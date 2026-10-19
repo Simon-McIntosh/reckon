@@ -204,12 +204,14 @@ def test_a_merge_that_drops_the_change_is_refused_and_nothing_is_pushed(
 ) -> None:
     """The negative control: with the merge resolved to drop the change.
 
-    The marker check refuses, the branch does not move, the remote keeps the
-    revision it had, and the worktree is left in place for recovery.
+    The marker check refuses, the remote keeps the revision it had, and the
+    worktree is left in place for recovery. The remote is the revision that
+    testifies here rather than the local branch: promotion commits its own
+    ledger to the local branch before the merge is attempted, so the local
+    branch moves whether or not the landing lands.
     """
     run = landed_run
     origin_before = _git(run["origin"], "rev-parse", "main")
-    branch_before = _git(run["repository"], "rev-parse", "main")
 
     def _merge_tree_without_the_change(repo: Path, base: str, head: str):
         tree = merge._run(repo, "rev-parse", f"{base}^{{tree}}").stdout.strip()
@@ -225,7 +227,6 @@ def test_a_merge_that_drops_the_change_is_refused_and_nothing_is_pushed(
     assert "dropped the reviewed change" in report["steps"]["land"]["error"]
     assert report["steps"]["land"]["resume"].startswith("reckon crew merge")
     assert _git(run["origin"], "rev-parse", "main") == origin_before
-    assert _git(run["repository"], "rev-parse", "main") == branch_before
     assert run["worktree"].is_dir()
 
 
