@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-standalone" content="It changes how a promotion&#x27;s landing commit is checked, rolled back and recorded; no live plan waits on it, and it consumes no plan&#x27;s pending evidence.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;a-landing-never-reverts-the-checkout#s1&quot;]}">
   <title>A Landing Never Reverts The Checkout | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="33">
+<meta name="plan-version" content="34">
 <meta name="plan-modified" content="2026-10-19">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -82,7 +82,7 @@
 </ul>
 
     <h2 id="s3">§3 — The path §1 names can no longer leave a written path behind HEAD</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> This is the fix at source nova's lead asked for. It is deferred until §1 names the mechanism, because the three candidates call for different fixes.</p>
 <ul>
 <li>If reckon's rollback ran against the pre-landing HEAD, the rollback captures the HEAD the landing started on before it stages anything. It restores only while HEAD still resolves to that commit. When HEAD carries the landing commit, it restores nothing and reports the landing as committed.</li>
@@ -122,10 +122,11 @@
     <pre class="r-fu-prompt">/reckon-build a-landing-never-reverts-the-checkout §2</pre>
     <p class="r-fu-outcome">§2 landed at 1c9c9ce43 and 54f91c9b7: every landing checks its paths before staging and after committing, reports to stderr and the receipt at all three sites, and records each refusal and rollback in landing.json.</p>
     </article>
-<article class="r-fu" data-id="f-alnrtc-003" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-build" data-written-at="2026-10-19" data-recommends-skill="/reckon-build a-landing-never-reverts-the-checkout §3" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-alnrtc-003" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-build" data-written-at="2026-10-19" data-recommends-skill="/reckon-build a-landing-never-reverts-the-checkout §3" data-resolved-at="2026-10-19T03:00:53+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">One promotion of a run at a time</h4>
     <div class="r-fu-body"><p>§1 found that the revert needed a second promotion of the same review run beside the first. §3 removes that by claiming a run for the whole of its promotion.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-landing-never-reverts-the-checkout §3</pre>
+    <p class="r-fu-outcome">§3 landed (head 3d2f768ad): a promotion holds a cross-host HostLease on its run, so a second promotion from any host refuses without writing.</p>
     </article>
 </section>
 
@@ -164,7 +165,10 @@
     <div class="r-comment-body"><p>§2 closed. Every landing checks its paths before staging and after committing, all three landing sites report the result to stderr and the receipt, and every refusal, rollback and success is appended to <code>landing.json</code> in the run directory (merged at <code>1c9c9ce43</code> and <code>54f91c9b7</code>). <a href="/reckon/evidence/archive/a-landing-never-reverts-the-checkout-landed.html#s2">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261019T023808401484-review-of-one-promotion-of-a-run-at-a-time-3d2f768adde1" data-who="reckon-build" data-when="2026-10-19T02:50:51.322Z">
-    <div class="r-comment-body"><p>review of r-20261019T020114916771-one-promotion-of-a-run-at-a-time at head 3d2f768adde1788a8589be8f373691277b7bb2ca stores a parsed record (base 473572f9bff57e97d77abbc4b52e6d9c68853a3e) scoring goal_fidelity 19, evidence 17, scope_discipline 20, durability 17, fit 19, reuse 20, with added_failure_count 0 and added_failure_ids [] derived from the reviewed run&#x27;s baseline_suite and after_suite gate logs, and two follow-on findings; reckon crew check-review reports ok with no findings.</p></div>
+    <div class="r-comment-body"><p>review of r-20261019T020114916771-one-promotion-of-a-run-at-a-time at head 3d2f768adde1788a8589be8f373691277b7bb2ca stores a parsed record (base 473572f9bff57e97d77abbc4b52e6d9c68853a3e) scoring goal_fidelity 19, evidence 17, scope_discipline 20, durability 17, fit 19, reuse 20, with added_failure_count 0 and added_failure_ids [] derived from the reviewed run's baseline_suite and after_suite gate logs, and two follow-on findings; reckon crew check-review reports ok with no findings.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-19T02:59:39Z">
+    <div class="r-comment-body"><p>§3 landed, head <code>3d2f768ad</code>. A promotion now holds a cross-host <code>HostLease</code> on its run for its whole span, so a second promotion from any host refuses without writing and names the holder. At base, the second promotion's row was written and rolled back, as in nova's incident. <a href="/reckon/evidence/archive/a-landing-never-reverts-the-checkout-landed.html#s3">evidence</a></p></div>
 </div>
 </section>
 </main>
