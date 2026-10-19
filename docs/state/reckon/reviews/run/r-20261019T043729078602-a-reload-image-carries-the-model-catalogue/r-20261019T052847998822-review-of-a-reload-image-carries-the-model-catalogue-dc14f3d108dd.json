@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_follow_commands.py:415",
+    "reckon/crew/follower_registration.py:34",
+    "reckon/crew/obligation_snapshot.py:428",
+    "reckon/flight.py:263"
+  ],
+  "completed_at": "2026-10-19T05:43:54.609Z",
+  "dispatched_at": "2026-10-19T05:30:27Z",
+  "findings": [
+    {
+      "file": "logs/ruff.log",
+      "line": 52,
+      "severity": "follow-on",
+      "summary": "cited ruff log is a stale red run and does not support the manifest's clean-ruff claim",
+      "text": "the ruff receipt cited in the manifest (test_logs) records 'check EXIT=1' and 'format EXIT=1' at rev c6ad9b332, the state before the style commit 9de1b2aff; the manifest's claim of clean ruff is true at head dc14f3d10 (verified independently) but the cited log does not support it, so a reader checking the receipt sees a failure where the record claims none."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew_follow_commands.py:415 (materialize_committed_tree), reckon/crew/follower_registration.py:34 (follower_code_stamp), reckon/crew/obligation_snapshot.py:428 (source_code_stamp), reckon/flight.py:263 (model_catalogue_path, the consumer of the carried file).",
+    "diff": "read the three commits c6ad9b332, 9de1b2aff and dc14f3d10 against base 3592c8f7c; they add CATALOGUE_RELATIVE_PATH, _mktree, _committed_catalogue_blob and _reload_tree_with_catalogue in reckon/checkout_trust.py, a 190-line test file, and the landing fragment.",
+    "done_when": "tests/test_a_reload_image_carries_the_model_catalogue.py asserts declared_model_aliases includes the alias, model_cell_width == len(ALIAS), the composed agent record names the model and alias, and the identity moves on a catalogue-only commit and not on an outside commit; the manifest records that run and its result.",
+    "goal": "The node goal is to make a reload image carry the model catalogue from the same revision so reloaded processes read model aliases and models; reckon/checkout_trust.py:334 (_committed_reload_tree) now folds docs/state/reckon/model-catalogue.yaml into the reload tree via _reload_tree_with_catalogue, so the image resolves it at the path reckon/flight.py:263 reads.",
+    "manifest": "read; it reports 2 focused tests passed at rev c6ad9b332, regression arms 99/99 and 109/109 at base and head, and cites logs whose negative control ends EXIT=1.",
+    "write_paths": "the manifest declares reckon/checkout_trust.py, tests/test_a_reload_image_carries_the_model_catalogue.py, the evidence fragment and the figures dir; every path in the diff is inside them (the figures dir is unused)."
+  },
+  "justifications": {
+    "durability": "the negative control at logs/negative-control.log reinstates the pre-change tree with no catalogue and the added assertions fail on it, so a regression reddens the test.",
+    "evidence": "the gate measures the done_when, but the cited logs/ruff.log:52 records format EXIT=1 at c6ad9b332 while the manifest claims ruff clean (verified clean independently at head dc14f3d10).",
+    "fit": "the change follows the surrounding subprocess/git idiom of reckon/checkout_trust.py:238 and its names carry no plan or ticket id.",
+    "goal_fidelity": "reckon/checkout_trust.py:334 folds the catalogue into the reload tree so the file lands at the path reckon/flight.py:263 resolves, and the test reads the alias back with the image's own package.",
+    "reuse": "_mktree extracts the pre-existing inline mktree call in _committed_reload_tree and _reload_tree_with_catalogue extends that same owner; a search of reckon/ found no other mechanism that folds a path into a reload tree.",
+    "scope_discipline": "all three changed paths (reckon/checkout_trust.py, tests/test_a_reload_image_carries_the_model_catalogue.py, the evidence fragment) are inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make a reload image carry the model catalogue from the same revision so reloaded processes read model aliases and models; reckon/checkout_trust.py:334 (_committed_reload_tree) folds docs/state/reckon/model-catalogue.yaml into the reload tree via _reload_tree_with_catalogue, so the image resolves it at the path reckon/flight.py:263 reads.\nVERDICT done_when: tests/test_a_reload_image_carries_the_model_catalogue.py asserts declared_model_aliases includes the alias, model_cell_width == len(ALIAS), the composed agent record names the model and alias, and the identity moves on a catalogue-only commit and not on an outside commit; the manifest records that run and its result.\nVERDICT write_paths: the manifest declares reckon/checkout_trust.py, tests/test_a_reload_image_carries_the_model_catalogue.py, the evidence fragment and the figures dir; every path in the diff is inside them (the figures dir is unused).\nVERDICT manifest: read; it reports 2 focused tests passed at rev c6ad9b332, regression arms 99/99 and 109/109 at base and head, and cites logs whose negative control ends EXIT=1.\nVERDICT diff: read the three commits c6ad9b332, 9de1b2aff and dc14f3d10 against base 3592c8f7c; they add CATALOGUE_RELATIVE_PATH, _mktree, _committed_catalogue_blob and _reload_tree_with_catalogue in reckon/checkout_trust.py, a 190-line test file, and the landing fragment.\nCALL_SITES: reckon/crew_follow_commands.py:415, reckon/crew/follower_registration.py:34, reckon/crew/obligation_snapshot.py:428, reckon/flight.py:263\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/checkout_trust.py:334 folds the catalogue into the reload tree so the file lands at the path reckon/flight.py:263 resolves, and the test reads the alias back with the image's own package.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate measures the done_when, but the cited logs/ruff.log:52 records format EXIT=1 at c6ad9b332 while the manifest claims ruff clean (verified clean independently at head dc14f3d10).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all three changed paths (reckon/checkout_trust.py, tests/test_a_reload_image_carries_the_model_catalogue.py, the evidence fragment) are inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: the negative control at logs/negative-control.log reinstates the pre-change tree with no catalogue and the added assertions fail on it, so a regression reddens the test.\nSCORE fit: 19\nJUSTIFICATION fit: the change follows the surrounding subprocess/git idiom of reckon/checkout_trust.py:238 and its names carry no plan or ticket id.\nSCORE reuse: 20\nJUSTIFICATION reuse: _mktree extracts the pre-existing inline mktree call in _committed_reload_tree and _reload_tree_with_catalogue extends that same owner; a search of reckon/ found no other mechanism that folds a path into a reload tree.\nFINDING logs/ruff.log:52 follow-on: the ruff receipt cited in the manifest (test_logs) records 'check EXIT=1' and 'format EXIT=1' at rev c6ad9b332, the state before the style commit 9de1b2aff; the manifest's claim of clean ruff is true at head dc14f3d10 (verified independently) but the cited log does not support it, so a reader checking the receipt sees a failure where the record claims none.\n",
+  "review_run_id": "r-20261019T052847998822-review-of-a-reload-image-carries-the-model-catalogue-dc14f3d108dd",
+  "reviewed_base_sha": "3592c8f7c74ca78f2b00b405ddb8e1a06277d420",
+  "reviewed_head_sha": "dc14f3d108dd63e9741dd729b84ce5435634b41b",
+  "reviewed_run_id": "r-20261019T043729078602-a-reload-image-carries-the-model-catalogue",
+  "rubric": "landed-node review",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T05:46:48.883460+00:00"
+}
