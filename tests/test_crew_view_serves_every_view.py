@@ -180,13 +180,22 @@ def _view_names() -> list[str]:
     return sorted(set(mcp.CREW_TOOL_VIEWS) | set(mcp_views.crew_view_names()))
 
 
-#: The instant a composition ran. A view that reads a live document stamps the
-#: moment it composed the answer, so two compositions seconds apart legitimately
-#: differ in exactly this field and nowhere else. It is dropped before the two
-#: surfaces are compared, so the comparison measures the composition rather than
-#: the clock; every other field, including any stamp read out of a file, must
-#: still agree.
-_VOLATILE_KEYS = frozenset({"composition_time"})
+#: Everything a composition derives from the instant it ran. The lanes view
+#: stamps when it composed its answer and reports ages measured from that
+#: instant, so two compositions seconds apart legitimately differ in these
+#: fields and nowhere else. They are dropped before the two surfaces are
+#: compared, so the comparison measures the composition rather than the clock —
+#: and every other field, including every stamp read out of a file, must still
+#: agree, which is what makes the comparison worth making.
+_VOLATILE_KEYS = frozenset(
+    {
+        "composed_at",
+        "age_seconds",
+        "lane_age_seconds",
+        "fetch_age_seconds",
+        "probe_fetch_age_seconds",
+    }
+)
 
 
 def _without_the_composition_instant(value):
