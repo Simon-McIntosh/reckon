@@ -1,0 +1,50 @@
+<article class="r-fragment" data-node="epw-server-serves-current-code">
+  <h2 id="epw-server-serves-current-code-heading">The MCP server answers a failed call on the checkout's current code</h2>
+
+  <section data-reckon="section" data-id="epw-server-serves-current-code-mechanism">
+    <h3 id="epw-server-serves-current-code-mechanism-heading">The stdio mechanism, and why re-exec cannot carry an initialised session</h3>
+    <p>The HTTP server owns its process: <code>_CodeReload</code> drains its handlers and calls
+      <code>os.execv</code>, and a re-executed image is simply a new server, because every caller
+      reconnects to a listener. A stdio MCP server has no listener to reconnect to. Its client holds
+      the session it opened with <code>initialize</code>, and a replacement process has received no
+      <code>initialize</code> — the front the client is talking to would have to be discarded for the
+      connection to survive, which is the reconnect the section exists to remove.</p>
+    <p>So the front stays and the <em>current code runs behind it</em>. When a call fails, the guard
+      asks the moved-checkout owner (<code>reckon.served_code.moved_checkout</code>) whether the code
+      has moved and whether the moved tree is trusted, and if both hold it runs the same call against
+      the checkout in a child interpreter (<code>_CURRENT_CODE_RUNNER</code>) whose answer stands in
+      for the stale image's. That child is disposable and holds no session, which is exactly why the
+      mechanism can be restarted per call where the server cannot.</p>
+    <p>Three verdicts follow, and each is a case of the gate:</p>
+    <ul>
+      <li>The current code answers — that answer is returned, and the session serves its later calls
+        on the current code (<code>_SERVE_ON_CURRENT_CODE</code>) rather than falling back to the
+        image.</li>
+      <li>The current code also fails the call — the failure is not the stale image's, so the
+        reconnect refusal is the answer, carrying the original error text. This is what keeps the
+        shared trust check's reader (<code>tests/test_one_check_trusts_a_moved_checkout.py</code>)
+        passing: a read the moved checkout also refuses is still refused.</li>
+      <li>The tool's parameter list changed on disk — always refused, naming that tool, because the
+        client holds the schema it connected with and no in-process answer can stand for it.</li>
+    </ul>
+  </section>
+
+  <section data-reckon="section" data-id="epw-server-serves-current-code-factoring">
+    <h3 id="epw-server-serves-current-code-factoring-heading">One owner for the moved-checkout decision</h3>
+    <p><code>reckon/served_code.py</code> now owns <code>MovedCheckout</code>, <code>code_fingerprints</code>,
+      <code>served_code_moved</code> (the HTTP server's half, comparing the executed-code report's
+      fingerprints) and <code>moved_checkout</code> (the MCP server's half, comparing the checkout's
+      code identity and running the shared trust check). <code>reckon/serve.py</code> calls
+      <code>served_code_moved</code> and no longer carries its own fingerprinting; <code>reckon/mcp.py</code>
+      calls <code>moved_checkout</code>. Neither server carries a check of its own.</p>
+  </section>
+
+  <section data-reckon="section" data-id="epw-server-serves-current-code-state">
+    <h3 id="epw-server-serves-current-code-state-heading">State at hand-off</h3>
+    <p>Cases (b) and (c) of the gate pass; case (a) failed on a defect in the test's own fixture —
+      the simulated "checkout ahead" wrapped <code>edit_plan</code> with <code>(*args, **kwargs)</code>,
+      which changed the tool's inferred parameter list and so tripped the intended signature refusal.
+      The fixture now preserves the signature with <code>functools.wraps</code>, which was not
+      re-run before the time budget expired. No uncommitted work is left in the tree.</p>
+  </section>
+</article>
