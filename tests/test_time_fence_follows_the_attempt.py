@@ -182,7 +182,11 @@ def test_a_dispatch_prompt_states_the_deadline_its_own_attempt_started_under(
         "the dispatch prompt does not state the deadline the attempt's own "
         f"launch instant sets (started {started}, expected deadline {deadline})"
     )
-    assert "`date -u`" in prompt
+    seconds_left = f"echo $(( $(date -d {deadline[:-1]}+00:00 +%s) - $(date +%s) ))"
+    assert seconds_left in prompt, (
+        "the dispatch prompt does not carry the seconds-left command built "
+        f"from the attempt's own deadline ({deadline})"
+    )
 
 
 # ── A lane change restates the fence for the attempt it launches ────────────
