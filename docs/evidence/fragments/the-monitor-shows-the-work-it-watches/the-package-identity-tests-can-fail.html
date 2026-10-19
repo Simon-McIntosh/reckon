@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-title" content="The package-identity tests can fail">
+  <meta name="plan-summary" content="Two assertions in the package-identity test compared a value against another derived the same way, so a commit-keyed identity left them green. Both now compare against a value git derives independently, and both fail under the commit-keyed negative control.">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s57">
+  <meta name="plan-recorded-at" content="2026-10-19">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="checkout-trust,identity,test,negative-control">
+  <title>The package-identity tests can fail — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="the-package-identity-tests-can-fail" class="r-note" data-node="the-package-identity-tests-can-fail" data-reckon="landed" data-when="2026-10-19">
+  <h2>The package-identity tests can fail</h2>
+  <p>Three assertions in <code>tests/test_a_commit_without_code_moves_no_identity.py</code> compared a value against another computed the same way, so none could fail when the identity was keyed on the commit. Case (b) asserted the reload's executed identity (<code>image.name</code>) against <code>_identity(root)</code>; the materialisation case asserted the published directory name against the identity passed into <code>materialize_committed_tree</code>; and the image-carrying case asserted the commit stamped into the reload environment (<code>execs[0][2][_IMAGE_COMMIT_ENV]</code>) against <code>_identity(root)</code> — every pair with both sides calling <code>source_code_identity</code>. The reload case now compares the executed identity and the reload environment's commit against <code>git rev-parse HEAD:reckon</code> derived directly from the test's own repository. The materialisation case compares its directory name against that same git-derived tree id, and its extracted package against <code>git ls-tree -r --name-only &lt;tree_id&gt;</code>, the listing of the reckon tree at that id.</p>
+  <p>The negative control keys <code>source_code_identity</code> on the commit instead of the reckon tree; the strengthened assertions then fail, and all six tests in the file fail (<code>negative-control.log</code>, 6 failed, <code>EXIT=1</code>), the image-carrying case among them. The head arm — the strengthened file against the unmutated tree — passes all six (<code>gate-head.log</code>, 6 passed, <code>EXIT=0</code>). The base arm (the file as at <code>7ee118fbf</code>) and the after arm both pass six (<code>baseline_suite.log</code> and <code>after_suite.log</code>, 6 passed, <code>EXIT=0</code>). <code>ruff check</code> and <code>ruff format --check</code> report no findings on the changed file. This gate measures only this node's own change; verifying the merged result belongs to a separately dispatched test node.</p>
+</article>
+</body>
+</html>
