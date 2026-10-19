@@ -181,11 +181,16 @@
       <li>The wrapper execs the sandbox only after its record has been written
       (<code>&amp;&amp; exec</code>, not <code>; exec</code>), and exits non-zero
       otherwise. So no worker runs inside a step that has no record.</li>
-      <li>If no record has appeared 30 s after the first stop attempt, the
-      supervisor checks once more that the record is still absent. It then
-      signals the client once, by pid alone, under its own sender reason. At that
-      point the signal withdraws a pending request; it does not cancel a running
-      worker.</li>
+      <li>Each placed step is named after its run id (<code>srun
+      --job-name</code>), so Slurm itself can say whether the step exists. If no
+      record has appeared 30 s after the first stop attempt, the supervisor asks
+      the scheduler for a step of the fleet job carrying that name. Slurm lists a
+      step only once it has been created, so no such step means the request is
+      still pending. Only then does it signal the client, once, by pid alone, under
+      its own sender reason. At that point the signal withdraws a pending request;
+      it does not cancel a running worker. If the scheduler lists the step
+      without a record, the client is not signalled. The supervisor records a
+      refusal naming the step and keeps waiting.</li>
       <li>A record that appears inside the window returns the stop to the inner
       path.</li>
     </ul>
