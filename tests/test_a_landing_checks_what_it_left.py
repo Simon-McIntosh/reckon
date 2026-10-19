@@ -15,6 +15,7 @@ import pytest
 
 from reckon import ledger
 from reckon.crew.node import CrewError
+from reckon.crew.promotion_gate import record_gate_rerun_at_integrated_revision
 from reckon.crew.promotion_release import _record_release_on_ledger
 from reckon.crew.promotion_scope import _commit_landing_writes
 from reckon.crew.runs import run_dir
@@ -264,6 +265,45 @@ def test_a_reversal_found_while_landing_a_release_is_reported(
     reversals = {
         entry["path"]: entry for entry in recorded["landing_check"]["reversals"]
     }
+    assert set(reversals) == {"created.txt"}
+    assert reversals["created.txt"]["commit"] == first_commit
+    assert "staged in reverse of" in capsys.readouterr().err
+
+
+def test_a_reversal_found_while_landing_a_gate_rerun_is_reported(
+    repository: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    run_id = "r-gate"
+    run_file = ledger.run_path(PROJECT, run_id, repository)
+    run_file.parent.mkdir(parents=True, exist_ok=True)
+    run_file.write_text(
+        ledger.serialize_run({"run_id": run_id, "project": PROJECT, "gate": "passed"}),
+        encoding="utf-8",
+    )
+    git(repository, "add", "--", str(run_file.relative_to(repository)))
+    git(repository, "commit", "-q", "-m", "test: run record")
+
+    created = repository / "created.txt"
+    created.write_text("an earlier landing\n", encoding="utf-8")
+    _landing(repository, "r-first", [created])
+    first_commit = _head(repository)
+
+    # A peer stages the earlier landing back before the gate re-run lands its
+    # report. The gate's landing runs the same pre-staging check a promotion's
+    # does, so the reversal reaches stderr and the returned receipt, not only
+    # the record file.
+    created.unlink()
+    git(repository, "add", "--", "created.txt")
+
+    result = record_gate_rerun_at_integrated_revision(
+        project=PROJECT,
+        run_id=run_id,
+        repository=repository,
+        root=repository,
+        command="true",
+    )
+
+    reversals = {entry["path"]: entry for entry in result["landing_check"]["reversals"]}
     assert set(reversals) == {"created.txt"}
     assert reversals["created.txt"]["commit"] == first_commit
     assert "staged in reverse of" in capsys.readouterr().err

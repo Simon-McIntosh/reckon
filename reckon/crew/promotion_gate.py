@@ -970,6 +970,7 @@ def record_gate_rerun_at_integrated_revision(
             "than only printed."
         ),
     )
+    landing_check = _report_landing_check(landing)
     return {
         "run_id": run_id,
         "project": project,
@@ -986,6 +987,10 @@ def record_gate_rerun_at_integrated_revision(
         "ok": report["ok"],
         "finding": report.get("finding"),
         "landing": landing,
+        # A reversal another session staged and a post-commit mismatch leave
+        # the checkout wrong while the re-run itself succeeded, so the landing
+        # check reaches stderr and this receipt rather than only the record.
+        "landing_check": landing_check,
         "store_synopsis": store_synopsis,
     }
 
@@ -1002,5 +1007,6 @@ from reckon.crew.promotion_release import (
 )
 from reckon.crew.promotion_scope import (
     _commit_landing_writes,
+    _report_landing_check,
     _revision_is_ancestor,
 )
