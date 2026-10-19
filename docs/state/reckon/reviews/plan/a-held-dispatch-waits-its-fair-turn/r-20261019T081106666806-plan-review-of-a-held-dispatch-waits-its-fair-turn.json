@@ -1,0 +1,129 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T08:51:23.831Z",
+  "dispatched_at": "2026-10-19T08:34:58Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-held-dispatch-waits-its-fair-turn.html:202",
+      "id": "reasoning-1",
+      "reason": "\u00a712 exists because orchestrators key on the exit code, and the plan must either align the review path to 75 or record that the divergence is intended.",
+      "text": "\u00a732's Deliverable says a paused gate \"reports `lane-paused` and exits as it does today\", but the review path exits 1 today (`reckon/crew_dispatch_commands.py:2437`), while \u00a712's contract \u2014 which \u00a732's Why cites as the thing `crew review` should match \u2014 fixes a paused gate at exit 75; after the change a coordinator reusing dispatch's convention reads the two commands' paused gates on different codes",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-held-dispatch-waits-its-fair-turn.html:202",
+      "id": "reasoning-2",
+      "reason": "the write path names the file, so a node reaches the branch regardless; the imprecise symbol costs a lookup, not a wrong path.",
+      "text": "\u00a732's Why attributes the exit-1 to `crew_review`, but `crew_review` is a pass-through wrapper (`reckon/crew_dispatch_commands.py:2232-2274`); the branch that both emits the result and raises is in `_run_review`'s plan-review path (`:2437`)",
+      "type": "reasoning",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-held-dispatch-waits-its-fair-turn.html:202",
+      "id": "anchors_resolve-1",
+      "reason": "\u00a732's claim is about what the CLI printed at 07:46Z, which the composed directory's record corroborates; the pointer is gone because the request was consumed, not because the section mis-cited it.",
+      "text": "the queued run `r-20261019T074644060201-plan-review-of-the-suite-is-green-at-head` \u00a732 cites resolves to no live pointer, run directory or brief, and the composed directory's own `dispatch.json` records the request launching as a different run id (`r-20261019T080753694997`)",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "f5c839eb1ca7300d9bb11dc48bba1de8b6754c173655948d08f2ee131294bfe7",
+  "plan_slug": "a-held-dispatch-waits-its-fair-turn",
+  "plan_version": 181,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-19T08:54:46.859982+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-19T08:55:04.456554+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "the citation records what the CLI printed at 07:46Z; the queued pointer was then consumed when the request launched as r-20261019T080753694997, which the composed directory's dispatch.json records",
+      "when": "2026-10-19T08:56:35.646070+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "the citation records what the CLI printed at 07:46Z; the queued pointer was then consumed when the request launched as r-20261019T080753694997, which the composed directory's dispatch.json records",
+      "when": "2026-10-19T08:56:35.646070+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T08:54:46.859982+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T08:55:04.456554+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-held-dispatch-waits-its-fair-turn.v181.json",
+  "review_run_id": "r-20261019T081106666806-plan-review-of-a-held-dispatch-waits-its-fair-turn",
+  "reviewed_blob_sha": "23d2d90fff3d6647908c349c4068abeeb3c865c8",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every code anchor resolves (`crew_review` at `reckon/crew_dispatch_commands.py:2232`, `_dispatch_composed_review` at `reckon/crew/recovery_review_dispatch.py:1860`, the sweep's `error == \"lane-paused\"` at `reckon/crew/recovery_review_acceptance.py:506`, `_queued_review_fields` at `reckon/crew/obligations.py:352` with its 30-minute bound at `:66`), and the composed directory `r-20261019T074610975860` exists on disk.",
+    "done_when": "pass \u2014 \u00a732's done-when names a negative control that restores the error-passthrough branch and makes its first case fail, so the guard is shown to fire.",
+    "evidence_paths": "pass \u2014 \u00a732's gate log lands under the run directory, a durable path, and no gate writes to a session scratchpad.",
+    "naming": "pass \u2014 \u00a732 names files and symbols by their function; no plan label, ticket number or changelog prose reaches the code or the section text.",
+    "reasoning": "a finding \u2014 \u00a732 states it adopts \u00a712's dispatch contract, but its deliverable keeps the paused-gate exit code at the review command's current 1 where \u00a712 fixes 75.",
+    "single_goal": "pass \u2014 \u00a732 carries one deliverable: the review CLI reports a queued composition the way dispatch does.",
+    "wiring": "pass \u2014 \u00a732 is the target of the open followup `f-ahdwift-028` and its file scope (`reckon/crew_dispatch_commands.py` plus one new test) is written by no other in-flight section, so no `depends-on` is owed."
+  },
+  "section_digests": {
+    "_document": "3056139e7e56d696867a265b24d2ad61f79491385a79601d708244490daaf99a",
+    "s1": "e09f72c38fa12dd06b1fede9137b6a8731c7f42dad95ea4d7873e48b6bcebc93",
+    "s10": "769f35c4ff338677b1083340b990086682e629701a25af49a8b6e2d3b8a175a4",
+    "s11": "3aafc106945bdc346a0f808fc26c7fc8e028b922103641455da38536ae24c036",
+    "s12": "f72ab709e3a40644be43c6e558b558089f939e3368a20a2b34321a9043c80c88",
+    "s13": "1f1792d925edd6b7c0b33bd02bebc3db1f499f9d5e1505b3ba04b305d9ed7f64",
+    "s14": "a86f35810a5d1446f8cf9294a46f7a7a393c1452cc3080ef8b9e51cf83670acf",
+    "s15": "694218fb467e061648aac13eed1a446529dbff08aca86ecfdb24792eb5b2820e",
+    "s16": "5d0a87ee69959477d707fb8d7b442b283f6ae0e7bc896382dd4c65c7e3efb9b8",
+    "s17": "d3bfb51ccfbe6c602a6a11cd9d7e433d1385fd2b90b604f2eb307029dc97f703",
+    "s18": "f67610611bfb819007234cb2d266523cab773379dedf07c8b53feb8f9e78ef59",
+    "s19": "1a735ef01d42913d9085a7d2db7eb238ecd99450b1ee61e3702d9951b4be8b04",
+    "s2": "c37ed4ecb2dad1331b0b031fb8351608243790308312236d375bede3594285b7",
+    "s20": "27cbb7d66474dcc03ee947d28d02bf69241181f95114d64b5dfd64cece9a6d2d",
+    "s21": "9d6a0b0914d4b7c617f66b56c23c29f423e83783cee042a59efd0844e910758e",
+    "s22": "04e32404c6bd6fba4d019c4ac2feb930c097b69019a6b5feeab58d4c16120a94",
+    "s23": "70ceaed3d3c3bdadbebbb977a408f022cd463ddb7697e91a9f3ddb9783544474",
+    "s24": "d7f6c25b7737b87618ce073988379c3a183b8bd0c2da8d647b9b86dd29f1ca6d",
+    "s25": "e88835723a96300f96faca8c273f7eaf945b39dd9df4be7a5c6199ddf55b8422",
+    "s26": "a829b38553b03955174d3dcabf9df353fe7c676b2f8ed7a1de83fe601c7d4b90",
+    "s27": "8f724251bb33d77182950fa280b7a11534308e59b061628a3780ecb8b004a68a",
+    "s28": "0c87a9ac04613153cbe9e2fe1fdcdde59bc64b31d5c992b0f4259ea611185452",
+    "s29": "25685afa8071dda611460a1344fd6e7da0681d3cd2548d0b28a59a7d3496c927",
+    "s3": "ef687123318fac196bded366330cf2e92b586c4991b5c1cc8670f228182f916c",
+    "s30": "c5e0af98c255e50c99d29c7b483d2832229c1bc3ee45b78945fcd5918356eeb9",
+    "s31": "8dbcbb92ffc2d9418e8419ba1716806b41e7a610d7b4aaaad9327e438085c016",
+    "s32": "32802f739fed26d3196c481422a67edbd7e821b6460f9b120233cd82c4ff7223",
+    "s4": "e6a41eadc72e4752cc0ebe35a14a9bce3f28bc1061ec677e8f779fa09d8c037c",
+    "s5": "4b674f96924c3dbfde217945d16c606df376d034dc060f02360a4336412e74f8",
+    "s6": "9e35fc2341a06de64fed9ff7f176a0e83b22c1482c1b5a04a5539b6e4c07aab4",
+    "s7": "764a72dad2d59bddd4d3b1209f07c0c210ff6c46cd14147d4bcc7ffe9fa9426d",
+    "s8": "1b92313fdf672f4b813b45aa8e26f1304ca363cdc5a4d1752238f794a2019e27",
+    "s9": "ef8f75976cf8d243089cb5955b0e084cf6e2c6bcd478f9e56b8e8654080c6ad6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T08:54:20.172449+00:00"
+}
