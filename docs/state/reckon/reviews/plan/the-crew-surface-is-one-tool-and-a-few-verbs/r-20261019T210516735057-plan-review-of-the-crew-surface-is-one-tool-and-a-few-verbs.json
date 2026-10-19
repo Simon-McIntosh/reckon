@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T21:24:08.548Z",
+  "dispatched_at": "2026-10-19T21:07:53Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:325",
+      "id": "wiring-1",
+      "reason": "the node cannot satisfy its own deliverable without writing two files outside its fence, and one of them is owned by a section it does not wait on, so the node would either stop as blocked or turn the registry case red.",
+      "text": "the filter node is to make \u00a76's registry case \"compare the views the MCP tool's schema advertises with the dispatcher's\", but the tool's typed schema is the `view` Literal in `reckon/_mcp_tools.py:85-95` (nine views) against the dispatcher's eighteen in `reckon/mcp_views.py:3598-3617`; that Literal is not in the node's write paths (plan:326), and `reckon/_mcp_tools.py` is \u00a75's (plan:167-168) while \u00a79 declares no s5 edge (plan:24). Reconciling it also forces the skill's documented view list (`test_ship_views_match_the_typed_mcp_surface` at tests/test_skill_contracts.py:1173-1179) to change, and `skills/reckon-build/SKILL.md` is likewise outside the node's write paths.",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:339",
+      "id": "done_when-1",
+      "reason": "a caller that node misses is still falsified downstream at node 4's head, by the tombstone and the head fixture case.",
+      "text": "the controls named cover the filter node and the two retiring nodes, but `cso-list-callers-move-to-crew-view` (plan:327-328) declares none, so nothing in the plan shows that node's caller-move guard fires.",
+      "type": "done_when",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:319",
+      "id": "reasoning-1",
+      "reason": "the ordering conclusion is unaffected; only the stated reason is wrong, though it hides that node 3 must follow node 2 for a semantic rather than a file-overlap reason.",
+      "text": "the four nodes are declared serial \"because each writes `reckon/crew_run_commands.py` or `tests/test_skill_contracts.py`\", but `cso-list-callers-move-to-crew-view` (plan:328) writes neither and shares no file with the filter node before it; the real ordering constraint is that node 3's `--phase`/`--mine` fixtures (plan:335) need node 2's new flags.",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "b0bbf8215cd4e4f010658b3715788e2a947a21ff520c43794a48c0db86c6ce83",
+  "plan_slug": "the-crew-surface-is-one-tool-and-a-few-verbs",
+  "plan_version": 28,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261019T210516735057-plan-review-of-the-crew-surface-is-one-tool-and-a-few-verbs",
+  "reviewed_blob_sha": "8880b2e6fc5cabcb679b80532ed61b748d4de125",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/mcp_deadlines.py` (line 184), `reckon/crew/refusals.py` (line 78), the imas-ambix guide (`ops/lane-cycle/AGENTS.md` line 40) and `every-plan-write-goes-through-edit-plan#s11` all resolve; `worktree_fleet.py` reads live pointers directly (line 125-127) as \u00a79 now states.",
+    "done_when": "a finding \u2014 `cso-list-callers-move-to-crew-view` is the only \u00a79 node with no declared negative control.",
+    "evidence_paths": "pass \u2014 \u00a79's gates run through named tests on durable repository paths; no gate is parked on a scratchpad.",
+    "naming": "pass \u2014 the section's names and prose carry no plan labels, ticket numbers or version tags.",
+    "reasoning": "a finding \u2014 the four nodes' serial justification names files that exclude the third node, so the reason given does not match the files.",
+    "single_goal": "pass \u2014 each of \u00a79's four nodes names one deliverable (retire ledger+velocity, filter the live view, move list's callers, tombstone list).",
+    "wiring": "a finding \u2014 \u00a79's filter node (`cso-crew-view-filters-live-runs`) must edit the MCP tool's typed view surface in `reckon/_mcp_tools.py`, which \u00a75 owns and which \u00a79 declares no dependency on."
+  },
+  "section_digests": {
+    "_document": "e8bb1db2690392c8b5611dbda930de65632d9202673b2fc818afac5a0a609348",
+    "s1": "7964ee282f4a5255288aa84785a54dbc6a5fec9660f4cee9f9c892a0807894ee",
+    "s2": "be69292dc4744e91b19438c3129be40ac6c6138f02cd12656616dd3906a1d313",
+    "s3": "bfc4b93502cb69a2a5878f9c282da2cbab878f4f49482f263fdfc074dfce4ba8",
+    "s4": "2feb22a10d53f02161e33412c6f491a2718ee9b88ffede06e39b7fc15799f5d1",
+    "s5": "4a0b632aaec0c9b2538edeab874ccd9fd39723e2eef864da9ae65a3f72b6695c",
+    "s6": "e037f188e4e0784a7a39a208f621ec226cacdda5308e5f226d6ba3e104345522",
+    "s7": "7a66876ae7177f3cc833a9fc9c2885beceef03cf567843584a885f144155809b",
+    "s8": "beb6c1568fe326e8af87c393c93ac9e71dec60ad9a9247b47ffbec9d08fc76a6",
+    "s9": "7035e56c9914aad3c602d84869935ce1d75b2eba9a855d32377d43998ebac231"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T21:28:06.606180+00:00"
+}
