@@ -26,7 +26,7 @@
   <title>The Crew Surface Is One Tool And A Few Verbs | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="21">
+<meta name="plan-version" content="22">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -274,8 +274,13 @@
         folds or deletes, plus the parent verb it adds. The budget node adds <code>crew budget</code>, and the repair-and-check node adds
         <code>crew repair</code> and <code>crew check</code>. The count is measured at each node's base, never quoted from here, because
         other plans add verbs.</li>
+      <li>The resume node adds a fifth check for the claim change. <code>crew widen</code> accepts a run whose worker has exited,
+        whatever its manifest status, and refuses one whose worker is still running. <code>complete --accept-path</code> on a path
+        outside the fence leaves the same claim record that <code>crew widen</code> leaves for that path, because both go through
+        <code>narrow_claim</code> and <code>release_claim</code>.</li>
     </ul>
-    <p>Each node's negative control alters one of its successors' answers, and that case then fails. The node also updates
+    <p>Each node's negative control alters one of its successors' answers, and that case then fails. The resume node has a second
+      control: it routes <code>complete --accept-path</code> around the claim owner, and the claim-record case then fails. The node also updates
       <code>tests/test_crew_help_names_its_state.py</code>, which pins the exact leaf set: the node adds a state row for each parent verb it
       introduces and removes the row of each name it folds, and the test passes. The help-contract tests and
       <code>tests/test_cited_commands_exist.py</code> pass. <code>tests/test_every_module_fits_a_worker_window.py</code> adds no
