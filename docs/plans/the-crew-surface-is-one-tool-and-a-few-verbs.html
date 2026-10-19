@@ -26,7 +26,7 @@
   <title>The Crew Surface Is One Tool And A Few Verbs | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -101,53 +101,50 @@
 
     <h2 id="s3">§3 — <code>crew complete</code> reads the manifest's gate receipt, and its dry run lists every refusal</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
-    <p><strong>Why.</strong> Seven reports describe the same loop. The coordinator copies the gate command, exit status and log path from the
-      worker's manifest into three flags. It is then refused for the next guard: a failure classification, a resume waiver, an impl move,
-      an accepted path. One refusal comes per call, and there is no way to ask for all of them at once. Flags that take a reason
-      (<code>--no-commit</code>, <code>--no-impl-change</code>, the <code>--waive-*</code> family) swallow the next flag when the reason is
-      left out. A <code>--commit</code> is not checked to resolve, and one report caught fabricated shas by hand.</p>
-    <p><strong>Deliverable.</strong></p>
+    <p><strong>Why.</strong> Seven reports describe the same loop: <code>complete</code> refuses one guard per call and there is no way to
+      ask for all of them at once. Flags that take a reason (<code>--no-commit</code>, <code>--no-impl-change</code>, the <code>--waive-*</code>
+      family) swallow the next flag when the reason is left out. The manifest fill already exists. <code>promotion_records.py</code> fills a
+      passing promotion's gate flags from the worker's manifest (<code>tests</code>, <code>test_logs</code>, <code>commits</code>), while an
+      explicit flag wins. <code>reports.py</code> parses the manifest and reads only an end-of-log <code>EXIT=</code> line.
+      <code>promotion_scope.py</code> refuses a commit that does not resolve. Yet three coordinators still supplied the gate command, status and
+      log by hand on every promotion, one because the worker's <code>tests:</code> field was prose.</p>
+    <p><strong>Deliverable.</strong> Three changes, each extending the owners above rather than adding a module:</p>
     <ul>
-      <li><code>complete</code> reads the gate receipt the run's manifest carries: the command, the exit status, the log path and the commits.
-        It validates the receipt. The log must be a file under the run directory whose last <code>EXIT=&lt;n&gt;</code> line equals the stated
-        status. Each commit must resolve to an object reachable from the worktree head.</li>
-      <li>An explicit flag overrides a manifest field, and the answer names every override.</li>
+      <li>Measure, over the manifests of the runs promoted in the last seven days, how often the existing fill applied and why it did not, and
+        repair the cause the measurement names. The repair goes in the fill, or in how the dispatch contract tells workers to write the
+        receipt fields.</li>
       <li>A reason-taking flag refuses a value that begins with <code>--</code>.</li>
-      <li><code>--dry-run</code> evaluates every guard without writing. It returns all of their failures together, and the one invocation
-        that would pass for the run's state: review attached or not, impl moved or not, gate passing or failing.</li>
+      <li><code>--dry-run</code> evaluates every guard without writing. It returns all of their failures together, and the one invocation that
+        would pass for the run's state: review attached or not, impl moved or not, gate passing or failing.</li>
     </ul>
-    <p>The receipt's field names are the ones the dispatch contract already gives workers. Where that contract does not name them, the node
-      adds them to the contract.</p>
-    <p><strong>Done when</strong> <code>tests/test_complete_reads_the_manifest_receipt.py</code> runs against a temporary project with a
-      finished run whose manifest carries a receipt, and checks three cases. <code>complete</code> with no gate flags promotes it, recording
-      the manifest's command, status and log. <code>--dry-run</code> on a run that fails three guards lists all three in one answer, with an
-      invocation that then promotes. <code>--no-commit --gate passed</code> is refused as a missing reason. Two negative controls: a receipt
-      whose log ends <code>EXIT=1</code> beside a stated <code>0</code> is refused, and a commit that does not resolve is refused, naming it.
+    <p><strong>Done when</strong> <code>tests/test_complete_reports_every_refusal.py</code> passes three cases on a temporary project.
+      <code>--dry-run</code> on a run that fails three guards lists all three in one answer, with an invocation that then promotes.
+      <code>--no-commit --gate passed</code> is refused as a missing reason. A run whose manifest carries the receipt in the contracted form
+      promotes with no gate flags. The evidence gives the fill rate on the measured manifests before and after the repair. The negative
+      control makes the dry run return only its first failure, and the three-guard case then fails.
       <code>tests/test_every_module_fits_a_worker_window.py</code> passes. Write paths: <code>reckon/crew_run_commands.py</code>,
-      <code>reckon/crew/promotion.py</code>, <code>reckon/crew/promotion_gate.py</code>, <code>reckon/crew/promotion_receipt.py</code>,
-      <code>reckon/crew/prompts.py</code>, <code>tests/test_complete_reads_the_manifest_receipt.py</code>.</p>
+      <code>reckon/crew/promotion.py</code>, <code>reckon/crew/promotion_records.py</code>, <code>reckon/crew/promotion_gate.py</code>,
+      <code>reckon/crew/reports.py</code>, <code>reckon/crew/prompts.py</code>, <code>tests/test_complete_reports_every_refusal.py</code>.</p>
 
     <h2 id="s4">§4 — One call lands a run</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
     <p><strong>Why.</strong> Four reports keep a scratch script that lands a run. One ran it about forty times a session. The script
       completes the run and merges its reviewed head without touching the shared index. It checks that the change survived the merge, pushes
       over the port a compute node allows, and releases the worktree.</p>
-    <p><strong>Deliverable.</strong> <code>crew complete --land</code> does those steps after promotion, in order. Each step reports, and a
-      failed step stops the call and names the command that resumes from it.</p>
-    <ol>
-      <li>Merge the reviewed head onto the primary branch with the mechanism <code>crew merge</code> uses.</li>
-      <li>Verify that the primary branch's copy carries a marker the change introduced, and lacks any marker it removed.</li>
-      <li>Push, honouring <code>GIT_SSH_COMMAND</code>.</li>
-      <li>Release the worktree through <code>gc</code>'s own removal.</li>
-    </ol>
+    <p><strong>Deliverable.</strong> <code>crew complete --land</code> adds no module. It calls a <code>land</code> function beside
+      <code>land_merge</code> in <code>reckon/crew/merge.py</code>, which already builds the merge without the shared index and pushes with the
+      port-443 fallback. It then calls the existing release after promotion, <code>_release_after_promotion</code> in
+      <code>reckon/crew/promotion_release.py</code>, which removes the worktree through <code>gc</code>. The one new step is the
+      content-survival check between merge and push: the primary branch's copy must carry a marker the change introduced and lack any marker it
+      removed. Each step reports, and a failed step stops the call and names the command that resumes from it.</p>
     <p>Before removing anything, the node reads the ledger for <code>crew merge</code> landings of heads that no run produced. The evidence
       records how many landed in the last thirty days. §7 tombstones <code>crew merge</code>, naming <code>crew complete --land</code>, when
       that count is zero, and otherwise leaves it as the form for a head with no run. This node registers no tombstone.</p>
     <p><strong>Done when</strong> <code>tests/test_one_call_lands_a_run.py</code> builds a temporary repository with a bare remote and a
       finished run, and calls <code>complete --land</code> on it. The primary branch then carries the change's marker, the remote ref equals
       the local one, and the worktree is gone. The negative control resolves the merge so that the change is dropped; the marker check
-      refuses, and nothing is pushed. Write paths: <code>reckon/crew_run_commands.py</code>, <code>reckon/crew/landing.py</code>,
-      <code>reckon/crew/merge.py</code>, <code>tests/test_one_call_lands_a_run.py</code>.</p>
+      refuses, and nothing is pushed. Write paths: <code>reckon/crew_run_commands.py</code>, <code>reckon/crew/merge.py</code>,
+      <code>reckon/crew/promotion_release.py</code>, <code>tests/test_one_call_lands_a_run.py</code>.</p>
 
     <h2 id="s5">§5 — The crew MCP tool carries the coordinator's write verbs</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
@@ -169,8 +166,10 @@
 
     <h2 id="s6">§6 — The read verbs become one <code>crew view</code></h2>
 <section data-reckon="section" data-id="s6" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> <code>crew view &lt;name&gt;</code> serves, through the same function, every view the MCP
-      <code>crew</code> tool serves. It is the transport for hooks and scripts. <code>list</code>, <code>ledger</code>,
+    <p><strong>Deliverable.</strong> <code>crew view &lt;name&gt;</code> serves every view the MCP <code>crew</code> tool serves, through
+      one function both call. No such function exists yet: <code>_crew</code> in <code>reckon/mcp.py</code> dispatches its views inline, and
+      <code>crew list</code> builds its own rows. So the view dispatch moves into <code>reckon/mcp_views.py</code>, and <code>crew list</code>'s
+      row builder is retired in its favour. It is the transport for hooks and scripts. <code>list</code>, <code>ledger</code>,
       <code>directory</code>, <code>drain</code> and <code>velocity</code> each become a tombstone naming its view.</p>
     <p>Other repositories call these verbs, and <code>consumers-read-reckon-through-verbs</code> made their JSON a contract. So the node
       first lists every invocation of the five verbs in the tracked files of every mounted project.</p>
@@ -185,7 +184,7 @@
       in the evidence. Every citation of the five verbs in reckon's skills and agent files is repointed to <code>crew view</code>, and
       <code>tests/test_cited_commands_exist.py</code> passes, which it cannot while a citation names a tombstone. The negative control
       registers a view on the MCP tool only, and the parity case then fails naming it. Write paths: <code>reckon/crew_run_commands.py</code>,
-      <code>reckon/crew_view_command.py</code>, <code>reckon/crew/tombstones.py</code>, <code>reckon/hooks</code>,
+      <code>reckon/mcp.py</code>, <code>reckon/mcp_views.py</code>, <code>reckon/crew/tombstones.py</code>, <code>reckon/hooks</code>,
       <code>skills/reckon-build/SKILL.md</code>, <code>skills/reckon-build/references/coordinator-reference.md</code>,
       <code>skills/reckon-build/references/sprint-orchestration.md</code>, <code>skills/reckon-review/SKILL.md</code>,
       <code>reckon/crew/AGENTS.md</code>, <code>tests/test_crew_view_serves_every_view.py</code>.</p>
@@ -201,7 +200,7 @@
         <code>crew resume --reopen --write-path P</code>. <code>--model</code> is what <code>redispatch</code> lacked;
         <code>--reopen</code> replaces <code>repair-status</code>, <code>widen</code> and <code>resume</code>.</li>
       <li><code>widen</code> accepts any run that is not running, and <code>complete --accept-path</code> writes the same fence record through
-        it.</li>
+        it; both go through the claim owner, <code>narrow_claim</code> and <code>release_claim</code> in <code>reckon/crew/claims.py</code>.</li>
       <li><code>crew watch --stop</code>.</li>
     </ul>
     <p>Each removed name gets a tombstone row. <code>repair-completion</code> and <code>split-runs</code> are deleted once the node shows
@@ -214,6 +213,7 @@
       names. The negative control alters one successor's answer, and that case then fails. The help-contract tests,
       <code>tests/test_cited_commands_exist.py</code> and <code>tests/test_every_module_fits_a_worker_window.py</code> pass. Write paths:
       <code>reckon/crew_run_commands.py</code>, <code>reckon/crew_dispatch_commands.py</code>, <code>reckon/crew/tombstones.py</code>,
+      <code>reckon/crew/claims.py</code>, <code>reckon/crew/gc.py</code>,
       <code>skills/reckon-build/SKILL.md</code>, <code>skills/reckon-build/references/coordinator-reference.md</code>,
       <code>skills/reckon-build/references/sprint-orchestration.md</code>, <code>skills/reckon-build/references/worker-verification.md</code>,
       <code>skills/reckon-build/references/conditional-guidance.md</code>, <code>skills/reckon-build/references/lane-routing.md</code>,

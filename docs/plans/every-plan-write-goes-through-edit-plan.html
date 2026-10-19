@@ -26,7 +26,7 @@
   <title>Every Plan Write Goes Through edit_plan | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -64,20 +64,19 @@
       the plan-state checklist in <code>AGENTS.md</code> ("<code>impl</code> advanced toward 1.0"). Each says instead that <code>impl</code>
       derives from the section records and moves when a section's declaration moves to <code>done</code>. In the same files, state that
       section effort is in quarter hours, and list the legal values of section risk.</p>
-    <p>Add <code>tests/test_skills_cite_ops_the_store_accepts.py</code>. It extracts every <code>edit_plan</code> op object written in a code
-      span or fenced block under <code>skills/</code> and in <code>AGENTS.md</code>, in either the <code>{op:'set', path:'…'}</code> or the JSON
-      spelling, and every path listed in the <code>set</code> row of the op-reference table in <code>skills/reckon-edit/SKILL.md</code>, which
-      is a table cell rather than an op object. It asserts each op verb is a key of the op vocabulary in <code>reckon/mcp.py</code>. It applies
-      each <code>set</code> path to a temporary plan through the store's op application and asserts the store does not refuse it as an unsupported path or a computed
-      field. Parity is held by this comparison of the surfaces, not by a literal on either side.</p>
-    <p><strong>Done when</strong> the test passes at the node's head, and the gate log shows it ran. The negative control restores
-      <code>impl</code> to the <code>reckon-edit</code> set row, and the test then fails naming that file and line. The prose instructions in
-      <code>AGENTS.md</code> and the two references are not op objects, so the gate log also carries a grep of the five files for an
-      instruction to set or advance <code>impl</code>, which finds none. Write paths:
-      <code>skills/reckon-edit/SKILL.md</code>, <code>skills/reckon-create/SKILL.md</code>,
+    <p>Extend the extract-and-apply harness <code>tests/test_skill_contracts.py</code> already owns, rather than add a second one. Its
+      <code>_documented_examples</code> reads op objects under the landing-beat marker, <code>_apply_example</code> applies them to a temporary
+      plan, and it already parses the op-reference table. Widen its scope to every op object in a code span or fenced block under
+      <code>skills/</code> and in <code>AGENTS.md</code>, and to every path listed in the <code>set</code> row of the op-reference table. Each
+      must apply without the store refusing it as an unsupported path or a computed field. <code>tests/test_mcp_vocabulary_is_complete.py</code>
+      keeps holding the vocabulary against the dispatch table.</p>
+    <p><strong>Done when</strong> <code>tests/test_skill_contracts.py</code> and <code>tests/test_mcp_vocabulary_is_complete.py</code> pass at
+      the node's head, and the gate log shows they ran. The negative control restores <code>impl</code> to the <code>reckon-edit</code> set
+      row, and the widened contract test then fails naming that file. The prose in <code>AGENTS.md</code> and the two references is not an op
+      object, so the gate log also carries a grep of the five files for an instruction to set or advance <code>impl</code>, which finds none.
+      Write paths: <code>skills/reckon-edit/SKILL.md</code>, <code>skills/reckon-create/SKILL.md</code>,
       <code>skills/reckon-build/references/sprint-orchestration.md</code>,
-      <code>skills/reckon-build/references/coordinator-reference.md</code>, <code>AGENTS.md</code>,
-      <code>tests/test_skills_cite_ops_the_store_accepts.py</code>.</p>
+      <code>skills/reckon-build/references/coordinator-reference.md</code>, <code>AGENTS.md</code>, <code>tests/test_skill_contracts.py</code>.</p>
 
     <h2 id="s3">§3 — The MCP server answers on current code without a reconnect</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
@@ -87,23 +86,25 @@
       with <code>stale_server_code</code>. That was the right first step: it named the cause instead of a misleading schema error. But the
       remedy is a reconnect only the user can perform. Every failure on a moved checkout becomes "reconnect", including a refusal the current
       code would also give, which the caller then meets one turn later.</p>
-    <p><strong>Deliverable.</strong> When a call fails and the checkout has moved and passes the existing trust check, the server serves
-      current code instead of refusing. It loads the moved checkout, re-runs the call there and returns that answer, and later calls run on
-      current code with no re-run. A failed write wrote nothing, so the re-run cannot double it. A write whose failure was a deadline (the
-      <code>storage-slow</code> class) may have landed late, so it is re-run with its original <code>expected_version</code>: a late landing
-      then reads as a version conflict, never as a second write. A changed tool signature still owes a reconnect, because the client holds
-      the schema it was given at start; the refusal names the tool and the change. That covers a new parameter the client has not been
-      told about. The mechanism is the node's choice, recorded in its evidence with the reason: re-executing while keeping the stdio session,
-      a child process restarted on a stamp change, or a module reload. An untrusted tree keeps serving the image the server started with, as
-      it does today, so a tree mid-merge never takes a running server down.</p>
+    <p><strong>Deliverable.</strong> The HTTP server already owns this machinery. <code>_CodeReload</code> in <code>reckon/serve.py</code>
+      detects a moved checkout through <code>_served_code_report</code> and re-executes on a stamp change, and <code>reckon/served_code.py</code>
+      owns the snapshot (<code>take_snapshot</code>, <code>served_report</code>, <code>drift</code>). Factor the moved-checkout decision and its
+      trust check out of <code>serve.py</code> into that one owner, and have both servers call it, rather than write a second reload path.</p>
+    <p>A stdio server cannot simply re-execute as the HTTP server does: the client holds the session it initialised, and a fresh process has
+      not received its <code>initialize</code>. So the MCP server answers on current code by a means the node chooses and records with its
+      reason: re-executing and restoring the session's initialised state, a child process restarted on a stamp change behind a stable stdio
+      front, or a module reload. When a call fails and the checkout has moved and is trusted, the call is re-run on current code and that
+      answer returned, and later calls run on current code. A failed write wrote nothing, so the re-run cannot double it. A deadline failure
+      is re-run with its original <code>expected_version</code>, so a late landing reads as a version conflict. A changed tool signature still
+      owes a reconnect, and its refusal names the tool. An untrusted tree keeps serving the started image.</p>
     <p><strong>Done when</strong> <code>tests/test_mcp_server_serves_current_code.py</code> drives a server over its own copy of the
-      package, as it does today, through three cases. (a) After a commit that changes what <code>edit_plan</code> returns, a call in the same
-      session returns the new answer and no <code>stale_server_code</code>. (b) A tree whose tracked file differs from <code>HEAD</code> keeps
-      serving the started image. (c) A change to a registered tool's parameters returns the reconnect refusal naming that tool. The negative
-      control disables the reload, and case (a) then returns <code>stale_server_code</code>.
-      <code>tests/test_every_module_fits_a_worker_window.py</code> also passes; <code>reckon/mcp.py</code> is about 34,000 of its 50,000-token
-      bound, so the mechanism lives in its own module. Write paths: <code>reckon/mcp.py</code>, <code>reckon/mcp_reload.py</code>,
-      <code>tests/test_mcp_server_serves_current_code.py</code>.</p>
+      package through three cases. (a) After a commit that changes what <code>edit_plan</code> returns, a call in the same session returns the
+      new answer and no <code>stale_server_code</code>. (b) A tree whose tracked file differs from <code>HEAD</code> keeps serving the started
+      image. (c) A change to a registered tool's parameters returns the reconnect refusal naming that tool. The negative control disables the
+      reload, and case (a) then returns <code>stale_server_code</code>. Every test that imports <code>reckon.serve</code>'s reload or
+      <code>reckon.served_code</code> passes unchanged, as do <code>tests/test_one_check_trusts_a_moved_checkout.py</code> and
+      <code>tests/test_every_module_fits_a_worker_window.py</code>. Write paths: <code>reckon/mcp.py</code>, <code>reckon/serve.py</code>,
+      <code>reckon/served_code.py</code>, <code>tests/test_mcp_server_serves_current_code.py</code>.</p>
 
     <h2 id="s4">§4 — An existing section is editable through one op</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
@@ -111,22 +112,25 @@
       title, or replaced its prose after a review, because <code>insert_section</code> refuses an id that exists and no <code>set</code> path
       reaches a section. Text mode refuses any replacement that overlaps the section's record, and an apostrophe stored as <code>&amp;#x27;</code>
       makes an exact <code>old_html</code> miss.</p>
-    <p><strong>Deliverable.</strong> <code>{op:'set', path:'sections.&lt;id&gt;.&lt;field&gt;', value}</code> accepts six fields.
-      <code>title</code> rewrites the section's <code>h2</code> text and keeps its id. <code>status</code> moves the declaration, as
-      <code>set section_declarations.&lt;id&gt;</code> does. <code>links</code>, <code>effort_hours</code> and <code>capability</code> are
-      validated as <code>insert_section</code> validates them. <code>body</code> replaces the authored HTML between the section's record
-      element and the next <code>h2</code> or <code>data-reckon</code> section. A body that contains an <code>h2</code> or a
-      <code>data-reckon</code> element is refused, because it would forge structure. An unknown field is refused, naming the accepted six.
-      The op table in <code>skills/reckon-edit/SKILL.md</code> names the path, which the §2 test enforces.</p>
+    <p><strong>Deliverable.</strong> <code>{op:'set', path:'sections.&lt;id&gt;.&lt;field&gt;', value}</code> accepts five fields.
+      <code>title</code> rewrites the section's <code>h2</code> text and keeps its id. <code>links</code>, <code>effort_hours</code> and
+      <code>capability</code> are validated as <code>insert_section</code> validates them. <code>body</code> replaces the authored HTML between
+      the section's record element and the next <code>h2</code> or <code>data-reckon</code> section, through the replacement machinery text
+      mode already uses. The write therefore reports <code>review_owed</code> for that section exactly as a text edit does, and the
+      plan-review fingerprint keeps its one form. A body containing an <code>h2</code> or a <code>data-reckon</code> element is refused,
+      because it would forge structure. A section's status stays with <code>set section_declarations.&lt;id&gt;</code>, and
+      <code>sections.&lt;id&gt;.status</code> is refused naming that path, so no second spelling is added. An unknown field is refused,
+      naming the accepted five. The op table in <code>skills/reckon-edit/SKILL.md</code> names the path, which §2's widened contract test
+      enforces.</p>
     <p><strong>Done when</strong> <code>tests/test_edit_plan_sets_a_section_field.py</code> sets each field on a temporary plan through
-      <code>edit_plan</code> and asserts three things: the parsed state carries the change, every other section's bytes are unchanged, and
-      <code>reckon audit-doc</code> reports no error. The body case replaces prose holding an apostrophe stored as <code>&amp;#x27;</code>.
-      Two negative controls: a body containing <code>&lt;h2</code> is refused, and <code>set sections.s9.title</code> on a plan with no
-      <code>s9</code> is refused naming it. <code>tests/test_every_module_fits_a_worker_window.py</code> passes;
-      <code>reckon/_store.py</code> is about 40,500 of the 50,000-token bound, so the new handlers live in
-      <code>reckon/_store_section_ops.py</code>. Write paths: <code>reckon/_store.py</code>, <code>reckon/_store_section_ops.py</code>,
-      <code>reckon/_plan_html.py</code>, <code>reckon/mcp.py</code>, <code>skills/reckon-edit/SKILL.md</code>,
-      <code>tests/test_edit_plan_sets_a_section_field.py</code>.</p>
+      <code>edit_plan</code> and asserts that the parsed state carries the change, that every other section's bytes are unchanged, and that
+      <code>reckon audit-doc</code> reports no error. The body case replaces prose holding an apostrophe stored as <code>&amp;#x27;</code>, and
+      returns <code>review_owed</code> naming that section, as the equivalent text edit does. <code>tests/test_the_fingerprint_has_one_form.py</code>
+      passes. Two negative controls: a body containing <code>&lt;h2</code> is refused, and <code>set sections.s9.title</code> on a plan with no
+      <code>s9</code> is refused naming it. <code>tests/test_every_module_fits_a_worker_window.py</code> passes; <code>reckon/_store.py</code>
+      is about 40,500 of the 50,000-token bound, so the new handlers live in <code>reckon/_store_section_ops.py</code>. Write paths:
+      <code>reckon/_store.py</code>, <code>reckon/_store_section_ops.py</code>, <code>reckon/_plan_html.py</code>, <code>reckon/mcp.py</code>,
+      <code>reckon/mcp_edit_plan.py</code>, <code>skills/reckon-edit/SKILL.md</code>, <code>tests/test_edit_plan_sets_a_section_field.py</code>.</p>
 
     <h2 id="s5">§5 — Followup text, section dependencies and gate measures are settable, and unset removes a key</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
@@ -134,23 +138,24 @@
       state; six coordinators wrote it with Python, one about twelve times in a day. Only a followup's <code>prompt</code> is settable, so a
       widened scope is written into the one-line prompt or the followup is resolved and re-appended. A gate's stale measure was answered with a
       correction comment because it could not be changed. A stale declaration key could not be removed.</p>
-    <p><strong>Deliverable.</strong> Four new paths and one new verb:</p>
+    <p><strong>Deliverable.</strong> Three new <code>set</code> paths, and a null value that removes a key, with no new verb:</p>
     <ul>
       <li><code>set followups.&lt;id&gt;.title</code> and <code>.body</code> on an open followup. A resolved followup is a record and is
         refused.</li>
       <li><code>set section_depends_on.&lt;sid&gt;</code> with a list of refs checked against the roadmap's <code>[project:]slug#section</code>
         grammar. It writes the head meta, and a later read gives back what was written.</li>
       <li><code>set gates.&lt;id&gt;.measure</code> and <code>.required_evidence</code> on an open gate.</li>
-      <li><code>{op:'unset', path}</code> for four kinds of key: <code>section_depends_on.&lt;sid&gt;</code>;
-        <code>section_declarations.&lt;id&gt;</code> once its heading is gone; a decision field other than <code>choice</code>; and an optional
-        top-level scalar. Unsetting a required field is refused, naming it.</li>
+      <li>A <code>set</code> whose <code>value</code> is <code>null</code> removes the key, for four kinds of key:
+        <code>section_depends_on.&lt;sid&gt;</code>; <code>section_declarations.&lt;id&gt;</code> once its heading is gone; a decision field
+        other than <code>choice</code>; and an optional top-level scalar. Removing a required field is refused, naming it. The op vocabulary
+        keeps its size.</li>
     </ul>
     <p>The <code>reckon-edit</code> op table names each one.</p>
     <p><strong>Done when</strong> <code>tests/test_edit_plan_sets_followup_dependency_and_gate_fields.py</code> exercises each path
       through <code>edit_plan</code> on a temporary project. After the dependency write, the roadmap's own <code>section_depends_on</code>
-      reading returns the edge, which proves the consumer and not only the meta. Two negative controls: unsetting
-      <code>section_declarations.&lt;id&gt;</code> while its heading exists is refused, because it would leave an undeclared heading; and a
-      ref outside the grammar is refused. Write paths: <code>reckon/_store.py</code>, <code>reckon/_store_section_ops.py</code>,
+      reading returns the edge, which proves the consumer and not only the meta. Two negative controls: a null
+      <code>section_declarations.&lt;id&gt;</code> while its heading exists is refused, because it would leave an undeclared heading; and a ref
+      outside the grammar is refused. Write paths: <code>reckon/_store.py</code>, <code>reckon/_store_section_ops.py</code>,
       <code>reckon/_plan_html.py</code>, <code>reckon/mcp.py</code>, <code>skills/reckon-edit/SKILL.md</code>,
       <code>tests/test_edit_plan_sets_followup_dependency_and_gate_fields.py</code>.</p>
 
@@ -162,14 +167,17 @@
       decision <code>deferred-continuation</code> holds; this section needs no decision.</p>
     <p><strong>Deliverable.</strong> <code>{op:'close', status, outcome, by[, superseded_by]}</code> is one write. It sets a terminal status
       and resolves every open followup with the outcome. It checks the existing guards together and reports every one that fails: a section
-      still implementable (named), or the evidence record that a terminal status needs (named by path). No guard is removed.
-      <code>skills/reckon-edit/SKILL.md</code> and <code>skills/reckon-build/SKILL.md</code> describe <code>close</code> and drop the
-      resolved-placeholder recipe.</p>
-    <p><strong>Done when</strong> <code>tests/test_a_plan_closes_in_one_op.py</code> passes two cases. A plan whose sections are done and
+      still implementable (named), or the evidence record that a terminal status needs (named by path). No guard is removed.</p>
+    <p>The op retires two surfaces, so the vocabulary does not grow net. A <code>set</code> of <code>status</code> to a terminal value
+      (shipped, done, superseded, abandoned) is refused, naming <code>close</code>, and every reckon caller that sets one moves to
+      <code>close</code> in the same node. The resolved-placeholder recipe goes too: <code>skills/reckon-edit/SKILL.md</code> and
+      <code>skills/reckon-build/SKILL.md</code> describe <code>close</code> and drop it.</p>
+    <p><strong>Done when</strong> <code>tests/test_a_plan_closes_in_one_op.py</code> passes three cases. A plan whose sections are done and
       whose evidence record exists closes in one version step, with every followup resolved and no placeholder followup appended. A plan with
-      an implementable section and no evidence record is refused, naming that section and the missing record in the same answer. The
-      negative control reports only the first failing guard, and the second case then fails for the guard it omits. Write paths: <code>reckon/_store.py</code>, <code>reckon/_store_section_ops.py</code>, <code>reckon/mcp.py</code>,
-      <code>skills/reckon-edit/SKILL.md</code>, <code>skills/reckon-build/SKILL.md</code>,
+      an implementable section and no evidence record is refused, naming that section and the missing record in the same answer. A
+      <code>set status shipped</code> is refused naming <code>close</code>. The negative control reports only the first failing guard, and the
+      second case then fails for the guard it omits. Write paths: <code>reckon/_store.py</code>, <code>reckon/_store_section_ops.py</code>,
+      <code>reckon/mcp.py</code>, <code>skills/reckon-edit/SKILL.md</code>, <code>skills/reckon-build/SKILL.md</code>,
       <code>tests/test_a_plan_closes_in_one_op.py</code>.</p>
 
     <h2 id="s7">§7 — A refused or late write names the next step</h2>
@@ -194,7 +202,7 @@
       the base, through <code>edit_plan</code>, with its own negative control. Without the current version, the conflict case fails. Reporting
       only the first refused op fails the batch case. Reusing one <code>request_id</code> for a write with different ops is refused as a
       reused id, not answered with the earlier write's version. Dropping the legal values from an enumerated-field refusal fails that case.
-      A change that already holds at the base (the conflict payload may: <code>_conflict_response</code> in <code>reckon/_mcp_tools.py</code>
+      A change that already holds at the base (the conflict payload may: <code>_conflict_response</code> in <code>reckon/mcp_deadlines.py</code>
       returns <code>current_version</code>) is recorded in the evidence with the passing base test, and gets no code. Write paths: <code>reckon/mcp_edit_plan.py</code>,
       <code>reckon/_store.py</code>, <code>reckon/_store_section_ops.py</code>,
       <code>tests/test_a_refused_write_names_the_next_step.py</code>.</p>
