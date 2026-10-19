@@ -22,11 +22,11 @@
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-informs" content="consumers-read-reckon-through-verbs">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s3&quot;], &quot;s5&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s4&quot;, &quot;the-crew-surface-is-one-tool-and-a-few-verbs#s6&quot;, &quot;every-plan-write-goes-through-edit-plan#s3&quot;], &quot;s6&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s2&quot;, &quot;the-crew-surface-is-one-tool-and-a-few-verbs#s4&quot;], &quot;s7&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s6&quot;, &quot;the-crew-surface-is-one-tool-and-a-few-verbs#s5&quot;], &quot;s8&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s7&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>The Crew Surface Is One Tool And A Few Verbs | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -100,7 +100,7 @@
       <code>tests/test_cited_commands_exist.py</code>.</p>
 
     <h2 id="s3">§3 — <code>crew complete</code> reads the manifest's gate receipt, and its dry run lists every refusal</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
     <p><strong>Why.</strong> Seven reports describe the same loop: <code>complete</code> refuses one guard per call and there is no way to
       ask for all of them at once. Flags that take a reason (<code>--no-commit</code>, <code>--no-impl-change</code>, the <code>--waive-*</code>
       family) swallow the next flag when the reason is left out. The manifest fill already exists. <code>promotion_records.py</code> fills a
@@ -318,6 +318,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261019T124718439574-review-of-cso-complete-reports-every-refusal-1687b805ce54" data-who="reckon-build" data-when="2026-10-19T14:18:15Z">
     <div class="r-comment-body"><p>review of 1687b805c: 106/120, zero added failures, no blocking finding</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-19T14:35:00Z">
+    <div class="r-comment-body"><p>§3 landed: <code>crew complete --dry-run</code> lists every refusal with one passing invocation and writes nothing; reason flags refuse a swallowed flag; the receipt fill reads the gate log's own command header, raising its rate from 33.65% to 38.29% over 841 runs (commits <code>0117d3e0b</code>..<code>1687b805c</code>); reviewed 106/120. <a href="/reckon/evidence/archive/the-crew-surface-is-one-tool-and-a-few-verbs-landed.html#s3">evidence</a></p></div>
 </div>
 </section>
 </main>
