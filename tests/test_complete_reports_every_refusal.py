@@ -21,7 +21,8 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from reckon import _plan_html, _store, cli as cli_module, crew
+from reckon import _plan_html, _store, crew
+from reckon import cli as cli_module
 from reckon.crew import promotion as promotion_module
 from reckon.crew.runs import _write_json, pointer_path
 from tests.conftest import EXECUTABLE_GATE_COMMAND
@@ -165,7 +166,12 @@ def test_the_dry_run_reports_three_refusals_and_an_invocation_that_promotes(
         run_id,
         root=repository,
         gate="passed",
-        gate_check={"command": "", "exit_status": None, "log_path": "", "log_digest": ""},
+        gate_check={
+            "command": "",
+            "exit_status": None,
+            "log_path": "",
+            "log_digest": "",
+        },
         require_gate_check=True,
     )
     refusals = "\n".join(report["refusals"])
@@ -219,9 +225,7 @@ def test_a_contracted_receipt_promotes_with_no_gate_flags(
     _pointer(
         repository,
         run_id,
-        manifest=_manifest(
-            tmp_path, run_id, log_lines=("ran the gate", "EXIT=0")
-        ),
+        manifest=_manifest(tmp_path, run_id, log_lines=("ran the gate", "EXIT=0")),
         plan_impl_at_dispatch=0.5,
     )
 

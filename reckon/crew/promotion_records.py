@@ -291,9 +291,9 @@ def _default_gate_evidence_from_manifest(
         except OSError:
             log_text = ""
     declared_command = str(manifest.get("tests") or "").strip()
-    if not str(resolved_gate.get("command") or "").strip():
-        if declared_command and not _gate_command_prose(declared_command):
-            resolved_gate["command"] = declared_command
+    command_unset = not str(resolved_gate.get("command") or "").strip()
+    if command_unset and declared_command and not _gate_command_prose(declared_command):
+        resolved_gate["command"] = declared_command
     # A worker that writes a description of its suite on the `tests:` line
     # rather than the command cannot have that text re-run at the integrated
     # head. The cited log's own header names the command that actually ran, so
@@ -744,9 +744,6 @@ def _retire_disposable_identity(record: Mapping[str, Any]) -> dict[str, Any]:
 from reckon.crew.promotion_checks import (
     _fresh_manifest,
 )
-from reckon.crew.reports import (
-    _gate_command_prose,
-)
 from reckon.crew.promotion_evidence import (
     _ATTEMPT_RECORD_NAME,
     _WORKER_RECORD_NAME,
@@ -759,4 +756,7 @@ from reckon.crew.promotion_release import (
 from reckon.crew.promotion_scope import (
     _changed_paths_inside_repository,
     _is_shadow,
+)
+from reckon.crew.reports import (
+    _gate_command_prose,
 )
