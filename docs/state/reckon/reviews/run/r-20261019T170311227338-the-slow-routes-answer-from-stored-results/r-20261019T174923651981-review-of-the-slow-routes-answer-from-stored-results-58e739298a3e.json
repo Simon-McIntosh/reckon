@@ -1,0 +1,77 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed manifest's after_suite gate log (logs/gate-head-final.log, revision 58e739298a3e374517e581dc078281cec4c28ff7, EXIT=0, failure_ids []): the head arm holds no failure, so no failure can be added against any base and the count is 0. The reviewed manifest records no baseline_suite, so no baseline id list existed either way; this 0 is a property of the empty head arm, not a base-to-head diff. The two added failures the gate arm does not cover (tests/test_served_code_drift.py) are named as findings below.",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/serve.py:3146 Handler.do_GET /_projects/index.json answers the fleet rollup through _served_result",
+    "reckon/serve.py:3459 Handler.do_GET /_checks/<project> and :3468 _start_refresh as the pending-document trigger",
+    "reckon/serve.py:3516 Handler.do_GET /_discover/<project> answers discovery through _served_result",
+    "reckon/serve.py:2898 and :2928 Handler._send_project_changes reads the stored discovery and writes fleet events from _fleet_versions",
+    "reckon/change_streams.py:374,375 _FleetChangeWatch._spawn_changes starts the discovery and rollup children on a change",
+    "reckon/serve.py:4235 __main__ dispatches _refresh_main for the child entry point",
+    "docs/ui/state-loader.js:737 watchProjectStateChanges reads the fleet event and dispatches reckon-fleet on window"
+  ],
+  "completed_at": "2026-10-19T18:02:18.282Z",
+  "dispatched_at": "2026-10-19T17:50:09Z",
+  "findings": [
+    {
+      "file": "tests/test_served_code_drift.py",
+      "line": "301",
+      "severity": "blocking",
+      "text": "blocking: renaming _CHECK_REFRESH_ENABLED to _REFRESH_ENABLED in reckon/serve.py:1030 leaves two tests in this file failing at head that passed at base - the assertions at :301, :307 and :482 read the old attribute - so the landed change adds two failures to a suite that imports reckon/serve.py, and the source done_when requires such suites to show no added failure against base; logs/out-of-scope-drift.log records 2 failed, 24 passed, EXIT=1. The file is outside the node's granted write paths, so the repair is the one-word name on those three lines, owed to whoever owns the file, not a duplicate of the node's own work."
+    },
+    {
+      "file": "docs/evidence/fragments/the-site-answers-fast-and-agrees/the-slow-routes-answer-from-stored-results.html",
+      "line": "20",
+      "severity": "follow-on",
+      "text": "follow-on: the source manifest's orientation_base_sha is 4233bbcaf16613d1421b0731ecef4273f7f4c4ba, which does not resolve in this repository; the parent of the first landed commit 26e8645983c46ca99cbacc13ccedbdf7a4a865f2 is 4233bbcaf2dc7858dda0194b8626cb012439162a. A reader matching the recorded base pair against this review's reviewed_base_sha would find a sha that names no object."
+    },
+    {
+      "file": "tests/serve-importers-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the wider serve-importing population arm (131 files) ended EXIT=124 at 98% with roughly fifteen failures showing and no pytest summary line, so the failure identities are unread and the done_when's 'tests importing reckon/serve.py show no added failure against base' is not established for that population; the node's six named suites and the new one pass in full, but the wider clause has no completed arm."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T170311227338-the-slow-routes-answer-from-stored-results/logs/gate-head-final.log",
+    "baseline_suite": null
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Seven production call sites reach the change: Handler.do_GET at reckon/serve.py:3146, :3459 and :3516, Handler._send_project_changes at :2898/:2928, _FleetChangeWatch._spawn_changes at reckon/change_streams.py:374, the child entry point at reckon/serve.py:4235, and the SPA listener at docs/ui/state-loader.js:737; the node's own test files are excluded.",
+    "diff": "Read commit by commit from 4233bbcaf2dc7858dda0194b8626cb012439162a to 58e739298a3e374517e581dc078281cec4c28ff7; 26e86459 generalises the checks refresh into a keyed stored-result mechanism and adds the fleet-event path, and 58e73929 records the landing fragment, all inside the declared scope.",
+    "done_when": "The done_when asks for a stubbed-delay recompute per route with a 50 ms answer bound, a marker the stub writes, a one-rollup-child case, a fleet-event case through the parent waiter, and no added failure in serve-importing suites; the gate log records 52 passed EXIT=0 and negative-control.log records EXIT=1 with the three routes at 350.8-351.8 ms against the 50 ms bound, but the serve-importing population clause is unmet.",
+    "goal": "The node goal is to serve discovery, the checks summary and the fleet rollup from stored results kept current by one generic child refresh, publishing each fleet-scoped result as a fleet event on every open stream; all three routes now read a store through reckon/serve.py:2393 _served_result and the watch publishes fleet versions through reckon/change_streams.py:340 publish_fleet, with velocity correctly deferred as a later node.",
+    "manifest": "The source manifest records status complete, the two commits, a 52-passed EXIT=0 gate at logs/gate-head-final.log, the declared negative control at logs/negative-control.log, the ruff delta, and the tests/test_served_code_drift.py drift as a follow-on; its after_suite arm is readable and its baseline_suite is absent.",
+    "write_paths": "The node was granted eleven files (reckon/serve.py, reckon/change_streams.py, reckon/compliance.py, docs/ui/state-loader.js, and seven test files); git diff 4233bbcaf2dc7858dda0194b8626cb012439162a..58e739298a3e374517e581dc078281cec4c28ff7 changes five of them plus the always-permitted landing fragment, so every changed path is inside the declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_the_slow_routes_answer_from_stored_results.py:167-192 asserts each route answers a store-only marker inside a 50 ms bound while a 350 ms recompute runs, which reddens if a route computes inline, and :283-306's one-rollup-child case reddens under the per-project mutant; the fleet-event case at :330-346 relies on a real child and a 20 s stream wait.",
+    "evidence": "logs/gate-head-final.log ends 52 passed EXIT=0 and logs/negative-control.log ends EXIT=1 with the three routes at 350.8-351.8 ms against the 50 ms bound, but the done_when's serve-importing population clause is contradicted by logs/out-of-scope-drift.log (2 failed) and unmeasured by logs/serve-importers-head.log (EXIT=124, no summary).",
+    "fit": "reckon/serve.py:2393-2417 follows the existing _send_json/headers idiom it extends at :2840 and the module's mechanism-named helpers, and no added symbol carries a plan, phase or ticket label.",
+    "goal_fidelity": "reckon/serve.py:3146, :3459 and :3516 answer the rollup, checks and discovery routes from _served_result with an X-Result-Age header, and reckon/change_streams.py:362 _spawn_changes plus reckon/serve.py:2297 _publish_refresh deliver the fleet event the goal names.",
+    "reuse": "reckon/serve.py:2201 reuses metadata_index._persisted_cache_path, the same owner compliance.py:139 already stores its verdicts through, and :2231 uses _store.write_json_atomically; the refresh generalises _start_check_refresh in place rather than adding a parallel mechanism.",
+    "scope_discipline": "git diff 4233bbcaf2dc7858dda0194b8626cb012439162a..58e739298a3e374517e581dc078281cec4c28ff7 changes only declared paths plus the always-permitted fragment, and the plan retires the compliance-only refresh names, so the rename at reckon/serve.py:1030 is implied by the goal."
+  },
+  "notes": "The fleet-event case (tests/test_the_slow_routes_answer_from_stored_results.py:330-346) runs the real child and asserts exactly one fleet event naming the rollup key reaches a stream open on the temp project, so the production publish path is exercised end to end. No added assertion compares a value against the same variable the test passed in: the 'prior', 'recomputed' and marker dicts are reachable only through the store, so each reddens when a route stops reading it.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to serve discovery, the checks summary and the fleet rollup from stored results kept current by one generic child refresh, publishing each fleet-scoped result as a fleet event on every open stream; all three routes now read a store through reckon/serve.py:2393 _served_result and the watch publishes fleet versions through reckon/change_streams.py:340 publish_fleet, with velocity correctly deferred as a later node.\nVERDICT done_when: The done_when asks for a stubbed-delay recompute per route with a 50 ms answer bound, a marker the stub writes, a one-rollup-child case, a fleet-event case through the parent waiter, and no added failure in serve-importing suites; the gate log records 52 passed EXIT=0 and negative-control.log records EXIT=1 with the three routes at 350.8-351.8 ms against the 50 ms bound, but the serve-importing population clause is unmet.\nVERDICT write_paths: The node was granted eleven files; git diff 4233bbcaf2dc7858dda0194b8626cb012439162a..58e739298a3e374517e581dc078281cec4c28ff7 changes five of them plus the always-permitted landing fragment, so every changed path is inside the declared scope.\nVERDICT manifest: The source manifest records status complete, the two commits, a 52-passed EXIT=0 gate at logs/gate-head-final.log, the declared negative control at logs/negative-control.log, the ruff delta, and the tests/test_served_code_drift.py drift as a follow-on; its after_suite arm is readable and its baseline_suite is absent.\nVERDICT diff: Read commit by commit from 4233bbcaf2dc7858dda0194b8626cb012439162a to 58e739298a3e374517e581dc078281cec4c28ff7; 26e86459 generalises the checks refresh into a keyed stored-result mechanism and adds the fleet-event path, and 58e73929 records the landing fragment, all inside the declared scope.\nCALL_SITES: reckon/serve.py:3146 Handler.do_GET /_projects/index.json, reckon/serve.py:3459 Handler.do_GET /_checks/<project>, reckon/serve.py:3516 Handler.do_GET /_discover/<project>, reckon/serve.py:2898 Handler._send_project_changes, reckon/change_streams.py:374 _FleetChangeWatch._spawn_changes, reckon/serve.py:4235 __main__ _refresh dispatch, docs/ui/state-loader.js:737 watchProjectStateChanges\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/serve.py:3146, :3459 and :3516 answer the rollup, checks and discovery routes from _served_result with an X-Result-Age header, and reckon/change_streams.py:362 _spawn_changes plus reckon/serve.py:2297 _publish_refresh deliver the fleet event the goal names.\nSCORE evidence: 13\nJUSTIFICATION evidence: logs/gate-head-final.log ends 52 passed EXIT=0 and logs/negative-control.log ends EXIT=1 with the three routes at 350.8-351.8 ms against the 50 ms bound, but the done_when's serve-importing population clause is contradicted by logs/out-of-scope-drift.log (2 failed) and unmeasured by logs/serve-importers-head.log (EXIT=124, no summary).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 4233bbcaf2dc7858dda0194b8626cb012439162a..58e739298a3e374517e581dc078281cec4c28ff7 changes only declared paths plus the always-permitted fragment, and the plan retires the compliance-only refresh names, so the rename at reckon/serve.py:1030 is implied by the goal.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_the_slow_routes_answer_from_stored_results.py:167-192 asserts each route answers a store-only marker inside a 50 ms bound while a 350 ms recompute runs, which reddens if a route computes inline, and :283-306's one-rollup-child case reddens under the per-project mutant; the fleet-event case at :330-346 relies on a real child and a 20 s stream wait.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/serve.py:2393-2417 follows the existing _send_json/headers idiom it extends at :2840 and the module's mechanism-named helpers, and no added symbol carries a plan, phase or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/serve.py:2201 reuses metadata_index._persisted_cache_path, the same owner compliance.py:139 already stores its verdicts through, and :2231 uses _store.write_json_atomically; the refresh generalises _start_check_refresh in place rather than adding a parallel mechanism.\nFINDING tests/test_served_code_drift.py:301 blocking: renaming _CHECK_REFRESH_ENABLED to _REFRESH_ENABLED in reckon/serve.py:1030 leaves two tests in this file failing at head that passed at base - the assertions at :301, :307 and :482 read the old attribute - so the landed change adds two failures to a suite that imports reckon/serve.py, and the source done_when requires such suites to show no added failure against base; logs/out-of-scope-drift.log records 2 failed, 24 passed, EXIT=1.\nFINDING docs/evidence/fragments/the-site-answers-fast-and-agrees/the-slow-routes-answer-from-stored-results.html:20 follow-on: the source manifest's orientation_base_sha 4233bbcaf16613d1421b0731ecef4273f7f4c4ba does not resolve; the parent of the first landed commit 26e8645983c46ca99cbacc13ccedbdf7a4a865f2 is 4233bbcaf2dc7858dda0194b8626cb012439162a.\nFINDING tests/serve-importers-head.log:1 follow-on: the wider serve-importing population arm (131 files) ended EXIT=124 at 98% with roughly fifteen failures showing and no pytest summary line, so the done_when's 'tests importing reckon/serve.py show no added failure against base' is not established for that population.\n",
+  "review_run_id": "r-20261019T174923651981-review-of-the-slow-routes-answer-from-stored-results-58e739298a3e",
+  "reviewed_base_sha": "4233bbcaf2dc7858dda0194b8626cb012439162a",
+  "reviewed_head_sha": "58e739298a3e374517e581dc078281cec4c28ff7",
+  "reviewed_run_id": "r-20261019T170311227338-the-slow-routes-answer-from-stored-results",
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T18:00:26.022451+00:00",
+  "total": 104
+}
