@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="390">
+<meta name="plan-version" content="391">
 <meta name="plan-modified" content="2026-10-19">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1514,7 +1514,7 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
     <div class="r-comment-body"><p>§57 landed: all three identity assertions compare against values git derives independently and fail under the commit-keyed control; merged as <code>63e566914</code>, review 116/120, 0 added over 131 importer files. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#the-package-identity-tests-can-fail">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s57" data-id="c-run-r-20261019T073807435938-the-package-identity-tests-can-fail" data-who="reckon-build" data-when="2026-10-19T08:58:56Z">
-    <div class="r-comment-body"><p>Strengthened three package-identity assertions to compare against git-derived values — the reload case and the reload environment&#x27;s commit against git rev-parse HEAD:reckon, the materialisation name against that tree id and its extracted package against git ls-tree -r --name-only &lt;tree_id&gt;; head arm 6 passed EXIT=0, base and after suites 6 passed EXIT=0, commit-keyed negative control 6 failed EXIT=1 with the reload-env case among them.</p></div>
+    <div class="r-comment-body"><p>Strengthened three package-identity assertions to compare against git-derived values — the reload case and the reload environment's commit against git rev-parse HEAD:reckon, the materialisation name against that tree id and its extracted package against git ls-tree -r --name-only &lt;tree_id&gt;; head arm 6 passed EXIT=0, base and after suites 6 passed EXIT=0, commit-keyed negative control 6 failed EXIT=1 with the reload-env case among them.</p></div>
 </div>
 <div class="r-comment" data-section="s56" data-id="c-run-r-20261019T083557647417-review-of-a-pane-counts-its-session-across-projects-47b37818e15d" data-who="reckon-build" data-when="2026-10-19T08:58:21.543Z">
     <div class="r-comment-body"><p>Independent review of r-20261019T074214468131-a-pane-counts-its-session-across-projects §56 stored as a parsed record at both declared review-record paths: goal_fidelity 19, evidence 15, scope_discipline 20, durability 18, fit 17, reuse 5, reviewed_base_sha e8c804a989c27707e0663cbe1dfc454c97e01d69 and reviewed_head_sha 47b37818e15df34a5e42048d49d4099ca8add2b4, added_failure_count 0 with added_failure_ids [] derived from the reviewed run's own cohort arms, five follow-on findings and no blocking finding.</p></div>
@@ -1533,6 +1533,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 </div>
 <div class="r-comment" data-section="s58" data-id="c-close-s58" data-who="reckon-build" data-when="2026-10-19T10:40:00Z">
     <div class="r-comment-body"><p>§58 landed: <code>committed_head</code> is gone from <code>reckon/checkout_trust.py</code>; merged as <code>f1d82e78a</code>, review 105/120, 0 added over 131 importer files. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#the-unused-commit-reader-goes">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s58" data-id="c-run-r-20261019T084606341423-the-unused-commit-reader-goes" data-who="reckon-build" data-when="2026-10-19T09:28:27.077Z">
+    <div class="r-comment-body"><p>Removed the uncalled `committed_head` reader from `reckon/checkout_trust.py` (16-line deletion, no other change); `git grep -nw committed_head -- reckon tests` prints the definition at base and nothing at head, and the 12 files naming `checkout_trust.py` pass 101 at base and 101 at head with 0 added failures.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
