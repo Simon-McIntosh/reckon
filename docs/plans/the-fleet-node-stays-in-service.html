@@ -23,7 +23,7 @@
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="23">
+<meta name="plan-version" content="24">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -527,6 +527,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261019T060029100374-review-of-a-producer-sweeps-only-on-change-c433cf0de998" data-who="reckon-build" data-when="2026-10-19T06:11:51.362Z">
     <div class="r-comment-body"><p>review of r-20261018T151304298883-a-producer-sweeps-only-on-change at head c433cf0de: parsed review, scores goal_fidelity 18, evidence 17, scope_discipline 18, durability 19, fit 18, reuse 12; added_failure_count 0; three follow-on findings (the _quiet_beat_snapshots duplication of _watch_snapshot's reuse decision, the review-stop cadence move off the beat to 30 s, and a stale negative-control sentence in the landing fragment); no blocking findings, no blockers.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261019T064133037110-a-worker-step-carries-a-memory-bound" data-who="reckon-build" data-when="2026-10-19T09:22:30Z">
+    <div class="r-comment-body"><p>reckon:the-fleet-node-stays-in-service#s6 — placement.step_prefix places every fleet worker step with an explicit --mem (default 24 GB, a declared bound honoured in either spelling, &gt;48 GB placed as a job of its own on a *_debug partition by asking the step client for a fresh allocation, with the allocation&#x27;s SLURM_JOB*/SLURM_STEP* identity removed so its stdout streams back to the supervisor); one reader (placement.option_values / declared_memory_bytes). The declared bound is read by admission and by the launch through the same reader; a --mem-per-cpu figure is totalled from the placement&#x27;s task count and refused without one; fleet_node.placement_argv composes through step_prefix; the migrate cutover test locates a step&#x27;s relayed command by its interpreter; focused gate 134 passed 1 skipped with 0 added failures against the base; a plan placed as a job of its own keeps the prompt it carries and the client forwards it to the job&#x27;s single task (job 1289936 live); a --mem=1G probe step shows cgroup memory.max = 1073741824; and a --mem=49G declaration ran live as job 1289800 of its own on all_debug, not a step of 1281970.</p></div>
 </div>
 </section>
 </main>
