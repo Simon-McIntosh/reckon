@@ -1,0 +1,65 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/ledger.py:review_scores",
+    "reckon/capabilities.py:_arm_figures",
+    "reckon/crew/picker/snapshot.py:_candidates_scan",
+    "reckon/crew/picker/outcomes.py:summarize",
+    "reckon/crew_run_commands.py:crew_supersede_review"
+  ],
+  "completed_at": "2026-10-19T09:04:49.710Z",
+  "dispatched_at": "2026-10-19T08:51:32Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-review-promotes-only-its-own-verdict/supersede-a-misattributed-review-row.html",
+      "line": "6",
+      "severity": "blocking",
+      "text": "the Gate paragraph asserts that 'the wider five-file gate (180 tests, adding test_skill_contracts.py, test_ledger.py and test_a_pick_sees_each_review_dimension.py) adds no failure against the base revision 49b9973b4' with a single named failure, but no log or stream record shows that gate completing: the run's own manifest.md:11 records only the four-file head gate (tests/test_skill_contracts.py, tests/test_crew_help_names_*.py, tests/test_a_corrected_review_row_reads_as_unreviewed.py, tests/test_cited_commands_exist.py), and the 180 figure is the worker's arithmetic projection (7+5+67+97+4) rather than an observed summary. The done-when names tests/test_ledger.py and tests/test_a_pick_sees_each_review_dimension.py -- the existing tests that cover ledger.review_scores and the picker review dimension this change edits -- and neither was run in the recorded gate, so the node's evidence claims a result it never measured."
+    },
+    {
+      "file": "manifest.md",
+      "line": "18",
+      "severity": "follow-on",
+      "text": "the after_suite and baseline_suite 'command' fields read 'uv run pytest -p no:cacheprovider -q ...' while the cited head-gate.log and base-arm.log headers record 'PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q -rA ...', so the recorded gate command does not match the log it cites."
+    },
+    {
+      "file": "scripts/review_rows_with_another_rounds_verdict.py",
+      "line": "59",
+      "severity": "follow-on",
+      "text": "the private _node_head_suffix is now a byte-for-byte duplicate of the new package owner reckon/crew/repair.py:331 round_node_head_suffix; the census script should import the repair module's inverse of round_node_id rather than keep a second copy of the head-suffix grammar, so the two cannot drift."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit from 49b9973b4 to bd3cd5c35; five commits touch 11 files -- review_block in reckon/ledger.py, round_node_head_suffix in reckon/crew/repair.py, the verb in reckon/crew_run_commands.py, four reader routings, the new test file, the skill and contract classification, and the landing fragment.",
+    "done_when": "the done-when's five-file gate names tests/test_ledger.py and tests/test_a_pick_sees_each_review_dimension.py; the recorded head gate (head-gate.log) runs four files omitting both, and the landing fragment claims a 180-test five-file result no log records (see FINDING).",
+    "goal_fidelity": "the goal is a supersede-review verb that appends a review_correction and routes every reader of a row's review through one accessor; reckon/crew_run_commands.py:806 defines supersede_run_review and reckon/ledger.py:3675 defines review_block, both present only at the head and used by the four named readers.",
+    "manifest": "read; it records the four-file head gate green (81 passed, EXIT=0) at bd3cd5c35, the base arm at 49b9973b4 (2 failed, 72 passed), the negative control, and the landing line; its after_suite/baseline_suite commands do not match the logs they cite.",
+    "write_paths": "the diff touches the declared paths plus tests/test_skill_contracts.py and skills/reckon-build/SKILL.md; prompt.txt:69-80 does not grant those two, but the resume brief (resume-1-advice.txt) explicitly widens the fence to include them, so the writes are sanctioned."
+  },
+  "justifications": {
+    "durability": "tests/test_a_corrected_review_row_reads_as_unreviewed.py:247-254 reddens if any reader re-reads the stale block (review_block would return the block, picker_reviews would be [0.75]) and the negative-control base arm shows all 7 cases failing by id at 49b9973b4, so each case names the code change that would break it.",
+    "evidence": "head-gate.log records 81 passed, EXIT=0 at bd3cd5c35 and negative-control-base-arm.log records the 7 new cases failing by id at 49b9973b4, but tests/test_ledger.py and tests/test_a_pick_sees_each_review_dimension.py -- named in the done-when -- were run by no recorded gate (see FINDING at the fragment).",
+    "fit": "reckon/crew/repair.py:331 and reckon/ledger.py:3675 follow the surrounding docstring-and-structure idiom and introduce no plan, ticket or version identifier; the new verb is now carried into the skills/reckon-build SKILL.md contract beside its siblings.",
+    "goal_fidelity": "reckon/crew_run_commands.py:806 supersede_run_review appends review_correction {time, reason, dispatched_head, recorded_head, superseded_field} without rewriting the recorded fields, and reckon/ledger.py:3686 review_block returns None for a corrected row so it drops out of totals and medians as the goal states.",
+    "reuse": "review_block is defined on the row owner (reckon/ledger.py:3675) and the four readers call it rather than reading row['review']; round_node_head_suffix sits beside round_node_source (reckon/crew/repair.py:312) as the inverse of round_node_id, and the verb reuses _review_record_subject, carried_revision_pair, same_revision and _commit_landing_writes -- but it duplicates the census script's already-existing _node_head_suffix (see follow-on FINDING).",
+    "scope_discipline": "every path in git diff 49b9973b4..bd3cd5c35 is inside the SCOPE fence in prompt.txt:69-80 once the resume-1-advice.txt widening of skills/reckon-build/SKILL.md and tests/test_skill_contracts.py is honoured; reckon/cli.py was declared and left unchanged."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal_fidelity: the goal is a supersede-review verb that appends a review_correction and routes every reader of a row's review through one accessor; reckon/crew_run_commands.py:806 defines supersede_run_review and reckon/ledger.py:3675 defines review_block, both present only at the head and used by the four named readers.\nVERDICT done_when: the done-when's five-file gate names tests/test_ledger.py and tests/test_a_pick_sees_each_review_dimension.py; the recorded head gate (head-gate.log) runs four files omitting both, and the landing fragment claims a 180-test five-file result no log records.\nVERDICT write_paths: the diff touches the declared paths plus tests/test_skill_contracts.py and skills/reckon-build/SKILL.md, which the resume brief explicitly widened the fence to include.\nVERDICT manifest: read; it records the four-file head gate green (81 passed, EXIT=0) at bd3cd5c35, the base arm (2 failed, 72 passed) at 49b9973b4, the negative control, and the landing line.\nVERDICT diff: read commit by commit from 49b9973b4 to bd3cd5c35; five commits touch 11 files -- review_block, round_node_head_suffix, the verb, four reader routings, the new test file, the skill and contract classification, and the landing fragment.\nCALL_SITES: reckon/ledger.py:review_scores, reckon/capabilities.py:_arm_figures, reckon/crew/picker/snapshot.py:_candidates_scan, reckon/crew/picker/outcomes.py:summarize, reckon/crew_run_commands.py:crew_supersede_review\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:806 appends review_correction without rewriting the recorded fields and reckon/ledger.py:3686 review_block returns None for a corrected row.\nSCORE evidence: 12\nJUSTIFICATION evidence: head-gate.log records 81 passed at bd3cd5c35 but the done-when's named tests/test_ledger.py and tests/test_a_pick_sees_each_review_dimension.py were run by no recorded gate.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in git diff 49b9973b4..bd3cd5c35 is inside prompt.txt:69-80 once the resume-1-advice.txt widening of SKILL.md and test_skill_contracts.py is honoured.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_corrected_review_row_reads_as_unreviewed.py:247-254 reddens if a reader re-reads the stale block, and all 7 cases fail by id at 49b9973b4.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/repair.py:331 and reckon/ledger.py:3675 follow the surrounding idiom and introduce no plan, ticket or version identifier.\nSCORE reuse: 18\nJUSTIFICATION reuse: review_block is defined on the row owner (reckon/ledger.py:3675) and round_node_head_suffix sits beside round_node_source (reckon/crew/repair.py:312), though it duplicates the census script's _node_head_suffix.\nFINDING docs/evidence/fragments/a-review-promotes-only-its-own-verdict/supersede-a-misattributed-review-row.html:6 blocking: the Gate paragraph asserts a Green wider five-file gate (180 tests) that no log records, while the done-when's named tests/test_ledger.py and tests/test_a_pick_sees_each_review_dimension.py were never run.\nFINDING manifest.md:18 follow-on: the after_suite/baseline_suite command fields read 'uv run pytest ...' while the cited head-gate.log and base-arm.log headers record a different PYTHONPATH ... python -m pytest invocation.\nFINDING scripts/review_rows_with_another_rounds_verdict.py:59 follow-on: _node_head_suffix is a byte-for-byte duplicate of the new package owner reckon/crew/repair.py:331 round_node_head_suffix.",
+  "review_run_id": "r-20261019T084914515758-review-of-supersede-a-misattributed-review-row-bd3cd5c35926",
+  "reviewed_base_sha": "49b9973b488c4de54b9ad8bebf0b39ae99cdc868",
+  "reviewed_head_sha": "bd3cd5c359268d01a7f337cbc2d38e66e8000ab6",
+  "reviewed_run_id": "r-20261019T034147435864-supersede-a-misattributed-review-row",
+  "scores": {
+    "durability": 18,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T09:11:48.334258+00:00"
+}
