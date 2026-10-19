@@ -26,7 +26,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="344">
+<meta name="plan-version" content="345">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -862,6 +862,9 @@
 <div class="r-comment" data-section="s31" data-id="c-run-r-20261017T103719136475-store-written-once-population-at-merge" data-who="reckon-build" data-when="2026-10-17T11:38:39.543Z">
     <div class="r-comment-body"><p>§31 importer population at merge: base e3a6da9d8 14 failed/1319 passed over 119 files, candidate 7dce72148 14 failed/1322 passed over 120 files, identical failure sets, added failing ids 0 — merging 0d5bdf3 onto main adds no failing test id over the metadata-index/discovery importer population.</p></div>
 </div>
+<div class="r-comment" data-section="s31" data-id="c-s31-after-s38" data-who="reckon-build" data-when="2026-10-19T04:40:00Z">
+    <div class="r-comment-body"><p>Re-review <code>r-20261019T042318858376</code>: §31 now waits on §38. Both write <code>reckon/serve.py</code>. §38 removes the per-poll stat of every run file, which costs 10 to 28 s per <code>/crew</code> request while GPFS metadata runs at about 5.8 ms a stat (2026-10-19), so it goes first. This reverses the direction suggested in comment <code>c-rereview-wiring-s31</code> on §38, which would have held the urgent section behind one nobody is building. §31's own "build after §26 and before §29" is already met.</p></div>
+</div>
 <div class="r-comment" data-section="s28" data-id="c-run-r-20261017T113208074260-review-of-a-fresh-read-takes-the-ledger-from-its-index-faee86b8e84f" data-who="reckon-build" data-when="2026-10-17T11:48:12.512Z">
     <div class="r-comment-body"><p>review of r-20261017T104516290345-a-fresh-read-takes-the-ledger-from-its-index scored 18/18/20/17/17/12 (goal_fidelity/evidence/scope_discipline/durability/fit/reuse), total 102, 4 follow-on findings, added_failure_count 0</p></div>
 </div>
@@ -1095,6 +1098,9 @@
 </div>
 <div class="r-comment" data-section="s41" data-id="c-run-r-20261018T221133468695-review-row-head-population-at-merge" data-who="reckon-build" data-when="2026-10-18T22:42:15.427Z">
     <div class="r-comment-body"><p>Merging 38aa5d8bff315daf7fb87cee9005b79f1a1d1196 onto fdef2e363b3d6fc01e1549b6f58f4114d097aa1f as 875558ac4ff9b9b98a4bd032a71bcb2ef856ade5 adds 0 failing test ids over the 45-file importer population: base arm 44 files 314 passed/2 failed, candidate arm 45 files 318 passed/2 failed, the same two ids in both arms, none absent at base except the change's own new test file, and the merge candidate's own added-failure reader positively controlled at 1 injected id, so the merge is clean on this measure.</p></div>
+</div>
+<div class="r-comment" data-section="s42" data-id="c-s42-rereview" data-who="reckon-build" data-when="2026-10-19T04:40:00Z">
+    <div class="r-comment-body"><p>Re-review <code>r-20261019T042318858376</code>, for this section's author. First, the done-when ends "Build it after §41 merges", while the Why and the section dependencies wait on §41, §43 and §44. Second, the "within reach" gate compares one profiled first <code>fleet_state</code> call against the unprofiled 10 s bound. The census records the profiler inflating that call by roughly 25 to 35 percent (32.8 s profiled against 24.1 to 26.4 s unprofiled), so a tree that meets the bound can read above it. Both are to be settled before §42 is dispatched.</p></div>
 </div>
 </section>
 </main>
