@@ -1,0 +1,78 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "test_quiet_cycles_list_nothing_and_spawn_no_git counts real calls: _install_list_counter wraps recovery_watch.list_live and _install_spawn_counter counts git argv seen by subprocess.run. Reinstating the fixed-beat sweep advances the listing counter at every boundary, so `marks['list'][1] == marks['list'][0]    ` and `marks['spawn'][1] == marks['spawn'][0]` redden. Neither side is a value the test handed to the code; the counters observe the code's own calls, so the assertion is independent of the value under test.",
+      "lines": "tests/test_a_producer_sweeps_only_on_change.py:196-205"
+    },
+    {
+      "failure_condition": "test_a_touched_pointer_sweeps_exactly_once asserts `marks[1] - marks[0] == 1`, marks being list_live call counts read at boundaries while os.utime moves a pointer's mtime. This is the assertion the declared negative control reddens (negative-control.log, `assert (1 - 1) == 1`), so its failure condition is demonstrated: a token whose per-run entry ignores the pointer leaves the touch invisible and the delta 0.",
+      "lines": "tests/test_a_producer_sweeps_only_on_change.py:208-226"
+    },
+    {
+      "failure_condition": "test_a_death_is_delivered_within_one_beat_with_no_file_change flips the fixture's monkeypatched liveness flag (tests/test_a_producer_sweeps_only_on_change.py:111-117) and asserts the yielded transitions name every live run. If _quiet_beat_snapshots dropped its _fresh_liveness re-probe and served the cached snapshot, no transition would be yielded and the assertion would redden. The liveness source is the fixture's own flag, not a value the assertion passes to the code.",
+      "lines": "tests/test_a_producer_sweeps_only_on_change.py:229-242"
+    },
+    {
+      "failure_condition": "Each of these five cases writes one gated input (budget_lift.lifts_path(), an EXIT_RECORD_NAME in the run directory, a handover record, a review-store candidate, a commit in the run's worktree) on a quiet beat and asserts `marks[1] - marks[0] == 1` then `marks[2] == marks[1]`. Dropping that input from the token leaves the write invisible and the delta 0. All five are demonstrated reddened: negative-control.log pins the per-run token entry to a constant and fails four of them (the lift and handover cases reach the token through directory stamps and carry their own coverage-mutations.log controls, EXIT=1 each). The counter observes list_live, not the input the test wrote, so the assertions are independent of the value under test.",
+      "lines": "tests/test_a_producer_sweeps_only_on_change.py:245-298, :334-422 (lift, run-record, handover, review-store, worktree-head cases)"
+    },
+    {
+      "failure_condition": "test_the_change_token_stamps_the_crew_home_through_the_shared_reader asserts each of runs.live_dir(), runs.runs_dir(), runs.handover_dir() and budget_lift.lifts_path() appears in the paths passed to capabilities.file_stamp. This is a shape assertion: it reddens if the token stops stamping a directory (or stops using the shared reader) but it would pass even if a stamped directory failed to move the gate, so it complements, rather than substitutes for, the behavioural cases above. The path strings compared are the token's own calls, not a value the test supplied to the code.",
+      "lines": "tests/test_a_producer_sweeps_only_on_change.py:301-331"
+    }
+  ],
+  "completed_at": "2026-10-19T06:11:51.362Z",
+  "dispatched_at": "2026-10-19T06:01:17Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "2305",
+      "severity": "follow-on",
+      "text": "follow-on: _quiet_beat_snapshots (recovery_watch.py:2275) re-implements the stored-snapshot liveness-resume decision that _watch_snapshot (recovery_watch.py:1272) already owns. The block `_fresh_liveness(pointer) != (stored.get('process_alive'), stored.get('liveness_proven'), stored.get('process_descendant_alive'))` followed by `_refresh_snapshot(stored, ...)` stands at recovery_watch.py:1300-1307 and again at recovery_watch.py:2305-2316. The two differ only in that the quiet path skips the _snapshot_reuse_key fan-out, which is exactly why it cannot simply call _watch_snapshot -- but the liveness tuple is one fact with two copies, and the recompute fallback is delegated to the owner rather than duplicated. A change to the tuple's composition must now be made in both. The worker names this as a follow_on in its manifest; recorded, not held."
+    },
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "2533",
+      "severity": "follow-on",
+      "text": "follow-on: _stop_delivered_reviews is moved from the every-beat body (base recovery_watch.py:2414) into the WATCHER_SWEEP_INTERVAL_SECONDS (30 s) cadence block at recovery_watch.py:2526-2535, so a delivered review whose stream has outlived its 300 s grace (recovery_review_delivery.py:41) is stopped up to 30 s later than before. The move is consistent with the goal ('only the per-run liveness probe on the fixed beat') and the added latency is ~10 % of the grace, so it is benign; it is recorded because it is a behaviour change the goal and done_when do not name, and the manifest describes the two clock sweeps as riding 'their own cadence on every beat' where sweep_unfollowed_sessions and the review stop both ride the 30 s cadence. Not held."
+    },
+    {
+      "file": "docs/evidence/fragments/the-fleet-node-stays-in-service/a-producer-sweeps-only-on-change.html",
+      "line": "88",
+      "severity": "follow-on",
+      "text": "follow-on: the landing fragment's negative-control paragraph says the constant-pin mutation 'fails exactly the two cases that assert a gated input moves the gate: the pointer whose mtime is touched, and the exit record written on a quiet beat.' At the reviewed head the same control fails four cases (negative-control.log: test_a_touched_pointer_sweeps_exactly_once, test_a_run_record_written_on_a_quiet_beat_sweeps, test_a_review_record_written_on_a_quiet_beat_sweeps, test_a_worktree_head_moved_on_a_quiet_beat_sweeps), because c433cf0de added the last two cases without updating this sentence. The authoritative log is correct; the fragment understates the coverage it reports. Documentation accuracy only, does not hold the node."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "recovery_watch.py:watch_ticker is the changed function. It is reached in production through recovery_watch.py:2522 watch_follow (transitions=True) and the follow command CLI at reckon/crew_follow_commands.py:3620, and re-exported at reckon/crew/recovery.py:445. The added helpers (_crew_home_change_token, _quiet_beat_snapshots, _lifts_path) are reached only through watch_ticker.",
+    "diff": "Read commit by commit against 284c31716. 2f129ebc9 gates the watch_ticker loop on a stat-only home token and adds _stat_stamp, _crew_home_change_token, _run_streams and _quiet_beat_snapshots plus the new test file; d84d1d601 adds the landing fragment; a6e4fca22 rewrites the fragment's measurement to fleet scale; 11a271be1 widens the token to the whole per-run composition (_snapshot_reuse_key), adds the lift document and handover directory, drops _stat_stamp for capabilities.file_stamp, and takes the orphan sweep and review-stop off the gate onto the 30 s cadence; af75c342b edits the fragment to record the coverage and cost; c433cf0de adds the three per-input cases (handover, review store candidate, worktree head) and removes the stray closing tag. Three files total, all inside the declared scope.",
+    "done_when": "The node done_when has three arms. Arms one and two (quiet cycles take no directory walk and no git-shim spawn, then a touched pointer pulls exactly one sweep) are asserted by tests/test_a_producer_sweeps_only_on_change.py:182-205 and :208-226; arm three (a death with no file moved still transitions within one beat) by tests/test_a_producer_sweeps_only_on_change.py:229-242. Arm two's separate strace requirement is recorded in fleet-syscall-gate.log: per quiet cycle the change costs 79.7/30.0 openat and 85.3/44.0 stat against the base's 1211.3 openat and 868.3 stat -- 6.6 % on openat and 9.8 % on stat, below the done_when's literal tenth of 1880 and 1575, with 0.0 git spawns against the base's 1.9. The measured base (1211/868) does not reproduce the done_when's 1880/1575 literally; it is the same order and the ratio targets hold either way.",
+    "goal": "The node goal is to make the crew watch producer run its live listing, run-directory walk and git sweeps only when the crew home changes, keeping only the per-run liveness probe on the fixed beat. Landed: recovery_watch.py:2503 computes _crew_home_change_token (recovery_watch.py:2218) each poll and recovery_watch.py:2505-2515 takes the handover read, the listing, the token refresh and the lift fold only under `if sweep:`; recovery_watch.py:2537-2554 takes _watch_snapshot on a sweeping beat and _quiet_beat_snapshots (recovery_watch.py:2275) on a quiet one, and the quiet path re-takes only _fresh_liveness per run. The watch directory is deliberately excluded from the token (its seat record is rewritten every poll), which is what makes the saving real.",
+    "manifest": "The source manifest.md records status complete with a checkpoint and the six commits 2f129ebc9, d84d1d601, a6e4fca22, 11a271be1, af75c342b and c433cf0de; the 9-test node gate (node-gate.log, `9 passed ... EXIT=0`); the declared negative control (negative-control.log, last line EXIT=1) and the three per-input controls (coverage-mutations.log); the fleet-syscall-gate.log per-cycle figures; a failure_attribution placing the adjacent cost case's redness at the base revision; and four follow_ons. baseline_suite and after_suite are prose naming the ten-run parity command, its revisions and its red/red counts rather than the structured JSON some nodes write, but each names the revision and the command.",
+    "write_paths": "The node declares five write paths: reckon/crew/recovery_watch.py, reckon/crew/runs.py, tests/test_a_producer_sweeps_only_on_change.py, docs/evidence/fragments/the-fleet-node-stays-in-service/a-producer-sweeps-only-on-change.html and the docs/figures/the-fleet-node-stays-in-service/a-producer-sweeps-only-on-change directory. git diff --stat 284c31716..c433cf0de names exactly three files -- recovery_watch.py (+166/-35), the new test file (+422) and the fragment (+93) -- and nothing else; runs.py and the figures directory were declared but not touched. Every changed path is inside the declared set."
+  },
+  "project": "reckon",
+  "record_notes": {
+    "added_failures_derivation": "Derived from the reviewed run's own gate logs. baseline_suite arm: baseline-ten.log, ten concurrent runs of `PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_producer_sweeps_only_on_change.py tests/test_producer_reads_only_what_changed.py` at base 284c31716 -- all ten EXIT=1 on tests/test_producer_reads_only_what_changed.py::test_bytes_parsed_equals_bytes_appended_and_unchanged_polls_parse_nothing. after_suite arm: after-ten.log, the same command at the change revision 11a271be1 -- eight EXIT=1 on the same id, two EXIT=0. The change adds no failure and removes two. node-gate.log records the node's own file at 9 passed, EXIT=0. added_failure_count 0, added_failure_ids [].",
+    "gate_reproduction": "The node gate was not re-run: the reviewer bound allows at most the single test the gate names, and the recorded result (node-gate.log, 9 passed, EXIT=0) reconciles with the test file at c433cf0de, which carries exactly nine test functions. The syscall gate and both negative controls were read from their logs rather than re-derived.",
+    "prior_review": "A prior review at head af75c342b87d (review-records/r-20261018T151304298883-a-producer-sweeps-only-on-change.at-af75c342b87d08dfda1dbb3b304d8b501206585c.json) raised three follow-ons: a stray closing </p> in the fragment, the _quiet_beat_snapshots duplication, and three gated inputs with no per-input case (handover, review-store candidate, worktree head). c433cf0de repairs two of them: it adds the three missing cases and removes the stray tag. That is why durability scores above that review's 17. The duplication follow-on is unfixed and carried forward here.",
+    "reviewed_revision": "reviewed_base_sha 284c31716ff9af26a17c74eb907bb2448b18b29c (the base recorded in the source manifest's orientation_base_sha and the live pointer's base_sha) to reviewed_head_sha c433cf0de9984cfd45fe4095a9e8181ccffa3d93 (the head named on the reviewed run's review_dispatch). The reviewed head is not an ancestor of the reviewer worktree's own HEAD; the at-head files were read with `git show c433cf0de:<path>` into a scratch tree and every line citation above is an at-head line number."
+  },
+  "review_run_id": "r-20261019T060029100374-review-of-a-producer-sweeps-only-on-change-c433cf0de998",
+  "reviewed_base_sha": "284c31716ff9af26a17c74eb907bb2448b18b29c",
+  "reviewed_head_sha": "c433cf0de9984cfd45fe4095a9e8181ccffa3d93",
+  "reviewed_run_id": "r-20261018T151304298883-a-producer-sweeps-only-on-change",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 12,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T06:11:54.323999+00:00"
+}
