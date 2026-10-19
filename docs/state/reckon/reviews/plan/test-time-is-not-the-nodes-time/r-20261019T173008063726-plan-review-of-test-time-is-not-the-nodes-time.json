@@ -1,0 +1,81 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T17:38:59.890Z",
+  "dispatched_at": "2026-10-19T17:30:52Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/test-time-is-not-the-nodes-time.html:112",
+      "id": "anchors_resolve-1",
+      "reason": "the anchor names the wrong function, and a node dispatched to add the shell command would open and could edit `_continuation_multiple` instead.",
+      "text": "\u00a75 cites `time_fence_statement` at `reckon/crew/prompts.py:382`, but line 382 is now the body of `_continuation_multiple` (added when \u00a73 landed) and `time_fence_statement` has moved to line 395, so a node editing the statement's command is pointed at the wrong function",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/test-time-is-not-the-nodes-time.html:114",
+      "id": "anchors_resolve-2",
+      "reason": "the anchor points at an unrelated git helper, so a node adding the command to the resumed path is sent to the wrong function and may fail to find the real resumed-fence site.",
+      "text": "\u00a75 cites `reckon/crew/dispatch_sessions.py:1468` as where \"a resumed attempt's fence is built by the same function\", but line 1468 is inside `_worktree_git_read` (a read-only git helper); the resumed fence is built by `_restate_time_fence` at line 1615, calling `time_fence_statement` at 1638",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "4b3a5b80a9de109610a95aa66368bdae56250c9c634c68a923a17d2fed16298c",
+  "plan_slug": "test-time-is-not-the-nodes-time",
+  "plan_version": 25,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "",
+      "when": "2026-10-19T17:40:41.721750+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "anchors_resolve-2",
+      "reason": "",
+      "when": "2026-10-19T17:40:49.251885+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T17:40:41.721750+00:00"
+    },
+    "anchors_resolve-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T17:40:49.251885+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-test-time-is-not-the-nodes-time.v25.json",
+  "review_run_id": "r-20261019T173008063726-plan-review-of-test-time-is-not-the-nodes-time",
+  "reviewed_blob_sha": "d2aa4c477997d3b21f9dcaaa0839930bcd5afe7e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 two line-number anchors in \u00a75 resolve to functions that no longer hold the cited code: `reckon/crew/prompts.py:382` is `_continuation_multiple`, not `time_fence_statement` (now at 395), and `reckon/crew/dispatch_sessions.py:1468` is `_worktree_git_read`, not the resumed-fence builder (now `_restate_time_fence`, line 1615, statement at 1638).",
+    "done_when": "pass \u2014 \u00a75's done-when is measurable (two-TZ shell equality of an epoch-second difference, and a hard-stop figure 3,600 s past the deadline for a 120-minute budget at 1.5), it carries a declared negative control at line 129 (command prints `date`; command dropped), and the added clause \"patched where dispatch.py reads it to return 2.0 \u2026 whatever the raw fences value says\" is itself discriminating, because patching the resolved reader only moves the prompt if dispatch actually reads it.",
+    "evidence_paths": "pass \u2014 \u00a75 writes its test file, its evidence fragment and both arms' logs under the run directory, none on a node-local or ephemeral path.",
+    "naming": "pass \u2014 \u00a75 introduces no plan labels, stage names, ticket numbers or version tags; \"first attempt\" and \"hard stop\" are mechanism words, not plan labels.",
+    "reasoning": "pass \u2014 \u00a75's Why (the run r-20261019T150700496206-cs1-fast-discharge-playback read a local CEST stamp against a UTC deadline) supports the epoch-second remedy, the remedy produces the two-TZ done-when, and it runs on the real path: `time_fence_statement` is carried by `compose_prompt` (prompts.py:395, called at 649) whose caller is `_compose_dispatch_prompt` (dispatch_claims.py:892), reached from `dispatch.py:1918`.",
+    "single_goal": "pass \u2014 \u00a75's deliverable is one statement a worker reads its time left from; the added \"one owner for the multiple\" paragraph is a prerequisite of the same deliverable (the command prints seconds to the hard stop, which requires the resolved multiple), not a second goal.",
+    "wiring": "pass \u2014 \u00a75 depends-on s3 (which owns the deadline rule and the multiple reader it reuses), and s2 depends on s5; every declared edge resolves to a node that exists, and \u00a75 needs no edge it omits (dispatch.py already holds `config`/`fences`, verified at dispatch.py:1296, so no new writer is unlisted)."
+  },
+  "section_digests": {
+    "_document": "1a4f077a0dd0d7e01e7c495aebac352ec6bd28fe0c6d47a9a6d3c86a7dad985b",
+    "s1": "db87e9dc091adc1afc070dc0aef99a3806a457e6dc5e0e2a813fea5769fe65b4",
+    "s2": "5a0fb3df892e6e7a0e3ffe65cb4d4d3141028f5087a91a448c204ff9d28a8d4a",
+    "s3": "cd3dc051b230ab35b56efe7d9ffb4d36e13bf85c4bec1cee0d8ae02e8371178a",
+    "s4": "3ecba0ba9644607d22d9c2d91dfb3f22042d163919f276abb7f2bfa201173b0a",
+    "s5": "c4e30de4a9811f26c5612e37338dc966226cee6a592d8f3713d57b8d725b092f"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T17:40:38.453719+00:00"
+}
