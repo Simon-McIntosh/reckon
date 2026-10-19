@@ -882,7 +882,9 @@ def derive_fleet_impl_imputing_effort(plans) -> float | None:
     weighted = 0.0
     total = 0.0
     for figure, weight in zip(figures, weights, strict=True):
-        effective = weight if weight is not None else (mean if mean is not None else 1.0)
+        effective = (
+            weight if weight is not None else (mean if mean is not None else 1.0)
+        )
         total += effective
         weighted += effective * figure
     if total <= 0:

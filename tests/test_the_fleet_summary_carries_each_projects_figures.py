@@ -95,9 +95,7 @@ def _seed_repo(repo: Path, plans: dict[str, str], committed_at: datetime) -> Pat
 
 
 @pytest.fixture(name="fleet")
-def fleet_fixture(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> dict[str, Path]:
+def fleet_fixture(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Path]:
     """A two-project fleet: alpha imputes hours, beta carries a sprint."""
 
     # A naive local stamp: git parses it as local and the activity series reads
