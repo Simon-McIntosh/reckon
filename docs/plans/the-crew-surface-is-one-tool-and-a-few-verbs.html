@@ -26,7 +26,7 @@
   <title>The Crew Surface Is One Tool And A Few Verbs | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="28">
+<meta name="plan-version" content="29">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -415,6 +415,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-close-s6" data-who="reckon-build" data-when="2026-10-19T20:20:00Z">
     <div class="r-comment-body"><p>§6 landed: every crew read view is served by one function, <code>serve_crew_view</code>, which both the MCP <code>crew</code> tool and a new <code>crew view &lt;name&gt;</code> verb call. A parity test fails naming any view registered on one surface only. Zero failures added. The five read verbs stay visible, each with a caller or flag outside the fence; retiring them is §9. <a href="/reckon/evidence/archive/the-crew-surface-is-one-tool-and-a-few-verbs-landed.html#s6">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-s9-review-deferred" data-who="reckon-build" data-when="2026-10-19T21:35:00Z">
+    <div class="r-comment-body"><p>Review <code>r-20261019T210516735057</code> found three defects in §9, deferred to its revision before dispatch:</p><ul><li><strong>wiring-1.</strong> To compare the views the MCP tool's schema advertises, the filter node must change the <code>view</code> Literal in <code>reckon/_mcp_tools.py</code>, which lists nine views where the dispatcher serves eighteen, and the view list in <code>skills/reckon-build/SKILL.md</code> that <code>test_ship_views_match_the_typed_mcp_surface</code> checks. Both join the filter node's fence, and §9 waits on §5, which owns <code>_mcp_tools.py</code>.</li><li><strong>done_when-1.</strong> <code>cso-list-callers-move-to-crew-view</code> gets a negative control of its own: leave one caller unmoved, and its fixture case fails.</li><li><strong>reasoning-1.</strong> The serial reason is restated. The mover node follows the filter node because its <code>--phase</code> and <code>--mine</code> fixtures need the filter node's flags, not because the two share a file.</li></ul></div>
 </div>
 </section>
 </main>
