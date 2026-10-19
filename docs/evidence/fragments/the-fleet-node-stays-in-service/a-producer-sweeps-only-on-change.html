@@ -22,4 +22,37 @@
     beat would mean reading a message record per run to find which stream is
     newest, which is the walk the gate exists to avoid.
   </p>
+  <h4>What the adjacent cost case was measuring</h4>
+  <p>
+    The producer cost case in <code>tests/test_producer_reads_only_what_changed.py</code>
+    fails intermittently on two of its assertions — the earlier revision of this
+    change was first read as the cause. It is not: the case is red in ten of ten
+    runs at the base revision of this module, and in eight of ten under the
+    change, for the same two assertions. Instrumenting the wait for subprocess
+    spawns shows the source. Two of the producer's git calls are not on the
+    beat at all: the watch-stream publisher derives the fleet's obligations on a
+    daemon thread, and that thread spawns <code>git rev-parse --verify HEAD</code>
+    when it starts, at a moment no caller can schedule. A case that counts spawns
+    at beat boundaries therefore races the thread, in either revision. The
+    byte-parity assertion races it the same way, because the same thread reads
+    streams and adds to the shared parsed-bytes meter the case reads at a
+    boundary.
+  </p>
+  <h4>Quiet-cycle syscall counts</h4>
+  <p>
+    Against a copy of the fleet's <code>live/</code> holding ten live pointers,
+    driven for five and for forty beats under
+    <code>strace -f -c -e trace=%file,getdents64</code>, the marginal cost of a
+    quiet cycle is <strong>12 openat and 35 stat calls</strong> (from the
+    difference between the two beat counts, so interpreter start-up and the
+    first sweeping beat cancel out). The same harness measures the base revision
+    at 24 openat and 12 stat per cycle. Both sit far below a tenth of the 1,880
+    openat and 1,575 stat per cycle recorded for the ungated producer against the
+    live fleet; the copy is a lighter fleet than that measurement's, so the
+    harness does not reproduce its absolute figures and the comparison of
+    interest is the within-harness pair. The gate's own cost is visible there:
+    a quiet cycle now pays about 35 stat calls to fingerprint the home — three
+    per live run, for its pointer, its stream and its manifest — in exchange for
+    not enumerating the fleet, not walking run directories and not spawning git.
+  </p>
 </article>
