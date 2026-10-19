@@ -1,0 +1,122 @@
+<article class="landed-report" data-run-id="r-20261019T182016743616-cso-read-verbs-become-crew-view" data-node="cso-read-verbs-become-crew-view">
+<h3 id="cso-read-verbs-become-crew-view-summary">Every crew read view is served by one function, and both surfaces call it</h3>
+<p id="cso-read-verbs-become-crew-view-change"><strong>Change.</strong>
+<code>reckon/mcp_views.py</code> gains <code>serve_crew_view</code> and the
+registry <code>CREW_VIEWS</code> it serves — <code>summary</code>,
+<code>flight</code>, <code>live</code>, <code>scopes</code>, <code>drain</code>,
+<code>records</code>, <code>ledger</code>, <code>budget</code>,
+<code>lanes</code>, <code>routing</code>, <code>directory</code>,
+<code>fleet</code>, <code>runs</code>, <code>obligations</code>,
+<code>velocity</code>, <code>scores</code>, <code>plan-review</code> and
+<code>findings</code>. The view dispatch that lived inline in the crew MCP tool
+moved there verbatim, so the composition now sits beside the plan and resource
+views rather than inside the tool's own module.
+
+<code>reckon/mcp.py</code>'s <code>_crew</code> keeps only what is the tool's
+own: the recover <code>action</code> branch, the refusal for a name outside the
+declared surface, and the delegation. It declares
+<code>CREW_TOOL_VIEWS = CREW_VIEWS</code>, so the tool's published surface is the
+one registry the dispatcher serves and cannot drift from it by being maintained
+separately. Imports the moved body used are gone from the tool module, except
+<code>reckon.ledger</code>, which stays reachable as <code>ledger_module</code>
+because a caller patches it through that name.
+
+<code>reckon/crew_run_commands.py</code> gains the <code>view</code> verb:
+<code>reckon crew view &lt;name&gt;</code> carries every argument the tool's view
+takes and prints the same document, so a hook or a script can reach a view
+without the MCP transport. It is documented in
+<code>skills/reckon-build/SKILL.md</code> beside the other crew verbs, and
+<code>tests/test_crew_help_names_its_state.py</code> gains its row in the
+reachable-verb census.</p>
+<p id="cso-read-verbs-become-crew-view-callers"><strong>Caller census.</strong>
+Every tracked invocation of the five read verbs was listed before deciding what
+to retire, and each verb keeps at least one caller this node could not migrate
+inside its write fence, so all five stay visible:
+
+<code>crew list</code> — <code>reckon/mcp_deadlines.py:184</code>
+(<code>_CLI_ANSWER_COMMANDS</code>) emits it as the answer a deadline refusal
+hands a caller. The verb also carries <code>--phase</code>,
+<code>--mine</code> and <code>--session</code>, which
+<code>crew view</code> does not take, so repointing that citation is not
+enough to retire it; its callers span about ten test files.
+<code>crew ledger</code> — <code>reckon/crew/refusals.py:78</code> names it in
+the D20 remedy text.
+<code>crew directory</code> — <code>imas-ambix
+ops/lane-cycle/AGENTS.md:40</code>, a foreign project outside this repository
+and outside this node's fence.
+<code>crew drain</code> — no read caller, but the verb carries a
+<code>--leave &lt;run&gt;=&lt;disposition&gt;</code> write half that records a
+pointer disposition, and no view successor or follow-on records it; retiring the
+verb would drop the write.
+<code>crew velocity</code> — <code>tests/test_crew_velocity_cli.py</code> drives
+the verb against the read view, a tracked caller this node could not migrate.
+
+The in-fence citations of the five verbs (<code>skills/reckon-build/SKILL.md</code>
+lines 206, 208, 209 and 211, <code>coordinator-reference.md</code> 95, 240, 603,
+605, 606, 607, 764 and 1108, <code>sprint-orchestration.md:580</code>,
+<code>reckon-review/SKILL.md:78</code>, and <code>reckon/crew/AGENTS.md</code>
+24, 27 and 31) are left pointing at the verbs, deliberately: a citation is
+repointed when its verb is retired, and the citation guard
+<code>tests/test_cited_commands_exist.py</code> reports a citation naming a
+retired verb. Nothing was retired, so nothing needed repointing.</p>
+<p id="cso-read-verbs-become-crew-view-test"><strong>Test.</strong>
+<code>tests/test_crew_view_serves_every_view.py</code> drives one synthesised
+fleet under <code>tmp_path</code> and asserts the two surfaces agree three ways.
+The tool's declared view set and the dispatcher's served set must be equal, and
+the failure names the views that differ. Every view either surface names is then
+driven on both — the union, not one side's constant, so a view registered on one
+surface only is exercised and its disagreement names it rather than being
+skipped silently. Fields a composition derives from the instant it ran
+(<code>composed_at</code> and the ages measured from it) are dropped before
+comparison, so the test measures the composition and not the clock. A third case
+is the declared negative control as an executable assertion.
+
+<code>tests/test_crew_help_names_its_state.py</code> gains the <code>view</code>
+row and keeps every other verb's row, because no verb was retired.</p>
+<p id="cso-read-verbs-become-crew-view-measure"><strong>Measure.</strong> Gate:
+the six files above, run in the foreground with the main checkout's
+<code>.venv/bin/python -m pytest -p no:cacheprovider</code>. Base arm, the five
+pre-existing gate files at <code>9c353762e</code> (the new test file absent, the
+tree materialised with <code>git archive</code> because this sandbox's git
+directory is read-only): <strong>1 failed, 88 passed</strong>, <code>EXIT=1</code>
+— <code>test_every_module_fits_a_worker_window</code>, which is red for
+<code>reckon/crew/review.py</code> (51584 tokens) and <code>reckon/ledger.py</code>
+(51666 tokens) at the base revision and is not this node's work. Head arm at
+<code>0e9c62f8</code>: <strong>1 failed, 91 passed</strong>, <code>EXIT=1</code>
+— the same module-window failure and nothing else, the same two offenders and
+the same counts, so this node adds no failure over the base arm. An earlier
+head read <strong>2 failed, 90 passed</strong>: naming
+<code>reckon crew view</code> in the build skill's command block is required by
+<code>test_every_registered_crew_verb_is_documented_or_exempt</code>, and that
+turned its sibling
+<code>test_ship_cli_instructions_match_registered_commands_and_flags</code> red,
+because that case compares the documented verbs against a hand-written flag map
+which needed the verb's row. The flag map gained
+<code>("crew", "view")</code> with <code>--project</code>,
+<code>--since</code>, <code>--until</code>, <code>--fields</code> and
+<code>--pretty</code>, and nothing else in the file changed; the map's assertion
+is a subset check, so the verb's fuller registered option set is unaffected.
+<code>ruff check</code> on that file reports the same three findings as at base.
+<code>ruff format --check</code> and
+<code>ruff check</code> on every changed path report the same 13 findings at head
+as at base (all pre-existing in the two large view modules), so the commit adds
+none. Logs <code>gate-head.log</code>, <code>base-arm.log</code>,
+<code>gate-head-2.log</code> and <code>negative-control.log</code> under the run
+directory, each ending in an <code>EXIT=</code> line.</p>
+<p id="cso-read-verbs-become-crew-view-control"><strong>Negative control.</strong>
+Registering a view on the MCP crew tool only — appending a name to
+<code>CREW_TOOL_VIEWS</code> in <code>reckon/mcp.py</code> and touching nothing
+else — reddens the parity case: <code>1 failed, 2 passed</code>, with
+<code>the crew tool serves these views and the crew view dispatcher does not:
+['tool-only-view']</code>. Log <code>negative-control.log</code> under the run
+directory, and <code>reckon/mcp.py</code> restored from a copy taken before the
+mutation, so the mutation survives only as the log.</p>
+<p id="cso-read-verbs-become-crew-view-followons"><strong>Not tombstoned.</strong>
+No tombstone row was added by this node. The five verbs' callers are listed
+above; retiring any one of them needs a caller migrated
+(<code>reckon/mcp_deadlines.py</code>, <code>reckon/crew/refusals.py</code>,
+<code>tests/test_crew_velocity_cli.py</code>, a foreign project's guide), the
+drain write half visited, or the extra options <code>crew list</code> carries
+reached through another verb. Each is recorded as a follow-on naming its file
+and line.</p>
+</article>

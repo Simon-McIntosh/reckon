@@ -1284,6 +1284,13 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
         ("crew", "suite"): set(),
         ("crew", "unwatch"): {"--project"},
         ("crew", "verify-gate"): {"--project", "--run", "--checkout-path"},
+        ("crew", "view"): {
+            "--project",
+            "--since",
+            "--until",
+            "--fields",
+            "--pretty",
+        },
         ("crew", "watch"): {"--project", "--stall-window"},
         ("crew", "widen"): {"--run", "--write-path"},
         ("flight",): {"--project"},
