@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T20:40:44.670Z",
+  "dispatched_at": "2026-10-19T20:27:57Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-plan-write-goes-through-edit-plan.html:274",
+      "id": "done_when-1",
+      "reason": "the changed-parameters case is the one refusal \u00a711 keeps (\"the `stale_server_code` refusal remains for one case only\"), and with no control, a rework that drops or widens that refusal passes every listed case, so the last legitimate reconnect is unguarded.",
+      "text": "\u00a711's done-when (lines 275-281) has five cases but declares negative controls only for its first two (lines 283-286); the cold-child case (:278), the changed-tool-parameters case (:279) and the pipe-close case (:280) carry none",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-plan-write-goes-through-edit-plan.html:269",
+      "id": "reasoning-1",
+      "reason": "the unwritten warming step decides whether the section's goal is reachable at all and whether a write executes once or twice, and the node cannot derive it from the text.",
+      "text": "the deliverable starts the persistent child when the stamp moves but rules that \"a call goes to the child only once it has answered at least once\", while case (:278) has the running image serve a cold-child call without waiting, so the section never says which call gives the child its first answer; a literal implementation either never consults the child \u2014 keeping \u00a73's current-code answer downgraded to the stale image, which no case would catch \u2014 or warms it by sending the same call twice, which lands a write twice, the very double-execution \u00a73 avoids (\"A failed write wrote nothing, so the re-run cannot double it\")",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "9470baca8e5e058b9e4fe65abe38b61c786a490f3b517df417168e7246bab6bc",
+  "plan_slug": "every-plan-write-goes-through-edit-plan",
+  "plan_version": 46,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261019T202714209758-plan-review-of-every-plan-write-goes-through-edit-plan",
+  "reviewed_blob_sha": "b8abb944c63731620c20f7cb51aa5d9f61e84c61",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol \u00a711 cites resolves in `reckon/mcp.py` (`_refuse_when_stale` :541, `_answer_on_current_code` :494, `_stale_code_response` :454, `_SERVE_ON_CURRENT_CODE` :538, `_CURRENT_CODE_TIMEOUT_S = 120.0` :345), the error codes `version_conflict` and `storage-slow` exist (`reckon/_mcp_tools.py:246`, `:9`), the cited test files exist, the cross-plan href `/reckon/the-crew-surface-is-one-tool-and-a-few-verbs#s5` resolves to a real `h2 id=\"s5\"`, and `stale-image-remedy` is a decision on this plan.",
+    "done_when": "a finding \u2014 \u00a711's done-when lists five cases and declares two negative controls, covering only its first two.",
+    "evidence_paths": "pass \u2014 \u00a711's gate is `tests/test_a_slow_child_never_forces_a_reconnect.py` in the repository, and both controls are logged; the section names no scratchpad or node-local path.",
+    "naming": "pass \u2014 \u00a711's new test file and symbols are named by what they do; no plan label, ticket number or version tag reaches them.",
+    "reasoning": "a finding \u2014 two of the three stated causes check out against the code, but the deliverable's routing rule for the cold child leaves the child with no first call.",
+    "single_goal": "pass \u2014 \u00a711 has one goal, the reload guard's behaviour when the current-code child is slow, and its three deliverable bullets are facets of that one mechanism, closed by one test file.",
+    "wiring": "pass \u2014 `_document`'s `plan-section-depends-on` (s4\u2190s2,s3; s5\u2190s4; s6\u2190s5; s7\u2190s6; s8\u2190s7; s9\u2190s6; s10\u2190s6; s11\u2190s9) puts \u00a711 after every section that writes `reckon/mcp.py` (s3, s4, s5, s6, s9, all done), and `plan-informs` names a plan that exists."
+  },
+  "section_digests": {
+    "_document": "31bdfc5178be11360f71becc7d4c5086981def76ca15cb377730a617a3fb63ab",
+    "s1": "7f96df198aae5b46c87f2d18f8eff17398ead36155ee67ba73607e91aa1d2fe3",
+    "s10": "fd786ebf0d880e15085a2e0ca5423504f73ce4c013e483f5e3cae145e3ad4079",
+    "s11": "c660a6daf33c12e87dcc72429db8a384e6e114862360db8e39d491ddc724a763",
+    "s2": "737250903251177035b357be3d656b549480337bc454f97615634dada495e251",
+    "s3": "4150e9281b9c0fe1173e9c23f5582efb0662d22f1d36944861d3033f988d479c",
+    "s4": "e0390ff35ac5e425fa3060cede9882af598c54dc89e0a6069101b3971f8e8367",
+    "s5": "699b049fe374b1219d8b917168575594a5bcb9255bbe13efdbf1d0c928562a86",
+    "s6": "27f4d6436a652181a180df37fa1a640ebff9cb62418e856c86bc907ecda9778f",
+    "s7": "80062db679255aff5087534386e7372545e1cd3414916db8329aec79a1a8388d",
+    "s8": "f9dd6299834b4d039fd1f45b37141d5e265075b4cfd7f341357bea21196f5b35",
+    "s9": "bd2c3090ecc9a89ad8c0b2f7312aae077382dd2709954d9e27f449e984d622a8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T20:43:59.096758+00:00"
+}
