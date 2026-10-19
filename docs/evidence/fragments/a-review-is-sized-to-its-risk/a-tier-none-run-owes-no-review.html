@@ -33,25 +33,26 @@
         <code>1 passed</code>, EXIT=0. Negative control — the tier read removed
         from the duty — fails that test with
         <code>assert 'review-missing' == 'review-ready'</code>, EXIT=1. Ruff
-        check adds no finding; ruff format adds none beyond the one
-        pre-existing unformatted line already present at base.
+        check adds no finding; ruff format adds none beyond the same
+        pre-existing unformatted lines the base revision already reports.
       </p>
       <p id="a-tier-none-run-owes-no-review-blocker">
-        <strong>Blocker — the change adds 9 failures, all out of scope.</strong>
-        Over the 39 test files that import <code>obligations.py</code>, the base
-        arm reports 0 failed and the change reports 9, both with the same 10
-        pytest-timeout errors from <code>run_store.py</code> under parallel load.
-        Every added failure is a fixture that declares <code>seed.txt</code> —
-        no runtime source — so §10's tier read correctly moves it from
-        <code>review-missing</code> to <code>review-ready</code>, across six
-        files: <code>test_crew_obligations.py</code> (2),
-        <code>test_a_review_row_reads_its_head_from_files.py</code> (2) and one
-        each in <code>test_coordinator_obligations_hook.py</code>,
-        <code>test_mcp_crew_obligations.py</code>,
-        <code>test_obligations_snapshot_is_published.py</code> and
-        <code>test_review_obligation_reads_the_head.py</code>. Each needs its
-        fixture to declare a runtime-source path with a matching commit so it
-        keeps asserting the unreviewed reading. None of those files is in this
-        node's write scope, so the node stops rather than widening it.
+        <strong>Blocker — one failure remains, outside this node's write
+        scope.</strong> The tier read moved nine fixtures from
+        <code>review-missing</code> to the promotable kind. Each pins a run
+        whose cited commit touches no runtime source, so the tier rule owes it
+        no review and the duty now says so. Eight are repaired in the files this
+        node was granted: every one of those fixtures now seeds a runtime source
+        under <code>reckon/</code> in a commit that has a parent, and cites that
+        commit as the run's head, so the run is tiered and still owes the review
+        the assertion names. After the repair the obligation-fixture arm is
+        <code>9 passed</code> at base and <code>10 passed</code> at the new head
+        (the gate included), both EXIT=0, and the 39-file importer arm is 218
+        passed and 1 failed, against 0 failed at base. The one failure left,
+        <code>test_stop_hook_reads_the_snapshot.py::test_a_lane_refused_review_reads_queued_and_returns_after_the_bound</code>,
+        is the same shape in a file outside the granted scope: its repository
+        fixture seeds only <code>seed.txt</code> in a root commit, which its run
+        cites, so the duty returns the promotable kind before the refused-review
+        branch is reached.
       </p>
     </article>
