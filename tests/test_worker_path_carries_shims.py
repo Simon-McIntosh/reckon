@@ -208,12 +208,16 @@ def test_persisted_worker_environments_exclude_dispatcher_secrets(
     )
     assert spec["plan"]["environment"]["PLAN_ONLY"] == "retained"
     assert SENTINEL not in spec["plan"]["environment"]
-    assert set(spec["plan"]["environment"]) == {"PATH", "PLAN_ONLY"}
+    assert set(spec["plan"]["environment"]) == {
+        "PATH",
+        "PLAN_ONLY",
+        "RECKON_SHIM_PYTHON",
+    }
     assert directive_environment["PATH"].split(os.pathsep)[0] == str(
         worker_shim_directory()
     )
     assert SENTINEL not in directive_environment
-    assert set(directive_environment) == {"PATH"}
+    assert set(directive_environment) == {"PATH", "RECKON_SHIM_PYTHON"}
 
 
 def test_inside_allocation_prompt_names_the_host_and_storage_contract(
@@ -285,7 +289,8 @@ def test_outside_allocation_carries_the_git_shim_but_no_scheduler_shims(
     assert spec["plan"]["environment"]["PATH"] == searched
     assert spec["plan"]["environment"]["PLAN_ONLY"] == "retained"
     assert set(dispatch_module._persisted_worker_environment({}, facts=facts)) == {
-        "PATH"
+        "PATH",
+        "RECKON_SHIM_PYTHON",
     }
     assert "HOST — ALLOCATION" not in prompt
     assert "RECKON_ALLOW_NESTED_LAUNCH" not in prompt
