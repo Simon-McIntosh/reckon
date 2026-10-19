@@ -19,7 +19,14 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import budget_lift, recovery_classification, recovery_watch, runs
+from reckon.crew import (
+    budget_lift,
+    recovery_classification,
+    recovery_memo,
+    recovery_watch,
+    review,
+    runs,
+)
 from reckon.crew.dispatch_launch import EXIT_RECORD_NAME
 
 PROJECT = "sweep-on-change"
@@ -322,3 +329,94 @@ def test_the_change_token_stamps_the_crew_home_through_the_shared_reader(
         budget_lift.lifts_path(),
     ):
         assert str(gated_read) in stamped, f"{gated_read} must be stamped"
+
+
+def test_a_handover_written_on_a_quiet_beat_sweeps(
+    fleet, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An admission handover is a gated sweep's input, not a stamped name.
+
+    ``handover_run_ids`` is read only on a sweeping beat, so the handover
+    directory must move the gate. Naming the directory among the token's stamps
+    is not the same claim: this case writes a record there itself.
+    """
+    lists = _install_list_counter(monkeypatch)
+    marks: list[int] = []
+
+    def on_boundary() -> None:
+        marks.append(len(lists))
+
+    def write_handover() -> None:
+        directory = runs.handover_dir()
+        directory.mkdir(parents=True, exist_ok=True)
+        (directory / "queued.json").write_text(
+            json.dumps({"project": PROJECT, "run_id": "r-queued"})
+        )
+
+    _drive([write_handover, lambda: None, lambda: None], on_boundary=on_boundary)
+
+    assert len(marks) >= 3, marks
+    assert marks[1] - marks[0] == 1, "a handover written on a quiet beat must sweep"
+    assert marks[2] == marks[1], "the beat after the sweep is quiet again"
+
+
+def test_a_review_record_written_on_a_quiet_beat_sweeps(
+    fleet, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A review store's candidate for a run is one of the run's inputs.
+
+    The classification is answered from the review store, so a record landing
+    there while every file the pointer names is still must move the gate; a
+    token that carried only the pointer, its stream and its manifest would serve
+    the reading taken before the record existed.
+    """
+    lists = _install_list_counter(monkeypatch)
+    marks: list[int] = []
+
+    def on_boundary() -> None:
+        marks.append(len(lists))
+
+    def write_review_record() -> None:
+        store = review.review_store_root() / PROJECT
+        store.mkdir(parents=True, exist_ok=True)
+        (store / f"{fleet['records'][0]['run_id']}.json").write_text(
+            json.dumps({"verdict": "pass"})
+        )
+
+    _drive([write_review_record, lambda: None, lambda: None], on_boundary=on_boundary)
+
+    assert len(marks) >= 3, marks
+    assert marks[1] - marks[0] == 1, "a review record landing must sweep"
+    assert marks[2] == marks[1], "the beat after the sweep is quiet again"
+
+
+def test_a_worktree_head_moved_on_a_quiet_beat_sweeps(
+    fleet, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The head a run's tree names now is an input of its classification.
+
+    A review is chosen against the revision the tree carries, so a commit
+    landing while every file the pointer names is still must move the gate; a
+    token that skipped the head would serve a review of code the run no longer
+    holds.
+    """
+    lists = _install_list_counter(monkeypatch)
+    marks: list[int] = []
+    tree = fleet["tree"]
+    before = recovery_memo._worktree_head_identity(tree)
+    assert before not in {"no-tree", "no-git", "no-head"}, before
+
+    def on_boundary() -> None:
+        marks.append(len(lists))
+
+    def commit() -> None:
+        (tree / "delivery.txt").write_text("moved\n")
+        _git(tree, "add", "delivery.txt")
+        _git(tree, "commit", "-q", "-m", "moved")
+
+    _drive([commit, lambda: None, lambda: None], on_boundary=on_boundary)
+
+    assert recovery_memo._worktree_head_identity(tree) != before
+    assert len(marks) >= 3, marks
+    assert marks[1] - marks[0] == 1, "a head that moved on a quiet beat must sweep"
+    assert marks[2] == marks[1], "the beat after the sweep is quiet again"
