@@ -86,6 +86,14 @@ def repository(tmp_path: Path, config_home: Path) -> Path:
         ("commit", "-q", "-m", "test: seed stop hook fixture"),
     ):
         _git(root, *arguments)
+    # A run's tier is read from the diff of the commit it cites against that
+    # commit's own parent, so a cited root commit measures no path at all. The
+    # runtime source lands in a second commit, which is what a run that owes a
+    # review cites.
+    (root / "reckon").mkdir()
+    (root / "reckon" / "fixture_runtime.py").write_text("VALUE = 1\n", encoding="utf-8")
+    _git(root, "add", "reckon/fixture_runtime.py")
+    _git(root, "commit", "-q", "-m", "test: seed a runtime source")
     (config_home / "mounts.json").write_text(
         json.dumps({PROJECT: str(root / "docs")}), encoding="utf-8"
     )
