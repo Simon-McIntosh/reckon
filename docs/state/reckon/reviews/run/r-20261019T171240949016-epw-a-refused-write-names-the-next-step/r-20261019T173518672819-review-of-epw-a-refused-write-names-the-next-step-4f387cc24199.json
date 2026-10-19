@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/mcp.py edit_plan tool registration via _deadline_tool",
+    "reckon/mcp_deadlines.py:_edit_success_response",
+    "reckon/mcp_edit_plan.py:_edit_plan_tool"
+  ],
+  "completed_at": "2026-10-19T17:47:56.131Z",
+  "dispatched_at": "2026-10-19T17:35:58Z",
+  "findings": [
+    {
+      "file": "tests/test_a_refused_write_names_the_next_step.py",
+      "line": 150,
+      "severity": "follow-on",
+      "summary": "assert conflict[\"expected_version\"] == 0 compares the response field against the literal the test itself passed in, so the two sides move together and it cannot fail on a regression; it is not an independent guard, though no score rests on it because the four new capabilities are each guarded by an independent assertion.",
+      "text": "tests/test_a_refused_write_names_the_next_step.py:150 compares conflict[\"expected_version\"] to 0, the value the test itself supplied to _edit, so it holds whatever the code echoes and survives a regression; the new capabilities are each guarded independently (changed_targets against fixture value 1.0, refused_ops indices, replay new_version tied to file version)."
+    },
+    {
+      "file": "reckon/mcp_edit_plan.py",
+      "line": 955,
+      "severity": "follow-on",
+      "summary": "_value_at_path re-inlines the by-id list lookup the store already owns at reckon/_store.py:2396 (_find_by_id) and mirrors a subset of _apply_set's accepted path forms without extending that owner, so the two resolutions must be kept in sync by hand.",
+      "text": "reckon/mcp_edit_plan.py:955 finds a list element with next((item for item in listed if str(item.get(\"id\")) == parts[1])) instead of reusing reckon/_store.py:2396 _find_by_id, the store's owned by-id lookup, so the new reader duplicates a capability the repository owns."
+    },
+    {
+      "file": "reckon/mcp_edit_plan.py",
+      "line": 1233,
+      "severity": "follow-on",
+      "summary": "the PROJECT_RESOURCE_TYPES branch returns version conflicts unwrapped (no changed_targets) and never records or replays a request_id, so the goal's \"each edit_plan refusal\" holds only for plan-path writes.",
+      "text": "reckon/mcp_edit_plan.py:1233 handles doc_types in PROJECT_RESOURCE_TYPES and its ProjectStateConflict return calls _conflict_response without _attach_changed_targets, and never reaches record_write_receipt, so a resource write's conflict names no changed targets and its request_id retry is not idempotent."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "the production call site is the edit_plan MCP tool registered in reckon/mcp.py:3194 via _deadline_tool into _edit_plan_tool in reckon/mcp_edit_plan.py.",
+    "diff": "read commit 4f387cc24 against base 2cbe964; five files changed, all inside the declared scope, adding the four refusal capabilities and a six-case test file.",
+    "done_when": "the done_when names the four-file pytest gate and a ruff-delta floor; the manifest records the gate result (91 passed, 1 failed) and I re-ran the single new file at head (6 passed) and measured the ruff delta at zero.",
+    "goal": "the node goal is that each edit_plan refusal names the caller's next step (version conflict with changed targets, batch reporting every refused op, request_id replay, enumerated-field legal values); the diff implements all four on the plan path in reckon/mcp_edit_plan.py and reckon/_store.py.",
+    "manifest": "read; it states the head gate passed with one pre-existing failure, names its three log paths, and records baseline_suite and after_suite JSON with matching revisions.",
+    "write_paths": "read the manifest's declared paths; every path in the diff (reckon/mcp_edit_plan.py, reckon/_store.py, reckon/_store_section_ops.py, tests/test_a_refused_write_names_the_next_step.py, docs/evidence/fragments/every-plan-write-goes-through-edit-plan/epw-a-refused-write-names-the-next-step.html) is inside them."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261019T173518672819-review-of-epw-a-refused-write-names-the-next-step-4f387cc24199",
+  "reviewed_base_sha": "2cbe964ac844108f42cd6d6e5ece006ce0444b06",
+  "reviewed_head_sha": "4f387cc2419915b534179633bb739998273d1a82",
+  "reviewed_run_id": "r-20261019T171240949016-epw-a-refused-write-names-the-next-step",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 15,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T17:55:07.913800+00:00"
+}
