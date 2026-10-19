@@ -1,0 +1,65 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:706",
+    "reckon/crew_run_commands.py:973",
+    "reckon/evidence.py:168",
+    "reckon/hooks/worker_stop.py:307",
+    "reckon/ledger.py:763",
+    "reckon/crew/promotion_scope.py:227",
+    "reckon/crew/promotion_evidence.py:229",
+    "reckon/crew/promotion_checks.py:462",
+    "reckon/crew/dispatch_launch.py:2607",
+    "reckon/crew/recovery_classification.py:200"
+  ],
+  "completed_at": "2026-10-19T18:07:48.414Z",
+  "dispatched_at": "2026-10-19T17:57:25Z",
+  "findings": [
+    {
+      "file": "reckon/crew/reports.py",
+      "line": 842,
+      "severity": "follow-on",
+      "text": "the refusal is applied to every key in _MANIFEST_LIST_KEYS (reports.py:758), including the prose-bearing artifacts, evidence_inputs, follow_ons and blockers; a semicolon before a path-like token in such a field is refused, so a legitimate coordinator manifest whose prose names two paths on one line is refused rather than judged \u2014 the reviewed run's own manifest was rewritten twice for this reason per its evidence_inputs."
+    },
+    {
+      "file": "reckon/crew/reports.py",
+      "line": 762,
+      "severity": "follow-on",
+      "text": "orientation_write_paths is declared a list shape beside _MANIFEST_LIST_KEYS at reports.py:139 and is a declared-write-path field, but the normalise loop iterates _MANIFEST_LIST_KEYS alone, so a joined orientation_write_paths is still read as one entry by parse_manifest, against the deliverable's claim that the parser yields every entry or a refusal; the escape is mitigated at its scope consumer because reckon/crew/dispatch_sessions.py:388 reads the joined value as a non-list and reports an orientation mismatch."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against base e1655c04; two commits (df5276b28, f86d14645) change three files, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_a_joined_path_list_is_refused.py; the manifest records the run and its result, and tests/test_a_joined_path_list_is_refused.py:73 exercises the measured joined value through audit_manifest.",
+    "goal": "the node's goal is to refuse a manifest list field whose entries are joined by an unsplit separator; reckon/crew/reports.py:834 raises ManifestParseError naming the field and the separator.",
+    "manifest": "read; it states tests/test_a_joined_path_list_is_refused.py passed, the base/head importer suite ran 247 tests at both arms with no added failure, and names its logs.",
+    "write_paths": "read the manifest's declared paths (reckon/crew/reports.py, tests/test_a_joined_path_list_is_refused.py, the scoring-should-stop-a-promotion evidence fragment); every path in the diff is inside them."
+  },
+  "justifications": {
+    "durability": "the declared negative control removes the refusal call at reports.py:762 and tests/test_a_joined_path_list_is_refused.py:69 and :123 then fail (DID NOT RAISE), so the assertions redden on the reinstated defect.",
+    "evidence": "tests/test_a_joined_path_list_is_refused.py:73 asserts the refusal through audit_manifest (the check-manifest path, reckon/crew_run_commands.py:706) and its result is recorded in gate_after.log (252 passed, EXIT=0) and negative_control.log (2 failed, EXIT=1).",
+    "fit": "the new helpers at reckon/crew/reports.py:805-857 follow the module's surrounding style and are named by mechanism, carrying no plan, ticket or version identifier.",
+    "goal_fidelity": "reckon/crew/reports.py:762 refuses a list-field value whose entries a semicolon joins before a path-like token, naming the field and the separator, so the measured changed_paths shape is refused rather than read as one entry.",
+    "reuse": "no owner for a joined-list-separator refusal exists; the split owner is _as_list at reckon/crew/reports.py:966 and the new refusal sits beside it, while node.py:254's semicolon rule judges goal clause splits, a different capability.",
+    "scope_discipline": "the diff touches only reckon/crew/reports.py, tests/test_a_joined_path_list_is_refused.py and the evidence fragment named in the manifest's declared write paths, with nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to refuse a manifest list field whose entries are joined by an unsplit separator; reckon/crew/reports.py:834 raises ManifestParseError naming the field and the separator.\nVERDICT done_when: the done_when names tests/test_a_joined_path_list_is_refused.py; the manifest records the run and its result, and tests/test_a_joined_path_list_is_refused.py:73 exercises the measured joined value through audit_manifest.\nVERDICT write_paths: read the manifest's declared paths (reckon/crew/reports.py, tests/test_a_joined_path_list_is_refused.py, the scoring-should-stop-a-promotion evidence fragment); every path in the diff is inside them.\nVERDICT manifest: read; it states tests/test_a_joined_path_list_is_refused.py passed, the base/head importer suite ran 247 tests at both arms with no added failure, and names its logs.\nVERDICT diff: read commit by commit against base e1655c04; two commits (df5276b28, f86d14645) change three files, all inside the declared scope.\nCALL_SITES: reckon/crew_run_commands.py:706, reckon/crew_run_commands.py:973, reckon/evidence.py:168, reckon/hooks/worker_stop.py:307, reckon/ledger.py:763, reckon/crew/promotion_scope.py:227, reckon/crew/promotion_evidence.py:229, reckon/crew/promotion_checks.py:462, reckon/crew/dispatch_launch.py:2607, reckon/crew/recovery_classification.py:200\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/reports.py:762 refuses a list-field value whose entries a semicolon joins before a path-like token, naming the field and the separator, so the measured changed_paths shape is refused rather than read as one entry.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_joined_path_list_is_refused.py:73 asserts the refusal through audit_manifest (the check-manifest path, reckon/crew_run_commands.py:706) and its result is recorded in gate_after.log (252 passed, EXIT=0) and negative_control.log (2 failed, EXIT=1).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/reports.py, tests/test_a_joined_path_list_is_refused.py and the evidence fragment named in the manifest's declared write paths, with nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: the declared negative control removes the refusal call at reports.py:762 and tests/test_a_joined_path_list_is_refused.py:69 and :123 then fail (DID NOT RAISE), so the assertions redden on the reinstated defect.\nSCORE fit: 19\nJUSTIFICATION fit: the new helpers at reckon/crew/reports.py:805-857 follow the module's surrounding style and are named by mechanism, carrying no plan, ticket or version identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner for a joined-list-separator refusal exists; the split owner is _as_list at reckon/crew/reports.py:966 and the new refusal sits beside it, while node.py:254's semicolon rule judges goal clause splits, a different capability.\nFINDING reckon/crew/reports.py:842 follow-on: the refusal is applied to every key in _MANIFEST_LIST_KEYS (reports.py:758), including the prose-bearing artifacts, evidence_inputs, follow_ons and blockers; a semicolon before a path-like token in such a field is refused, so a legitimate coordinator manifest whose prose names two paths on one line is refused rather than judged.\nFINDING reckon/crew/reports.py:762 follow-on: orientation_write_paths is declared a list shape beside _MANIFEST_LIST_KEYS at reports.py:139 and is a declared-write-path field, but the normalise loop iterates _MANIFEST_LIST_KEYS alone, so a joined orientation_write_paths is still read as one entry by parse_manifest; reckon/crew/dispatch_sessions.py:388 mitigates it as an orientation mismatch.",
+  "review_run_id": "r-20261019T175636640019-review-of-a-joined-path-list-is-refused-f86d14645a83",
+  "reviewed_base_sha": "e1655c04736d7ea21f82533ec9f0f23288f02483",
+  "reviewed_head_sha": "f86d14645a83a5d65c02e2d08b609ded677059e2",
+  "reviewed_run_id": "r-20261019T172337901170-a-joined-path-list-is-refused",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T18:09:52.571933+00:00",
+  "total": 113
+}
