@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:85 crew merge reaches merge.land_merge with no verify seam",
+    "reckon/crew_run_commands.py:2282 _land_a_promoted_run calls merge_module.land, which hands its marker check to land_merge"
+  ],
+  "completed_at": "2026-10-19T17:34:09.672Z",
+  "dispatched_at": "2026-10-19T17:25:55Z",
+  "findings": [
+    {
+      "file": "reckon/crew/merge.py",
+      "line": "593",
+      "severity": "follow-on",
+      "text": "follow-on: the refactor moves the report construction into land_merge, so a push that fails after the fast-forward raises MergePushOutstandingError with a report that no longer carries the survived block land used to attach before pushing; no production consumer reads survived from that error (reckon/crew_run_commands.py:2287 reads only head, commit and base), so it is recorded rather than repaired."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T143650682729-cso-one-call-lands-a-run/gate-arm-head.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T143650682729-cso-one-call-lands-a-run/gate-arm-base.log"
+  },
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit from 5fc6243b3 to b57fb26de; f7000dee5 gives land_merge a verify seam (reckon/crew/merge.py:449,:505-506) and reduces land to a thin caller (:549-613) plus two tests, 86aac43a8 and b57fb26de update the evidence fragment's landing paragraph and gate paragraph.",
+    "done_when": "the done-when names tests/test_one_call_lands_a_run.py building a temporary repository with a bare remote and a finished run whose marker reaches the primary branch; tests/test_one_call_lands_a_run.py:179-200 assert the marker on main, the remote ref equal to the local one and the released worktree, :203-231 the dropped-merge refusal, and the gate arm ran at b57fb26de.",
+    "goal": "the source node's goal is a crew complete --land that merges the reviewed head, checks the change's markers survived, pushes and releases; reckon/crew/merge.py:549 land is now a thin caller of land_merge (:438) with its marker check handed through the verify seam at :505.",
+    "manifest": "read; it records the repair round's commits f7000dee5, 86aac43a8, b57fb26de, the gate arm at b57fb26de (1 failed, 126 passed) against the base at 1eb8d8dc6 (1 failed, 121 passed), and the two revert logs that answer the prior findings.",
+    "write_paths": "the source node's declared paths are reckon/crew_run_commands.py, reckon/crew/merge.py, reckon/crew/promotion_release.py, tests/test_one_call_lands_a_run.py and the evidence fragment; the diff 5fc6243b3..b57fb26de touches exactly reckon/crew/merge.py, tests/test_one_call_lands_a_run.py and the fragment, all inside."
+  },
+  "justifications": {
+    "durability": "tests/test_one_call_lands_a_run.py:281 asserts the module holds one quoted \"--ff-only\", which revert-f76.log shows reddening (assert 2 == 1) when f7000dee5 is reverted, and the source-length assertion at :282-284 reddens on the same revert, where land is 108 lines and land_merge 93.",
+    "evidence": "gate-arm-head.log's first line names b57fb26de, the manifest's recorded head, and its last line reports 1 failed, 126 passed against gate-arm-base.log's 1 failed, 121 passed at 1eb8d8dc6, so the arm adds no failure.",
+    "fit": "reckon/crew/merge.py:449 adds the verify keyword beside the module's existing keyword-only parameters at :438, and the new names (verify, _refuse_a_dropped_change) are short and carry no plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/merge.py:549 land still lands, checks the change's markers and pushes, now through land_merge's verify seam at :505-506, so the shipped behaviour is unchanged.",
+    "reuse": "reckon/crew/merge.py:438 land_merge is the owner of the landing loop and land now extends it through the verify seam rather than copying it, and a capability search for a second fast-forward landing loop over reckon/ found only this one.",
+    "scope_discipline": "the diff 5fc6243b3..b57fb26de touches only reckon/crew/merge.py, tests/test_one_call_lands_a_run.py and the evidence fragment, every one a declared write path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is a crew complete --land that merges the reviewed head, checks the change's markers survived, pushes and releases; reckon/crew/merge.py:549 land is now a thin caller of land_merge (:438) with its marker check handed through the verify seam at :505.\nVERDICT done_when: the done-when names tests/test_one_call_lands_a_run.py building a temporary repository with a bare remote and a finished run whose marker reaches the primary branch; tests/test_one_call_lands_a_run.py:179-200 assert the marker on main, the remote ref equal to the local one and the released worktree, :203-231 the dropped-merge refusal, and the gate arm ran at b57fb26de.\nVERDICT write_paths: the source node's declared paths are reckon/crew_run_commands.py, reckon/crew/merge.py, reckon/crew/promotion_release.py, tests/test_one_call_lands_a_run.py and the evidence fragment; the diff 5fc6243b3..b57fb26de touches exactly reckon/crew/merge.py, tests/test_one_call_lands_a_run.py and the fragment, all inside.\nVERDICT manifest: read; it records the repair round's commits f7000dee5, 86aac43a8, b57fb26de, the gate arm at b57fb26de (1 failed, 126 passed) against the base at 1eb8d8dc6 (1 failed, 121 passed), and the two revert logs that answer the prior findings.\nVERDICT diff: read commit by commit from 5fc6243b3 to b57fb26de; f7000dee5 gives land_merge a verify seam (reckon/crew/merge.py:449,:505-506) and reduces land to a thin caller (:549-613) plus two tests, 86aac43a8 and b57fb26de update the evidence fragment's landing paragraph and gate paragraph.\nCALL_SITES: reckon/crew_run_commands.py:85 crew merge reaches merge.land_merge with no verify seam, reckon/crew_run_commands.py:2282 _land_a_promoted_run calls merge_module.land, which hands its marker check to land_merge\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/merge.py:549 land still lands, checks the change's markers and pushes, now through land_merge's verify seam at :505-506, so the shipped behaviour is unchanged.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-arm-head.log's first line names b57fb26de, the manifest's recorded head, and its last line reports 1 failed, 126 passed against gate-arm-base.log's 1 failed, 121 passed at 1eb8d8dc6, so the arm adds no failure.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff 5fc6243b3..b57fb26de touches only reckon/crew/merge.py, tests/test_one_call_lands_a_run.py and the evidence fragment, every one a declared write path.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_one_call_lands_a_run.py:281 asserts the module holds one quoted \"--ff-only\", which revert-f76.log shows reddening (assert 2 == 1) when f7000dee5 is reverted, and the source-length assertion at :282-284 reddens on the same revert, where land is 108 lines and land_merge 93.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/merge.py:449 adds the verify keyword beside the module's existing keyword-only parameters at :438, and the new names (verify, _refuse_a_dropped_change) are short and carry no plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/merge.py:438 land_merge is the owner of the landing loop and land now extends it through the verify seam rather than copying it, and a capability search for a second fast-forward landing loop over reckon/ found only this one.\nFINDING reckon/crew/merge.py:593 follow-on: the refactor moves the report construction into land_merge, so a push that fails after the fast-forward raises MergePushOutstandingError with a report that no longer carries the survived block land used to attach before pushing; no production consumer reads survived from that error (reckon/crew_run_commands.py:2287 reads only head, commit and base), so it is recorded rather than repaired.\n",
+  "review_run_id": "r-20261019T172514871247-review-of-cso-one-call-lands-a-run-b57fb26de543",
+  "reviewed_base_sha": "5fc6243b361f8c924cef46ef13a788e485c5c8a7",
+  "reviewed_head_sha": "b57fb26de543ff9c22ec77542026353086a10845",
+  "reviewed_run_id": "r-20261019T143650682729-cso-one-call-lands-a-run",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T17:34:00+00:00",
+  "total": 115
+}
