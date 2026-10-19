@@ -47,10 +47,8 @@ import logging
 import mimetypes
 import os
 import re
-import select
 import shutil
 import socket
-import struct
 import subprocess
 import sys
 import threading
