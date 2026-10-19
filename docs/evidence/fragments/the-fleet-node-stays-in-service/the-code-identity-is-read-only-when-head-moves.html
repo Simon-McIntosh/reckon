@@ -71,6 +71,20 @@
   failure could not surface and the check was red. The hold being scoped to the process's
   own root is what keeps that failure path reachable.</p>
 
+  <h3 id="the-code-identity-is-read-only-when-head-moves-cohort">The existing cohort</h3>
+  <p>The 25 existing test files that exercise <code>source_code_identity</code> or
+  <code>follower_code_stamp</code> were run at both revisions, one log each, in place on the
+  same host. No failure is added.</p>
+  <table>
+    <thead><tr><th>Arm</th><th>Result</th><th>Failing test</th></tr></thead>
+    <tbody>
+      <tr><td>Base <code>3b652d4b</code></td><td><code>1 failed, 164 passed</code> (<code>EXIT=1</code>)</td><td><code>test_follower_freshness.py::test_running_follower_reloads_without_stream_or_registration_gap</code></td></tr>
+      <tr><td>This change</td><td><code>1 failed, 164 passed</code> (<code>EXIT=1</code>)</td><td>the same test, at the same position in the progress line</td></tr>
+    </tbody>
+  </table>
+  <p>Both arms carry the same single failure, which reproduces at the base revision, so it is
+  pre-existing and outside this change; it is reported rather than repaired here.</p>
+
   <h3 id="the-code-identity-is-read-only-when-head-moves-negative-control">Negative control</h3>
   <p>Declared mutation applied to a scratch extraction of the head revision:
   <em>a commit touching nothing under</em> <code>reckon/</code> <em>or</em> <code>skills/</code>
