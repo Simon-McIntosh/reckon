@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-informs" content="consumers-read-reckon-through-verbs">
-  <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s3&quot;], &quot;s5&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s4&quot;, &quot;the-crew-surface-is-one-tool-and-a-few-verbs#s6&quot;, &quot;every-plan-write-goes-through-edit-plan#s3&quot;], &quot;s6&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s2&quot;, &quot;the-crew-surface-is-one-tool-and-a-few-verbs#s4&quot;], &quot;s7&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s6&quot;], &quot;s8&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s7&quot;]}">
+  <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s3&quot;], &quot;s5&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s4&quot;, &quot;the-crew-surface-is-one-tool-and-a-few-verbs#s6&quot;, &quot;every-plan-write-goes-through-edit-plan#s3&quot;], &quot;s6&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s2&quot;, &quot;the-crew-surface-is-one-tool-and-a-few-verbs#s4&quot;], &quot;s7&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s6&quot;, &quot;the-crew-surface-is-one-tool-and-a-few-verbs#s5&quot;], &quot;s8&quot;: [&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s7&quot;]}">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>The Crew Surface Is One Tool And A Few Verbs | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="8">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -203,18 +203,35 @@
         it; both go through the claim owner, <code>narrow_claim</code> and <code>release_claim</code> in <code>reckon/crew/claims.py</code>.</li>
       <li><code>crew watch --stop</code>.</li>
     </ul>
-    <p>Each removed name gets a tombstone row. <code>repair-completion</code> and <code>split-runs</code> are deleted once the node shows
-      their migrations have no input left on any mounted project. <code>crew merge</code> is tombstoned, naming
-      <code>crew complete --land</code>, when §4's evidence counts no merge of a head that no run produced in the last thirty days. Every
-      citation of a folded name in reckon's skills, references and agent files moves to its new form in the same node.</p>
-    <p><strong>Done when</strong> <code>tests/test_crew_families_fold.py</code> checks three things. Every old invocation in the table prints
-      its successor through its tombstone. Each successor gives the same answer the old verb gave at the node's base; the node captures those
-      answers as fixtures before changing anything. The visible leaf count read from the command tree, tombstones excluded, is at most the base count minus the folded
-      names plus the three parent verbs this section adds (<code>crew repair</code>, <code>crew budget</code>, <code>crew check</code>), and
-      one fewer again when <code>crew merge</code> is tombstoned. The negative control alters one successor's answer, and that case then fails. The help-contract tests,
-      <code>tests/test_cited_commands_exist.py</code> and <code>tests/test_every_module_fits_a_worker_window.py</code> pass. Write paths:
-      <code>reckon/crew_run_commands.py</code>, <code>reckon/crew_dispatch_commands.py</code>, <code>reckon/crew/tombstones.py</code>,
-      <code>reckon/crew/claims.py</code>, <code>reckon/crew/gc.py</code>,
+    <p>Each folded name gets a tombstone row. <code>crew merge</code> is tombstoned, naming <code>crew complete --land</code>, when §4's
+      evidence counts no merge of a head that no run produced in the last thirty days. <code>repair-completion</code> and
+      <code>split-runs</code> are deleted, not tombstoned, once the node shows their migrations have no input left on any mounted project, so
+      they carry no successor.</p>
+    <p>Every place that names a folded verb moves to its new form in the same node. That covers reckon's skills, references and agent files,
+      and the command strings five modules build: <code>reckon/crew/prompts.py</code> (<code>check-manifest</code>),
+      <code>reckon/crew/refusals.py</code> (<code>preflight</code>, <code>resume-ready</code>), <code>reckon/crew/watch_unit.py</code>
+      (<code>unwatch</code>), <code>reckon/crew/recovery_review_subject.py</code> (<code>check-review</code>) and
+      <code>reckon/crew/obligations.py</code> (<code>repair-review</code>). <code>obligations.py</code> is also §5's, so this section waits on
+      §5.</p>
+    <p><strong>Done when</strong> <code>tests/test_crew_families_fold.py</code> checks four things:</p>
+    <ul>
+      <li>Every old invocation in the table except the two deleted names prints its successor through its tombstone.
+        <code>repair-completion</code> and <code>split-runs</code> are absent from both the command tree and the tombstone registry.</li>
+      <li>Each successor gives the same answer the old verb gave at the node's base; the node captures those answers as fixtures before
+        changing anything.</li>
+      <li>No string literal under <code>reckon/</code> names a tombstoned verb as a <code>reckon crew</code> command; a violation is reported
+        with its module and line.</li>
+      <li>The visible leaf count read from the command tree, tombstones excluded, is at most the base count minus the folded and deleted names
+        plus the three parent verbs this section adds (<code>crew repair</code>, <code>crew budget</code>, <code>crew check</code>), and one
+        fewer again when <code>crew merge</code> is tombstoned.</li>
+    </ul>
+    <p>The negative control alters one successor's answer, and that case then fails. The two tests that fail at base because
+      <code>check-review</code> and <code>repair-review</code> lack a help-state row and a skill citation pass once those verbs fold. The
+      help-contract tests, <code>tests/test_cited_commands_exist.py</code> and <code>tests/test_every_module_fits_a_worker_window.py</code>
+      pass. Write paths: <code>reckon/crew_run_commands.py</code>, <code>reckon/crew_dispatch_commands.py</code>,
+      <code>reckon/crew/tombstones.py</code>, <code>reckon/crew/claims.py</code>, <code>reckon/crew/gc.py</code>,
+      <code>reckon/crew/prompts.py</code>, <code>reckon/crew/refusals.py</code>, <code>reckon/crew/watch_unit.py</code>,
+      <code>reckon/crew/recovery_review_subject.py</code>, <code>reckon/crew/obligations.py</code>,
       <code>skills/reckon-build/SKILL.md</code>, <code>skills/reckon-build/references/coordinator-reference.md</code>,
       <code>skills/reckon-build/references/sprint-orchestration.md</code>, <code>skills/reckon-build/references/worker-verification.md</code>,
       <code>skills/reckon-build/references/conditional-guidance.md</code>, <code>skills/reckon-build/references/lane-routing.md</code>,

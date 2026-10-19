@@ -26,7 +26,7 @@
   <title>Every Plan Write Goes Through edit_plan | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -171,22 +171,29 @@
       by appending a followup already resolved "done — no followup", which one called gaming the guard. Closing a plan therefore takes
       several writes whose order is learned from refusals. A plan whose only remaining work waits on the lead is §8's case, which the
       decision <code>deferred-continuation</code> holds; this section needs no decision.</p>
-    <p><strong>Deliverable.</strong> <code>{op:'close', status, outcome, by[, superseded_by]}</code> is one write. It sets a terminal status
-      and resolves every open followup with the outcome. It checks the existing guards together and reports every one that fails: a section
-      still implementable (named), or the evidence record that a terminal status needs (named by path). No guard is removed.</p>
-    <p>The op retires two surfaces, so the vocabulary does not grow net. A <code>set</code> of <code>status</code> to a terminal value
-      (shipped, done, superseded, abandoned) is refused, naming <code>close</code>, and every reckon caller that sets one moves to
-      <code>close</code> in the same node, including the instructions in
-      <code>skills/reckon-build/references/coordinator-reference.md</code> and the plan-state checklist in <code>AGENTS.md</code>. The
-      resolved-placeholder recipe goes too: <code>skills/reckon-edit/SKILL.md</code> and
-      <code>skills/reckon-build/SKILL.md</code> describe <code>close</code> and drop it.</p>
+    <p><strong>Deliverable.</strong> <code>{op:'close', status, outcome, by[, superseded_by]}</code> is one write. It sets any status in
+      <code>TERMINAL_STATUSES</code> (<code>reckon/lifecycle.py</code>) and resolves every open followup with the outcome. It runs every guard
+      a terminal transition fires and reports each one that fails, together:</p>
+    <ul>
+      <li>a section still implementable, named;</li>
+      <li>the evidence record that a terminal status needs, named by path;</li>
+      <li>a pending transition gate (<code>_require_transition_verdict</code>);</li>
+      <li>an appended followup that hides work (<code>_refuse_appended_hiding_followups</code>).</li>
+    </ul>
+    <p>No guard is removed. The vocabulary gains one verb and <code>set</code> loses its terminal path: a <code>set</code> of
+      <code>status</code> to any value in <code>TERMINAL_STATUSES</code> is refused, naming <code>close</code>, and every reckon caller that
+      sets one moves to <code>close</code> in the same node. The resolved-placeholder recipe is dropped where it lives:
+      <code>skills/reckon-build/references/coordinator-reference.md</code>, <code>skills/reckon-build/references/sprint-orchestration.md</code>
+      and <code>AGENTS.md</code>. <code>skills/reckon-edit/SKILL.md</code> documents <code>close</code> in its op table.</p>
     <p><strong>Done when</strong> <code>tests/test_a_plan_closes_in_one_op.py</code> passes three cases. A plan whose sections are done and
       whose evidence record exists closes in one version step, with every followup resolved and no placeholder followup appended. A plan with
-      an implementable section and no evidence record is refused, naming that section and the missing record in the same answer. A
-      <code>set status shipped</code> is refused naming <code>close</code>. The negative control reports only the first failing guard, and the
-      second case then fails for the guard it omits. Write paths: <code>reckon/_store.py</code>, <code>reckon/_store_section_ops.py</code>,
-      <code>reckon/mcp.py</code>, <code>skills/reckon-edit/SKILL.md</code>, <code>skills/reckon-build/SKILL.md</code>,
-      <code>skills/reckon-build/references/coordinator-reference.md</code>, <code>AGENTS.md</code>,
+      an implementable section, no evidence record and a pending transition gate is refused, naming all three in the same answer. A
+      <code>set</code> of <code>status</code> to each value of <code>TERMINAL_STATUSES</code>, imported from <code>reckon/lifecycle.py</code>
+      rather than listed, is refused naming <code>close</code>. The negative control reports only the first failing guard, and the second case
+      then fails for the guards it omits. Write paths: <code>reckon/_store.py</code>, <code>reckon/_store_section_ops.py</code>,
+      <code>reckon/mcp.py</code>, <code>skills/reckon-edit/SKILL.md</code>,
+      <code>skills/reckon-build/references/coordinator-reference.md</code>,
+      <code>skills/reckon-build/references/sprint-orchestration.md</code>, <code>AGENTS.md</code>,
       <code>tests/test_a_plan_closes_in_one_op.py</code>.</p>
 
     <h2 id="s7">§7 — A refused or late write names the next step</h2>

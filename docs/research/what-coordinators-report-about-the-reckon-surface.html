@@ -132,10 +132,15 @@
       the command line carries only overrides (imas-ambix 4fd309f5, fa77649b); <code>crew merge</code> pushing over port 22 from a compute node
       (reckon 67139f13); and SQLite <code>database is locked</code> inside <code>complete</code> and <code>verify-gate</code>, which a plain
       retry clears (reckon 67139f13, 7a8f07c4).</p>
-    <p>One defect arrived after the round, from power_convertor on 2026-10-19. The automatic review of a run dispatched with
-      <code>--backend codex</code> ran on codex (<code>r-20261019T044201986969-review-of-tf-supply-circuit-bd77c20bf092</code>), although the
-      host flight lists codex under <code>review_excluded_backends</code>. The review inherited the reviewed run's named lane instead of being
-      routed again. Reviews of local-lane runs ran locally as expected. It belongs to <a href="/reckon/lane-and-model-routing">lane-and-model-routing</a>.</p>
+    <p>One defect arrived after the round, from power_convertor on 2026-10-19. It was first reported as an automatic review inheriting its
+      reviewed run's named lane in breach of <code>review_excluded_backends</code>. Two instances were cited:
+      <code>r-20261019T044201986969-review-of-tf-supply-circuit-bd77c20bf092</code> ran on codex, and
+      <code>r-20261019T062910397475-review-of-correction-coil-supplies-e58b86598eee</code> failed in six seconds with "Selected model is at
+      capacity". The coordinator of <a href="/reckon/lane-and-model-routing">lane-and-model-routing</a> corrected the reading. power_convertor's
+      own flight sets <code>review_excluded_backends</code> to claude and native, opening codex to its reviews by the lead's choice. So the lane
+      was allowed. The defect is narrower. The review reflex composes the review with the owning lane as <code>backend_override</code> and
+      deterministic routing, so the picker never chooses a model inside the lane and every such review launches the lane's default model.
+      Separately, a capacity refusal is not retried on another model of the lane. lane-and-model-routing has taken the fix.</p>
 
     <h2 id="s5">§5 — The reports</h2>
     <p>Reproduced as delivered, one per coordinator session.</p>
