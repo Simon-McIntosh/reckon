@@ -116,6 +116,12 @@ _FOLLOWER_CHECKPOINT_ENV = "RECKON_FOLLOWER_CHECKPOINT"
 _FOLLOWER_SOURCE_ROOT_ENV = "RECKON_FOLLOWER_SOURCE_ROOT"
 _FOLLOWER_IMAGE_COMMIT_ENV = "RECKON_FOLLOWER_IMAGE_COMMIT"
 _FOLLOWER_IMAGE_PIN_ENV = "RECKON_FOLLOWER_IMAGE_PIN"
+# The interpreter the host shims start: a reload image has no ``.venv`` of its
+# own, so the srun/sbatch/salloc/git shims fall back to a bare ``python3.12``
+# on ``PATH`` that cannot import the package's dependencies unless the reloaded
+# process names the interpreter it runs under. Carried across the exec so every
+# shim the replacement invokes resolves it before any system interpreter.
+_SHIM_PYTHON_ENV = "RECKON_SHIM_PYTHON"
 
 
 
@@ -567,6 +573,13 @@ class _FollowerReloader:
             if self.replacement_pin is not None:
                 os.set_inheritable(self.replacement_pin, True)
                 exec_environment[_FOLLOWER_IMAGE_PIN_ENV] = str(self.replacement_pin)
+            # A reload image holds only the package, so its shims find no
+            # ``.venv`` and fall through to a system Python that cannot import
+            # the package's dependencies. Hand the image the interpreter this
+            # process runs under so every shim it launches starts there instead.
+            # An interpreter a caller already named is left as it stands.
+            if not exec_environment.get(_SHIM_PYTHON_ENV):
+                exec_environment[_SHIM_PYTHON_ENV] = sys.executable
         if not self.seat:
             # The reader's place reaches the replacement image through the
             # mapping this exec passes and never through ``os.environ``: every
