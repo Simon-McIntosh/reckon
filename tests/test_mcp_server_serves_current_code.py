@@ -13,10 +13,11 @@ When a call does fail and the checkout has moved and can be trusted, the server
 answers it on the current code rather than refusing: a stdio server's client
 holds the session this process initialised, so the image cannot be replaced the
 way the HTTP server replaces its own, and the call is run against the checkout
-in a child interpreter whose answer stands in for the stale image's. A call the
-current code also fails is not the stale image's failure, so the reconnect
-refusal is then the answer. A tool whose parameters changed is always refused,
-naming that tool, because the client holds the schema it connected with.
+in a child interpreter whose answer stands in for the stale image's. Whatever
+that child answers is the caller's answer, a failure as much as a success,
+because a reconnect would only deliver the current code's same failure a turn
+later. A tool whose parameters changed is the one refusal, naming that tool,
+because the client holds the schema it connected with.
 
 Each test runs a server over its own copy of the package in a temp directory,
 in a fresh interpreter, so nothing here reads the checkout it lives in.
@@ -72,15 +73,15 @@ async def edit_plan():
 # The change a checkout ahead of the running image carries. ``answers`` makes
 # edit_plan return an answer the running image never could; ``signature``
 # changes the tool's parameter list, which no in-process answer can cover.
+# The answer is patched below the registered tool, on the sync function the
+# tool calls: wrapping the registered tool itself changes how the tool manager
+# classifies it and the call is then never awaited.
 _ANSWERS = """
 
 # the checkout ahead of the running image answers this call
-import functools
-
-_edit_plan_tool_before_the_change = _edit_plan_tool
-@functools.wraps(_edit_plan_tool_before_the_change)
-async def _edit_plan_tool(*args, **kwargs):  # noqa: F811
-    result = await _edit_plan_tool_before_the_change(*args, **kwargs)
+_edit_plan_before_the_change = _edit_plan
+def _edit_plan(*args, **kwargs):  # noqa: F811
+    result = _edit_plan_before_the_change(*args, **kwargs)
     if isinstance(result, dict) and result.get("ok") is False:
         return {"ok": True, "served_by": "current code", "was": result.get("error")}
     return result
