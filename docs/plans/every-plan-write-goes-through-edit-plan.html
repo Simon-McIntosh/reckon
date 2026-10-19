@@ -26,7 +26,7 @@
   <title>Every Plan Write Goes Through edit_plan | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="12">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -192,11 +192,11 @@
       rather than listed, is refused naming <code>close</code>. The negative control reports only the first failing guard, and the second case
       then fails for the guards it omits.</p>
     <p>The refusal changes a write existing tests use as their subject. Before changing anything, the node greps <code>tests/</code> and
-      <code>reckon/</code> at its base for every write of a terminal status. Every hit moves to <code>close</code> in the same node, and every
+      <code>reckon/</code> at its base for every write of a terminal plan status (a sprint's or an inventory row's status is not one). Every hit moves to <code>close</code> in the same node, and every
       test file it touches passes. A hit in a file outside the write paths below stops the node as blocked, naming the file, so the
       coordinator can widen its fence. The base already shows <code>tests/test_terminal_status_needs_every_section_ticked.py</code>,
       <code>tests/test_every_section_has_a_declaration.py</code>, <code>tests/test_closure_gates.py</code> and
-      <code>tests/test_continuation.py</code>. The gate log also carries a grep of the three recipe files and
+      <code>tests/test_continuation.py</code> and <code>tests/test_edit_plan.py</code>. The gate log also carries a grep of the three recipe files and
       <code>skills/reckon-create/SKILL.md</code> for an instruction to append a resolved placeholder followup or to set a terminal status, which
       finds none. Write paths: <code>reckon/_store.py</code>, <code>reckon/_store_section_ops.py</code>,
       <code>reckon/mcp.py</code>, <code>skills/reckon-edit/SKILL.md</code>,
@@ -204,7 +204,7 @@
       <code>skills/reckon-build/references/sprint-orchestration.md</code>, <code>AGENTS.md</code>,
       <code>skills/reckon-create/SKILL.md</code>, <code>tests/test_terminal_status_needs_every_section_ticked.py</code>,
       <code>tests/test_every_section_has_a_declaration.py</code>, <code>tests/test_closure_gates.py</code>,
-      <code>tests/test_continuation.py</code>, <code>tests/test_a_plan_closes_in_one_op.py</code>.</p>
+      <code>tests/test_continuation.py</code>, <code>tests/test_edit_plan.py</code>, <code>tests/test_a_plan_closes_in_one_op.py</code>.</p>
 
     <h2 id="s7">§7 — A refused or late write names the next step</h2>
 <section data-reckon="section" data-id="s7" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
@@ -284,7 +284,7 @@
     <div class="r-comment-body"><p>§2 landed: no skill or agent file tells a coordinator to set <code>impl</code>, and the widened contract test holds every op the skills cite against the store (commits <code>5f0a050eb</code>, <code>d0bdc8598</code>, <code>2b1dfdcb1</code>); zero added failures; reviewed 105/120. <a href="/reckon/evidence/archive/every-plan-write-goes-through-edit-plan-landed.html#s2">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261019T060159939214-epw-skills-cite-accepted-ops" data-who="reckon-build" data-when="2026-10-19T06:47:49Z">
-    <div class="r-comment-body"><p>Corrected the impl guidance in the five files (impl now derives from the section records and moves when a section&#x27;s declaration moves to done; section effort is quarter hours; section risk values listed) and widened the extract-and-apply harness in tests/test_skill_contracts.py to every documented op object and every op-reference `set` row path, with both sweeps applying through a single helper (_apply_example, retired the duplicated _apply_documented_op) and the op-object sweep carrying a positive floor of at least one op object from under skills/. Gate at the committed head: 74 passed / 1 pre-existing failure (0 added against base). Two negative controls: restoring impl to the `set` row names skills/reckon-edit/SKILL.md; pointing the extractor at an empty corpus fails the floor, naming the empty source.</p></div>
+    <div class="r-comment-body"><p>Corrected the impl guidance in the five files (impl now derives from the section records and moves when a section's declaration moves to done; section effort is quarter hours; section risk values listed) and widened the extract-and-apply harness in tests/test_skill_contracts.py to every documented op object and every op-reference `set` row path, with both sweeps applying through a single helper (_apply_example, retired the duplicated _apply_documented_op) and the op-object sweep carrying a positive floor of at least one op object from under skills/. Gate at the committed head: 74 passed / 1 pre-existing failure (0 added against base). Two negative controls: restoring impl to the `set` row names skills/reckon-edit/SKILL.md; pointing the extractor at an empty corpus fails the floor, naming the empty source.</p></div>
 </div>
 </section>
 </main>
