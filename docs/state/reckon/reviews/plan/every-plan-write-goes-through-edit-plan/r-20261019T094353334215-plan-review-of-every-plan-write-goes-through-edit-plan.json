@@ -1,0 +1,85 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T09:58:38.813Z",
+  "dispatched_at": "2026-10-19T09:45:13Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-plan-write-goes-through-edit-plan.html:24",
+      "id": "wiring-1",
+      "reason": "without an edge \u00a79 is unordered ready work in the roadmap and discharges concurrently with \u00a74/\u00a75/\u00a76 onto one file, exactly the scope conflict the s4\u2026s8 chain was declared to avoid.",
+      "text": "`plan-section-depends-on` runs `s4\u2190s2,s3; s5\u2190s4; s6\u2190s5; s7\u2190s6; s8\u2190s7`; \u00a79 writes `reckon/mcp.py`, a file \u00a74 (line 132), \u00a75 (line 165) and \u00a76 (line 201) also write, and it appears in no edge, so it is ready the moment \u00a72/\u00a73 close and will be dispatched beside \u00a74\u2013\u00a76 on the same file \u2014 the collision the rest of the chain exists to prevent",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-plan-write-goes-through-edit-plan.html:176",
+      "id": "reasoning-1",
+      "reason": "the enumeration is the node's specification for what `close` reports, and one guard the same transition fires is missing from it, so the mechanism as written need not produce the done-when (a plan with no chain-closing outcome) and the section's stated completeness is wrong.",
+      "text": "\u00a76 states the `close` op \"runs every guard a terminal transition fires and reports each one that fails, together\" and lists four, but a transition to a landed status (`shipped`/`done`) also fires `continuation_present`, raising `CONTINUATION_REQUIRED` (`reckon/_store.py:3441`) \u2014 the guard \u00a76 exists to retire \u2014 so a node wiring only the listed four leaves a close to a terminal status able to be refused by an un-reported guard, and the section never states that `close`'s `outcome` must be chain-closing for the write to land",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b35b452735b58d2cf909649086972055748527719fb113387814bdbf5dfa2b4a",
+  "plan_slug": "every-plan-write-goes-through-edit-plan",
+  "plan_version": 15,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-19T10:00:23.098449+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-19T10:00:47.228839+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T10:00:47.228839+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T10:00:23.098449+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-plan-write-goes-through-edit-plan.v15.json",
+  "review_run_id": "r-20261019T094353334215-plan-review-of-every-plan-write-goes-through-edit-plan",
+  "reviewed_blob_sha": "d4c2ee548cad8b197466c5a06f891cfe5fde0444",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/lifecycle.py`, `reckon/mcp.py`, the five terminal-status test files listed at line 197-199, `tests/test_mcp_server_serves_current_code.py`, and the four recipe files (\u00a76 line 186-187) all resolve on disk.",
+    "done_when": "pass \u2014 \u00a76's three cases and \u00a79's three cases each name a measurable outcome and a declared negative control (truncating the guard report to the first failure; removing the branch each case covers), and each can fail.",
+    "evidence_paths": "pass \u2014 \u00a76 lands through the plan's evidence record under `docs/evidence/archive/`, which resolves, and \u00a79 names its gate log and `EXIT=0`; no session scratchpad or node-local temporary path is named.",
+    "naming": "pass \u2014 \u00a76 and \u00a79 carry no plan labels, ticket numbers or version tags into code; the names they introduce (`close`, `serves_by_code_stamp`, the test file) are by mechanism.",
+    "reasoning": "a finding \u2014 \u00a76's guard enumeration is presented as the complete set a terminal transition fires and omits the continuation guard.",
+    "single_goal": "pass \u2014 \u00a76 carries one deliverable (the `close` op and the removal of `set status`'s terminal path); \u00a79 one (cases for the reload's unreached branches).",
+    "wiring": "a finding \u2014 `plan-section-depends-on` (`docs/plans/every-plan-write-goes-through-edit-plan.html:24`) declares no edge for `s9`, though \u00a79 writes `reckon/mcp.py`, which \u00a74, \u00a75 and \u00a76 also write."
+  },
+  "section_digests": {
+    "_document": "aea24b8be36466854f5f5e1fec63f708605f2a200a01ed0c8f89462e621467e8",
+    "s1": "7f96df198aae5b46c87f2d18f8eff17398ead36155ee67ba73607e91aa1d2fe3",
+    "s2": "737250903251177035b357be3d656b549480337bc454f97615634dada495e251",
+    "s3": "4150e9281b9c0fe1173e9c23f5582efb0662d22f1d36944861d3033f988d479c",
+    "s4": "e0390ff35ac5e425fa3060cede9882af598c54dc89e0a6069101b3971f8e8367",
+    "s5": "699b049fe374b1219d8b917168575594a5bcb9255bbe13efdbf1d0c928562a86",
+    "s6": "5092d9112888c910b778b8e17d585b02aaad16416945dfb485a8fd729582c4a2",
+    "s7": "80062db679255aff5087534386e7372545e1cd3414916db8329aec79a1a8388d",
+    "s8": "f9dd6299834b4d039fd1f45b37141d5e265075b4cfd7f341357bea21196f5b35",
+    "s9": "bd2c3090ecc9a89ad8c0b2f7312aae077382dd2709954d9e27f449e984d622a8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T10:00:15.391926+00:00"
+}
