@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-paired-arm-is-reviewed-as-itself">
   <meta name="plan-title" content="A Paired Arm Is Reviewed As Itself">
   <meta name="plan-summary" content="Both arms of a pair share a node id, so the composed review of one arm resolves to its partner; a paired arm&#x27;s review must name the arm by its run id.">
-  <meta name="plan-status" content="done">
+  <meta name="plan-status" content="active">
   <meta name="plan-roi" content="mid">
   <meta name="plan-effort-hours" content="1.0">
   <meta name="plan-capability-version" content="1.0">
@@ -20,13 +20,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-standalone" content="It repairs review composition for the landed paired dispatch of a-shadow-cannot-see-its-primary; no live plan waits on it, and it consumes no plan&#x27;s pending evidence.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s2&quot;: [&quot;a-paired-arm-is-reviewed-as-itself#s1&quot;]}">
   <title>A Paired Arm Is Reviewed As Itself | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="16">
-<meta name="plan-modified" content="2026-10-18">
+<meta name="plan-version" content="17">
+<meta name="plan-modified" content="2026-10-20">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
 <body>
@@ -85,6 +85,36 @@ The test writes nothing outside its temporary directory.</li>
 </ul>
 <p><strong>Negative control.</strong> With the shadow block removed from <code>_review_brief_text</code>, the first case must fail. With the block appended for every paired arm rather than for a shadow, the third case must fail. Each control runs under pytest with its default short summary, so its log lists the failing test id.</p>
 
+    <h2 id="s3">§3 — A promoted run&#x27;s review resolves its run</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> On 2026-10-19 power_convertor discarded the first review of <code>r-20261019T214532819779-cs1-ripple-window</code>, then promoted that run with <code>--waive-unreviewed-promotion</code>. Re-attaching the review with the obligation's own command was refused as not-dispatchable on the <code>scoped</code> property. The command used node id <code>review-of-cs1-ripple-window-a317532bd536</code>, and the refusal said that review "reviews run cs1-ripple-window and may write only that run's record directory". The run's <code>review-records/</code> directory exists. The same review dispatched as <code>review-of-r-20261019T214532819779-cs1-ripple-window-a317532bd536</code> launched (<code>r-20261019T233949612668-…</code>).</p>
+<p>The cause is that an unpaired run's review node id is minted from the run's node id, which §1 left unchanged. <code>_resolved_reviewed_run_id</code> (<code>reckon/crew/recovery_review_delivery.py:220</code>) returns a run-id source as it is, and matches any other source against live pointers only (lines 248 to 254). When none matches, it returns the bare source. A promoted run has no live pointer. So <code>_reviewed_run_id_for_node</code> (<code>reckon/crew/dispatch_admission.py</code>) hands <code>_review_record_directory_grant</code> a bare node id, which names no run directory, and nothing is granted. The resolver's other readers, the delivery reader among them, resolve the same way. A queued review that the admit service launches after its run has been promoted meets the same refusal.</p>
+<p><strong>Remedy.</strong> When no live pointer carries the source node id, <code>_resolved_reviewed_run_id</code> resolves it over the durable run records whose node id is that source.</p>
+<ul>
+<li>The review node id's head suffix chooses among them. Read the suffix with <code>round_node_head_suffix</code> (<code>reckon/crew/repair.py:331</code>). A record matches when the head <code>_run_head_for_review</code> (<code>reckon/crew/recovery_review_dispatch.py:577</code>) gives for it starts with that suffix. A node id that carries no suffix matches every record carrying its node id.</li>
+<li>Exactly one match resolves to that record's run id. No match, or more than one, returns the bare source, as today, whether or not <code>refuse_ambiguous</code> is set.</li>
+<li>Read the durable records through <code>RunStore</code> in <code>reckon/run_store.py</code>. Add one reader there that selects rows by the <code>node</code> column across projects, because the dispatch grant holds no project. Open the database nowhere else.</li>
+<li>A durable read that raises returns the bare source and never propagates.</li>
+</ul>
+<p>Live pointers are still read first, so every case that resolves today resolves the same way. The grant and the review node ids are unchanged.</p>
+<p><strong>Write paths:</strong> <code>reckon/crew/recovery_review_delivery.py</code>, <code>reckon/run_store.py</code>, the new <code>tests/test_a_promoted_runs_review_resolves_its_run.py</code>, and the node's evidence fragment.</p>
+<p><strong>Done when</strong> all of these hold:</p>
+<ul>
+<li>The new test points the crew home and the run store at a temporary directory. It writes durable run records, with each run's <code>review-records/</code> directory, and no live pointer unless a case says so. It asserts five cases:
+  <ul>
+  <li>One promoted run carries node id <code>solo-node</code> at head <code>H</code>. <code>_reviewed_run_id_for_node("review-of-solo-node-" + H[:12])</code> returns that run's id. <code>_review_record_directory_grant</code> then grants that run's <code>review-records/</code> directory for its declared record path.</li>
+  <li>Two promoted runs carry node id <code>twice-node</code>, the older at head <code>H1</code> and the newer at <code>H2</code>. The node id with <code>H1</code>'s suffix resolves to the older run, and the one with <code>H2</code>'s suffix to the newer. A suffix matching neither head returns the bare source <code>twice-node</code>.</li>
+  <li>Two promoted runs carry node id <code>same-head</code> at one head. The node id with that head's suffix returns the bare source, and the grant refuses.</li>
+  <li>A live pointer carries <code>solo-node</code> beside the durable record. Its run id is returned, as today.</li>
+  <li>With the run-store reader patched to raise, the resolver returns the bare source and raises nothing.</li>
+  </ul>
+The test asserts that the real crew home and the real run store are untouched afterwards.</li>
+<li>Run pytest in the foreground with <code>-rA</code> over the new file, <code>tests/test_a_paired_arm_is_reviewed_as_itself.py</code>, <code>tests/test_a_resumed_head_is_reviewed.py</code>, <code>tests/test_a_run_review_with_run_directory_records_dispatches.py</code>, <code>tests/test_a_review_is_not_refused_for_its_run.py</code>, <code>tests/test_review_reflex_sweep.py</code>, <code>tests/test_run_store.py</code>, <code>tests/test_run_store_backend_query.py</code> and <code>tests/test_every_module_fits_a_worker_window.py</code>. It adds no failure against a base arm run at the dispatched base revision. Both arms' logs go in the run directory, and the manifest's <code>baseline_suite</code> names the base log and its failure ids exactly as pytest prints them.</li>
+<li><code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths, judged by delta against the base blobs.</li>
+</ul>
+<p><strong>Negative control.</strong> Remove the durable fallback, and the first case must fail. Separately, return the newest durable match instead of matching the head suffix, and the second case must fail on the older run. Apply each mutation alone and run it under pytest with the default short summary.</p>
+<p><strong>After it lands.</strong> Run the printed obligation command for the next review composed after its run's promotion. It should dispatch under its node-id form.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-apairas-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-18" data-recommends-skill="/reckon-build a-paired-arm-is-reviewed-as-itself §1" data-resolved-at="2026-10-18T09:37:14+00:00" data-resolved-by="reckon-build">
@@ -104,6 +134,11 @@ The test writes nothing outside its temporary directory.</li>
     <div class="r-fu-body"><p>Both sections have landed: a paired arm's review is named by its run id, with an ambiguous node id refused at the grant, and a shadow is reviewed on its retained patch. The post-merge checks pass.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-paired-arm-is-reviewed-as-itself</pre>
     <p class="r-fu-outcome">done — no followup</p>
+    </article>
+<article class="r-fu" data-id="f-apairas-004" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-build" data-written-at="2026-10-20" data-recommends-skill="/reckon-build a-paired-arm-is-reviewed-as-itself §3" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Resolve a promoted run&#x27;s review without the live fleet</h4>
+    <div class="r-fu-body"><p>Filed after power_convertor's obligation command for the review of a promoted run was refused on <code>scoped</code>: its node id resolves against live pointers only. §3 resolves it over the durable run records, chosen by the review's head suffix.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-paired-arm-is-reviewed-as-itself §3</pre>
     </article>
 </section>
   
