@@ -1,0 +1,80 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T15:36:22.332Z",
+  "dispatched_at": "2026-10-19T15:19:38Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/test-time-is-not-the-nodes-time.html:83",
+      "id": "reasoning-1",
+      "reason": "as written a worker fenced to the listed paths cannot add the multiple to the composed first-attempt prompt without editing a file outside its exclusive scope, so it stops at a scope blocker.",
+      "text": "the write-path list grants `reckon/crew/dispatch_claims.py` as \"the compose_prompt caller, which passes the multiple\", but that module has no access to the `fences` block; the multiple is read from `fences` in `reckon/crew/dispatch.py:1928` (precisely where `needs_help_after_failures` is read) and threaded through `_compose_dispatch_prompt` from `dispatch.py:1918`, and `dispatch.py` is not a granted path",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/test-time-is-not-the-nodes-time.html:79",
+      "id": "reasoning-2",
+      "reason": "the watchdog's absent-multiple behaviour is left undetermined (act at the deadline as now, or go inert), and for an absent multiple the two surfaces the section exists to align would disagree.",
+      "text": "the plan routes both the prompt's hard stop and the watchdog through one `resolved_grace_multiple`, but the reader's contract returns the same \"nothing\" for an absent and for a non-numeric value (line 93), while the plan requires the watchdog to keep today's behaviour (absent \u2192 default 1.0 so it acts at the deadline; invalid \u2192 inert) and to agree with the prompt's hard stop; one \"nothing\" cannot carry that distinction",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "7748d47a745187f83addc18eac3129067427638aed85636da25e71d118db85f4",
+  "plan_slug": "test-time-is-not-the-nodes-time",
+  "plan_version": 16,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-19T15:37:36.557238+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-19T15:37:43.720241+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T15:37:36.557238+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T15:37:43.720241+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-test-time-is-not-the-nodes-time.v16.json",
+  "review_run_id": "r-20261019T151149072831-plan-review-of-test-time-is-not-the-nodes-time",
+  "reviewed_blob_sha": "097a27589051a8f84ebfe242cb11854a385140fd",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every file:line anchor resolves (`prompts.py:382/635/701`, `recovery_stream.py:320/333`, `routing.py:473`, `flight-defaults.yaml:201`, `worker-protocol.md:66/346`, `dispatch_sessions.py:1468`), and the power_convertor ledger at `11b0f9ec` reproduces exactly 163 of 338 implement/test/investigate rows with `attempt_kind: resume`.",
+    "done_when": "pass \u2014 each \u00a73 done-when clause is measurable (prompt states launch+60m and launch+90m; the fence names the checkpoint and bounded step; the stop list drops \"the time budget is spent\"; a resumed fence measures from its own launch) and a negative control is declared (restore \"never push on\"; drop the multiple at the resumed call), under pytest with the default short summary.",
+    "evidence_paths": "pass \u2014 the new test, the three granted test files and the node's evidence fragment are in-repo, and both gate arms' logs are the crew run directory's logs the manifest's `baseline_suite` names, not a session scratchpad.",
+    "naming": "pass \u2014 `test_a_deadline_lets_a_named_batch_finish.py` and `resolved_grace_multiple` name the mechanism, with no plan label, ticket number or version tag.",
+    "reasoning": "a finding \u2014 the grace multiple cannot be resolved on the real prompt-composition path within the declared write scope, and the single-owner reader's contract cannot preserve both the watchdog's absent and invalid behaviour.",
+    "single_goal": "pass \u2014 \u00a73 carries one deliverable, the deadline rule restated at every surface, and the `resolved_grace_multiple` reader exists only to make the prompt's hard stop and the watchdog agree on one instant.",
+    "wiring": "pass \u2014 \u00a73 declares no dependency of its own and is consumed by \u00a72 (`plan-section-depends-on` gives s2 the `test-time-is-not-the-nodes-time#s3` edge), so no dependency \u00a73 needs is missing."
+  },
+  "section_digests": {
+    "_document": "854b9c6a2d9d713b72aae68242f962cf0b223a20d300b4ab11d368bf994f1b41",
+    "s1": "db87e9dc091adc1afc070dc0aef99a3806a457e6dc5e0e2a813fea5769fe65b4",
+    "s2": "5a0fb3df892e6e7a0e3ffe65cb4d4d3141028f5087a91a448c204ff9d28a8d4a",
+    "s3": "9bfdc23a6255c3a517f9706231a34a9ff8c5f7f8100742b3cb28fe184b460ab0",
+    "s4": "3ecba0ba9644607d22d9c2d91dfb3f22042d163919f276abb7f2bfa201173b0a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T15:37:32.407195+00:00"
+}
