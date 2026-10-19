@@ -1,0 +1,96 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "test_a_capacity_refusal_resumes_on_the_model_jev_names asserts 'gpt-6-luna' in argv. It reddens if the swap is not applied to the launch: the negative control that sets capacity_swap = None in resume_plan makes it fail on 'assert \"gpt-6-luna\" in argv' (negative-control.log:45-46), so detection plus swap is load-bearing. The asserted model comes from CONFIG's lane declaration, an independent source from the stub's answer key 'luna'.",
+      "lines": "tests/test_a_capacity_refusal_resumes_on_another_lane_model.py:299-311"
+    },
+    {
+      "failure_condition": "test_another_ending_resumes_on_the_recorded_model[quoted-message] asserts 'gpt-6-sol' in argv with calls == []. It reddens if detection reads the capacity text anywhere rather than from the terminal event: the negative control that widens the match makes it fail (negative-control.log:118-122). An independent fixture stream (item.completed quoting the message, then turn.completed) drives it.",
+      "lines": "tests/test_a_capacity_refusal_resumes_on_another_lane_model.py:423-459"
+    },
+    {
+      "failure_condition": "test_a_left_out_model_is_not_offered_to_the_picker asserts offered == [[\"astra\", \"luna\"]]. It reddens if _config_within_lane stops dropping the excluded key from lanes.<lane>.models: the stub records what the ask was handed, and a regression that left 'sol' in would make offered [\"astra\", \"luna\", \"sol\"].",
+      "lines": "tests/test_a_named_lane_lets_jev_choose_its_model.py:433"
+    },
+    {
+      "failure_condition": "test_a_pick_naming_a_left_out_model_is_refused asserts the applied backends.codex.model stays 'gpt-6-sol'. It reddens if an answer naming the excluded key were applied; the stub answers the key 'sol' and the assertion is on the applied config, an output independent of the stub.",
+      "lines": "tests/test_a_named_lane_lets_jev_choose_its_model.py:464-465"
+    },
+    {
+      "failure_condition": "No added assertion compares a value against the same variable the test passed in. Each asserts an argv token or a written-pointer field against a literal derived from the fixture CONFIG, and both negative controls redden on reinstating the regressed code.",
+      "lines": "tests/test_a_capacity_refusal_resumes_on_another_lane_model.py:309, tests/test_a_named_lane_lets_jev_choose_its_model.py:433"
+    }
+  ],
+  "call_sites": [
+    "reckon/crew_run_commands.py:1579 crew resume -> resume_plan",
+    "reckon/crew/resumption.py:1319 resumption -> resume_plan",
+    "reckon/mcp.py:2378 mcp resume -> resume_plan",
+    "reckon/crew_dispatch_commands.py:1453 lane_model_selection",
+    "reckon/crew/recovery_review_dispatch.py:2052 lane_model_selection"
+  ],
+  "completed_at": "2026-10-19T16:30:36.975Z",
+  "dispatched_at": "2026-10-19T16:18:34Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "valid drift risk, but there is no owner to import: _backends.py:1334 holds the terminal kinds as an inline tuple inside the codex fold, not a named constant; naming it once there is a refactor of _backends.py outside this node's write scope, and the set is the same four kinds the fold reads today",
+      "recorded_at": "2026-10-19T16:32:08.777385+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the promotion records the done-when's eight-file -rA arm as the gate (gate-head.log, its command from after_suite), not the focused two-file run on the tests: line",
+      "recorded_at": "2026-10-19T16:32:22.054089+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "the resume path decides both cases by one membership test, named in others, where others excludes the refused key and every undeclared name alike; the key-shaped refused answer is exercised through lane_model_selection at tests/test_a_named_lane_lets_jev_choose_its_model.py:446",
+      "recorded_at": "2026-10-19T16:32:33.454355+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_sessions.py",
+      "line": "1109",
+      "severity": "follow-on",
+      "text": "follow-on: _TERMINAL_STREAM_KINDS re-declares the terminal-event kind set that reckon/_backends.py already owns. _backends.py:1330-1334 folds turn.completed and ('turn.failed', 'thread.error', 'error', 'stream.error') into obs.terminal, and _backends.py:1426 declares the same pair in classify_stream_failure. The new helper reuses _backends.cached_stream_events and _backends._error_detail but copies the kind set locally, so a terminal kind added to the dialect fold must also be added here or a capacity refusal on a new kind will be missed."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T153521975019-a-capacity-refusal-resumes-on-another-lane-model/manifest.md",
+      "line": "15",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest tests: line and test_logs name only the two-file focused run (pytest -q, gate-focused.log, EXIT=0), while the done_when's eight-file -rA arm lives in baseline_suite/after_suite (gate-base.log, gate-head.log). A promotion receipt re-run from tests: would not reproduce the command the done_when names, so the recorded gate and the required gate are not the same run."
+    },
+    {
+      "file": "tests/test_a_capacity_refusal_resumes_on_another_lane_model.py",
+      "line": "370",
+      "severity": "follow-on",
+      "text": "follow-on: the answers-sol case passes _route('gpt-6-sol'), a model id, but the picker answers a lane model KEY ('sol'), as lane_model_selection itself keys on (dispatch_picker.py:1046-1048). The case therefore exercises the 'answer names an undeclared model' path rather than the 'answer names the refused key' path the done_when names, and would still pass if the refused key were not in others; the key-shaped case is covered separately at tests/test_a_named_lane_lets_jev_choose_its_model.py:446."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Production call sites reached at runtime: reckon/crew_run_commands.py:1579 (crew resume -> resume_plan), reckon/crew/resumption.py:1319 (resumption sweep -> resume_plan), reckon/mcp.py:2378 (mcp resume -> resume_plan), and the two lane_model_selection callers reckon/crew_dispatch_commands.py:1453 and reckon/crew/recovery_review_dispatch.py:2052 that the added exclude argument is threaded through. crew resume --backend does not reach the swap: it routes to change_lane (reckon/crew/dispatch_sessions.py:1638) which builds through plan_dispatch, not resume_plan.",
+    "diff": "Read commit by commit against 1cc0a1a40: one commit d7e392b08 touches five files - dispatch_picker.py (exclude threaded through _config_within_lane and lane_model_selection), dispatch_sessions.py (_latest_attempt_capacity_refusal, _TERMINAL_STREAM_KINDS, _capacity_resume_swap, and the swap applied in resume_plan and captured on the pointer), the new test file, two added cases in the granted test file, and the evidence fragment. All five are inside the declared write paths.",
+    "done_when": "The source brief.md:393-407 done_when names the new test's cases, an eight-file -rA arm adding no failure against a base arm at the dispatched revision with both logs in the run directory, ruff adding no finding, and two negative controls. The manifest records baseline_suite and after_suite (gate-base.log 1 failed 36 passed, gate-head.log 1 failed 47 passed, identical failure id test_every_module_fits_a_worker_window naming review.py and ledger.py, delta zero) and negative-control.log with both mutations red; the two-file tests: line does not name that eight-file arm.",
+    "goal": "The source brief.md:30 sets the goal: resume a run whose latest attempt was refused for model capacity on another model of the same lane. The landed change detects the capacity turn.failed from the recorded stream (dispatch_sessions.py:1076-1104), picks another lane model with the refused key excluded (dispatch_sessions.py:1114-1186), applies the chosen model and effort to the settings resume_plan builds (dispatch_sessions.py:1259-1266), keeps the session id, and records agent.model/model_key plus a model-capacity model_changes entry (dispatch_sessions.py:1382-1405).",
+    "manifest": "Read the source manifest.md: status complete, commits d7e392b08, tests: names the two-file focused -q run (EXIT=0 in gate-focused.log), baseline_suite/after_suite name the eight-file -rA arms, negative_control_log names negative-control.log with both mutations recorded, artifacts and evidence_inputs list the four gate logs, follow_ons and blockers empty.",
+    "write_paths": "The source prompt.txt:69-75 fences dispatch_sessions.py, dispatch_picker.py, the new tests/test_a_capacity_refusal_resumes_on_another_lane_model.py, tests/test_a_named_lane_lets_jev_choose_its_model.py (granted to add cases) and the node's evidence fragment; git diff --stat 1cc0a1a40..d7e392b08 names exactly those five paths and no other."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261019T161756953635-review-of-a-capacity-refusal-resumes-on-another-lane-model-d7e392b088a2",
+  "reviewed_base_sha": "1cc0a1a404db756a70990a4d9b92d31d814eb1fa",
+  "reviewed_head_sha": "d7e392b088a2a5645324581de835bd4560bb489d",
+  "reviewed_run_id": "r-20261019T153521975019-a-capacity-refusal-resumes-on-another-lane-model",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T16:30:40.335311+00:00"
+}
