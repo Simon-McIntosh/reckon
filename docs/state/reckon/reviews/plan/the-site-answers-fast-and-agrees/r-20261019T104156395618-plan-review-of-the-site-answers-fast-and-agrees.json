@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T10:50:39.947Z",
+  "dispatched_at": "2026-10-19T10:42:37Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-site-answers-fast-and-agrees.html:137",
+      "id": "reasoning-1",
+      "reason": "a worker must either build a velocity invalidation path with no caller (dead code) or find the client re-request test unsatisfiable, so the plan must say whether a velocity key's result changes on an input change (and name the caller that spawns it) or only when its rounded window advances (and drop the velocity half of the fleet-event claim).",
+      "text": "\u00a75 has `_serve_velocity` \"spawn on a miss or a change\" and line 136 push \"a velocity key spanning every project\" to every open stream as a `fleet` event, but line 138 rounds the key's window end down to the refresh interval so a stored result is \"reused within that interval and recomputed after it\" \u2014 a later interval yields a new key, not a changed one, so a given key's result is computed once and never changes \u2014 and the only change-spawner \u00a75 names (line 137, `_FleetChangeWatch`) fires for the project discovery and the fleet rollup, never for a velocity key; the done-when's VelocityView assertion that it \"re-requests when a `fleet` event names the key it shows\" therefore exercises an event the production path never emits",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "609619798b0f4e6b8316bb9e3ae244c9ef4650a81ec563cffd2f3306e37ed594",
+  "plan_slug": "the-site-answers-fast-and-agrees",
+  "plan_version": 45,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261019T104156395618-plan-review-of-the-site-answers-fast-and-agrees",
+  "reviewed_blob_sha": "e027489eabde6f6ff688ef4483eb7f8651cbc22d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol \u00a75 names resolves: `_start_check_refresh` / `_spawn_check_refresh` (`reckon/serve.py:3151` / `:3147`), `_CHECK_REFRESHES` (`:1474`), `Handler._send_project_changes` (`:3542`), `Handler._serve_velocity` (`:3631`), `compliance.project_checks` (`reckon/compliance.py:247`), `_FleetChangeWatch` (`reckon/serve.py:351`), `VelocityView` (`docs/ui/velocity.jsx:183`), `watchProjectStateChanges` (`docs/ui/state-loader.js:697`) and `tests/test_spa_crew_cards.py`; \"\u00a78's evidence\" for 605.8 s resolves in the landed record, and `reckon/change_streams.py` is named as future (\"once \u00a716 lands\"), not as present.",
+    "done_when": "pass \u2014 each of the four route cases, the fleet-rollup case and the fleet-event case declares its own negative control, and the live measures are quantified (route answers under 50 ms while the stub runs; every derived endpoint under 1 s at the 95th percentile).",
+    "evidence_paths": "pass \u2014 \u00a75 inherits \u00a72's log terms (logs under the run directory, ending in EXIT=, suite on the fleet allocation), so no gate lands in a scratchpad or a node-local temp tree.",
+    "naming": "pass \u2014 the revision adds no plan label, stage name, ticket number or version tag; the generic entries are named by function (compute, read the last result, spawn on change), and no comment needs a tracker entry to be read.",
+    "reasoning": "a finding \u2014 the velocity key makes a stored result immutable per rounded interval, so the fleet-event push for a velocity key has no production trigger and the caller that would spawn a velocity recompute on a change is unnamed.",
+    "single_goal": "pass \u2014 one deliverable: generalise the out-of-request recompute from one route to four, with the interface it names; the write paths are the files that one change touches.",
+    "wiring": "pass \u2014 \u00a75's declared depends-on [s3, s8] matches its own text (\"Build it after \u00a73 and \u00a78 merge\"), and \u00a716 \u2014 which creates `reckon/change_streams.py`, a path \u00a75 writes \u2014 is reached through \u00a73's depends-on [s2, s14, s16]."
+  },
+  "section_digests": {
+    "_document": "16d4c01278e4d835bd6aef8170eee8ab98fb304a4302985dbe4539fa0b5c4fb1",
+    "s1": "119fda14843398660e67ce4dbc6d52b2466804be618c0bc58fe57d48c4364db4",
+    "s10": "aedffe9563719b3b93e2b36282e17d4d2aeabecf2938ffcbf516cfacc5887281",
+    "s11": "b9aa035553d395057dad26d5353e7b79c6bdec033a1ab82eb1042718d03592cd",
+    "s12": "3086e0ba68e51ca085e7178c914c92d64248be41088440dfa18abf077d5819ee",
+    "s13": "fa208e7c5f148ec329458a9824c867762bc66c986ccb7bc85745b08640484173",
+    "s14": "7f21ec58ce9adf4ba663f205fe60555a585a263354e7954c7dd99543a0d56139",
+    "s15": "884c8ab0e973894007385f537b51e29ef55bf2de18ef2cf6a25966e656f62bf2",
+    "s16": "68b4e68d648fe76ecff74c05d2cdfb995f2e13890befafc25046869d469abcac",
+    "s2": "f4d544c85c1a75bc7938448339d0239290de9ffaef0434766aa4baa2571d7436",
+    "s3": "50f2ca1f3b1277d5f4b2d70a240688387a89a3136ad2d6aee26f0b3f324b1afc",
+    "s4": "a1ad15bdafaed28134c2565ad8374bc91928064852c10da6661f2499ca286149",
+    "s5": "ff4d8f77dabe06bf54f86cb46ba81b37072917f40513ec07f5972d69cf477b0e",
+    "s6": "fdb08d5e7b8272372c8ced83ee14c031730239025c2a13ccb211329d7951673e",
+    "s7": "90073ced7051cfae8f66fd6b78f99e6ace90b008ffc6c9e5559d87a2e5c31704",
+    "s8": "46535efa968faf1a9d457821c0b182e1f73fbc67570e478aa63cc7eb29d08e37",
+    "s9": "3df747cffcffa70e17ef701d032c7d4a87e78cd03759393f0efa74f96e5fde92"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T10:53:01.051131+00:00"
+}
