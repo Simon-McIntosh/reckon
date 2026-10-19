@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="spa,reckon-tooling">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;the-site-answers-fast-and-agrees#s2&quot;, &quot;the-site-answers-fast-and-agrees#s14&quot;], &quot;s4&quot;: [&quot;the-site-answers-fast-and-agrees#s9&quot;], &quot;s5&quot;: [&quot;the-site-answers-fast-and-agrees#s3&quot;], &quot;s6&quot;: [&quot;the-site-answers-fast-and-agrees#s2&quot;, &quot;the-site-answers-fast-and-agrees#s5&quot;, &quot;a-read-answers-inside-its-deadline#s39&quot;], &quot;s7&quot;: [&quot;the-site-answers-fast-and-agrees#s6&quot;], &quot;s12&quot;: [&quot;the-site-answers-fast-and-agrees#s4&quot;], &quot;s13&quot;: [&quot;the-site-answers-fast-and-agrees#s12&quot;], &quot;s14&quot;: [&quot;the-site-answers-fast-and-agrees#s13&quot;, &quot;a-read-answers-inside-its-deadline#s39&quot;], &quot;s15&quot;: [&quot;the-site-answers-fast-and-agrees#s14&quot;], &quot;s11&quot;: [&quot;the-site-answers-fast-and-agrees#s3&quot;, &quot;the-site-answers-fast-and-agrees#s5&quot;, &quot;the-site-answers-fast-and-agrees#s6&quot;, &quot;the-site-answers-fast-and-agrees#s7&quot;, &quot;the-site-answers-fast-and-agrees#s8&quot;, &quot;the-site-answers-fast-and-agrees#s10&quot;, &quot;the-site-answers-fast-and-agrees#s15&quot;, &quot;a-read-answers-inside-its-deadline#s38&quot;, &quot;a-read-answers-inside-its-deadline#s39&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
   <title>The Site Answers Fast and Agrees With Itself | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="37">
+<meta name="plan-version" content="38">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -172,7 +172,7 @@
       <code>docs/ui/graph.jsx</code>, <code>docs/ui/crew.jsx</code> and the test file.</p>
 
     <h2 id="s8">§8 — Velocity answers for every scope</h2>
-<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
     <p><strong>Why.</strong> <code>capture_project</code> in <code>reckon/velocity.py</code> takes <code>selected[0]</code> without checking that the window
       selected any commit, so one quiet repository fails the all-project view. The same line takes index −1 when the window starts at a repository's first
       commit, which Python reads as the last commit rather than as no base.</p>
@@ -360,6 +360,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261018T133004739776-velocity-answers-for-every-scope" data-who="reckon-build" data-when="2026-10-18T14:03:22.082Z">
     <div class="r-comment-body"><p>§8 — capture_project measures every scope from a defined base: a quiet window reads as an empty range so every metric is zero, and a window opening at a repository's first commit measures from the empty tree; head arm 135 passed EXIT=0, base arm 129 passed/2 scaffolding-failed, negative control 4 errors EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-10-19T06:05:00Z">
+    <div class="r-comment-body"><p>§8 closed. All-project velocity answered <code>ok</code> for all 18 projects on the fleet node, six of them with empty windows, in 605.8 s. Run on compute, not via the route on srv-1006, because that walk is heavy login-node work. §5 owns making the route answer from a stored result. <a href="/reckon/evidence/archive/the-site-answers-fast-and-agrees-landed.html#s8">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261018T175709836375-review-of-figure-thumbnails-are-small-rasters-8a579be29a7c" data-who="reckon-build" data-when="2026-10-18T18:04:37Z">
     <div class="r-comment-body"><p>§12 review of 26fd36a9c21e67bfb209df48f1912be17f07480e..8a579be29a7cfff3d4a6e7d5d197a42fb11b4e58 stored under the reviewed run's review-records; six dimensions scored, one added test failure derived from source suite logs, three blocking findings and one follow-on finding.</p></div>

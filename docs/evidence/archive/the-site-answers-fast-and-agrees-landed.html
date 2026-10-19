@@ -50,6 +50,11 @@
     <p>Run <code>r-20261018T214318686755-text-responses-are-compressed</code> (merge <code>26099eb39</code>, review 103). <code>_send_file</code> gzips SVG, JavaScript, CSS, HTML and JSON above the existing threshold when the request accepts gzip. It caches the compressed bytes per ETag, and 304s are unchanged. <code>tests/test_text_responses_are_compressed.py</code> passes 5; its negative control, removing the compression branch, fails it. The review counted two added browser-test failures. Both pass twice at the run's head with a real browser. The one that fails on main does so because the page needed about 60 s to become ready during the 2026-10-19 GPFS slowdown, so the delta was waived with that evidence. Live, with the served process on <code>26099eb39</code>: power_convertor's <code>overlap-and-drop.svg</code> is sent as 16,319 bytes against 82,103 uncompressed, and nova's largest figure as 319,869 bytes against 3,201,677, in 58 ms.</p>
   </section>
 
+  <section id="s8">
+    <h2>§8 — velocity answers for every scope</h2>
+    <p>§8's fix (<code>capture_project</code> measures a quiet window as an empty range and a window opening at a repository's first commit from the empty tree) merged earlier in this plan. Live check, 2026-10-19 05:45–05:55Z on the fleet node 98dci4-clu-2002 (load 19.2): <code>reckon.velocity.view("*", fields="plans")</code> over the route's default fourteen-day window, the function <code>/crew/velocity</code> calls, answered <code>ok: true</code> for all 18 mounted projects in 605.8 s, 139,225 bytes. Six of them had no commits in the window (L2G, helix, imas-standard-names-catalog, norma, tessera and vv) and read zero for every metric, the case that raised <code>IndexError</code> before. Log: <code>~/.cache/reckon-spa-latency/velocity-all-fleet-20261019T054504Z.log</code>, ending <code>EXIT=0</code>.</p><p>The route itself was not exercised on srv-1006. A ten-minute git walk over every repository is heavy work, and the login node is not the place for it. It would also hold one of the served process's threads for those ten minutes. The same function on compute answers for every scope. Answering the route quickly is §5's deliverable: a stored result that a request reads.</p>
+  </section>
+
 </main>
 </body>
 </html>
