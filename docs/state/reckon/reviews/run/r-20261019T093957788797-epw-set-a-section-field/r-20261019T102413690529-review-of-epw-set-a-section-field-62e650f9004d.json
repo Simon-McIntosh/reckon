@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/mcp_edit_plan.py:1259 (_edit_plan_tool applies the op batch through _store.apply_ops)",
+    "reckon/mcp_edit_plan.py:1484 (_review_owed_fields consumes the written plan after the batch)",
+    "reckon/mcp.py (registers the edit_plan tool whose state path reaches the landed dispatch)"
+  ],
+  "completed_at": "2026-10-19T10:35:13.481Z",
+  "dispatched_at": "2026-10-19T10:25:13Z",
+  "findings": [
+    {
+      "file": "reckon/_store_section_ops.py",
+      "line": 151,
+      "severity": "follow-on",
+      "text": "_section_by_id re-implements a capability the repository already owns: reckon/_store.py:2264 _find_by_id(lst, ident, id_field='id') has the identical contract (scan a list of dicts for one matching id, return (index, record) or None). The module already imports from reckon._store (OpError, SectionRecord, _section_contract_refusal), so the lookup could call the owner rather than duplicate it; it duplicates, it does not extend."
+    },
+    {
+      "file": "tests/test_edit_plan_sets_a_section_field.py",
+      "line": 170,
+      "severity": "follow-on",
+      "text": "The links case at line 170, the effort_hours case at line 186 and the capability case at line 200 assert only that the parsed record carries the change and that audit-doc is clean; none asserts that every other section's authored bytes are unchanged, which the done_when requires for each of the five fields. Only the title case (line 150) and the body case (line 225) take the other-section byte snapshot, so a typed-field write that disturbed a neighbouring section's authored HTML would pass the gate."
+    },
+    {
+      "file": "reckon/_store_section_ops.py",
+      "line": 213,
+      "severity": "follow-on",
+      "text": "Setting the body of a section whose authored span is whitespace-only is refused with an internal match error rather than applied. For such a section section_field_spans returns a body span that is a bare newline (probe against the head module: section s1 with a record element and no prose yields body preimage '\\n', which occurs 7 times in the document), and _replace_authored_html requires the preimage to occur exactly once, so the write raises 'must match exactly once; found 7 occurrences'. The refusal is safe (nothing is written) but it is unreachable-looking for a caller setting prose on an empty section, and the plan's own \u00a74 deliverable phrases body as replacing authored HTML between the record element and the next heading, a span that can be empty."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "The landed dispatch is reached from reckon/mcp_edit_plan.py:1259 (_edit_plan_tool calls _store.apply_ops) and the review-debt read at reckon/mcp_edit_plan.py:1484; the MCP tool is registered in reckon/mcp.py. No other production path writes plan sections.",
+    "diff": "Read commit by commit against base fb8a5315: 634395541 adds reckon/_store_section_ops.py, a 38-line section_field_spans helper in reckon/_plan_html.py, the set dispatch and effect consumption in reckon/_store.py, one SKILL.md op-table row and the test file; c3b7d7605 trims backticks from that SKILL.md row only; 62e650f90 adds only the 52-line landing fragment.",
+    "done_when": "The done_when names six test files run through pytest and asserts zero added failures against the base arm; the manifest's after_suite (169 passed / 2 failed, EXIT=1, completed true) and baseline_suite (160 passed / same 2 failed, EXIT=1, completed true) carry it, and the gate logs gate-head.log and gate-base.log both end EXIT=1 with the same two FAILED ids (test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt and test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window), so added=0.",
+    "goal": "The node goal is to accept a set whose path is sections.<id>.<field> over title, links, effort_hours, capability and body, with body written through text mode's replacement path; reckon/_store_section_ops.py:114 apply_section_field_set handles all five, and reckon/_store.py:1328 routes title/body through _replace_authored_html, the same function the text path calls at reckon/_store.py:1924.",
+    "manifest": "Read; it reports the three commits 634395541, c3b7d7605 and 62e650f90, the six-file gate with 169/2 at head against 160/2 at base and zero added failures, a negative control that disables the forged-heading refusal and reddens test_a_body_containing_a_heading_is_refused, and the two pre-existing failures as follow_ons.",
+    "write_paths": "The declared write paths are reckon/_store.py, reckon/_store_section_ops.py, reckon/_plan_html.py, reckon/mcp.py, reckon/mcp_edit_plan.py, skills/reckon-edit/SKILL.md, tests/test_edit_plan_sets_a_section_field.py and the two fragment paths; the diff touches reckon/_store.py, reckon/_store_section_ops.py, reckon/_plan_html.py, skills/reckon-edit/SKILL.md, tests/test_edit_plan_sets_a_section_field.py and docs/evidence/fragments/.../epw-set-a-section-field.html, all inside them (mcp.py and mcp_edit_plan.py were in scope and were not needed)."
+  },
+  "justifications": {
+    "durability": "tests/test_edit_plan_sets_a_section_field.py guards the title, body, links, effort_hours and capability writes plus three refusals, and the manifest's negative control shows the forged-heading guard reddens when disabled, but the typed-field cases omit the done_when's other-section byte-stability assertion and no case covers a body write onto a whitespace-only span.",
+    "evidence": "gate-head.log and gate-base.log both carry a revision header and a trailing EXIT= line, and the two arms' FAILED ids are identical, so the manifest's zero added failures is read from the logs rather than claimed.",
+    "fit": "reckon/_store_section_ops.py follows the store's idiom of a private module with a lazy in-function import of OpError to avoid the import cycle, its docstrings state mechanism (not plan labels), and no name carries a version or ticket tag.",
+    "goal_fidelity": "reckon/_store_section_ops.py:114 handles each of the five named fields, and reckon/_store.py:1328 applies title/body through the same _replace_authored_html the text editor uses at reckon/_store.py:1924, so the goal's 'through text mode's replacement path' is met.",
+    "reuse": "reckon/_store_section_ops.py extends the owners it depends on (SectionRecord for validation, _replace_authored_html for the write, plan_headings and section_record_id in _plan_html) but reckon/_store_section_ops.py:151 _section_by_id re-implements the store's own _find_by_id (reckon/_store.py:2264) rather than extending it, so one added definition duplicates an owned capability.",
+    "scope_discipline": "Every path in the diff (reckon/_store.py, reckon/_store_section_ops.py, reckon/_plan_html.py, skills/reckon-edit/SKILL.md, tests/test_edit_plan_sets_a_section_field.py, the landing fragment) is inside the declared write paths, and no change the goal does not imply rides along."
+  },
+  "project": "reckon",
+  "raw_text": "see item_verdicts, scores and justifications",
+  "review_run_id": "r-20261019T102413690529-review-of-epw-set-a-section-field-62e650f9004d",
+  "reviewed_base_sha": "fb8a53156da84ce443bea1fec8b3242d6f22dfdb",
+  "reviewed_head_sha": "62e650f9004def4f742aae61125e585cc4f58625",
+  "reviewed_run_id": "r-20261019T093957788797-epw-set-a-section-field",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T10:40:00+00:00"
+}
