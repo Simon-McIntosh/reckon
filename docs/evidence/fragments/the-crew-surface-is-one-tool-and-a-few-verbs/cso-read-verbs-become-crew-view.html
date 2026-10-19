@@ -35,7 +35,10 @@ inside its write fence, so all five stay visible:
 
 <code>crew list</code> — <code>reckon/mcp_deadlines.py:184</code>
 (<code>_CLI_ANSWER_COMMANDS</code>) emits it as the answer a deadline refusal
-hands a caller.
+hands a caller. The verb also carries <code>--phase</code>,
+<code>--mine</code> and <code>--session</code>, which
+<code>crew view</code> does not take, so repointing that citation is not
+enough to retire it; its callers span about ten test files.
 <code>crew ledger</code> — <code>reckon/crew/refusals.py:78</code> names it in
 the D20 remedy text.
 <code>crew directory</code> — <code>imas-ambix
@@ -78,20 +81,28 @@ tree materialised with <code>git archive</code> because this sandbox's git
 directory is read-only): <strong>1 failed, 88 passed</strong>, <code>EXIT=1</code>
 — <code>test_every_module_fits_a_worker_window</code>, which is red for
 <code>reckon/crew/review.py</code> (51584 tokens) and <code>reckon/ledger.py</code>
-(51666 tokens) at the base revision and is not this node's work. Head arm:
-<strong>2 failed, 90 passed</strong> — the same module-window failure, plus
-<code>test_ship_cli_instructions_match_registered_commands_and_flags</code>,
-which fails because naming <code>reckon crew view</code> in the build skill's
-command block is required by its sibling check
-<code>test_every_registered_crew_verb_is_documented_or_exempt</code>, while the
-flag map in that same test file is a hand-written literal that must gain
-<code>("crew", "view")</code>. That file is outside this node's fence; zero added
-failures elsewhere. <code>ruff format --check</code> and
+(51666 tokens) at the base revision and is not this node's work. Head arm at
+<code>0e9c62f8</code>: <strong>1 failed, 91 passed</strong>, <code>EXIT=1</code>
+— the same module-window failure and nothing else, the same two offenders and
+the same counts, so this node adds no failure over the base arm. An earlier
+head read <strong>2 failed, 90 passed</strong>: naming
+<code>reckon crew view</code> in the build skill's command block is required by
+<code>test_every_registered_crew_verb_is_documented_or_exempt</code>, and that
+turned its sibling
+<code>test_ship_cli_instructions_match_registered_commands_and_flags</code> red,
+because that case compares the documented verbs against a hand-written flag map
+which needed the verb's row. The flag map gained
+<code>("crew", "view")</code> with <code>--project</code>,
+<code>--since</code>, <code>--until</code>, <code>--fields</code> and
+<code>--pretty</code>, and nothing else in the file changed; the map's assertion
+is a subset check, so the verb's fuller registered option set is unaffected.
+<code>ruff check</code> on that file reports the same three findings as at base.
+<code>ruff format --check</code> and
 <code>ruff check</code> on every changed path report the same 13 findings at head
 as at base (all pre-existing in the two large view modules), so the commit adds
-none. Logs <code>gate-head.log</code>, <code>base-arm.log</code> and
-<code>negative-control.log</code> under the run directory, each ending in an
-<code>EXIT=</code> line.</p>
+none. Logs <code>gate-head.log</code>, <code>base-arm.log</code>,
+<code>gate-head-2.log</code> and <code>negative-control.log</code> under the run
+directory, each ending in an <code>EXIT=</code> line.</p>
 <p id="cso-read-verbs-become-crew-view-control"><strong>Negative control.</strong>
 Registering a view on the MCP crew tool only — appending a name to
 <code>CREW_TOOL_VIEWS</code> in <code>reckon/mcp.py</code> and touching nothing
@@ -102,11 +113,10 @@ directory, and <code>reckon/mcp.py</code> restored from a copy taken before the
 mutation, so the mutation survives only as the log.</p>
 <p id="cso-read-verbs-become-crew-view-followons"><strong>Not tombstoned.</strong>
 No tombstone row was added by this node. The five verbs' callers are listed
-above; retiring any one of them needs a caller migrated outside this fence
+above; retiring any one of them needs a caller migrated
 (<code>reckon/mcp_deadlines.py</code>, <code>reckon/crew/refusals.py</code>,
 <code>tests/test_crew_velocity_cli.py</code>, a foreign project's guide), the
-drain write half visited, or the flag map in
-<code>tests/test_skill_contracts.py</code> extended. Each is a one-line change in
-a file this node may not write, and each is recorded as a follow-on naming its
-file and line.</p>
+drain write half visited, or the extra options <code>crew list</code> carries
+reached through another verb. Each is recorded as a follow-on naming its file
+and line.</p>
 </article>
