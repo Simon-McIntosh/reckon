@@ -5,7 +5,7 @@
   <table id="the-slow-routes-answer-from-stored-results-measure">
     <thead><tr><th>Check</th><th>Result</th></tr></thead>
     <tbody>
-      <tr><td>Node gate: the six named suites plus the new one. A recompute is stubbed at a 350 ms delay, and each of discovery, the checks summary and the fleet rollup must answer the prior result inside a 50 ms bound with an age header, then the recomputed result once the stub stores it.</td><td>52 passed, EXIT=0</td>
+      <tr><td>Node gate: the six named suites plus the new one. A recompute is stubbed at a 350 ms delay, and each of discovery, the checks summary and the fleet rollup must answer the prior result inside a 50 ms bound with an age header, then the recomputed result once the stub stores it.</td><td>52 passed, EXIT=0</td></tr>
       <tr><td>Repair gate: the seven named suites plus the served-code drift suite, after the switch and the machinery moved</td><td>78 passed in 114.84s, EXIT=0</td></tr>
       <tr><td>Declared negative control: compute each slow route inline under the same delay, so no stored result is readable</td><td>EXIT=1. All three routes took the recompute's delay on their own request path — <code>/_discover/sample</code> 351.8 ms, <code>/_checks/sample</code> 350.8 ms, <code>/_projects/index.json</code> 351.2 ms — against the 50 ms bound. 5 failed, 1 passed.</td></tr>
       <tr><td>Negative control: key the rollup per project, so a change to two projects starts two children</td><td>EXIT=1, 1 failed (the one-rollup-child case).</td></tr>
