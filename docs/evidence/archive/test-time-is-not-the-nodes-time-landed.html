@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="test-time-is-not-the-nodes-time-landed">
+  <meta name="plan-title" content="Test Time Is Not The Node&#x27;s Time — landed record">
+  <meta name="plan-summary" content="Closure synthesis for Test Time Is Not The Node&#x27;s Time: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="test-time-is-not-the-nodes-time">
+  <meta name="plan-verdict" content="qualified">
+  <title>Test Time Is Not The Node&#x27;s Time — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>Test Time Is Not The Node&#x27;s Time — landed record</h1>
+  <p>Closure synthesis for Test Time Is Not The Node&#x27;s Time: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s3-a-deadline-lets-a-named-batch-finish">
+    <h2>§3 — at its deadline a worker checkpoints, then finishes only a bounded step it named</h2>
+    <p>The worker prompt no longer says "never push on". <code>time_fence_statement</code> in <code>reckon/crew/prompts.py</code> now states the deadline and, when the grace multiple exceeds 1, a hard stop at launch plus budget times the multiple: at the deadline the worker writes its checkpoint and may continue only through a bounded step its manifest named before the deadline, finishing by the hard stop. The stop list and both restatements in <code>skills/reckon-build/references/worker-protocol.md</code> say the same. <code>resolved_grace_multiple</code> in <code>reckon/crew/routing.py</code> returns the configured number, 1.0 when absent and nothing when non-numeric; the watchdog and the resumed and lane-changed fences read it.</p><p>Run <code>r-20261019T164106237543-a-deadline-lets-a-named-batch-finish</code> on clive, commit <code>1b827f3bd</code>, merged as <code>52e62d5ee</code>. Ten new tests; the ten-file gate read 2 failed, 157 passed at the base and 1 failed, 168 passed at the head. The shared failure is the module-size test on <code>review.py</code> and <code>ledger.py</code>; the other base failure, the brief-prompt golden drifted by <code>0117d3e0b</code>, was repaired. Restoring the old sentence and dropping the resumed multiple each fail their case. Review scored 16 to 19. Its finding that the first attempt still passes the raw multiple, re-parsed in <code>_continuation_multiple</code>, is folded into §5.</p>
+  </section>
+
+</main>
+</body>
+</html>
