@@ -22,11 +22,11 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-informs" content="the-crew-surface-is-one-tool-and-a-few-verbs">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;every-plan-write-goes-through-edit-plan#s2&quot;, &quot;every-plan-write-goes-through-edit-plan#s3&quot;], &quot;s5&quot;: [&quot;every-plan-write-goes-through-edit-plan#s4&quot;], &quot;s6&quot;: [&quot;every-plan-write-goes-through-edit-plan#s5&quot;], &quot;s7&quot;: [&quot;every-plan-write-goes-through-edit-plan#s6&quot;], &quot;s8&quot;: [&quot;every-plan-write-goes-through-edit-plan#s7&quot;], &quot;s9&quot;: [&quot;every-plan-write-goes-through-edit-plan#s6&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>Every Plan Write Goes Through edit_plan | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="20">
+<meta name="plan-version" content="21">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -107,7 +107,7 @@
       <code>reckon/served_code.py</code>, <code>tests/test_mcp_server_serves_current_code.py</code>.</p>
 
     <h2 id="s4">§4 — An existing section is editable through one op</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s4" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
     <p><strong>Why.</strong> Seven of the fifteen reports hand-edited an existing section. The edits changed its links, effort, status or
       title, or replaced its prose after a review, because <code>insert_section</code> refuses an id that exists and no <code>set</code> path
       reaches a section. Text mode refuses any replacement that overlaps the section's record, and an apostrophe stored as <code>&amp;#x27;</code>
@@ -314,7 +314,10 @@
     <div class="r-comment-body"><p>review of run r-20261019T093957788797-epw-set-a-section-field landed at head 1c964c500d039b262be85fd2a48cb57dfa6654ba, scored goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 18, reuse 14, added_failure_count 0 with no added ids, carrying one blocking finding at reckon/_store_section_ops.py:71 - the section-body forged-structure guard drops the meta[name^="plan-"] clause that the sibling guards at reckon/_store.py:830 and :968 apply, so a section body can carry a plan-* meta that read_state at reckon/_plan_html.py:1221 accepts as plan state.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261019T115159253161-review-of-epw-set-a-section-field-e871d96948a2" data-who="reckon-build" data-when="2026-10-19T12:06:00.774Z">
-    <div class="r-comment-body"><p>review of run r-20261019T093957788797-epw-set-a-section-field at head e871d96948a2fb04b364c61278f01b23e82a1f10 (base fb8a53156da84ce443bea1fec8b3242d6f22dfdb) scores goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 18, reuse 19, added_failure_count 0 with no added ids, carrying one follow-on finding on the independence of the other-section byte-stability assertion at tests/test_edit_plan_sets_a_section_field.py:172; the prior review&#x27;s blocking finding at reckon/_store_section_ops.py:71 is repaired by commit 61e705aaa, which routes all three authored-body sites through one predicate, verified by a mutation control that reddens the head&#x27;s test; status parsed.</p></div>
+    <div class="r-comment-body"><p>review of run r-20261019T093957788797-epw-set-a-section-field at head e871d96948a2fb04b364c61278f01b23e82a1f10 (base fb8a53156da84ce443bea1fec8b3242d6f22dfdb) scores goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 18, reuse 19, added_failure_count 0 with no added ids, carrying one follow-on finding on the independence of the other-section byte-stability assertion at tests/test_edit_plan_sets_a_section_field.py:172; the prior review's blocking finding at reckon/_store_section_ops.py:71 is repaired by commit 61e705aaa, which routes all three authored-body sites through one predicate, verified by a mutation control that reddens the head's test; status parsed.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-19T12:10:00Z">
+    <div class="r-comment-body"><p>§4 landed: <code>set sections.ID.FIELD</code> edits title, links, effort, capability and body of an existing section, the body addressed by span and guarded by one shared forged-structure predicate (commits <code>634395541</code>..<code>e871d9694</code>); zero added failures; reviewed 111/120. <a href="/reckon/evidence/archive/every-plan-write-goes-through-edit-plan-landed.html#s4">evidence</a></p></div>
 </div>
 </section>
 </main>
