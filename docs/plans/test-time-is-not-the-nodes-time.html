@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-standalone" content="It changes how a node&#x27;s own time budget is stated and accounted; no live plan waits on it, and it consumes no plan&#x27;s pending evidence.">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;deferred&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;deferred&quot;}">
-  <meta name="plan-section-depends-on" content="{&quot;s2&quot;: [&quot;test-time-is-not-the-nodes-time#s1&quot;], &quot;s4&quot;: [&quot;test-time-is-not-the-nodes-time#s1&quot;, &quot;test-time-is-not-the-nodes-time#s2&quot;]}">
+  <meta name="plan-section-depends-on" content="{&quot;s2&quot;: [&quot;test-time-is-not-the-nodes-time#s1&quot;, &quot;test-time-is-not-the-nodes-time#s3&quot;], &quot;s4&quot;: [&quot;test-time-is-not-the-nodes-time#s1&quot;, &quot;test-time-is-not-the-nodes-time#s2&quot;]}">
   <title>Test Time Is Not The Node's Time | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-modified" content="2026-10-19">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -69,7 +69,7 @@
 
     <h2 id="s3">At its deadline a worker checkpoints, then finishes only a bounded step it named</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-<p><strong>Why.</strong> On 2026-10-19 the power_convertor session reported that the worker prompt is the only thing that stops a worker at its deadline. <code>fences.enforce_budget_watchdog</code> is false in <code>reckon/schema/flight-defaults.yaml:201</code>, and the prompt says "Exceeding it means stop and report, never push on" (<code>reckon/crew/prompts.py:635</code>). Its stop list repeats this: "the time budget is spent with the measure still unmet" (<code>reckon/crew/prompts.py:701</code>). Workers obey. A numerical node whose remaining step is one solver batch under <code>timeout 570</code> stops anyway, writes a partial manifest and waits for a resume. That session counts 163 of its 337 worker ledger rows as resumes, though repair rounds are among them. Across all projects, it counts 19 of 755 recent worker manifests that name a deadline stop. A hung worker is caught separately, by the 900-second stall window, so the deadline does not need to double as a hang detector. The rule should still stop a worker that has lost its way. It should let one whose next step is bounded, and already written down, finish that step.</p>
+<p><strong>Why.</strong> On 2026-10-19 the power_convertor session reported that the worker prompt is the only thing that stops a worker at its deadline. <code>fences.enforce_budget_watchdog</code> is false in <code>reckon/schema/flight-defaults.yaml:201</code>, and the prompt says "Exceeding it means stop and report, never push on" (<code>reckon/crew/prompts.py:635</code>). Its stop list repeats this: "the time budget is spent with the measure still unmet" (<code>reckon/crew/prompts.py:701</code>). Workers obey. A numerical node whose remaining step is one solver batch under <code>timeout 570</code> stops anyway, writes a partial manifest and waits for a resume. In power_convertor's committed ledger at <code>11b0f9ec</code> (<code>docs/state/power_convertor/runs/*.json</code>), 163 of the 338 implement, test and investigate rows have <code>attempt_kind: resume</code>. Repair rounds are among those resumes, and how many of them were deadline stops is not measured. A hung worker is caught separately, by the 900-second stall window, so the deadline does not need to double as a hang detector. The rule should still stop a worker that has lost its way. It should let one whose next step is bounded, and already written down, finish that step.</p>
 <p><strong>Deliverable.</strong> One deadline rule, stated the same way at every place a worker is told it:</p>
 <ul>
 <li><strong>At the deadline, write the checkpoint.</strong> The manifest's <code>status</code>, <code>checkpoint</code> and remaining work are current on disk before anything else runs.</li>
