@@ -37,22 +37,19 @@
         pre-existing unformatted lines the base revision already reports.
       </p>
       <p id="a-tier-none-run-owes-no-review-blocker">
-        <strong>Blocker — one failure remains, outside this node's write
-        scope.</strong> The tier read moved nine fixtures from
-        <code>review-missing</code> to the promotable kind. Each pins a run
-        whose cited commit touches no runtime source, so the tier rule owes it
-        no review and the duty now says so. Eight are repaired in the files this
-        node was granted: every one of those fixtures now seeds a runtime source
-        under <code>reckon/</code> in a commit that has a parent, and cites that
-        commit as the run's head, so the run is tiered and still owes the review
-        the assertion names. After the repair the obligation-fixture arm is
-        <code>9 passed</code> at base and <code>10 passed</code> at the new head
-        (the gate included), both EXIT=0, and the 39-file importer arm is 218
-        passed and 1 failed, against 0 failed at base. The one failure left,
-        <code>test_stop_hook_reads_the_snapshot.py::test_a_lane_refused_review_reads_queued_and_returns_after_the_bound</code>,
-        is the same shape in a file outside the granted scope: its repository
-        fixture seeds only <code>seed.txt</code> in a root commit, which its run
-        cites, so the duty returns the promotable kind before the refused-review
-        branch is reached.
+        <strong>Fixtures — nine recordings moved, all repaired.</strong> The tier read
+        moved nine fixtures from <code>review-missing</code> to the promotable
+        kind. Each pinned a run whose cited commit touches no runtime source, so
+        the tier rule owes it no review and the duty now says so. Every affected fixture now seeds a runtime source under
+        <code>reckon/</code> in a commit that has a parent, and the run cites
+        that commit, so the run is tiered and the assertions are unchanged.
+        One mechanism accounted for all nine, and it is easy to miss: the tier
+        is read from the cited commit's diff against its own first parent, so a
+        repository's first commit — which has no parent — yields an empty path
+        list and reads as a run that changed nothing at all. After the repair
+        the obligation-fixture arm is <code>9 passed</code> at base and
+        <code>10 passed</code> at the new head (the gate included), both EXIT=0,
+        and the 39-file importer arm is <code>219 passed</code> with no failure,
+        against no failure at base.
       </p>
     </article>
