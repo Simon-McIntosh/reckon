@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import signal
 import subprocess
 import sys
@@ -476,10 +477,13 @@ def signal_pending_step_client(pid: int, run_dir: str | Path) -> str | None:
     ]
     if len(jobs) != 1 or not jobs[0].isdigit() or names != [Path(run_dir).name]:
         return None
+    scheduler = shutil.which("squeue")
+    if scheduler is None:
+        return None
     try:
         answer = subprocess.run(
             [
-                str(Path(argv[0]).with_name("squeue")),
+                scheduler,
                 "--steps",
                 "--jobs",
                 jobs[0],

@@ -58,15 +58,17 @@
   <code>srun --overlap</code> request is still pending: a step may be active
   before that record. The wrapper now requires a successful record write before
   it execs the sandbox. Each placed step is named for its run id. After 30 s
-  without a record, the supervisor asks <code>squeue --steps</code> for that
+  without a record, the supervisor resolves <code>squeue</code> on PATH and asks
+  <code>squeue --steps</code> for that
   name in the fleet job. A listed step produces one refusal naming its id;
   the client stays alive. If the scheduler lists the job's other steps but no
   step with this name, a verified client PID receives one TERM under
   <code>stop-before-step-started</code>. A late task record reopens the inner path.
   An unreadable or empty scheduler answer signals nothing and is retried.
-  The focused gate passed 43 tests with one allocation-only skip, including
-  the three scheduler branches, late record, failed record write and unreadable
-  scheduler answer, plus a recycled client PID refusal.</p>
+  The focused gate covers the three scheduler branches, late record, failed
+  record write, unreadable scheduler answer, recycled client PID refusal, and
+  a host-shim path with no adjacent <code>squeue</code>. The client and inner
+  processes have distinct test PIDs, with separate signal-target assertions.</p>
 
   <p>The node read <code>draining — Kill task failed</code> before and after the
   probes; its state did not change. The first named probe was invalidated by

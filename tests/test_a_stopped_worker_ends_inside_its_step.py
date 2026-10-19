@@ -276,6 +276,7 @@ def test_pending_step_signal_requires_scheduler_clearance(
         named = f"{scheduler_step} {run.name}\n" if scheduler_step else ""
         return SimpleNamespace(returncode=0, stdout="1281970.batch batch\n" + named)
 
+    monkeypatch.setattr(process_signal.shutil, "which", lambda _: "/usr/bin/squeue")
     monkeypatch.setattr(process_signal, "subprocess", subprocess, raising=False)
     monkeypatch.setattr(process_signal.subprocess, "run", list_steps)
     sent: list[tuple[int, int]] = []
@@ -283,6 +284,7 @@ def test_pending_step_signal_requires_scheduler_clearance(
         process_signal.os, "kill", lambda pid, sig: sent.append((pid, sig))
     )
     inner: list[tuple[int, str]] = []
+    inner_sent: list[tuple[int, int]] = []
     attempts: list[float] = []
 
     def signal_step(pid: int, sig: int, **kwargs: object) -> list[int]:
@@ -291,6 +293,7 @@ def test_pending_step_signal_requires_scheduler_clearance(
         attempts.append(clock.now)
         if (run / "step-task.txt").exists():
             inner.append((sig, str(kwargs["reason"])))
+            inner_sent.append((303, sig))
             return [303]
         return []
 
@@ -322,6 +325,11 @@ def test_pending_step_signal_requires_scheduler_clearance(
         assert ended == [101]
     else:
         assert sent == []
+    assert {target for target, _ in sent}.isdisjoint(
+        {target for target, _ in inner_sent}
+    )
+    assert all(target == 303 for target, _ in inner_sent)
+    assert all(target == 101 for target, _ in sent)
     assert all(
         attempt <= attempts[0] + 30 or (record_at is not None and attempt >= record_at)
         for attempt in attempts
@@ -417,6 +425,55 @@ def test_placed_step_is_named_for_its_run(monkeypatch: pytest.MonkeyPatch) -> No
     assert "--job-name=r-probe-name" in placed.argv
 
 
+def test_pending_step_uses_scheduler_on_path_beside_host_shim(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    run = tmp_path / "run"
+    run.mkdir()
+    shim = tmp_path / "host_shims" / "srun"
+    shim.parent.mkdir()
+    shim.touch()
+    assert not shim.with_name("squeue").exists()
+    client_pid, inner_pid = 101, 303
+    (run / "worker.json").write_text(
+        json.dumps(
+            {
+                "pid": client_pid,
+                "pid_start_time": "77",
+                "argv": [str(shim), "--jobid=1281970", f"--job-name={run.name}"],
+            }
+        )
+    )
+    scheduler = "/usr/bin/squeue"
+    queries: list[list[str]] = []
+
+    def list_steps(command: list[str], **_: object) -> SimpleNamespace:
+        queries.append(command)
+        assert command[0] == scheduler
+        return SimpleNamespace(returncode=0, stdout="1281970.batch batch\n")
+
+    monkeypatch.setattr(process_signal, "shutil", shutil, raising=False)
+    monkeypatch.setattr(process_signal.shutil, "which", lambda name: scheduler)
+    monkeypatch.setattr(process_signal.subprocess, "run", list_steps)
+    monkeypatch.setattr(process_signal, "_process_comm", lambda _: "srun")
+    monkeypatch.setattr(process_signal, "_process_start_time", lambda _: "77")
+    monkeypatch.setattr(process_signal.os, "getpgid", lambda _: client_pid)
+    sent: list[tuple[int, int]] = []
+    monkeypatch.setattr(
+        process_signal.os, "kill", lambda pid, sig: sent.append((pid, sig))
+    )
+
+    assert process_signal.signal_pending_step_client(client_pid, run) == "delivered"
+    assert len(queries) == 1
+    assert sent == [(client_pid, signal.SIGTERM)]
+    assert all(pid != inner_pid for pid, _ in sent)
+    receipts = [
+        json.loads(line) for line in (run / "senders.jsonl").read_text().splitlines()
+    ]
+    assert receipts[-1]["target_pid"] == client_pid
+    assert receipts[-1]["outcome"] == "delivered"
+
+
 @pytest.mark.parametrize(("exit_code", "output"), [(1, ""), (0, "")])
 def test_unreadable_step_listing_never_signals_client(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, exit_code: int, output: str
@@ -432,6 +489,7 @@ def test_unreadable_step_listing_never_signals_client(
             }
         )
     )
+    monkeypatch.setattr(process_signal.shutil, "which", lambda _: "/usr/bin/squeue")
     monkeypatch.setattr(
         process_signal.subprocess,
         "run",
@@ -460,6 +518,7 @@ def test_pending_client_start_mismatch_refuses_signal(
             }
         )
     )
+    monkeypatch.setattr(process_signal.shutil, "which", lambda _: "/usr/bin/squeue")
     monkeypatch.setattr(
         process_signal.subprocess,
         "run",
