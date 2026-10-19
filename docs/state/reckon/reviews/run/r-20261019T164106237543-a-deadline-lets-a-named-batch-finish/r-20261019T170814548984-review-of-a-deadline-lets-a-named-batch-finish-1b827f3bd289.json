@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-19T17:20:26.513Z",
+  "dispatched_at": "2026-10-19T17:09:21Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the golden was red at the base because 0117d3e0b changed the composer's manifest lines without it; the edit matches current production text, removes no assertion, and turns the file green",
+      "recorded_at": "2026-10-19T17:21:33.631742+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "a-deadline-needs-no-time-zone",
+      "recorded_at": "2026-10-19T17:21:45.645925+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "the plan states the absent-key contract as 1.0 and a null value reads as absent; no flight layer in the tree sets the key to null, so no configuration changes behaviour",
+      "recorded_at": "2026-10-19T17:21:59.308029+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_brief_prompt.py",
+      "line": 372,
+      "severity": "follow-on",
+      "text": "the golden prompt snapshot was edited at the tests:/test_logs: manifest lines, which the plan grants this file only 'to update an asserted fence sentence to the new rule'; the edit repairs a pre-existing snapshot drift (the composer's MANIFEST block text changed in an earlier commit) but lies outside the stated grant. No assertion was removed and the file is green at head, so it does not hold the node."
+    },
+    {
+      "file": "reckon/crew/prompts.py",
+      "line": 382,
+      "severity": "follow-on",
+      "text": "_continuation_multiple is a second normaliser of fences.budget_grace_multiple beside routing.resolved_grace_multiple, and the first-attempt path reads the raw fences value at dispatch.py:1929 rather than through resolved_grace_multiple, so the plan's 'one owner' is realised on the watchdog and resumed paths but not the first-attempt prompt. The two agree on every case the tests cover (1.5, 1.0, absent, non-numeric), so the hard stop cannot drift; the duplication is a maintenance hazard, not a live defect."
+    },
+    {
+      "file": "reckon/crew/recovery_stream.py",
+      "line": 332,
+      "severity": "follow-on",
+      "text": "resolved_grace_multiple returns 1.0 when the key is present with a null value, where the replaced inline read (float(fences.get('budget_grace_multiple', 1.0))) raised and left the watchdog inert. A fences block that sets budget_grace_multiple to null now arms the watchdog at the deadline instead of remaining inert; no config in the tree does this and the plan states the absent-key semantics, so the change is consistent with the stated contract."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261019T170814548984-review-of-a-deadline-lets-a-named-batch-finish-1b827f3bd289",
+  "reviewed_base_sha": "a346c2e1495c564e6c724a469ca8996ed3b7ff8d",
+  "reviewed_head_sha": "1b827f3bd2898934e36f1fde327492cd4242d6f1",
+  "reviewed_run_id": "r-20261019T164106237543-a-deadline-lets-a-named-batch-finish",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T17:20:32.070405+00:00"
+}
