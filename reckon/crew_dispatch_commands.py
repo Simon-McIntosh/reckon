@@ -10,9 +10,27 @@ import click
 
 from reckon._store import write_json_atomically
 from reckon.cli_entry import main
+from reckon.crew.tombstones import tombstone_command
 
 
-@main.group(name="crew")
+class _CrewGroup(click.Group):
+    """Resolve a retired verb name to the tombstone that names its successor.
+
+    A tombstone is deliberately absent from :attr:`commands` — a retired name
+    must not appear in ``crew --help`` nor in a census that reads the live
+    command tree, which is what keeps the fold invisible until it is reached
+    for. It is matched only when a caller types it, through the same resolution
+    path a registered subcommand uses.
+    """
+
+    def get_command(self, ctx: click.Context, cmd_name: str) -> click.Command | None:
+        command = super().get_command(ctx, cmd_name)
+        if command is not None:
+            return command
+        return tombstone_command(cmd_name)
+
+
+@main.group(name="crew", cls=_CrewGroup)
 def crew():
     """Dispatch and observe workers through one backend-agnostic call.
 
@@ -24,7 +42,9 @@ def crew():
     the named plan section is unavailable at the worktree base ref, 5 the
     selected worker configuration has a typed competence refusal, 6 terminal
     pointers need reconciliation, 7 a live run holds a conflicting write scope,
-    8 no live project watcher is waiting for the dispatched work.
+    8 no live project watcher is waiting for the dispatched work, 9 a member is
+    already in flight so the dispatch was refused, 10 the name is retired and
+    the output names its successor.
     """
 
 
