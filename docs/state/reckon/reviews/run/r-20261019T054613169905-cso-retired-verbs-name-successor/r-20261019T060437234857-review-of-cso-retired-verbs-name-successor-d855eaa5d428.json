@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Taken from the reviewed run's own gate logs: baseline_suite (base-arm.log, rev f339f0eda) 2 failed / 70 passed, EXIT=1, ids test_crew_help_names_its_state.py::test_every_crew_verb_help_names_its_state_or_condition and test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt; after_suite (gate-head.log, rev d855eaa5d) 2 failed / 78 passed, EXIT=1, the same two ids. Head failures are a subset of base failures, so added_failure_count is 0 and added_failure_ids is empty. The two ids concern the check-review and repair-review verbs, which are registered at f339f0eda in reckon/crew_run_commands.py and are untouched by this diff, so they are pre-existing and outside this node.",
+  "base_log_revision": "f339f0eda7fb778034e050fea9d96ba35cb28e56",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:_CrewGroup.get_command"
+  ],
+  "completed_at": "2026-10-19T06:13:03.371Z",
+  "dispatched_at": "2026-10-19T06:05:31Z",
+  "findings": [
+    {
+      "file": "tests/test_cited_commands_exist.py",
+      "line": "256",
+      "severity": "follow-on",
+      "text": "The tombstone branch added to test_every_cited_command_and_flag_resolves is never negated: the current corpus contains no citation of a retired verb (the test asserts that at line 334) and the dedicated case at line 316 calls _retired directly, so deleting the `retired = _retired(cite.chain)` block would leave every test green. The plan's requirement that a citation resolving to a tombstone is refused with its successor is guarded only at the helper, not at the check that would report it."
+    },
+    {
+      "file": "tests/test_a_retired_verb_names_its_successor.py",
+      "line": "93",
+      "severity": "follow-on",
+      "text": "assert payload[\"retired\"] == row.retired and payload[\"successor\"] == row.successor compare the command's output against the same TOMBSTONES row the command looked up by name, so the two sides move together and the pair survives any change that alters a row's successor in both places. It catches a mis-lookup but not an incorrect successor; the independent pins are at line 118 (literal invocation) and line 107 (live-tree resolution)."
+    },
+    {
+      "file": "reckon/crew/tombstones.py",
+      "line": "110",
+      "severity": "follow-on",
+      "text": "retired_names() is a public helper with no caller in production or in the tests, so it is dead surface that future folds must maintain; the registry's own TOMBSTONES tuple already serves any caller that needs the names."
+    }
+  ],
+  "head_log_revision": "d855eaa5d4285c183906588d741ce9a64e7d3197",
+  "item_verdicts": {
+    "diff": "Read commit by commit against base f339f0eda (one commit, d855eaa5d): a new tombstone registry, a _CrewGroup.get_command override plus a help-codes line, one help-docstring line adding code 9, two test files, and one evidence fragment; the four source/test changes are all inside the declared write paths.",
+    "done_when": "The done_when names tests/test_a_retired_verb_names_its_successor.py and tests/test_cited_commands_exist.py; both are in the head gate (gate-head.log), which records 2 failed / 78 passed, EXIT=1, and the two failures are the same ids the base arm fails, so the gate asserts the measure (each row exits with the documented code and prints its successor; no row appears in crew --help; the review-plan invocation carries its arguments; every successor resolves; a citation naming a tombstone is refused) at zero added failures.",
+    "goal": "The node goal is to make a retired crew verb answer with its successor; reckon/crew/tombstones.py:1 defines the TOMBSTONE registry and its three seeded rows (review-plan, obligations, promote) and reckon/crew_dispatch_commands.py:26 resolves a typed retired name to one, so what landed matches the goal.",
+    "manifest": "Read; it records committed sha d855eaa5d, the head gate 2 failed / 78 passed EXIT=1 against base 2 failed / 70 passed EXIT=1, the negative control at logs/negative-control.log, and follow_ons naming the two pre-existing failures as another node's; the recorded numbers match the three log files on disk.",
+    "write_paths": "The manifest declares five write paths (reckon/crew/tombstones.py, reckon/crew_dispatch_commands.py, tests/test_a_retired_verb_names_* , tests/test_cited_commands_exist.py, and the evidence fragment); `git diff --name-only f339f0eda d855eaa5d` returns exactly those five plus the declared figures/vendor directory, so every changed path is inside the declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_retired_verb_names_its_successor.py:118 pins the literal successor invocation and :107 walks the live click tree, both of which redden on a real regression, but the tombstone branch at tests/test_cited_commands_exist.py:256 is exercised by no test, so the citation-refusal wiring could be deleted with the suite still green.",
+    "evidence": "gate-head.log records the four-file command and 2 failed / 78 passed EXIT=1, base-arm.log records the two-file base arm at f339f0eda with the identical two failing ids, and negative-control.log records the guard firing at EXIT=1, so the result is recorded rather than claimed.",
+    "fit": "tombstones.py follows the surrounding crew-module idiom (frozen dataclass registry, module-level lookup dict) and its names carry no plan label or version, but reckon/crew/tombstones.py:110 adds a public helper with no caller, which the rest of the package does not do.",
+    "goal_fidelity": "reckon/crew/tombstones.py:44 seeds exactly the three rows the plan names and reckon/crew_dispatch_commands.py:30 answers a typed retired name with the tombstone while keeping it out of crew.commands, which is the deliverable; one unused helper (retired_names) is the only surplus.",
+    "reuse": "Searched reckon/ and reckon/crew/ for an existing retired-name owner and found none live (the earlier hidden review-plan alias was removed; only the deprecated-flag notice at reckon/crew_follow_commands.py:2950 remains), so the registry does not fork a capability the repository owns.",
+    "scope_discipline": "git diff --name-only f339f0eda d855eaa5d lists only reckon/crew/tombstones.py, reckon/crew_dispatch_commands.py, the two test files and the evidence fragment, all inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make a retired crew verb answer with its successor; reckon/crew/tombstones.py:44 seeds the three rows the plan names and reckon/crew_dispatch_commands.py:26 resolves a typed retired name to one.\nVERDICT done_when: the done_when names tests/test_a_retired_verb_names_its_successor.py and tests/test_cited_commands_exist.py; the head gate (gate-head.log) runs all four named files and records 2 failed / 78 passed, EXIT=1, against a base arm with the identical two failing ids.\nVERDICT write_paths: read the manifest's declared paths; `git diff --name-only f339f0eda d855eaa5d` returns exactly those paths and nothing else.\nVERDICT manifest: read; it records commit d855eaa5d, the base/head gate counts, the negative-control log path, and follow_ons naming the two pre-existing failures as another node's.\nVERDICT diff: read commit by commit against base f339f0eda; one commit touches five paths (registry, group override, two test files, evidence fragment), all inside the declared scope.\nCALL_SITES: reckon/crew_dispatch_commands.py:_CrewGroup.get_command\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/tombstones.py:44 seeds the three named rows and reckon/crew_dispatch_commands.py:30 answers a typed retired name with the tombstone while keeping it out of crew.commands.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-head.log records the four-file command and 2 failed / 78 passed EXIT=1, base-arm.log records the base arm at f339f0eda with the identical two failing ids, and negative-control.log records the guard firing at EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --name-only f339f0eda d855eaa5d` lists only the five declared paths, all inside the manifest's write scope.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_retired_verb_names_its_successor.py:118 pins the literal successor invocation and :107 walks the live click tree, but the tombstone branch at tests/test_cited_commands_exist.py:256 is exercised by no test and could be deleted with the suite still green.\nSCORE fit: 17\nJUSTIFICATION fit: tombstones.py follows the surrounding frozen-dataclass registry idiom and carries no plan label, but reckon/crew/tombstones.py:110 adds a public helper with no caller.\nSCORE reuse: 19\nJUSTIFICATION reuse: no live owner of a retired-verb registry exists in reckon/ (the earlier hidden review-plan alias was removed), so reckon/crew/tombstones.py:1 does not fork a capability the repository owns.\nFINDING tests/test_cited_commands_exist.py:256 follow-on: the tombstone branch added to test_every_cited_command_and_flag_resolves is never negated, so deleting it leaves every test green and the citation refusal is guarded only at the helper.\nFINDING tests/test_a_retired_verb_names_its_successor.py:93 follow-on: the assertions compare the command's output against the same registry row it looked up, so they move together and do not pin a wrong successor.\nFINDING reckon/crew/tombstones.py:110 follow-on: retired_names() has no caller in production or tests, so it is dead public surface.",
+  "review_run_id": "r-20261019T060437234857-review-of-cso-retired-verbs-name-successor-d855eaa5d428",
+  "reviewed_base_sha": "f339f0eda7fb778034e050fea9d96ba35cb28e56",
+  "reviewed_head_sha": "d855eaa5d4285c183906588d741ce9a64e7d3197",
+  "reviewed_run_id": "r-20261019T054613169905-cso-retired-verbs-name-successor",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T06:15:00+00:00",
+  "total": 110
+}
