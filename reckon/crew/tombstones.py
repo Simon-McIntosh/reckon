@@ -2,7 +2,7 @@
 
 A coordinator's session carries skill text loaded before a verb is folded away,
 so a name that no longer resolves keeps being reached for long after the change
-(the retired ``crew review-plan`` alias was called hundreds of times after it was
+(the retired ``review-plan`` alias was called hundreds of times after it was
 folded into ``crew review``). A tombstone answers that call in one turn: it
 writes nothing, prints one JSON document naming the retired verb, its successor
 and the successor's invocation with the caller's arguments carried across, and
@@ -47,11 +47,18 @@ class Tombstone:
     """One retired verb and the invocation that replaced it.
 
     :param retired: the folded verb name exactly as a caller types it, e.g.
-        ``"review-plan"`` for ``reckon crew review-plan``.
+        ``"review-plan"`` for the retired plan-review alias.
     :param successor: the successor as a reader names it, e.g.
         ``"crew review"`` — this is what the JSON document reports.
     :param argv: for a CLI successor, the token path from the crew group,
         e.g. ``("crew", "review")``. Empty for an MCP successor.
+    :param flags: for a CLI successor that selects its behaviour with a flag,
+        the flag that names the retired verb's own case, e.g. ``("--lift",)``
+        for the retired ``budget-lift`` folded into ``crew budget --lift``. Carried
+        into the successor invocation ahead of the caller's arguments, because
+        the arguments alone do not select the case. It is deliberately not part
+        of ``argv``: ``argv`` is a token path into the live command tree, and a
+        flag is not a command.
     :param mcp_view: for an MCP successor, the view the crew tool accepts.
     :param mcp_action: for an MCP successor, the action the crew tool accepts.
     :param detail: one line saying what the successor does, so the refusal
@@ -61,6 +68,7 @@ class Tombstone:
     retired: str
     successor: str
     argv: tuple[str, ...] = ()
+    flags: tuple[str, ...] = ()
     mcp_view: str | None = None
     mcp_action: str | None = None
     detail: str = ""
@@ -92,6 +100,37 @@ TOMBSTONES: tuple[Tombstone, ...] = (
         successor="crew complete",
         argv=("crew", "complete"),
         detail="a finished run is promoted by `crew complete`",
+    ),
+    Tombstone(
+        retired="budget-lift",
+        successor="crew budget --lift",
+        argv=("crew", "budget"),
+        flags=("--lift",),
+        detail="a budget group's pace is lifted or cleared by `crew budget --lift`",
+    ),
+    Tombstone(
+        retired="budget-lifts",
+        successor="crew budget --list",
+        argv=("crew", "budget"),
+        flags=("--list",),
+        detail="active and recent budget lifts are listed by `crew budget --list`",
+    ),
+    Tombstone(
+        retired="budget-reset",
+        successor="crew budget --reset",
+        argv=("crew", "budget"),
+        flags=("--reset",),
+        detail=(
+            "a budget group's banked reset is flagged, cleared or read by "
+            "`crew budget --reset`"
+        ),
+    ),
+    Tombstone(
+        retired="preflight",
+        successor="crew budget --check",
+        argv=("crew", "budget"),
+        flags=("--check",),
+        detail="backend budget state is checked by `crew budget --check`",
     ),
 )
 
@@ -142,7 +181,7 @@ def successor_invocation(row: Tombstone, args: tuple[str, ...]) -> str:
     options that map onto the tool's parameters.
     """
     if row.is_cli:
-        return " ".join(("reckon", *row.argv, *args))
+        return " ".join(("reckon", *row.argv, *row.flags, *args))
     rendered = [f'{key}="{value}"' for key, value in _mcp_arguments(args)]
     view = f'view="{row.mcp_view}"' if row.mcp_view else ""
     action = f'action="{row.mcp_action}"' if row.mcp_action else ""

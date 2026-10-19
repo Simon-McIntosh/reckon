@@ -289,7 +289,7 @@ backgrounded search, so the host half is here:
 ## Resuming a held wave without a human
 
 A wave held on a reset timestamp knows *when* it can reopen —
-`reckon crew preflight` reports `resume_after_seconds` and `resume_at`. Turning
+`reckon crew budget --check` reports `resume_after_seconds` and `resume_at`. Turning
 that into an actual resumption is the harness-local part, and this host offers
 three forms, in increasing order of what they cost and commit to.
 
