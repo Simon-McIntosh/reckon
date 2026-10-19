@@ -28,27 +28,41 @@
     <section id="a-failed-catalogue-read-is-not-an-absent-catalogue-what-changed">
       <h2>What changed</h2>
       <ul>
-        <li><code>reckon/checkout_trust.py</code> gains <code>IDENTITY_UNKNOWN</code> (the value <code>"unknown"</code>, which collides with neither a 40-digit tree id nor a 64-digit content digest) and <code>IdentityReadError</code>, raised where a read could not be completed.</li>
-        <li>The catalogue is now read with <code>git ls-tree HEAD -- &lt;path&gt;</code>, which answers whether or not the path exists &#8212; exit zero naming the blob when present, exit zero naming nothing when absent, and non-zero only when it could not answer. So empty output is git's own statement of absence, and a non-zero exit or an unfinished read is raised rather than read as absence. <code>committed_reckon_tree</code> similarly raises on a read that did not complete, and only returns <code>None</code> when git ran and answered that there is no such tree.</li>
-        <li><code>_committed_reload_tree</code> propagates an <code>IdentityReadError</code> rather than returning a partial tree, and <code>source_code_identity</code> catches it to report <code>IDENTITY_UNKNOWN</code>. A checkout that genuinely lacks the catalogue still yields the package-and-scripts tree, and a package outside Git is still hashed directly.</li>
-        <li><code>reckon/crew_follow_commands.py</code>: <code>_FollowerReloader.poll</code> treats an unknown reading as no new identity &#8212; it returns before comparing, keeping its current image and its recorded stamp rather than materialising a tree from a partial read. The producer's reloader is the same class, so it gets the same treatment.</li>
+        <li><code>reckon/checkout_trust.py</code> gains <code>IDENTITY_UNKNOWN</code> (the value <code>"unknown"</code>, which collides with neither a 40-digit tree id nor a 64-digit content digest) and <code>IdentityReadError</code>.</li>
+        <li>The catalogue is now read with <code>git ls-tree HEAD -- &lt;path&gt;</code>, which answers whether or not the path exists: exit zero naming the blob when present, exit zero naming nothing when absent, non-zero only when it could not answer. So empty output is git's own statement of absence, and a read that could not be completed is raised rather than read as absence.</li>
+        <li><strong>Unknown is earned by that read alone.</strong> It runs only after a listing has answered for both <code>reckon</code> and <code>skills</code>, so it can only fail on a checkout git answered for. Every other way the computation can fail to identify a checkout &mdash; a git that cannot be run, a directory that is no repository, or a tree this process cannot compose &mdash; returns <code>None</code>, which <code>source_code_identity</code> has always read as a checkout outside Git and identified by its package content stamp. Those keep the identity they had before.</li>
+        <li><code>reckon/crew_follow_commands.py</code>: <code>_FollowerReloader.poll</code> treats an unknown reading as no new identity &mdash; it returns before comparing, keeping its current image and its recorded stamp rather than materialising a tree from a partial read. The producer's reloader is the same class, so it gets the same treatment.</li>
       </ul>
+    </section>
+
+    <section id="a-failed-catalogue-read-is-not-an-absent-catalogue-overreach">
+      <h2>The first attempt raised too widely, and the follower-pane gate caught it</h2>
+      <p>The first delivery raised the failure from the listing, the catalogue lookup <em>and</em> the tree composition together. On this workstation a worker process may not write to the repository's object store, and <code>git mktree</code> &mdash; which writes one &mdash; therefore returns nothing for it. The composition that follows a perfectly good catalogue read failed, every identity read in that environment returned <code>IDENTITY_UNKNOWN</code>, and the follower's reloader returned early on every tick.</p>
+      <p><code>tests/test_a_pane_settles_when_no_work_is_live.py::test_the_real_follower_settles_when_the_host_advertises_it</code> spawns a real follower and waits for it to settle and leave. It failed 5 of 5 runs alone at the first delivery, and passes 5 of 5 runs alone at the delivered revision and at base. The attribution is the gate's, not the loader's: the failure was reproducible in isolation, in the foreground, with <code>TMPDIR</code> unset.</p>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>Follower-pane case alone, first delivery (raised from every step)</td><td>1 failed in 5 of 5 runs, <code>EXIT=1</code> each</td><td><code>logs/head-alone5-prefix.log</code></td></tr>
+          <tr><td>Follower-pane case alone, delivered revision</td><td>1 passed in 5 of 5 runs, <code>EXIT=0</code> each</td><td><code>logs/head-pane-alone5.log</code></td></tr>
+          <tr><td>Follower-pane case alone, base revision <code>12d236688</code></td><td>1 passed in 5 of 5 runs, <code>EXIT=0</code> each</td><td><code>logs/base-pane-alone5.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>The gate gained a case for the distinction the overreach lost: a checkout git cannot be read through keeps its package content stamp; only a catalogue read that failed on a checkout git answered for is unknown. The case fails against the over-broad raise and passes against the delivered code.</p>
     </section>
 
     <section id="a-failed-catalogue-read-is-not-an-absent-catalogue-the-gate">
       <h2>The gate</h2>
-      <p><code>tests/test_a_failed_catalogue_read_is_not_an_absent_catalogue.py</code> builds a temporary checkout carrying the package, its dispatch script and the catalogue. The first case makes the catalogue read raise <code>TimeoutExpired</code> and requires the identity to be <code>IDENTITY_UNKNOWN</code>, distinct from the catalogue-less tree. The second case removes the catalogue from <code>HEAD</code> and requires the package-and-scripts tree. The third requires a fully successful read to fold the catalogue in, confirmed by materialising the identity and finding the catalogue file inside the image. The fourth arms a reloader on a good stamp, then feeds it <code>IDENTITY_UNKNOWN</code> and requires it to keep its recorded stamp, to run its check without re-executing, and never to materialise a tree.</p>
+      <p><code>tests/test_a_failed_catalogue_read_is_not_an_absent_catalogue.py</code> builds a temporary checkout carrying the package, its dispatch script and the catalogue. The first case makes the catalogue read raise <code>TimeoutExpired</code> and requires the identity to be <code>IDENTITY_UNKNOWN</code>, distinct from the catalogue-less tree. The second removes the catalogue from <code>HEAD</code> and requires the package-and-scripts tree. The third makes tree composition unavailable and points at a directory that is no repository, and requires both to keep the package content stamp rather than report unknown. The fourth requires a fully successful read to fold the catalogue in, confirmed by materialising the identity and finding the catalogue file inside the image. The fifth arms a reloader on a good stamp, then feeds it <code>IDENTITY_UNKNOWN</code> and requires it to keep its recorded stamp, to run its check without re-executing, and never to materialise a tree.</p>
       <table>
         <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
         <tbody>
-          <tr><td>Delivered head, <code>tests/test_a_failed_catalogue_read_is_not_an_absent_catalogue.py</code></td><td>4 passed, <code>EXIT=0</code></td><td><code>logs/head-arm.log</code></td></tr>
-          <tr><td>Delivered head, the 46 test files importing <code>reckon/checkout_trust.py</code> or <code>reckon/crew_follow_commands.py</code></td><td>3 failed, 415 passed, <code>EXIT=1</code> (failures outside this node's scope; see below)</td><td><code>logs/after-importers.log</code></td></tr>
-          <tr><td>Base revision <code>12d236688</code>, the same 46 importer files</td><td>1 failed, 415 passed, 2 errors, <code>EXIT=1</code>; the one failure is shared with the head arm and both errors did not reproduce in isolation</td><td><code>logs/base-importers.log</code></td></tr>
+          <tr><td>Delivered revision, <code>tests/test_a_failed_catalogue_read_is_not_an_absent_catalogue.py</code></td><td>5 passed, <code>EXIT=0</code></td><td><code>logs/head-arm.log</code></td></tr>
+          <tr><td>Delivered revision, the 46 test files importing <code>reckon/checkout_trust.py</code> or <code>reckon/crew_follow_commands.py</code></td><td>see below</td><td><code>logs/after-importers.log</code></td></tr>
+          <tr><td>Base revision <code>12d236688</code>, the same 46 importer files</td><td>see below</td><td><code>logs/base-importers.log</code></td></tr>
           <tr><td>Declared negative control, fold restored and guard dropped</td><td>2 failed, 2 passed, <code>EXIT=1</code>; the failing ids are the first case and the reloader case, neither of which the head arm fails</td><td><code>logs/negative-control.log</code></td></tr>
         </tbody>
       </table>
-      <p>Logs live under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T133039067330-a-failed-catalogue-read-is-not-an-absent-catalogue/</code>. Every arm ran in the assigned worktree or a scratch extraction of the delivered revision under the run's scratch, with <code>reckon.checkout_trust</code> imported from the tree that tree names on its own header lines.</p>
-      <p>The three importer-suite failures at the delivered head &#8212; <code>test_a_pane_settles_when_no_work_is_live.py::test_the_real_follower_settles_when_the_host_advertises_it</code>, and two in <code>test_removed_flag_migration.py</code> &#8212; are reported for the coordinator to attribute against the base arm; this node's declared scope is <code>reckon/checkout_trust.py</code> and <code>reckon/crew_follow_commands.py</code>, and none of the three exercises the identity computation this node changed.</p>
+      <p>Logs live under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T133039067330-a-failed-catalogue-read-is-not-an-absent-catalogue/</code>. Each arm runs against the revision its log names, with <code>reckon.checkout_trust</code> imported from that tree.</p>
     </section>
 
     <section id="a-failed-catalogue-read-is-not-an-absent-catalogue-negative-control">
@@ -58,7 +72,10 @@
 
     <section id="a-failed-catalogue-read-is-not-an-absent-catalogue-commits">
       <h2>Commits</h2>
-      <p><code>f94ec6674</code> &mdash; fix(crew): a failed catalogue read leaves the code identity unknown. Reads the catalogue with <code>ls-tree</code> so absence is git's own answer, raises <code>IdentityReadError</code> on a read that did not complete, reports <code>IDENTITY_UNKNOWN</code> from <code>source_code_identity</code>, and has <code>_FollowerReloader.poll</code> keep its image on an unknown reading. Changes <code>reckon/checkout_trust.py</code>, <code>reckon/crew_follow_commands.py</code>, <code>tests/test_a_failed_catalogue_read_is_not_an_absent_catalogue.py</code>.</p>
+      <ul>
+        <li><code>f94ec6674</code> &mdash; fix(crew): a failed catalogue read leaves the code identity unknown. The catalogue is read with <code>ls-tree</code>, and <code>source_code_identity</code> reports <code>IDENTITY_UNKNOWN</code>, with the reloader keeping its image on an unknown reading. This is the revision the follower-pane failure above is attributed to.</li>
+        <li><code>5fe725324</code> &mdash; fix(crew): only a failed catalogue read leaves the code identity unknown. Narrows the raise to the catalogue read, so a checkout git cannot be read through keeps its package content stamp, and adds the gate case for it.</li>
+      </ul>
     </section>
   </main>
 </body>
