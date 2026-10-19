@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T19:30:46.493Z",
+  "dispatched_at": "2026-10-19T19:11:33Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/test-time-is-not-the-nodes-time.html:132",
+      "id": "single_goal-1",
+      "reason": "both halves are already shown by the one done-when (a clause each) and are a single small cleanup; splitting the node would change choreography, not the plan's content or its measure.",
+      "text": "\u00a76 (\"The time fence reads cleanly, and its tests assert what it says\") carries two independent deliverables: a source fix in `reckon/crew/prompts.py` (deliverable 1) and an assertion change in `tests/test_time_fence_follows_the_attempt.py:185` (deliverable 2), which two different defects motivate \u2014 a punctuation fault and a stale guard \u2014 so a single verdict cannot close either on its own.",
+      "type": "single_goal",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "a6845841d210f5b26653460032a50fded62e957edbc664051dfeeb7d39789e9d",
+  "plan_slug": "test-time-is-not-the-nodes-time",
+  "plan_version": 32,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "single_goal-1",
+      "reason": "one small cleanup of the time fence: each half has its own done-when clause and its own negative control, so a verdict closes each independently; splitting it would add a node and a review round without changing what is built or measured",
+      "when": "2026-10-19T19:32:55.787931+00:00"
+    }
+  ],
+  "responses": {
+    "single_goal-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "one small cleanup of the time fence: each half has its own done-when clause and its own negative control, so a verdict closes each independently; splitting it would add a node and a review round without changing what is built or measured",
+      "when": "2026-10-19T19:32:55.787931+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-test-time-is-not-the-nodes-time.v32.json",
+  "review_run_id": "r-20261019T191003219466-plan-review-of-test-time-is-not-the-nodes-time",
+  "reviewed_blob_sha": "03de2b048052042bc2ff2e6ef991b2a654665809",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `tests/test_time_fence_follows_the_attempt.py:185` is exactly `assert \"` + backtick + `date -u` + backtick + ` in prompt`; `compose_prompt` does append `.` to `{time_fence}` (`reckon/crew/prompts.py:721`); the two-period fault is real (time_fence_statement returns a string ending `.`); the brief-prompt golden at `tests/test_brief_prompt.py:328` does use the bare form (`20m.`); and the cited review finding resolves (finding index 0, file `tests/test_time_fence_follows_the_attempt.py` line 185, severity follow-on, in `\u2026/runs/r-20261019T174344205759-a-deadline-needs-no-time-zone/review-records/\u2026at-c81cbcf8e31f\u2026json`).",
+    "done_when": "pass \u2014 each clause is falsifiable (three composed-prompt forms; the changed assertion) and the section declares two negative controls naming the mutation and the red case for each.",
+    "evidence_paths": "pass \u2014 the section writes only source and test files plus \"the node's evidence fragment\", matching \u00a73/\u00a75's landing convention (`docs/evidence/fragments/test-time-is-not-the-nodes-time/<node>.html`), and the gate logs go to the run directory as the other sections require.",
+    "naming": "pass \u2014 the new test file `tests/test_the_time_fence_reads_cleanly.py` and the section title name the mechanism, carrying no plan label, ticket number or version tag.",
+    "reasoning": "pass \u2014 all three checks hold: the stated root cause matches the code and the cited review finding (a period appended to a statement that already ends in one; an assertion whose literal now appears only inside the prohibition clause it warns against); the mechanism (compose prompts in the three forms, assert no double period) produces the done-when; and the change lands on the real path \u2014 `compose_prompt`'s FENCE \u2014 TIME block, the function every dispatch and resume composes through.",
+    "single_goal": "a finding \u2014 s6 carries two deliverables (fix the fence's double period in `reckon/crew/prompts.py`, and change a stale assertion in `tests/test_time_fence_follows_the_attempt.py`), which is two artifacts and two defects under one node: a real but low-impact edge, since both halves are shown by the one gate.",
+    "wiring": "pass \u2014 s6 declares `depends-on: [s5]`, and s5's own entry declares `[s3]`, so s6's reliance on \u00a73 (whose statement form created the double period) is covered transitively; every named node resolves."
+  },
+  "section_digests": {
+    "_document": "c0ecb679b727b164aa788d1c3fad2f6e4a5e884fb7555ea609e20d99aefba5be",
+    "s1": "db87e9dc091adc1afc070dc0aef99a3806a457e6dc5e0e2a813fea5769fe65b4",
+    "s2": "5a0fb3df892e6e7a0e3ffe65cb4d4d3141028f5087a91a448c204ff9d28a8d4a",
+    "s3": "cd3dc051b230ab35b56efe7d9ffb4d36e13bf85c4bec1cee0d8ae02e8371178a",
+    "s4": "3ecba0ba9644607d22d9c2d91dfb3f22042d163919f276abb7f2bfa201173b0a",
+    "s5": "ecbd1f94c5f09b24eefdd48287dd43df47235707f7cc8383517bcff7811ac5b5",
+    "s6": "9da78f642e03bbc37fc621705aab289bc6d375b2322239fed2128e1147f80233"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T19:32:31.111476+00:00"
+}
