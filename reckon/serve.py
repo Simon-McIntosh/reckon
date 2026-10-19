@@ -48,6 +48,7 @@ import mimetypes
 import os
 import re
 import shutil
+import signal
 import socket
 import subprocess
 import sys
@@ -73,6 +74,7 @@ from reckon import (
     fleet_index,
     ledger,
     metadata_index,
+    route_results,
     served_code,
 )
 from reckon._store import (
@@ -1020,12 +1022,10 @@ _SOURCE_SNAPSHOT: served_code.SourceSnapshot | None = None
 # only changes to these, because a file the server never runs cannot change
 # what it serves.
 _EXECUTED_SOURCE: served_code.ExecutedSource | None = None
-# Document verdicts are computed out of process (see _start_check_refresh). Only
+# Route results are computed out of process (see reckon.route_results). Only
 # the served process opts in, in main(); a handler driven by a test or another
-# caller reports pending verdicts and starts nothing.
-_CHECK_REFRESH_ENABLED = False
-_CHECK_REFRESHES: dict[str, subprocess.Popen] = {}
-_CHECK_REFRESH_LOCK = threading.Lock()
+# caller answers from a stored result or derives one inline, and starts no
+# child that would write a cache outside its sandbox.
 _SIGNATURE_MEMO: dict[tuple[str, str, str], tuple[float, tuple[int, int]]] = {}
 _SIGNATURE_MEMO_LOCK = threading.Lock()
 # The served process opts into the longer window; the library default stays 0
@@ -1103,6 +1103,11 @@ class _CodeReload:
         with self._idle:
             self._idle.wait_for(lambda: self._active == 0, timeout=3)
         self.server.server_close()
+        # The exec below replaces this image, and returns only on failure, so
+        # the release that runs on a normal exit would never run. Stop the
+        # refresh children here: they hold the derivation this image started,
+        # and the image that replaces it can start its own.
+        route_results.stop_children()
         argv = [sys.executable, *sys.orig_argv[1:]]
         self.exec_(sys.executable, argv)
 
@@ -2180,38 +2185,11 @@ def _project_for_root(root: Path) -> str:
     return root.parent.name
 
 
-def _spawn_check_refresh(argv: list[str]) -> subprocess.Popen:
-    return subprocess.Popen(argv, stdin=subprocess.DEVNULL)
-
-
-def _start_check_refresh(project: str) -> bool:
-    """Check a project's pending documents in a child process; True if running.
-
-    One check costs about a tenth of a second on a shared filesystem, so a large
-    project would hold a request thread for minutes. The child runs at lower
-    priority, writes the verdict store the routes read, and logs to the server's
-    own output. At most one runs per project.
-    """
-
-    if not _CHECK_REFRESH_ENABLED:
-        return False
-    with _CHECK_REFRESH_LOCK:
-        running = _CHECK_REFRESHES.get(project)
-        if running is not None and running.poll() is None:
-            return True
-        argv = [sys.executable, "-m", "reckon.compliance", "refresh"]
-        argv += ["--project", project]
-        if _MOUNTS_FILE is not None:
-            argv += ["--mounts", str(_MOUNTS_FILE)]
-        nice = shutil.which("nice")
-        if nice:
-            argv = [nice, "-n", "10", *argv]
-        try:
-            _CHECK_REFRESHES[project] = _spawn_check_refresh(argv)
-        except OSError as exc:
-            print(f"compliance refresh for {project} did not start: {exc}", flush=True)
-            return False
-        return True
+# ── Stored route results ──────────────────────────────────────────────────
+#
+# A route whose derivation is expensive — discovery, the checks summary, the
+# fleet rollup — is answered from the stored result that reckon.route_results
+# keeps current for its key, so the request path never holds the derivation.
 
 
 def _resolve_plan_file(
@@ -2584,11 +2562,17 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def _send_json(self, status: int, obj) -> None:
+    def _send_json(
+        self,
+        status: int,
+        obj,
+        *,
+        headers: Mapping[str, str] | None = None,
+    ) -> None:
         body = json.dumps(obj, indent=2).encode()
         accepts = self.headers.get("Accept-Encoding", "") if self.headers else ""
         if len(body) < _GZIP_MIN_BYTES or "gzip" not in accepts:
-            self._send(status, body, "application/json")
+            self._send(status, body, "application/json", headers=headers)
             return
         # A project inventory is megabytes of repetitive JSON; compressed it is
         # a small fraction of that over a tunnelled connection.
@@ -2598,7 +2582,10 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Encoding", "gzip")
         self.send_header("Vary", "Accept-Encoding")
         self.send_header("Content-Length", str(len(compressed)))
-        self.send_header("Cache-Control", "no-store")
+        if not headers or "Cache-Control" not in headers:
+            self.send_header("Cache-Control", "no-store")
+        for name, value in (headers or {}).items():
+            self.send_header(name, value)
         self.end_headers()
         self.wfile.write(compressed)
 
@@ -2630,8 +2617,15 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         try:
-            initial = discover_plans(docs_dir, project, _STATE_ROOT)
-            digest = initial.get("provenance", {}).get("content_digest", "")
+            # Discovery is read from its stored result rather than derived on
+            # the stream: a change-driven recompute belongs to the fleet watch,
+            # so this spawns only when nothing is stored yet.
+            digest = route_results._discovery_digest(
+                route_results._stored_discovery(project, docs_dir)
+            )
+            # The fleet-scoped versions this stream has already told the reader
+            # about; the ones already published when it opens are not news.
+            sent_fleet = route_results._fleet_versions()
             # The rows the stream diffs against: what a page painting from
             # /_index holds when its stream opens.
             known = {
@@ -2654,6 +2648,22 @@ class Handler(BaseHTTPRequestHandler):
                 # A save or a merge is a burst of events; let it settle so the
                 # burst costs one rediscovery rather than one per event.
                 watch.drain(_CHANGE_SETTLE_S)
+                # A finished refresh publishes its fleet-scoped result through
+                # the parent's waiter, which wakes this stream. One event per
+                # key whose version moved, even when this project's own rows
+                # are unchanged.
+                current_fleet = route_results._fleet_versions()
+                moved_fleet = {
+                    key: version
+                    for key, version in current_fleet.items()
+                    if sent_fleet.get(key) != version
+                }
+                if moved_fleet:
+                    sent_fleet = dict(current_fleet)
+                    for fleet_key, fleet_version in moved_fleet.items():
+                        self._write_project_event(
+                            "fleet", fleet={"key": fleet_key, "version": fleet_version}
+                        )
                 # Every watch that reports a tree drops the same views of it,
                 # so a page that paints from the index is never handed rows
                 # that predate the change its own stream just reported.
@@ -2670,8 +2680,9 @@ class Handler(BaseHTTPRequestHandler):
                     # the resolver behind the next digest is the expensive
                     # half of a change, and a reader must not wait on it.
                     self._write_project_event("change", rows=row_changes)
-                current = discover_plans(docs_dir, project, _STATE_ROOT)
-                next_digest = current.get("provenance", {}).get("content_digest", "")
+                next_digest = route_results._discovery_digest(
+                    route_results._stored_discovery(project, docs_dir)
+                )
                 if next_digest == digest:
                     continue
                 digest = next_digest
@@ -2688,13 +2699,19 @@ class Handler(BaseHTTPRequestHandler):
                 subscription.close()
 
     def _write_project_event(
-        self, event: str, content_digest: str | None = None, rows: dict | None = None
+        self,
+        event: str,
+        content_digest: str | None = None,
+        rows: dict | None = None,
+        fleet: dict[str, str] | None = None,
     ) -> None:
         payload: dict = {}
         if content_digest is not None:
             payload["content_digest"] = content_digest
         if rows is not None:
             payload["rows"] = rows
+        if fleet is not None:
+            payload["fleet"] = fleet
         data = json.dumps(payload, separators=(",", ":"))
         self.wfile.write(f"event: {event}\ndata: {data}\n\n".encode())
         self.wfile.flush()
@@ -2855,7 +2872,10 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path == "/_projects/index.json":
-            self._send_json(HTTPStatus.OK, collect_projects(load_mounts()))
+            rollup, age = route_results._served_result(("rollup",))
+            self._send_json(
+                HTTPStatus.OK, rollup, headers={"X-Result-Age": f"{age:.3f}"}
+            )
             return
 
         if path.startswith("/_projects/"):
@@ -3163,18 +3183,26 @@ class Handler(BaseHTTPRequestHandler):
                 return
             docs_root = Path(check_mounts[project])
             if len(parts) == 1:
+                key = ("checks", project)
                 try:
-                    summary = compliance.project_checks(docs_root, project)
+                    summary, age = route_results._served_result(
+                        key, spawn_on_miss=False
+                    )
                 except Exception as exc:  # noqa: BLE001
                     self._send_json(
                         HTTPStatus.INTERNAL_SERVER_ERROR,
                         {"error": "compliance_failed", "detail": str(exc)},
                     )
                     return
-                summary["refreshing"] = bool(summary["pending"]) and (
-                    _start_check_refresh(project)
+                summary = dict(summary)
+                summary["refreshing"] = bool(summary.get("pending")) and (
+                    route_results._start_refresh(key)
                 )
-                self._send_json(HTTPStatus.OK, summary)
+                self._send_json(
+                    HTTPStatus.OK,
+                    summary,
+                    headers={"X-Result-Age": f"{age:.3f}"},
+                )
                 return
             artifact_type = ROOT_TYPES.get(parts[1])
             slug = parts[2].removesuffix(".html")
@@ -3216,7 +3244,7 @@ class Handler(BaseHTTPRequestHandler):
                 return
             _note_tree_read(disc_mounts[project])
             try:
-                result = discover_plans(disc_mounts[project], project, _STATE_ROOT)
+                result, age = route_results._served_result(("discover", project))
             except Exception as exc:  # noqa: BLE001
                 self._send_json(
                     HTTPStatus.INTERNAL_SERVER_ERROR,
@@ -3226,13 +3254,9 @@ class Handler(BaseHTTPRequestHandler):
                     },
                 )
                 return
-            result = _attach_schedule(
-                result,
-                project,
-                disc_mounts,
-                reference=datetime.now(UTC),
+            self._send_json(
+                HTTPStatus.OK, result, headers={"X-Result-Age": f"{age:.3f}"}
             )
-            self._send_json(HTTPStatus.OK, result)
             return
 
         if path.startswith("/_changes/"):
@@ -3869,6 +3893,43 @@ def start_fleet_change_watch(mounts: dict[str, Path]) -> _FleetChangeWatch:
     return _FLEET_WATCH
 
 
+def _unwind_on_termination(signum: int, frame: object) -> None:
+    """Unwind on SIGTERM, so a killed server releases what it started.
+
+    The served process is the only parent its refresh children have, and a
+    child left running writes a stored result into a home whose owner is
+    already removing it. Ctrl-C already unwinds and runs the release; raising
+    here gives a term signal the same path rather than an image that dies
+    without one.
+    """
+
+    raise SystemExit(128 + signum)
+
+
+def _install_termination_unwind() -> object | None:
+    """Make SIGTERM unwind; return the handler it displaced.
+
+    Returns None where no handler may be installed — off the main thread, or
+    where the platform has no SIGTERM — and the caller hands the value back to
+    :func:`_remove_termination_unwind`.
+    """
+
+    if threading.current_thread() is not threading.main_thread():
+        return None
+    if not hasattr(signal, "SIGTERM"):
+        return None
+    return signal.signal(signal.SIGTERM, _unwind_on_termination)
+
+
+def _remove_termination_unwind(previous: object | None) -> None:
+    """Put back the handler :func:`_install_termination_unwind` displaced."""
+
+    if previous is None:
+        return
+    with contextlib.suppress(ValueError, TypeError):
+        signal.signal(signal.SIGTERM, previous)
+
+
 def main(
     port: int = 8765,
     host: str | None = None,
@@ -3878,12 +3939,12 @@ def main(
 ) -> None:
     global _SIGNATURE_TTL_S  # noqa: PLW0603 — the served process opts into reuse
     global _SOURCE_SNAPSHOT  # noqa: PLW0603 — recorded once, as the code loads
-    global _CHECK_REFRESH_ENABLED  # noqa: PLW0603 — the served process opts in
     global _EXECUTED_SOURCE  # noqa: PLW0603 — recorded from here on
     _SOURCE_SNAPSHOT = served_code.take_snapshot()
     executed = served_code.ExecutedSource(_SOURCE_SNAPSHOT.root)
     _EXECUTED_SOURCE = executed if executed.start() else None
-    _CHECK_REFRESH_ENABLED = True
+    route_results.set_enabled(True)
+    previous_sigterm = _install_termination_unwind()
     try:
         _resolve_paths(mounts_file)
         # A log left oversized by an earlier run is bounded as the server
@@ -3931,10 +3992,16 @@ def main(
         # what this function set up for the served process, so a caller that
         # ran it in a thread gets the library defaults back rather than a
         # module still acting as a server.
+        #
+        # The refresh children go first: each one writes a stored result under
+        # the configuration home this process was serving, so one left running
+        # past this point writes into a home its owner may already be removing.
+        route_results.stop_children()
+        _remove_termination_unwind(previous_sigterm)
         if _EXECUTED_SOURCE is not None:
             _EXECUTED_SOURCE.stop()
         _EXECUTED_SOURCE = None
-        _CHECK_REFRESH_ENABLED = False
+        route_results.set_enabled(False)
         _SOURCE_SNAPSHOT = None
 
 

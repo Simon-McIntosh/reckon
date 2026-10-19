@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import serve, served_code
+from reckon import route_results, serve, served_code
 
 
 def _package(root: Path) -> Path:
@@ -298,13 +298,13 @@ def test_main_releases_the_served_process_state_when_serving_stops(
     while serve._EXECUTED_SOURCE is None and time.monotonic() < deadline:
         time.sleep(0.05)
     tool = serve._EXECUTED_SOURCE.tool if serve._EXECUTED_SOURCE else None
-    assert serve._CHECK_REFRESH_ENABLED is True
+    assert route_results._REFRESH_ENABLED is True
 
     servers[0].shutdown()
     thread.join(timeout=10)
 
     assert not thread.is_alive()
-    assert serve._CHECK_REFRESH_ENABLED is False
+    assert route_results._REFRESH_ENABLED is False
     assert serve._EXECUTED_SOURCE is None
     assert tool is None or sys.monitoring.get_tool(tool) is None
 
@@ -479,7 +479,7 @@ def test_main_releases_the_served_process_state_when_it_cannot_bind(
         with pytest.raises(OSError, match="in use"):
             serve.main(port=port, host="127.0.0.1", mounts_file=mounts_file)
 
-    assert serve._CHECK_REFRESH_ENABLED is False
+    assert route_results._REFRESH_ENABLED is False
     assert serve._EXECUTED_SOURCE is None
     assert serve._SOURCE_SNAPSHOT is None
     assert seen_tools and all(

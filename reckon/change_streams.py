@@ -274,6 +274,7 @@ class _FleetChangeWatch:
         self._subscribers: dict[Path, list[_TreeWake]] = {}
         self._read_at: dict[Path, float] = {}
         self._signals: dict[Path, _TreeSignal] = {}
+        self._fleet_versions: dict[str, str] = {}
         self._lock = threading.Lock()
         self._stop_reader, self._stop_writer = os.pipe()
         self._stop_event = threading.Event()
@@ -326,7 +327,7 @@ class _FleetChangeWatch:
         with self._lock:
             self._read_at[Path(root).resolve()] = time.monotonic()
 
-    def _notify(self, root: Path) -> None:
+    def notify(self, root: Path) -> None:
         """Wake every open stream registered for one tree."""
 
         root = Path(root).resolve()
@@ -335,6 +336,43 @@ class _FleetChangeWatch:
         for wake in wakes:
             with contextlib.suppress(OSError):
                 os.write(wake.writer, b"x")
+
+    def publish_fleet(self, key: tuple[str, ...], version: str) -> None:
+        """Record a fleet-scoped result's new version and wake every stream.
+
+        A result derived over every mount belongs to no one project, so every
+        open stream is woken and each writes its own event for a key whose
+        version moved past the one it last sent.
+        """
+
+        token = ":".join(key)
+        with self._lock:
+            self._fleet_versions[token] = version
+            wakes = [wake for peers in self._subscribers.values() for wake in peers]
+        for wake in wakes:
+            with contextlib.suppress(OSError):
+                os.write(wake.writer, b"x")
+
+    def fleet_versions(self) -> dict[str, str]:
+        """The published version of every fleet-scoped result, by key."""
+
+        with self._lock:
+            return dict(self._fleet_versions)
+
+    def _spawn_changes(self, tree: Path) -> None:
+        """Start the refreshes a change to one tree calls for.
+
+        The watch computes nothing itself: it starts the project's discovery
+        refresh and the one fleet-rollup refresh, both single-flight, so a
+        change to several projects at once starts one rollup child.
+        """
+
+        from reckon import route_results
+
+        project = self._projects.get(Path(tree).resolve(), "")
+        if project:
+            route_results._start_refresh(("discover", project))
+        route_results._start_refresh(("rollup",))
 
     # ── The cross-node detector ───────────────────────────────────────────
 
@@ -413,7 +451,8 @@ class _FleetChangeWatch:
                 fired = True
         if fired:
             _invalidate_tree_views(tree, changed_at=time.monotonic())
-            self._notify(tree)
+            self._spawn_changes(tree)
+            self.notify(tree)
 
     def _slow_pass(self) -> None:
         from reckon.serve import LOGGER
@@ -445,7 +484,8 @@ class _FleetChangeWatch:
         if signature != signal.slow_signature:
             signal.slow_signature = signature
             _invalidate_tree_views(tree, changed_at=time.monotonic())
-            self._notify(tree)
+            self._spawn_changes(tree)
+            self.notify(tree)
 
     def _tree_is_active(self, tree: Path, now: float) -> bool:
         with self._lock:
@@ -495,7 +535,8 @@ class _FleetChangeWatch:
                 # burst costs one invalidation rather than one per event.
                 watch.drain(_CHANGE_SETTLE_S)
                 _invalidate_tree_views(watch.root, changed_at=changed_at)
-                self._notify(watch.root)
+                self._spawn_changes(watch.root)
+                self.notify(watch.root)
 
     def close(self) -> None:
         """Signal both threads to stop and release their descriptors."""
