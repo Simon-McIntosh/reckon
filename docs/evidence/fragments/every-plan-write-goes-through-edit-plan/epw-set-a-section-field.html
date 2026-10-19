@@ -26,38 +26,53 @@
     Two guards keep the two write kinds from colliding with the store's own model. A section's status
     stays a declaration: <code>sections.&lt;id&gt;.status</code> is refused naming
     <code>section_declarations.&lt;id&gt;</code>, so no second spelling is added. A <code>body</code>
-    carrying a heading or a <code>data-reckon</code> section element is refused, because it would
-    forge structure. An unknown field is refused listing the accepted five, and a section id the plan
-    does not carry is refused naming it.
+    carrying a heading, a <code>data-reckon</code> section element or a <code>plan-*</code> meta is
+    refused, because it would forge structure the store reads back as the plan's own — a heading
+    adds a section, a structured section element adds state, and a <code>plan-status</code> meta
+    would rewrite the plan's status. That check is one predicate the three sites that write an
+    authored body share — <code>insert_section</code>, <code>append_evidence</code> and this path —
+    rather than a copy per site, so a clause dropped once is dropped everywhere. An unknown field is
+    refused listing the accepted five, and a section id the plan does not carry is refused naming it.
   </p>
 
   <p id="epw-set-a-section-field-measure">
-    The gate ran at head <code>7db7282e7</code> over
+    The gate ran at head <code>61e705aaa</code> over
     <code>tests/test_edit_plan_sets_a_section_field.py</code>,
     <code>tests/test_the_fingerprint_has_one_form.py</code>, <code>tests/test_skill_contracts.py</code>,
-    <code>tests/test_mcp_vocabulary_is_complete.py</code>, <code>tests/test_edit_plan.py</code> and
-    <code>tests/test_every_module_fits_a_worker_window.py</code>: 170 passed, 2 failed, both failing at
-    the base arm too (<code>test_every_registered_crew_verb_is_documented_or_exempt</code>,
-    <code>test_every_module_fits_a_worker_window</code>) — <strong>zero added failures</strong>. Each of
-    the five fields is set on a temporary plan through <code>edit_plan</code>, every other section's
-    authored title and body bytes are asserted identical for all five, and
-    <code>reckon audit-doc</code> reports clean. The body case replaces prose holding an apostrophe
-    stored as <code>&amp;#x27;</code> and returns <code>review_owed</code> naming that section, matching
-    the equivalent text edit, and a second body case fills a section that carries a heading and a record
-    but no prose — the state a section sits in between its creation and its first body write.
+    <code>tests/test_mcp_vocabulary_is_complete.py</code>, <code>tests/test_edit_plan.py</code>,
+    <code>tests/test_every_module_fits_a_worker_window.py</code>,
+    <code>tests/test_edit_plan_section_writes.py</code> and
+    <code>tests/test_edit_plan_append_evidence.py</code>: 193 passed, 2 failed, both failing at the base
+    arm too (<code>test_every_registered_crew_verb_is_documented_or_exempt</code>,
+    <code>test_every_module_fits_a_worker_window</code>) — <strong>zero added failures</strong>. The last
+    two suites cover <code>insert_section</code> and <code>append_evidence</code>, so the shared
+    predicate cannot change their refusals without the gate saying so. Each of the five fields is set on
+    a temporary plan through <code>edit_plan</code>, every other section's authored title and body bytes
+    are asserted identical for all five, and <code>reckon audit-doc</code> reports clean. The body case
+    replaces prose holding an apostrophe stored as <code>&amp;#x27;</code> and returns
+    <code>review_owed</code> naming that section, matching the equivalent text edit, and a second body
+    case fills a section that carries a heading and a record but no prose — the state a section sits in
+    between its creation and its first body write.
   </p>
 
   <p id="epw-set-a-section-field-negative-control">
-    Negative controls. The forged-structure control — accept a body containing an
-    <code>h2</code> element — was applied at the node head and
-    <code>test_a_body_containing_a_heading_is_refused</code> then failed, logged at
-    <code>negative-control-forged-structure.log</code> with <code>EXIT=1</code>. The placement control
-    this repair round declares — restore the text-match placement — was applied at the repaired head
-    and <code>test_set_body_fills_a_section_that_has_no_prose_yet</code> then failed with
+    Negative controls. The control this repair round declares — drop the
+    <code>plan-*</code> meta clause from the shared predicate — was applied at the node head in a
+    scratch export and <code>test_a_body_carrying_plan_metadata_is_refused</code> then failed, the body
+    being accepted and written instead, logged at <code>negative-control.log</code> with
+    <code>EXIT=1</code>. The same single clause dropped makes the pre-existing
+    <code>insert_section</code> case fail too
+    (<code>test_insert_section_refuses_unsafe_authored_fragments[plan-metadata]</code>, logged at
+    <code>negative-control-sibling-refusals.log</code>) — one predicate, three sites, one place to
+    change. Dropping the heading clause instead fails
+    <code>test_a_body_containing_a_heading_is_refused</code>, logged at
+    <code>negative-control-forged-structure.log</code> with <code>EXIT=1</code>. The earlier placement
+    control — restore the text-match body placement — was applied at the repaired head and
+    <code>test_set_body_fills_a_section_that_has_no_prose_yet</code> then failed with
     <code>sections.s4.body must match exactly once; found 23 occurrences</code>, logged at
-    <code>negative-control.log</code> with <code>EXIT=1</code>. Both mutations were reverted without
-    being committed. Two further controls pass unaided: a body containing a heading is refused, and
-    <code>set sections.s9.title</code> on a plan without <code>s9</code> is refused naming it. The
-    <code>reckon-edit</code> op table names the path, which the skill-contract sweep reads.
+    <code>negative-control-body-placement.log</code> with <code>EXIT=1</code>. Every mutation was
+    reverted without being committed. Two further controls pass unaided: a body containing a heading is
+    refused, and <code>set sections.s9.title</code> on a plan without <code>s9</code> is refused naming
+    it. The <code>reckon-edit</code> op table names the path, which the skill-contract sweep reads.
   </p>
 </section>
