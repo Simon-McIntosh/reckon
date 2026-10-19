@@ -871,7 +871,7 @@ def _compose_dispatch_prompt(
     working_directory: str,
     launch_instant: str = "",
     needs_help_after_failures: int,
-    grace_multiple: float | str | None = None,
+    grace_multiple: float | None = None,
     peer_scopes: Mapping[str, Iterable[str]] | None = None,
     run_id: str = "",
     peer_channels: Mapping[str, Mapping[str, str]] | None = None,
