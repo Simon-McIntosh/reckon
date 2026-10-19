@@ -47,7 +47,13 @@ verb, reported with module and line (the registry module is exempt — it is whe
 the names are defined). And the visible leaf count, read from the live command
 tree, is the base count less the four retired names plus the one parent verb:
 <code>48 - 4 + 1 = 45</code>. One row replaces the four retired rows in
-<code>tests/test_crew_help_names_its_state.py</code>.</p>
+<code>tests/test_crew_help_names_its_state.py</code>. The two test files that
+drove the retired names directly —
+<code>tests/test_crew_budget_lift_cli.py</code> and
+<code>tests/test_skill_contracts.py</code> — are repointed: the CLI test's
+invocations name the folded form with its expected payloads unchanged, and the
+skill-contract checks read the folded form once instead of the three retired
+names.</p>
 <p id="cso-budget-family-folds-measure"><strong>Measure.</strong> Gate:
 <code>tests/test_crew_families_fold.py</code>,
 <code>tests/test_crew_help_names_its_state.py</code>,
@@ -61,26 +67,29 @@ tree, is the base count less the four retired names plus the one parent verb:
 <code>tests/test_the_preflight_reads_the_lift.py</code>, run with the main
 checkout's <code>.venv/bin/python -m pytest -p no:cacheprovider</code>. Base arm
 at <code>0fa62dca44a63a65382c140c82a003dd7a660e02</code> in a scratch tree (the
-new test file absent): <code>6 failed, 154 passed</code>, <code>EXIT=1</code>.
-Head arm at <code>f7a8cbcfc</code> (one commit above the base): <code>16 failed,
-148 passed</code>, <code>EXIT=1</code>.</p>
-<p><strong>Delta.</strong> Two base-arm failures clear at the head: the fold
-repoints the citations, so
-<code>test_cited_commands_exist.py::test_every_cited_command_and_flag_resolves</code>
-and
-<code>test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt</code>
-pass. Two head-arm failures I introduced in scope are fixed before this
-measure. Three head failures (<code>test_ship_skill_authors_the_budget_fence_alone</code>,
-<code>test_ship_crew_surface_lists_each_budget_lift_form_on_its_own_line</code>,
-<code>test_ship_cli_instructions_match_registered_commands_and_flags</code>) and
-<code>test_every_module_fits_a_worker_window.py</code> reproduce identically at
-the base and are pre-existing. The remaining twelve are added by this change and
-live in <code>tests/test_crew_budget_lift_cli.py</code>, which is <strong>outside
-this node's write fence</strong>: that file still invokes the four retired names
-directly and asserts on their answers, so it fails against the folded surface.
-They are recorded under <code>follow_ons</code> rather than fixed here. Ruff
-<code>check</code> and <code>format --check</code> are clean on every changed
-path. Logs <code>gate-head.log</code> and <code>gate-base.log</code> under the
+new test file absent, every path this change touches restored to its base
+content): <code>1 failed, 159 passed</code>, <code>EXIT=1</code>. Head arm at
+<code>cfeb758c39c7348277ba3adeb8a8f2a869e11821</code>: <code>1 failed, 163
+passed</code>, <code>EXIT=1</code>.</p>
+<p><strong>Delta.</strong> Zero failures added against the base arm. The one
+failure both arms share is
+<code>test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window</code>,
+whose two offenders are <code>reckon/crew/review.py</code> and
+<code>reckon/ledger.py</code> — neither of them a file this change touches, and
+the same two at the base revision. No other failure is shared and none is
+added.</p>
+<p><strong>An earlier base arm was wrong, and the correction is the point.</strong>
+The first scratch tree restored the five changed modules and one test file but
+left the <em>head</em> copy of <code>skills/reckon-build/SKILL.md</code> and the
+other documents this change rewrites. That made three skill-contract checks fail
+against a half-folded tree, and a script that scrolls its runs from those
+failure lists is how a base arm is wrong. The corrected tree restores every path
+the change touches, and against it those three checks pass at base and pass at
+head. The earlier arm is not evidence and its numbers are superseded.</p>
+<p>Ruff <code>check</code> and <code>format --check</code> add no findings on
+any changed path — measured against the base copies of the same files, whose
+findings are three and two files-to-reformat respectively, identical either
+side. Logs <code>gate-head.log</code> and <code>gate-base.log</code> under the
 run directory, each ending in an <code>EXIT=</code> line.</p>
 <p id="cso-budget-family-folds-control"><strong>Negative control.</strong>
 Appending one field to <code>_budget_lifts_payload</code>'s answer — the
