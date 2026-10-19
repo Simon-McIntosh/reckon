@@ -112,14 +112,14 @@ def test_the_identity_is_read_once_over_many_quiet_ticks(source, spawns) -> None
 def test_a_commit_yields_the_new_identity_on_the_next_read(source, spawns) -> None:
     """(b) A commit rewriting the ref is seen by the next read."""
     first = _identity(source)
-    before = len(spawns)
 
     _commit(source, "reckon/example.py", "VALUE = 'second'\n", "Change the package")
 
+    before = len(spawns)
     second = _identity(source)
+    assert len(spawns) > before
     assert second != first
     assert second == _fresh_read(source)
-    assert len(spawns) > before
 
 
 def test_a_branch_switch_yields_the_new_identity_on_the_next_read(source) -> None:
@@ -139,20 +139,22 @@ def test_a_branch_switch_yields_the_new_identity_on_the_next_read(source) -> Non
 def test_a_packed_ref_yields_the_new_identity_on_the_next_read(source, spawns) -> None:
     """(d) ``git pack-refs`` moves the fingerprint, and a later commit is still seen."""
     first = _identity(source)
-    before_pack = len(spawns)
 
     _git(source, "pack-refs", "--all")
     branch = _git(source, "rev-parse", "--abbrev-ref", "HEAD")
+    assert (source / ".git" / "packed-refs").exists()
     assert not (source / ".git" / "refs" / "heads" / branch).exists()
+
+    before_pack = len(spawns)
     assert _identity(source) == first
     assert len(spawns) > before_pack
 
-    after_pack = len(spawns)
     _commit(source, "reckon/example.py", "VALUE = 'third'\n", "Change again")
+    after_pack = len(spawns)
     newest = _identity(source)
+    assert len(spawns) > after_pack
     assert newest != first
     assert newest == _fresh_read(source)
-    assert len(spawns) > after_pack
 
 
 def test_a_detached_head_yields_the_new_identity_on_the_next_read(source) -> None:
@@ -183,7 +185,10 @@ def test_a_worktree_is_stamped_through_its_gitdir(source, tmp_path, spawns) -> N
     assert len(spawns) == after_first
 
     _commit(linked, "reckon/example.py", "VALUE = 'linked'\n", "Change in the worktree")
-    assert checkout_trust.source_code_identity(linked / "reckon") == _fresh_read(linked)
+    before = len(spawns)
+    refreshed = checkout_trust.source_code_identity(linked / "reckon")
+    assert len(spawns) > before
+    assert refreshed == _fresh_read(linked)
 
 
 def test_a_failed_read_is_not_held_and_the_next_read_runs_git(
@@ -224,9 +229,9 @@ def test_a_commit_outside_the_package_moves_the_stamp_and_runs_the_reads(
 ) -> None:
     """(h) An out-of-scope commit re-reads, and the identity is unchanged."""
     first = _identity(source)
-    before = len(spawns)
 
     _commit(source, "NOTES.md", "outside every carried tree\n", "Notes outside")
 
+    before = len(spawns)
     assert _identity(source) == first
     assert len(spawns) > before
