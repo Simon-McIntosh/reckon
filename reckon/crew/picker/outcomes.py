@@ -474,8 +474,8 @@ def summarize(
         scores = [
             score
             for row in members
-            if isinstance(row.get("review"), Mapping)
-            and (score := _number(row["review"].get("total"))) is not None
+            if isinstance(block := ledger.review_block(row), Mapping)
+            and (score := _number(block.get("total"))) is not None
         ]
         walls = [
             wall

@@ -3672,6 +3672,25 @@ def read_records(
     return [normalize_identity(record) for record in records], version
 
 
+def review_block(row: Mapping[str, Any]) -> Mapping[str, Any] | None:
+    """The review block a row's readers should see, or ``None``.
+
+    A row's recorded review fields state what a promotion believed when it
+    landed, and that belief is itself evidence, so a misattributed row is never
+    rewritten in place. It carries an appended ``review_correction`` beside
+    them instead. Every reader of a row's review therefore reads through here:
+    a corrected row reads as a run with no review, so it drops out of review
+    totals and per-dimension medians rather than contributing another round's
+    verdict. A row that carries no correction returns its recorded block, and
+    a row that carries no block at all returns ``None`` either way, because an
+    absent review is not a score of zero.
+    """
+    if row.get("review_correction"):
+        return None
+    block = row.get("review")
+    return block if isinstance(block, Mapping) else None
+
+
 def review_scores(
     records: Iterable[Mapping[str, Any]],
     *,
@@ -3699,7 +3718,7 @@ def review_scores(
             continue
         if run_id is not None and str(record.get("run_id") or "") != str(run_id):
             continue
-        block = record.get("review")
+        block = review_block(record)
         if not isinstance(block, Mapping):
             continue
         selected.append(

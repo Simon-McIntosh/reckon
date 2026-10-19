@@ -777,6 +777,168 @@ def crew_repair_review(reviewed_run_id, record_path, change, reason, pretty):
     _emit_crew_result(result, pretty)
 
 
+@crew.command(name="supersede-review")
+@click.option(
+    "--project", required=True, help="Project whose committed ledger holds the row."
+)
+@click.option(
+    "--run", "run_id", required=True, help="Run whose review row is corrected."
+)
+@click.option("--reason", required=True, help="Why the row's review is superseded.")
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_supersede_review(project, run_id, reason, pretty):
+    """Append a correction that supersedes a misattributed row's review; every reader then reads the row as unreviewed."""
+    from reckon.crew.node import CrewError
+
+    try:
+        result = supersede_run_review(project, run_id, reason)
+    except (OSError, ValueError, TypeError, CrewError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit_crew_result(result, pretty)
+
+
+def _dispatched_head_for_row(row: Mapping[str, Any]) -> str:
+    """The head a committed row was dispatched to read, or "" when it names none.
+
+    The strongest source is a declared ``.at-<head>`` write path, read through
+    the delivery code's own predicate so a path a reviewer was granted names the
+    head without the name being parsed a second time. Falling back, the head
+    suffix the review node id mints names the same revision when the dispatch
+    composed a head-keyed id; a hand dispatch under a coordinator's own id
+    carries neither source and is left unresolved rather than guessed.
+    """
+    from reckon.crew.recovery_review_dispatch import _review_record_subject
+    from reckon.crew.recovery_vocabulary import REVIEW_NODE_PREFIX
+    from reckon.crew.repair import round_node_head_suffix
+
+    definition = row.get("node_definition")
+    write_paths = (
+        definition.get("write_paths") if isinstance(definition, Mapping) else None
+    )
+    for declared in write_paths or []:
+        _run_id, head = _review_record_subject(Path(str(declared)))
+        if head:
+            return head
+    return round_node_head_suffix(str(row.get("node") or ""), REVIEW_NODE_PREFIX)
+
+
+def supersede_run_review(project: str, run_id: str, reason: str) -> dict[str, Any]:
+    """Append one review correction to a run's committed row, correcting it.
+
+    A committed row records what a promotion believed when it landed, and that
+    belief is evidence in its own right, so a row whose review fields describe
+    another round is never rewritten in place. The correction is appended
+    beside the recorded fields instead: it names the head the row was
+    dispatched to read, the head it recorded, the reason and the field it
+    supersedes. Every reader of a row's review reads the correction through the
+    ledger's own accessor, so a corrected row reads as a run with no review.
+
+    Three row shapes are refused and left untouched, so a second run of the
+    verb cannot append a second correction to one row. A row whose recorded
+    head is the same revision as its dispatched head was not misattributed and
+    has nothing to correct. A row naming no dispatched head from any source
+    cannot be compared, so its attribution is unknown rather than wrong. A row
+    that already carries a correction has been corrected once.
+    """
+    import json
+
+    from reckon import ledger
+    from reckon.crew.promotion_scope import _commit_landing_writes
+    from reckon.crew.recovery_review_subject import same_revision
+    from reckon.crew.review import carried_revision_pair
+
+    explanation = str(reason or "").strip()
+    if not explanation:
+        raise ValueError("a review correction requires a non-empty --reason")
+
+    source = ledger.run_path(project, run_id, None)
+    resolved_source = source.resolve()
+    row: Mapping[str, Any] | None = None
+    if resolved_source.is_file():
+        loaded = json.loads(resolved_source.read_text(encoding="utf-8"))
+        if isinstance(loaded, dict):
+            row = loaded
+    aggregate, version = ledger.load_aggregate(project)
+    rows = aggregate["runs"]
+    index = next(
+        (
+            position
+            for position, item in enumerate(rows)
+            if isinstance(item, Mapping) and str(item.get("run_id") or "") == run_id
+        ),
+        None,
+    )
+    if row is None:
+        if index is None:
+            raise ValueError(
+                f"run {run_id!r} names no committed row for {project!r}: neither "
+                f"{source} nor the project's ledger holds it"
+            )
+        row = dict(rows[index])
+
+    if row.get("review_correction"):
+        raise ValueError(f"run {run_id!r} already carries a review correction")
+
+    dispatched = _dispatched_head_for_row(row)
+    if not dispatched:
+        raise ValueError(
+            f"run {run_id!r} names no dispatched head to compare against, so its "
+            "attribution cannot be judged"
+        )
+    review = row.get("review")
+    if not isinstance(review, Mapping):
+        raise TypeError(f"run {run_id!r} carries no review to supersede")
+    _base_carried, _base, _head_carried, recorded_head = carried_revision_pair(review)
+    recorded = str(recorded_head or "").strip()
+    if not recorded:
+        raise ValueError(f"run {run_id!r} records no reviewed head to supersede")
+    if same_revision(recorded, dispatched):
+        raise ValueError(
+            f"run {run_id!r} records the head it was dispatched to read "
+            f"({recorded}); its review is correctly attributed and is left as it is"
+        )
+
+    correction = {
+        "time": datetime.now(UTC).isoformat(),
+        "reason": explanation,
+        "dispatched_head": dispatched,
+        "recorded_head": recorded,
+        "superseded_field": "review",
+    }
+    corrected = dict(row)
+    corrected["review_correction"] = correction
+
+    if index is not None:
+        rows[index] = corrected
+        ledger.write(project, aggregate, version)
+    else:
+        ledger.write_run_file(project, corrected, mode=None)
+
+    resolved_aggregate = ledger.ledger_path(project).resolve()
+    checkout = resolved_aggregate.parents[2]
+    paths = [ledger.ledger_path(project)]
+    if resolved_source.is_file():
+        paths.append(source)
+    landing = _commit_landing_writes(
+        run_id=run_id,
+        verdict="superseded",
+        checkout=checkout,
+        paths=paths,
+        subject=f"supersede-review({run_id}): append a review correction",
+        body=(
+            "Append one review correction to a misattributed run's committed "
+            "ledger row, so every reader of its review reads the row as "
+            "unreviewed without rewriting the fields the promotion recorded."
+        ),
+    )
+    return {
+        "project": project,
+        "run_id": run_id,
+        "correction": correction,
+        "landing": landing,
+    }
+
+
 WIDENABLE_PHASE = "blocked"
 
 

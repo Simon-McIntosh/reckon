@@ -20,6 +20,7 @@ STATE_PHRASES: dict[CommandPath, str] = {
     ("budget-lift",): "a budget group's pace",
     ("budget-lifts",): "active and recent budget lifts",
     ("budget-reset",): "a budget group's banked reset is available or used",
+    ("check-review",): "a delivered run review can be filed",
     ("check-manifest",): "delivered manifest against its own node",
     ("complete",): "finished run",
     ("directory",): "live coordinator ownership",
@@ -44,6 +45,7 @@ STATE_PHRASES: dict[CommandPath, str] = {
     ("recover",): "live pointers",
     ("redispatch",): "working run",
     ("repair-completion",): "historical completion measurements missing",
+    ("repair-review",): "a review's status or missing subject identity",
     ("repair-status",): "a manifest's status word",
     ("resume",): "one blocked run with advice",
     ("resume-ready",): "provider hold or declared external wait has ended",
@@ -54,6 +56,7 @@ STATE_PHRASES: dict[CommandPath, str] = {
     # mounted project's ledger still holds, which is the state its phrase names.
     ("split-runs",): "aggregate run rows",
     ("stop",): "running spawned worker",
+    ("supersede-review",): "a misattributed row's review",
     ("suite", "run"): "the project's declared suite",
     ("suite", "waive"): "standing-suite hold",
     ("unwatch",): "registered project watcher",

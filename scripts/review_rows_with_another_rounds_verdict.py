@@ -48,36 +48,12 @@ if str(_ROOT) not in sys.path:
 
 from reckon.crew.recovery_review_dispatch import _review_record_subject  # noqa: E402
 from reckon.crew.recovery_vocabulary import REVIEW_NODE_PREFIX  # noqa: E402
-from reckon.crew.repair import _ROUND_HEAD_DIGITS, round_node_source  # noqa: E402
+from reckon.crew.repair import round_node_head_suffix  # noqa: E402
 from reckon.flight import FlightConfigError, mounted_project_docs  # noqa: E402
 
 _REVIEW_ROLE = "review"
 _RUNS_DIRNAME = "runs"
 _STATE_DIRNAME = "state"
-
-
-def _node_head_suffix(node_id: str) -> str:
-    """The head a review node id mints, read through the writer's own reader.
-
-    ``round_node_source`` strips the review prefix and, when present, the
-    ``-<head[:12]>`` suffix ``round_node_id`` writes, and returns the source.
-    The suffix is therefore the tail separating the prefix from that source: it
-    is recovered as ``raw[len(source) + 1:]`` where ``raw`` is the node id
-    without the prefix, and only when ``raw`` is exactly the source, one
-    separator and the writer's digit count. Deriving it this way keeps one
-    grammar — the writer's, read back through its own inverse — rather than a
-    second regex that could drift from ``round_node_id``.
-    """
-    text = str(node_id or "")
-    if not text.startswith(REVIEW_NODE_PREFIX):
-        return ""
-    raw = text[len(REVIEW_NODE_PREFIX) :]
-    source = round_node_source(text, REVIEW_NODE_PREFIX)
-    if len(raw) != len(source) + _ROUND_HEAD_DIGITS + 1 or not raw.startswith(
-        source + "-"
-    ):
-        return ""
-    return raw[len(source) + 1 :]
 
 
 def _dispatched_head(record: object) -> str:
@@ -99,7 +75,7 @@ def _dispatched_head(record: object) -> str:
             return head
     node = record.get("node")
     node_id = node if isinstance(node, str) else str((node or {}).get("id") or "")
-    return _node_head_suffix(node_id)
+    return round_node_head_suffix(node_id, REVIEW_NODE_PREFIX)
 
 
 def _recorded_head(record: object) -> str:
