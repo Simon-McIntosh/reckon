@@ -40,19 +40,27 @@
   </p>
   <h4>Quiet-cycle syscall counts</h4>
   <p>
-    Against a copy of the fleet's <code>live/</code> holding ten live pointers,
-    driven for five and for forty beats under
-    <code>strace -f -c -e trace=%file,getdents64</code>, the marginal cost of a
-    quiet cycle is <strong>12 openat and 35 stat calls</strong> (from the
-    difference between the two beat counts, so interpreter start-up and the
-    first sweeping beat cancel out). The same harness measures the base revision
-    at 24 openat and 12 stat per cycle. Both sit far below a tenth of the 1,880
-    openat and 1,575 stat per cycle recorded for the ungated producer against the
-    live fleet; the copy is a lighter fleet than that measurement's, so the
-    harness does not reproduce its absolute figures and the comparison of
-    interest is the within-harness pair. The gate's own cost is visible there:
-    a quiet cycle now pays about 35 stat calls to fingerprint the home — three
-    per live run, for its pointer, its stream and its manifest — in exchange for
-    not enumerating the fleet, not walking run directories and not spawning git.
+    Against an isolated crew home whose <code>live/</code> holds an unedited
+    copy of the fleet's 30 live pointers — each still naming its real run
+    directory, stream and worktree — with the producer run from a copy of each
+    revision's tree, and the watched project the one whose runs wrote nothing
+    during the window while every other project's runs were appending: per
+    quiet cycle, from the difference between a 45-beat and a 5-beat run under
+    <code>strace -f -c -e trace=%file,getdents64</code>, the change costs
+    <strong>22 openat and 99 stat calls</strong> against the base revision's
+    <strong>418–471 openat and 297–334 stat</strong>.
+  </p>
+  <p>
+    The change is below a tenth of the base on openat (4.7 %), on
+    <code>newfstatat</code> (0.7 %) and on <code>getdents64</code> (9.2 %), and
+    it spawns no git on a quiet cycle: 0.0 <code>execve</code> per cycle
+    against the base's 2.0, and a per-call trace over 30 beats shows one git
+    invocation for the whole run, at the opening sweep. <strong>It is not below
+    a tenth on stat: 99 against 297–334, 29.7 %.</strong> The cause is the
+    fingerprint itself, which stamps every live pointer and each run's stream
+    and manifest on every beat — about 90 stats for this fleet — where the base
+    pays 334 stats for the same fleet's full walk. The gate removes the
+    listing, the run-directory walk and the git spawns; it leaves the
+    per-pointer stat, and on that the tenth is not reached.
   </p>
 </article>
