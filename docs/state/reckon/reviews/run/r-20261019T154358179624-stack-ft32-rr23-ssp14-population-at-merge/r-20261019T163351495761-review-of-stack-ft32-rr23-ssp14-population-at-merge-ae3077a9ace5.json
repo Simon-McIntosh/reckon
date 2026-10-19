@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_one_automatic_repair_round_per_run.py::test_a_second_round_on_a_new_head_hands_back"
+  ],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/review.py:2243"
+  ],
+  "completed_at": "2026-10-19T16:48:34.000Z",
+  "dispatched_at": "2026-10-19T16:34:35Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T154358179624-stack-ft32-rr23-ssp14-population-at-merge/manifest.md",
+      "line": "12",
+      "text": "follow-on: the reviewed manifest fails reckon crew check-manifest (ok:false) with 'status is complete but no commit is recorded' and changed paths outside the write scope (the run-directory scripts and logs it lists in changed_paths sit outside its declared orientation_write_paths); the node's own contract required it to run check-manifest and repair what it reports before setting a terminal status, and it closed at status: complete without doing so, so the record will be refused at promotion until it is repaired."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "the node commits nothing and changes no product code, so there is no commit diff against base ae3077a9ace5c5c06a2178e1fceee202fecc7a00; the landed change is the recorded measurement and its logs.",
+    "evidence": "the brief's measure is report.md plus each arm's pass/fail counts with its log path; /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T154358179624-stack-ft32-rr23-ssp14-population-at-merge/population/base.log ends '10 failed, 2317 passed, 1 skipped ... ' EXIT=1 and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T154358179624-stack-ft32-rr23-ssp14-population-at-merge/population/candidate.log ends '11 failed, 2330 passed, 1 skipped ...' EXIT=1, both matching the manifest's baseline_suite and after_suite.",
+    "goal_fidelity": "the node goal is to answer whether merging the three stacked runs adds any failing id over their combined importer population; /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-held-dispatch-waits-its-fair-turn/stack-ft32-rr23-ssp14-population-at-merge/report.md:9-11 answers 'yes, one id' and names it.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T154358179624-stack-ft32-rr23-ssp14-population-at-merge/manifest.md: status complete, commits none, baseline_suite 10 failed and after_suite 11 failed with log paths, failure_attribution and artifacts carrying the added id and its 5/0 alone counts; but reckon crew check-manifest returns ok:false ('status is complete but no commit is recorded'; changed paths outside the write scope).",
+    "scope_discipline": "no product file changed (manifest.md:8 'commits: none'); the writes are the report at the declared reports path plus the scripts and logs the brief placed under the run directory."
+  },
+  "justifications": {
+    "durability": "the node adds no test and no assertion, so nothing reddens if the harness or the added_failures_from_gate_logs reader regresses; only the two arm logs make the measurement re-runnable, at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T154358179624-stack-ft32-rr23-ssp14-population-at-merge/population/.",
+    "evidence": "the gate measure is recorded, not claimed: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T154358179624-stack-ft32-rr23-ssp14-population-at-merge/population/base.log and candidate.log both carry the literal command on their header line and a bare EXIT= line, and I independently reproduced added_failures_from_gate_logs -> count 1 on those two files.",
+    "fit": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-held-dispatch-waits-its-fair-turn/stack-ft32-rr23-ssp14-population-at-merge/report.md:1-3 and the helper scripts (population-job.sh, population-derive.py) follow the surrounding report/script idiom and introduce no plan, issue or version label in a symbol or filename.",
+    "goal_fidelity": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-held-dispatch-waits-its-fair-turn/stack-ft32-rr23-ssp14-population-at-merge/report.md:48-57 answers the brief's question with the one added id and its per-arm alone counts, which is exactly the object the node goal names.",
+    "reuse": "the node drove the repository's own reckon/crew/review.py:2172 added_failures_from_gate_logs rather than hand-diffing FAILED lines, and added no definition; a capability search over reckon/crew found its only production consumer at annotate_added_failures (reckon/crew/review.py:2243).",
+    "scope_discipline": "the manifest's changed_paths lists only the report and run-dir artifacts the brief named, but its orientation_write_paths declared only the reports directory, so /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T154358179624-stack-ft32-rr23-ssp14-population-at-merge/manifest.md:12 put run-directory paths outside the declared write scope and check-manifest refuses it."
+  },
+  "node": "review-of-stack-...-ae3077a9ace5",
+  "node:reviewed": "stack-ft32-rr23-ssp14-population-at-merge",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to answer whether merging the three stacked runs adds any failing id over their combined importer population; /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-held-dispatch-waits-its-fair-turn/stack-ft32-rr23-ssp14-population-at-merge/report.md:9-11 answers 'yes, one id' and names it.\nVERDICT done_when: the brief's measure is report.md plus each arm's pass/fail counts with its log path; /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T154358179624-stack-ft32-rr23-ssp14-population-at-merge/population/base.log ends '10 failed, 2317 passed, 1 skipped ... ' EXIT=1 and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T154358179624-stack-ft32-rr23-ssp14-population-at-merge/population/candidate.log ends '11 failed, 2330 passed, 1 skipped ...' EXIT=1, both matching the manifest's baseline_suite and after_suite.\nVERDICT write_paths: no product file changed (manifest.md:8 'commits: none'); the writes are the report at the declared reports path plus the scripts and logs the brief placed under the run directory.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T154358179624-stack-ft32-rr23-ssp14-population-at-merge/manifest.md: status complete, commits none, baseline_suite 10 failed and after_suite 11 failed with log paths, failure_attribution and artifacts carrying the added id and its 5/0 alone counts; but reckon crew check-manifest returns ok:false ('status is complete but no commit is recorded'; changed paths outside the write scope).\nVERDICT diff: the node commits nothing and changes no product code, so there is no commit diff against base ae3077a9ace5c5c06a2178e1fceee202fecc7a00; the landed change is the recorded measurement and its logs.\nCALL_SITES: reckon/crew/review.py:2243\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-held-dispatch-waits-its-fair-turn/stack-ft32-rr23-ssp14-population-at-merge/report.md:48-57 answers the brief's question with the one added id and its per-arm alone counts, which is exactly the object the node goal names.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate measure is recorded, not claimed: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T154358179624-stack-ft32-rr23-ssp14-population-at-merge/population/base.log and candidate.log both carry the literal command on their header line and a bare EXIT= line, and I independently reproduced added_failures_from_gate_logs -> count 1 on those two files.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the manifest's changed_paths lists only the report and run-dir artifacts the brief named, but its orientation_write_paths declared only the reports directory, so /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T154358179624-stack-ft32-rr23-ssp14-population-at-merge/manifest.md:12 put run-directory paths outside the declared write scope and check-manifest refuses it.\nSCORE durability: 13\nJUSTIFICATION durability: the node adds no test and no assertion, so nothing reddens if the harness or the added_failures_from_gate_logs reader regresses; only the two arm logs make the measurement re-runnable, at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T154358179624-stack-ft32-rr23-ssp14-population-at-merge/population/.\nSCORE fit: 20\nJUSTIFICATION fit: /home/ITER/mcintos/.config/reckon/crew/reports/reckon/a-held-dispatch-waits-its-fair-turn/stack-ft32-rr23-ssp14-population-at-merge/report.md:1-3 and the helper scripts (population-job.sh, population-derive.py) follow the surrounding report/script idiom and introduce no plan, issue or version label in a symbol or filename.\nSCORE reuse: 20\nJUSTIFICATION reuse: the node drove the repository's own reckon/crew/review.py:2172 added_failures_from_gate_logs rather than hand-diffing FAILED lines, and added no definition; a capability search over reckon/crew found its only production consumer at annotate_added_failures (reckon/crew/review.py:2243).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T154358179624-stack-ft32-rr23-ssp14-population-at-merge/manifest.md:12 follow-on: the reviewed manifest fails reckon crew check-manifest (ok:false) with 'status is complete but no commit is recorded' and changed paths outside the write scope (the run-directory scripts and logs it lists in changed_paths sit outside its declared orientation_write_paths); the node's own contract required it to run check-manifest and repair what it reports before setting a terminal status, and it closed at status: complete without doing so, so the record will be refused at promotion until it is repaired.\n",
+  "review_run_id": "r-20261019T163351495761-review-of-stack-ft32-rr23-ssp14-population-at-merge-ae3077a9ace5",
+  "reviewed_base_sha": "ae3077a9ace5c5c06a2178e1fceee202fecc7a00",
+  "reviewed_head_sha": "ae3077a9ace5c5c06a2178e1fceee202fecc7a00",
+  "reviewed_run_id": "r-20261019T154358179624-stack-ft32-rr23-ssp14-population-at-merge",
+  "scores": {
+    "durability": 13,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T16:51:44.567731+00:00",
+  "total": 107
+}
