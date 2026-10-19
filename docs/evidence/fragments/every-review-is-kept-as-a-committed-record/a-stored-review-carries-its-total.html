@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="reckon-type" content="evidence">
+  <meta name="docs-project" content="reckon">
+  <meta name="plan-slug" content="every-review-is-kept-as-a-committed-record">
+  <meta name="plan-evidence-for" content="every-review-is-kept-as-a-committed-record">
+  <title>Landing: a stored review carries its total | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; landing record</p>
+      <h1>Landing: a stored review carries the total its scores make</h1>
+    </header>
+
+    <section id="a-stored-review-carries-its-total-what-landed">
+      <h2>What landed</h2>
+      <ul>
+        <li><code>reckon/crew/review.py</code> &mdash; three helpers derive a landed record's <code>total</code> from its six measured dimensions. <code>_score_total</code> sums only when no dimension is absent; <code>_derive_landed_total</code> replaces the record's total with that sum and keeps a disagreeing reviewer figure under <code>reviewer_total</code>; <code>_has_integer_total</code> lets the reader tell a record that already states a total from one that omitted it. The text parser (<code>parse_review</code>) now routes through <code>_score_total</code>. <code>store_review</code> derives on every landed write. <code>read_review</code> derives only for a record that carries no integer total of its own, so an older unsummed record reads complete while a record that already states one reads as stored. The claims rubric is unchanged, and the existing added-failure cap is applied after the derivation, as it is to the text path.</li>
+        <li><code>tests/test_a_stored_review_carries_its_total.py</code> (new) &mdash; six cases: sum-without-a-reviewer-total reads back complete; a missing dimension withholds the total and reads incomplete; a disagreeing reviewer total is kept beside the derived sum; a record written straight to the store without a total reads complete; an unretired added failure caps the derived total; a claims record keeps its own shape.</li>
+        <li><code>tests/test_review_counts_added_failures.py</code> &mdash; the no-lowering case now makes its six dimensions sum to the cap before asserting that capping leaves the total unchanged, so it measures the same intent under a derived total.</li>
+        <li><code>tests/test_one_automatic_repair_round_per_run.py</code> &mdash; the repair-round fixture stored six dimension scores of 15 (sum 90) beside a recorded total of 75, numbers that contradict each other, so the hand-back reason named the derived 90 while the test asserted the recorded 75. The six scores now sum to the recorded total, so the stored and the derived total are one number and the assertion reads the round cap on every run.</li>
+      </ul>
+    </section>
+
+    <section id="a-stored-review-carries-its-total-state-probe">
+      <h2>Why the repair-round test flipped between runs</h2>
+      <p>The test asserts <code>"75" in reason</code>. At this head the derived total is 90, so the reason reads <code>this review scores 90</code>; the only other literal text in it is the round id <code>r-reviewed@&lt;first-head-sha&gt;</code>, the attempt count and the prose. The assertion is therefore satisfied only when the fixture repository's random first-head sha happens to contain the substring <code>75</code> &mdash; a property of the commit timestamp, not of the revision or of any stored state.</p>
+      <ul>
+        <li><code>state-probe-findings.md</code> in the run directory carries the full evidence, including five isolated runs that fail with <code>scores 90</code>, thirty more that fail twenty-nine times, and a <code>strace</code> run that imported this worktree's <code>review.py</code> and made no open under the operator's real review store.</li>
+        <li>The decisive pair fixes only the commit timestamp at the same head: with the sha <code>182fabd498ff26aa6362d23a846754aa513fcde3</code> (contains <code>75</code>) the test passes; with a timestamp whose sha has no <code>75</code> it fails naming <code>90</code>.</li>
+        <li>The derived total is uniform across read paths: the store's index caches paths and heads only and re-reads the selected file, so no cached read can serve an underived total.</li>
+      </ul>
+    </section>
+
+    <section id="a-stored-review-carries-its-total-measure">
+      <h2>Measure</h2>
+      <ul>
+        <li>Importer suite, the 125 files that import <code>reckon/crew/review.py</code> or <code>reckon/crew/recovery_review_subject.py</code>, run in place with <code>-n 8</code>: base <code>3 failed, 1036 passed</code>; head <code>2 failed, 1037 passed</code>. Both head failures are in the base failure set; the head adds none and clears one (<code>test_a_disposition_survives_a_later_promotion</code>).</li>
+        <li>Focused files <code>tests/test_a_stored_review_carries_its_total.py</code> and <code>tests/test_review_counts_added_failures.py</code>: <code>14 passed</code>, <code>EXIT=0</code>.</li>
+        <li>Negative control, the declared mutation (remove the store's total derivation): <code>5 failed, 1 passed</code>, <code>EXIT=1</code> &mdash; the first case (sum without a reviewer total) and the fourth (a stored record with no total reads complete) both fail, as declared.</li>
+        <li><code>ruff check</code> and <code>ruff format --check</code>: no findings on the changed Python files.</li>
+        <li>The repaired test file <code>tests/test_one_automatic_repair_round_per_run.py</code>, whole file, five times in fresh state and five times with one <code>--basetemp</code> reused so the previous run's state survives: <code>3 passed</code> each, ten of ten.</li>
+      </ul>
+      <p><strong>The second importer arm carries one added id, and it is not this change.</strong> At head <code>cb8e7da9f</code> the arm is <code>3 failed, 1036 passed</code> against base <code>3 failed, 1036 passed</code>; two head failures are base failures, and the third, <code>test_scoring_dispatches_its_review.py::test_an_unattached_session_refuses_the_automatic_dispatch_too</code>, fails in its teardown with <code>refusing to stop watcher for project 'sample': the locked registration names ''</code> &mdash; a fleet-watcher lock race in the test's own temporary crew home, outside anything this change touches. Rerunning that test alone with <code>review._derive_landed_total</code> replaced by the identity function still fails (<code>causality-no-derive.log</code>), so the derivation is not the cause; the previous arm at <code>ff2155a57</code>, which already carried the same read-time derivation, passed the same id. Re-running the whole arm at <code>c5a07967e</code> reproduces it exactly (<code>3 failed, 1036 passed</code>, the same id). The two arms' evidence is kept as <code>after-suite-flock-run1.log</code>, <code>after-suite-flock-run2.log</code> and <code>after-suite.log</code>.</p>
+    </section>
+
+    <section id="a-stored-review-carries-its-total-commits">
+      <h2>Commits and records</h2>
+      <p>Code and tests: <code>2af932d50c5ef6624e5dae25194dc8b706d0aa19</code> (derivation and its tests), <code>34da256cef747527262e4f55284c5715f74fc8b7</code> (the no-lowering case measures a capped score), <code>ff2155a579c718cd4ef067c9eff34c0f9012d8e7</code> (the read-time derivation narrowed to a record without a total) and <code>cb8e7da9f</code> (the repair-round fixture's scores sum to its recorded total). Logs under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T124040554227-a-stored-review-carries-its-total/</code>: <code>focused-head-current.log</code>, <code>baseline-suite.log</code>, <code>after-suite.log</code>, <code>negative-control.log</code>, <code>fresh-warm/</code>, <code>state-probe-findings.md</code>.</p>
+    </section>
+  </main>
+</body>
+</html>
