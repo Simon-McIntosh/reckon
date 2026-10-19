@@ -34,14 +34,19 @@
     <tbody>
       <tr><td>Base revision, same quiet checkout</td><td>5 in 35.1 s (6 spawns per read)</td><td>30</td><td>moved</td></tr>
       <tr><td>This change, same quiet checkout</td><td>30 in 30.1 s</td><td>0</td><td>unmoved</td></tr>
+      <tr><td>Base revision again, alone</td><td>9 in 61.0 s (6 spawns per read)</td><td>54</td><td>moved</td></tr>
     </tbody>
   </table>
   <p>The window ran in place on the fleet allocation (<code>98dci4-clu-2002</code>, job
   <code>1281970</code>), one identity read a second through the production call shape. The
-  base arm took 7 s per read because each read composes the tree again and the cohort
-  arms were running beside it; at the follower's 1 s cadence that is 6 git spawns a
-  second per reader. The object named is the composed identity tree
-  <code>.git/objects/c9/a7ec51&hellip;</code>, the inode <code>git mktree</code> rewrote.</p>
+  base reader spawns <strong>6 git per identity read</strong>, and each of its reads costs
+  about 7 s: re-measured with the cohort arms finished and the box to itself, 9 reads took
+  61.0 s. That cost is the reading, not contention: the base reader is slower than the 1 s
+  window it is asked for, so its measured rate is 0.85&ndash;0.88 spawns a second rather
+  than the 6 a second its 1 s cadence would produce if it kept up. This change reads the
+  identity 30 times in 30.1 s and spawns no git at all. The object named is the composed
+  identity tree <code>.git/objects/c9/a7ec51&hellip;</code>, the inode <code>git mktree</code>
+  rewrote.</p>
 
   <h3 id="the-code-identity-is-read-only-when-head-moves-tests">Checks</h3>
   <table>
