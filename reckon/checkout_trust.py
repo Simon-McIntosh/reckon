@@ -81,6 +81,16 @@ COMMITTED_TREE_PUBLISH_GRACE_SECONDS = 300.0
 COMMITTED_TREE_LEASE_WINDOW_SECONDS = 600.0
 COMMITTED_TREE_LEASE_MARKER = ".lease"
 
+# The model catalogue is versioned data beside the package rather than inside
+# it, so a reload image carries it explicitly at the checkout's own relative
+# path: a process reloaded into the image then resolves it through
+# ``model_catalogue_path`` exactly as a checkout would, so a reloaded follower
+# sizes its pane from the declared aliases and a reloaded producer stamps the
+# model it dispatched onto its run. Only this one file is placed -- the
+# ``docs/state`` tree beside it holds the ledger and run state, which are
+# neither code nor read by a reloaded process.
+CATALOGUE_RELATIVE_PATH = "docs/state/reckon/model-catalogue.yaml"
+
 
 def _lock_node_name() -> str:
     """The name this node records for itself in a lease record.
@@ -235,8 +245,70 @@ def committed_reckon_tree(root: Path) -> str | None:
     return tree if result.returncode == 0 and len(tree) == 40 else None
 
 
+def _mktree(root: Path, entries: str) -> str | None:
+    """Write one tree object from ``ls-tree``-shaped entry lines, or None."""
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(root), "mktree"],
+            input=entries,
+            capture_output=True,
+            text=True,
+            timeout=IMPORT_PROBE_TIMEOUT,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    tree = result.stdout.strip()
+    return tree if result.returncode == 0 and len(tree) == 40 else None
+
+
+def _committed_catalogue_blob(root: Path) -> str | None:
+    """The catalogue blob at ``HEAD``, or None when the checkout carries none.
+
+    The catalogue is data a checkout may legitimately lack -- a wheel install
+    carries no ``docs/``.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "--verify", f"HEAD:{CATALOGUE_RELATIVE_PATH}"],
+            capture_output=True,
+            text=True,
+            timeout=IMPORT_PROBE_TIMEOUT,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    blob = result.stdout.strip()
+    return blob if result.returncode == 0 and len(blob) == 40 else None
+
+
+def _reload_tree_with_catalogue(root: Path, base_entries: str, blob: str) -> str | None:
+    """Fold a tree entry for the catalogue into the package and scripts.
+
+    ``mktree`` composes one directory level at a time, so the catalogue's
+    directory path is built from the leaf outward: a tree holding the blob,
+    then one holding that tree, and so on to ``docs``, which joins the package
+    and scripts in the top-level tree. Only the catalogue's own file is placed,
+    so the ledger and run state beside it is not carried.
+    """
+    parts = CATALOGUE_RELATIVE_PATH.split("/")
+    entry = f"100644 blob {blob}\t{parts[-1]}\n"
+    for segment in reversed(parts[:-1]):
+        tree = _mktree(root, entry)
+        if tree is None:
+            return None
+        entry = f"040000 tree {tree}\t{segment}\n"
+    return _mktree(root, base_entries + entry)
+
+
 def _committed_reload_tree(root: Path) -> str | None:
-    """Write a content tree containing the package and its dispatch scripts."""
+    """Write a content tree of the package, its dispatch scripts and catalogue.
+
+    The catalogue folds into the identity with the package and scripts, so a
+    catalogue edit reloads processes to read the new models and an edit outside
+    the three moves nothing. A checkout carrying no catalogue yields the
+    package-and-scripts tree unchanged.
+    """
     try:
         entries = subprocess.run(
             ["git", "-C", str(root), "ls-tree", "HEAD", "reckon", "skills"],
@@ -252,18 +324,12 @@ def _committed_reload_tree(root: Path) -> str | None:
             return committed_reckon_tree(root)
         if names != {"reckon", "skills"}:
             return None
-        result = subprocess.run(
-            ["git", "-C", str(root), "mktree"],
-            input=entries.stdout,
-            capture_output=True,
-            text=True,
-            timeout=IMPORT_PROBE_TIMEOUT,
-            check=False,
-        )
     except (OSError, subprocess.SubprocessError):
         return None
-    tree = result.stdout.strip()
-    return tree if result.returncode == 0 and len(tree) == 40 else None
+    blob = _committed_catalogue_blob(root)
+    if blob is None:
+        return _mktree(root, entries.stdout)
+    return _reload_tree_with_catalogue(root, entries.stdout, blob)
 
 
 def source_code_identity(package_dir: Path, *, source_root: Path | None = None) -> str:
