@@ -1,0 +1,105 @@
+<article class="landed-report" data-run-id="r-20261019T105208473456-cso-complete-reports-every-refusal" data-node="cso-complete-reports-every-refusal">
+<h3 id="cso-complete-reports-every-refusal-summary">crew complete answers every refusal it would raise in one call</h3>
+<p id="cso-complete-reports-every-refusal-change"><strong>Change.</strong>
+<code>reckon/crew/promotion.py</code> gains <code>complete_dry_run</code> and
+<code>complete(..., dry_run=True)</code>. The dry run runs the same guard sweep
+a promotion runs — <code>_require_independently</code> already collects every
+independent refusal into one <code>_PromotionRefusalError</code> — and returns a
+JSON answer carrying <code>would_promote</code>, the full refusal list, and the
+one invocation that would pass for the run's state. It writes nothing: no ledger
+row, no plan comment, and no live-pointer mutation. The pointer survives the
+call, which the test asserts directly. In
+<code>reckon/crew/promotion_records.py</code> the suite-delta evaluator takes
+<code>dry_run</code> and its three pointer writes route through one
+<code>_record_refusal</code> helper that is a no-op under the dry run, so the
+sweep cannot leave a partial record behind on its way to refusing.
+
+The emitted invocation is synthesised from the refusals themselves: the run id,
+the gate verdict, the gate flags when a refusal says the receipt is the check
+that produced it, and any remedy flag a refusal names in its own text — each
+with a concrete reason quoted so the line runs as it stands. Emitting a
+placeholder reason would be the same defect the fill repair fixes, so the line
+is executed by the test rather than merely inspected:
+<code>shlex.split</code> of the answer, invoked through the real CLI, promotes
+the run and removes its pointer.
+
+<code>reckon/crew_run_commands.py</code> adds
+<code>_refuse_a_flag_as_a_reason</code> as the callback of all eight
+reason-taking <code>crew complete</code> options (<code>--no-commit</code>,
+<code>--no-impl-change</code>, and the six <code>--waive-*</code> flags). In
+<code>--no-commit --gate passed</code>, click binds <code>--gate</code> as the
+reason and leaves the gate unstated, and the run is then refused for the wrong
+missing thing. A value beginning with two dashes is now refused as a missing
+reason, naming the swallowed flag and the form that works; the callback fires
+before the parser reaches what follows, which is why the refusal can name it.</p>
+<p id="cso-complete-reports-every-refusal-measure"><strong>Measure.</strong> The
+plan asks how often the existing manifest gate-receipt fill applies, and why
+not, over the manifests of the runs promoted in the last seven days. The
+measurement (<code>fill-rate-measurement.py</code> under this run's directory)
+loads the six mounted project ledgers, keeps every row whose <code>gate</code>
+is <code>passed</code> and which completed or dispatched inside the window, and
+asks of each cited manifest whether the fill yields a <em>usable</em> receipt: a
+command a shell can re-run, a cited log that reads, and an exit status read from
+that log. Both arms call the module's own
+<code>_default_gate_evidence_from_manifest</code>, the second with the log-header
+recovery disabled, so the instrument under test is the one measured.
+
+Over 841 such runs the fill produced a usable receipt <strong>283</strong> times
+(<code>0.3365</code>). The named causes: the command is not runnable 498 times,
+the cited log is unreadable 46, the log carries no exit status 12, and no log
+path was filled at all 2. The dominant cause is therefore the
+<code>tests:</code> line itself — a description of the suite rather than the
+command a shell was handed.
+
+<strong>Repair.</strong> The fill now reads the cited gate log's own
+<code># command:</code> header line when the manifest's <code>tests:</code> line
+is absent or carries prose — the log is the record the gate actually wrote, and
+it is already in hand because the fill resolves <code>log_path</code> first.
+Measured the same way, the rate rises to <strong>322</strong> of 841
+(<code>0.3829</code>); the 39 gained runs are exactly the
+<code>command is not runnable</code> reason falling from 498 to 459, with every
+other reason unchanged. The second half of the repair is at the source: the
+dispatch contract in <code>reckon/crew/prompts.py</code> now states the
+contracted form of <code>tests:</code> and <code>test_logs:</code> — a literal
+command rather than a description of one, and a log whose first line names the
+revision and command and whose last line is a bare <code>EXIT=&lt;code&gt;</code>
+— so the next wave writes a receipt the fill can use instead of one it must
+recover.
+
+Gate: <code>tests/test_complete_reports_every_refusal.py</code>,
+<code>tests/test_crew_help_names_its_state.py</code>,
+<code>tests/test_skill_contracts.py</code>,
+<code>tests/test_every_module_fits_a_worker_window.py</code>,
+<code>tests/test_the_ledger_writer_refuses_a_fold.py</code>,
+<code>tests/test_promotion_records_the_pick.py</code>,
+<code>tests/test_promotion_releases_its_worktree.py</code>,
+<code>tests/test_one_resolver_names_a_worktree_project.py</code>,
+<code>tests/test_crew_promotion.py</code> and
+<code>tests/test_routing_evidence_fields.py</code>, run in the foreground with
+<code>PYTHONPATH=$PWD python -m pytest -p no:cacheprovider -q</code>: 2 failed,
+174 passed, <code>EXIT=1</code> in 593.91s. Both failures are outside this
+node's scope and none of the three files they name appears in this commit:
+<code>test_every_module_fits_a_worker_window</code> fails on
+<code>reckon/crew/review.py</code>, <code>reckon/ledger.py</code> and
+<code>reckon/serve.py</code> exceeding the 50&#8239;000-token worker window, and
+<code>test_promotion_releases_only_the_integrated_clean_case</code> fails at
+<code>tests/test_promotion_releases_its_worktree.py:331</code> on a stored release
+dict carrying a <code>landing_check</code> key the test does not expect.
+<code>git show 0117d3e0b | grep landing_check</code> returns nothing, and the
+failing test file's last change is <code>713287a7a</code> — neither file is
+touched here, so both failures stand at the base revision too. Log
+<code>gate-after.log</code> under the run directory, ending in
+<code>EXIT=1</code>.</p>
+<p id="cso-complete-reports-every-refusal-control"><strong>Negative control.</strong>
+The declared control is to make the dry run stop at its first failing guard;
+the three-guard case must then fail. <code>_require_independently</code> was
+mutated in place to keep only the first refusal it collected. Running the new
+test file alone reddens
+<code>test_the_dry_run_reports_three_refusals_and_an_invocation_that_promotes</code>
+— the id the head arm does not fail — with
+<code>assert 1 == 3</code>, the one refusal being the missing review: 1 failed
+in 3.08s, <code>EXIT=1</code>. The mutation was reverted and the file re-run,
+3 passed. Log <code>negative-control.log</code> under the run directory, whose
+second header line names the mutation and whose last line is
+<code>EXIT=1</code>.</p>
+</article>
