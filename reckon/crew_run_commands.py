@@ -2033,6 +2033,16 @@ def _refuse_a_flag_as_a_reason(
         "writing nothing: no ledger row, no plan comment, no pointer change."
     ),
 )
+@click.option(
+    "--land",
+    "land",
+    is_flag=True,
+    help=(
+        "After the promotion, merge the run's reviewed head onto the project's "
+        "primary branch, refuse if the merge dropped the change, push it, and "
+        "release the worktree. Refused with --dry-run, which writes nothing."
+    ),
+)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_complete(
     run_id,
@@ -2060,6 +2070,7 @@ def crew_complete(
     plan_link,
     unplanned_reason,
     dry_run,
+    land,
     pretty,
 ):
     """Promote one finished run into the owning repository's committed ledger.
@@ -2070,7 +2081,19 @@ def crew_complete(
     this is the sole route by which a run is promoted, so the requirement is
     unconditional here even though the underlying ledger call remains
     permissive for internal callers assembling records from other evidence.
+
+    With ``--land`` the promotion is followed by three reported steps: the
+    reviewed head is merged onto the project's primary branch without touching
+    the shared index, the merged tree is refused unless it carries a marker the
+    change introduced and lacks any marker it removed, and the branch is pushed
+    before the worktree is released. A step that fails stops the call and the
+    report names the command that resumes from it.
     """
+    if land and dry_run:
+        raise click.ClickException(
+            "--land merges and pushes, which --dry-run promises not to do; run "
+            "the promotion with --dry-run first, then promote with --land"
+        )
     crew_module, _ = _crew_modules()
     ledger_module = _ledger_module()
     from reckon.crew import review as review_module
@@ -2192,7 +2215,189 @@ def crew_complete(
         raise click.ClickException(detail) from exc
     except ledger_module.LedgerError as exc:
         raise click.ClickException(str(exc)) from exc
+    if land:
+        report, exit_code = _land_a_promoted_run(
+            result,
+            run_id=run_id,
+            gate=gate,
+            checkout_path=checkout_path,
+            pointer=pointer,
+        )
+        _emit_crew_result(report, pretty)
+        if exit_code:
+            raise click.exceptions.Exit(exit_code)
+        return
     _emit_crew_result(result, pretty)
+
+
+def _land_a_promoted_run(
+    promoted: Mapping[str, Any],
+    *,
+    run_id: str,
+    gate: str,
+    checkout_path: Path | None,
+    pointer: Mapping[str, Any] | None = None,
+) -> tuple[dict[str, Any], int]:
+    """Merge, verify and push a promoted run's head, then release its worktree.
+
+    Each step reports under ``steps``: the promotion that already happened, the
+    merge that carries the reviewed head onto the primary branch, and the
+    release that follows it. A refused step stops the call — nothing is pushed
+    when the merge dropped the change — and its entry names the command that
+    resumes from there rather than restating what the report already shows.
+    Promotion is reported first because it is the step whose guards run before
+    any code reaches the branch: a run promotion refuses lands nothing.
+
+    The workspace the release reads is carried over from the live pointer
+    captured before the promotion deleted it: the committed ledger row states
+    the run's outcome and its release, not the path of the tree the release has
+    to remove.
+    """
+    import shlex
+
+    from reckon.crew import merge as merge_module
+    from reckon.crew import promotion_release as release_module
+
+    project = str(promoted.get("project") or "")
+    record: dict[str, Any] = dict(promoted.get("record") or {})
+    for key in ("worktree", "repo", "scratch", "pid", "pid_start_time"):
+        if key not in record and key in (pointer or {}):
+            record[key] = pointer[key]
+    report: dict[str, Any] = {
+        "ok": False,
+        "run_id": run_id,
+        "project": project,
+        "steps": {"promote": {"ok": True}},
+        "promotion": promoted,
+    }
+    head = _reviewed_head_of(record)
+    if not head:
+        report["steps"]["land"] = {
+            "ok": False,
+            "error": (
+                "the promoted run records no commit to land, so there is no "
+                "reviewed head to merge"
+            ),
+        }
+        report["worktree_released"] = bool(
+            (promoted.get("release") or {}).get("worktree_released")
+        )
+        return report, 1
+    try:
+        repository = merge_module.project_repository(project)
+    except merge_module.MergeError as exc:
+        report["steps"]["land"] = {"ok": False, "error": str(exc)}
+        return report, 1
+    message = f"land({run_id}): merge the reviewed head onto the primary branch"
+    body = (
+        f"Run {run_id} was promoted, so its reviewed head {head} is merged "
+        "onto the branch and reaches every reader rather than only the "
+        "worktree the change was written in."
+    )
+    resume_merge = shlex.join(
+        [
+            "reckon",
+            "crew",
+            "merge",
+            "--project",
+            project,
+            "--head",
+            head,
+            "--message",
+            message,
+            "--body",
+            body,
+        ]
+    )
+    try:
+        landed = merge_module.land(repository, head=head, message=message, body=body)
+    except merge_module.MergePushOutstandingError as exc:
+        report["steps"]["land"] = {
+            "ok": True,
+            "push_outstanding": True,
+            "resume": resume_merge,
+            **{key: exc.report[key] for key in ("head", "commit", "base")},
+        }
+        report["worktree_released"] = False
+        report["error"] = str(exc)
+        return report, merge_module.PUSH_OUTSTANDING_EXIT
+    except merge_module.MergeError as exc:
+        report["steps"]["land"] = {
+            "ok": False,
+            "error": str(exc),
+            "resume": resume_merge,
+        }
+        report["worktree_released"] = bool(
+            (promoted.get("release") or {}).get("worktree_released")
+        )
+        return report, 1
+    report["steps"]["land"] = {"ok": True, **landed}
+    release = release_module._release_after_promotion(
+        run_id, record, None, gate=str(gate)
+    )
+    repository_value = str(record.get("repo") or "").strip()
+    # The release records its own outcome as a second ledger commit, so the
+    # branch moves again after the push. The remote is left equal to the local
+    # branch rather than behind it. A push that fails here is the same shape as
+    # a landing whose push failed: the work is committed and only the push is
+    # outstanding.
+    release, recorded = release_module._record_release_on_ledger(
+        project=project,
+        root=checkout_path,
+        run_id=run_id,
+        release=release,
+        checkout=Path(repository_value) if repository_value else None,
+    )
+    if recorded is not None:
+        report["promotion"] = {**promoted, "record": recorded}
+    report["steps"]["release"] = {"ok": bool(release.get("worktree_released")), **release}
+    branch = str(landed.get("branch") or "")
+    remote = str(landed.get("remote") or "origin")
+    if branch and repository_value:
+        try:
+            head_now = merge_module._rev_parse(Path(repository_value), branch)
+            pushed_head = str(landed.get("remote_head") or "")
+        except merge_module.MergeError as exc:  # pragma: no cover - reported, not fatal
+            report["steps"]["release"]["push_error"] = str(exc)
+            head_now = pushed_head = ""
+    else:
+        head_now = pushed_head = ""
+    if head_now and head_now != pushed_head:
+        try:
+            pushed = merge_module._push_and_confirm(
+                Path(repository_value), remote, head_now, branch
+            )
+        except merge_module._PushError as exc:
+            report["steps"]["release"]["push_error"] = str(exc)
+        else:
+            report["steps"]["land"]["remote_head"] = pushed
+            report["steps"]["release"]["release_commit_pushed"] = head_now
+    report["release"] = release
+    if not release.get("worktree_released"):
+        report["steps"]["release"]["resume"] = shlex.join(
+            ["reckon", "crew", "gc", "--project", project, "--apply"]
+        )
+        report["error"] = (
+            "the reviewed head landed and was pushed, but the worktree was "
+            "withheld: " + str(release.get("worktree_withheld") or "no reason given")
+        )
+        return report, 1
+    report["ok"] = True
+    return report, 0
+
+
+def _reviewed_head_of(record: Mapping[str, Any]) -> str:
+    """Return the commit a promoted run's worktree was reviewed at.
+
+    The promoted revision is the head a review read; where the row recorded no
+    revision the run's own commits name it, newest last, so the change that
+    reached the branch is the one the ledger already attributes to the run.
+    """
+    promoted_revision = str(record.get("promoted_revision") or "").strip()
+    if promoted_revision:
+        return promoted_revision
+    commits = [str(sha).strip() for sha in (record.get("commits") or ())]
+    return next((sha for sha in reversed(commits) if sha), "")
 
 
 
