@@ -1,0 +1,93 @@
+<article class="r-evidence-fragment" data-reckon-fragment="a-producer-sweeps-only-on-change">
+  <h3>A producer sweeps only when the crew home changes</h3>
+  <p>
+    The watch producer's cycle now opens with a fingerprint of every document a
+    sweep reads — <code>live/</code>, <code>runs/</code> and the handover
+    directory by their own timestamps, the workstation's lift document, and,
+    per run this producer listed, the whole composition its classification is a
+    function of. The fleet listing, the run-directory walk and the git sweeps
+    run only on a beat where that fingerprint moved. The per-live-run liveness
+    probe stays on the fixed beat, because a worker can die with every file
+    untouched and no stamp would move.
+  </p>
+  <p>
+    Carrying the classification's <em>whole</em> composition rather than a
+    cheaper subset of it is the point. A quiet beat serves each run's stored
+    snapshot without re-deriving the reuse key, so a document outside the
+    fingerprint — a lift folded, a review record landed, an exit record written
+    — would move unseen and the beat would report a state the run no longer
+    holds. What the gate vouches for and what the reuse path assumes are now one
+    claim, taken from the same key, so the two cannot drift apart.
+  </p>
+  <p>
+    Two sweeps act on the clock rather than on a document: the orphan sweep and
+    the stop of a delivered review both come due with every file still. They
+    ride their own cadence rather than the change gate, which would never fire
+    for them.
+  </p>
+  <p>
+    Three directories are deliberately outside the fingerprint or scoped
+    narrowly inside it. The watch directory carries the producer's own seat
+    record, rewritten by an atomic rename on every poll, so stamping it would
+    fire the gate every beat and undo the saving. <code>runs/</code> holds every
+    run the fleet has ever recorded, so it is stamped by its own timestamp
+    rather than enumerated. And only the pointers this producer listed are
+    stamped: another project's run is not what this producer classifies, so a
+    whole-fleet stamp would let every other project's writes fire this gate
+    while costing a stat per pointer per beat — a run joining or leaving moves
+    the <code>live/</code> directory, which is stamped.
+  </p>
+  <h4>What the adjacent cost case was measuring</h4>
+  <p>
+    The producer cost case in <code>tests/test_producer_reads_only_what_changed.py</code>
+    fails intermittently on two of its assertions — an earlier revision of this
+    change was first read as the cause. It is not: the case is red in ten of ten
+    runs at the base revision of this module, and in eight of ten under the
+    change, for the same two assertions. Instrumenting the wait for subprocess
+    spawns shows the source. Two of the producer's git calls are not on the
+    beat at all: the watch-stream publisher derives the fleet's obligations on a
+    daemon thread, and that thread spawns <code>git rev-parse --verify HEAD</code>
+    when it starts, at a moment no caller can schedule. A case that counts
+    spawns at beat boundaries therefore races the thread, in either revision.
+    The byte-parity assertion races it the same way, because the same thread
+    reads streams and adds to the shared parsed-bytes meter the case reads at a
+    boundary.
+  </p>
+  <h4>Quiet-cycle syscall counts</h4>
+  <p>
+    Against an isolated crew home whose <code>live/</code> holds an unedited
+    copy of the fleet's <strong>43</strong> live pointers —
+    each still naming its real run directory, stream and worktree — with the
+    producer run from a copy of each revision's tree, and the watched project
+    the one whose runs wrote nothing during the window while every other
+    project's runs were appending: per quiet cycle, from the difference between
+    a 45-beat and a 5-beat run under
+    <code>strace -f -c -e trace=%file,getdents64</code>, the change costs
+    <strong>30–80 openat and 44–85 stat calls</strong> against the base
+    revision's <strong>1211 openat and 868 stat</strong>.
+  </p>
+  <p>
+    Against the re-planned section's targets, the change is below a tenth of the
+    base on openat (6.6 % at worst of the two runs), below a tenth on stat
+    (9.8 % at worst, against a target of at most half), and it spawns no git on
+    a quiet cycle. The git claim rests on a per-call <code>execve</code> trace
+    rather than on the execve total: the fleet's start-up spawns git 20 times in
+    the first five beats for <em>both</em> revisions, and over the following
+    forty cycles the base adds 96 more while the change adds none — 1.9 git
+    spawns per quiet cycle at the base and <strong>0.0</strong> under the gate.
+  </p>
+  <p>
+    Two runs of the change are reported rather than one, because the gate's cost
+    now tracks how many of the watched project's runs are also changing: the
+    same harness gives 30 openat and 44 stat on one run and 79.7 and 85.3 on
+    another. Both are under the targets; the wider figure is the one quoted.
+  </p>
+  <p>
+    A negative control pins the coverage the quiet path rests on. Pinning the
+    token's per-run entry to a constant — so no run-directory record, review
+    store candidate or worktree head could move it — fails exactly the two cases
+    that assert a gated input moves the gate: the pointer whose mtime is
+    touched, and the exit record written on a quiet beat.
+  </p>
+  <p>The work is committed locally and left unpromoted for the coordinator.</p>
+</article>
