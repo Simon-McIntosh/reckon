@@ -1,0 +1,111 @@
+<!-- Evidence anchor: epw-set-followup-dependency-and-gate-fields -->
+
+<section id="epw-set-followup-dependency-and-gate-fields-evidence">
+  <h2>Followup text, section dependencies, gate text and null removal</h2>
+
+  <p id="epw-set-followup-dependency-and-gate-fields-surfaces">
+    <code>edit_plan</code> accepts three further <code>set</code> paths over the same handlers the
+    section fields already use, and a <code>null</code> value that removes a key instead of writing
+    one. No new verb is added. An open followup's <code>title</code> and <code>body</code> are
+    authorable through <code>followups.&lt;id&gt;.title</code> and <code>.body</code>. A section's
+    dependencies are written through <code>section_depends_on.&lt;sid&gt;</code>, as the list of
+    <code>[project:]slug#section</code> refs the roadmap's own grammar accepts. An open gate's
+    <code>measure</code> and <code>required_evidence</code> are authorable through
+    <code>gates.&lt;id&gt;.measure</code> and <code>.required_evidence</code>. Each field lands where
+    the plan's own writer reads it: a followup and a gate are typed records the state writer renders
+    from the working state, so those two write the record; the dependency mapping is a
+    <code>plan-section-depends-on</code> head meta the state writer leaves untouched, so that one
+    queues an authored-HTML edit which reads the current mapping, sets or drops the one section's
+    entry, and rewrites the meta — the same read-modify-write shape the section title uses.
+  </p>
+
+  <p id="epw-set-followup-dependency-and-gate-fields-null">
+    A <code>null</code> value removes the key for four kinds. <code>section_depends_on.&lt;sid&gt;</code>
+    drops that section's entry, and the meta comes off the page entirely once the mapping is empty.
+    <code>section_declarations.&lt;id&gt;</code> drops a declaration and its record. A decision field
+    other than <code>choice</code> is dropped. An optional top-level scalar is dropped, which needs an
+    explicit meta removal because the state writer emits a <code>plan-*</code> meta only for keys
+    present in state and never removes one for a key that has gone. A field whose absence the plan
+    cannot express refuses its own removal and names itself, so
+    <code>decisions.&lt;key&gt;.choice</code> and a required scalar each keep their value.
+  </p>
+
+  <p id="epw-set-followup-dependency-and-gate-fields-refusals">
+    Four refusals bound the surfaces. A resolved followup is refused for a text write, and a gate
+    whose verdict is <code>passed</code> or <code>failed</code> is refused, because text settled
+    against an outcome is a record of what was done rather than a plan. A dependency ref outside the
+    grammar — one naming no target section — is refused naming the ref. A <code>null</code>
+    <code>section_declarations.&lt;id&gt;</code> while its heading is still authored is refused: a
+    declaration and its heading are one statement, and removing the declaration alone leaves an
+    undeclared heading. That check is judged against the document the write is about, in the write
+    pipeline, rather than trusted from the caller, because the same state is refused by the coverage
+    guard on the way back in — the handler refuses first and names the path, so the caller learns
+    which of the two it met.
+  </p>
+
+  <table id="epw-set-followup-dependency-and-gate-fields-verdicts">
+    <thead>
+      <tr><th>Surface</th><th>Case</th><th>Negative control</th><th>Verdict</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Followup title and body</td>
+        <td><code>test_followup_title_and_body_change_on_an_open_followup</code></td>
+        <td><code>test_followup_text_on_a_resolved_followup_is_refused</code></td>
+        <td>holds — text lands on an open followup, a resolved one is refused unchanged</td>
+      </tr>
+      <tr>
+        <td>Section dependencies</td>
+        <td><code>test_section_depends_on_writes_the_meta_the_roadmap_reads</code></td>
+        <td><code>test_a_ref_outside_the_grammar_is_refused</code></td>
+        <td>holds — the roadmap's own reader returns the edge; a ref naming no section is refused</td>
+      </tr>
+      <tr>
+        <td>Gate measure and evidence</td>
+        <td><code>test_gate_measure_and_required_evidence_change_on_an_open_gate</code></td>
+        <td><code>test_gate_text_on_a_passed_gate_is_refused</code></td>
+        <td>holds — text lands on an open gate, a passed one is refused unchanged</td>
+      </tr>
+      <tr>
+        <td>Null removal, four key kinds</td>
+        <td><code>test_null_removes_the_section_dependency_entry</code>, <code>…</code> a stale declaration, a decision field, an optional scalar</td>
+        <td><code>test_null_declaration_while_its_heading_exists_is_refused</code></td>
+        <td>holds — each kind is removed; a null on a required field and on a live declaration is refused</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p id="epw-set-followup-dependency-and-gate-fields-measure">
+    The gate ran over <code>tests/test_edit_plan_sets_followup_dependency_and_gate_fields.py</code>,
+    <code>tests/test_edit_plan_sets_a_section_field.py</code>, <code>tests/test_skill_contracts.py</code>,
+    <code>tests/test_mcp_vocabulary_is_complete.py</code>, <code>tests/test_edit_plan.py</code>,
+    <code>tests/test_roadmap.py</code> and <code>tests/test_every_module_fits_a_worker_window.py</code>.
+    At the base arm six of those files gave 214 passed and 1 failed, and at the node head all seven
+    gave 225 passed and 1 failed, the same pre-existing
+    <code>test_every_module_fits_a_worker_window</code> — <strong>zero added failures</strong>. The
+    new file covers each surface with its own case and its own negative control: a resolved followup
+    and a passed gate are each refused with the document byte-identical afterwards, an out-of-grammar
+    ref is refused, a null declaration whose heading survives is refused, and a null on a required
+    field is refused. The dependency case is read back through the roadmap's own
+    <code>_plan_section_deps</code>, so the consumer returns the edge and not only the meta. The
+    <code>reckon-edit</code> op row names every new path, which the skill-contract sweep parses and
+    applies; none of them raises an unsupported-path refusal. Ruff is at parity with the base on every
+    changed source path: 37 findings either side over the four sources, and the new test file clean.
+  </p>
+
+  <p id="epw-set-followup-dependency-and-gate-fields-negative-control">
+    The control this node declares — make the heading-presence refusal in
+    <code>apply_declaration_removals</code> unreachable, so a null declaration is accepted while its
+    heading still exists — was applied at the node head in a scratch export. The case then failed,
+    <code>test_null_declaration_while_its_heading_exists_is_refused</code>, logged at
+    <code>negative-control.log</code> with <code>EXIT=1</code>, and the mutation was reverted without
+    being committed. It takes that <em>shape</em> only because of what the first run showed: with the
+    removal accepted, the write is still refused by the pipeline's coverage guard, whose message reads
+    <code>authored section heading 's1' carries no section_declarations entry</code>. The test as
+    originally written asserted only that the write was refused, which both guards satisfy, so it could
+    not tell which had spoken and the declared control passed through unaided. The assertion now
+    requires the refusal to name <code>section_declarations.s1</code>, the handler's own message, and
+    the control bites. The behaviour was correct in both runs — what changed is that the test can now
+    distinguish the guard it means to exercise from the backstop behind it.
+  </p>
+</section>
