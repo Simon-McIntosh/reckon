@@ -33,10 +33,10 @@
 
   <p id="a-worker-step-carries-a-memory-bound-measure"><strong>Measure.</strong> Honest
   evaluator of capacity and honesty of experimentally reporting: the focused
-  gate ran <strong>110 passed, 1 skipped</strong> in place on the fleet
-  allocation (job <code>1281970</code>, node <code>1281970</code>), and the
-  probe step read <code>memory.max = 1073741824</code> for a declared
-  <code>--mem=1G</code>.</p>
+  gate ran <strong>127 passed, 1 skipped</strong> in place on the fleet
+  allocation (job <code>1281970</code> on host
+  <code>98dci4-clu-2002</code>), and the probe step read
+  <code>memory.max = 1073741824</code> for a declared <code>--mem=1G</code>.</p>
 
   <table id="a-worker-step-carries-a-memory-bound-table">
     <thead><tr><th>Done-when</th><th>Evidence</th></tr></thead>
@@ -61,6 +61,16 @@
       <tr>
         <td>A probe step's cgroup <code>memory.max</code> equals its bound</td>
         <td><code>step_7090/user/memory.max = 1073741824</code> for <code>--mem=1G</code></td>
+      </tr>
+      <tr>
+        <td>Both spellings of a declared bound are read, and a bound is never restated beside itself</td>
+        <td><code>test_both_spellings_of_a_bound_read_the_same</code>,
+        <code>test_a_declared_bound_is_never_restated_beside_itself</code></td>
+      </tr>
+      <tr>
+        <td>A per-task bound is totalled from the declared task count, and refused without one</td>
+        <td><code>test_a_step_per_cpu_bound_is_totalled_from_the_task_count</code>,
+        <code>test_a_per_cpu_bound_with_no_task_count_is_refused</code></td>
       </tr>
     </tbody>
   </table>
@@ -100,11 +110,19 @@
   <p>The shipped options are <code>["--ntasks=1"]</code>, so they are repeated
   beside the new bound. A declaration at or below the 48 GB ceiling stays a
   step of the held allocation; a larger one is submitted as its own batch job
-  on the backend partition's <code>_debug</code> sibling.</p>
+  on the backend partition's <code>_debug</code> sibling. Both spellings of an
+  option are read (<code>--mem=64G</code> and <code>--mem 64G</code>), and a
+  declared bound is never restated beside itself — a step carries the one
+  request its placement made, in the spelling it made it. A
+  <code>--mem-per-cpu</code> figure is honoured by multiplying it by the
+  placement's own <code>--cpus-per-task</code>; with no task count beside it
+  the total is unknown and the dispatch is refused, naming the option, rather
+  than priced as a single task — pricing it low is the direction that overfills
+  the allocation.</p>
 
   <p id="a-worker-step-carries-a-memory-bound-paths"><strong>Changed paths.</strong>
   <code>reckon/crew/placement.py</code>, <code>reckon/crew/fleet_node.py</code>,
-  <code>reckon/crew/dispatch_launch.py</code>,
+  <code>reckon/crew/dispatch_launch.py</code>, <code>reckon/crew/summary.py</code>,
   <code>tests/test_fleet_node.py</code>,
   <code>tests/test_fleet_migrate_cutover.py</code>,
   <code>tests/test_a_worker_step_carries_a_memory_bound.py</code>.</p>
