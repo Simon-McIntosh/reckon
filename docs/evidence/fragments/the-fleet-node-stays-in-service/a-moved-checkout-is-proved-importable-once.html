@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-fleet-node-stays-in-service">
+  <meta name="plan-evidence-for" content="the-fleet-node-stays-in-service">
+  <title>A moved checkout is proved importable once | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="a-moved-checkout-is-proved-importable-once-landing">
+      <header>
+        <p class="eyebrow">Execution evidence &middot; fragment</p>
+        <h2>A moved checkout is proved importable once</h2>
+        <p class="lead">A published reload image is now proved once, under an exclusive lock in the image's own directory. The first asker records the verdict beside the image, keyed by the interpreter, published by rename; every later asker reads that verdict instead of spending a probe of its own. A pass and an import failure are both recorded. A timeout is recorded by nothing, because it says nothing about the code, so the next asker under the lock proves the image alone. A source checkout has no immutable tree and keeps its per-process probe. The retry a timeout earns is now drawn back by a random fraction on each timeout, so the followers of one slow node do not re-probe in step; the shortening is downward only, so the gap and its cap stay a true ceiling on the wait.</p>
+      </header>
+      <article id="a-moved-checkout-is-proved-importable-once-measure">
+        <h3>Measure: sixteen concurrent askers on one freshly published image</h3>
+        <p>Run in place on the fleet allocation (job 1281970, 98dci4-clu-2002). Sixteen separate asker processes each call <code>reckon_imports</code> on one freshly published image; the probe text is instrumented to append one byte per probe execution, so the count is read as the probe's own receipt rather than inferred.</p>
+        <table>
+          <thead>
+            <tr><th>Arm</th><th>Askers</th><th>Probes started</th><th>Wall</th><th>All answered within 30 s</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>base revision <code>e18f609b2</code> (positive control)</td><td>16</td><td>16</td><td>6.78 s</td><td>yes</td></tr>
+            <tr><td>change <code>785509df4</code></td><td>16</td><td>1</td><td>5.86 s</td><td>yes</td></tr>
+          </tbody>
+        </table>
+        <p>Every asker in both arms returned the same verdict, <code>(True, "")</code>.</p>
+      </article>
+      <article id="a-moved-checkout-is-proved-importable-once-negative">
+        <h3>Negative control</h3>
+        <p>The declared scenario is a materialised tree carrying a module that fails to import, or any state where the shared verdict does not hold: sixteen concurrent askers must all refuse the reload from one probe and the failure verdict it records, and none may re-execute into the tree. The mutation applied was <code>_published_image</code> returning <code>False</code> for every image, which removes the shared verdict outright. Against it, three checks fail: the sixteen-asker single-probe check, the sixteen-asker shared-failure check, and the recorded-failure-not-reprobed check.</p>
+      </article>
+      <article id="a-moved-checkout-is-proved-importable-once-unit">
+        <h3>Tests</h3>
+        <p>Seven checks cover the bullet list directly: concurrent askers on one image start one probe and all receive its verdict; concurrent askers all receive a recorded failure; a timed-out probe records nothing and the next asker probes; a recorded failure is returned without probing again; a new image id is probed afresh; a verdict proved under another interpreter is not reused; a source checkout keeps its per-process probe. Two more cover the retry jitter.</p>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
