@@ -409,3 +409,58 @@ def test_a_composed_review_of_a_codex_run_launches_the_model_jev_names(
     assert captured["config"]["backends"]["codex"]["model"] == "gpt-6-luna"
     assert captured["picker_selection"]["model"] == "luna"
     assert offered == [["codex", "codex-astra", "codex-luna"]]
+
+
+def test_a_left_out_model_is_not_offered_to_the_picker(repo, monkeypatch):
+    """An excluded key leaves the lane's models, so the picker never sees it."""
+    from reckon.crew import dispatch_picker as dispatch_picker_module
+    from reckon.crew.node import TaskNode
+
+    config = flight_module.resolve("sample", checkout_path=repo).config
+    offered: list[list[str]] = []
+
+    def pick(request, config, *, repo, cached_only, **inputs):
+        lane = (config.get("lanes") or {}).get("codex")
+        offered.append(sorted((lane or {}).get("models") or {}))
+        return _route(model="luna")
+
+    monkeypatch.setattr(picker_module, "pick", pick)
+    node = TaskNode(id="left-out", goal="g", plan="fixture", section="guard")
+
+    applied, selection = dispatch_picker_module.lane_model_selection(
+        node=node,
+        config=config,
+        backend="codex",
+        project="sample",
+        repo=repo,
+        session="named-lane-session",
+        exclude=("sol",),
+    )
+
+    assert offered == [["astra", "luna"]], offered
+    assert "sol" not in offered[0]
+    assert selection["model"] == "luna"
+    assert applied["backends"]["codex"]["model"] == "gpt-6-luna"
+
+
+def test_a_pick_naming_a_left_out_model_is_refused(repo, monkeypatch):
+    """A pick naming the excluded key is not applied; the lane default stands."""
+    from reckon.crew import dispatch_picker as dispatch_picker_module
+    from reckon.crew.node import TaskNode
+
+    config = flight_module.resolve("sample", checkout_path=repo).config
+    _install_picker(monkeypatch, _route(model="sol"))
+    node = TaskNode(id="left-out-named", goal="g", plan="fixture", section="guard")
+
+    applied, selection = dispatch_picker_module.lane_model_selection(
+        node=node,
+        config=config,
+        backend="codex",
+        project="sample",
+        repo=repo,
+        session="named-lane-session",
+        exclude=("sol",),
+    )
+
+    assert applied["backends"]["codex"]["model"] == "gpt-6-sol"
+    assert selection["model"] == "sol"

@@ -1,0 +1,63 @@
+<article class="landed-report" data-run-id="r-20261019T153521975019-a-capacity-refusal-resumes-on-another-lane-model" data-node="a-capacity-refusal-resumes-on-another-lane-model">
+<h3 id="a-capacity-refusal-resumes-on-another-lane-model-summary">A capacity refusal resumes on another model of the same lane</h3>
+<p>A run whose latest attempt was refused because one model was at capacity is
+now resumed on another model of that same lane, keeping its session. Before this
+change the resume relaunched the recorded model, which was the one the provider
+had just refused, so the retry walked into the same refusal.</p>
+<p id="a-capacity-refusal-resumes-on-another-lane-model-mechanism">The refusal is
+read from the stream's own terminal event, in
+<code>reckon/crew/dispatch_sessions.py</code>. The scan walks the recorded
+stream backwards and stops at the first terminal kind it meets: only a
+<code>turn.failed</code> whose error detail begins
+<code>Selected model is at capacity</code> is a refusal. A stream that merely
+quotes the message in an <code>item.completed</code> and ends with
+<code>turn.completed</code> is an ordinary resume, as are a clean end and any
+other terminal failure, so prose never counts. The refused model is the
+attempt's recorded <code>agent.model</code>, mapped to its key through the
+lane's declared models.</p>
+<p id="a-capacity-refusal-resumes-on-another-lane-model-choice">The replacement
+is chosen by the same owner a named-lane dispatch already uses.
+<code>lane_model_selection</code> in <code>reckon/crew/dispatch_picker.py</code>
+gained an <code>exclude</code> argument: the excluded keys leave the lane's
+declared models, so the picker is never offered them, and an answer naming an
+excluded or undeclared model is not applied. The resume asks with the refused
+key left out and takes the named model, or falls back to the lane's first
+declared model other than the refused one when the ask holds, raises, times out
+or names the refused or an undeclared model. A lane declaring no other model
+resumes on its recorded model, exactly as before.</p>
+<p id="a-capacity-refusal-resumes-on-another-lane-model-swap">The swap is applied
+where the resume reads its model: the settings <code>resume_plan</code> builds
+carry the chosen model and its declared effort, and the session id is kept. The
+resumed pointer records the new model in <code>agent.model</code> and its key in
+<code>model_key</code>, and gains one <code>model_changes</code> entry naming the
+lane, the refused model and key, the chosen model and key, and the reason
+<code>model-capacity</code>. <code>lane_changes</code> and the lineage are
+untouched, and a <code>crew resume --backend</code> move still goes where it is
+told with no ask.</p>
+<table id="a-capacity-refusal-resumes-on-another-lane-model-gate">
+<thead><tr><th>Arm</th><th>Revision</th><th>Log summary</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>Base</td><td><code>1cc0a1a40</code></td><td>1 failed, 36 passed in 225.95s</td><td>EXIT=1</td></tr>
+<tr><td>Head</td><td><code>1cc0a1a40</code></td><td>1 failed, 47 passed in 198.27s</td><td>EXIT=1</td></tr>
+</tbody></table>
+<p id="a-capacity-refusal-resumes-on-another-lane-model-logs">Both arms run the
+same selection of test files under <code>pytest -rA</code>, the base arm in a
+tree exported from the dispatched revision and the head arm in this worktree,
+logged as <code>gate-base.log</code> and <code>gate-head.log</code> in the run
+directory. Both carry the identical single failure,
+<code>test_every_module_fits_a_worker_window</code>, naming
+<code>reckon/crew/review.py</code> and <code>reckon/ledger.py</code> — files this
+node does not touch — so it is present at the base revision and the change adds
+no failure against it. The head arm's eleven extra passes are this node's own
+focused tests.</p>
+<p id="a-capacity-refusal-resumes-on-another-lane-model-negative">Two negative
+controls are logged in <code>negative-control.log</code>, each reverting one
+declared half. With the swap removed, the case that resumes on the picked model
+fails on the launched argv (<code>assert "gpt-6-luna" in argv</code>), so
+detection plus swap is load-bearing. With detection widened to match the
+capacity text anywhere in the stream rather than only at a
+<code>turn.failed</code>, the case whose stream quotes the message and ends
+cleanly fails, because it is then wrongly swapped — so the strict reading of the
+terminal event, not merely the presence of the words, is what the change rests
+on. Both mutations are reverted.</p>
+</article>
