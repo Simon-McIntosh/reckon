@@ -26,7 +26,7 @@
   <title>The Crew Surface Is One Tool And A Few Verbs | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="10">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -215,12 +215,14 @@
       <code>reckon/crew/recovery_classification.py</code> (<code>repair-status</code>, in the <code>exited-unfinished</code> action) and the
       crew tool's docstring in <code>reckon/mcp.py</code> (<code>resume-ready</code>). <code>obligations.py</code> and <code>mcp.py</code> are
       also §5's, so this section waits on §5. The list is a starting point, not the boundary. Before changing anything, the node greps
-      <code>reckon/</code> at its base for every folded name as a <code>reckon crew</code> command. A hit in a file outside its write paths stops
+      <code>reckon/</code> at its base for every folded name, both as a <code>reckon crew</code> command string and as an imported command
+      function. <code>reckon/cli.py</code> re-exports the folded functions by name (<code>crew_preflight</code>, <code>crew_redispatch</code>,
+      <code>crew_repair_status</code> and others), so a removed function would break every import of the CLI. A hit in a file outside its write paths stops
       it as blocked, naming the file, so the coordinator can widen its fence.</p>
     <p><strong>Done when</strong> <code>tests/test_crew_families_fold.py</code> checks four things:</p>
     <ul>
-      <li>Every old invocation in the table prints its successor through its tombstone, except the two deleted names and, unless §4's
-        evidence tombstones it, <code>crew merge</code>.
+      <li>Every old invocation in the table prints its successor through its tombstone, except the two deleted names, <code>widen</code>
+        (which this section keeps and widens), and <code>crew merge</code> unless §4's evidence tombstones it.
         <code>repair-completion</code> and <code>split-runs</code> are absent from both the command tree and the tombstone registry.</li>
       <li>Each successor gives the same answer the old verb gave at the node's base; the node captures those answers as fixtures before
         changing anything.</li>
@@ -237,7 +239,7 @@
       <code>reckon/crew/tombstones.py</code>, <code>reckon/crew/claims.py</code>, <code>reckon/crew/gc.py</code>,
       <code>reckon/crew/prompts.py</code>, <code>reckon/crew/refusals.py</code>, <code>reckon/crew/watch_unit.py</code>,
       <code>reckon/crew/recovery_review_subject.py</code>, <code>reckon/crew/obligations.py</code>,
-      <code>reckon/crew/recovery_classification.py</code>, <code>reckon/mcp.py</code>,
+      <code>reckon/crew/recovery_classification.py</code>, <code>reckon/mcp.py</code>, <code>reckon/cli.py</code>,
       <code>skills/reckon-build/SKILL.md</code>, <code>skills/reckon-build/references/coordinator-reference.md</code>,
       <code>skills/reckon-build/references/sprint-orchestration.md</code>, <code>skills/reckon-build/references/worker-verification.md</code>,
       <code>skills/reckon-build/references/conditional-guidance.md</code>, <code>skills/reckon-build/references/lane-routing.md</code>,
