@@ -763,58 +763,47 @@ _STATE_STAMPS = frozenset(["version", "modified"])
 #: are derived from are compared already.
 _DERIVED_STATE_FIELDS = frozenset(["todos"])
 
-# Authored HTML insertions are write effects, not plan state. ``apply_ops`` and
-# ``write_plan`` run in the same request context, while ContextVar keeps
-# concurrent requests isolated. Holding the working dict by identity also means
-# an effect can only be consumed by the exact validated object that produced it.
-_SECTION_INSERTIONS: ContextVar[tuple[dict[str, Any], list[dict[str, str]]] | None] = (
-    ContextVar("reckon_section_insertions", default=None)
-)
+# Authored HTML insertions, evidence-record appends and authored section-field
+# edits are write effects, not plan state: each is HTML the state writer leaves
+# alone, produced by an op and applied by the write that follows it. ``apply_ops``
+# and ``write_plan`` run in the same request context, while ContextVar keeps
+# concurrent requests isolated. Holding the working dict by identity also means an
+# effect can only be consumed by the exact validated object that produced it.
+#
+# Each kind keeps its own collection rather than sharing a list. An evidence
+# append's destination is the plan's cumulative landing record rather than its own
+# HTML, so an evidence beat must never force a plan-file write; an insertion and a
+# section-field edit are both authored HTML, but one adds a section and the other
+# rewrites a span inside one, so the write applies them differently.
+_WRITE_EFFECT_KINDS = ("section_insertions", "evidence_appends", "section_field_edits")
 
-#: Evidence appends are the same kind of write effect, but their destination is
-#: the plan's cumulative landing record rather than its own HTML. Kept in its own
-#: collection so an evidence beat never forces a plan-file write.
-_EVIDENCE_APPENDS: ContextVar[tuple[dict[str, Any], list[dict[str, str]]] | None] = (
-    ContextVar("reckon_evidence_appends", default=None)
-)
+_WRITE_EFFECTS: dict[str, ContextVar[tuple[dict[str, Any], list[dict[str, str]]] | None]] = {
+    kind: ContextVar(f"reckon_{kind}", default=None) for kind in _WRITE_EFFECT_KINDS
+}
+
 
 def _begin_write_effects(working: dict[str, Any]) -> None:
     """Start empty out-of-band effect collections for one op batch."""
-    _SECTION_INSERTIONS.set((working, []))
-    _EVIDENCE_APPENDS.set((working, []))
+    for pending in _WRITE_EFFECTS.values():
+        pending.set((working, []))
 
 
-def _queue_section_insertion(working: dict[str, Any], request: dict[str, str]) -> None:
-    """Attach one insertion to the current batch without changing plan state."""
-    pending = _SECTION_INSERTIONS.get()
+def _queue_write_effect(
+    kind: str, working: dict[str, Any], request: dict[str, str]
+) -> None:
+    """Attach one effect of ``kind`` to the current batch."""
+    pending = _WRITE_EFFECTS[kind].get()
     if pending is None or pending[0] is not working:
-        raise OpError("insert_section has no active write-effect collection")
+        raise OpError(f"{kind} has no active write-effect collection")
     pending[1].append(request)
 
 
-def _consume_section_insertions(data: dict[str, Any]) -> list[dict[str, str]]:
-    """Return effects produced by this exact state object, then clear them."""
-    pending = _SECTION_INSERTIONS.get()
+def _consume_write_effects(kind: str, data: dict[str, Any]) -> list[dict[str, str]]:
+    """Return effects of ``kind`` produced by this exact state object, then clear."""
+    pending = _WRITE_EFFECTS[kind].get()
     if pending is None or pending[0] is not data:
         return []
-    _SECTION_INSERTIONS.set(None)
-    return list(pending[1])
-
-
-def _queue_evidence_append(working: dict[str, Any], request: dict[str, str]) -> None:
-    """Attach one evidence-record append to the current batch."""
-    pending = _EVIDENCE_APPENDS.get()
-    if pending is None or pending[0] is not working:
-        raise OpError("append_evidence has no active write-effect collection")
-    pending[1].append(request)
-
-
-def _consume_evidence_appends(data: dict[str, Any]) -> list[dict[str, str]]:
-    """Return evidence appends produced by this exact state object, then clear."""
-    pending = _EVIDENCE_APPENDS.get()
-    if pending is None or pending[0] is not data:
-        return []
-    _EVIDENCE_APPENDS.set(None)
+    _WRITE_EFFECTS[kind].set(None)
     return list(pending[1])
 
 
@@ -1088,7 +1077,7 @@ def _apply_append_evidence(
         "body": body,
     }
     _evidence_section_html(request)  # refuse a malformed body before any write
-    _queue_evidence_append(working, request)
+    _queue_write_effect("evidence_appends", working, request)
 
 
 def _plan_write_target(
@@ -1254,9 +1243,9 @@ def _write_state_locked(
     # merge can replace ``data`` with a fresh mapping.
     from reckon import _store_section_ops
 
-    section_insertions = _consume_section_insertions(data)
-    evidence_appends = _consume_evidence_appends(data)
-    section_field_edits = _store_section_ops.consume_section_field_edits(data)
+    section_insertions = _consume_write_effects("section_insertions", data)
+    evidence_appends = _consume_write_effects("evidence_appends", data)
+    section_field_edits = _consume_write_effects("section_field_edits", data)
 
     if expected_version != cur_version:
         merged_comments = _comment_append_onto_current(data, cur_state)
@@ -3148,7 +3137,8 @@ def _require_authored_section_fields(section: dict) -> None:
 def _queue_authored_section(working: dict, section: dict) -> None:
     """Queue one validated authored h2 block for the atomic HTML write."""
     _require_authored_section_fields(section)
-    _queue_section_insertion(
+    _queue_write_effect(
+        "section_insertions",
         working,
         {
             "id": section["id"],
@@ -3578,9 +3568,6 @@ def apply_ops(
     previous_status = str(working.get("status") or "").strip().lower()
     warnings: list[str] = []
     _begin_write_effects(working)
-    from reckon import _store_section_ops
-
-    _store_section_ops.begin_section_field_edits(working)
     for n, op in enumerate(ops):
         if not isinstance(op, dict):
             raise OpError(f"op #{n} is not an object")

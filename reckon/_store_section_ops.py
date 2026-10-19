@@ -19,7 +19,6 @@ status, which stays with ``section_declarations.<id>``.
 
 from __future__ import annotations
 
-from contextvars import ContextVar
 from typing import Any
 
 #: The fields ``sections.<id>.<field>`` accepts, in the order a refusal lists them.
@@ -48,11 +47,9 @@ _RECORD_KEYS = ("id", "effort_hours", "capability", "attempts", "status", "links
 #: ``sections.<id>.status`` spelling this handler does not accept.
 DECLARATION_PATH = "section_declarations.<id>"
 
-#: Queued authored edits, held by identity of the working dict that produced
-#: them, exactly as the section-insertion and evidence-append effects are.
-_SECTION_FIELD_EDITS: ContextVar[tuple[dict, list[dict[str, str]]] | None] = ContextVar(
-    "reckon_section_field_edits", default=None
-)
+#: The write-effect kind an authored title/body edit is queued and consumed as.
+#: The store owns the collection; this module only names the kind.
+SECTION_FIELD_EDITS_KIND = "section_field_edits"
 
 
 def _op_error(message: str):
@@ -61,30 +58,6 @@ def _op_error(message: str):
     from reckon._store import OpError
 
     return OpError(message)
-
-
-def begin_section_field_edits(working: dict) -> None:
-    """Start an empty authored-section-edit collection for one op batch."""
-    _SECTION_FIELD_EDITS.set((working, []))
-
-
-def _queue_section_field_edit(working: dict, request: dict[str, str]) -> None:
-    """Attach one authored title/body edit to the current batch."""
-    pending = _SECTION_FIELD_EDITS.get()
-    if pending is None or pending[0] is not working:
-        raise _op_error(
-            "set sections.<id>.title/body has no active write-effect collection"
-        )
-    pending[1].append(request)
-
-
-def consume_section_field_edits(data: dict[str, Any]) -> list[dict[str, str]]:
-    """Return effects produced by this exact state object, then clear them."""
-    pending = _SECTION_FIELD_EDITS.get()
-    if pending is None or pending[0] is not data:
-        return []
-    _SECTION_FIELD_EDITS.set(None)
-    return list(pending[1])
 
 
 def _accepted_fields_message(section_id: str) -> str:
@@ -176,7 +149,10 @@ def apply_section_field_set(
         )
     index, record = hit
     if field in _AUTHORED_FIELDS:
-        _queue_section_field_edit(
+        from reckon._store import _queue_write_effect
+
+        _queue_write_effect(
+            SECTION_FIELD_EDITS_KIND,
             working,
             {
                 "id": section_id,
