@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T15:59:41.097Z",
+  "dispatched_at": "2026-10-19T15:51:54Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-site-answers-fast-and-agrees.html:136",
+      "id": "reasoning-1",
+      "reason": "naming the publisher (the woken stream loop emitting a `fleet` event when a fleet-scoped result's revision moved since its last wake) makes the one mechanism \u00a75 adds to `_send_project_changes` falsifiable; left unnamed a node may attach the event to its own tree-change path, where it never fires for a fleet result, and the plan's central delivery claim rests on a caller that does not run.",
+      "text": "\u00a75 says \"A fleet-scoped result goes to every open stream as one `fleet` event naming its key\" but names no producer of that event, and neither piece of machinery \u00a75 assigns the job to can emit it: `_FleetChangeWatch` (reckon/change_streams.py:238) only drops derived views and writes a wake byte to each stream's registered pipe, and `Handler._send_project_changes` (reckon/serve.py:2613) at its wake re-diffs only its own project's rows and returns to waiting when the digest is unchanged (`if next_digest == digest: continue`, reckon/serve.py:2686), so a stream woken for a fleet result writes nothing \u2014 the \u00a75 done-when's fleet-event case would then be reachable only by a synthetic push",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-site-answers-fast-and-agrees.html:138",
+      "id": "reasoning-2",
+      "reason": "the node cannot size the interval from the plan, and the wrong choice turns \u00a75's stated reuse rule into a recompute storm on the route \u00a75 exists to fix; stating the interval's floor (at or above the measured computation) is a one-line change to the same sentence.",
+      "text": "\u00a75's velocity key \"rounds the window's end down to the refresh interval, so the stored result is reused within that interval and recomputed after it\", but no value or range for that interval is given anywhere in the plan, and \u00a75's own evidence puts the computation it must cover at 605.8 s for the all-project view (line 138, \u00a78's landing record) \u2014 a fact \u00a75 cites to justify answering 202 rather than waiting \u2014 so an interval shorter than the computation makes every new interval's key a miss and the all-project view compute continuously instead of reusing",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c2ac73dd6819638a8cca52c867137c5ba241c929bc120887e900581a0ea063db",
+  "plan_slug": "the-site-answers-fast-and-agrees",
+  "plan_version": 61,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261019T155105875435-plan-review-of-the-site-answers-fast-and-agrees",
+  "reviewed_blob_sha": "c4ed4c1a17e99b66dbbf17d9e9239daffaddc52c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a75's cited symbols and files resolve in the assigned tree: `_start_check_refresh`/`_spawn_check_refresh`/`_CHECK_REFRESHES` (`reckon/serve.py:2187`, `:2183`, `:1027`), `Handler._send_project_changes` (`reckon/serve.py:2613`), `Handler._serve_velocity` (`reckon/serve.py:2702`), `_FleetChangeWatch` (`reckon/change_streams.py:238`), `docs/ui/velocity.jsx`, `docs/ui/state-loader.js`, `tests/test_spa_crew_cards.py`, and the extensionless `a-read-answers-inside-its-deadline` href (resolved as `docs/plans/a-read-answers-inside-its-deadline.html`).",
+    "done_when": "pass \u2014 each of the four routes carries a forced-recompute case, a 50 ms bound, an age header, a stub-marker assertion that the recompute's own result becomes served, and its own inline negative control (line 139); the fleet-rollup, fleet-event and VelocityView cases each name the assertion their negative control falsifies.",
+    "evidence_paths": "pass \u2014 the gates log under the run directory ending in `EXIT=` (lines 140\u2013141), and the one live measurement (\u00a79's durations over ten minutes on srv-1006) is a production read of a durable access log, not a session scratchpad.",
+    "naming": "pass \u2014 \u00a75 names existing production symbols and mechanism words only; it introduces no plan label, stage name, ticket number or version tag into prose or symbol, and carries no changelog prose.",
+    "reasoning": "two findings \u2014 line 136 asserts a fleet event, but no production publisher is named and the machinery \u00a75 relies on today emits nothing when a woken stream's own tree is unchanged; and line 138 keys the stored velocity result on an undefined \"refresh interval\" whose period its own \u00a78 evidence (605.8 s) can exceed.",
+    "single_goal": "pass \u2014 \u00a75 carries one deliverable (answer the four derived routes from a stored result, never behind a recompute) with the velocity key rule and the caller list as its sub-parts, and one verdict can close it.",
+    "wiring": "pass \u2014 \u00a75's declared depends-on [s3, s8] matches its own text (\"Build it after \u00a73 and \u00a78 merge\", line 141); \u00a74, \u00a79 and \u00a716 are named as earlier in the chain and are already done, and `reckon/change_streams.py` (which \u00a75's write paths name as `_FleetChangeWatch`'s home) exists from \u00a716's merge `d71859d00`."
+  },
+  "section_digests": {
+    "_document": "16d4c01278e4d835bd6aef8170eee8ab98fb304a4302985dbe4539fa0b5c4fb1",
+    "s1": "119fda14843398660e67ce4dbc6d52b2466804be618c0bc58fe57d48c4364db4",
+    "s10": "aedffe9563719b3b93e2b36282e17d4d2aeabecf2938ffcbf516cfacc5887281",
+    "s11": "b9aa035553d395057dad26d5353e7b79c6bdec033a1ab82eb1042718d03592cd",
+    "s12": "3086e0ba68e51ca085e7178c914c92d64248be41088440dfa18abf077d5819ee",
+    "s13": "fa208e7c5f148ec329458a9824c867762bc66c986ccb7bc85745b08640484173",
+    "s14": "7f21ec58ce9adf4ba663f205fe60555a585a263354e7954c7dd99543a0d56139",
+    "s15": "884c8ab0e973894007385f537b51e29ef55bf2de18ef2cf6a25966e656f62bf2",
+    "s16": "68b4e68d648fe76ecff74c05d2cdfb995f2e13890befafc25046869d469abcac",
+    "s2": "f4d544c85c1a75bc7938448339d0239290de9ffaef0434766aa4baa2571d7436",
+    "s3": "50f2ca1f3b1277d5f4b2d70a240688387a89a3136ad2d6aee26f0b3f324b1afc",
+    "s4": "a1ad15bdafaed28134c2565ad8374bc91928064852c10da6661f2499ca286149",
+    "s5": "ac0d27f67e50e32d35564a8fd102da6a3ada7099273495c6767932458cfcbf4c",
+    "s6": "fdb08d5e7b8272372c8ced83ee14c031730239025c2a13ccb211329d7951673e",
+    "s7": "90073ced7051cfae8f66fd6b78f99e6ace90b008ffc6c9e5559d87a2e5c31704",
+    "s8": "46535efa968faf1a9d457821c0b182e1f73fbc67570e478aa63cc7eb29d08e37",
+    "s9": "3df747cffcffa70e17ef701d032c7d4a87e78cd03759393f0efa74f96e5fde92"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T16:04:35.515806+00:00"
+}
