@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/mcp.py:_refuse_when_stale",
+    "reckon/mcp.py:_answer_on_current_code"
+  ],
+  "completed_at": "2026-10-19T18:09:11.601Z",
+  "dispatched_at": "2026-10-19T18:00:48Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T171408539976-epw-reload-branches-have-cases/manifest.md",
+      "line": "12",
+      "severity": "follow-on",
+      "text": "follow-on: the done_when requires \"ruff format --check and ruff check findings on every changed path do not exceed base\" but the manifest records no ruff command or result (test_logs names only pytest logs); the delta is zero when measured (11 findings at both 2cbe964 and 825cb62e, 2 files already formatted), so the substance holds and only the record is missing."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T171408539976-epw-reload-branches-have-cases/nc2_never_reached_arm.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: each negative-control log's revision header names base 2cbe964 while the mutation was applied to the fixed but then-uncommitted working tree, so the log's own header cannot show that the guard under test was the head revision's; only negctl.sh's assert ties the log to that guard."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read 825cb62e against base 2cbe964; three files, reckon/mcp.py +9/-3 (the reached flag and the guard that reads it), tests/test_mcp_server_serves_current_code.py +156/-9 (the crew driver and three cases), and the new evidence fragment, all inside the declared scope.",
+    "done_when": "the done_when's measure is the pytest run over the three named files with zero added failures and a per-case negative control, plus a ruff delta clause; after_gate.log records \"1 failed, 12 passed in 301.47s\" at head 825cb62e against baseline_gate.log's \"1 failed, 9 passed in 113.40s\" at base 2cbe964 (the same single pre-existing failure, test_every_module_fits_a_worker_window), and nc1/nc2/nc3 each redden their own case, but the ruff clause has no recorded result.",
+    "goal": "the node goal is to add a case each in tests/test_mcp_server_serves_current_code.py for the crew tool returning a failing current-code answer with its stamp, a child that never reaches the tool, and a child that makes no answer, fixing reckon/mcp.py where a case exposes a defect; the landed change adds tests/test_mcp_server_serves_current_code.py:377,406,429 for the three cases and reckon/mcp.py:317,328,450 for the reached flag that the never-reached case exposes.",
+    "manifest": "read manifest.md; status complete, commit 825cb62e, the tests line names the pytest command, baseline_suite and after_suite are one-line JSON with revision, command, exit_status, log_path, completed and failure_ids, and after_suite's revision 825cb62e equals after_gate.log's first line.",
+    "write_paths": "the manifest declares reckon/mcp.py, tests/test_mcp_server_serves_current_code.py, docs/evidence/fragments/every-plan-write-goes-through-edit-plan/epw-reload-branches-have-cases.html and the figures directory; git diff --stat 2cbe964 825cb62e touches only the first three, all inside them."
+  },
+  "justifications": {
+    "durability": "nc2_never_reached_arm.log applies the mutation that deletes the reckon/mcp.py:450 guard and reddens tests/test_mcp_server_serves_current_code.py:414, so the case fails if the guard regresses; nc1 and nc3 control the other two cases.",
+    "evidence": "after_gate.log's summary line \"1 failed, 12 passed in 301.47s\" at head 825cb62e differs from baseline_gate.log's \"1 failed, 9 passed in 113.40s\" by three gained cases and zero added failures, and the base-revision reproduction is recorded in head_before_fix2.log, but the done_when's ruff clause has no recorded result.",
+    "fit": "reckon/mcp.py:326-327 follows the module's out[...] child-protocol idiom and comment style, and the added test and case names carry no plan, version or ticket label.",
+    "goal_fidelity": "reckon/mcp.py:317,328 add the reached flag the goal's \"fixing reckon/mcp.py where a case exposes a defect\" clause requires and tests/test_mcp_server_serves_current_code.py:377,406,429 adds the three named cases, so the landed change is the goal's deliverable.",
+    "reuse": "the reached key extends the existing child protocol (reckon/mcp.py:317 params/answer) rather than forking it; a search over reckon/ for another did-the-child-reach-the-tool mechanism found none, reckon/mcp.py:415 inferring it only for the signature decision from empty params.",
+    "scope_discipline": "git diff --stat 2cbe964 825cb62e lists only reckon/mcp.py, tests/test_mcp_server_serves_current_code.py and the declared evidence fragment."
+  },
+  "node": "review-of-epw-reload-branches-have-cases-825cb62e7f82",
+  "node:reviewed": "epw-reload-branches-have-cases",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to add a case each in tests/test_mcp_server_serves_current_code.py for the crew tool returning a failing current-code answer with its stamp, a child that never reaches the tool, and a child that makes no answer, fixing reckon/mcp.py where a case exposes a defect; the landed change adds tests/test_mcp_server_serves_current_code.py:377,406,429 for the three cases and reckon/mcp.py:317,328,450 for the reached flag that the never-reached case exposes.\nVERDICT done_when: the done_when's measure is the pytest run over the three named files with zero added failures and a per-case negative control, plus a ruff delta clause; after_gate.log records \"1 failed, 12 passed in 301.47s\" at head 825cb62e against baseline_gate.log's \"1 failed, 9 passed in 113.40s\" at base 2cbe964 (the same single pre-existing failure, test_every_module_fits_a_worker_window), and nc1/nc2/nc3 each redden their own case, but the ruff clause has no recorded result.\nVERDICT write_paths: the manifest declares reckon/mcp.py, tests/test_mcp_server_serves_current_code.py, docs/evidence/fragments/every-plan-write-goes-through-edit-plan/epw-reload-branches-have-cases.html and the figures directory; git diff --stat 2cbe964 825cb62e touches only the first three, all inside them.\nVERDICT manifest: read manifest.md; status complete, commit 825cb62e, the tests line names the pytest command, baseline_suite and after_suite are one-line JSON with revision, command, exit_status, log_path, completed and failure_ids, and after_suite's revision 825cb62e equals after_gate.log's first line.\nVERDICT diff: read 825cb62e against base 2cbe964; three files, reckon/mcp.py +9/-3 (the reached flag and the guard that reads it), tests/test_mcp_server_serves_current_code.py +156/-9 (the crew driver and three cases), and the new evidence fragment, all inside the declared scope.\nCALL_SITES: reckon/mcp.py:_refuse_when_stale, reckon/mcp.py:_answer_on_current_code\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp.py:317,328 add the reached flag the goal's \"fixing reckon/mcp.py where a case exposes a defect\" clause requires and tests/test_mcp_server_serves_current_code.py:377,406,429 adds the three named cases, so the landed change is the goal's deliverable.\nSCORE evidence: 14\nJUSTIFICATION evidence: after_gate.log's summary line \"1 failed, 12 passed in 301.47s\" at head 825cb62e differs from baseline_gate.log's \"1 failed, 9 passed in 113.40s\" by three gained cases and zero added failures, and the base-revision reproduction is recorded in head_before_fix2.log, but the done_when's ruff clause has no recorded result.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 2cbe964 825cb62e lists only reckon/mcp.py, tests/test_mcp_server_serves_current_code.py and the declared evidence fragment.\nSCORE durability: 19\nJUSTIFICATION durability: nc2_never_reached_arm.log applies the mutation that deletes the reckon/mcp.py:450 guard and reddens tests/test_mcp_server_serves_current_code.py:414, so the case fails if the guard regresses; nc1 and nc3 control the other two cases.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/mcp.py:326-327 follows the module's out[...] child-protocol idiom and comment style, and the added test and case names carry no plan, version or ticket label.\nSCORE reuse: 18\nJUSTIFICATION reuse: the reached key extends the existing child protocol (reckon/mcp.py:317 params/answer) rather than forking it; a search over reckon/ for another did-the-child-reach-the-tool mechanism found none, reckon/mcp.py:415 inferring it only for the signature decision from empty params.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T171408539976-epw-reload-branches-have-cases/manifest.md:12 follow-on: the done_when requires \"ruff format --check and ruff check findings on every changed path do not exceed base\" but the manifest records no ruff command or result (test_logs names only pytest logs); the delta is zero when measured (11 findings at both 2cbe964 and 825cb62e, 2 files already formatted), so the substance holds and only the record is missing.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T171408539976-epw-reload-branches-have-cases/nc2_never_reached_arm.log:1 follow-on: each negative-control log's revision header names base 2cbe964 while the mutation was applied to the fixed but then-uncommitted working tree, so the log's own header cannot show that the guard under test was the head revision's; only negctl.sh's assert ties the log to that guard.\n",
+  "review_run_id": "r-20261019T180010307508-review-of-epw-reload-branches-have-cases-825cb62e7f82",
+  "reviewed_base_sha": "2cbe964ac844108f42cd6d6e5ece006ce0444b06",
+  "reviewed_head_sha": "825cb62e7f82b22ea12005e4be2a5de243542c06",
+  "reviewed_run_id": "r-20261019T171408539976-epw-reload-branches-have-cases",
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T18:07:41.531106+00:00",
+  "total": 110
+}
