@@ -55,6 +55,8 @@ corrective repair is a worker node, even when only one item is ready. A small
 plan is not an exception — isolation, independent review, a manifest and a
 ledger record hold for one node too. Inline fallback is the reported exception
 only when no capable worker backend exists; member scarcity never qualifies.
+Redrawing a figure the lead is reviewing is not a build target: it runs in the
+session through `reckon-plot`, which owns that loop.
 Detail: `crew(project, view="live")`, `crew(project, view="scopes")`,
 `crew(project, view="drain")`, `crew(project, view="ledger")`,
 `crew(project, view="summary")`, `crew(project, view="flight")`,

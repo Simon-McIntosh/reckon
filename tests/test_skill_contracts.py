@@ -113,6 +113,7 @@ def test_fan_out_rule_lands_in_every_skill_a_session_holds() -> None:
                 "reckon-sprint",
                 "reckon-create",
                 "reckon-review",
+                "reckon-plot",
             )
         },
     }
@@ -185,6 +186,33 @@ def test_review_skill_is_discovered_beside_the_other_reckon_skills() -> None:
         "review; move procedural detail into the plan the skill cites rather "
         "than widening this bound."
     )
+
+
+def test_plot_skill_owns_the_in_session_figure_loop() -> None:
+    """reckon-plot is discovered, bounded, and the build skill hands figures to it.
+
+    The figure loop is the one place a session edits product files itself, so
+    both halves of that boundary are asserted: the plot skill says it does not
+    dispatch, and the build skill's coordinator-only rule names it as the owner
+    of figure redraws. Its rasteriser ships beside it and is invoked through
+    bash, so a packager that drops executable bits cannot break the look step.
+    """
+    skill_root = ROOT / "skills"
+    discovered = sorted(path.parent.name for path in skill_root.glob("*/SKILL.md"))
+    assert "reckon-plot" in discovered, discovered
+
+    plot = skill_root / "reckon-plot" / "SKILL.md"
+    words = len(_skill_body(plot).split())
+    assert words <= SKILL_BODY_WORD_LIMIT, (
+        f"reckon-plot's body is {words} words against a {SKILL_BODY_WORD_LIMIT} bound"
+    )
+    text = normalized(plot.read_text())
+    assert "not through reckon-build or crew dispatch" in text
+    assert "bash <this skill>/scripts/look.sh" in text
+    assert (skill_root / "reckon-plot" / "scripts" / "look.sh").is_file()
+
+    ship = normalized((skill_root / "reckon-build" / "SKILL.md").read_text())
+    assert "through `reckon-plot`, which owns that loop" in ship
 
 
 def test_skills_use_progressive_reads_by_intent() -> None:

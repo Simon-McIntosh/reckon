@@ -222,6 +222,7 @@ writeback, content parity, fleet safety).
 | Sprint / milestone / roadmap state (the project index) | `reckon-sprint` | `/reckon-sprint` |
 | Pure-read inspection across all plans in this repo | `reckon-status` | `/reckon-status` |
 | Pending work, true blockers, critical/open paths, and DAG wiring | `reckon-roadmap` | `/reckon-roadmap` |
+| Fix, redraw or iterate on a figure under `docs/figures/`, in the session | `reckon-plot` | `/reckon-plot <figure>` |
 | Set up or refresh reckon infra in a repo (CSS, mounts, state dir, symlink) | `reckon-sync` | `/reckon-sync` |
 | Non-plan docs (RCAs, incident reports, tickets, reviews, explainers, dashboards) | `reckon-create` (with `reckon-type=doc`) | `/reckon-create <slug>` |
 
