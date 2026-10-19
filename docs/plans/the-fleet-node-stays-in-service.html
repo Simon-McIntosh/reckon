@@ -23,8 +23,8 @@
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="10">
-<meta name="plan-modified" content="2026-10-18">
+<meta name="plan-version" content="11">
+<meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
   <main class="plan-doc">
@@ -454,6 +454,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-18T15:45:00Z">
     <div class="r-comment-body"><p>§4 landed: a done move ledger now makes the next <code>fleet-node migrate</code> begin a census, and the drain warning is corrected (merged <code>c2e033c6c</code>; 91 tests pass; review 82/120, blocking scope finding accepted). §5's rehearsal can now run at this head. Correction to the resume advice the worker was given: it named the plan fix as 'reckon main 75a', a sha nobody read; the plan correction is commit <code>15ba1406d</code>. <a href="/reckon/evidence/archive/the-fleet-node-stays-in-service-landed.html#s4">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-s5-authority" data-who="reckon-build" data-when="2026-10-19T03:50:00Z">
+    <div class="r-comment-body"><p>§5 dispatch refused at launch (2026-10-19 05:47). Dispatch confines a node's write paths to registered repositories and reckon's delivery directories (<code>reckon/crew/dispatch_admission.py:1773</code>), with no override. The rehearsal must write <code>~/.config/zellij/layouts/</code>, where the supervisor reads layouts by name, and <code>~/.local/state/fleet/migration/rehearsals/</code>, where <code>_rehearse</code> keeps its ledger. So no worker can be authorised to run it. The same command passed <code>--dry-run</code> with all eight properties and no warning, so the dry-run does not apply this check. The node needs either an operator run of <code>reckon fleet-node migrate --rehearse --session probe-current-head</code> from a plain shell on the fleet node, with a worker writing only the evidence fragment, or a reckon change that lets a node be granted fleet state paths. No move is planned, so §5 is not urgent.</p></div>
 </div>
 </section>
 </main>
