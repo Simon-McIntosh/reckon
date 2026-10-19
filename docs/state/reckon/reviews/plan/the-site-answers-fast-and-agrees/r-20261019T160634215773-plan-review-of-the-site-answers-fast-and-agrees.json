@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T16:18:17.450Z",
+  "dispatched_at": "2026-10-19T16:07:21Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-site-answers-fast-and-agrees.html:138",
+      "id": "reasoning-1",
+      "reason": "a node can implement exactly this miss-triggered refresh and \u00a75's own promise (\"A request is answered from the last computed result, never behind a recompute\") still fails for the default-window case, so the plan needs a scheduling rule or a carry-forward of the previous interval's result.",
+      "text": "\u00a75 justifies its interval with \"15 minutes, which is longer than the 605.8 s the all-project computation takes, so the stored result is reused within that interval and recomputed after it\", but velocity \"spawns on a miss only\" (line 137) and the default window's end rounds down to that same interval, so the computation is triggered by whichever request first misses \u2014 a request landing in the last ~606 s of interval N stores its result under key N after interval N+1 has begun, and the next request asks for key N+1 and misses again, so the interval exceeding the computation time does not produce the reuse the sentence claims; the binding condition is the interval exceeding the delay from the triggering request to the interval's end (or the refresh starting at the interval boundary)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-site-answers-fast-and-agrees.html:136",
+      "id": "reasoning-2",
+      "reason": "without the completion-to-wake path named, the `fleet` event has no reachable production producer and the mechanism the done-when verifies is not the one that runs.",
+      "text": "the added sentence has \"The refresh that stores a fleet-scoped result publishes it: it records the key's new version and wakes every open stream\", but that refresh is the helper child process the section generalises from `/_checks` (`_start_check_refresh`/`_spawn_check_refresh`, reckon/serve.py:2183/2187, applied to all four routes by line 130), which cannot wake the parent process's in-process SSE streams, while line 137 gives the waking to `_FleetChangeWatch`; no path is named by which the child's store write reaches the parent's streams, and the done-when's fleet-event case stubs the computation in-process, so it passes while production emits nothing",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "0362f1cf70594f54f48828908d455265cdcd1703f193ed756819f6d560a12c5a",
+  "plan_slug": "the-site-answers-fast-and-agrees",
+  "plan_version": 63,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261019T160634215773-plan-review-of-the-site-answers-fast-and-agrees",
+  "reviewed_blob_sha": "2cb6d4f13266b6fb750bddd7a1a0c471d7ae39bf",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited symbols resolve in the tree (`_send_project_changes` reckon/serve.py:2613, `_start_check_refresh`/`_spawn_check_refresh` reckon/serve.py:2187/:2183, `collect_projects` reckon/serve.py:872, `_FleetChangeWatch` reckon/change_streams.py:238, `watchProjectStateChanges` docs/ui/state-loader.js:697, `VelocityView` docs/ui/velocity.jsx:183), and the 605.8 s figure resolves in \u00a78's landed evidence (the-site-answers-fast-and-agrees-landed.html:55).",
+    "done_when": "pass \u2014 each of \u00a75's four route cases carries its own inline negative control, and the recompute's result is identified by \"a marker the stub writes into it, so a refresh that computes but stores nothing, or stores under another key, fails\" (line 139).",
+    "evidence_paths": "pass \u2014 \u00a75's evidence is the landed archive record docs/evidence/archive/the-site-answers-fast-and-agrees-landed.html#s8 and the \u00a78 log under ~/.cache/reckon-spa-latency/, both durable and outside any scratch tree.",
+    "naming": "pass \u2014 the changed text names mechanism (`fleet` event, velocity key, `Handler._send_project_changes`) and carries no plan label, gate id, ticket number or version tag.",
+    "reasoning": "a finding \u2014 \u00a75's new justification for the 15-minute velocity interval compares it to the computation's runtime, which is not the condition that makes a stored result reusable (see finding at line 138).",
+    "single_goal": "pass \u2014 \u00a75 carries one deliverable, the generalised stored-result refresh over the four routes, with no second outcome bolted on (line 130).",
+    "wiring": "pass \u2014 \u00a75's declared depends-on [s3, s8] matches its own \"Build it after \u00a73 and \u00a78 merge\" (line 141), and every node it names (\u00a73, \u00a78, \u00a74, \u00a79, \u00a716, \u00a76) resolves to a section that exists and is ordered before or beside it."
+  },
+  "section_digests": {
+    "_document": "16d4c01278e4d835bd6aef8170eee8ab98fb304a4302985dbe4539fa0b5c4fb1",
+    "s1": "119fda14843398660e67ce4dbc6d52b2466804be618c0bc58fe57d48c4364db4",
+    "s10": "aedffe9563719b3b93e2b36282e17d4d2aeabecf2938ffcbf516cfacc5887281",
+    "s11": "b9aa035553d395057dad26d5353e7b79c6bdec033a1ab82eb1042718d03592cd",
+    "s12": "3086e0ba68e51ca085e7178c914c92d64248be41088440dfa18abf077d5819ee",
+    "s13": "fa208e7c5f148ec329458a9824c867762bc66c986ccb7bc85745b08640484173",
+    "s14": "7f21ec58ce9adf4ba663f205fe60555a585a263354e7954c7dd99543a0d56139",
+    "s15": "884c8ab0e973894007385f537b51e29ef55bf2de18ef2cf6a25966e656f62bf2",
+    "s16": "68b4e68d648fe76ecff74c05d2cdfb995f2e13890befafc25046869d469abcac",
+    "s2": "f4d544c85c1a75bc7938448339d0239290de9ffaef0434766aa4baa2571d7436",
+    "s3": "50f2ca1f3b1277d5f4b2d70a240688387a89a3136ad2d6aee26f0b3f324b1afc",
+    "s4": "a1ad15bdafaed28134c2565ad8374bc91928064852c10da6661f2499ca286149",
+    "s5": "6d3629f630e6f6cef071b470dda4804365263772ddbd184bd4ca3e866207d9d0",
+    "s6": "fdb08d5e7b8272372c8ced83ee14c031730239025c2a13ccb211329d7951673e",
+    "s7": "90073ced7051cfae8f66fd6b78f99e6ace90b008ffc6c9e5559d87a2e5c31704",
+    "s8": "46535efa968faf1a9d457821c0b182e1f73fbc67570e478aa63cc7eb29d08e37",
+    "s9": "3df747cffcffa70e17ef701d032c7d4a87e78cd03759393f0efa74f96e5fde92"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T16:20:38.982662+00:00"
+}
