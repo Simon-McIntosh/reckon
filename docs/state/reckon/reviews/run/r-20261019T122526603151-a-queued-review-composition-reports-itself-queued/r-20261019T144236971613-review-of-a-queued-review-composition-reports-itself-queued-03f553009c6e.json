@@ -1,0 +1,70 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "Reddens on the declared regression: restoring the error-passthrough branch makes `payload[\"ok\"]` a KeyError and ``result.exit_code == 0`` fail with `1 == 0` (<run>/negative-control-error-passthrough.log). The `run_id` and `position` assertions compare the CLI output against QUEUED_RECORD the stub was handed while the report separately carries COMPOSED_ID, so a fallback to either id reddens them; not self-comparing.",
+      "lines": "tests/test_a_queued_review_reports_queued.py:102-108"
+    },
+    {
+      "failure_condition": "Reddens if the no-queued branch is folded back into the generic error path: it fails at `assert result.exit_code == 75` with `1 == 75` in the negative-control log.",
+      "lines": "tests/test_a_queued_review_reports_queued.py:120-124"
+    },
+    {
+      "failure_condition": "A reading of unchanged code: reddens if dispatch_awaiting_reviews stopped sorting on the report's own `error` or reported the source run's id, since the stubbed pointer is `r-source` and the composed report's id is COMPOSED_ID (reckon/crew/recovery_review_acceptance.py:506).",
+      "lines": "tests/test_a_queued_review_reports_queued.py:157-160"
+    },
+    {
+      "failure_condition": "Reddens if the `except (LaneHeld, LanePaused)` at reckon/crew_dispatch_commands.py:2484 is removed: the hold reaches the generic handler at :2567 and the command reports `crew_error` at exit 1, failing `assert result.exit_code == 0`. The `report_run_id` expectation is computed by the production helper `code_review_report_directory(subject)`, so a wrong-but-consistent helper would not be caught.",
+      "lines": "tests/test_a_queued_review_reports_queued.py:178-184"
+    },
+    {
+      "failure_condition": "Reddens under the same removal as the fourth case: without the catch the command reports `crew_error` at exit 1, failing `assert result.exit_code == 75` and the `error != crew_error` assertion.",
+      "lines": "tests/test_a_queued_review_reports_queued.py:203-207"
+    },
+    {
+      "failure_condition": "Reddens if a plain `LanePaused` (not `LaneHeld`) is left uncaught, which is the specific half of the catch added at reckon/crew_dispatch_commands.py:2484; asserts exit 75, `error == \"lane-paused\"`, and the gate's own detail.",
+      "lines": "tests/test_a_queued_review_reports_queued.py:225-244"
+    }
+  ],
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1279 crew_dispatch",
+    "reckon/crew_dispatch_commands.py:2315 crew_review -> reckon/crew_dispatch_commands.py:2360 _run_review",
+    "reckon/crew/plan_review.py:160 review_invocation",
+    "reckon/crew/recovery_review_acceptance.py:377 dispatch_awaiting_reviews"
+  ],
+  "completed_at": "2026-10-19T15:03:54.376Z",
+  "dispatched_at": "2026-10-19T14:43:20Z",
+  "findings": [
+    {
+      "file": "reckon/crew_dispatch_commands.py",
+      "line": "329",
+      "severity": "follow-on",
+      "text": "follow-on: `_emit_held_result`'s not-queued branch renders its detail as `_lane_paused_detail(gate) if gate else str(reason or \"\")` (reckon/crew_dispatch_commands.py:329), so a hold whose gate mapping is empty emits `detail: \"\"`, where the inline dispatch payload this refactor replaced rendered `_lane_paused_detail(exc.gate)` unconditionally and produced `\"the lane gate is None\"` (the pre-refactor `except LaneHeld` and `except LanePaused` blocks in the same file). So `crew dispatch`'s output is not byte-identical for an empty gate, contrary to the landing's claim that the dispatch command's output is unchanged; the divergence is only reachable when a lane-gate mapping is empty, which no caller in reckon/crew/dispatch.py constructs today."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against 002f85b4f: 6dc83c470 changes reckon/crew_dispatch_commands.py and adds the test; 825178fb3 adds the fragment; 75f7c3436 extracts `_emit_held_result` and broadens the code-review catch to LanePaused; 03f55300 updates the fragment.",
+    "done_when": "plan section 32's Done when names click-runner cases and the negative control; tests/test_a_queued_review_reports_queued.py holds six matching cases, its log ends `EXIT=0` `6 passed`, the negative control ends `EXIT=1` with the first two cases failed, both arms reach summary with six identical pre-existing failures, and ruff is logged at <run>/ruff-changed-files.log.",
+    "goal": "Make crew review report a queued composition the way crew dispatch reports a queued dispatch; reckon/crew_dispatch_commands.py:270 `_emit_held_result` with call sites at :2497 and :2554 implements exactly plan section 32's deliverable.",
+    "manifest": "Read at <run>/manifest.md; status complete, four commits, a bare negative_control_log path, and a 40-character orientation_base_sha resolving to a real commit; `crew check-manifest --run` returns ok:true, no findings.",
+    "write_paths": "declared: reckon/crew_dispatch_commands.py, tests/test_a_queued_review_reports_queued.py, docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/a-queued-review-composition-reports-itself-queued.html and docs/figures/a-held-dispatch-waits-its-fair-turn/a-queued-review-composition-reports-itself-queued; the diff names three files, all inside the list."
+  },
+  "project": "reckon",
+  "review": "VERDICT goal: the node goal is `Make crew review report a queued composition the way crew dispatch reports a queued dispatch`; reckon/crew_dispatch_commands.py:270 `_emit_held_result` with its two `crew review` call sites at :2497 and :2554 emits `ok: true`, the queued run's id, its position, `reason` and `lane_gate`, plus `report_run_id` for the composed directory, matching plan \u00a732's deliverable.\nVERDICT done_when: plan \u00a732's Done when names click-runner cases and the negative control; tests/test_a_queued_review_reports_queued.py holds six cases whose assertions match its five requirements, its log ends `EXIT=0` with `6 passed`, the negative control ends `EXIT=1` with the first two cases failed, both arm logs reach their summary line with the same six pre-existing failures, and the ruff run is logged.\nVERDICT write_paths: the manifest declares reckon/crew_dispatch_commands.py, tests/test_a_queued_review_reports_queued.py, the landing fragment and an unused figures directory; `git diff --stat 002f85b4f0df85463466aa0a8caea8297020045d 03f553009c6e35f55445707c37036531254040b4` names exactly those three files, every one inside the list.\nVERDICT manifest: read at <run>/manifest.md; records status complete, the four commits, the gate and negative-control log paths, a bare `negative_control_log` path, and baseline_suite/after_suite objects whose six identical failure_ids I re-derived from importer-base-arm.log and importer-head-arm.log; `reckon crew check-manifest --run` returns ok:true with no findings and `orientation_base_sha` is 40 hex characters resolving to a real commit.\nVERDICT diff: read commit by commit against base 002f85b4f0df85463466aa0a8caea8297020045d; 6dc83c470 changes reckon/crew_dispatch_commands.py and adds the test file, 825178fb3 adds only the evidence fragment, 75f7c3436 extracts the single `_emit_held_result` builder and points the dispatch branch and the code-review catch at it, and 03f55300 updates the fragment.\nCALL_SITES: reckon/crew_dispatch_commands.py:1279 crew_dispatch, reckon/crew_dispatch_commands.py:2315 crew_review -> reckon/crew_dispatch_commands.py:2360 _run_review, reckon/crew/plan_review.py:160 review_invocation, reckon/crew/recovery_review_acceptance.py:377 dispatch_awaiting_reviews\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_dispatch_commands.py:2497 and :2554 report a held `crew review` as `ok` and `queued` with the queued run's id at exit 0 and a paused gate at exit 75, the held-dispatch contract now shared at :270.\nSCORE evidence: 18\nJUSTIFICATION evidence: <run>/gate-new-tests.log records the named file as `6 passed in 1.51s`  and `EXIT=0` (re-run at the head: 6 passed), <run>/negative-control-error-passthrough.log records `2 failed` with `EXIT=1`, and both arm logs reach their summary line at `6 failed, 843 passed, 1 skipped`.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat 002f85b4f0df85463466aa0a8caea8297020045d 03f553009c6e35f55445707c37036531254040b4` lists only reckon/crew_dispatch_commands.py, tests/test_a_queued_review_reports_queued.py and the evidence fragment, all inside the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: the negative control reddens tests/test_a_queued_review_reports_queued.py:103 and :121 when the error-passthrough branch is restored, and the three code-review cases name their failure condition (removing the `except (LaneHeld, LanePaused)` at reckon/crew_dispatch_commands.py:2484) though the control does not exercise them.\nSCORE fit: 18\nJUSTIFICATION fit: the helper sits beside `_lane_paused_detail` at reckon/crew_dispatch_commands.py:255 and uses the module's own `_emit(...)` idiom, and the in-body `from reckon.crew.dispatch import LaneHeld, LanePaused` at :2482 matches the local-import style of the surrounding branches.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew_dispatch_commands.py:270 `_emit_held_result` is now the single owner both commands read a hold through; the search over `\"lane-paused\"` in reckon/ found the other emitters (crew_run_commands.py:1601 and :1699, mcp.py:2488) build unrelated result shapes and fork no owner this change duplicates.\nFINDING reckon/crew_dispatch_commands.py:329 follow-on: the empty-gate detail changed from `the lane gate is None` to an empty string, so `crew dispatch`'s output is not unchanged for an empty gate mapping, contrary to the landing's claim.",
+  "review_run_id": "r-20261019T144236971613-review-of-a-queued-review-composition-reports-itself-queued-03f553009c6e",
+  "reviewed_base_sha": "002f85b4f0df85463466aa0a8caea8297020045d",
+  "reviewed_head_sha": "03f553009c6e35f55445707c37036531254040b4",
+  "reviewed_run_id": "r-20261019T122526603151-a-queued-review-composition-reports-itself-queued",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T15:06:03.042448+00:00"
+}
