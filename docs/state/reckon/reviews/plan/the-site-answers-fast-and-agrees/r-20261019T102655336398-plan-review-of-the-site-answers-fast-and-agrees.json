@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T10:35:49.343Z",
+  "dispatched_at": "2026-10-19T10:27:39Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-site-answers-fast-and-agrees.html:139",
+      "id": "done_when-1",
+      "reason": "the deliverable's whole claim is \"answered from the last computed result\", and without a landed-marker assertion the suite cannot tell a working refresh from one that never stores.",
+      "text": "the done-when asserts only that the route serves the prior result with an age header while the recompute runs; it never asserts that the recompute's result then becomes the served one, so a child that computes but writes nothing (or to the wrong key) passes every discovery, rollup and checks case",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-site-answers-fast-and-agrees.html:139",
+      "id": "done_when-2",
+      "reason": "a control that cannot exceed the bound proves nothing, so the plan must name a fixture (or a deliberate delay) heavy enough that the inline path exceeds 50 ms, or the case rests on a control that never fires.",
+      "text": "the four cases run \"for a temporary project\" and each negative control \"computes that route inline\", then asserts \"the trivial-request bound then fails\"; but discovery, rollup and checks over one temporary project compute in single-digit milliseconds, well under the 50 ms bound, so the inline control need not make the bound fail and is not shown to fire",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "bc3630943df811ca1514b3abefad15a095859d714c169db90e47cad62c28be44",
+  "plan_slug": "the-site-answers-fast-and-agrees",
+  "plan_version": 44,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261019T102655336398-plan-review-of-the-site-answers-fast-and-agrees",
+  "reviewed_blob_sha": "3e956a77ad3de74775dae5fa93202d1917e19bc1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_start_check_refresh`/`_spawn_check_refresh` (reckon/serve.py:3151,3147), `_CHECK_REFRESHES` (:1474), `_FleetChangeWatch` (:351), `_send_project_changes` (:3542), `_serve_velocity` (:3631), `collect_projects` (:1313), `compliance.project_checks` (reckon/compliance.py:247), `watchProjectStateChanges` (docs/ui/state-loader.js:697), `VelocityView` (docs/ui/velocity.jsx:183), `tests/test_spa_crew_cards.py`, and \u00a78's 605.8 s anchor all resolve.",
+    "done_when": "two findings \u2014 the measure shows the stale-serve path but never that a recomputed result becomes the served one, and the inline negative control is not shown to exceed the bound it must fail.",
+    "evidence_paths": "pass \u2014 gate logs and the srv-1006 latency watch sit under the run directory per \u00a72's shared terms and \u00a79's lands; nothing is written to a scratchpad or node-local temp.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach the new symbols; the \u00a7-references are the plan's own section ids in prose.",
+    "reasoning": "pass \u2014 the cited costs match \u00a71's evidence (checks 2.2\u20132.7 s, velocity 10.5 s), the child-process-plus-stored-result mechanism is capable of the under-50 ms answer the done-when asserts, and each of the four routes names the production caller that spawns its refresh (`_send_project_changes`, the `/_checks` pending-document spawn, `_FleetChangeWatch`, `_serve_velocity`).",
+    "single_goal": "pass \u2014 one goal: answer a request from the last computed result rather than behind a recompute, applied to the four routes with the client that consumes them.",
+    "wiring": "pass \u2014 \u00a75's declared depends-on [s3, s8] matches its text (\"Build it after \u00a73 and \u00a78 merge\"), \u00a78 is done, and the \u00a716 it relies on for `reckon/change_streams.py` orders before it transitively through \u00a73 (whose depends-on carries s16)."
+  },
+  "section_digests": {
+    "_document": "16d4c01278e4d835bd6aef8170eee8ab98fb304a4302985dbe4539fa0b5c4fb1",
+    "s1": "119fda14843398660e67ce4dbc6d52b2466804be618c0bc58fe57d48c4364db4",
+    "s10": "aedffe9563719b3b93e2b36282e17d4d2aeabecf2938ffcbf516cfacc5887281",
+    "s11": "b9aa035553d395057dad26d5353e7b79c6bdec033a1ab82eb1042718d03592cd",
+    "s12": "3086e0ba68e51ca085e7178c914c92d64248be41088440dfa18abf077d5819ee",
+    "s13": "fa208e7c5f148ec329458a9824c867762bc66c986ccb7bc85745b08640484173",
+    "s14": "7f21ec58ce9adf4ba663f205fe60555a585a263354e7954c7dd99543a0d56139",
+    "s15": "884c8ab0e973894007385f537b51e29ef55bf2de18ef2cf6a25966e656f62bf2",
+    "s16": "68b4e68d648fe76ecff74c05d2cdfb995f2e13890befafc25046869d469abcac",
+    "s2": "f4d544c85c1a75bc7938448339d0239290de9ffaef0434766aa4baa2571d7436",
+    "s3": "50f2ca1f3b1277d5f4b2d70a240688387a89a3136ad2d6aee26f0b3f324b1afc",
+    "s4": "a1ad15bdafaed28134c2565ad8374bc91928064852c10da6661f2499ca286149",
+    "s5": "2c29870db6630fa39e34ec5eec7f8a11effa774b1dd7b8d34ad7de1e36aa770f",
+    "s6": "fdb08d5e7b8272372c8ced83ee14c031730239025c2a13ccb211329d7951673e",
+    "s7": "90073ced7051cfae8f66fd6b78f99e6ace90b008ffc6c9e5559d87a2e5c31704",
+    "s8": "46535efa968faf1a9d457821c0b182e1f73fbc67570e478aa63cc7eb29d08e37",
+    "s9": "3df747cffcffa70e17ef701d032c7d4a87e78cd03759393f0efa74f96e5fde92"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T10:38:14.559583+00:00"
+}
