@@ -1615,11 +1615,22 @@ class CurrentCodeServer:
         self._lock = threading.Lock()
 
     def _child_for(self, stamp: str) -> ServedChild | None:
+        """The live child for ``stamp``, starting exactly one when there is none.
+
+        A child that has died is not the child for this stamp however well its
+        stamp matches: reusing it makes every routed call take the may-have-
+        landed timeout until the stamp happens to move again. A dead child is
+        dropped and one replacement is started, which is cold until its own
+        probe answers, so calls are served on the running image meanwhile.
+        """
         with self._lock:
-            if self._child is not None and self._stamp == stamp:
-                return self._child
-            if self._child is not None:
+            if self._child is not None and (
+                self._stamp != stamp or not self._child.alive
+            ):
                 self._child.stop()
+                self._child = None
+            if self._child is not None:
+                return self._child
             self._stamp = stamp
             try:
                 process = self._spawn(self._root)

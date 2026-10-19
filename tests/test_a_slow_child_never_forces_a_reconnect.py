@@ -243,6 +243,18 @@ def _apply_control(monkeypatch, control: str | None) -> None:
         monkeypatch.setattr(
             mcp_module, "_probe_signature_changed", lambda name, probe: False
         )
+    elif control == "dead-child-reused":
+        original = served_code.CurrentCodeServer._child_for
+
+        def without_liveness_check(self, stamp):
+            with self._lock:
+                if self._child is not None and self._stamp == stamp:
+                    return self._child
+            return original(self, stamp)
+
+        monkeypatch.setattr(
+            served_code.CurrentCodeServer, "_child_for", without_liveness_check
+        )
     elif control == "child-outlives-pipe":
         monkeypatch.setattr(served_code.ServedChild, "stop", lambda self: None)
 
@@ -433,7 +445,54 @@ def test_a_changed_tool_signature_still_owes_a_reconnect(
     assert "reconnect" in json.dumps(result).lower(), result
 
 
-# ── case 7: closing the pipe ends the child ────────────────────────────────
+# ── case 7: a child that dies is replaced, not reused ──────────────────────
+
+
+def test_a_dead_child_is_replaced_and_warms_on_its_probe(
+    tmp_path, monkeypatch, control
+):
+    """A child that dies within one stamp never traps calls in the timeout."""
+    rig = _rig(tmp_path, monkeypatch, control, probe_delay=1.0)
+    guarded, image = rig.tool(
+        "edit_plan", answer={"ok": False, "error": "version_conflict"}
+    )
+    guarded = _wrap_routed(guarded, image, control)
+
+    assert rig.warm(), "the first child answers its probe"
+    first = call(guarded, project="reckon", slug="p", expected_version=1)
+    assert first.get("served_by") == "current code", first
+    assert rig.spawner.count == 1, rig.spawner.count
+
+    dead = rig.spawner.children[0]
+    dead.kill()
+    deadline = time.monotonic() + 5.0
+    while dead.poll() is None and time.monotonic() < deadline:
+        time.sleep(0.02)
+    assert dead.poll() is not None, "the first child is dead"
+
+    served_before = len(image)
+    started = time.monotonic()
+    result = call(guarded, project="reckon", slug="p", expected_version=1)
+    elapsed = time.monotonic() - started
+    assert result is not None
+    assert len(image) == served_before + 1, (
+        f"a call under a dead child is served by the image: {len(image)} image calls"
+    )
+    assert elapsed < 0.8, f"a call under a dead child never waits: {elapsed:.2f}s"
+    assert rig.spawner.count == 2, (
+        f"exactly one replacement is started for the dead child: {rig.spawner.count}"
+    )
+    assert rig.spawner.calls() == ["edit_plan"], (
+        f"the replacement is warmed by its probe, not by a call: {rig.spawner.calls()}"
+    )
+
+    assert rig.warm(), "the replacement turns warm on its own probe answer"
+    later = call(guarded, project="reckon", slug="p", expected_version=1)
+    assert later.get("served_by") == "current code", later
+    assert rig.spawner.calls() == ["edit_plan", "edit_plan"], rig.spawner.calls()
+
+
+# ── case 8: closing the pipe ends the child ────────────────────────────────
 
 
 def test_closing_the_pipe_ends_the_child(tmp_path, monkeypatch, control):
