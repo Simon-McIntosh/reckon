@@ -258,14 +258,13 @@ _LOGGER = logging.getLogger("reckon.mcp")
 # server answers it on the current code rather than refusing: the client holds
 # the session it initialised, so the process cannot be replaced the way the
 # HTTP server is, and the call is run against the checkout in a child
-# interpreter whose answer stands in for the stale image's. A call that the
-# current code also fails is not a stale image's failure, and the reconnect
-# refusal is then the answer, naming the start time, the change and the remedy
-# and carrying the original error text. A changed tool signature always owes a
-# reconnect, because the client holds the old schema, so it is refused naming
-# that tool. When the stamp has not moved, or the tree is not trusted, the
-# original failure is returned unchanged — a tree mid-merge must never take a
-# running server down.
+# interpreter whose answer stands in for the stale image's. That answer is
+# returned whether it succeeded or failed, because a failure the current code
+# gives is the caller's real answer and a reconnect would deliver the same one
+# a turn later. A changed tool signature is the one refusal, naming that tool,
+# because the client holds the schema it connected with. When the stamp has not
+# moved, or the tree is not trusted, the original failure is returned unchanged
+# — a tree mid-merge must never take a running server down.
 #
 # The moved-checkout decision and its trust check are the served-code owner's,
 # shared with the HTTP server, so the MCP loads only a tree the followers would
@@ -452,16 +451,19 @@ def _answer_on_current_code(
 ) -> dict[str, Any] | None:
     """The answer a failed call gets from the checkout's current code, or None.
 
-    ``None`` means the current code will not take the call over: the checkout
-    has not moved, or cannot be trusted, or the current code fails it too — in
-    which case the caller keeps the reconnect refusal and the original failure.
-    A tool whose parameters changed is refused here, naming that tool, because
-    the client holds the schema it connected with and no answer can stand in
-    for it. An answer the current code made is returned, and the session serves
-    its later calls on the current code too.
+    ``None`` means the current code did not answer at all: the checkout has not
+    moved, or cannot be trusted, or the child that runs the call made nothing —
+    and the caller then keeps the reconnect refusal. Any answer the current code
+    did make is returned, a failure as much as a success, because a failure the
+    current code gives is the caller's real answer and a reconnect would only
+    deliver the same one a turn later. It carries the stamp of the code that
+    served it, so a caller can tell it is not the image's. A tool whose
+    parameters changed is the one refusal: the client holds the schema it
+    connected with and no in-process answer can stand in for it.
     """
 
-    if not _moved_checkout_state().may_load:
+    state = _moved_checkout_state()
+    if not state.may_load:
         return None
     child = _run_on_current_code(name, kwargs)
     if child is None:
@@ -469,10 +471,20 @@ def _answer_on_current_code(
     if _current_code_signature_changed(name, child):
         return _stale_code_response(original_error, tool=name)
     answer = child.get("answer")
-    if not isinstance(answer, Mapping) or _error_text(answer) is not None:
+    if not isinstance(answer, Mapping):
         return None
     _SERVE_ON_CURRENT_CODE.add(name)
-    return dict(answer)
+    return _served_on_current_code(answer, state.disk_stamp)
+
+
+#: The field an answer carries when the checkout's current code served it.
+SERVED_BY_CODE_STAMP = "served_by_code_stamp"
+
+
+def _served_on_current_code(answer: Mapping[str, Any], stamp: str) -> dict[str, Any]:
+    """Mark an answer as the current code's, naming the stamp that served it."""
+
+    return {**answer, SERVED_BY_CODE_STAMP: stamp}
 
 
 #: Tools whose calls this session has started answering on the current code. A
@@ -493,6 +505,7 @@ def _refuse_when_stale(tool: Callable[..., Any], *, name: str) -> Callable[..., 
 
     async def guarded(**kwargs: Any) -> Any:
         if name in _SERVE_ON_CURRENT_CODE:
+            state = _moved_checkout_state()
             child = _run_on_current_code(name, kwargs)
             if child is not None:
                 if _current_code_signature_changed(name, child):
@@ -500,7 +513,7 @@ def _refuse_when_stale(tool: Callable[..., Any], *, name: str) -> Callable[..., 
                     if refusal is not None:
                         return refusal
                 elif isinstance(child.get("answer"), Mapping):
-                    return dict(child["answer"])
+                    return _served_on_current_code(child["answer"], state.disk_stamp)
         try:
             result = await tool(**kwargs)
         except Exception as exc:
