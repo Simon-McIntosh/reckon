@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T03:33:54.596Z",
+  "dispatched_at": "2026-10-19T03:24:18Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-promotes-only-its-own-verdict.html:77",
+      "id": "reasoning-1",
+      "reason": "every recorded head in the mounted ledgers is 40 characters (1831 rows read, none abbreviated), so with dispatched heads of 12 or 40 the two rules coincide on the whole observed population and the divergence needs a record shape that does not occur; it is worth knowing before \u00a74 publishes per-row commands, not worth an edit that reopens the plan-wide gate.",
+      "text": "\u00a73 calls its same-as-recorded refusal \"the complement of \u00a72's rule that a row is mismatched when its recorded head does not begin with its dispatched head\", but the shipped census classifies a row mismatched on `not recorded.lower().startswith(dispatched.lower())` (`scripts/review_rows_with_another_rounds_verdict.py:198`) while the verb refuses on `same_revision`, which is true when *either* head is a prefix of the other \u2014 so a row whose recorded head were the shorter abbreviation of a longer dispatched head (a `.at-<full-40>` write path with a 12-character `reviewed_head_sha`) would be listed by \u00a72 as mismatched and refused by \u00a73, and \u00a74 publishes a `supersede-review` command for every listed row.",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "56cf11ed877be9c3ca0608022c4985a35e9e7dc2561023f8d831803eb3f56140",
+  "plan_slug": "a-review-promotes-only-its-own-verdict",
+  "plan_version": 34,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "every recorded head in the mounted ledgers is 40 characters (1831 rows read, none abbreviated), so same_revision and the census's prefix rule coincide on the whole observed population; \u00a74 re-checks the rule against its re-count before publishing per-row commands",
+      "when": "2026-10-19T03:35:17.996098+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "every recorded head in the mounted ledgers is 40 characters (1831 rows read, none abbreviated), so same_revision and the census's prefix rule coincide on the whole observed population; \u00a74 re-checks the rule against its re-count before publishing per-row commands",
+      "when": "2026-10-19T03:35:17.996098+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-review-promotes-only-its-own-verdict.v34.json",
+  "review_run_id": "r-20261019T032241824049-plan-review-of-a-review-promotes-only-its-own-verdict",
+  "reviewed_blob_sha": "4315210ce5adc1a0220a28e6cdd7384c46061f1a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every \u00a73 anchor resolves exactly at this head: `crew_run_commands.py:760` (`repair-review`, the name it shows is taken), `obligations.py:202` (its next-command emission, which is the reason for the rename), `recovery_review_dispatch.py:133` (`_review_record_subject`), `repair.py:310` (`round_node_source`), `review.py:348` (`carried_revision_pair`), `recovery_review_subject.py:102` (`same_revision`), `scripts/review_rows_with_another_rounds_verdict.py:59` (`_node_head_suffix`), and the four reader sites \u2014 `capabilities.py:968`, `ledger.py:3702`, `picker/snapshot.py:377`, `picker/outcomes.py:477` \u2014 each read a row's `review` block.",
+    "done_when": "pass \u2014 \u00a73's five done-when items are measurable (byte-identical recorded fields, one commit, three named refusals, a per-test-id red log at the base revision) and item 4 names the declared negative control, logged under the run directory.",
+    "evidence_paths": "pass \u2014 the verb writes the row's committed per-run file under `docs/state/<project>/runs/` and the gate log lands under the run directory; no session scratchpad or node-local temporary path is named.",
+    "naming": "pass \u2014 `supersede-review` and `review_correction` carry no plan label, stage name, ticket number or version tag, and the section names the mechanism (append-only correction read by one accessor) rather than the history that motivated it.",
+    "reasoning": "a finding \u2014 the changed head-source sentence is now accurate and its new `repair.py` suffix reader matches the census's derivation, but the section's claim that its refusal rule is \"the complement of \u00a72's rule\" holds only while recorded heads are full-length.",
+    "single_goal": "pass \u2014 \u00a73's two deliverable bullets (the single review-block accessor and the append verb) are the two halves of one goal, a correction every reader honours; neither closes without the other and the gate exercises them together.",
+    "wiring": "pass \u2014 s3 declares depends-on `a-review-promotes-only-its-own-verdict#s2` (a done section whose census and 19-row count s3 consumes) and is itself the depends-on of s4; both relationships resolve and no needed dependency is missing."
+  },
+  "section_digests": {
+    "_document": "37efc2b77cf3646243e013d967ec9088d667b1d9ea2a5b9eef64b5497466ceb5",
+    "s1": "b5cea03aef396e4aea2b2b9c76f01fd0b684b3da7cce27ab57a3fe3cd364801d",
+    "s2": "7210c28c3600892789bd0cf6bb61f4c9e0443ff586e1b7887eb2255666cb75c1",
+    "s3": "378be966d4bc47fa03fa252d23c73567a77a8385c43dfc64af23e66c6447d5b2",
+    "s4": "a9322c904cf8f73d13927bdb94c285337d65beb883692d0de9754b12bbf059ca"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T03:35:10.432734+00:00"
+}
