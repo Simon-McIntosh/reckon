@@ -19,11 +19,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-fleet-moves-to-a-new-node">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="37">
+<meta name="plan-version" content="38">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -434,7 +434,7 @@
     </p>
 
     <h2 id="s10">&sect;10 &mdash; The code identity is read only when HEAD moves</h2>
-    <section data-reckon="section" data-id="s10" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s10" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="done" data-links=""></section>
     <p>
       Every long-running reckon process asks once a second whether reckon's code has
       moved: the followers, the producers, the MCP server and queue admission all
@@ -670,7 +670,10 @@
     <div class="r-comment-body"><p>Reviewed the commit r-20261019T193630060197-the-code-identity-is-read-only-when-head-moves gained since its last review (base 25f5db63, head 3280f08c): reuse 20 and durability 18, no added failure, one follow-on. The gained commit deletes the duplicated git-directory/fingerprint helpers in favour of git_dates._head_identity and clears RECKON_FOLLOWER_SOURCE_ROOT in the test fixture, repairing both prior findings; the eight-check gate re-run at 3280f08c passes 8 in both env arms.</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261019T193630060197-the-code-identity-is-read-only-when-head-moves" data-who="reckon-build" data-when="2026-10-19T21:45:02Z">
-    <div class="r-comment-body"><p>Held the code identity against git_dates._head_identity -- HEAD and the ref it names, read as files with no git spawn -- so a quiet checkout&#x27;s per-second read spawns no git (base arm: 6 git spawns per read, 30 spawns over 5 reads, the identity object&#x27;s mtime rewritten; this change: 0 spawns over 30 reads, that mtime unmoved), while a commit, a branch switch, a detach and git pack-refs each move the reading and yield the new identity on the next read. The four helpers first written for the hold are deleted in favour of the reading git_dates already provides and change_streams already uses.</p></div>
+    <div class="r-comment-body"><p>Held the code identity against git_dates._head_identity -- HEAD and the ref it names, read as files with no git spawn -- so a quiet checkout's per-second read spawns no git (base arm: 6 git spawns per read, 30 spawns over 5 reads, the identity object's mtime rewritten; this change: 0 spawns over 30 reads, that mtime unmoved), while a commit, a branch switch, a detach and git pack-refs each move the reading and yield the new identity on the next read. The four helpers first written for the hold are deleted in favour of the reading git_dates already provides and change_streams already uses.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-close-s10" data-who="reckon-build" data-when="2026-10-19T22:10:00Z">
+    <div class="r-comment-body"><p>§10 landed in merge <code>93a355e5b</code> (head <code>3280f08cc</code>). The per-second identity read now spawns no git on a quiet checkout: 0 spawns in 30 reads, against the base's 30 in 5, and the identity object's mtime no longer moves. Eight tests were added; the 25 existing identity files show no added failure. The re-review gave 112/120 after a repair to reuse <code>git_dates._head_identity</code>. <a href="/reckon/evidence/archive/the-fleet-node-stays-in-service-landed.html#s10">evidence</a></p></div>
 </div>
 </section>
 </main>
