@@ -392,11 +392,23 @@
     <p>
       Done when two things hold. A test drives a producer through quiet cycles and
       sees no directory walk and no git-shim spawn, then touches a pointer and sees
-      exactly one sweep. A 32 s strace of a producer against the fleet's copied
-      <code>live/</code> must also show per-cycle <code>openat</code> and
-      <code>stat</code> counts below a tenth of §7's figures while no file changes.
-      The negative control is a cycle in which a pointer's mtime moves, which must
-      sweep. A transition test must still deliver a run's death within one beat when
+      exactly one sweep. Every input a gated sweep reads is covered by the change
+      signal. That covers the budget-lift document and the classification inputs
+      behind a reused snapshot. There is one test per input: it writes that input on
+      a quiet beat and requires a sweep.
+    </p>
+    <p>
+      A 32 s strace is taken in a harness whose base revision reproduces the order
+      of §7's figures. That positive control is several hundred <code>openat</code>
+      per quiet cycle. On a quiet cycle the change must stay below a tenth of the
+      base's <code>openat</code>, spawn no git, and make no more than half the
+      base's <code>stat</code> calls. The stat target is half rather than a tenth
+      because the change signal itself stamps each live pointer, stream and
+      manifest. On 19 October, against a 30-pointer copy, the change measured 22
+      opens against the base's 418–471, and 99 stats against 297–334. A signal that
+      stamps directories and lets the per-run stat ride the liveness probe would
+      remove the per-pointer stat; that is a follow-on. The negative control is a
+      cycle in which a pointer's mtime moves, which must sweep. A transition test must still deliver a run's death within one beat when
       no file moved. Because this changes load on the run trees that
       <code>reckon serve</code> also reads, the session owning that work is told
       before this section dispatches.
@@ -410,7 +422,7 @@
     <a class="r-gate-evidence" href="the §2 fragment docs/evidence/fragments/the-fleet-node-stays-in-service/name-how-a-stopped-worker-step-ends.html (commit 66610d127) names the srun client as the signalled pid with code citations and attributes both drain steps by exact stderr step markers; the claims review reproduced 3 of 3">Evidence</a>
 </div>
 <div class="r-gate" data-id="g-tfnsis-move-ready" data-section="s5" data-gated-sections="s8" data-status="open" data-verdict="">
-    <h4 class="r-gate-measure">A stopped worker&#x27;s step ends COMPLETED on the fleet allocation, and a migrate rehearsal passes at the head carrying the second-move fix</h4>
+    <h4 class="r-gate-measure">A stopped worker&#x27;s step ends without cancellation (not CANCELLED, signal field 0) on the fleet allocation, and a migrate rehearsal passes at the head carrying the second-move fix</h4>
     <p class="r-gate-required-evidence">The §3 probe's sacct state and reaper record, and the §5 rehearsal ledger at its pass state.</p>
     </div>
 </section>
