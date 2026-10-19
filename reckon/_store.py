@@ -3330,28 +3330,14 @@ def _apply_close(
                 }
             )
 
-    _raise_close_guards(working, status, previous_status)
-
-
-def _raise_close_guards(working: dict, status: str, previous_status: str) -> None:
-    """Run every terminal-transition guard and report all failures together."""
-    failures: list[str] = []
-
-    def collect(guard, *args) -> None:
-        try:
-            guard(*args)
-        except OpError as exc:
-            failures.append(str(exc))
-
-    if status in _LANDED_STATUSES and previous_status not in TERMINAL_STATUSES:
-        collect(_require_every_section_ticked, working, _plan_html_text(working))
-    collect(_require_transition_verdict, working, "plan-terminal")
-    project = str(working.get("project") or "")
-    slug = str(working.get("slug") or "")
-    if project and slug:
-        collect(_require_terminal_evidence, project, slug, status)
-    if status in _LANDED_STATUSES and not continuation_present(working):
-        failures.append(CONTINUATION_REQUIRED)
+    failures = validate_landing_patch(
+        working,
+        {"status": status, "followups": working.get("followups")},
+        _plan_html_text(working),
+        report_all=True,
+        closing_outcome=outcome,
+        before_status=previous_status,
+    )
     if failures:
         raise OpError("close refused: " + "; ".join(failures))
 
@@ -3599,9 +3585,15 @@ def _undeclared_headings(state: dict[str, Any], html_text: str | None) -> list[s
 
 
 def validate_landing_patch(
-    state: dict[str, Any], patch: dict[str, Any], html_text: str | None = None
-) -> None:
-    """Refuse a merge patch that lands a plan without naming a continuation.
+    state: dict[str, Any],
+    patch: dict[str, Any],
+    html_text: str | None = None,
+    *,
+    report_all: bool = False,
+    closing_outcome: str | None = None,
+    before_status: str | None = None,
+) -> list[str]:
+    """Validate a write that lands a plan; own every guard the transition fires.
 
     Deliberately keyed to the *write* rather than to the resulting state. A
     state-level invariant would retroactively lock every plan already recorded
@@ -3611,25 +3603,53 @@ def validate_landing_patch(
     ``html_text`` is the plan's HTML as it stands when the patch is applied, so
     the section check can see an authored heading nothing declares; a caller
     without the document still gets the declaration-map check.
+
+    This is the one guard list for a terminal transition: the guards below are
+    the section-ticked check, the appended hiding followup, the pending
+    transition gate, the terminal evidence record and the continuation. Both
+    writers route through it, so a guard added here reaches the merge-patch
+    writer and the op writer alike.
+
+    With ``report_all`` the guards are collected rather than raised at the
+    first, and the failures come back as a list — the close op's mode, so one
+    refused close names everything still outstanding instead of only the
+    first. Otherwise the first failure raises and the list is empty.
     """
+    failures: list[str] = []
+
+    def guard(check, *args) -> None:
+        if not report_all:
+            check(*args)
+            return
+        try:
+            check(*args)
+        except OpError as exc:
+            failures.append(str(exc))
+
     if str(state.get("type", "plan") or "plan") != "plan":
-        return
-    _refuse_appended_hiding_followups(state, patch)
+        return failures
+    guard(_refuse_appended_hiding_followups, state, patch)
     requested_status = str(patch.get("status", "")).lower()
-    if requested_status in _LANDED_STATUSES and (
-        _status_before_the_patch(state) not in TERMINAL_STATUSES
-    ):
-        _require_every_section_ticked(state, html_text)
+    prior_status = (
+        before_status if before_status is not None else _status_before_the_patch(state)
+    )
+    if requested_status in _LANDED_STATUSES and prior_status not in TERMINAL_STATUSES:
+        guard(_require_every_section_ticked, state, html_text)
     if requested_status in TERMINAL_STATUSES:
-        _require_transition_verdict(state, "plan-terminal")
+        guard(_require_transition_verdict, state, "plan-terminal")
         project = str(state.get("project") or "")
         slug = str(state.get("slug") or "")
         if project and slug:
-            _require_terminal_evidence(project, slug, requested_status)
-    if requested_status not in _LANDED_STATUSES:
-        return
-    if not continuation_present(state):
-        raise OpError(CONTINUATION_REQUIRED)
+            guard(_require_terminal_evidence, project, slug, requested_status)
+    if (
+        requested_status in _LANDED_STATUSES
+        and not continuation_present(state)
+        and not (closing_outcome and _chain_closed(closing_outcome))
+    ):
+        failures.append(CONTINUATION_REQUIRED)
+    if failures and not report_all:
+        raise OpError(failures[0])
+    return failures
 
 
 def _require_terminal_evidence(

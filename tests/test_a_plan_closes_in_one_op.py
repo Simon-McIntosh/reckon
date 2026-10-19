@@ -233,3 +233,62 @@ def test_a_superseded_close_skips_the_landed_only_guard(setup) -> None:
     assert result["ok"] is True, result
     data, _ = _store_module.read_plan(project, SLUG)
     assert data["status"] == "superseded"
+
+
+def test_a_close_batch_that_appends_a_hiding_followup_is_refused(setup) -> None:
+    # A close batch that also appends a followup hiding work is refused, and the
+    # refusal names that followup. Guard (d) lives in the same list the close
+    # consults, so the two writers cannot disagree about it.
+    docs_dir, _, project = setup
+    _write_plan(docs_dir, SLUG, {"version": 0, "section_declarations": {"s1": "done"}})
+    _write_evidence(docs_dir, SLUG)
+
+    result = mcp_module._edit_plan(
+        project,
+        SLUG,
+        [
+            {
+                "op": "close",
+                "status": "done",
+                "outcome": "the sections landed — no followup",
+                "by": "reckon-build",
+            },
+            {"op": "append", "target": "followups", "item": _open_followup("f-hide")},
+        ],
+        0,
+    )
+
+    assert result["ok"] is False, result
+    assert "f-hide" in result["detail"], result["detail"]
+    assert "hides work" in result["detail"], result["detail"]
+
+
+def test_the_close_guard_list_carries_the_hiding_followup(setup) -> None:
+    """The hiding-followup guard is in the list a close consults.
+
+    Driven here rather than through an op batch, because on the op path an
+    appended open followup is refused by the append op before the batch is
+    judged, so a close batch can never reach this guard with one: the guard is
+    the merge-patch writer's, and the close consults the same list. The failure
+    comes back beside the missing evidence record, which is the point — one
+    list, every failing guard in one answer.
+    """
+    docs_dir, _, project = setup
+    _write_plan(docs_dir, SLUG, {"version": 0, "section_declarations": {"s1": "done"}})
+
+    state = {
+        "project": project,
+        "slug": SLUG,
+        "type": "plan",
+        "status": "done",
+        "followups": [_open_followup("f-hide")],
+    }
+    failures = _store_module.validate_landing_patch(
+        state,
+        {"status": "done", "followups": state["followups"]},
+        None,
+        report_all=True,
+    )
+
+    assert any("hides work" in failure for failure in failures), failures
+    assert any("evidence" in failure for failure in failures), failures
