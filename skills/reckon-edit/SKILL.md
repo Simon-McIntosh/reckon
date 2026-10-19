@@ -391,7 +391,8 @@ section carries the result and a link to the evidence. Never a hand edit.
 
 | Op | Required keys | Notes |
 |---|---|---|
-| `set` | `path`, `value` | Plan: `status`, `roi`, `effort`, `milestone`, `sprint`, `capability`, `owner`, `summary`, `title`, `type`, `archived`, `read`, `depends_on`, `blocks`, `informs`, `followups.<id>.prompt`, `followups.<id>.title`, `followups.<id>.body`, `gates.<id>.measure`, `gates.<id>.required_evidence`, `section_depends_on.<sid>`, `sections.<id>.<field>` (a section's title, links, effort_hours, capability or body). Index: `active_sprint_id`, `sprints.<id>.<field>` |
+| `set` | `path`, `value` | Plan: `status` (any non-terminal value), `roi`, `effort`, `milestone`, `sprint`, `capability`, `owner`, `summary`, `title`, `type`, `archived`, `read`, `depends_on`, `blocks`, `informs`, `followups.<id>.prompt`, `followups.<id>.title`, `followups.<id>.body`, `gates.<id>.measure`, `gates.<id>.required_evidence`, `section_depends_on.<sid>`, `sections.<id>.<field>` (a section's title, links, effort_hours, capability or body). Index: `active_sprint_id`, `sprints.<id>.<field>` |
+| `close` | `status`, `outcome`, `by` | Closes a plan in one write: sets a terminal `status` and resolves every open followup with `outcome`, reporting every failing terminal guard together. A `set` of a terminal `status` is refused, naming this op. Optional `superseded_by`. |
 | `append` | `target`, `item` | Plan targets: `followups`, `research`, `questions`, `comments`, `decisions` (+ `key`). Index targets: `sprints`, `sprints.<id>.items`, `milestones`, `timeline`, `blockers` |
 | `resolve` | `target`, `id`, `by`, `outcome` or `resolution` | `followups` uses `outcome`; `questions` uses `resolution` |
 | `lock` | `key`, `choice`, `rationale`, `by` | Locks a decision (`data-choice` + by/when). |
@@ -633,7 +634,7 @@ wrong:
 
 1. Write `docs/plans/archive/<slug>-final.html` — frozen snapshot.
 2. Edit `docs/plans/<slug>.html` — add landed-summary card, update prose to past-tense.
-3. `edit_plan(project, slug, ops=[{"op":"set","path":"status","value":"archived"}], expected_version=…)`.
+3. Close the plan in one write: `edit_plan(project, slug, ops=[{"op":"close","status":"archived","outcome":"Archived after the frozen snapshot; no further work is carried here.","by":"<agent | smc>"}], expected_version=…)`. The `close` op sets the terminal status and resolves every open followup with the outcome, so no followup is appended to satisfy a guard.
 
 Before freezing, consolidate the plan's execution outcomes into the single
 `docs/evidence/archive/<slug>-landed.html` record. Do not preserve a litter of

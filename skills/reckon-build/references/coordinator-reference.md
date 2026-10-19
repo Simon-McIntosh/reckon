@@ -132,7 +132,10 @@ structured state (decisions, followups). Do not implement items marked
 
 **Write path:** use `edit_plan` to record outcomes atomically:
 1. `read_plan(resource={project,type:"plan",id:slug}, view="raw")` → get `version`.
-2. `edit_plan(…, ops=[set status + resolve driving followup + append next followup], expected_version=…)`.
+2. `edit_plan(…, ops=[…], expected_version=…)` — one op per change: tick a section's
+   landing, append its comment, resolve or append a followup. A plan's terminal status
+   is set by the single `close` op (`{op:'close', status, outcome, by}`), which also
+   resolves the open followups; a `set` of a terminal `status` is refused.
 3. On 412 conflict: re-read + retry.
 
 ## Reading state: ask the tool, and ask it for a view
@@ -953,8 +956,8 @@ and the section's `section_declarations` reclassification to `done` in the same
 the node's section, leave that followup open: a node landing advances the ledger
 without pretending the larger section is finished.
 
-**Same-plan follow-on work becomes a section, never a followup.** Before setting
-a terminal status, add discovered work that belongs to this plan to the evergreen
+**Same-plan follow-on work becomes a section, never a followup.** Before closing
+a plan, add discovered work that belongs to this plan to the evergreen
 as a concrete section, add its executable nodes to the DAG, and keep the plan
 active. A followup is reserved for work owned by a different plan, whose own
 lifecycle keeps it visible to `roadmap`.
@@ -1014,7 +1017,7 @@ two dangling.
 | Altitude | What it owes | How |
 |---|---|---|
 | **Worker** | candidate follow-ons it was fenced out of | classify the manifest's `follow_ons`: same-plan work becomes a section; different-plan work routes to its owning plan |
-| **Plan landing** | visible continuation, or an explicit end | keep same-plan sections active; use a one-line followup only for another plan, or resolve with `done — no followup` |
+| **Plan landing** | visible continuation, or an explicit end | keep same-plan sections active; use a one-line followup only for another plan, or close the plan with the `close` op when the chain ends |
 | **Sprint close** | the sprints this one lets us start | `roadmap(project)` → each sprint row's `feeds_sprints` and `unblocks`, derived from the dependency graph |
 
 A worker's out-of-scope discovery has nowhere to go but prose, where it is lost.
@@ -1024,9 +1027,9 @@ its nodes to the live DAG. Only cross-plan work may become a followup invocation
 pointing at the plan whose lifecycle owns and surfaces it.
 
 **The plan altitude is enforced at the write boundary.** A writeback that lands a
-plan — one that resolves a followup or sets a terminal status — is **refused**
-unless an open followup still carries the chain or a resolved outcome records in
-words that the chain closes (`"done — no followup"`). Do not work around the
+plan — one that resolves a followup or closes it — is **refused** unless an open
+followup still carries the chain or the plan closes with the `close` op, whose
+`outcome` records that the chain has ended. Do not work around the
 refusal: it is telling you the session was about to end silently.
 
 Report the sprint altitude at close from `feeds_sprints` rather than from memory:
@@ -1141,7 +1144,7 @@ assert state["data"]["status"] in ("shipped", "done")   # or "active" if more se
 assert state["data"]["impl"] == expected_fraction         # set correctly
 # All shipped sections are ticked: declaration done, c-close comment present
 # Driving followup is resolved
-# A next followup or "done — no followup" outcome is present
+# A next followup is present, or the plan was closed with close and no open followup remains
 # No foldable followup remains open; each exempt open followup records its exemption
 # crew(project, view="drain")["unreconciled_runs"] == 0
 # version has incremented

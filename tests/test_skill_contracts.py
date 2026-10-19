@@ -2021,14 +2021,16 @@ def test_each_skills_documented_landing_links_a_record_section(tmp_path: Path) -
 # Every op object a skill or AGENTS.md shows in a code span or fenced block is
 # one a reader copies and submits, and every path the op-reference `set` row
 # lists is offered as settable. A documented op the store refuses as an
-# unsupported path — or a computed field it refuses outright — sends that
-# reader to a text-mode edit or a direct file write, the hand edit these ops
-# exist to replace. So each is applied to a synthesized resource and the
-# refusal, if any, must not be for its path.
+# unsupported path — a computed field it refuses outright, or a terminal plan
+# `status` it refuses in favour of `close` — sends that reader to a text-mode
+# edit or a direct file write, the hand edit these ops exist to replace. So
+# each is applied to a synthesized resource and the refusal, if any, must not
+# be for its path.
 _REFUSAL_FOR_PATH = re.compile(
     r"unsupported (?:plan|index) (?:set path|append target)"
     r"|is (?:computed|counted) from"
     r"|is not authorable"
+    r"|terminal status is set with the 'close' op"
 )
 
 

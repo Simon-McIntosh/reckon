@@ -1,0 +1,70 @@
+<!-- Evidence anchor: epw-skills-describe-close -->
+
+<section id="epw-skills-describe-close-evidence">
+  <h2>The skills describe close and drop the retired instructions</h2>
+
+  <p id="epw-skills-describe-close-cause">
+    Five documents still taught a write the store refuses. The archive example
+    in <code>skills/reckon-edit/SKILL.md</code> closed a plan with
+    <code>{"op":"set","path":"status","value":"archived"}</code>; the write-path
+    step of <code>coordinator-reference.md</code> summarised a landing as
+    <code>ops=[set status + resolve driving followup + append next followup]</code>;
+    the plan-state checklist in <code>AGENTS.md</code> wrote "A new followup
+    MUST be written … or with <code>outcome: "done — no followup"</code>";
+    <code>sprint-orchestration.md</code> and <code>coordinator-reference.md</code>
+    both offered the same "done — no followup" placeholder as the way to close a
+    chain; and <code>reckon-create/SKILL.md</code> said to update
+    <code>plan-status</code> "as the plan progresses". With the landing store
+    refusing a terminal <code>set</code> of <code>status</code> and accepting one
+    <code>close</code> op instead, each of those was a documented write that
+    sends a reader to a refusal or to a placeholder followup that hides nothing.
+  </p>
+
+  <p id="epw-skills-describe-close-fix">
+    The <code>reckon-edit</code> op table gains one <code>close</code> row
+    (<code>status</code>, <code>outcome</code>, <code>by</code>; optional
+    <code>superseded_by</code>) and its <code>set</code> row now reads a terminal
+    status as the exception, naming <code>close</code>. The archive example
+    closes the plan in one write with a <code>close</code> op carrying the
+    outcome. In the other four files the positive instruction to set a terminal
+    status and the placeholder recipe are replaced by <code>close</code>: the
+    write-path step, the same-plan section rule, the landing altitude row, the
+    write-boundary paragraph and the eat-the-dog-food check in
+    <code>coordinator-reference.md</code>; the landing-beat step in
+    <code>sprint-orchestration.md</code>; the plan-state and dog-food checklists
+    in <code>AGENTS.md</code>; and the <code>plan-status</code> note in
+    <code>reckon-create/SKILL.md</code>. A prohibition on setting a terminal
+    status while a foldable followup is open is left in place — it forbids the
+    write rather than teaching it, and it is stated identically in
+    <code>reckon-build/SKILL.md</code>, outside this section's fence.
+  </p>
+
+  <p id="epw-skills-describe-close-harness">
+    The op-object sweep in <code>tests/test_skill_contracts.py</code> applies
+    every op object a skill or <code>AGENTS.md</code> shows and fails only when
+    the refusal is <em>for the op's path</em> (<code>_REFUSAL_FOR_PATH</code>).
+    It did not recognise the terminal-status refusal, so a documented terminal
+    <code>set</code> applied cleanly and passed. The predicate gains one
+    alternative — <code>terminal status is set with the 'close' op</code> — so
+    the sweep now counts that refusal for its path and a surviving terminal
+    <code>set</code> reddens it. The declared negative control is that mutation.
+  </p>
+
+  <p id="epw-skills-describe-close-evidence-tail">
+    The gate ran
+    <code>PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider tests/test_skill_contracts.py tests/test_cited_commands_exist.py</code>
+    at the node head: 74 passed, <code>EXIT=0</code>. The base arm ran the same
+    command at <code>2cbe964ac</code> and also reported 74 passed, so the delta
+    is zero added failures. The negative control restores the archive example's
+    <code>set</code> of <code>status</code> to <code>archived</code>; the sweep
+    then fails <code>test_every_documented_op_object_is_supported_by_the_store</code>
+    (<code>EXIT=1</code>) naming
+    <code>skills/reckon-edit/SKILL.md</code>, which the head arm does not fail.
+    A grep of the five files for an instruction to set a terminal plan status or
+    append an already-resolved placeholder finds eight sites at the base
+    revision and none at the head; the base run is kept as the positive control.
+    Ruff reports the base file's one pre-existing <code>RUF005</code> and its
+    pre-existing format-dirty state; the change adds neither a finding nor a
+    format violation.
+  </p>
+</section>

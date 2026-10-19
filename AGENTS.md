@@ -256,16 +256,18 @@ those elements on every successful POST.
 Concretely:
 
 1. **When work lands on a plan**:
-   - `status` updated (`active` → `shipped`/`done` when fully done;
-     `active` → `blocked` when stalled; etc.)
+   - `status` updated (`active` → `blocked` when stalled; etc.); a terminal
+     status (`shipped`, `done`, `archived`, `superseded`, `abandoned`) is set
+     by the `close` op, never a `set` of `status` — `close` sets it and resolves
+     every open followup in one write
    - `impl` moves on its own: it derives from the section records and advances
      when a section's declaration moves to `done` — never set directly
    - `modified` set to today (server-written on each POST)
    - **The driving followup MUST be resolved** with `resolved_at`,
      `resolved_by`, `outcome` describing what landed
-   - **A new followup MUST be written** with the one-line §05 invocation
-     for whatever comes next — or with `outcome: "done — no followup"`
-     when the chain truly closes
+   - **The chain must close visibly** — either an open followup carrying the
+     next one-line §05 invocation, or the plan's `close`, whose `outcome`
+     resolves the open followups and records that the chain has ended
    - `version` will be incremented by the server on each POST (do
      not set it client-side)
 
@@ -287,13 +289,15 @@ Concretely:
      do not edit shared plan state
 
    When all workers land, the **coordinator MUST resolve the driving followup
-   and write the next one-line invocation** before marking the task shipped.
+   and either write the next one-line invocation or, when the chain ends, close
+   the plan with the `close` op**.
 
 4. **Eat-the-dog-food check.** Before marking any reckon-build work
    "done" in chat, verify the plan-system itself reflects the work:
    - `GET /plan/<project>/<slug>` → `status` matches reality
    - The driving followup is resolved (`data-status="resolved"` on its `<article class="r-fu">`)
-   - A next followup or `outcome: "done — no followup"` is present
+   - A next followup is present, or the plan was closed with `close` and no
+     open followup remains
    - `version` has incremented
    If any of those is false, you bypassed the skill. Fix it before
    moving on.

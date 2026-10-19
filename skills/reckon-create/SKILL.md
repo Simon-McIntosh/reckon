@@ -610,8 +610,10 @@ Only author fields that a view downstream consumes:
 A plan's `impl` derives from the section records and moves when a section's
 declaration moves to `done`; the store refuses a direct write.
 
-`plan-status` is authored on lifecycle transitions (draft → active → shipped).
-Set it to `draft` on initial scaffolding; update it as the plan progresses.
+`plan-status` is authored on lifecycle transitions. Set a non-terminal value
+(`draft`, `active`, `blocked`, …) with the `set` op; a terminal status
+(`shipped`, `done`, `archived`, `superseded`, `abandoned`) is set with the
+`close` op, which resolves the plan's open followups in the same write.
 
 ## §05 followup invocation
 
