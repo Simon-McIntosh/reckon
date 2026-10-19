@@ -1967,6 +1967,19 @@ E  assert 5 == 90</pre>
     mutation verbatim. The node records this landing only; it does not resolve the section's followup
     or close it.</p>
   </section>
+  <section id="a-reverted-ledger-row-reads-absent">
+    <h2>§14 — a reverted ledger row reads absent before the receipt forbids re-promotion</h2>
+    <p>The 10:38:20Z landing record reported the run's per-run ledger file reverted after
+        <code>.git/index.lock</code> refused staging, yet the receipt warned that the row was
+        already written. The later re-promotion committed that missing per-run file. At the
+        node's base, <code>_ledger_holds_row</code> read the entire ledger union with
+        <code>use_index=False</code>. An unreadable document for any other run caused that
+        read to raise, and its exception handler answered <em>present</em>. The incident
+        receipt did not record the failed read's path or exception, so it cannot identify
+        the historical transient document; the temporary-repository test reproduces the
+        same answer through this source.</p><p><strong>Landing.</strong> Merged with <code>crew merge</code> as <code>70f8ea873</code> (run head <code>b5f9fe0b9</code>). <code>diagnosis.md</code> under the run directory names the source. <code>_ledger_holds_row</code> read every per-run document through <code>ledger.load(..., use_index=False)</code> and mapped any <code>LedgerError</code> to present. So a half-written document of another run, such as one a concurrent promotion was writing behind the held index lock, made the reverted row read present. The repair narrows the read to the aggregate and this run's own file. The reproduction fails with the already-written wording at base and passes at head. The review scored 114/120. Its negative control ran in a base tree, which exercises the same read-back. A stacked importer population over 243 files at base <code>ae3077a9a</code> (run <code>r-20261019T154358179624</code>) added one id, <code>tests/test_one_automatic_repair_round_per_run.py::test_a_second_round_on_a_new_head_hands_back</code>. Measuring each link alone placed it in the stack's other head, review-record §23, which did not land. This head's link passed. Restoring the plan file under a held lock is §15.</p>
+  </section>
+
 </main>
 </body>
 </html>
