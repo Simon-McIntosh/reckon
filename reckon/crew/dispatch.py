@@ -346,6 +346,103 @@ def _answer_existing_node_run(
     return held
 
 
+def _session_older_admissible_request(
+    *,
+    session: str,
+    backend_name: str,
+    moment: datetime,
+) -> Mapping[str, Any] | None:
+    """The oldest of a session's queued requests on a lane the pass could admit.
+
+    A dispatch that finds room on its lane yields the slot to its own session's
+    oldest waiting request for that lane, so a session's work launches in its
+    order of arrival rather than whichever of its dispatches happened to see a
+    free slot first. A request the admission pass would hold does not stand in
+    the way: one inside its retry back-off after a refused launch and one the
+    pass holds behind an earlier overlapping request are both skipped, and the
+    next older admissible request is taken. A request that can never be admitted
+    therefore never stops the session launching. The ranking among sessions is
+    the admission pass's — only this session's own requests are ever chosen.
+    """
+    from reckon.crew import queue_admission, queue_order, runs as runs_module
+
+    live = runs_module.list_live()
+    queued = [
+        pointer for pointer in live if str(pointer.get("phase") or "") == "queued"
+    ]
+    if not queued:
+        return None
+    order = queue_order.admission_order(queued, live, now=moment)
+    claims: dict[str, list[tuple[Path | None, Path]]] = {}
+    for index, pointer in enumerate(order):
+        if str(pointer.get("session") or "") != session:
+            continue
+        if str(pointer.get("backend") or "") != backend_name:
+            continue
+        if (
+            queue_admission._retry_backoff_hold(pointer, moment=moment, config_for=None)
+            is not None
+        ):
+            continue
+        if (
+            queue_admission._earlier_overlapping_request(
+                pointer, order[:index], moment=moment, claims=claims
+            )
+            is not None
+        ):
+            continue
+        return pointer
+    return None
+
+
+def _launch_yielded_queued_request(
+    pointer: Mapping[str, Any],
+    *,
+    launcher,
+    moment: datetime,
+) -> Mapping[str, Any] | None:
+    """Launch one queued request through the admission pass's own path.
+
+    The pointer is released inside the launch, so it is held in memory here and
+    written back carrying the failure when the launch does not survive — the
+    release-and-restore the admission pass performs — so freeing a lane slot for
+    an older request can never lose that request. The launched run record is
+    returned, or ``None`` when the launch did not land.
+    """
+    from reckon.crew import queue_admission, runs as runs_module
+
+    snapshot = dict(pointer)
+    runs_module.write_handover(pointer)
+    record: Mapping[str, Any] | None = None
+    requeued_run_id = ""
+    caught: Exception | None = None
+    try:
+        candidate = queue_admission._launch_queued(
+            pointer, launcher=launcher, config_for=None
+        )
+        if isinstance(candidate, Mapping) and candidate.get("phase") == "queued":
+            requeued_run_id = str(candidate.get("run_id") or "")
+        record = queue_admission._require_launched_record(candidate)
+    except Exception as exc:  # noqa: BLE001 - every launch failure keeps its request
+        caught = exc
+        if isinstance(exc, LaneHeld):
+            queued = getattr(exc, "queued", None)
+            if isinstance(queued, Mapping):
+                requeued_run_id = str(queued.get("run_id") or "")
+    finally:
+        if record is None:
+            queue_admission._record_queued_failure(
+                snapshot,
+                f"{type(caught).__name__}: {caught}"
+                if caught is not None
+                else "dispatch did not return a launched record",
+                requeued_run_id,
+                moment=moment,
+            )
+        runs_module.clear_handover(pointer)
+    return record
+
+
 def _offered_local_backend(
     selection: Mapping[str, Any] | None, config: Mapping[str, Any]
 ) -> str | None:
@@ -1592,6 +1689,63 @@ def dispatch(
             )
             raise held
         raise LaneHeld(lane_allowance)
+
+    # A dispatch that found room on its lane yields the slot to its own session's
+    # oldest waiting request for that lane, launching that request through the
+    # admission pass's own path and queueing itself behind it. A session's new
+    # work must not keep taking the slots its oldest queued request needs. A
+    # request the pass would hold is skipped by the selector, so a request that
+    # can never be admitted never stops the session launching; the lane slot an
+    # admission pass is itself spending is left to the pass, which already owns
+    # the ordering.
+    if is_local and not shadow_lineage and not admission_launch:
+        moment = datetime.now(UTC)
+        older_request = _session_older_admissible_request(
+            session=session, backend_name=backend_name, moment=moment
+        )
+        if older_request is not None:
+            launched = _launch_yielded_queued_request(
+                older_request, launcher=launcher, moment=moment
+            )
+            if launched is not None:
+                queued, position = queue_dispatch(
+                    _queued_request_record(
+                        run_id=run_id,
+                        project=project,
+                        node=node,
+                        repo_root=repo_root,
+                        session=session,
+                        backend_name=backend_name,
+                        launch_kind=launch_kind,
+                        lane_allowance=lane_allowance,
+                        dispatch_options=dispatch_options,
+                        queued_at=_utc_now(),
+                    ),
+                    cap=queued_dispatch_cap(_queued_share_cap(backend)),
+                )
+                held = LaneHeld(
+                    {
+                        "detail": (
+                            "yielded this lane slot to queued request "
+                            f"{launched.get('run_id')!r}"
+                        ),
+                        "reason": "yielded to this session's older queued request",
+                    }
+                )
+                held.queued = {
+                    "run_id": str(queued["run_id"]),
+                    "position": position,
+                    "phase": str(queued.get("phase") or "queued"),
+                    "reason": "waiting behind this session's older queued request",
+                }
+                _arrange_dispatch_follower(
+                    project,
+                    session,
+                    launch_kind,
+                    watch_required=watch_required,
+                    watch_override=watch_override,
+                )
+                raise held
 
     # A cli worker launches inside the fence, and the fence is bubblewrap over a
     # user namespace. A host with neither cannot seal a worker's writes, so the
