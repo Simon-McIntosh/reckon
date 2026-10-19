@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-19T13:33:18.964Z",
+  "dispatched_at": "2026-10-19T13:15:05Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_scope.py",
+      "line": "2018",
+      "severity": "follow-on",
+      "text": "follow-on: the new reportless branch reads the row only when the exception carries no rollback report, but every staging refusal in _commit_landing_writes raises through _landing_refusal (promotion_scope.py:2215), which always sets LANDING_ROLLBACK_ATTRIBUTE; the recorded incident's own landing record docs-state/reckon/runs/r-20261019T080250830060.landing.json shows the refusal carried a report whose ledger entry read true (reverted), which the base code maps to the re-promote wording, so the branch this change adds may not be the branch the recorded incident exercised."
+    },
+    {
+      "file": "tests/test_a_failed_staging_reads_its_row_back.py",
+      "line": "31",
+      "severity": "follow-on",
+      "text": "follow-on: the first case reaches the reportless branch by monkeypatching _landing_refusal to drop the rollback report, a state production cannot produce from a staging refusal and cannot produce with an absent row from a post-commit failure, so the guard reddens on the mutation but exercises a synthetic state rather than the incident's code path."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to read the ledger row back before the receipt forbids re-promotion and the landed change does exactly that at reckon/crew/promotion_scope.py:2018.\nVERDICT done_when: the done-when names tests/test_a_failed_staging_reads_its_row_back.py; the manifest records its three cases passing at head and the negative control reddening the first case on its wording.\nVERDICT write_paths: the declared paths are reckon/crew/promotion_scope.py, tests/test_a_failed_staging_reads_its_row_back.py and the evidence fragment; every path in the diff is inside them.\nVERDICT manifest: read; it states 167 passed at head, 2 failed/165 passed at base, and names the base-suite, after-suite, negative-control and reproduction logs.\nVERDICT diff: read commit by commit against 002f85b4; three commits, touching promotion_scope.py, the new test file and the evidence fragment only.\nCALL_SITES: reckon/crew/promotion.py:818 _report_written_ledger_row, reckon/crew/promotion.py:1390 _report_written_ledger_row, reckon/crew/promotion_scope.py:2204 _commit_landing_writes staging branch, reckon/crew/promotion_release.py:636 _commit_landing_writes, reckon/crew_run_commands.py:922 _commit_landing_writes, reckon/crew/promotion_gate.py:960 _commit_landing_writes\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_scope.py:2018 returns row_present() is False on the reportless branch, which is the read-back the deliverable names.\nSCORE evidence: 15\nJUSTIFICATION evidence: baseline-suite.log (2 failed, 165 passed) and after-suite.log (167 passed) are recorded beside the negative-control.log red at reckon/crew/promotion_scope.py:2018's branch.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only promotion_scope.py, tests/test_a_failed_staging_reads_its_row_back.py and the declared evidence fragment.\nSCORE durability: 16\nJUSTIFICATION durability: restoring the report-only decision reddens tests/test_a_failed_staging_reads_its_row_back.py:47, and the plan-byte assertion at line 38 guards the reachable staging continue path.\nSCORE fit: 17\nJUSTIFICATION fit: the byte restore at reckon/crew/promotion_scope.py:1742 uses raw subprocess.run where the module otherwise calls _git, which decodes text and so could not restore bytes exactly.\nSCORE reuse: 18\nJUSTIFICATION reuse: no byte-preserving HEAD restore exists; _git at reckon/crew/routing.py:481 normalises line endings, so the bytes read is a deliberate non-reuse rather than a fork.\nFINDING reckon/crew/promotion_scope.py:2018 follow-on: the new reportless branch may not be the branch the recorded incident exercised, because every staging refusal raises through _landing_refusal (promotion_scope.py:2215) which always sets the rollback attribute and the incident's own landing record carried a report.\nFINDING tests/test_a_failed_staging_reads_its_row_back.py:31 follow-on: the first case reaches the reportless branch by monkeypatching _landing_refusal, a state production cannot produce from a staging refusal with an absent row.",
+  "review_run_id": "r-20261019T131209004910-review-of-a-failed-staging-reads-its-row-back-7a788fd3a512",
+  "reviewed_base_sha": "002f85b4f0df85463466aa0a8caea8297020045d",
+  "reviewed_head_sha": "7a788fd3a51285f64b87b86394e6b34b3a4970c4",
+  "reviewed_run_id": "r-20261019T123112426653-a-failed-staging-reads-its-row-back",
+  "rubric": "landed-node review",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T13:43:31.260860+00:00"
+}
