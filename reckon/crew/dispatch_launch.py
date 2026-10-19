@@ -1130,7 +1130,9 @@ def apply_backend_placement(
         # from the environment it is no longer a step of the fleet job, so its
         # partition and its bound are the ones stated here. Its standard
         # streams are the plan's, so a worker placed this way reports as any
-        # other does rather than into a batch output file.
+        # other does rather than into a batch output file — and the prompt the
+        # dialect writes to stdin is left on the plan, because srun forwards
+        # stdin to its one task exactly as a step of the allocation does.
         return dataclasses.replace(
             plan,
             argv=[
@@ -1147,7 +1149,6 @@ def apply_backend_placement(
                 ),
             ],
             environment=placement_module.without_slurm_job_identity(plan.environment),
-            stdin_text="",
         )
     # The one shared reservation, which any project's dispatch resolves: a
     # worker placed into it runs where it was sized to and is counted against

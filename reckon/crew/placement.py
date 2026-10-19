@@ -331,6 +331,12 @@ def memory_figure_bytes(text: str) -> int | None:
     A figure is a bare number of mebibytes or a number with a KiB/MiB/GiB/TiB
     suffix. An unreadable figure is None rather than zero: zero would read as a
     bound of nothing, and a bound of nothing places no step at all.
+
+    This is the one reader of a scheduler memory figure in either direction — a
+    bound a placement states, and a size the scheduler reports back — so the two
+    can never disagree about what ``96G`` or a bare ``98304`` means. A caller
+    that publishes the answer in another unit converts from here rather than
+    parsing the string a second time.
     """
     match = re.fullmatch(r"\s*(\d+)\s*([KMGTkmgt]?)[Bb]?\s*", str(text))
     if not match:

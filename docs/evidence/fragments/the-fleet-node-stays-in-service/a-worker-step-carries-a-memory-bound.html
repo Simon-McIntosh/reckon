@@ -129,7 +129,11 @@
   placement's own <code>--cpus-per-task</code>; with no task count beside it
   the total is unknown and the dispatch is refused, naming the option, rather
   than priced as a single task — pricing it low is the direction that overfills
-  the allocation.</p>
+  the allocation. A scheduler memory figure is read by one parser in either
+  direction: the same reader that prices a declared bound also reads the size
+  the scheduler reports for a held allocation, so the two can never disagree
+  about what <code>96G</code> or a bare <code>98304</code> means, and each
+  caller states the answer in the unit it publishes.</p>
 
   <p id="a-worker-step-carries-a-memory-bound-own-job"><strong>A step of its own.</strong>
   The over-ceiling route is the step client asked for an allocation of its own,
@@ -159,6 +163,16 @@
   among the steps of the holding job: no <code>1289800</code> row appears under
   <code>1281970</code>. Log:
   <code>logs/own-job-live-check.log</code>.</p>
+
+  <p id="a-worker-step-carries-a-memory-bound-own-job-stdin"><strong>The prompt reaches
+  it.</strong> Every dialect writes the worker's prompt to the launched process's
+  stdin, so a route that emptied it would start a worker with nothing to do.
+  This one leaves it alone: with the command carried as argv, stdin is forwarded
+  to the job's single task exactly as it is for a step of the allocation. Placed
+  the same way with <code>cat</code> as the command, a prompt came back on the
+  caller's stdout — <strong>job <code>1289936</code></strong>, <code>all_debug</code>,
+  <code>mem=49G</code>, <code>COMPLETED</code>, and again no row under
+  <code>1281970</code>. Log: <code>logs/own-job-stdin-check.log</code>.</p>
 
   <p id="a-worker-step-carries-a-memory-bound-paths"><strong>Changed paths.</strong>
   <code>reckon/crew/placement.py</code>, <code>reckon/crew/fleet_node.py</code>,

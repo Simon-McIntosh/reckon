@@ -31,24 +31,30 @@ RESERVATION_ID = "1281970"
 SRUN = "/opt/slurm/bin/srun"
 
 
-def _plan() -> LaunchPlan:
+def _plan(*, stdin_text: str = "", environment=None) -> LaunchPlan:
     return LaunchPlan(
         backend="alpha",
         dialect="codex",
         argv=["/opt/backends/bin/codex", "exec", "--task", "t"],
         cwd="/work/tree",
-        stdin_text="",
-        environment={"PATH": "/opt/slurm/bin:/opt/backends/bin"},
+        stdin_text=stdin_text,
+        environment=environment or {"PATH": "/opt/slurm/bin:/opt/backends/bin"},
         final_message_path=None,
         resumed_session=None,
     )
 
 
-def _placed_plan(placement_options, *, run_id=None, monkeypatch=None) -> LaunchPlan:
+def _placed_plan(
+    placement_options, *, run_id=None, monkeypatch=None, plan=None
+) -> LaunchPlan:
     backend = {
         "launch": "cli",
         "command": "codex",
-        "placement": {"scheduler": "srun", "options": list(placement_options)},
+        "placement": {
+            "scheduler": "srun",
+            "partition": "all",
+            "options": list(placement_options),
+        },
     }
     monkeypatch.setattr(flight, "placement_for", lambda _: backend["placement"])
     monkeypatch.setattr(
@@ -64,7 +70,9 @@ def _placed_plan(placement_options, *, run_id=None, monkeypatch=None) -> LaunchP
 
     monkeypatch.setattr(dispatch_launch.shutil, "which", which)
     return dispatch_launch.resolve_backend_placement(
-        _plan(), backend, payload={"run_id": run_id} if run_id else None
+        _plan() if plan is None else plan,
+        backend,
+        payload={"run_id": run_id} if run_id else None,
     )
 
 
@@ -131,6 +139,25 @@ def test_a_declaration_above_the_ceiling_leaves_the_allocation(monkeypatch) -> N
     )
 
 
+def test_a_plan_above_the_ceiling_keeps_the_prompt_it_carries(monkeypatch) -> None:
+    """A worker placed as a job of its own is still given the same prompt.
+
+    Every dialect writes the worker's prompt to the launched process's stdin, so
+    a route that emptied it would start a worker with nothing to do. The
+    over-ceiling route leaves it alone: the client forwards stdin to its single
+    task exactly as a step of the allocation does.
+    """
+    plan = _plan(stdin_text="the prompt a worker is given")
+    placed = _placed_plan(
+        [placement.step_memory_option(64)], monkeypatch=monkeypatch, plan=plan
+    )
+
+    assert placed.stdin_text == plan.stdin_text
+    assert placed.argv[0] == SRUN
+    # The command is carried as argv, so the prompt is not folded into it.
+    assert placed.argv[-len(plan.argv) :] == list(plan.argv)
+
+
 def test_a_job_of_its_own_states_a_limit_inside_the_debug_window() -> None:
     """A debug partition allows an hour and has no default, so a limit is stated."""
     assert placement.debug_job_time_limit(None) == placement.DEBUG_JOB_TIME_CEILING
@@ -173,6 +200,31 @@ def test_the_declaration_reaches_the_placement_through_a_dispatch_set(
     declared = flight.placement_for(resolved.config["backends"]["alpha"])
     assert declared is not None
     assert placement.declared_memory_gb(declared["options"]) == 64
+
+
+def test_one_parser_reads_a_memory_figure_in_both_directions() -> None:
+    """A declared bound and a reported size are read by the same parser.
+
+    The placement declares a step's memory and the fleet node reads back the
+    memory the scheduler reports for an allocation. Both are the same vocabulary
+    stated unconnectedly, so the two answers must agree rather than merely look
+    alike, and each caller keeps the unit it publishes: bytes on one side, whole
+    gigabytes on the other.
+    """
+    from reckon.crew import fleet_node
+
+    for figure in ("96G", "98304M", "98304", "1T", "512M"):
+        total = placement.memory_figure_bytes(figure)
+        assert total is not None, figure
+        assert fleet_node.parse_memory_gb(figure) == total // (1024**3), figure
+    # The units are the scheduler's, so a bare number is the megabytes it means.
+    assert fleet_node.parse_memory_gb("98304M") == 96
+    assert fleet_node.parse_memory_gb("96G") == 96
+    assert placement.memory_figure_bytes("98304") == 98304 * 1024**2
+    # The reported-size reader drops the per-node/per-cpu suffix the scheduler
+    # prints; the figure itself is still read by the shared parser.
+    assert fleet_node.parse_memory_gb("96Gn") == 96
+    assert fleet_node.parse_memory_gb("unreadable") is None
 
 
 def test_a_bound_named_in_options_is_read_back() -> None:
