@@ -1,0 +1,52 @@
+<section id="the-first-paint-carries-each-plans-progress">
+  <h2>The first paint carries each plan's progress</h2>
+  <p>
+    The page paints from <code>/_index/&lt;project&gt;</code> before
+    <code>/_discover/&lt;project&gt;</code> answers, and the index rows carried
+    no progress, so every progress bar painted at 0% and filled only once
+    discovery landed. Each plan row now carries its progress figure as
+    <code>impl</code>, so the first paint draws every bar.
+  </p>
+  <p>
+    The value comes from the same parse the discovery payload reads —
+    <code>_plan_html.parse_meta</code>, which derives the figure through
+    <code>derive_impl_with_source</code> — so the index row and the discovery
+    row cannot report different figures by construction. Nothing is retired:
+    discovery keeps <code>impl</code> for the roadmap and agent readers, and the
+    two rows agree because one function feeds both. A row written before the
+    field existed is rebuilt rather than served without it: the persisted index
+    version moved with the shape.
+  </p>
+  <p>
+    The gate is <code>tests/test_the_first_paint_carries_each_plans_progress.py</code>
+    and the two updated files: <strong>18 passed, EXIT=0</strong>. It serves a
+    temporary project of four sectioned plans and asserts that every plan's
+    <code>impl</code> in <code>/_index/sample</code> equals its value in
+    <code>/_discover/sample</code>. Two edges the measure names are present and
+    reduced: a plan declared with no section records reads 2/3, and one with
+    partial hours reads 2/9 (its unrecorded section taking the mean of the
+    present hours). Both rows are pinned to the one progress function, so
+    neither is a hand-set figure the other could drift from.
+  </p>
+  <p>
+    The SPA renders the index row's figure on first paint: the served loader
+    spreads the row's <code>impl</code> onto the plan object, and
+    <code>tests/test_page_paints_from_the_index.py</code> now asserts the bars
+    at readiness — before the discovery merge — equal the plan rows' figures.
+  </p>
+  <p>
+    The declared negative control — drop <code>impl</code> from the index row —
+    reddens the index-equals-discovery assertion: <strong>2 failed, EXIT=1</strong>,
+    the assertion reading <code>{'all-hours': 0.4} != {'all-hours': None}</code>
+    and the first-paint case finding no figure on the row. Tests pinning the
+    index row's fields (<code>tests/test_metadata_index_survives_restart.py</code>)
+    and the SPA index test are updated to the new contract without deleting or
+    loosening a case. The focused population importing
+    <code>reckon/metadata_index.py</code> or <code>reckon/serve.py</code> plus
+    the SPA test files is at <strong>77 passed, EXIT=0</strong> at head against
+    <strong>75 passed, EXIT=0</strong> at base — no added failure. The full
+    merged population belongs to the coordinator's merge gate. Logs:
+    <code>logs/head_three_files.log</code>, <code>logs/head_focused.log</code>,
+    <code>logs/negative_control.log</code>, <code>logs/base_focused.log</code>.
+  </p>
+</section>
