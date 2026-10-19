@@ -93,7 +93,7 @@ from reckon.evidence import (
     evidence_record_plan,
 )
 from reckon.figures import figure_rows
-from reckon.file_memo import memoized
+from reckon.file_memo import file_revision, memoized
 from reckon.lifecycle import (
     effective_status,
     unresolved_dependencies,
@@ -2556,7 +2556,7 @@ def _discover_plans_uncached(
         # URL the server will answer immutable while the file still matches. An
         # unreadable file carries none, and its URL falls back to revalidation.
         try:
-            figure["revision"] = _file_revision(figure_path.stat())
+            figure["revision"] = file_revision(figure_path.stat())
         except OSError:
             figure["revision"] = ""
         inventory.append(figure)
@@ -2970,19 +2970,6 @@ def safe_join(root: Path, rel: str) -> Path | None:
     return target
 
 
-def _file_revision(stat: os.stat_result) -> str:
-    """Return the revision token a served file is addressed by.
-
-    Derived from the file's stat identity — inode, size and modification time —
-    so a rewritten file yields a new token and an untouched one yields the same
-    token across processes. It is the same value the ETag is built from, so a
-    URL carrying it as ``?rev=`` and the response's validator agree by
-    construction.
-    """
-
-    return f"{stat.st_ino:x}-{stat.st_size:x}-{stat.st_mtime_ns:x}"
-
-
 # A response whose URL carried the file's current revision cannot change while
 # that revision holds, so the browser may keep it for a year without asking
 # again. A year is the ceiling most caches accept; ``immutable`` tells them the
@@ -3337,7 +3324,12 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Cache-Control", "no-store")
+        # A caller that names its own Cache-Control owns the whole header: a
+        # second value beside the default would be two directives a cache
+        # resolves by whichever it reads first, and a fallback that keeps its
+        # bytes cached immutably is the opposite of ``no-store``.
+        if not headers or "Cache-Control" not in headers:
+            self.send_header("Cache-Control", "no-store")
         for name, value in (headers or {}).items():
             self.send_header(name, value)
         self.end_headers()
@@ -3367,7 +3359,7 @@ class Handler(BaseHTTPRequestHandler):
         """
         try:
             stat = target.stat()
-            identity = _file_revision(stat)
+            identity = file_revision(stat)
             etag = f'"{identity}"'
             cache_control = (
                 _IMMUTABLE_CACHE
@@ -3442,7 +3434,7 @@ class Handler(BaseHTTPRequestHandler):
         except OSError:
             self._send(HTTPStatus.NOT_FOUND, b"figure not readable")
             return
-        identity = _file_revision(stat)
+        identity = file_revision(stat)
         cache_control = (
             _IMMUTABLE_CACHE
             if _revision_matches(requested_revision, identity)

@@ -40,7 +40,7 @@ from pathlib import Path
 
 from reckon import _plan_html, figures, resources
 from reckon._store import _config_home, write_json_atomically
-from reckon.file_memo import file_signature, memoized
+from reckon.file_memo import file_revision, file_signature, memoized
 
 #: A row's stamp source: a file and its stat identity in, ``(created, edited)``
 #: out. The default derives both from the stat identity; a caller that can
@@ -65,6 +65,7 @@ ROW_FIELDS = (
     "edited",
     "width",
     "height",
+    "revision",
 )
 
 _SCHEMA = "reckon.metadata-index"
@@ -79,6 +80,8 @@ _COVERED_PROJECT: ContextVar[tuple[str, str] | None] = ContextVar(
 #: The types discovery keeps in an inventory, so the index answers with the
 #: same row set the derived payload is merged into.
 _INDEX_TYPES = frozenset({"plan", "research", "evidence"})
+#: The row types a figure file derives, which carry a revision of its bytes.
+_FIGURE_TYPES = frozenset({"figure", "gif"})
 
 
 @dataclass
@@ -448,7 +451,9 @@ def _row_is_complete(entry: Mapping) -> bool:
     answering from a row whose figures were never derived. An entry for a
     document discovery inventories must also carry its discovery state — the
     parsed head record and readiness — so a reader serving a discovery read from
-    the index never reuses an entry written before that state was kept.
+    the index never reuses an entry written before that state was kept. A figure
+    entry likewise carries the revision of its bytes, so an index written before
+    the field existed is rebuilt rather than served with the row missing it.
     """
 
     fields = entry.get("fields")
@@ -458,6 +463,8 @@ def _row_is_complete(entry: Mapping) -> bool:
         entry.get("discovery"), Mapping
     ):
         return False
+    if fields.get("type") in _FIGURE_TYPES:
+        return "revision" in fields
     if fields.get("type") != "plan":
         return True
     return isinstance(entry.get("plan"), Mapping)
@@ -986,6 +993,14 @@ def _figure_row(
     dims = figures._DIMS_BY_SUFFIX[path.suffix](path)
     capture, _caption = figures._capture_metadata(path)
     created, edited = stamp(path, signature)
+    # The revision addresses this figure's bytes, so a page's first paint builds
+    # a URL the server answers immutable from the row it already holds rather
+    # than one it must ask for. An unreadable file carries none, and its URL
+    # falls back to revalidation.
+    try:
+        revision = file_revision(path.stat())
+    except OSError:
+        revision = ""
     return {
         "slug": slug,
         "href": f"/{project}/figures/{slug}",
@@ -1000,6 +1015,7 @@ def _figure_row(
         "edited": edited,
         "width": dims[0] if dims else None,
         "height": dims[1] if dims else None,
+        "revision": revision,
     }
 
 
