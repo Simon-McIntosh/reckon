@@ -83,6 +83,18 @@ def _lane_held(*, queued):
     return held
 
 
+def _lane_paused():
+    """The gate hold, raised without the router's queued record.
+
+    ``LaneHeld`` is the subclass a router hold arrives as; the parent is what a
+    lane whose gate is simply shut raises, and the code-review dispatch can
+    reach it without a queued record ever existing.
+    """
+    from reckon.crew.dispatch import LanePaused
+
+    return LanePaused(dict(LANE_GATE))
+
+
 def test_a_queued_review_composition_reports_itself_queued(monkeypatch) -> None:
     """The first case: a queued composition is an acceptance at exit 0."""
     _stub_plan_composition(monkeypatch, _composition_report(queued=QUEUED_RECORD))
@@ -201,4 +213,34 @@ def test_a_held_code_review_with_no_queued_record_is_lane_paused(monkeypatch) ->
     assert result.exit_code == 75
     assert payload["error"] == "lane-paused"
     assert payload["error"] != "crew_error"
+    assert "queued" not in payload
+
+
+def test_a_gate_hold_on_a_code_review_is_lane_paused(monkeypatch) -> None:
+    """The sixth case: the hold's own class, raised by the gate rather than the
+    router, is caught before the generic handler too.
+
+    ``LaneHeld`` is a subclass of ``LanePaused``, so a branch catching only the
+    subclass lets a gate hold fall through to the generic handler and be
+    reported as ``crew_error`` at exit 1 — a failure of the command where the
+    lane was merely shut. This is the same report at the same exit code.
+    """
+    subject = {"project": "proj", "named_paths": ["reckon/x.py"], "modules": []}
+    monkeypatch.setattr(
+        plan_review, "code_review_subject", lambda *a, **k: dict(subject)
+    )
+    monkeypatch.setattr(
+        plan_review,
+        "dispatch_code_review",
+        lambda *a, **k: (_ for _ in ()).throw(_lane_paused()),
+    )
+
+    result = _review("--project", "proj", "--around", "p", "--session", "s")
+    payload = json.loads(result.output)
+
+    assert result.exit_code == 75
+    assert payload["error"] == "lane-paused"
+    assert payload["error"] != "crew_error"
+    assert payload["lane_gate"] == LANE_GATE
+    assert payload["detail"] == LANE_GATE["detail"]
     assert "queued" not in payload

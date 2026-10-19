@@ -267,21 +267,36 @@ def _lane_paused_detail(gate) -> str:
     return f"the lane gate is {gate.get('state')!r}"
 
 
-def _emit_held_review(
+def _emit_held_result(
     queued,
     *,
-    report_run_id,
     reason,
     lane_gate,
+    noun: str,
     pretty: bool,
+    report_run_id=None,
 ) -> int:
-    """Report a held review the way dispatch reports a held dispatch.
+    """Report a held dispatch or a held review, and the status it exits on.
 
-    A hold is an acceptance rather than a refusal, so it rides the same channel
-    every other review result uses: a queued composition carries ``ok``, the
-    queued crew run's id and its position, and a hold naming a run already in
-    another phase says which. Both exit 0, so a caller keeps working rather than
-    stopping on a lane that is doing its job.
+    A lane hold has one shape whichever command read it. The lane has either
+    stored the request as a queued run the queue service will launch, or
+    answered with the run of the same node that is already being admitted or
+    working. Both are acceptances, not refusals: the result carries ``ok``, the
+    queued run's id, its phase and its position on the channel every other
+    result uses, and it exits 0 so a caller keeps working rather than stopping
+    on a lane that is doing its job. The phase distinguishes a fresh queueing
+    from an already-live run, so a reader never takes the latter for the former.
+
+    A hold with nothing queued is the lane's own gate saying paused, or unable
+    to be answered. Nothing was created and the node is still ready, so it
+    carries ``lane-paused`` and exits on the conventional temporary-failure code
+    a caller retries after, with the gate the decision was read from riding the
+    result.
+
+    ``noun`` names what the hold is about in the sentence a run already in
+    another phase carries — a node for a dispatch, a subject for a review.
+    ``report_run_id`` is supplied only where the hold was read by a command that
+    composed a report of its own, so an ordinary dispatch carries no such key.
     """
     if queued:
         phase = str(queued.get("phase") or "queued")
@@ -290,22 +305,21 @@ def _emit_held_review(
         detail = (
             f"the local lane queued run {run_id} at position {queued.get('position')}"
             if queued_now
-            else f"run {run_id} is already {phase} for this subject"
+            else f"run {run_id} is already {phase} for this {noun}"
         )
-        _emit(
-            {
-                "ok": True,
-                "queued": queued_now,
-                "phase": phase,
-                "detail": detail,
-                "run_id": run_id,
-                "position": queued.get("position"),
-                "reason": queued.get("reason") or reason,
-                "lane_gate": lane_gate,
-                "report_run_id": report_run_id,
-            },
-            pretty,
-        )
+        result = {
+            "ok": True,
+            "queued": queued_now,
+            "phase": phase,
+            "detail": detail,
+            "run_id": run_id,
+            "position": queued.get("position"),
+            "reason": reason,
+            "lane_gate": lane_gate,
+        }
+        if report_run_id is not None:
+            result["report_run_id"] = report_run_id
+        _emit(result, pretty)
         return 0
     gate = lane_gate or {}
     _emit(
@@ -313,7 +327,7 @@ def _emit_held_review(
             "ok": False,
             "error": "lane-paused",
             "detail": _lane_paused_detail(gate) if gate else str(reason or ""),
-            "reason": reason or gate.get("reason"),
+            "reason": reason if reason is not None else gate.get("reason"),
             "lane_gate": lane_gate,
         },
         pretty,
@@ -1993,67 +2007,31 @@ def crew_dispatch(
         )
         raise click.exceptions.Exit(75) from exc
     except LaneHeld as exc:
-        # The lane's router grants the session no slot. The lane has either
-        # stored the request as a queued run the queue service will launch, or
-        # answered with the run of the same node that is already being admitted
-        # or working. Both are acceptances, not refusals: the outcome is reported
-        # with the run id, its phase and the hold's reason on the same channel
-        # every other dispatch result uses, and it exits 0 so a caller keeps
-        # dispatching rather than stopping on a lane that is doing its job. The
-        # phase distinguishes a fresh queueing from an already-live run, so a
-        # reader never takes the latter for the former.
-        if getattr(exc, "queued", None):
-            phase = str(exc.queued.get("phase") or "queued")
-            run_id = str(exc.queued.get("run_id") or "")
-            queued_now = phase == "queued"
-            detail = (
-                f"the local lane queued run {run_id} at "
-                f"position {exc.queued.get('position')}"
-                if queued_now
-                else f"run {run_id} is already {phase} for this node"
+        # The lane's router grants the session no slot. The lane's own gate is
+        # the hold's reason when it queued nothing; otherwise the queued record
+        # carries the reason beside the lane that stored it.
+        held = getattr(exc, "queued", None)
+        raise click.exceptions.Exit(
+            _emit_held_result(
+                held,
+                reason=held.get("reason") if held else exc.gate.get("reason"),
+                lane_gate=exc.gate,
+                noun="node",
+                pretty=pretty,
             )
-            _emit(
-                {
-                    "ok": True,
-                    "queued": queued_now,
-                    "phase": phase,
-                    "detail": detail,
-                    "run_id": run_id,
-                    "position": exc.queued.get("position"),
-                    "reason": exc.queued.get("reason"),
-                    "lane_gate": exc.gate,
-                },
-                pretty,
-            )
-            raise click.exceptions.Exit(0) from None
-        _emit(
-            {
-                "ok": False,
-                "error": "lane-paused",
-                "detail": _lane_paused_detail(exc.gate),
-                "reason": exc.gate.get("reason"),
-                "lane_gate": exc.gate,
-            },
-            pretty,
-        )
-        raise click.exceptions.Exit(75) from exc
+        ) from exc
     except LanePaused as exc:
-        # Neither a launch nor a refusal: the lane's own gate says paused, or
-        # cannot be answered, so the dispatch waits. Nothing was created and the
-        # node is still ready, so it exits on the conventional temporary-failure
-        # code a caller retries after, and the gate the decision was read from
-        # rides the result.
-        _emit(
-            {
-                "ok": False,
-                "error": "lane-paused",
-                "detail": _lane_paused_detail(exc.gate),
-                "reason": exc.gate.get("reason"),
-                "lane_gate": exc.gate,
-            },
-            pretty,
-        )
-        raise click.exceptions.Exit(75) from exc
+        # A hold that carried no queued record at all: the gate itself is the
+        # whole answer.
+        raise click.exceptions.Exit(
+            _emit_held_result(
+                None,
+                reason=exc.gate.get("reason"),
+                lane_gate=exc.gate,
+                noun="node",
+                pretty=pretty,
+            )
+        ) from exc
     except crew_module.CompetenceLimit as exc:
         _emit(
             {
@@ -2499,30 +2477,34 @@ def _run_review(
             subject = plan_review.code_review_subject(
                 project, session, around=around_plan, paths=paths, local=local
             )
-            from reckon.crew.dispatch import LaneHeld
+            from reckon.crew.dispatch import LaneHeld, LanePaused
 
             try:
                 result = plan_review.dispatch_code_review(subject, dry_run=dry_run)
-            except LaneHeld as exc:
-                # A router hold reaches this branch as a raised exception rather
-                # than a returned report, because the code-review dispatch has no
-                # lane-paused result of its own. It is reported exactly as the
-                # plan-review branch reports a hold, so both subjects answer a
-                # queued composition with the queued run's id and exit 0, and a
-                # paused gate that queued nothing with lane-paused at the
-                # temporary-failure code the generic handler would have called
-                # crew_error.
+            except (LaneHeld, LanePaused) as exc:
+                # A hold reaches this branch as a raised exception rather than a
+                # returned report, because the code-review dispatch has no
+                # lane-paused result of its own. Both the router hold and the
+                # gate hold its parent class carries are caught, and both before
+                # the generic handler, which would otherwise report a paused gate
+                # as crew_error: a hold is the lane doing its job, not a failure
+                # of this command. The hold is reported exactly as the plan-review
+                # branch reports one, so the two subjects answer a queued
+                # composition alike and a gate that queued nothing alike.
+                held = getattr(exc, "queued", None)
+                gate = getattr(exc, "gate", None) or {}
                 raise click.exceptions.Exit(
-                    _emit_held_review(
-                        getattr(exc, "queued", None),
+                    _emit_held_result(
+                        held,
+                        reason=held.get("reason") if held else gate.get("reason"),
+                        lane_gate=gate,
+                        noun="subject",
+                        pretty=pretty,
                         report_run_id=plan_review.code_review_report_directory(
                             subject
                         ).name,
-                        reason=str(exc),
-                        lane_gate=getattr(exc, "gate", None),
-                        pretty=pretty,
                     )
-                ) from None
+                ) from exc
             _emit(result, pretty)
             if result.get("refused") or result.get("error"):
                 raise click.exceptions.Exit(1)
@@ -2569,12 +2551,14 @@ def _run_review(
             # directory's id rides under its own key so a reader can still find
             # the brief the queued run will read.
             raise click.exceptions.Exit(
-                _emit_held_review(
+                _emit_held_result(
                     result.get("queued"),
-                    report_run_id=result.get("run_id"),
-                    reason=result.get("reason"),
+                    reason=(result.get("queued") or {}).get("reason")
+                    or result.get("reason"),
                     lane_gate=result.get("lane_gate"),
+                    noun="subject",
                     pretty=pretty,
+                    report_run_id=result.get("run_id"),
                 )
             )
         _emit(result, pretty)
