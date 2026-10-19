@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-crew-surface-is-one-tool-and-a-few-verbs-landed">
+  <meta name="plan-title" content="The Crew Surface Is One Tool And A Few Verbs — landed record">
+  <meta name="plan-summary" content="Closure synthesis for The Crew Surface Is One Tool And A Few Verbs: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="the-crew-surface-is-one-tool-and-a-few-verbs">
+  <meta name="plan-verdict" content="qualified">
+  <title>The Crew Surface Is One Tool And A Few Verbs — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>The Crew Surface Is One Tool And A Few Verbs — landed record</h1>
+  <p>Closure synthesis for The Crew Surface Is One Tool And A Few Verbs: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s2">
+    <h2>§2 — retired crew verbs name their successor</h2>
+    <p>Run <code>r-20261019T054613169905-cso-retired-verbs-name-successor</code>, commits <code>d855eaa5d</code> and <code>ffd82cfe6</code>. <code>reckon/crew/tombstones.py</code> holds three rows: <code>review-plan</code> names <code>crew review</code>, <code>obligations</code> names the crew MCP tool's obligations view, and <code>promote</code> names <code>crew complete</code>. The crew group resolves a retired name through <code>get_command</code>, so no tombstone appears in <code>crew --help</code> or in the command tree. A tombstone prints one JSON document carrying the caller's arguments across and exits 10. The crew group help now documents 9 (<code>member-in-flight</code>, previously undocumented) and 10. <code>tests/test_cited_commands_exist.py</code> refuses a citation that resolves to a tombstone.</p><p>Gate: four test files, 80 passed and 2 failed at the head, against 70 passed and the same 2 failed at base; zero added failures. The two pre-existing failures are <code>check-review</code> and <code>repair-review</code> lacking a help-state row and a skill citation, which §7 folds. Negative controls: a row naming a missing verb fails the successor check, and a tombstone code of 9 fails the collision test. Reviews scored 110 and then 111 of 120. The first repair round, prompted by the coordinator, moved the code off 9, which <code>crew dispatch</code> already raises for <code>member-in-flight</code>.</p>
+  </section>
+
+</main>
+</body>
+</html>
