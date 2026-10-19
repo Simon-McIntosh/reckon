@@ -775,7 +775,14 @@ _DERIVED_STATE_FIELDS = frozenset(["todos"])
 # HTML, so an evidence beat must never force a plan-file write; an insertion and a
 # section-field edit are both authored HTML, but one adds a section and the other
 # rewrites a span inside one, so the write applies them differently.
-_WRITE_EFFECT_KINDS = ("section_insertions", "evidence_appends", "section_field_edits")
+_WRITE_EFFECT_KINDS = (
+    "section_insertions",
+    "evidence_appends",
+    "section_field_edits",
+    "section_dependency_edits",
+    "plan_meta_removals",
+    "declaration_removals",
+)
 
 _WRITE_EFFECTS: dict[str, ContextVar[tuple[dict[str, Any], list[dict[str, str]]] | None]] = {
     kind: ContextVar(f"reckon_{kind}", default=None) for kind in _WRITE_EFFECT_KINDS
@@ -1262,6 +1269,9 @@ def _write_state_locked(
     section_insertions = _consume_write_effects("section_insertions", data)
     evidence_appends = _consume_write_effects("evidence_appends", data)
     section_field_edits = _consume_write_effects("section_field_edits", data)
+    section_dependency_edits = _consume_write_effects("section_dependency_edits", data)
+    meta_removals = _consume_write_effects("plan_meta_removals", data)
+    declaration_removals = _consume_write_effects("declaration_removals", data)
 
     if expected_version != cur_version:
         merged_comments = _comment_append_onto_current(data, cur_state)
@@ -1334,6 +1344,23 @@ def _write_state_locked(
             # prose-less section does not yet contain.
             source_text = _store_section_ops.apply_section_field_edits(
                 source_text, section_field_edits, replace_span=_replace_authored_span
+            )
+        if section_dependency_edits:
+            # The section-scoped dependency mapping is a head meta the state
+            # writer leaves untouched, so it is rewritten here from the mapping
+            # already on the page rather than through the state dict.
+            source_text = _store_section_ops.apply_section_dependency_edits(
+                source_text, section_dependency_edits
+            )
+        if meta_removals:
+            source_text = _store_section_ops.apply_meta_removals(
+                source_text, meta_removals
+            )
+        if declaration_removals:
+            # Judged against the document the write is about: a declaration
+            # removed while its heading survives would leave an undeclared one.
+            _store_section_ops.apply_declaration_removals(
+                source_text, declaration_removals
             )
     except ValueError as exc:
         raise OpError(str(exc)) from exc
@@ -2467,6 +2494,13 @@ def _apply_set(working: dict, op: dict, is_index: bool, warnings: list[str]) -> 
     parts = path.split(".")
     head = parts[0]
 
+    if value is None and not is_index:
+        from reckon import _store_section_ops
+
+        if _store_section_ops.handles_null_removal(parts):
+            _store_section_ops.apply_null_removal(working, parts, warnings)
+            return
+
     if is_index:
         if head == "active_sprint_id" and len(parts) == 1:
             working["active_sprint_id"] = value
@@ -2591,6 +2625,21 @@ def _apply_set(working: dict, op: dict, is_index: bool, warnings: list[str]) -> 
             **followup,
             "prompt": _validate_new_followup_prompt(value),
         }
+        return
+    if head == "followups" and len(parts) == 3:
+        from reckon import _store_section_ops
+
+        _store_section_ops.apply_followup_field_set(working, parts, value, warnings)
+        return
+    if head == "gates" and len(parts) == 3:
+        from reckon import _store_section_ops
+
+        _store_section_ops.apply_gate_field_set(working, parts, value, warnings)
+        return
+    if head == "section_depends_on" and len(parts) == 2:
+        from reckon import _store_section_ops
+
+        _store_section_ops.apply_section_depends_on_set(working, parts, value, warnings)
         return
     if len(parts) != 1 or head not in _PLAN_SET_TOP:
         raise OpError(f"unsupported plan set path {path!r}")

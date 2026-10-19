@@ -15,10 +15,22 @@ the same review a hand replacement would.
 
 The five accepted fields are named by a refusal for both an unknown field and a
 status, which stays with ``section_declarations.<id>``.
+
+The same three write kinds carry the sibling fields a section-scoped workflow
+records: an open followup's ``title`` and ``body``, an open gate's ``measure``
+and ``required_evidence``, and the section-scoped dependency mapping. A
+followup and a gate are typed records the state writer renders, so setting one
+of their fields is a working-state change like a section's typed metadata. The
+dependency mapping is a head meta the state writer leaves untouched, so it is an
+authored-HTML edit like a section's title: the meta is rewritten from the
+mapping the write carries. A ``null`` value removes the key instead, for the
+four kinds of key whose absence is meaningful, and a required field refuses its
+own removal.
 """
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 #: The fields ``sections.<id>.<field>`` accepts, in the order a refusal lists them.
@@ -50,6 +62,47 @@ DECLARATION_PATH = "section_declarations.<id>"
 #: The write-effect kind an authored title/body edit is queued and consumed as.
 #: The store owns the collection; this module only names the kind.
 SECTION_FIELD_EDITS_KIND = "section_field_edits"
+
+#: The fields ``followups.<id>.<field>`` accepts, in the order a refusal lists them.
+FOLLOWUP_SET_FIELDS: tuple[str, ...] = ("title", "body")
+
+#: The fields ``gates.<id>.<field>`` accepts, in the order a refusal lists them.
+GATE_SET_FIELDS: tuple[str, ...] = ("measure", "required_evidence")
+
+#: The path heads these handlers own.
+FOLLOWUP_PATH_HEAD = "followups"
+GATE_PATH_HEAD = "gates"
+SECTION_DEPENDS_ON_HEAD = "section_depends_on"
+DECLARATIONS_PATH_HEAD = "section_declarations"
+DECISIONS_PATH_HEAD = "decisions"
+
+#: The write-effect kind a section-scoped dependency write is queued under: the
+#: meta it rewrites is authored HTML the state writer leaves untouched.
+SECTION_DEPENDENCY_EDITS_KIND = "section_dependency_edits"
+
+#: The write-effect kind a ``null`` top-level scalar removal is queued under, so
+#: the meta the state writer would otherwise leave in place is removed too.
+META_REMOVALS_KIND_NAME = "plan_meta_removals"
+
+#: The write-effect kind a ``null`` stale-declaration removal is queued under:
+#: whether its heading is gone is judged against the authored HTML at write time.
+DECLARATION_REMOVALS_KIND = "declaration_removals"
+
+#: Top-level keys a ``null`` value may remove: the authored scalars the state
+#: writer emits as ``plan-*`` metas, read from the writer's own lists so a field
+#: added there is removable without a second edit. ``modified`` is excluded —
+#: the writer re-emits its stamp on every write, so removing it is a no-op.
+REQUIRED_TOP: frozenset[str] = frozenset({"project", "slug", "title", "type", "status"})
+
+
+def _removable_top() -> frozenset[str]:
+    """The top-level keys a ``null`` value may remove."""
+    from reckon import _plan_html
+
+    authored = set(_plan_html._SCALARS) | set(_plan_html._LIST_SCALARS)
+    authored.discard("modified")
+    authored.add("effort_hours")
+    return frozenset(authored)
 
 
 def _op_error(message: str):
@@ -214,3 +267,281 @@ def apply_section_field_edits(
             selector_name=f"sections.{section_id}.{field}",
         )
     return html_text
+
+
+def _find_record(collection: Any, ident: str) -> tuple[int, dict] | None:
+    from reckon._store import _find_by_id
+
+    if not isinstance(collection, list):
+        return None
+    return _find_by_id(collection, ident)
+
+
+def _is_open_entry(entry: dict) -> bool:
+    from reckon._store import _entry_is_open
+
+    return _entry_is_open(entry)
+
+
+def _queue(kind: str, working: dict, request: dict[str, Any]) -> None:
+    from reckon._store import _queue_write_effect
+
+    _queue_write_effect(kind, working, request)
+
+
+def apply_followup_field_set(
+    working: dict, parts: list[str], value: Any, warnings: list[str]
+) -> None:
+    """Handle ``set followups.<id>.<field>`` for an open followup.
+
+    ``title`` and ``body`` are the followup's authored text. A resolved followup
+    is a record of what landed, so its text is refused: widening a scope belongs
+    in a new followup, not in a rewrite of the one that closed.
+    """
+    if len(parts) != 3 or parts[2] not in FOLLOWUP_SET_FIELDS:
+        raise _op_error(
+            f"set followups requires the form followups.<id>.<field>; "
+            f"the accepted fields are {', '.join(FOLLOWUP_SET_FIELDS)}"
+        )
+    ident, field = parts[1], parts[2]
+    hit = _find_record(working.get("followups"), ident)
+    if hit is None:
+        raise _op_error(f"followup {ident!r} not found")
+    index, followup = hit
+    if not _is_open_entry(followup):
+        raise _op_error(
+            f"followup {ident!r} is resolved: its {field} is a record of what "
+            "landed, not settable — append a new followup instead"
+        )
+    if not isinstance(value, str) or (field == "title" and not value.strip()):
+        raise _op_error(f"followups.{ident}.{field} must be a non-empty string")
+    working["followups"][index] = {**followup, field: value}
+
+
+def apply_gate_field_set(
+    working: dict, parts: list[str], value: Any, warnings: list[str]
+) -> None:
+    """Handle ``set gates.<id>.<field>`` for an open gate.
+
+    ``measure`` and ``required_evidence`` are the gate's authored text. A gate
+    with a verdict is closed and its verdict describes the measure as it stood,
+    so its text is refused: a corrected measure is a new gate, or the old one is
+    reopened by removing its verdict.
+    """
+    if len(parts) != 3 or parts[2] not in GATE_SET_FIELDS:
+        raise _op_error(
+            f"set gates requires the form gates.<id>.<field>; "
+            f"the accepted fields are {', '.join(GATE_SET_FIELDS)}"
+        )
+    ident, field = parts[1], parts[2]
+    hit = _find_record(working.get("gates"), ident)
+    if hit is None:
+        raise _op_error(f"gate {ident!r} not found")
+    index, gate = hit
+    verdict = str(gate.get("verdict") or "").strip().lower()
+    if verdict in {"passed", "failed"}:
+        raise _op_error(
+            f"gate {ident!r} is closed with verdict {verdict!r}: its {field} is "
+            "a record of what was judged, not settable"
+        )
+    if not isinstance(value, str):
+        raise _op_error(f"gates.{ident}.{field} must be a string")
+    working["gates"][index] = {**gate, field: value}
+
+
+def _validated_refs(section: str, value: Any) -> list[str]:
+    """Return a validated list of ``[project:]slug#section`` refs or refuse it."""
+    from reckon._schema import parse_plan_ref
+
+    if not isinstance(value, list):
+        raise _op_error(
+            f"section_depends_on.{section} must be a list of refs; "
+            "expected [project:]slug#section"
+        )
+    refs: list[str] = []
+    for ref in value:
+        parsed = parse_plan_ref(ref) if isinstance(ref, str) else None
+        if parsed is None or not parsed.stage:
+            raise _op_error(
+                f"section_depends_on.{section}: malformed plan ref {ref!r} — "
+                "expected [project:]slug#section naming a target section"
+            )
+        refs.append(ref.strip())
+    return refs
+
+
+def apply_section_depends_on_set(
+    working: dict, parts: list[str], value: Any, warnings: list[str]
+) -> None:
+    """Handle ``set section_depends_on.<sid>`` with a list of section refs.
+
+    The mapping is a head meta the state writer leaves untouched, so the write
+    queues an authored-HTML edit the same write consumes. Each ref is checked
+    against the roadmap's ``[project:]slug#section`` grammar, because an edge
+    nobody can resolve must be refused rather than written and later dropped.
+    """
+    if len(parts) != 2 or not parts[1]:
+        raise _op_error(
+            "set section_depends_on requires the form section_depends_on.<section>"
+        )
+    section = parts[1]
+    refs = _validated_refs(section, value)
+    _queue(
+        SECTION_DEPENDENCY_EDITS_KIND,
+        working,
+        {"section": section, "refs": refs},
+    )
+
+
+def _read_section_dependency_mapping(html_text: str) -> dict[str, Any]:
+    """The plan's current section-scoped dependency mapping, or an empty one."""
+    from reckon._schema import SECTION_DEPENDS_ON_DEFECT_KEY
+    from reckon._schema import section_depends_on as _read
+
+    mapping = _read(html_text) or {}
+    if SECTION_DEPENDS_ON_DEFECT_KEY in mapping:
+        raise _op_error(
+            "section_depends_on: the plan's existing mapping cannot be read, so "
+            f"it cannot be edited — {mapping[SECTION_DEPENDS_ON_DEFECT_KEY]}"
+        )
+    return dict(mapping)
+
+
+def apply_section_dependency_edits(
+    html_text: str, requests: list[dict[str, Any]]
+) -> str:
+    """Rewrite the ``plan-section-depends-on`` meta from queued edits.
+
+    Each request sets one section's refs (a list) or removes the section's
+    entry (``refs`` is ``None``). The mapping is read back from the document,
+    so an edit lands on the mapping already on the page rather than replacing
+    its siblings. An empty mapping removes the meta entirely, which read_state
+    and the roadmap both read as "no section-scoped edge".
+    """
+    from reckon import _plan_html
+    from reckon._schema import SECTION_DEPENDS_ON_META
+
+    if not requests:
+        return html_text
+    mapping = _read_section_dependency_mapping(html_text)
+    for request in requests:
+        section = request["section"]
+        refs = request.get("refs")
+        if refs is None:
+            mapping.pop(section, None)
+        else:
+            mapping[section] = list(refs)
+    if not mapping:
+        return _plan_html._remove_meta(html_text, SECTION_DEPENDS_ON_META)
+    content = json.dumps(mapping, ensure_ascii=True, separators=(",", ":"))
+    return _plan_html._set_meta(html_text, SECTION_DEPENDS_ON_META, content)
+
+
+def apply_declaration_removals(html_text: str, requests: list[dict[str, Any]]) -> None:
+    """Refuse a stale-declaration removal while its heading is still authored.
+
+    A declaration and its heading are one statement; removing the declaration
+    while the heading survives leaves an undeclared heading, which the coverage
+    guard refuses on the way back in. So the heading's absence is judged here,
+    against the document the write is about, rather than trusted from the caller.
+    """
+    from reckon import _plan_html
+
+    if not requests:
+        return
+    headings = {
+        identity
+        for identity, _heading in _plan_html.authored_section_headings(html_text)
+    }
+    for request in requests:
+        section_id = request["id"]
+        if section_id in headings:
+            raise _op_error(
+                f"section_declarations.{section_id} is refused while the section "
+                f"still carries an authored heading {section_id!r}; remove the "
+                "heading first, or set its declaration instead"
+            )
+
+
+def apply_meta_removals(html_text: str, requests: list[dict[str, Any]]) -> str:
+    """Remove the ``plan-*`` metas named by queued top-level scalar removals."""
+    from reckon import _plan_html
+
+    for request in requests:
+        html_text = _plan_html._remove_meta(html_text, request["name"])
+    return html_text
+
+
+def _drop_section_record(working: dict, section_id: str) -> None:
+    sections = working.get("sections")
+    if isinstance(sections, list):
+        working["sections"] = [
+            row
+            for row in sections
+            if not (isinstance(row, dict) and row.get("id") == section_id)
+        ]
+
+
+def handles_null_removal(parts: list[str]) -> bool:
+    """Whether a ``null`` set is a removal this module owns.
+
+    A path outside these four kinds is left to the set handler that already
+    addresses it, so a null on an unrelated path keeps its prior meaning.
+    """
+    head = parts[0]
+    if head in (SECTION_DEPENDS_ON_HEAD, DECLARATIONS_PATH_HEAD, DECISIONS_PATH_HEAD):
+        return True
+    return len(parts) == 1 and (head in REQUIRED_TOP or head in _removable_top())
+
+
+def apply_null_removal(working: dict, parts: list[str], warnings: list[str]) -> None:
+    """Handle a ``set`` whose ``value`` is ``null``: remove the addressed key.
+
+    Four kinds of key carry a meaningful absence, so a null removes each: the
+    section-scoped dependency entry, a stale declaration whose heading is gone,
+    a decision field other than the required ``choice``, and an authored
+    top-level scalar. A required field refuses its own removal, naming it.
+    """
+    head = parts[0]
+    if head == SECTION_DEPENDS_ON_HEAD and len(parts) == 2:
+        _queue(
+            SECTION_DEPENDENCY_EDITS_KIND,
+            working,
+            {"section": parts[1], "refs": None},
+        )
+        return
+    if head == DECLARATIONS_PATH_HEAD and len(parts) == 2:
+        section_id = parts[1]
+        declarations = working.get("section_declarations")
+        if not isinstance(declarations, dict) or section_id not in declarations:
+            raise _op_error(f"plan declares no section {section_id!r} to remove")
+        _queue(DECLARATION_REMOVALS_KIND, working, {"id": section_id})
+        declarations.pop(section_id, None)
+        _drop_section_record(working, section_id)
+        return
+    if head == DECISIONS_PATH_HEAD and len(parts) == 3:
+        key, field = parts[1], parts[2]
+        if field == "choice":
+            raise _op_error(
+                f"decisions.{key}.choice is required and cannot be removed; "
+                "the decision's options and ``choice`` stay"
+            )
+        decisions = working.get("decisions") or {}
+        decision = decisions.get(key)
+        if not isinstance(decision, dict) or field not in decision:
+            raise _op_error(f"plan has no decision field {key}.{field} to remove")
+        decision.pop(field, None)
+        return
+    if len(parts) == 1:
+        if head in REQUIRED_TOP:
+            raise _op_error(f"{head} is required and cannot be removed")
+        if head not in _removable_top():
+            raise _op_error(f"set {head} is not a removable key")
+        working.pop(head, None)
+        _queue(
+            META_REMOVALS_KIND_NAME,
+            working,
+            {"name": f"plan-{head.replace('_', '-')}"},
+        )
+        return
+    raise _op_error(f"set {'.'.join(parts)} is not a removable key")
