@@ -1,0 +1,93 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured: the reviewed manifest contains no completed baseline_suite and after_suite arms; the focused and live logs are separate gates, not a paired suite delta",
+  "assertion_review": [
+    "90-93: fixed expected supervisor, PID-only, inner PIDs and return list fail if the established-step path reaches client or task, uses a group, omits an inner PID or misreports delivery.",
+    "97-98: independently read sender targets and delivered outcome fail if receipts target protected PIDs or omit delivery.",
+    "124-127: fixed expected return and direct targets fail if a missing task identity causes ordinary signal_worker to reach the client.",
+    "148-151: fixed return and PID-only call fail if the pre-worker-record path signals srun or a process group.",
+    "167-168: _signal_one success and recorded PID fail if PID-only delivery disappears or becomes killpg, which the stub explicitly refuses.",
+    "197-209: empty delivery, one refusal receipt, target and outcome fail if wrong task cgroup or start tick is accepted or refusal is unrecorded.",
+    "262-263: pid equals the very client input at 277, and the signal condition is always true in record_arrives cases; these do not independently guard target or signal.",
+    "276-307: return zero, inner-call presence or absence, client-send list, ended list and exact receipts fail if the simulated branch differs; line 295 specifically requires the forbidden client fallback.",
+    "378-381: early client exit or readiness after 30 seconds fails probe setup.",
+    "395-408: host child count, protected task membership and two inner PIDs fail if the live probe's process identities are incomplete.",
+    "489-495: absent sacct row, CANCELLED state, nonzero signal field, changed node state, wrong grace duration or wrong ended PID set fail independently of the signal routine's return value.",
+    "501-504: delivered receipt targets, TERM/KILL pair and protected-PID exclusion fail if the live stop omits the child, omits escalation or records a client/task/bwrap signal."
+  ],
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:1197 (placement)",
+    "reckon/crew/dispatch_launch.py:3306 (per-run supervisor stop)",
+    "reckon/crew/dispatch_sessions.py:1904 (terminate via _signal_process_group)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-19T04:22:11Z",
+  "findings": [
+    {
+      "file": "reckon/crew/process_signal.py",
+      "line": "476",
+      "severity": "blocking",
+      "text": "blocking: signal_pending_step_client sends SIGTERM to the srun client merely because step-task.txt is absent; an active step can exist before or without that wrapper record, so this can cancel the step and violates the live plan's no-client-signal rule."
+    },
+    {
+      "file": "tests/test_a_stopped_worker_ends_inside_its_step.py",
+      "line": "295",
+      "severity": "blocking",
+      "text": "blocking: the pending-step test requires SIGTERM to the client when no task record exists, so it would reject a repair that preserves the no-client-signal invariant."
+    },
+    {
+      "file": "tests/test_a_stopped_worker_ends_inside_its_step.py",
+      "line": "262",
+      "severity": "follow-on",
+      "text": "follow-on: pid == 101 only rechecks the client PID supplied at line 277, and line 263 is tautological whenever record_arrives is true; neither assertion independently protects the signal target."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T150822949393-a-stopped-worker-ends-inside-its-step/manifest.md",
+      "line": "12",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest has no completed baseline_suite and after_suite pair, so added failures cannot be measured and must not be reported as zero."
+    }
+  ],
+  "head_log_revision": null,
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call sites",
+    "diff": "commit a6808040694c0ba2c2dd6e2533b585d9cb45a251 against 8afeb0709f341be7690765c47387ebc69cb4dbe6 adds inner-step signalling and a 30-second client fallback at reckon/crew/dispatch_launch.py:3071-3086.",
+    "done_when": "prompt.txt:99-100 asks for a COMPLETED fleet probe; probe-inner-two.log records one passing probe with FAILED|9:0 and zero signal, which live plan section 3 accepts but the dispatched wording does not.",
+    "goal": "prompt.txt:30 asks for a stop inside a placed step with no client signal; reckon/crew/process_signal.py:490-564 reaches verified inner descendants, but :463-478 adds a client-signal fallback contrary to live plan section 3.",
+    "manifest": "manifest.md:5-18 reports the sole commit, four changed paths, a 34-pass/1-skip focused gate, and the live probe; it contains no baseline_suite or after_suite arm.",
+    "write_paths": "prompt.txt:69-74 grants the two product modules, the new focused test and the evidence fragment, and git diff 8afeb070..a6808040 changes exactly those four paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_stopped_worker_ends_inside_its_step.py:90-98 and :489-504 would fail on direct client signalling in an established step, but :295 requires the unsafe no-record client signal and :262-263 are not independent guards.",
+    "evidence": "pending-step-focused-at-head.log records 34 passed and 1 skipped at a6808040, while probe-inner-two.log records one live pass at pre-commit 35c2004f+working-tree with FAILED|9:0 rather than prompt.txt:100's COMPLETED.",
+    "fit": "reckon/crew/process_signal.py:345-396 and :490-564 extend the existing signal and receipt idioms, while tests/test_a_stopped_worker_ends_inside_its_step.py:1 inaccurately says the task is signalled.",
+    "goal_fidelity": "reckon/crew/process_signal.py:490-564 preserves the step task during inner signals, but :463-478 sends SIGTERM to srun if its task record is missing.",
+    "reuse": "The capability search for run ownership, descendants, signal receipts, step cgroups and wait-channel diagnostics found the existing owners in reckon/crew/process_signal.py:213-396 and reckon/crew/dispatch_launch.py:2873-3093; the added definitions extend those owners.",
+    "scope_discipline": "git diff 8afeb070..a6808040 contains only the four paths granted in prompt.txt:69-74."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 asks for a stop inside a placed step with no client signal; reckon/crew/process_signal.py:490-564 reaches verified inner descendants, but :463-478 adds a client-signal fallback contrary to live plan section 3.\nVERDICT done_when: prompt.txt:99-100 asks for a COMPLETED fleet probe; probe-inner-two.log records one passing probe with FAILED|9:0 and zero signal, which live plan section 3 accepts but the dispatched wording does not.\nVERDICT write_paths: prompt.txt:69-74 grants the two product modules, the new focused test and the evidence fragment, and git diff 8afeb070..a6808040 changes exactly those four paths.\nVERDICT manifest: manifest.md:5-18 reports the sole commit, four changed paths, a 34-pass/1-skip focused gate, and the live probe; it contains no baseline_suite or after_suite arm.\nVERDICT diff: commit a6808040694c0ba2c2dd6e2533b585d9cb45a251 against 8afeb0709f341be7690765c47387ebc69cb4dbe6 adds inner-step signalling and a 30-second client fallback at reckon/crew/dispatch_launch.py:3071-3086.\nCALL_SITES: reckon/crew/dispatch_launch.py:1197 (placement), reckon/crew/dispatch_launch.py:3306 (per-run supervisor stop), reckon/crew/dispatch_sessions.py:1904 (terminate via _signal_process_group)\nSCORE goal_fidelity: 12\nJUSTIFICATION goal_fidelity: reckon/crew/process_signal.py:490-564 preserves the step task during inner signals, but :463-478 sends SIGTERM to srun if its task record is missing.\nSCORE evidence: 15\nJUSTIFICATION evidence: pending-step-focused-at-head.log records 34 passed and 1 skipped at a6808040, while probe-inner-two.log records one live pass at pre-commit 35c2004f+working-tree with FAILED|9:0 rather than prompt.txt:100's COMPLETED.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 8afeb070..a6808040 contains only the four paths granted in prompt.txt:69-74.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_stopped_worker_ends_inside_its_step.py:90-98 and :489-504 would fail on direct client signalling in an established step, but :295 requires the unsafe no-record client signal and :262-263 are not independent guards.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/process_signal.py:345-396 and :490-564 extend the existing signal and receipt idioms, while tests/test_a_stopped_worker_ends_inside_its_step.py:1 inaccurately says the task is signalled.\nSCORE reuse: 20\nJUSTIFICATION reuse: The capability search for run ownership, descendants, signal receipts, step cgroups and wait-channel diagnostics found the existing owners in reckon/crew/process_signal.py:213-396 and reckon/crew/dispatch_launch.py:2873-3093; the added definitions extend those owners.\nFINDING reckon/crew/process_signal.py:476 blocking: signal_pending_step_client sends SIGTERM to the srun client merely because step-task.txt is absent; an active step can exist before or without that wrapper record, so this can cancel the step and violates the live plan's no-client-signal rule.\nFINDING tests/test_a_stopped_worker_ends_inside_its_step.py:295 blocking: the pending-step test requires SIGTERM to the client when no task record exists, so it would reject a repair that preserves the no-client-signal invariant.\nFINDING tests/test_a_stopped_worker_ends_inside_its_step.py:262 follow-on: pid == 101 only rechecks the client PID supplied at line 277, and line 263 is tautological whenever record_arrives is true; neither assertion independently protects the signal target.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T150822949393-a-stopped-worker-ends-inside-its-step/manifest.md:12 follow-on: the reviewed manifest has no completed baseline_suite and after_suite pair, so added failures cannot be measured and must not be reported as zero.\n",
+  "review_run_id": "r-20261019T042001309375-review-of-a-stopped-worker-ends-inside-its-step-a6808040694c",
+  "reviewed_base_sha": "8afeb0709f341be7690765c47387ebc69cb4dbe6",
+  "reviewed_head_sha": "a6808040694c0ba2c2dd6e2533b585d9cb45a251",
+  "reviewed_run_id": "r-20261018T150822949393-a-stopped-worker-ends-inside-its-step",
+  "reviewer_run_id": "r-20261019T042001309375-review-of-a-stopped-worker-ends-inside-its-step-a6808040694c",
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 12,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T04:28:03Z",
+  "total": 98
+}

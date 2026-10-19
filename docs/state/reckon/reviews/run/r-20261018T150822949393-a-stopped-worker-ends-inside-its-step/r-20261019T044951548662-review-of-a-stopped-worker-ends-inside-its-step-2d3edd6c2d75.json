@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest carries no baseline_suite or after_suite arm, so no paired suite delta exists; the reviewed head's focused gate reads 36 passed, 1 skipped and the four negative-control failures are confined to a reverted-source scratch tree, so no test fails at the reviewed head",
+  "assertion_review": [
+    "299: assert sent == [] fails if the code signals the srun client, which is exactly the behaviour the reverted-source control restores; this is the regression guard.",
+    "301-302: the all(...) bound over attempts is vacuously true when attempts is empty, the no-record case it names; it bounds attempt timing only where inner attempts were made.",
+    "305-309: assert inner and ended == [303] for a record that appears late fails if a late record does not reopen the inner stop path; assert inner == [] and ended == [] for no record fails if the inner path runs without a record.",
+    "310-320: the closed refusal receipt set fails if a refusal is not written, carries the wrong reason or outcome, or more than one is written; line 319 names the client pid the test itself supplied.",
+    "321: assert not senders.jsonl exists fails if a refusal is written even though the record arrived before the settle window.",
+    "457-519 (probe, allocation-only): sacct state, zero signal field, delivered inner PIDs and the protected bwrap/client exclusion fail if the live stop cancels the step or signals a protected process."
+  ],
+  "base_log_revision": null,
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:3076 (supervisor stop path inside _reap_worker_on_its_terminal_manifest)",
+    "reckon/crew/dispatch_launch.py:3183 (per-run supervisor child reap)",
+    "reckon/crew/dispatch_launch.py:3304 (per-run supervisor status reap)"
+  ],
+  "completed_at": "2026-10-19T05:08:46.290Z",
+  "dispatched_at": "2026-10-19T04:50:49Z",
+  "findings": [
+    {
+      "file": "reckon/crew/process_signal.py",
+      "line": "463",
+      "severity": "follow-on",
+      "text": "follow-on: the repair removed the pending-step client signal entirely and left no scheduler-confirmed replacement, so a genuinely pending srun --overlap request can no longer be ended by the supervisor; live plan section 3 requires that a stop still end such a run: the supervisor must ask the scheduler for the run-named step and signal the client by pid only when no such step exists. The fail-closed trade is safe and is recorded in the node's follow_ons, but the section's designed escape hatch is now unimplemented and a pending request holds its run slot while the supervisor waits."
+    },
+    {
+      "file": "tests/test_a_stopped_worker_ends_inside_its_step.py",
+      "line": "319",
+      "severity": "follow-on",
+      "text": "follow-on: the receipt assertion compares entry[\"target_pid\"] against the literal 101, which is the same pid the test hands to _reap_worker_on_its_terminal_manifest at line 287, and signal_step's assert pid == 101 at line 273 rechecks the same input; both move with the value under test and cannot catch a wrong-target defect independently, unlike the meaningful guard assert sent == [] at line 299."
+    },
+    {
+      "file": "tests/test_a_stopped_worker_ends_inside_its_step.py",
+      "line": "301",
+      "severity": "follow-on",
+      "text": "follow-on: the all(...) bound over attempts at line 301 is vacuously true when attempts is empty, which is exactly the record_at is None case it is written to bound; the assertion carries no weight in the no-record case and the refusal-receipt check at line 313 is what holds there."
+    }
+  ],
+  "head_log_revision": "2d3edd6c2d75feeb42c70ae2d3e07c560e3fe9d6",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call sites",
+    "diff": "git diff a6808040..2d3edd6c changes exactly the four granted paths, replacing signal_pending_step_client with refuse_unverified_step_client and re-opening the inner stop path when a late record appears.",
+    "done_when": "prompt.txt:99-100 asks for a unit test proving no client signal and a fleet probe reading COMPLETED; review-repair-focused-at-head.log records 36 passed and 1 skipped at 2d3edd6c and review-repair-negative.log records the four guard cases red under reverted source, while the live probe that measures the COMPLETED line was not rerun on this delta.",
+    "goal": "prompt.txt:30 asks the supervisor to stop a step-placed worker inside the step and never signal the srun client; reckon/crew/process_signal.py:463 and reckon/crew/dispatch_launch.py:3071-3082 record one refusal instead of signalling the client, matching the goal.",
+    "manifest": "manifest.md:14-27 reports the sole delta commit 2d3edd6c, the focused gate at head, the source-reverted negative control, and a follow_ons entry for the pending-request slot; it carries no baseline_suite or after_suite arm.",
+    "write_paths": "prompt.txt:69-74 grants reckon/crew/dispatch_launch.py, reckon/crew/process_signal.py, tests/test_a_stopped_worker_ends_inside_its_step.py and the evidence fragment, and git diff a6808040..2d3edd6c changes exactly those four paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_stopped_worker_ends_inside_its_step.py:299 fails if the client is signalled, and the source-reverted control reddens test_unverified_step_never_signals_client for both the no-record and late-record cases; lines 301 and 319 are weaker non-independent assertions.",
+    "evidence": "review-repair-focused-at-head.log records 36 passed and 1 skipped at 2d3edd6c with EXIT=0, and review-repair-negative.log records 4 failed, 2 passed under reverted source, but the done_when's live allocation probe was not rerun on this delta.",
+    "fit": "reckon/crew/process_signal.py:463 reuses the existing _write_sender_record idiom at process_signal.py:26 with the documented refused outcome, and the new names state the mechanism with no plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/dispatch_launch.py:3071-3082 records the stop-before-step-unverified refusal and never signals the client, satisfying the node goal; reckon/crew/process_signal.py:463 removes plan section 3's scheduler-confirmed pending-step signal with no replacement.",
+    "reuse": "The new function replaces signal_pending_step_client in place rather than forking it, and extends the existing sender-record owner at reckon/crew/process_signal.py:26.",
+    "scope_discipline": "git diff a6808040..2d3edd6c touches only the two product modules, the focused test and the evidence fragment named in prompt.txt:69-74, and adds nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 asks the supervisor to stop a step-placed worker inside the step and never signal the srun client; reckon/crew/process_signal.py:463 and reckon/crew/dispatch_launch.py:3071-3082 record a refusal instead of a client signal, matching the goal.\nVERDICT done_when: prompt.txt:99-100 asks for a unit test proving no client signal and a fleet probe reading COMPLETED; review-repair-focused-at-head.log records 36 passed and 1 skipped at 2d3edd6c and review-repair-negative.log records the four guard cases red under reverted source, while the live probe was not rerun on this delta.\nVERDICT write_paths: prompt.txt:69-74 grants the two product modules, the focused test and the evidence fragment, and git diff a6808040..2d3edd6c changes exactly those four paths.\nVERDICT manifest: manifest.md:14-27 reports the sole delta commit 2d3edd6c, the head gate, the source-reverted negative control and a follow_ons entry for the pending-request slot, but carries no baseline_suite or after_suite arm.\nVERDICT diff: git diff a6808040..2d3edd6c replaces signal_pending_step_client with refuse_unverified_step_client and re-opens the inner stop path on a late record, inside the four granted paths.\nCALL_SITES: reckon/crew/dispatch_launch.py:3076 (supervisor stop path), reckon/crew/dispatch_launch.py:3183 (per-run supervisor child reap), reckon/crew/dispatch_launch.py:3304 (per-run supervisor status reap)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:3071-3082 records the stop-before-step-unverified refusal and never signals the client, satisfying the node goal, while reckon/crew/process_signal.py:463 removes plan section 3's scheduler-confirmed pending-step signal with no replacement.\nSCORE evidence: 16\nJUSTIFICATION evidence: review-repair-focused-at-head.log records 36 passed and 1 skipped at 2d3edd6c with EXIT=0 and review-repair-negative.log records 4 failed, 2 passed under reverted source, but the done_when's live allocation probe was not rerun on this delta.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff a6808040..2d3edd6c touches only the two product modules, the focused test and the evidence fragment named in prompt.txt:69-74.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_stopped_worker_ends_inside_its_step.py:299 fails if the client is signalled and the source-reverted control reddens test_unverified_step_never_signals_client for the no-record and late-record cases, while lines 301 and 319 are weaker non-independent assertions.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/process_signal.py:463 reuses the existing _write_sender_record idiom at process_signal.py:26 with the documented refused outcome and introduces no banned name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the new function replaces signal_pending_step_client in place rather than forking it and extends the existing sender-record owner at reckon/crew/process_signal.py:26.\nFINDING reckon/crew/process_signal.py:463 follow-on: the repair removed the pending-step client signal with no scheduler-confirmed replacement, so a genuinely pending srun --overlap request can no longer be ended by the supervisor, while live plan section 3 requires that a stop still end such a run.\nFINDING tests/test_a_stopped_worker_ends_inside_its_step.py:319 follow-on: the receipt assertion compares target_pid against the same 101 the test passes in and signal_step rechecks that input, so neither independently protects the signal target.\nFINDING tests/test_a_stopped_worker_ends_inside_its_step.py:301 follow-on: the all(...) bound over attempts is vacuously true when attempts is empty, so it carries no weight in the no-record case it names.\n",
+  "review_run_id": "r-20261019T044951548662-review-of-a-stopped-worker-ends-inside-its-step-2d3edd6c2d75",
+  "reviewed_base_sha": "a6808040694c0ba2c2dd6e2533b585d9cb45a251",
+  "reviewed_head_sha": "2d3edd6c2d75feeb42c70ae2d3e07c560e3fe9d6",
+  "reviewed_run_id": "r-20261018T150822949393-a-stopped-worker-ends-inside-its-step",
+  "reviewer_run_id": "r-20261019T044951548662-review-of-a-stopped-worker-ends-inside-its-step-2d3edd6c2d75",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T05:03:00Z",
+  "total": 107
+}
