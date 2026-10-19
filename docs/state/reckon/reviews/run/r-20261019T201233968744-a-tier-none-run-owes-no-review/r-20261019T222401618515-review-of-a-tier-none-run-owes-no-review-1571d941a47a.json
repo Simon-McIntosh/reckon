@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest's baseline_suite and after_suite both carry failure_count 0 and failure_ids []; the same-population arms logs/base-importers.log and logs/after-importers-repaired-2.log also carry 0 failed rows (219 passed), so the delta is 0 added failures.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_run_commands.py:659",
+    "reckon/hooks/coordinator_obligations.py:188",
+    "reckon/crew/obligation_snapshot.py:824",
+    "reckon/mcp_views.py:951",
+    "reckon/crew/runs.py:1346"
+  ],
+  "completed_at": "2026-10-19T22:44:00.632Z",
+  "dispatched_at": "2026-10-19T22:25:08Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "466",
+      "text": "follow-on: the tier-none duty is built by _live_item(row, ...), so its next_command is row['next_action'] \u2014 for a scoring row that is _review_dispatch_action (reckon/crew/recovery_classification.py:797), the very review dispatch the sweep decided against; the kind reads promotable while the command still names a review nothing will ever run."
+    },
+    {
+      "file": "tests/test_crew_obligations.py",
+      "line": "48",
+      "text": "follow-on: the change writes seven test files outside the two declared write paths (this file, tests/test_a_review_row_reads_its_head_from_files.py, tests/test_coordinator_obligations_hook.py, tests/test_mcp_crew_obligations.py, tests/test_obligations_snapshot_is_published.py, tests/test_review_obligation_reads_the_head.py, tests/test_stop_hook_reads_the_snapshot.py), repairing fixtures an out-of-scope edit should have requested a scope extension for."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T201233968744-a-tier-none-run-owes-no-review/manifest.md",
+      "line": "15",
+      "text": "follow-on: baseline_suite names tests/test_crew_obligations.py at base while after_suite names the 39-file importer set at head, so the recorded pair does not measure one population; the same-population base arm exists at logs/base-importers.log (209 passed, 10 pre-existing timeout errors, 0 failed)."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_tier_none_run_owes_no_review.py:189 fails when the tier read is removed (negative-control.log) and the guard at :179 pins both runs as classification scoring, so the promotable reading cannot come from the classifier and the assertion is not vacuous.",
+    "evidence": "tests/test_a_tier_none_run_owes_no_review.py:189 asserts the tier-none run reads review-ready and :196 asserts the runtime-source run still reads review-missing in one pass, and the negative control at .../logs/negative-control.log reddens :189 under the removed tier read with EXIT=1.",
+    "fit": "reckon/crew/obligations.py:392 follows the module's mapping-in/dict-out idiom and docstring style, and ruff check on the two changed product/test paths is clean; ruff format flags only the pre-existing region at line 189, which the diff does not touch.",
+    "goal_fidelity": "reckon/crew/obligations.py:466 makes a tier-none run carry the promotable kind review-ready instead of the classifier's review-missing (reckon/crew/obligations.py:41), which is exactly the node's goal.",
+    "reuse": "the tier is read through recovery._sweep_review_tier (the sweep's own entry over promotion._run_review_tier); a search over reckon/crew for a tier resolver found review_tiers.review_tier and promotion._run_review_tier and this change adds no second resolver, only the reuse of the owner's entry.",
+    "scope_discipline": "the declared write paths are reckon/crew/obligations.py and tests/test_a_tier_none_run_owes_no_review.py, but the diff also edits seven other test files (git diff --stat 83d5a0ce8 1571d941a), all outside the exclusive scope."
+  },
+  "node": "review-of-a-tier-none-run-owes-no-review-1571d941a47a",
+  "node:reviewed": "a-tier-none-run-owes-no-review",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make a run whose review tier is none carry the promotable obligation kind rather than review-missing; reckon/crew/obligations.py:466 returns kind review-ready for a tier-none run in _review_duty_item.\nVERDICT done_when: the measure names a test in a temporary crew home whose tier-none run's item is present and promotable and whose runtime-source run still reads review-missing, a negative control, and importers showing no added failure; tests/test_a_tier_none_run_owes_no_review.py asserts both cases and the control at logs/negative-control.log reddens under the removed read.\nVERDICT write_paths: the declared paths are reckon/crew/obligations.py and tests/test_a_tier_none_run_owes_no_review.py; git diff --stat 83d5a0ce8 1571d941a changes those two plus seven further test files.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T201233968744-a-tier-none-run-owes-no-review/manifest.md; status complete, commits 529204b6..1571d941a, gate at 529204b6 passes, negative control EXIT=1, importer arm 219 passed at 385b3ccd0, baseline_suite and after_suite both 0 failures.\nVERDICT diff: read commit by commit against 83d5a0ce8: obligations.py adds _review_tier_for_duty and a tier-none branch in _review_duty_item, one new gate test file, and the fixture repairs.\nCALL_SITES: reckon/crew_run_commands.py:659, reckon/hooks/coordinator_obligations.py:188, reckon/crew/obligation_snapshot.py:824, reckon/mcp_views.py:951, reckon/crew/runs.py:1346\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:466 makes a tier-none run carry the promotable kind review-ready instead of the classifier's review-missing (reckon/crew/obligations.py:41), which is exactly the node's goal.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_a_tier_none_run_owes_no_review.py:189 asserts the tier-none run reads review-ready and :196 asserts the runtime-source run still reads review-missing in one pass, and the negative control at .../logs/negative-control.log reddens :189 under the removed tier read with EXIT=1; the manifest's baseline_suite and after_suite objects measure different populations.\nSCORE scope_discipline: 9\nJUSTIFICATION scope_discipline: the declared write paths are reckon/crew/obligations.py and tests/test_a_tier_none_run_owes_no_review.py, but the diff also edits seven other test files (git diff --stat 83d5a0ce8 1571d941a), all outside the exclusive scope.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_tier_none_run_owes_no_review.py:189 fails when the tier read is removed (negative-control.log) and the guard at :179 pins both runs as classification scoring, so the promotable reading cannot come from the classifier and the assertion is not vacuous.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/obligations.py:392 follows the module's mapping-in/dict-out idiom and docstring style, and ruff check on the two changed product/test paths is clean; ruff format flags only the pre-existing region at line 189, which the diff does not touch.\nSCORE reuse: 20\nJUSTIFICATION reuse: the tier is read through recovery._sweep_review_tier (the sweep's own entry over promotion._run_review_tier); a search over reckon/crew for a tier resolver found review_tiers.review_tier and promotion._run_review_tier and this change adds no second resolver, only the reuse of the owner's entry.\nFINDING reckon/crew/obligations.py:466 follow-on: the tier-none duty is built by _live_item(row, ...), so its next_command is row['next_action'] \u2014 for a scoring row that is _review_dispatch_action (reckon/crew/recovery_classification.py:797), the very review dispatch the sweep decided against; the kind reads promotable while the command still names a review nothing will ever run.\nFINDING tests/test_crew_obligations.py:48 follow-on: the change writes seven test files outside the two declared write paths, repairing fixtures an out-of-scope edit should have requested a scope extension for.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T201233968744-a-tier-none-run-owes-no-review/manifest.md:15 follow-on: baseline_suite names tests/test_crew_obligations.py at base while after_suite names the 39-file importer set at head, so the recorded pair does not measure one population; the same-population base arm exists at logs/base-importers.log (209 passed, 10 pre-existing timeout errors, 0 failed).",
+  "review_run_id": "r-20261019T222401618515-review-of-a-tier-none-run-owes-no-review-1571d941a47a",
+  "reviewed_base_sha": "83d5a0ce8eca1c7a37a4322873735b1ed86362c7",
+  "reviewed_head_sha": "1571d941a47a55cd3d9600f6b0a7bdcf85253e32",
+  "reviewed_run_id": "r-20261019T201233968744-a-tier-none-run-owes-no-review",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 9
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T22:40:00+00:00",
+  "total": 101
+}
