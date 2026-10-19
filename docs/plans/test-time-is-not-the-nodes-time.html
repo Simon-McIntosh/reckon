@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-standalone" content="It changes how a node&#x27;s own time budget is stated and accounted; no live plan waits on it, and it consumes no plan&#x27;s pending evidence.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;deferred&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;deferred&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s2&quot;: [&quot;test-time-is-not-the-nodes-time#s1&quot;, &quot;test-time-is-not-the-nodes-time#s3&quot;, &quot;test-time-is-not-the-nodes-time#s5&quot;], &quot;s4&quot;: [&quot;test-time-is-not-the-nodes-time#s1&quot;, &quot;test-time-is-not-the-nodes-time#s2&quot;], &quot;s5&quot;: [&quot;test-time-is-not-the-nodes-time#s3&quot;], &quot;s6&quot;: [&quot;test-time-is-not-the-nodes-time#s5&quot;]}">
   <title>Test Time Is Not The Node's Time | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="33">
+<meta name="plan-version" content="34">
 <meta name="plan-modified" content="2026-10-19">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -130,7 +130,7 @@
 <p><strong>After it lands.</strong> Read the next local-lane run that reaches its deadline. Its stream should show the stated command before any deadline judgment.</p>
 
     <h2 id="s6">The time fence reads cleanly, and its tests assert what it says</h2>
-<section data-reckon="section" data-id="s6" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s6" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> Two defects were left behind when §3 and §5 landed.</p>
 <ul>
 <li><strong>The fence ends a sentence with two periods.</strong> <code>compose_prompt</code> writes the fence as <code>{time_fence}.</code> and then the next sentence. That period suits the bare-duration form, such as <code>20m.</code>. Since §3, though, the statement form ends with its own sentence, so a worker reads "and stop and report.." or "past the deadline..".</li>
