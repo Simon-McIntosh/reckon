@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/mcp.py:1983",
+    "reckon/mcp.py:1998",
+    "reckon/crew_run_commands.py:416"
+  ],
+  "completed_at": "2026-10-19T20:14:11.024Z",
+  "dispatched_at": "2026-10-19T19:53:58Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_view_serves_every_view.py",
+      "line": 159,
+      "severity": "follow-on",
+      "summary": "the surface-parity assertion compares a registry against itself",
+      "text": "test_the_tool_and_the_dispatcher_declare_the_same_views compares mcp.CREW_TOOL_VIEWS against mcp_views.crew_view_names(); reckon/mcp.py:235 assigns CREW_TOOL_VIEWS = CREW_VIEWS and reckon/mcp_views.py:3623 has crew_view_names return the same CREW_VIEWS tuple, so both sides are one object and the assertion holds whatever serve_crew_view does. It cannot catch the one-surface-only drift its docstring claims, and only the declared monkeypatch makes it fail, so the parity of the declared surface rests on the mutation."
+    },
+    {
+      "file": "tests/test_crew_view_serves_every_view.py",
+      "line": 43,
+      "severity": "follow-on",
+      "summary": "the document-parity case drives only one argument vector",
+      "text": "_READ_ARGUMENTS is the single vector (project, since, until) both surfaces are driven with, so the parity case never exercises the CLI's --fields, --source, --scope, --candidates or --pretty plumbing; a regression that dropped any of those options from reckon/crew_run_commands.py:365 crew_view would leave the comparison green because neither side is asked for them."
+    },
+    {
+      "file": "tests/test_skill_contracts.py",
+      "line": 1287,
+      "severity": "follow-on",
+      "summary": "a changed file is absent from the manifest's changed_paths",
+      "text": "The diff changes this file to add the (\"crew\", \"view\") flag-map row, but the manifest's changed_paths and orientation_write_paths list neither it nor any other entry for it, so a coordinator reading the manifest cannot see that this file was touched; the review found it only by reading the diff."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against the base sha 9c353762e; five commits change eight files, moving the view dispatch into reckon/mcp_views.py, adding the crew view verb, the parity test and the evidence fragment, all inside the fence.",
+    "done_when": "The done_when names tests/test_crew_view_serves_every_view.py, the tombstone exit code, the caller census and the negative control; the worker's gate runs that file and records 1 failed/91 passed at the head with zero added failures over the base arm, and the census is accurate, but no tombstone clause is exercised because no verb was retired.",
+    "goal": "The node goal is to serve every crew MCP view through one function both the tool and a crew view CLI verb call and to retire the five read verbs to tombstones once no tracked caller remains; reckon/mcp_views.py:3626 serve_crew_view plus reckon/crew_run_commands.py:365 crew_view and reckon/mcp.py:1998 deliver the first half, and the second is correctly withheld because callers remain.",
+    "manifest": "Read; it declares five commits, the gate command and logs, a caller census, five follow-ons for the un-retired verbs, and a negative-control note; its changed_paths omits tests/test_skill_contracts.py and it names no ruff log for the ruff sub-claim.",
+    "write_paths": "The declared fence is the plan's write set plus a documented mid-run extension to tests/test_skill_contracts.py; every path in the diff is inside it, though tests/test_skill_contracts.py is absent from the manifest's own changed_paths."
+  },
+  "justifications": {
+    "durability": "the document-parity case at tests/test_crew_view_serves_every_view.py:213 drives both surfaces through real code, but the name-parity case at line 154 compares two references to the same CREW_VIEWS tuple and the parity case drives only one argument vector.",
+    "evidence": "base-arm.log and gate-head-2.log record the gate and both arms with EXIT lines and zero added failures, but the tombstone clause is unexercised and the ruff sub-claim in the evidence fragment rests on no cited log, the only ruff log on disk (ruff.log) being a stale pre-fix artifact showing an F401 at reckon/mcp.py:56 that does not exist at head.",
+    "fit": "the added symbols (CREW_VIEWS, serve_crew_view, crew_view) name the capability they carry with no plan or ticket reference and match the surrounding style of reckon/mcp_views.py, though the invalid_view refusal text is duplicated verbatim at reckon/mcp.py:1984 and reckon/mcp_views.py:3719.",
+    "goal_fidelity": "reckon/mcp_views.py:3626 serve_crew_view is the one function both reckon/mcp.py:1998 and reckon/crew_run_commands.py:416 call, so every view is served through one implementation; the five read verbs stay visible only because tracked callers of theirs remain, verified at reckon/mcp_deadlines.py:184.",
+    "reuse": "serve_crew_view relocates the tool's inline view dispatch rather than adding a parallel one, and a capability search over reckon/ found no pre-existing owner of a crew-view registry, so the added registry and dispatcher are the first.",
+    "scope_discipline": "every changed file lies inside the fence as extended mid-run, but the manifest's changed_paths and orientation_write_paths omit tests/test_skill_contracts.py, which the diff changes at line 1287."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261019T195237351367-review-of-cso-read-verbs-become-crew-view-e5aec958b38f",
+  "reviewed_base_sha": "9c353762e355dfa95020597d2203b79145d4af8c",
+  "reviewed_head_sha": "e5aec958b38f51aed458de1d8e4e6656cc7ba420",
+  "reviewed_run_id": "r-20261019T182016743616-cso-read-verbs-become-crew-view",
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T20:15:42.231995+00:00",
+  "total": 100
+}
