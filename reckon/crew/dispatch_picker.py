@@ -913,6 +913,149 @@ def _config_without_lane(config: Mapping[str, Any], lane: str) -> dict[str, Any]
     }
 
 
+def lane_declared_models(config: Mapping[str, Any], lane: str) -> tuple[str, ...]:
+    """The model keys one lane declares, or an empty tuple for none.
+
+    A lane's models are its ``lanes.<lane>.models`` block. A name whose flight
+    declares no such block — a legacy per-model backend, or a plain backend
+    that belongs to no lane — offers nothing to choose between, so the count
+    read here is what tells a lane that has a choice from one that does not.
+    """
+    block = (config.get("lanes") or {}).get(lane)
+    if not isinstance(block, Mapping):
+        return ()
+    models = block.get("models")
+    if not isinstance(models, Mapping):
+        return ()
+    return tuple(str(key) for key in models)
+
+
+def _config_within_lane(config: Mapping[str, Any], lane: str) -> dict[str, Any]:
+    """The configuration narrowed to one lane's backends.
+
+    The sibling of :func:`_config_without_lane`: where that removes a lane's
+    backends from the offering, this keeps only them, so an ask narrowed to one
+    lane is offered that lane's models alone. The default backend is moved onto
+    the lane when it sits outside it, so a fallback the picker answers with
+    still resolves inside the lane rather than to a backend the ask never saw.
+    """
+    kept = _lane_backend_names(config, lane)
+    narrowed: dict[str, Any] = {
+        **config,
+        "backends": {
+            name: backend
+            for name, backend in (config.get("backends") or {}).items()
+            if str(name) in kept
+        },
+    }
+    if lane in narrowed["backends"]:
+        narrowed["default_backend"] = lane
+    return narrowed
+
+
+def lane_of_backend(config: Mapping[str, Any], backend_name: str) -> str:
+    """The lane one named backend belongs to, or its own name when it declares none.
+
+    A lane's expanded entry carries the pair it was built from, so a named lane
+    backend reads its lane directly rather than re-deriving it from the command;
+    a plain backend that belongs to no lane returns its own name, which declares
+    no models and so asks nothing.
+    """
+    entry = (config.get("backends") or {}).get(backend_name)
+    if isinstance(entry, Mapping):
+        declared = str(entry.get("lane") or "").strip()
+        if declared:
+            return declared
+    return backend_name
+
+
+def lane_names_a_choice(config: Mapping[str, Any], backend: str) -> bool:
+    """Whether a named backend is a lane that leaves Jev a model to choose.
+
+    True only when the name is a lane's own default entry, the resolved flight
+    routes through the picker, and the lane declares more than one model — the
+    three conditions under which a dispatch that named the lane and no model
+    still has a choice to put to the picker. A caller reads this before building
+    the picker's inputs, so a dispatch that offers no choice pays nothing.
+    """
+    if not backend or backend != lane_of_backend(config, backend):
+        return False
+    if str((config.get("routing") or {}).get("picker") or "") != "route":
+        return False
+    return len(lane_declared_models(config, backend)) >= 2
+
+
+def lane_model_selection(
+    *,
+    node: TaskNode,
+    config: Mapping[str, Any],
+    backend: str,
+    project: str,
+    repo: Path,
+    session: str = "",
+    comment: str = "",
+    records: list[dict[str, Any]] | None = None,
+    verdict_inputs: Mapping[str, Any] | None = None,
+    budget_snapshot: Mapping[str, Any] | None = None,
+    input_errors: Mapping[str, str] | None = None,
+    authority: Mapping[str, Any] | None = None,
+    authority_error: str | None = None,
+    orchestrator_assessment: Mapping[str, Any] | None = None,
+    due: str | None = None,
+    urgency: str | None = None,
+) -> tuple[Mapping[str, Any], dict[str, Any] | None]:
+    """Ask Jev for a model inside one named lane, and apply the one it names.
+
+    A dispatch that names a lane but no model launches the lane's default and
+    never reaches the other model that suits the work, so the named lane's own
+    models are offered to the picker here and the answer's model is applied to
+    the configuration through :func:`reckon.flight.select_lane_model`, exactly
+    as a picker route's model is applied to a routed lane.
+
+    The lane never changes. A lane declaring fewer than two models, a flight
+    whose ``routing.picker`` is not ``route``, a hold, a refusal, a fallback, a
+    pick naming no model of this lane, and a name that reaches no lane at all
+    each leave the configuration untouched and launch the lane default as
+    before; the ask is still returned so the run records what the picker said.
+    Returns ``(config, selection)`` with the selection ``None`` when no ask ran.
+    """
+    if not lane_names_a_choice(config, backend):
+        return config, None
+    lane = backend
+    keys = lane_declared_models(config, lane)
+    selection = dispatch_picker_selection(
+        node=node,
+        config=_config_within_lane(config, lane),
+        project=project,
+        repo=repo,
+        session=session,
+        comment=comment,
+        records=records,
+        verdict_inputs=verdict_inputs,
+        budget_snapshot=budget_snapshot,
+        input_errors=input_errors,
+        authority=authority,
+        authority_error=authority_error,
+        orchestrator_assessment=orchestrator_assessment,
+        due=due,
+        urgency=urgency,
+        _allow_reask=False,
+    )
+    model_key = ""
+    if str(selection.get("action") or "") == "route":
+        named = str(selection.get("model") or "").strip()
+        if named in keys:
+            model_key = named
+    if not model_key:
+        return config, selection
+    from reckon import flight as flight_module
+
+    return (
+        flight_module.select_lane_model(config, lane, lane, model_key),
+        selection,
+    )
+
+
 def _ask_summary(selection: Mapping[str, Any]) -> dict[str, Any]:
     """One recorded ask, compact enough to keep both beside each other."""
     return {

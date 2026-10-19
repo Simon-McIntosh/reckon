@@ -1423,6 +1423,52 @@ def crew_dispatch(
     # on every route rather than raising as a traceback on the picker route.
     _refuse_a_foreign_repository(crew_module, project, repo, pretty)
 
+    # A lane named with no model lets Jev choose the model inside it. The lane's
+    # own models are offered, the one the pick names is applied to the
+    # configuration here — where the availability probe and the resolution both
+    # read it — and the ask is carried onto the run as its picker selection. A
+    # --model, a --local, a paired arm, and a lane declaring no choice ask
+    # nothing and resolve exactly as before.
+    named_lane_selection: dict[str, Any] | None = None
+    if backend and not local and not model_name and not pair_backend:
+        from reckon.crew.dispatch import resolve_project_repository
+        from reckon.crew.dispatch_picker import (
+            build_picker_inputs,
+            lane_model_selection,
+            lane_names_a_choice,
+            resolve_picker_authority,
+        )
+
+        if lane_names_a_choice(config, backend):
+            lane_repo = resolve_project_repository(project, repo)
+            (
+                lane_records,
+                lane_verdicts,
+                lane_budget,
+                lane_input_errors,
+            ) = build_picker_inputs(project, config, lane_repo, session=session)
+            lane_authority, lane_authority_error = resolve_picker_authority(
+                project, lane_repo
+            )
+            config, named_lane_selection = lane_model_selection(
+                node=node,
+                config=config,
+                backend=backend,
+                project=project,
+                repo=lane_repo,
+                session=session,
+                comment=comment,
+                records=lane_records,
+                verdict_inputs=lane_verdicts,
+                budget_snapshot=lane_budget,
+                input_errors=lane_input_errors,
+                authority=lane_authority,
+                authority_error=lane_authority_error,
+                orchestrator_assessment=orchestrator_assessment,
+                due=due,
+                urgency=urgency,
+            )
+
     picker_selection = None
     if effective_route == "picker":
         from reckon.crew.dispatch import (
@@ -1468,6 +1514,11 @@ def crew_dispatch(
             due=due,
             urgency=urgency,
         )
+
+    if named_lane_selection is not None:
+        # The in-lane ask reaches the run exactly where a picker route's answer
+        # does, so the record's picker selection carries the lane's choice.
+        picker_selection = named_lane_selection
 
     availability_refusal = _model_availability_refusal(
         crew_module,

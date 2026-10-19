@@ -2022,6 +2022,48 @@ def _dispatch_composed_review(
             backend = candidates[0]
             on_local_lane = backend == local_lane
 
+    # The review leaves the composed lane to Jev as freely as a coordinator's
+    # --backend does: a lane named with no model offers its own models, and the
+    # one the pick names is applied to the resolution the launch reads. The lane
+    # itself is unchanged, and a lane declaring no choice, a local review and a
+    # flight not routing through the picker all ask nothing.
+    review_lane_selection: dict[str, Any] | None = None
+    if backend and not on_local_lane:
+        from reckon.crew.dispatch_picker import (
+            build_picker_inputs,
+            lane_model_selection,
+            lane_names_a_choice,
+            resolve_picker_authority,
+        )
+
+        if lane_names_a_choice(resolved, backend):
+            review_repo = Path(repo)
+            (
+                review_records,
+                review_verdicts,
+                review_budget,
+                review_input_errors,
+            ) = build_picker_inputs(
+                project, resolved, review_repo, session=fields["session"]
+            )
+            review_authority, review_authority_error = resolve_picker_authority(
+                project, review_repo
+            )
+            resolved, review_lane_selection = lane_model_selection(
+                node=node,
+                config=resolved,
+                backend=backend,
+                project=project,
+                repo=review_repo,
+                session=fields["session"],
+                records=review_records,
+                verdict_inputs=review_verdicts,
+                budget_snapshot=review_budget,
+                input_errors=review_input_errors,
+                authority=review_authority,
+                authority_error=review_authority_error,
+            )
+
     if dry_run:
         # The plan review's brief is composed rather than given, so a preview
         # holds its text while a dispatch writes it. The resolver reads the
@@ -2080,6 +2122,7 @@ def _dispatch_composed_review(
             else None,
             unreconciled_override=allow_unreconciled_runs,
             route="deterministic",
+            picker_selection=review_lane_selection,
             # A review held by the lane is recorded as a queued request and
             # relaunched later by the admission pass, which rebuilds the
             # unreconciled waiver from these options. Passing the waiver here
