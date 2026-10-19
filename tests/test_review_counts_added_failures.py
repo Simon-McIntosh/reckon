@@ -173,7 +173,15 @@ def test_a_null_total_reads_unscored_and_is_not_named_capped(
 
 def test_a_total_already_at_the_cap_is_not_named_capped(crew_home: Path) -> None:
     """``min()`` leaves a total at the cap unchanged, so nothing was applied."""
-    _write_review(total=review_module.ADDED_FAILURES_TOTAL_CAP)
+    cap = review_module.ADDED_FAILURES_TOTAL_CAP
+    path = _write_review(total=cap)
+    record = json.loads(path.read_text(encoding="utf-8"))
+    quotient, remainder = divmod(cap, len(review_module.REVIEW_DIMENSIONS))
+    record["scores"] = {
+        dimension: quotient + int(index < remainder)
+        for index, dimension in enumerate(review_module.REVIEW_DIMENSIONS)
+    }
+    path.write_text(json.dumps(record), encoding="utf-8")
     _synthesise_run([A, B], [B, C, D])
 
     review = _selected()
