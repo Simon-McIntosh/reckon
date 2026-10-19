@@ -1,0 +1,52 @@
+<article class="landed-report" data-run-id="r-20261019T201233968744-a-tier-none-run-owes-no-review" data-node="a-tier-none-run-owes-no-review">
+      <h3 id="a-tier-none-run-owes-no-review-heading">a-tier-none-run-owes-no-review — a tier-none run owes no review duty</h3>
+      <p id="a-tier-none-run-owes-no-review-anchor">
+        The review sweep reads a run's tier through promotion's resolver and
+        skips the review of a run that changes no runtime source, recording the
+        skip on the run's pointer. The coordinator's obligations view read the
+        tier not at all, so it held such a run at <code>review-missing</code>
+        with the review dispatch as its next action — a duty nothing could ever
+        satisfy, which the coordinator could clear only by running a review the
+        tier rule had exempted or by acknowledging the duty by hand.
+      </p>
+      <p id="a-tier-none-run-owes-no-review-fix">
+        <code>_review_duty_item</code> (<code>reckon/crew/obligations.py</code>)
+        now reads the tier through
+        <code>reckon.crew.recovery._sweep_review_tier</code>, the very resolver
+        the sweep uses, so the two surfaces cannot disagree about which run owes
+        a review and the tier's inputs — changed paths, changed lines, spec
+        level, capability risk — are never re-derived in the duty. A tier-none
+        run reads the kind a reviewed run with a passing review would get,
+        carrying its tier on the duty, and stays in the list rather than falling
+        out of it. A run whose tier requires a review keeps today's reading.
+      </p>
+      <p id="a-tier-none-run-owes-no-review-measure">
+        <strong>Measure.</strong> In
+        <code>tests/test_a_tier_none_run_owes_no_review.py</code> a temporary
+        crew home holds a documentation run and a runtime-source run, both live
+        and both classified <code>scoring</code> (whose unqualified reading is
+        <code>review-missing</code>). The documentation run's obligation is
+        present with kind <code>review-ready</code> and <code>review_tier:
+        none</code>; the runtime-source run still reads
+        <code>review-missing</code> in the same pass, so the quietening is keyed
+        on the tier and not on something the read did to every run. Gate:
+        <code>1 passed</code>, EXIT=0. Negative control — the tier read removed
+        from the duty — fails that test with
+        <code>assert 'review-missing' == 'review-ready'</code>, EXIT=1. Ruff
+        check adds no finding; ruff format adds none beyond the one
+        pre-existing unformatted line already present at base.
+      </p>
+      <p id="a-tier-none-run-owes-no-review-blocker">
+        <strong>Blocker.</strong> Two pre-existing cases in
+        <code>tests/test_crew_obligations.py</code> — out of this node's write
+        scope — build runs that declare only <code>seed.txt</code>, no runtime
+        source, so §10's tier read correctly flips them from
+        <code>review-missing</code> to <code>review-ready</code>:
+        <code>test_obligations_reads_scoring_without_observing_or_dispatching</code>
+        and <code>test_a_review_of_an_earlier_head_is_still_missing</code>.
+        Base passes that file (9 passed, EXIT=0); the change makes it 2 failed,
+        7 passed. Their fixtures need a runtime-source path (and a matching
+        commit) to keep asserting the unreviewed reading, which requires a write
+        scope this node was not granted.
+      </p>
+    </article>
