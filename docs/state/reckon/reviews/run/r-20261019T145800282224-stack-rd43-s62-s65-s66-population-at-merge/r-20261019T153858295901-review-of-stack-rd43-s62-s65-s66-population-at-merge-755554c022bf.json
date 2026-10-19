@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-19T15:51:41.787Z",
+  "dispatched_at": "2026-10-19T15:39:40Z",
+  "findings": [
+    {
+      "file": ".config/reckon/crew/runs/r-20261019T145800282224-stack-rd43-s62-s65-s66-population-at-merge/manifest.md",
+      "line": "tests",
+      "severity": "follow-on",
+      "text": "follow-on: the brief asked the manifest's tests line to carry each arm's pass and fail counts with its log path, but the tests line names only the candidate arm command; the counts sit in the artifacts line and in the structured baseline_suite/after_suite fields instead, which are the fields promotion reads, so the information is recorded though not where the brief put it."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T145800282224-stack-rd43-s62-s65-s66-population-at-merge/cand_arm.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T145800282224-stack-rd43-s62-s65-s66-population-at-merge/base_arm.log"
+  },
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "call_sites": "verified 0 production call site(s)",
+    "diff": "The node changes no product code and commits nothing, so the commit range is empty and the deliverables are report.md and the run's gate logs.",
+    "done_when": "base_arm.log:1-7 and cand_arm.log:1-7 carry rev/host/command/module headers under each arm's checkout and end EXIT=1; the report and manifest state none was added.",
+    "goal": "The source brief asked whether merging the four reviewed heads adds a failing test id over their combined importer population; report.md answers 0 added over the 123-file population.",
+    "manifest": "Read; status complete, both arms' commands and identical 3-failure sets recorded in baseline_suite/after_suite, landing states 0 added ids.",
+    "write_paths": "The node was fenced to the reports directory; report.md answers there and the worktree is clean with no commit."
+  },
+  "justifications": {
+    "durability": "No test guards the reported answer: no assertion was added anywhere by this node, and re-running the merge would not redden anything; there is also a SCORE gap that a measurement node cannot close without adding a regression test.",
+    "evidence": "base_arm.log:1-7 and cand_arm.log:1-7 carry rev/host/command/module headers under each arm's own checkout and end EXIT=1, the manifest's baseline_suite and after_suite record 3/3 identical ids, and my own reader over both logs returns added=(0,[]), so the gate asserts the done_when's measure.",
+    "fit": "The node changes no source, so no symbol or filename carries a plan identifier; the report and the manifest follow the brief's own headings, and the only value read is the fleet's own reckon.crew.review.added_failures_from_gate_logs.",
+    "goal_fidelity": "The report at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-monitor-shows-the-work-it-watches/stack-rd43-s62-s65-s66-population-at-merge/report.md answers the brief's question directly: 0 added failing ids over the 123-file importer population, with both arms' counts and the four-head chain named.",
+    "reuse": "The derive step imports reckon.crew.review.added_failures_from_gate_logs rather than hand-diffing FAILED lines; the two-checkout sbatch orchestration is bespoke per-measurement and I found no existing owner for it under reckon/crew.",
+    "scope_discipline": "The node was fenced to the reports directory only; report.md is the sole deliverable there, the node's worktree is clean and it committed nothing, and its logs and manifest sit in its own run directory as the brief directed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source brief asked whether merging the four reviewed heads (read-deadline \u00a743 at 25874a85f, monitor \u00a762 at c5333049f, \u00a765 at b49ec8a81, \u00a766 at 441ae3e23) onto main adds a failing test id over their combined importer population; report.md answers 0 added over the 123-file population and names the chain.\nVERDICT done_when: The done_when asks for one sbatch job over the 123 listed files at base 7761f1c26 and candidate 87d1d3237 with logs beginning rev=/host/command and ending EXIT= under each arm's checkout, added ids from reckon.  added_failures_from_gate_logs, or a statement that none was added; base_arm.log:1-7 and cand_arm.log:1-7 satisfy the header and both end EXIT=1, and the report states none was added.\nVERDICT write_paths: The node was fenced to the reports directory /home/ITER/mcintos/.config/reckon/crew/reports/reckon/the-monitor-shows-the-work-it-watches/stack-rd43-s62-s65-s66-population-at-merge; report.md is the only deliverable there, and the reviewed worktree at 755554c022bf is clean with no commit, so the diff is empty.\nVERDICT manifest: Read at the run directory's manifest.md; status complete, tests line names the candidate command, baseline_suite and after_suite carry both commands and the identical 3 failing ids, artifacts give both arms' summaries with their log paths, and landing states 0 added ids.\nVERDICT diff: The node changes no product code and commits nothing \u2014 the reviewed worktree head is 755554c022bf with a clean status \u2014 so there is no commit range to review; the deliverables are report.md and the run's own gate logs.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: report.md answers the brief's question directly, giving 0 added failing ids over the 123-file importer population with both arms' counts and the four-head chain.\nSCORE evidence: 18\nJUSTIFICATION evidence: base_arm.log:1-7 and cand_arm.log:1-7 carry the required headers and end EXIT=1, and my own added_failures_from_gate_logs over both logs returns (0, []).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: report.md is the sole deliverable in the fenced reports directory, the worktree is clean and no commit was made, and the logs sit in the node's own run directory as the brief directed.\nSCORE durability: 12\nJUSTIFICATION durability: no assertion was added anywhere, so no test fails if the reported 0-added answer regresses.\nSCORE fit: 19\nJUSTIFICATION fit: the node changes no source, so no symbol or filename carries a plan identifier and the report follows the brief's own headings.\nSCORE reuse: 19\nJUSTIFICATION reuse: measure.sh calls reckon.crew.review.added_failures_from_gate_logs instead of hand-diffing FAILED lines, and I found no existing owner for the two-arm sbatch orchestration under reckon/crew.\nFINDING .config/reckon/crew/runs/r-20261019T145800282224-stack-rd43-s62-s65-s66-population-at-merge/manifest.md:tests follow-on: the brief asked the manifest's tests line to carry each arm's counts with its log path, but it names only the candidate command; the counts are in the artifacts line and the structured suite fields instead.\n",
+  "review_run_id": "r-20261019T153858295901-review-of-stack-rd43-s62-s65-s66-population-at-merge-755554c022bf",
+  "reviewed_base_sha": "755554c022bf912c4ff3e9cedbc322f3de8b3171",
+  "reviewed_head_sha": "755554c022bf912c4ff3e9cedbc322f3de8b3171",
+  "reviewed_run_id": "r-20261019T145800282224-stack-rd43-s62-s65-s66-population-at-merge",
+  "scores": {
+    "durability": 12,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T15:54:55.681554+00:00",
+  "total": 106
+}

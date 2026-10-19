@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="416">
+<meta name="plan-version" content="417">
 <meta name="plan-modified" content="2026-10-19">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1527,7 +1527,10 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
     <div class="r-comment-body"><p>§62 landed: a composed launch environment names the composing process's interpreter as <code>RECKON_SHIM_PYTHON</code> unless the caller set one; merged as <code>64356fcc5</code>, review 110/120. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#a-launch-names-its-composers-interpreter">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s62" data-id="c-run-r-20261019T115629947225-a-launch-names-its-composers-interpreter" data-who="reckon-build" data-when="2026-10-19T14:04:04Z">
-    <div class="r-comment-body"><p>the persisted launch environment in reckon/crew/dispatch_launch.py now names the composing process&#x27;s own sys.executable as RECKON_SHIM_PYTHON unless the caller set one, so every worker shim on the composed PATH resolves an interpreter that can import the package however the dispatcher was started or reloaded; the variable name has a single owner, reckon/crew_follow_commands.py, which the dispatcher imports at composition time, so the two writers cannot drift. 2 focused tests pass, the launch-environment population ran 44 passed at base and 46 at head with zero added failures, the negative control is EXIT=1, and ruff adds no finding on any changed Python file.</p></div>
+    <div class="r-comment-body"><p>the persisted launch environment in reckon/crew/dispatch_launch.py now names the composing process's own sys.executable as RECKON_SHIM_PYTHON unless the caller set one, so every worker shim on the composed PATH resolves an interpreter that can import the package however the dispatcher was started or reloaded; the variable name has a single owner, reckon/crew_follow_commands.py, which the dispatcher imports at composition time, so the two writers cannot drift. 2 focused tests pass, the launch-environment population ran 44 passed at base and 46 at head with zero added failures, the negative control is EXIT=1, and ruff adds no finding on any changed Python file.</p></div>
+</div>
+<div class="r-comment" data-section="s62" data-id="c-run-r-20261019T153858295901-review-of-stack-rd43-s62-s65-s66-population-at-merge-755554c022bf" data-who="reckon-build" data-when="2026-10-19T15:51:41.787Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261019T145800282224-stack-rd43-s62-s65-s66-population-at-merge recorded at review-records/ inside that run&#x27;s directory, scoring all six dimensions (total 106), added_failure_count 0 with an empty added_failure_ids list, one follow-on finding, no blocking finding, status parsed.</p></div>
 </div>
 <div class="r-comment" data-section="s64" data-id="c-s64-superseded" data-who="reckon-build" data-when="2026-10-19T04:30:00Z">
     <div class="r-comment-body"><p>§64 is superseded by §63. Its review found that a picker-fallback dispatch already records its model when it runs from a checkout: live fallback pointers carry <code>deepseek-v4.1-flash</code> / <code>dsv4.1-flash</code> and <code>gpt-6-sol</code> / <code>sol6</code>. The blank model comes from dispatches made by reloaded processes, whose image lacks the model catalogue. That is the cause §63 now fixes. No separate change to the agent record is needed.</p></div>
