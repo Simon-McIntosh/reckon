@@ -1,0 +1,45 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own two gate arms: gate-baseline-head.log (header revision 7ee118fbff9636e2510f4ea73bedfa690fe9cbd2, unmodified test file, 6 passed, EXIT=0) and gate-head.log (header revision 7ee118fb... + the uncommitted strengthened file, 6 passed, EXIT=0). Both complete at 6 passed, so no failure is added against base.",
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T073807435938-the-package-identity-tests-can-fail/gate-head.log",
+  "base_log_revision": "7ee118fbff9636e2510f4ea73bedfa690fe9cbd2",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T073807435938-the-package-identity-tests-can-fail/gate-baseline-head.log",
+  "call_sites": [
+    "reckon/crew_follow_commands.py:415 calls checkout_trust.materialize_committed_tree",
+    "reckon/crew/follower_registration.py:34 calls checkout_trust.source_code_identity",
+    "reckon/crew/obligation_snapshot.py:428 calls checkout_trust.source_code_identity"
+  ],
+  "completed_at": "2026-10-19T08:19:37.624Z",
+  "dispatched_at": "2026-10-19T08:02:35Z",
+  "findings": [
+    {
+      "file": "tests/test_a_commit_without_code_moves_no_identity.py",
+      "line": "201",
+      "severity": "follow-on",
+      "text": "the reload-env assertion `execs[0][2][_IMAGE_COMMIT_ENV] == _identity(root)` compares the identity the reload code stamped against the identity recomputed by the same function, so both sides call source_code_identity and the assertion cannot fail under the commit-keyed mutation; it is the same class \u00a757 repaired but is outside the two named assertions, and the node recorded it as a follow-on."
+    }
+  ],
+  "head_log_revision": "1b24b50242b3ac92b5b44df1abb00b984f07db82",
+  "negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T073807435938-the-package-identity-tests-can-fail/negative-control.log",
+  "node": "review-of-the-package-identity-tests-can-fail",
+  "note": "the landed change is confined to tests/ and docs/, so no production runtime reaches it; the call_sites above are the production mechanisms its strengthened tests exercise, listed for a reader of the record and excluded from the CALL_SITES verdict by the rubric's rule that test files and the code they exercise are not production call sites of a test-only change.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the two package-identity assertions compare against independently derived values so they fail when the identity is keyed on the commit (plan \u00a757 reckon:the-monitor-shows-the-work-it-watches); the landed change makes the reload case compare image.name and the stamped RECKON_FOLLOWER_IMAGE_COMMIT against `git rev-parse HEAD:reckon` and the materialisation case compare its directory name against that tree id and its extracted package against `git ls-tree -r --name-only <tree_id>`, at tests/test_a_commit_without_code_moves_no_identity.py:130,136,139,166-167,178-179.\nVERDICT done_when: the done_when names tests/test_a_commit_without_code_moves_no_identity.py passing, the negative control keying source_code_identity on the commit with both strengthened assertions failing, every log ending in EXIT=, and ruff clean on the changed file; the manifest records all four and the gate logs bear them out \u2014 gate-head.log ends 6 passed EXIT=0, negative-control.log ends 6 failed EXIT=1 with the strengthened assertions at test lines 136 and 178 red, and ruff.log ends EXIT=0 with both arms 'All checks passed!'.\nVERDICT write_paths: the manifest's declared paths are tests/test_a_commit_without_code_moves_no_identity.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/... (fragment) and a figures dir; `git diff 7ee118fb..1b24b502 --stat` lists exactly two changed paths \u2014 the test file (+15/-3) and the newly added fragment docs/evidence/fragments/the-monitor-shows-the-work-it-watches/the-package-identity-tests-can-fail.html (+28) \u2014 both inside the grant, with no figure written (the done-when names no artifact) and no plan edit.\nVERDICT manifest: read against the tree; its single commit 1b24b50242b3ac92b5b44df1abb00b984f07db82 is the worktree head, its changed_paths match the diff, its negative_control_log names the bare path of a log whose last line is EXIT=1, and its evidence_inputs state that source_code_identity returns the git tree id HEAD:reckon, which the pre-existing test at line 97 already asserts independently.\nVERDICT diff: read commit by commit against base 7ee118fbff9636e2510f4ea73bedfa690fe9cbd2; one commit touches the test file and the fragment only, the test edits replace two same-derived comparisons with git-derived `tree_id`/`listing` values and add one extracted-files equality, and the fragment records the reproduction and the control.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_commit_without_code_moves_no_identity.py:136 and :178 now compare against git-derived values, exactly the two independent sources \u00a757's deliverable names.\nSCORE evidence: 19\nJUSTIFICATION evidence: negative-control.log shows the strengthened assertions at :136 and :178 failing under the commit-keyed mutation while gate-head.log shows 6 passed, and pre-defect-reproduction.log shows the unedited file fail-open (4 failed, 2 passed) on the same mutation.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in `git diff 7ee118fb..1b24b502 --stat` is inside the manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the two strengthened assertions fail when the identity is re-keyed on the commit (negative-control.log:136,:178), naming the exact regression they guard, but tests/test_a_commit_without_code_moves_no_identity.py:201 remains same-derived.\nSCORE fit: 18\nJUSTIFICATION fit: the change reuses the file's own `_git` helper (line 27) and its assertion style, adding no symbol and no name the naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function or module; it composes the pre-existing `_git` helper at tests/test_a_commit_without_code_moves_no_identity.py:27, so no capability is forked.\nFINDING tests/test_a_commit_without_code_moves_no_identity.py:201 follow-on: the reload-env commit assertion compares the stamped env value against _identity(root), both derived by source_code_identity, so it stays green under a commit-keyed identity; it is the same class \u00a757 repaired and the manifest already records it, but it is outside the two named assertions so it does not hold this node.",
+  "review_run_id": "r-20261019T080042989676-review-of-the-package-identity-tests-can-fail-1b24b50242b3",
+  "reviewed_base_sha": "7ee118fbff9636e2510f4ea73bedfa690fe9cbd2",
+  "reviewed_head_sha": "1b24b50242b3ac92b5b44df1abb00b984f07db82",
+  "reviewed_run_id": "r-20261019T073807435938-the-package-identity-tests-can-fail",
+  "reviewer_run_id": "r-20261019T080042989676-review-of-the-package-identity-tests-can-fail-1b24b50242b3",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T08:24:04.191080+00:00"
+}
