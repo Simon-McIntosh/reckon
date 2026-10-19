@@ -2,16 +2,18 @@
 //
 // The page paints from the index. /_index/<project> carries one row per
 // document and figure — slug, href, type, title, status, sprint, archive
-// marker, stamps and figure dimensions — and nothing derived, so it is the
-// first request and window.STATE_READY resolves on it.
+// marker, stamps, figure dimensions and each plan's progress figure (impl) —
+// so it is the first request and window.STATE_READY resolves on it, with every
+// plan's progress bar already drawn rather than waiting for discovery.
 //
 // Derived state follows in the background. /_discover/<project> carries the
-// same rows plus the derived fields (effective status, blockers, readiness)
-// and the ready set; when it arrives it is merged into the rows already on
-// screen, in place and in the order the reader is looking at, and then
-// window.STATE_DERIVED_READY resolves. Every path settles that promise — the
-// fallback below carries its derived state already, so it resolves with the
-// state it assembled. A plan's body is fetched only when that plan is opened.
+// same rows plus the remaining derived fields (effective status, blockers,
+// readiness) and the ready set; when it arrives it is merged into the rows
+// already on screen, in place and in the order the reader is looking at, and
+// then window.STATE_DERIVED_READY resolves. Every path settles that promise —
+// the fallback below carries its derived state already, so it resolves with
+// the state it assembled. A plan's body is fetched only when that plan is
+// opened.
 // The derived values are computed in Python on the server; the loader merges
 // them and never derives them itself.
 //

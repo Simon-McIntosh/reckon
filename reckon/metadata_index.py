@@ -66,12 +66,13 @@ ROW_FIELDS = (
     "width",
     "height",
     "revision",
+    "impl",
 )
 
 _SCHEMA = "reckon.metadata-index"
 #: Bumped when an entry gains a field, so an index written by the previous
 #: shape is rebuilt rather than reused with the new field absent.
-_VERSION = 5
+_VERSION = 6
 _FIGURE_DIR = "figures"
 _FIGURE_SUFFIXES = (".png", ".svg", ".gif")
 _COVERED_PROJECT: ContextVar[tuple[str, str] | None] = ContextVar(
@@ -744,6 +745,11 @@ def _resource_row(
         "width": None,
         "height": None,
     }
+    if resource.type == "plan":
+        # The plan's progress figure rides the row so a page painting from the
+        # index draws the bar without waiting for discovery. It comes from the
+        # same parse the discovery payload reads, so the two rows agree.
+        row["impl"] = rec["impl"]
     plan = _plan_record(path, resource.archived) if resource.type == "plan" else None
     discovery = {"meta": rec, "state": None, "readiness": None}
     try:

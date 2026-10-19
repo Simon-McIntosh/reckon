@@ -1,8 +1,10 @@
 """The page paints from the index, and derived state arrives afterwards.
 
-The served loader asks for the index first — one row per document and figure
-and nothing derived — and resolves the first paint on it. The discovery
-payload, which carries the derived fields and the ready set, is fetched
+The served loader asks for the index first — one row per document and figure,
+carrying each plan's progress figure (impl) and nothing else derived — and
+resolves the first paint on it, so every progress bar is drawn without waiting
+for discovery. The discovery payload, which carries the remaining derived
+fields and the ready set, is fetched
 afterwards in the background and merged into the rows already on screen,
 without re-sorting them. An index that is unavailable must not cost the page
 its rows: the loader then takes the discovery path it used before.
@@ -60,6 +62,7 @@ INDEX_ROWS = [
         "edited": "2026-01-01T00:00:00",
         "width": None,
         "height": None,
+        "impl": 0.4,
     },
     {
         "slug": "beta",
@@ -73,6 +76,7 @@ INDEX_ROWS = [
         "edited": "2026-01-02T00:00:00",
         "width": None,
         "height": None,
+        "impl": 0.9,
     },
     {
         "slug": "gate",
@@ -103,7 +107,9 @@ INDEX_ROWS = [
 ]
 
 # The same rows plus what the index deliberately does not carry: the effective
-# status each row derives once blockers are known, and the ready set.
+# status each row derives once blockers are known, and the ready set. The plan
+# rows repeat impl, which both payloads carry, so the merge leaves the bars the
+# first paint drew where they were.
 DISCOVERY = {
     "source_format": "distributed",
     "active_sprint_id": "focus",
@@ -325,6 +331,11 @@ window.STATE_READY.then(async state => {{
     # effective status is only the row's own workflow status.
     assert paint["ready_set"] == {}
     assert paint["effective_status"][:2] == ["active", "active"]
+    # The progress bars are drawn from the index alone: each plan row carries
+    # its impl, while the evidence and figure rows carry none. This is the
+    # first-paint contract — the bars do not wait for the discovery merge.
+    assert paint["impl"][:2] == [0.4, 0.9]
+    assert paint["impl"][:2] == [r["impl"] for r in INDEX_ROWS if r["type"] == "plan"]
 
 
 def test_derived_fields_merge_into_the_rows_already_on_screen() -> None:
