@@ -26,8 +26,13 @@ from reckon._plan_html import (
 PROJECT = "tick-project"
 SLUG = "tick-guard"
 
-# The landing write under test: set the plan's status to done.
-LAND = {"op": "set", "path": "status", "value": "done"}
+# The landing write under test: close the plan to a terminal status in one op.
+LAND = {
+    "op": "close",
+    "status": "done",
+    "outcome": "every section landed — no followup",
+    "by": "reckon-build",
+}
 
 
 def _open_state(declaration: str) -> dict:
@@ -77,7 +82,7 @@ def test_landing_with_a_deferred_section_is_refused() -> None:
     assert "s2" in str(refusal.value), "the refusal names the deferred section"
 
 
-def test_landing_succeeds_once_every_section_is_ticked() -> None:
+def test_landing_succeeds_once_every_section_is_ticked(mounted_evidence: Path) -> None:
     state = _open_state(SECTION_DECLARATION_IMPLEMENTABLE)
 
     _store.apply_ops(
@@ -106,7 +111,7 @@ def test_the_patch_writer_refuses_a_landing_with_an_open_section() -> None:
     assert "s2" in str(refusal.value)
 
 
-def test_an_already_terminal_plan_is_not_rejudged() -> None:
+def test_an_already_terminal_plan_is_not_rejudged(mounted_evidence: Path) -> None:
     # A plan that landed while a section was open — grandfathered history — must
     # still accept an unrelated write.
     state = _open_state(SECTION_DECLARATION_IMPLEMENTABLE)
@@ -126,6 +131,35 @@ def _write_html(path: Path, project: str, state: dict) -> None:
         '</head><body><main class="plan-doc"></main></body></html>\n'
     )
     path.write_text(_plan_html.write_state(bare, state), encoding="utf-8")
+
+
+@pytest.fixture()
+def mounted_evidence(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Mount the fixture project with a back-linking evidence record.
+
+    A close fires the terminal-evidence guard, which reads the mounted project
+    for a record whose ``plan-evidence-for`` names the plan, so a close under
+    test needs one to be present.
+    """
+    config_home = tmp_path / "close-config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+    docs = tmp_path / "close-repo" / "docs"
+    _write_html(
+        docs / "evidence" / "archive" / f"{SLUG}-landed.html",
+        PROJECT,
+        {
+            "type": "evidence",
+            "slug": f"{SLUG}-landed",
+            "title": "Close execution evidence",
+            "evidence_for": [SLUG],
+            "version": 0,
+        },
+    )
+    (config_home / "mounts.json").write_text(
+        json.dumps({PROJECT: str(docs)}), encoding="utf-8"
+    )
+    return docs
 
 
 @pytest.fixture()

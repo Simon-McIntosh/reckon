@@ -1590,10 +1590,28 @@ def test_reject_preexisting_empty_followup_prompt_via_validate(setup):
             ],
         },
     )
-    # An unrelated edit (set status) must still be rejected — the whole dict is
-    # validated, and the empty prompt trips validate_for_write.
+    # An unrelated landing (close) must still be rejected — the whole dict is
+    # validated, and the empty prompt trips validate_for_write. A back-linking
+    # evidence record lets the close pass the op layer so it reaches the schema
+    # boundary this test is about.
+    _make_plan_html(
+        docs_dir,
+        "plan-a-landed",
+        {"version": 0, "type": "evidence", "evidence_for": ["plan-a"]},
+        relative="evidence/archive/plan-a-landed.html",
+    )
     r = mcp_module._edit_plan(
-        project, "plan-a", [{"op": "set", "path": "status", "value": "shipped"}], 0
+        project,
+        "plan-a",
+        [
+            {
+                "op": "close",
+                "status": "shipped",
+                "outcome": "the pre-existing prompt violation — no followup",
+                "by": "reckon-build",
+            }
+        ],
+        0,
     )
     assert r["ok"] is False
     assert r["error"] == "schema_validation"
@@ -1671,7 +1689,10 @@ def test_version_conflict(setup):
     docs_dir, _, project = setup
     _make_plan_html(docs_dir, "plan-a", {"version": 0, "status": "active"})
     r = mcp_module._edit_plan(
-        project, "plan-a", [{"op": "set", "path": "status", "value": "shipped"}], 99
+        project,
+        "plan-a",
+        [{"op": "close", "status": "shipped", "outcome": "closing", "by": "bm"}],
+        99,
     )
     assert r["ok"] is False
     assert r["error"] == "version_conflict"

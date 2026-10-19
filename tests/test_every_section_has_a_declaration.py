@@ -275,7 +275,11 @@ def test_a_landing_with_an_undeclared_heading_is_refused(tmp_path: Path) -> None
     )
     before = path.read_text(encoding="utf-8")
 
-    result = _edit(checkout, path, {"op": "set", "path": "status", "value": "done"})
+    result = _edit(
+        checkout,
+        path,
+        {"op": "close", "status": "done", "outcome": "closing", "by": "bm"},
+    )
 
     assert result["ok"] is False, result
     assert "s2" in result["detail"], result

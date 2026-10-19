@@ -1,0 +1,60 @@
+<!-- Evidence anchor: epw-a-plan-closes-in-one-op -->
+
+<section id="epw-a-plan-closes-in-one-op-evidence">
+  <h2>A plan closes in one write, without a placeholder followup</h2>
+
+  <p id="epw-a-plan-closes-in-one-op-mechanism">
+    <code>edit_plan</code> gains one op, <code>{op:'close', status, outcome, by[, superseded_by]}</code>.
+    It sets the plan's status to any value in <code>TERMINAL_STATUSES</code> and resolves every open
+    followup with the close's <code>outcome</code>, so the close itself supplies the chain-closing
+    continuation and no placeholder followup is appended. A <code>set</code> of a plan's
+    <code>status</code> to a terminal value is refused, naming <code>close</code>; the terminal path
+    has one spelling. Sprint, milestone, blocker and inventory statuses are untouched, because
+    <code>close</code> closes a plan and nothing else.
+  </p>
+
+  <p id="epw-a-plan-closes-in-one-op-guards">
+    The close runs every guard the terminal transition fires and reports them together rather than
+    one at a time: the section-ticked guard (<code>shipped</code>/<code>done</code> only), the
+    terminal-evidence record, the pending transition gate, the appended hiding followup and the
+    continuation. The list is not the close's own — it is
+    <code>validate_landing_patch</code>, which the merge-patch writer calls too, given a mode that
+    collects every failing guard instead of raising at the first, so one transition is judged by one
+    list and a guard added there reaches both writers. A plan that is refused names every outstanding
+    condition in one answer. The section-ticked guard is skipped for a
+    <code>superseded</code> or <code>archived</code> close, which is not a landing.
+  </p>
+
+  <p id="epw-a-plan-closes-in-one-op-census">
+    <strong>Census of the op-path terminal-status writes at the base.</strong> Every plan
+    <code>status</code> written through the op path (a <code>set</code> of <code>status</code> at a
+    terminal value, applied through <code>edit_plan</code> or the store's <code>apply_ops</code>)
+    moved to <code>close</code>, or was replaced by a benign edit where its subject was unrelated to
+    the landing. Direct status literals written into fixtures, and sprint and inventory statuses, are
+    not hits. Files touched: <code>tests/test_terminal_status_needs_every_section_ticked.py</code>
+    (<code>LAND</code>, now a close op), <code>tests/test_closure_gates.py</code> (three calls),
+    <code>tests/test_continuation.py</code> (three calls; one rewritten because the op-path
+    continuation guard is now reached only through <code>close</code>),
+    <code>tests/test_edit_plan.py</code> (the schema-boundary and version-conflict cases), and
+    <code>tests/test_every_section_has_a_declaration.py</code> (one call). No source op-path hit
+    existed in <code>reckon/</code>.
+  </p>
+
+  <p id="epw-a-plan-closes-in-one-op-gate">
+    <strong>Gate.</strong> <code>tests/test_a_plan_closes_in_one_op.py</code> drives three cases:
+    a finished plan closes in one version step with every followup resolved and no placeholder
+    appended; a plan with an implementable section, no evidence record and a pending transition gate
+    is refused naming all three; a <code>set</code> of <code>status</code> to each value of
+    <code>TERMINAL_STATUSES</code> (imported from <code>reckon/lifecycle.py</code>) is refused naming
+    <code>close</code>. The declared negative control — report only the first failing guard — makes
+    the three-guard case fail for the two guards it omits.
+  </p>
+
+  <p id="epw-a-plan-closes-in-one-op-scope">
+    <strong>Scope.</strong> The guard list lives in <code>validate_landing_patch</code>, which both
+    writers call, and <code>close</code> is the only op that sets a plan's terminal status. The HTTP
+    merge-patch writer behind <code>POST /plan</code> is not on that op path and still sets a
+    terminal plan status directly, judged by the same guard list but without the close's outcome
+    resolution — closing it is outside this section's scope.
+  </p>
+</section>

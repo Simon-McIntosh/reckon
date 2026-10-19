@@ -684,6 +684,7 @@ def _read_state(
     from reckon import _plan_html
 
     state, text = _plan_html.read_state_and_text_file(html_file)
+    _RECENT_PLAN_HTML.set(((project, slug), text))
     state = _state_with_diagnostics(project, text, state, root)
     state["todos"] = _plan_html.derive_section_todos(text, state)
     version = int(state.get("version", 0) or 0)
@@ -787,6 +788,12 @@ _WRITE_EFFECT_KINDS = (
 _WRITE_EFFECTS: dict[str, ContextVar[tuple[dict[str, Any], list[dict[str, str]]] | None]] = {
     kind: ContextVar(f"reckon_{kind}", default=None) for kind in _WRITE_EFFECT_KINDS
 }
+
+# The most recently read plan's HTML, kept so an op batch applied to that plan
+# can see the document it was applied to even when its project is not mounted.
+_RECENT_PLAN_HTML: ContextVar[tuple[tuple[str, str], str] | None] = ContextVar(
+    "reckon_recent_plan_html", default=None
+)
 
 
 def _begin_write_effects(working: dict[str, Any]) -> None:
@@ -2560,6 +2567,17 @@ def _apply_set(working: dict, op: dict, is_index: bool, warnings: list[str]) -> 
         raise OpError(f"unsupported index set path {path!r}")
 
     # ── plan set ──
+    if (
+        head == "status"
+        and len(parts) == 1
+        and str(working.get("type", "plan") or "plan") == "plan"
+        and str(value or "").strip().lower() in TERMINAL_STATUSES
+    ):
+        raise OpError(
+            "a plan's terminal status is set with the 'close' op, not 'set': "
+            "{op:'close', status, outcome, by} sets the status and resolves "
+            "every open followup in one write"
+        )
     if head == "sections" and len(parts) >= 2:
         from reckon import _store_section_ops
 
@@ -3269,8 +3287,64 @@ def _apply_move(working: dict, op: dict, is_index: bool, warnings: list[str]) ->
     sprints[ti] = {**ts, "items": to_items}
 
 
+def _apply_close(
+    working: dict, op: dict, is_index: bool, warnings: list[str]
+) -> None:
+    """Set a terminal status and resolve every open followup in one write.
+
+    The single op that closes a plan: it sets the close's status, resolves every
+    open followup with the close's outcome, and then runs every guard the
+    terminal transition fires, reporting them together so one refusal names
+    everything still outstanding rather than only the first.
+
+    The close itself supplies the chain-closing continuation: its outcome is the
+    record that ends the plan's work, so no placeholder followup is appended.
+    """
+    if is_index:
+        raise OpError("close op is plan-only")
+    status = str(op.get("status") or "").strip().lower()
+    if status not in TERMINAL_STATUSES:
+        raise OpError(
+            "close requires a terminal status (one of "
+            f"{', '.join(sorted(TERMINAL_STATUSES))}); got {op.get('status')!r}"
+        )
+    outcome = str(op.get("outcome") or "").strip()
+    if not outcome:
+        raise OpError("close op requires a non-empty 'outcome'")
+    by = str(op.get("by") or "").strip()
+    if not by:
+        raise OpError("close op requires a 'by'")
+    previous_status = str(working.get("status") or "").strip().lower()
+
+    working["status"] = status
+    if op.get("superseded_by"):
+        working["superseded_by"] = op["superseded_by"]
+    for followup in working.get("followups") or []:
+        if isinstance(followup, dict) and _entry_is_open(followup):
+            followup.update(
+                {
+                    "outcome": outcome,
+                    "resolved_at": _utc_ts(),
+                    "resolved_by": by,
+                    "status": "resolved",
+                }
+            )
+
+    failures = validate_landing_patch(
+        working,
+        {"status": status, "followups": working.get("followups")},
+        _plan_html_text(working),
+        report_all=True,
+        closing_outcome=outcome,
+        before_status=previous_status,
+    )
+    if failures:
+        raise OpError("close refused: " + "; ".join(failures))
+
+
 _OP_DISPATCH = {
     "set": _apply_set,
+    "close": _apply_close,
     "append": _apply_append,
     "resolve": _apply_resolve,
     "lock": _apply_lock,
@@ -3482,6 +3556,9 @@ def _plan_html_text(state: dict[str, Any]) -> str | None:
     slug = str(state.get("slug") or "")
     if not project or not slug:
         return None
+    recent = _RECENT_PLAN_HTML.get()
+    if recent is not None and recent[0] == (project, slug):
+        return recent[1]
     try:
         html_file = _resolve_html_file(project, slug)
         if html_file is None or not html_file.is_file():
@@ -3508,9 +3585,15 @@ def _undeclared_headings(state: dict[str, Any], html_text: str | None) -> list[s
 
 
 def validate_landing_patch(
-    state: dict[str, Any], patch: dict[str, Any], html_text: str | None = None
-) -> None:
-    """Refuse a merge patch that lands a plan without naming a continuation.
+    state: dict[str, Any],
+    patch: dict[str, Any],
+    html_text: str | None = None,
+    *,
+    report_all: bool = False,
+    closing_outcome: str | None = None,
+    before_status: str | None = None,
+) -> list[str]:
+    """Validate a write that lands a plan; own every guard the transition fires.
 
     Deliberately keyed to the *write* rather than to the resulting state. A
     state-level invariant would retroactively lock every plan already recorded
@@ -3520,25 +3603,53 @@ def validate_landing_patch(
     ``html_text`` is the plan's HTML as it stands when the patch is applied, so
     the section check can see an authored heading nothing declares; a caller
     without the document still gets the declaration-map check.
+
+    This is the one guard list for a terminal transition: the guards below are
+    the section-ticked check, the appended hiding followup, the pending
+    transition gate, the terminal evidence record and the continuation. Both
+    writers route through it, so a guard added here reaches the merge-patch
+    writer and the op writer alike.
+
+    With ``report_all`` the guards are collected rather than raised at the
+    first, and the failures come back as a list — the close op's mode, so one
+    refused close names everything still outstanding instead of only the
+    first. Otherwise the first failure raises and the list is empty.
     """
+    failures: list[str] = []
+
+    def guard(check, *args) -> None:
+        if not report_all:
+            check(*args)
+            return
+        try:
+            check(*args)
+        except OpError as exc:
+            failures.append(str(exc))
+
     if str(state.get("type", "plan") or "plan") != "plan":
-        return
-    _refuse_appended_hiding_followups(state, patch)
+        return failures
+    guard(_refuse_appended_hiding_followups, state, patch)
     requested_status = str(patch.get("status", "")).lower()
-    if requested_status in _LANDED_STATUSES and (
-        _status_before_the_patch(state) not in TERMINAL_STATUSES
-    ):
-        _require_every_section_ticked(state, html_text)
+    prior_status = (
+        before_status if before_status is not None else _status_before_the_patch(state)
+    )
+    if requested_status in _LANDED_STATUSES and prior_status not in TERMINAL_STATUSES:
+        guard(_require_every_section_ticked, state, html_text)
     if requested_status in TERMINAL_STATUSES:
-        _require_transition_verdict(state, "plan-terminal")
+        guard(_require_transition_verdict, state, "plan-terminal")
         project = str(state.get("project") or "")
         slug = str(state.get("slug") or "")
         if project and slug:
-            _require_terminal_evidence(project, slug, requested_status)
-    if requested_status not in _LANDED_STATUSES:
-        return
-    if not continuation_present(state):
-        raise OpError(CONTINUATION_REQUIRED)
+            guard(_require_terminal_evidence, project, slug, requested_status)
+    if (
+        requested_status in _LANDED_STATUSES
+        and not continuation_present(state)
+        and not (closing_outcome and _chain_closed(closing_outcome))
+    ):
+        failures.append(CONTINUATION_REQUIRED)
+    if failures and not report_all:
+        raise OpError(failures[0])
+    return failures
 
 
 def _require_terminal_evidence(
