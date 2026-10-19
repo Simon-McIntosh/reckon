@@ -323,7 +323,7 @@ def parse_manifest(text: str, *, path: str | None = None) -> dict[str, Any]:
             # worker. Such a body raises rather than half-succeeding.
             raise ManifestParseError(_unreadable_text_manifest_message(path))
     fields = _refuse_undetermined_status(fields, path)
-    fields = _normalise_manifest_fields(fields)
+    fields = _normalise_manifest_fields(fields, path=path)
     fields["needs_help"] = parse_needs_help(text) if NEEDS_HELP_MARKER in text else None
     return fields
 
@@ -752,11 +752,14 @@ def _declares_derived(fields: dict[str, Any]) -> bool:
     return str(fields.get("derived") or "").strip().lower() in {"1", "true", "yes"}
 
 
-def _normalise_manifest_fields(fields: dict[str, Any]) -> dict[str, Any]:
+def _normalise_manifest_fields(
+    fields: dict[str, Any], *, path: str | None = None
+) -> dict[str, Any]:
     """Apply the typed post-processing shared by both manifest formats."""
     has_retry_failures = "retry_failures" in fields
     for name in _MANIFEST_LIST_KEYS:
         value = fields.get(name)
+        _refuse_joined_list_separator(name, value, path=path)
         fields[name] = (
             _coerce_commit_identifiers(value)
             if name == "commits"
@@ -787,6 +790,70 @@ def _coerce_list_field(value: Any) -> Any:
     if value is None or isinstance(value, (list, str)):
         return _as_list(value)
     return value
+
+
+# The separator a worker reaches for when writing several list entries on one
+# line. A list value is split on commas and newlines only, so a value joined by
+# a semicolon is read as a single entry: the first path satisfies a scope audit
+# and every path after the separator is never checked, and the guard then looks
+# applied while covering one entry. A semicolon that stands before a path-like
+# token is that join rather than ordinary prose, so it is refused naming the
+# field and the separator instead of being read as the one entry it is not. The
+# path-like test keeps a semicolon inside a sentence — a blocker or a commit
+# subject — from being mistaken for a joined path list, because the token after
+# it there is a word and not a path.
+_JOINED_LIST_SEPARATOR = ";"
+_PATH_LIKE_TOKEN = re.compile(r"[A-Za-z0-9_.-]+\.[A-Za-z0-9]+")
+_SEMICOLON_THEN_TOKEN = re.compile(r";[^\S\n]*([^\s;]+)")
+
+
+def _looks_like_a_path_token(token: str) -> bool:
+    """Whether a token reads as a path rather than as a word of prose."""
+    bare = token.strip("\"'")
+    if not bare:
+        return False
+    return "/" in bare or bool(_PATH_LIKE_TOKEN.fullmatch(bare))
+
+
+def _joined_list_separator_candidates(value: Any) -> list[str]:
+    """The strings a list field's raw value offers for a separator scan.
+
+    A value written as a string is scanned whole, so the joined case is caught
+    before splitting; a value that already arrived as a list has each entry
+    scanned, which catches an entry that kept a semicolon through its own
+    split — a JSON array element, say. Any other shape carries no text this
+    rule judges.
+    """
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, list):
+        return [str(item) for item in value]
+    return []
+
+
+def _refuse_joined_list_separator(field: str, value: Any, *, path: str | None) -> None:
+    """Refuse a list field whose entries a semicolon joins instead of a comma.
+
+    The finding names the field and the separator, and the entry the separator
+    stands before, so its author can rewrite the value as a comma list or a
+    JSON array. ``None`` and an explicit nothing are left alone: this rule
+    judges a joined value, not an empty one.
+    """
+    for candidate in _joined_list_separator_candidates(value):
+        for match in _SEMICOLON_THEN_TOKEN.finditer(candidate):
+            token = match.group(1)
+            if not _looks_like_a_path_token(token):
+                continue
+            where = f" at {path}" if path else ""
+            raise ManifestParseError(
+                f"cannot read manifest{where}: field '{field}' joins its "
+                f"entries with {_JOINED_LIST_SEPARATOR!r} before {token!r}, a "
+                "separator the list parser does not split on; the value is "
+                "refused rather than read as a single entry, which would "
+                "scope-check only the first entry and pass every entry after "
+                "the separator — write the entries comma-separated or as a "
+                "JSON array"
+            )
 
 
 def _coerce_commit_identifiers(value: Any) -> Any:
