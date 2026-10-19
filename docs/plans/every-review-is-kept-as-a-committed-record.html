@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.97">
-<meta name="plan-version" content="176">
+<meta name="plan-version" content="177">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -704,7 +704,10 @@
     <div class="r-comment-body"><p>§23 landed: the review store derives a landed record's total from its six scores on write, and on read for a record without one, so a run whose reviewer left the total out no longer reads review-missing; merged as <code>934f522ba</code>, review 102/120. <a href="/reckon/evidence/archive/every-review-is-kept-as-a-committed-record-landed.html#a-stored-review-carries-its-total">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s23" data-id="c-run-r-20261019T124040554227-a-stored-review-carries-its-total" data-who="reckon-build" data-when="2026-10-19T17:27:08Z">
-    <div class="r-comment-body"><p>The review store derives a landed record&#x27;s total from its six scores; reckon/crew/review.py sums the six dimensions on every landed write and, for a record with no integer total, on read. The repair-round fixture&#x27;s six scores now sum to its recorded total, so the test reads the round cap instead of a sha that happened to contain 75. Importer arm at head cb8e7da9f: 3 failed, 1036 passed against base 3 failed, 1036 passed; the one added id is a fleet-watcher lock race that fails identically with the derivation disabled.</p></div>
+    <div class="r-comment-body"><p>The review store derives a landed record's total from its six scores; reckon/crew/review.py sums the six dimensions on every landed write and, for a record with no integer total, on read. The repair-round fixture's six scores now sum to its recorded total, so the test reads the round cap instead of a sha that happened to contain 75. Importer arm at head cb8e7da9f: 3 failed, 1036 passed against base 3 failed, 1036 passed; the one added id is a fleet-watcher lock race that fails identically with the derivation disabled.</p></div>
+</div>
+<div class="r-comment" data-section="s23" data-id="c-run-r-20261019T181215792224-s23-population-at-merge" data-who="reckon-build" data-when="2026-10-19T19:09:34.662Z">
+    <div class="r-comment-body"><p>population measurement of the stored-review total head: merging 81331dba (candidate merge ea6dbeffb) onto main f79098cb1 over the 174-file importer population adds no failing test id — its two candidate-only ids (tests/test_crew.py watcher tests) fail at base too when run alone (4/5 and 2/5), while the head repairs five base failures (14 failed/1661 passed at base; 11 failed/1670 passed at the candidate)</p></div>
 </div>
 </section>
 </main>
