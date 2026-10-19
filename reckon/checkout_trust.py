@@ -78,10 +78,11 @@ IMPORT_PROBE_LOCK_POLL_SECONDS = 0.05
 # the fresh ones. The effect is bounded and can only retain an image: pruning
 # decides what it must keep from the in-use and completion markers, never from
 # the directory mtime, so the cost of the coupling is at worst one more image
-# kept on disk than the directory mtime alone would have chosen. The alternative
-# -- filing these two files outside the image -- would strand them when the
-# image is pruned and would put an image's verdict somewhere the plan's design
-# does not place it.
+# kept on disk than the directory mtime alone would have chosen. Filing these
+# two files outside the image instead would strand them: removing the image
+# directory is what removes its verdict and its lock, so a record kept anywhere
+# else outlives the tree it describes and is read as a verdict about an image
+# that no longer exists.
 
 # A real code identity is a git object id: a 40-digit tree, or a 64-digit
 # content digest for a package outside Git. This value collides with neither, so
