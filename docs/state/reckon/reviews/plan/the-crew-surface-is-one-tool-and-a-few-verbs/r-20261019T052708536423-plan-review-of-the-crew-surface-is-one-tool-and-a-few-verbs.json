@@ -1,0 +1,124 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T05:35:37.376Z",
+  "dispatched_at": "2026-10-19T05:29:39Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/promotion_records.py:231,reckon/crew/reports.py:287,reckon/crew/reports.py:1097,reckon/crew/reports.py:1304,reckon/crew/promotion_scope.py:265",
+      "id": "reuse_search-1",
+      "reason": "\u00a73 must be reduced to the genuinely missing parts (the all-guards `--dry-run`, the reason-taking-flag swallow refusal) and expressed as an extension of `promotion_records.py`/`reuse reports.py`, or it will land a parallel receipt validator beside a working one.",
+      "text": "\u00a73's deliverable (\"complete reads the gate receipt the run's manifest carries: the command, the exit status, the log path and the commits. It validates the receipt. The log must be a file under the run directory whose last `EXIT=<n>` line equals the stated status. Each commit must resolve\u2026\") is already in the tree, so \u00a73 as written re-implements working code: `promotion_records.py:231`'s docstring reads \"Fill a passing promotion's gate flags from the worker's own manifest\u2026 the manifest states the gate command in `tests`, the log path in `test_logs`, its exit status on the log's own `EXIT=` line, and the commits in `commits`. Each is taken only where the operator's flag left the value absent, so an explicit `--gate-command` or `--commit` always wins\" \u2014 which is \u00a73 bullets 1 and 2 verbatim in behaviour; `reports.py:287` `parse_manifest` is the manifest reader \u00a73 would need; `reports.py:1097` `_EXIT_RECORD`/`reports.py:1101` `_terminal_exit_status` read only an end-of-log `EXIT=<n>` and `reports.py:1304` already refuses a log \"ends with no `EXIT=<n>` line\" \u2014 \u00a73's stated log validation and its `EXIT=1` beside a stated `0` negative control; and `promotion_scope.py:265` `_resolve_commits` already refuses a commit that \"does not resolve to a commit object in the run repository\", which is \u00a73's second negative control. The plan measures its premise at `d8ff471c9` and does not restate it at a revision where this machinery is absent.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/promotion_records.py:231,reckon/crew/merge.py:309,reckon/crew/promotion_release.py:476,reckon/crew/claims.py:90,reckon/crew/claims.py:128,reckon/mcp.py:1621,reckon/crew_run_commands.py:221",
+      "id": "duplicate_owner-1",
+      "reason": "the author must add `promotion_records.py`, `promotion_scope.py`, `reports.py`, `claims.py`, `gc.py`, `mcp.py` and `mcp_views.py` to the scopes that touch their behaviour, drop the nonexistent `promotion_receipt.py`, and name the owner each new file extends instead of forking it.",
+      "text": "each section re-specifies behaviour owned by a file its write paths omit, and one write path names a module that does not exist: \u00a73's write paths list `reckon/crew/promotion_receipt.py`, which `ls` reports absent on this revision, while omitting `promotion_records.py:231` (the receipt filler) and `promotion_scope.py:265`/`reports.py:1097` (commit resolution and the `EXIT=` reader) that exist and own exactly that work; \u00a74's write paths list `reckon/crew/merge.py` but add a new `reckon/crew/landing.py`, while `merge.py:309` `land_merge` already builds the merge and pushes it (`_push_and_confirm`, with the port-443 fallback \u00a74 step 3 asks for) and `promotion_release.py:476` `_release_after_promotion` already releases the worktree through `gc`'s removal; \u00a77 names `complete --accept-path` \"writes the same fence record through it\" but its write paths omit `reckon/crew/claims.py:90` `narrow_claim`/`reckon/crew/claims.py:128` `release_claim`, the owner of the fence/claim record, and `reckon/crew/gc.py:262` `garbage_collect`, which \u00a74 step 4 defers to; \u00a76 says `crew view` serves \"through the same function\" the MCP `crew` tool serves, but no such function exists \u2014 `reckon/mcp.py:1621` `_crew` is a ~200-line inline view dispatch, and `reckon/crew_run_commands.py:221` `crew_list` hand-builds its own ~25-field row set rather than calling it \u2014 and \u00a76's write paths omit `reckon/mcp.py` and `reckon/mcp_views.py`, where that function must be extracted for the parity its own done-when asserts.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "<plan>#s4",
+      "id": "thin_wrapper-1",
+      "reason": "the plan should either place the sequence in `merge.py` (where the merge and push already live) or justify a separate module; as written it adds a path where an extension would do.",
+      "text": "`crew complete --land` (the plan's \u00a74 deliverable) introduces a new module `reckon/crew/landing.py` that sequences four steps already held by `merge.py:309`, `promotion_release.py:476` and `gc.py:262`, and the section does not say why those existing mechanisms cannot carry the sequence \u2014 the honest change looks like a `land` function beside `land_merge` in `reckon/crew/merge.py`, or a promotion-time delay of the existing release, not a fourth module over the same three calls.",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "<plan>#s5",
+      "id": "interface_budget-1",
+      "reason": "\u00a71 already accounts for the retained CLI surface and the fold is net-reducing (65 visible leaves), so \u00a75's growth is stated rather than unowned.",
+      "text": "\u00a75 adds eight actions (`complete`, `land`, `dispose`, `ack`, `answer`, `widen`, `stop`, `discard`) to the `crew` MCP tool without naming, in \u00a75's own text, what it retires or merges on the tool side, against this week's mcp_views 34 \u2014 though \u00a71 does state that the CLI remains the worker and hook transport, which is the reason nothing CLI-side can be withdrawn by this section.",
+      "type": "interface_budget",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "19235e9fcb50460139d871efee6fac5c973bcff9d30a67b3cbf7e927ab1a9b6d",
+  "plan_slug": "the-crew-surface-is-one-tool-and-a-few-verbs",
+  "plan_version": 1,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-1",
+      "reason": "",
+      "when": "2026-10-19T05:38:50.331327+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "duplicate_owner-1",
+      "reason": "",
+      "when": "2026-10-19T05:38:56.433897+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "thin_wrapper-1",
+      "reason": "",
+      "when": "2026-10-19T05:39:02.975378+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "interface_budget-1",
+      "reason": "\u00a71 accounts for the retained CLI surface: the CLI stays the worker and hook transport, and the fold is net-reducing to about 65 visible leaves, as the finding itself records.",
+      "when": "2026-10-19T05:39:08.815435+00:00"
+    }
+  ],
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T05:38:56.433897+00:00"
+    },
+    "interface_budget-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a71 accounts for the retained CLI surface: the CLI stays the worker and hook transport, and the fold is net-reducing to about 65 visible leaves, as the finding itself records.",
+      "when": "2026-10-19T05:39:08.815435+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T05:38:50.331327+00:00"
+    },
+    "thin_wrapper-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T05:39:02.975378+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-crew-surface-is-one-tool-and-a-few-verbs.v1.json",
+  "review_run_id": "r-20261019T052708536423-plan-review-of-the-crew-surface-is-one-tool-and-a-few-verbs",
+  "reviewed_blob_sha": "7ba6fa6a8859984f811d1d9f63b5a53185d4e262",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a72's tombstone registry (`reckon/crew/tombstones.py`) is one table plus one registration path hiding per-row successor resolution, and \u00a76's `crew view` hides the view dispatch behind one verb; both are interfaces smaller than the behaviour behind them.",
+    "duplicate_owner": "a finding \u2014 the re-specified mechanisms census below names five existing owners that the plan's write scopes omit.",
+    "interface_budget": "pass \u2014 public_definitions 1824, cli_options 371, mcp_views 34, refusal_families 23; \u00a71's fold table names, row by row, what each section retires or merges, \u00a76/\u00a77 name their tombstone rows, and \u00a77 states the target visible leaf count (at most the base count minus the folded names), which is the accounting the item exists for.",
+    "reuse_search": "a finding \u2014 the plan re-specifies the gate-receipt and commit-resolution machinery that `reckon/crew/promotion_records.py:231`, `reckon/crew/reports.py:287` and `reckon/crew/promotion_scope.py:265` already implement, and cites none of them.",
+    "thin_wrapper": "a finding \u2014 \u00a74 adds `reckon/crew/landing.py` beside `reckon/crew/merge.py:309` (which already merges *and* pushes) and `reckon/crew/promotion_release.py:476` (which already releases after promotion), without saying why those two cannot be extended."
+  },
+  "section_digests": {
+    "_document": "26fd28404590af02aa2ebae125b81f4f7629f614fb6c2a72ea68b2d0d1aff496",
+    "s1": "df3ca327aa989333473f3456bef3fcb4304fc54d8ab37eb334a92448b8837aaa",
+    "s2": "be69292dc4744e91b19438c3129be40ac6c6138f02cd12656616dd3906a1d313",
+    "s3": "f4f2f36e40f3d89ee43594a96da4041ef68a97feb6ba9a25169220c6a22dc85b",
+    "s4": "3b2eef0b387c93bccbd2e07309b1ba5593074ace9f2be7ec1c34e53fc6cf9f1f",
+    "s5": "530c6781675c3f9dccecf9f7e556fb74664afde36da3623d64a3b3c65e1e5267",
+    "s6": "8da142caa21d9aa6b72683389917aa25e7e0171874a067cfa5d3e17d806cca43",
+    "s7": "a2609e70d6fceca66d85eaf282598cbc2f24e0ebde990fd7e047da0bdb709aa6",
+    "s8": "beb6c1568fe326e8af87c393c93ac9e71dec60ad9a9247b47ffbec9d08fc76a6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T05:38:47.386515+00:00"
+}
