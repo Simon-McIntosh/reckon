@@ -18,11 +18,14 @@ from __future__ import annotations
 import importlib
 from pathlib import Path
 
+import pytest
+
 from reckon import flight
 from reckon._backends import LaunchPlan
 from reckon.crew import placement
 
 dispatch_launch = importlib.import_module("reckon.crew.dispatch_launch")
+LaunchResolutionError = dispatch_launch.LaunchResolutionError
 
 RESERVATION_ID = "1281970"
 SRUN = "/opt/slurm/bin/srun"
@@ -139,6 +142,52 @@ def test_a_bound_named_in_options_is_read_back() -> None:
     assert placement.declared_memory_gb(["--mem=48G"]) == 48
     # A malformed bound is not read as zero, which would place an unbounded step.
     assert placement.declared_memory_gb(["--mem=big"]) is None
+
+
+def test_both_spellings_of_a_bound_read_the_same() -> None:
+    """A placement writes an option joined or separated; both name one bound."""
+    joined = placement.step_prefix("1281970", ["--mem=64G"])
+    separated = placement.step_prefix("1281970", ["--mem", "64G"])
+
+    # The declared spelling is placed unchanged, and neither gains a default.
+    assert joined == ["--overlap", "--jobid=1281970", "--mem=64G"]
+    assert separated == ["--overlap", "--jobid=1281970", "--mem", "64G"]
+    assert placement.declared_memory_gb(["--mem", "64G"]) == 64
+    assert placement.declared_memory_bytes(["--mem", "64G"]) == 64 * 1024**3
+
+
+def test_a_declared_bound_is_never_restated_beside_itself() -> None:
+    """No step is given a default beside the bound its placement declared.
+
+    Two memory requests in one argv are a conflict rather than a bound: the
+    default would compete with the declaration it was meant to defer to.
+    """
+    options = ["--ntasks=1", "--mem", "64G"]
+    placed = placement.step_prefix("1281970", options)
+    argv = ["srun", *placed, "/opt/backends/bin/codex", "exec"]
+
+    assert sum(item.startswith("--mem") for item in argv) == 1
+    assert f"--mem={placement.DEFAULT_STEP_MEMORY_GB}G" not in argv
+
+
+def test_a_step_per_cpu_bound_is_totalled_from_the_task_count() -> None:
+    """A per-task figure is the placement's own task count multiplied by it."""
+    options = ["--cpus-per-task=16", "--mem-per-cpu", "4G"]
+
+    assert placement.declared_memory_gb(options) == 64
+    assert placement.step_memory_above_ceiling(placement.declared_memory_gb(options))
+    # The step states its bound once, in the spelling declared.
+    assert placement.step_prefix("1281970", options)[2:] == options
+
+
+def test_a_per_cpu_bound_with_no_task_count_is_refused(monkeypatch) -> None:
+    """A total that cannot be read is refused rather than priced as one task."""
+    options = ["--mem-per-cpu=4G"]
+
+    assert placement.declared_memory_gb(options) is None
+    assert placement.unresolved_memory_declaration(options) == "--mem-per-cpu=4G"
+    with pytest.raises(LaunchResolutionError):
+        _placed(options, monkeypatch=monkeypatch)
 
 
 def test_the_step_prefix_is_the_owner_of_the_placement_prefix() -> None:

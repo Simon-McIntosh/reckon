@@ -1114,6 +1114,14 @@ def apply_backend_placement(
     # partition rather than inside the shared reservation. The declaration is
     # read from the placement's own options, so no second key carries it, and a
     # placement naming none stays in the allocation at the default bound.
+    unresolved = placement_module.unresolved_memory_declaration(options)
+    if unresolved is not None:
+        raise LaunchResolutionError(
+            f"the placement declares {unresolved}, whose total cannot be read: "
+            "a per-task figure is multiplied by the placement's own task count, "
+            "so state --cpus-per-task beside it or declare the step's whole "
+            "bound with --mem — nothing has been launched"
+        )
     declared = placement_module.declared_memory_gb(options)
     if declared is not None and placement_module.step_memory_above_ceiling(declared):
         batch = shutil.which(

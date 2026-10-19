@@ -24,6 +24,7 @@ import fcntl
 import getpass
 import json
 import os
+import re
 import shlex
 import subprocess
 import time
@@ -288,25 +289,128 @@ def step_memory_above_ceiling(memory_gb: int) -> bool:
     return int(memory_gb) > STEP_MEMORY_CEILING_GB
 
 
+_MEMORY_UNIT_BYTES: dict[str, int] = {
+    "": 1024**2,
+    "K": 1024,
+    "M": 1024**2,
+    "G": 1024**3,
+    "T": 1024**4,
+}
+
+_MEMORY_OPTION_NAMES = ("--mem", "--mem-per-cpu")
+_CPU_OPTION_NAMES = ("--cpus-per-task", "-c")
+
+
+def option_values(
+    options: Sequence[str], names: Sequence[str]
+) -> list[tuple[str, str]]:
+    """Every ``names`` option stated among ``options``, paired with its value.
+
+    A scheduler resource request is a plain option string written either
+    ``--name=value`` or ``--name value``, so both spellings are read. Anything
+    else is not this option and is skipped, so a placement's unrelated flags
+    never parse as a request.
+
+    This is the one reader of a placement's declared resources; an admission
+    summary that priced a share and a launch that placed no step for it were
+    reading two spellings of one declaration and disagreeing about the second.
+    """
+    found: list[tuple[str, str]] = []
+    tokens = [str(option) for option in options or ()]
+    for index, token in enumerate(tokens):
+        for name in names:
+            if token.startswith(f"{name}="):
+                found.append((name, token[len(name) + 1 :].strip()))
+            elif token == name and index + 1 < len(tokens):
+                found.append((name, tokens[index + 1].strip()))
+    return [(name, value) for name, value in found if value]
+
+
+def memory_figure_bytes(text: str) -> int | None:
+    """A scheduler memory figure in bytes, or None for anything else.
+
+    A figure is a bare number of mebibytes or a number with a KiB/MiB/GiB/TiB
+    suffix. An unreadable figure is None rather than zero: zero would read as a
+    bound of nothing, and a bound of nothing places no step at all.
+    """
+    match = re.fullmatch(r"\s*(\d+)\s*([KMGTkmgt]?)[Bb]?\s*", str(text))
+    if not match:
+        return None
+    return int(match.group(1)) * _MEMORY_UNIT_BYTES[match.group(2).upper()]
+
+
+def declared_task_count(options: Sequence[str]) -> int | None:
+    """The task count a placement declares, or None when it declares none."""
+    for _name, value in option_values(options, _CPU_OPTION_NAMES):
+        try:
+            count = int(value)
+        except ValueError:
+            return None
+        return None if count < 1 else count
+    return None
+
+
+def declared_memory_bytes(options: Sequence[str]) -> int | None:
+    """The whole bound a placement declares, in bytes, or None.
+
+    ``--mem`` states the step's total directly. ``--mem-per-cpu`` states it per
+    task, so it is read as its product with the task count the placement
+    declares beside it; a per-task figure with no task count is a bound whose
+    total is unknown, and None is returned rather than a figure that would
+    price the step as a single task.
+
+    None means no whole bound was read — either no bound was declared at all,
+    or the one declared cannot be totalled. A caller that must tell those apart
+    asks :func:`unresolved_memory_declaration`, which names the option that
+    could not be totalled.
+    """
+    declared = option_values(options, _MEMORY_OPTION_NAMES)
+    for name, value in declared:
+        if name == "--mem":
+            return memory_figure_bytes(value)
+    per_task = [
+        memory_figure_bytes(value)
+        for name, value in declared
+        if name == "--mem-per-cpu"
+    ]
+    if not per_task or per_task[0] is None:
+        return None
+    count = declared_task_count(options)
+    return None if count is None else per_task[0] * count
+
+
+def unresolved_memory_declaration(options: Sequence[str]) -> str | None:
+    """A declared bound whose total cannot be read, or None.
+
+    ``--mem-per-cpu`` is refused rather than approximated: without a task count
+    beside it nothing says how much memory the step may actually take. A
+    refusal is the safe answer because the alternative — pricing the step as
+    one task — understates it by the task count, which is the direction that
+    overfills the allocation.
+    """
+    count = declared_task_count(options)
+    for name, value in option_values(options, _MEMORY_OPTION_NAMES):
+        if (
+            name == "--mem-per-cpu"
+            and memory_figure_bytes(value) is not None
+            and count is None
+        ):
+            return f"--mem-per-cpu={value}"
+    return None
+
+
 def declared_memory_gb(options: Sequence[str]) -> int | None:
-    """The bound a caller already named among ``options``, or None.
+    """The bound a placement declares, rounded up to whole gigabytes, or None.
 
     A placement declares a step's memory the way it declares any other resource
     request, as a scheduler option string, so the value is read back from the
-    options rather than from a key of its own. None means no bound was named and
-    the default applies; a bound that cannot be read as a whole number is left
-    for ``step_prefix`` to re-state as the default rather than read as zero.
+    options rather than from a key of its own. A figure below a whole gigabyte
+    counts as a gigabyte so that a bound is never read as smaller than it is.
     """
-    for option in options:
-        text = str(option)
-        if not text.startswith("--mem="):
-            continue
-        raw = text[len("--mem=") :].strip()
-        try:
-            return int(raw.rstrip("Gg"))
-        except ValueError:
-            return None
-    return None
+    total = declared_memory_bytes(options)
+    if total is None:
+        return None
+    return -(-total // (1024**3))
 
 
 def debug_partition(partition: str = RESERVATION_PARTITION) -> str:
@@ -325,12 +429,12 @@ def step_prefix(job_id: str, options: list[str]) -> list[str]:
     Every step is bounded with ``--mem`` so that an undeclared worker cannot
     grow to the allocation's limit, where the scheduler's OOM killer would pick
     the largest process anywhere in the job. The default bound is stated here,
-    in the one owner of a step's options; a caller that already names a bound
-    keeps it, so a declared size is passed as an option rather than the prefix
-    being given a bound a second way.
+    in the one owner of a step's options; a caller that already states a bound
+    keeps it, in whichever spelling it was written and whether it is a total or
+    a per-task figure, so no step is given two conflicting memory requests.
     """
     placed = list(options)
-    if not any(str(option).startswith("--mem=") for option in placed):
+    if not option_values(placed, _MEMORY_OPTION_NAMES):
         placed = [step_memory_option(step_memory_gb()), *placed]
     return ["--overlap", f"--jobid={job_id}", *placed]
 

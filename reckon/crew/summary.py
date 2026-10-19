@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from reckon._timestamps import parse_utc
+from reckon.crew import placement as placement_module
 from reckon.crew.node import SUMMARY_AXES
 
 # ── The summary reflex ──────────────────────────────────────────────────────
@@ -129,24 +130,6 @@ class Bound:
     detail: str = field(default="")
 
 
-def _option_values(options: Any, names: tuple[str, ...]) -> list[str]:
-    """Values declared by any of ``names`` among a placement's options.
-
-    Options are scheduler argument strings. An option is read as ``name=value``
-    or as ``name value``; anything else is not this option and is skipped, so a
-    wrapper's unrelated flags never parse as a resource request.
-    """
-    found: list[str] = []
-    tokens = [str(option) for option in options or ()]
-    for index, token in enumerate(tokens):
-        for name in names:
-            if token.startswith(f"{name}="):
-                found.append(token[len(name) + 1 :].strip())
-            elif token == name and index + 1 < len(tokens):
-                found.append(str(tokens[index + 1]).strip())
-    return [value for value in found if value]
-
-
 def _as_count(text: str) -> int | None:
     """A positive integer count, or None for anything that is not one."""
     try:
@@ -154,23 +137,6 @@ def _as_count(text: str) -> int | None:
     except (TypeError, ValueError):
         return None
     return value if value >= 1 else None
-
-
-_MEMORY_UNITS = {"": 1024**2, "K": 1024, "M": 1024**2, "G": 1024**3, "T": 1024**4}
-
-
-def _as_bytes(text: str) -> int | None:
-    """A memory figure in bytes, or None for anything that is not one.
-
-    Scheduler clients spell memory as a bare number of mebibytes or with a
-    KiB/MiB/GiB/TiB suffix, so both forms are read. An unreadable figure is
-    None rather than zero: zero would admit every worker and turn a typo into
-    an unbounded lane.
-    """
-    match = re.fullmatch(r"\s*(\d+)\s*([KMGTkmgt]?)[Bb]?\s*", str(text))
-    if not match:
-        return None
-    return int(match.group(1)) * _MEMORY_UNITS[match.group(2).upper()]
 
 
 def _finite(text: str) -> int | None:
@@ -346,7 +312,9 @@ def cores_bound(
     placement = backend.get("placement")
     options = (placement or {}).get("options") if isinstance(placement, Mapping) else None
     share = 1
-    for text in _option_values(options, ("--cpus-per-task", "-c")):
+    for _name, text in placement_module.option_values(
+        options, ("--cpus-per-task", "-c")
+    ):
         parsed = _as_count(text)
         if parsed is not None:
             share = parsed
@@ -395,12 +363,9 @@ def memory_bound(
         )
     placement = backend.get("placement")
     options = (placement or {}).get("options") if isinstance(placement, Mapping) else None
-    share: int | None = None
-    for text in _option_values(options, ("--mem", "--mem-per-cpu")):
-        parsed = _as_bytes(text)
-        if parsed is not None:
-            share = parsed
-            break
+    # The declared bound is read by its one owner, so the share priced here is
+    # the same one a launch places a step for and routes over the ceiling.
+    share: int | None = placement_module.declared_memory_bytes(options)
     current = login_slice.current or 0
     maximum = login_slice.maximum or 0
     admits = share is None or (current + share) <= maximum
