@@ -1,6 +1,7 @@
 # ruff: noqa: I001, UP035
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import re
 import shlex
@@ -13,6 +14,7 @@ from reckon._timestamps import parse_utc
 from reckon.crew.node import (
     INTERRUPTED_RUN_PHASE,
     LOG_STALE_AFTER_SECONDS,
+    CrewError,
 )
 from reckon.crew.reports import (
     NON_TERMINAL_MANIFEST_STATUSES,
@@ -82,6 +84,61 @@ def _manifest_is_the_predecessor_attempts_report(
         _run_stream_quiet_seconds(record, now_seconds=now_seconds)
         <= LOG_STALE_AFTER_SECONDS
     )
+
+
+def _queued_failure_remedy(record: Mapping[str, Any]) -> dict[str, str] | None:
+    """The remedy for a queued request the session itself must unblock.
+
+    A queued request waits on the lane by default, and that reading is the one
+    a coordinator acts on: the lane will launch it when a slot frees, and the
+    session has only to wait. An admission attempt refused by a condition of
+    the session — a follower that is not registered, a delivery that reaches
+    nothing — is the one case no amount of waiting clears, and the refusal
+    sits in the pointer's ``failure`` where neither the live view nor the
+    obligations view read it.
+
+    A lane hold is told apart by its own message: it is the lane speaking and
+    is left to the waiting reading. Any other refusal that names the session is
+    a condition of that session, and its remedy is the follower the session
+    arms. The remedy travels as the run's next action so the reader is told
+    what the session must do rather than what the lane will do.
+
+    The command is the one the rest of the crew arms a session with, taken from
+    the helper that owns it rather than spelled again here: a reader who runs
+    the published line and a reader who runs the dispatch record's attach line
+    have to be running the same command, and two spellings of it drift.
+    """
+    failure = record.get("failure")
+    if not failure:
+        return None
+    from reckon.crew.queue_admission import _failure_text, _is_lane_hold
+    from reckon.crew.watch_unit import _watch_attach_line
+
+    if _is_lane_hold(failure):
+        return None
+    session = str(record.get("session") or "").strip()
+    if not session:
+        return None
+    text = _failure_text(failure)
+    if session not in text:
+        return None
+    project = str(record.get("project") or "").strip()
+    # The plain follower name is what the record falls back to when no attach
+    # line was written, and it is also all a process with no resolvable console
+    # script can name: the same condition that refuses the helper is what would
+    # make an absolute path to it unrunnable. Classification reads a project's
+    # whole pointer set, so it publishes the duty it found rather than raising.
+    command = "reckon crew follow"
+    if project:
+        with contextlib.suppress(CrewError):
+            command = _watch_attach_line(project, session=session)
+    return {
+        "detail": (
+            f"the last admission attempt was refused for a condition of this "
+            f"session rather than of the lane: {text}"
+        ),
+        "next_command": command,
+    }
 
 
 def classify_pointer(
@@ -575,10 +632,16 @@ def classify_pointer(
     # authoritative only once the process is gone.
     marker = None
     needs_help_complete_value = None
+    session_refusal: dict[str, str] | None = None
     if phase == "queued":
         classification = "queued"
-        detail = str(record.get("reason") or "waiting for a local lane slot")
-        action = "wait for a local lane slot"
+        session_refusal = _queued_failure_remedy(record)
+        if session_refusal is not None:
+            detail = session_refusal["detail"]
+            action = session_refusal["next_command"]
+        else:
+            detail = str(record.get("reason") or "waiting for a local lane slot")
+            action = "wait for a local lane slot"
     elif _attempt_awaits_its_worker(record) and (
         not manifest_status or manifest_status in NON_TERMINAL_MANIFEST_STATUSES
     ):
@@ -1550,6 +1613,11 @@ def classify_pointer(
         if wait
         else None,
     }
+    if session_refusal is not None:
+        # A queued request the session itself must unblock. Carried whole so a
+        # surface projecting duties reads one verdict rather than re-deriving
+        # it from the refusal text.
+        classified["session_refusal"] = session_refusal
     if session_resolution is not None:
         classified["session_resolution"] = session_resolution
     if resume_remedy is not None:

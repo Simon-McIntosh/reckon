@@ -69,6 +69,13 @@ REVIEW_QUEUED_BOUND_SECONDS = 30 * 60
 # the attempt as paused; the refusal instant it carries is the bound's origin.
 REVIEW_LANE_PAUSED_STATUS = "lane-paused"
 
+# A queued request the session itself has to unblock before anything can launch
+# it: the admission refusal is a condition of the session rather than of the
+# lane, so the duty is the session's own. The remedy the classifier published
+# for it travels as the duty's ``next_command``, so the two surfaces name the
+# one action.
+QUEUED_AWAITING_SESSION_DUTY_KIND = "queued-awaiting-session"
+
 # The duty kinds that are listed but never hold a stop open: the work behind
 # them is already owned by a reflex that retries, so blocking would ask the
 # coordinator to act on a wait it cannot shorten.
@@ -946,6 +953,16 @@ def obligations(project: str, session: str) -> dict[str, Any]:
             continue
         classification = str(row.get("classification") or "")
         recovery_classification = str(row.get("recovery_classification") or "")
+        if classification == "queued":
+            # A queued request is normally the lane's to launch, so it is not a
+            # duty and stays out of the list: it is being waited on, not
+            # skipped. A refusal naming the session is the exception — nothing
+            # on the lane clears it, so the session owes the fix.
+            if row.get("session_refusal"):
+                items.append(
+                    _live_item(row, kind=QUEUED_AWAITING_SESSION_DUTY_KIND, now=now)
+                )
+            continue
         kind = ""
         if classification in REVIEW_CLASSIFICATION_KINDS:
             if (
