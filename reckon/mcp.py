@@ -29,6 +29,8 @@ from __future__ import annotations
 
 import json
 import logging
+import subprocess
+import sys
 from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
@@ -45,7 +47,7 @@ except ImportError:
     FastMCP = None  # type: ignore[assignment,misc]
 
 import reckon.crew.resumption as resumption_module
-from reckon.checkout_trust import moved_checkout_is_trustworthy
+from reckon import served_code
 from reckon.crew.follower_registration import follower_code_stamp
 from reckon import (
     _plan_html,
@@ -251,21 +253,85 @@ _LOGGER = logging.getLogger("reckon.mcp")
 # call: a call that returns normally is returned untouched and computes no
 # stamp, because most commits move the code without breaking a running image
 # and refusing them all would stop every session's server many times an hour.
-# Only when a call raises or returns an error result does the tool compare the
-# checkout's code stamp, the one the producers and followers already compute,
-# against the stamp this image started with. When it has moved and the new code
-# can be trusted — clean under ``reckon/`` against ``HEAD`` and importable — the
-# original failure is replaced by one refusal naming the server's start time,
-# the change and the reconnect remedy, carrying the original error text. When
-# the stamp has not moved, or the tree is not trusted, the original failure is
-# returned unchanged — a tree mid-merge must never take a running server down.
 #
-# The trust check is shared with the follower's reloader, so the MCP points its
-# caller only at a tree the followers would themselves load.
+# When a call does fail and the checkout has moved and can be trusted, the
+# server answers it on the current code rather than refusing: the client holds
+# the session it initialised, so the process cannot be replaced the way the
+# HTTP server is, and the call is run against the checkout in a child
+# interpreter whose answer stands in for the stale image's. A call that the
+# current code also fails is not a stale image's failure, and the reconnect
+# refusal is then the answer, naming the start time, the change and the remedy
+# and carrying the original error text. A changed tool signature always owes a
+# reconnect, because the client holds the old schema, so it is refused naming
+# that tool. When the stamp has not moved, or the tree is not trusted, the
+# original failure is returned unchanged — a tree mid-merge must never take a
+# running server down.
+#
+# The moved-checkout decision and its trust check are the served-code owner's,
+# shared with the HTTP server, so the MCP loads only a tree the followers would
+# themselves load and neither server carries a check of its own.
 _SERVER_STARTED_AT = datetime.now(UTC)
 _SERVER_CODE_STAMP = follower_code_stamp()
 
 _RECONNECT_REMEDY = "reconnect the reckon MCP server: /mcp → reckon → reconnect"
+
+#: The parameter names each registered tool answers to, recorded as it is
+#: registered. A checkout that changes them cannot be answered in-process — the
+#: client holds the schema it connected with — so the guard compares them before
+#: running an answer on the current code.
+_REGISTERED_TOOL_PARAMS: dict[str, tuple[str, ...]] = {}
+
+#: The child that runs one tool call against the checkout's current code, and
+#: prints one JSON object: the tool's parameter names, and its answer when it
+#: made one. It is a child rather than the running process because a stdio
+#: server's client holds the session this process initialised; replacing the
+#: image would discard it, so the front stays and the current code runs behind
+#: it. This is the one text both the answer and the signature check share.
+_CURRENT_CODE_RUNNER = r'''
+import asyncio, json, sys
+
+root, name, payload = sys.argv[1], sys.argv[2], sys.argv[3]
+sys.path.insert(0, root)
+
+import reckon.mcp as reckon_mcp
+
+
+def structured(result):
+    if isinstance(result, tuple):
+        for item in result:
+            if isinstance(item, dict):
+                return item
+        result = result[0]
+    if isinstance(result, list):
+        for block in result:
+            text = getattr(block, "text", None)
+            if text:
+                try:
+                    return json.loads(text)
+                except json.JSONDecodeError:
+                    return {"text": text}
+    return {"unstructured": repr(result)}
+
+
+out = {"params": []}
+try:
+    tool = next(
+        item
+        for item in reckon_mcp.mcp._tool_manager.list_tools()
+        if item.name == name
+    )
+    out["params"] = sorted(tool.fn_metadata.arg_model.model_fields)
+    result = asyncio.run(reckon_mcp.mcp.call_tool(name, json.loads(payload)))
+    out["answer"] = structured(result)
+except BaseException as exc:  # noqa: BLE001 - any failure is the child's answer
+    out["error"] = f"{type(exc).__name__}: {exc}"
+print(json.dumps(out))
+'''
+
+#: How long one child gets to answer on the current code. It imports the whole
+#: package, so it is generous; a child that runs out is a child that did not
+#: answer, and the caller keeps the refusal.
+_CURRENT_CODE_TIMEOUT_S = 120.0
 
 
 def _import_root() -> Path:
@@ -281,58 +347,178 @@ def _error_text(result: Any) -> str | None:
     return str(detail)
 
 
-def _stale_code_response(original_error: str | None) -> dict[str, Any] | None:
-    """The reconnect refusal when the imported code no longer matches the checkout.
+def _moved_checkout_state() -> served_code.MovedCheckout:
+    """This image's moved-checkout verdict, from the decision's one owner."""
 
-    Called only once a call has failed. ``None`` means the failure is not the
-    stale image's: either the code is the image this process started with, or
-    the checkout cannot be trusted — a tracked file differs from ``HEAD``, or
-    the checkout does not import — and the original failure stands.
+    return served_code.moved_checkout(
+        root=_import_root(), running_stamp=_SERVER_CODE_STAMP
+    )
+
+
+def _run_on_current_code(
+    name: str, kwargs: Mapping[str, Any]
+) -> dict[str, Any] | None:
+    """Run one tool call against the checkout's current code in a child.
+
+    ``None`` means the child made no answer — it failed to start, ran out of its
+    bound, or printed nothing readable — and every caller then keeps the failure
+    it already has. A child that answered returns its parameter names and, when
+    it made one, its answer.
     """
-    current = follower_code_stamp()
-    if current == _SERVER_CODE_STAMP:
+
+    try:
+        payload = json.dumps(dict(kwargs))
+    except (TypeError, ValueError):
         return None
-    if not moved_checkout_is_trustworthy(_import_root()).trusted:
+    try:
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                _CURRENT_CODE_RUNNER,
+                str(_import_root()),
+                name,
+                payload,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=_CURRENT_CODE_TIMEOUT_S,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    lines = [line for line in completed.stdout.splitlines() if line.strip()]
+    if not lines:
+        return None
+    try:
+        child = json.loads(lines[-1])
+    except json.JSONDecodeError:
+        return None
+    return child if isinstance(child, dict) else None
+
+
+def _current_code_signature_changed(name: str, child: Mapping[str, Any]) -> bool:
+    """Whether the child's parameter list differs from the registered one."""
+
+    registered = _REGISTERED_TOOL_PARAMS.get(name)
+    if registered is None:
+        return False
+    params = child.get("params")
+    if not isinstance(params, list):
+        return False
+    return tuple(sorted(str(item) for item in params)) != tuple(sorted(registered))
+
+
+def _stale_code_response(
+    original_error: str | None, *, tool: str | None = None
+) -> dict[str, Any] | None:
+    """The reconnect refusal for a call the current code will not take over.
+
+    ``None`` means the failure is not the stale image's: either the code is the
+    image this process started with, or the checkout cannot be trusted — a
+    tracked file differs from ``HEAD``, or the checkout does not import — and
+    the original failure stands. ``tool`` names a tool whose parameters changed,
+    for which no in-process answer can stand and a reconnect is owed.
+    """
+    state = _moved_checkout_state()
+    if not state.may_load:
         return None
     started = _SERVER_STARTED_AT.isoformat()
+    change = (
+        f"tool {tool} changed its parameters" if tool is not None else "changed on disk"
+    )
     response: dict[str, Any] = {
         "ok": False,
         "error": "stale_server_code",
         "detail": (
             f"this reckon MCP server started {started}; the code it imported has "
-            f"changed on disk since then (code stamp {_SERVER_CODE_STAMP[:12]} → "
-            f"{current[:12]}), so it no longer matches the checkout. This call "
-            f"failed against the stale image; {_RECONNECT_REMEDY}."
+            f"changed on disk since then (code stamp {state.running_stamp[:12]} → "
+            f"{state.disk_stamp[:12]}), so it no longer matches the checkout. "
+            f"{'The ' + change + ', which this session cannot cover; ' if tool else 'This call failed on the current code too; '}"
+            f"{_RECONNECT_REMEDY}."
         ),
         "server_started_at": started,
-        "code_stamp_at_start": _SERVER_CODE_STAMP,
-        "code_stamp_now": current,
+        "code_stamp_at_start": state.running_stamp,
+        "code_stamp_now": state.disk_stamp,
         "reconnect": _RECONNECT_REMEDY,
     }
+    if tool is not None:
+        response["tool"] = tool
     if original_error is not None:
         response["original_error"] = original_error
     return response
 
 
-def _refuse_when_stale(tool: Callable[..., Any]) -> Callable[..., Any]:
-    """Wrap one registered tool so a failed call on a moved checkout names the remedy.
+def _answer_on_current_code(
+    name: str, kwargs: Mapping[str, Any], *, original_error: str | None
+) -> dict[str, Any] | None:
+    """The answer a failed call gets from the checkout's current code, or None.
+
+    ``None`` means the current code will not take the call over: the checkout
+    has not moved, or cannot be trusted, or the current code fails it too — in
+    which case the caller keeps the reconnect refusal and the original failure.
+    A tool whose parameters changed is refused here, naming that tool, because
+    the client holds the schema it connected with and no answer can stand in
+    for it. An answer the current code made is returned, and the session serves
+    its later calls on the current code too.
+    """
+
+    if not _moved_checkout_state().may_load:
+        return None
+    child = _run_on_current_code(name, kwargs)
+    if child is None:
+        return None
+    if _current_code_signature_changed(name, child):
+        return _stale_code_response(original_error, tool=name)
+    answer = child.get("answer")
+    if not isinstance(answer, Mapping) or _error_text(answer) is not None:
+        return None
+    _SERVE_ON_CURRENT_CODE.add(name)
+    return dict(answer)
+
+
+#: Tools whose calls this session has started answering on the current code. A
+#: session whose image went stale keeps serving from the checkout behind it,
+#: rather than falling back to the image every later call.
+_SERVE_ON_CURRENT_CODE: set[str] = set()
+
+
+def _refuse_when_stale(tool: Callable[..., Any], *, name: str) -> Callable[..., Any]:
+    """Wrap one registered tool so it answers on the current code once it moves.
 
     A call that returns normally is returned untouched, so a commit that moves
-    the code without breaking the running image costs nothing. The stamp is
-    computed only on failure.
+    the code without breaking the running image costs nothing. The checkout's
+    stamp is computed only on failure, and only a failure is re-run on the
+    current code.
     """
     signature = getattr(tool, "__signature__", None)
 
     async def guarded(**kwargs: Any) -> Any:
+        if name in _SERVE_ON_CURRENT_CODE:
+            child = _run_on_current_code(name, kwargs)
+            if child is not None:
+                if _current_code_signature_changed(name, child):
+                    refusal = _stale_code_response(_error_text(child), tool=name)
+                    if refusal is not None:
+                        return refusal
+                elif isinstance(child.get("answer"), Mapping):
+                    return dict(child["answer"])
         try:
             result = await tool(**kwargs)
         except Exception as exc:
-            refusal = _stale_code_response(f"{type(exc).__name__}: {exc}")
+            text = f"{type(exc).__name__}: {exc}"
+            answer = _answer_on_current_code(name, kwargs, original_error=text)
+            if answer is not None:
+                return answer
+            refusal = _stale_code_response(text)
             if refusal is not None:
                 return refusal
             raise
         failure_text = _error_text(result)
         if failure_text is not None:
+            answer = _answer_on_current_code(name, kwargs, original_error=failure_text)
+            if answer is not None:
+                return answer
             refusal = _stale_code_response(failure_text)
             if refusal is not None:
                 return refusal
@@ -2918,6 +3104,7 @@ def _reject_unknown_tool_arguments(tool_name: str) -> None:
 
     tool.fn_metadata.arg_model = StrictArguments
     tool.parameters = StrictArguments.model_json_schema(by_alias=True)
+    _REGISTERED_TOOL_PARAMS[tool_name] = accepted
 
 
 # ── Register tools with SDK ────────────────────────────────────────────────
@@ -2940,17 +3127,20 @@ if mcp is not None:
                 kind="read",
                 path_hint=_plan_path_hint,
                 response_budget=True,
-            )
+            ),
+            name="read_plan",
         )
     )
     edit_plan_tool = mcp.tool(name="edit_plan")(
         _refuse_when_stale(
-            _deadline_tool(_edit_plan_tool, kind="write", path_hint=_plan_path_hint)
+            _deadline_tool(_edit_plan_tool, kind="write", path_hint=_plan_path_hint),
+            name="edit_plan",
         )
     )
     roadmap_tool = mcp.tool(name="roadmap")(
         _refuse_when_stale(
-            _deadline_tool(_roadmap_tool, kind="read", response_budget=True)
+            _deadline_tool(_roadmap_tool, kind="read", response_budget=True),
+            name="roadmap",
         )
     )
     audit_tool = mcp.tool(name="audit")(
@@ -2960,12 +3150,14 @@ if mcp is not None:
                 kind="read",
                 path_hint=_document_path_hint,
                 response_budget=True,
-            )
+            ),
+            name="audit",
         )
     )
     crew_tool = mcp.tool(name="crew")(
         _refuse_when_stale(
-            _deadline_tool(_crew, kind=_crew_call_kind, response_budget=True)
+            _deadline_tool(_crew, kind=_crew_call_kind, response_budget=True),
+            name="crew",
         )
     )
     for tool_name in ("read_plan", "edit_plan", "roadmap", "audit", "crew"):

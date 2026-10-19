@@ -1496,26 +1496,6 @@ def _served_code_report() -> dict | None:
     return served_code.served_report(_SOURCE_SNAPSHOT, executed)
 
 
-def _code_fingerprints(
-    snapshot: served_code.SourceSnapshot, report: Mapping[str, object]
-) -> tuple[str, str]:
-    """Fingerprint exactly the source files the executed-code report counted."""
-
-    names = sorted(set(report["changed"] + report["added"] + report["removed"]))
-    running = hashlib.sha256()
-    disk = hashlib.sha256()
-    for name in names:
-        known = snapshot.files.get(name)
-        before = known[1] if known is not None else "missing"
-        try:
-            after = hashlib.sha256((snapshot.root / name).read_bytes()).hexdigest()
-        except OSError:
-            after = "missing"
-        running.update(f"{name}:{before}\n".encode())
-        disk.update(f"{name}:{after}\n".encode())
-    return running.hexdigest(), disk.hexdigest()
-
-
 class _CodeReload:
     """Stop the listener, drain active handlers briefly, then replace the image."""
 
@@ -3290,17 +3270,15 @@ class Handler(BaseHTTPRequestHandler):
         report = _served_code_report()
         if _SOURCE_SNAPSHOT is None or report is None or not report["stale"]:
             return False
-        running, disk = _code_fingerprints(_SOURCE_SNAPSHOT, report)
-        if running == disk:
+        state = served_code.served_code_moved(_SOURCE_SNAPSHOT, report)
+        if not state.moved:
             return False
         body = json.dumps(
             {
                 "error": "stale-code",
-                "running_code_stamp": running,
-                "disk_code_stamp": disk,
-                "changed_files": report["changed"]
-                + report["added"]
-                + report["removed"],
+                "running_code_stamp": state.running_stamp,
+                "disk_code_stamp": state.disk_stamp,
+                "changed_files": list(state.changed_files),
                 "detail": "The server is loading the changed code; retry this request.",
             }
         ).encode()

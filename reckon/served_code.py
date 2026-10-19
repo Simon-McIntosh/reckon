@@ -635,6 +635,117 @@ def served_report(
     return drift(snapshot, executed=executed, max_age_s=_REPORT_TTL_S)
 
 
+# ── The moved-checkout decision ────────────────────────────────────────────
+#
+# Two servers must answer one question about an image whose code has moved: may
+# the moved tree be loaded, and so may the call be answered on its current code?
+# The HTTP server answers by re-executing, the MCP server by running the call
+# again on the current code; both must reach the same verdict about the tree, or
+# one serves code the other refuses. The verdict is derived here, once, from the
+# snapshot the process loaded and the checkout's own code identity.
+
+@dataclass(frozen=True)
+class MovedCheckout:
+    """Whether the code an image loaded differs from the checkout, and if it loads.
+
+    ``moved`` says the checkout's code is not the code this image runs, which is
+    what makes a failed call worth answering on current code. ``trusted`` says
+    the moved tree may be loaded at all -- clean under the package against
+    ``HEAD`` and importable -- so a tree mid-edit is never loaded over a running
+    image. ``running_stamp`` and ``disk_stamp`` are the two identities the
+    verdict compares, kept so a reader can report the change it saw.
+    """
+
+    moved: bool
+    trusted: bool
+    detail: str
+    running_stamp: str
+    disk_stamp: str
+    changed_files: tuple[str, ...] = ()
+
+    @property
+    def may_load(self) -> bool:
+        """True only for a moved tree a reader is allowed to load."""
+        return self.moved and self.trusted
+
+
+def code_fingerprints(
+    snapshot: SourceSnapshot, report: Mapping[str, object]
+) -> tuple[str, str]:
+    """Fingerprint exactly the source files the executed-code report counted.
+
+    Two digests, one over the bytes the process loaded and one over the bytes on
+    disk, so ``running == disk`` means the report's change was a timestamp
+    rather than a content move and the image still serves what it run.
+    """
+
+    names = sorted(set(report["changed"] + report["added"] + report["removed"]))
+    running = hashlib.sha256()
+    disk = hashlib.sha256()
+    for name in names:
+        known = snapshot.files.get(name)
+        before = known[1] if known is not None else "missing"
+        try:
+            after = hashlib.sha256((snapshot.root / name).read_bytes()).hexdigest()
+        except OSError:
+            after = "missing"
+        running.update(f"{name}:{before}\n".encode())
+        disk.update(f"{name}:{after}\n".encode())
+    return running.hexdigest(), disk.hexdigest()
+
+
+def served_code_moved(
+    snapshot: SourceSnapshot, report: Mapping[str, object]
+) -> MovedCheckout:
+    """The HTTP server's decision: does the report's change reach the image?
+
+    A report counts a file whose identity moved, which a touch alone moves. The
+    fingerprints tell a touch from a content change, and only a content change
+    makes the image stale. The HTTP server loads the checkout it serves, so it
+    does not consult the tree's trust itself.
+    """
+
+    running, disk = code_fingerprints(snapshot, report)
+    return MovedCheckout(
+        moved=running != disk,
+        trusted=False,
+        detail="",
+        running_stamp=running,
+        disk_stamp=disk,
+        changed_files=tuple(report["changed"] + report["added"] + report["removed"]),
+    )
+
+
+def moved_checkout(*, root: Path, running_stamp: str) -> MovedCheckout:
+    """The MCP server's decision: has the checkout's code moved, and may it load?
+
+    ``running_stamp`` is the code identity the server recorded when it imported
+    the package, and ``root`` the checkout that supplied it. The verdict is the
+    trust-checked one, so a caller re-running a call on current code does so only
+    onto a tree the followers would themselves load.
+    """
+
+    from reckon import checkout_trust
+
+    current = checkout_trust.source_code_identity(root)
+    if current == running_stamp:
+        return MovedCheckout(
+            moved=False,
+            trusted=False,
+            detail="",
+            running_stamp=running_stamp,
+            disk_stamp=current,
+        )
+    verdict = checkout_trust.moved_checkout_is_trustworthy(root)
+    return MovedCheckout(
+        moved=True,
+        trusted=verdict.trusted,
+        detail=verdict.detail,
+        running_stamp=running_stamp,
+        disk_stamp=current,
+    )
+
+
 class ExecutedSource:
     """Record which of a package's functions the process has run.
 

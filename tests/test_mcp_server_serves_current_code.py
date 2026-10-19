@@ -1,4 +1,4 @@
-"""A reckon MCP server answers for the code it actually imported, once a call fails.
+"""A reckon MCP server answers on the checkout's current code, once it moves.
 
 The server holds the classes it imported at start for the life of the process,
 while reading its configuration from disk on each call. A checkout that moves
@@ -7,11 +7,16 @@ when it started — is therefore validated against classes that no longer match
 it, and a call fails with a schema error that names nothing about the restart
 owed. The guard answers on failure rather than before the call: most commits
 move the code without breaking a running image, so a call that returns normally
-must be returned untouched. When a call fails and the checkout has moved and
-still imports, the failure is replaced by one refusal naming the server's start
-time, the change and the reconnect remedy, carrying the original error text. A
-checkout that does not import defers, so a tree mid-merge never takes a running
-server down.
+must be returned untouched.
+
+When a call does fail and the checkout has moved and can be trusted, the server
+answers it on the current code rather than refusing: a stdio server's client
+holds the session this process initialised, so the image cannot be replaced the
+way the HTTP server replaces its own, and the call is run against the checkout
+in a child interpreter whose answer stands in for the stale image's. A call the
+current code also fails is not the stale image's failure, so the reconnect
+refusal is then the answer. A tool whose parameters changed is always refused,
+naming that tool, because the client holds the schema it connected with.
 
 Each test runs a server over its own copy of the package in a temp directory,
 in a fresh interpreter, so nothing here reads the checkout it lives in.
@@ -29,10 +34,11 @@ from pathlib import Path
 SOURCE_PACKAGE = Path(__file__).resolve().parents[1] / "reckon"
 
 _DRIVER = r'''
-import asyncio, json, pathlib, sys
+import asyncio, json, pathlib, subprocess, sys
 
 root = pathlib.Path(sys.argv[1])
 mode = sys.argv[2]
+git = sys.argv[3]
 
 import reckon.mcp as reckon_mcp
 
@@ -51,57 +57,84 @@ def structured(result):
     return {"unstructured": repr(result)}
 
 
-async def crew_view():
-    """A crew view that resolves the flight config, so a shipped default that
-    moved under a running image is the thing a call actually validates."""
-    blocks = await reckon_mcp.mcp.call_tool(
-        "crew", {"project": "reckon", "view": "flight"}
-    )
+async def edit_plan():
+    """A call the running image fails: the checkout carries no such plan."""
+    try:
+        blocks = await reckon_mcp.mcp.call_tool(
+            "edit_plan",
+            {"project": "reckon", "slug": "no-such-plan", "expected_version": 1},
+        )
+    except Exception as exc:
+        return {"ok": False, "error": "tool_error", "detail": f"{type(exc).__name__}: {exc}"}
     return structured(blocks)
 
 
-def move_the_stamp():
-    """Change a module the code stamp digests, as a checkout ahead would."""
+# The change a checkout ahead of the running image carries. ``answers`` makes
+# edit_plan return an answer the running image never could; ``signature``
+# changes the tool's parameter list, which no in-process answer can cover.
+_ANSWERS = """
+
+# the checkout ahead of the running image answers this call
+import functools
+
+_edit_plan_tool_before_the_change = _edit_plan_tool
+@functools.wraps(_edit_plan_tool_before_the_change)
+async def _edit_plan_tool(*args, **kwargs):  # noqa: F811
+    result = await _edit_plan_tool_before_the_change(*args, **kwargs)
+    if isinstance(result, dict) and result.get("ok") is False:
+        return {"ok": True, "served_by": "current code", "was": result.get("error")}
+    return result
+"""
+
+_SIGNATURE = """
+
+# the checkout ahead of the running image adds a parameter to the tool
+_edit_plan_tool_before_the_change = _edit_plan_tool
+async def _edit_plan_tool(*args, added_parameter=None, **kwargs):  # noqa: F811
+    return await _edit_plan_tool_before_the_change(*args, **kwargs)
+"""
+
+
+def move_the_checkout():
+    target = root / "reckon" / "mcp_edit_plan.py"
+    addition = _ANSWERS if mode == "answers" else _SIGNATURE
+    target.write_text(target.read_text() + addition)
+
+
+def move_a_tracked_file():
+    """Leave a tracked file modified against HEAD, as a half-edited tree would."""
     target = root / "reckon" / "crew" / "runs.py"
     target.write_text(target.read_text() + "\n# a change the server did not import\n")
 
 
-def break_the_tree():
-    """Leave conflict markers, as a merge resolving mid-file would."""
-    target = root / "reckon" / "crew" / "runs.py"
-    target.write_text(
-        target.read_text()
-        + "\n<<<<<<< HEAD\n_broken = (1\n=======\n>>>>>>> other\n"
-    )
-
-
-def add_a_shipped_default():
-    """Add a key the running image's schema rejects, as a later commit would."""
-    config = root / "reckon" / "schema" / "flight-defaults.yaml"
-    config.write_text(
-        config.read_text().replace(
-            "  exhausted_statuses: []",
-            "  exhausted_statuses: []\n  a_key_from_the_future: 1",
-        )
+def commit_the_move():
+    subprocess.run([git, "-C", str(root), "add", "reckon"], check=True)
+    subprocess.run(
+        [
+            git, "-C", str(root),
+            "-c", "user.email=probe@example.invalid",
+            "-c", "user.name=probe",
+            "commit", "-q", "-m", "move the code",
+        ],
+        check=True,
     )
 
 
 async def main():
-    first = await crew_view()
-    if mode == "moved_and_broken":
-        move_the_stamp()
-        add_a_shipped_default()
-    elif mode == "moved_and_well":
-        move_the_stamp()
-    elif mode == "unimportable_and_broken":
-        break_the_tree()
-        add_a_shipped_default()
-    second = await crew_view()
+    first = await edit_plan()
+    if mode in ("answers", "signature"):
+        move_the_checkout()
+        commit_the_move()
+    elif mode == "dirty":
+        move_a_tracked_file()
+    second = await edit_plan()
+    third = await edit_plan()
     print(json.dumps({
         "module": reckon_mcp.__file__,
         "started_at": reckon_mcp._SERVER_STARTED_AT.isoformat(),
         "first": first,
         "second": second,
+        "third": third,
     }))
 
 
@@ -109,16 +142,72 @@ asyncio.run(main())
 '''
 
 
-def _build_checkout(tmp_path: Path) -> Path:
+def _real_git() -> str:
+    """The git binary, skipping the PATH shims a worker session installs."""
+    for entry in os.environ.get("PATH", "").split(os.pathsep):
+        candidate = Path(entry) / "git"
+        if not candidate.is_file() or not os.access(candidate, os.X_OK):
+            continue
+        if "shim" in entry:
+            continue
+        return str(candidate)
+    return "git"
+
+
+_GIT = _real_git()
+
+
+def _git(root: Path, *args: str) -> str:
+    completed = subprocess.run(
+        [_GIT, "-C", str(root), *args],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode == 0, (
+        f"git {' '.join(args)} failed in {root}: {completed.stderr!r}"
+    )
+    return completed.stdout
+
+
+def _committed_checkout(tmp_path: Path) -> Path:
+    """A self-contained committed git checkout of the package.
+
+    The copy is committed, so ``HEAD`` names its exact starting content, a
+    modification is a real difference from it, and a commit moves the code
+    identity the server recorded when it imported the copy.
+    """
     root = tmp_path / "checkout"
-    shutil.copytree(SOURCE_PACKAGE, root / "reckon")
+    shutil.copytree(
+        SOURCE_PACKAGE,
+        root / "reckon",
+        ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+    )
+    _git(root, "init", "-q", "-b", "main")
+    _git(root, "add", "reckon")
+    _git(
+        root,
+        "-c",
+        "user.email=probe@example.invalid",
+        "-c",
+        "user.name=probe",
+        "commit",
+        "-q",
+        "-m",
+        "base",
+    )
     return root
 
 
 def _run_server(tmp_path: Path, root: Path, mode: str) -> dict:
     driver = tmp_path / "driver.py"
     driver.write_text(_DRIVER)
-    # A directory with no reckon package on it, so the copy is what an
+    # A directory carrying a real ``git``, so the server's own tree check is not
+    # answered by a worker session's shim.
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    (bin_dir / "git").symlink_to(_GIT)
+    # A working directory holding no reckon package, so the copy is what an
     # unscoped import resolves to.
     working = tmp_path / "working"
     working.mkdir()
@@ -126,13 +215,14 @@ def _run_server(tmp_path: Path, root: Path, mode: str) -> dict:
     home.mkdir()
     environment = {
         **os.environ,
+        "PATH": f"{bin_dir}{os.pathsep}{os.environ.get('PATH', '')}",
         "PYTHONPATH": str(root),
         "RECKON_HOME": str(home),
         "PYTHONDONTWRITEBYTECODE": "1",
         "PYTHONUNBUFFERED": "1",
     }
     completed = subprocess.run(
-        [sys.executable, str(driver), str(root), mode],
+        [sys.executable, str(driver), str(root), mode, _GIT],
         capture_output=True,
         text=True,
         env=environment,
@@ -148,62 +238,63 @@ def _assert_served_from_the_copy(payload: dict, root: Path) -> None:
     assert Path(payload["module"]).resolve().is_relative_to(root.resolve())
 
 
-def test_a_failed_call_on_a_moved_checkout_answers_with_the_remedy(
+def test_a_call_on_a_moved_checkout_answers_on_the_current_code(
     tmp_path: Path,
 ) -> None:
-    """A call that fails after the checkout moves names the restart owed."""
-    root = _build_checkout(tmp_path)
-    payload = _run_server(tmp_path, root, "moved_and_broken")
+    """A commit that changes edit_plan's answer is reached without a reconnect."""
+    root = _committed_checkout(tmp_path)
+    payload = _run_server(tmp_path, root, "answers")
     _assert_served_from_the_copy(payload, root)
 
-    first, second = payload["first"], payload["second"]
-    assert first.get("error") != "stale_server_code", (
-        f"a fresh server must answer normally, not refuse: {first!r}"
+    first, second, third = payload["first"], payload["second"], payload["third"]
+    assert first.get("ok") is False, (
+        f"the running image must fail the call: {first!r}"
     )
-    assert second.get("error") == "stale_server_code", (
-        f"a failed call on a moved checkout must answer with the remedy, got {second!r}"
-    )
-    detail = second["detail"]
-    assert payload["started_at"] in detail, "the error must name the start time"
-    assert second["server_started_at"] == payload["started_at"]
-    assert second["code_stamp_at_start"] != second["code_stamp_now"]
-    assert "changed" in detail.lower(), "the error must name the code change"
-    assert "reconnect" in detail.lower(), "the error must name the remedy"
-    assert "/mcp" in second["reconnect"]
-    # The original failure is carried, so the caller sees what actually failed.
-    assert "Extra inputs are not permitted" in second["original_error"]
-
-
-def test_a_successful_call_on_a_moved_checkout_is_returned_untouched(
-    tmp_path: Path,
-) -> None:
-    """Most commits move the code without breaking the image, so a good call stands."""
-    root = _build_checkout(tmp_path)
-    payload = _run_server(tmp_path, root, "moved_and_well")
-    _assert_served_from_the_copy(payload, root)
-
-    first, second = payload["first"], payload["second"]
-    assert first.get("ok") is True, f"a fresh server must answer normally: {first!r}"
     assert second.get("ok") is True, (
-        f"a call that succeeds must be returned untouched whatever the stamp reads: {second!r}"
+        f"a moved checkout must answer on its current code, got {second!r}"
     )
-    assert second.get("error") != "stale_server_code"
-    assert "stale_server_code" not in json.dumps(second)
+    assert second.get("served_by") == "current code"
+    assert "stale_server_code" not in json.dumps(second), (
+        "a call the current code answers is never refused"
+    )
+    # Later calls run on the current code too, rather than falling back.
+    assert third.get("served_by") == "current code", (
+        f"later calls must run on the current code: {third!r}"
+    )
 
 
-def test_a_checkout_that_does_not_import_returns_the_original_failure(
-    tmp_path: Path,
-) -> None:
-    """A tree that will not load never has its failure mistaken for staleness."""
-    root = _build_checkout(tmp_path)
-    payload = _run_server(tmp_path, root, "unimportable_and_broken")
+def test_a_dirty_tree_keeps_serving_the_started_image(tmp_path: Path) -> None:
+    """A tracked file modified against ``HEAD`` is never loaded over the image."""
+    root = _committed_checkout(tmp_path)
+    payload = _run_server(tmp_path, root, "dirty")
     _assert_served_from_the_copy(payload, root)
 
     first, second = payload["first"], payload["second"]
-    assert first.get("ok") is True, f"a fresh server must answer normally: {first!r}"
+    assert first.get("ok") is False, f"the running image must fail the call: {first!r}"
     assert second.get("error") != "stale_server_code", (
-        f"a checkout that does not import must not be called stale, got {second!r}"
+        f"a dirty moved checkout must not be called stale, got {second!r}"
     )
-    # The original failure stands, unchanged.
-    assert second.get("error") == "crew_error"
-    assert "Extra inputs are not permitted" in second.get("detail", "")
+    assert second.get("ok") is False, (
+        f"an untrusted tree keeps serving the started image, got {second!r}"
+    )
+    assert second.get("served_by") != "current code"
+
+
+def test_a_changed_tool_signature_returns_the_reconnect_refusal(
+    tmp_path: Path,
+) -> None:
+    """A parameter list the client does not hold owes a reconnect naming the tool."""
+    root = _committed_checkout(tmp_path)
+    payload = _run_server(tmp_path, root, "signature")
+    _assert_served_from_the_copy(payload, root)
+
+    second = payload["second"]
+    assert second.get("error") == "stale_server_code", (
+        f"a changed tool signature must be refused, got {second!r}"
+    )
+    assert second.get("tool") == "edit_plan", (
+        f"the refusal must name the changed tool: {second!r}"
+    )
+    assert "edit_plan" in second["detail"], second["detail"]
+    assert "reconnect" in second["detail"].lower()
+    assert second.get("served_by") != "current code"
