@@ -38,21 +38,26 @@
 
   <section data-reckon="section" data-id="epw-server-serves-current-code-state">
     <h3 id="epw-server-serves-current-code-state-heading">State at hand-off</h3>
-    <p>Five of the gate's six subprocess cases pass: both cases of the new
-      <code>edit_plan</code> file — including <code>test_a_call_on_a_moved_checkout_answers_on_the_current_code</code>,
-      which fails on the running image, is re-run on the checkout, and reads the current code's
-      marked answer with no <code>stale_server_code</code> anywhere — and the dirty-tree and
-      changed-signature cases. The sixth, <code>test_a_clean_moved_checkout_answers_on_the_current_code</code>,
-      still returns the refusal. Its call is <code>crew</code> rather than <code>edit_plan</code>, and its
-      child produced no readable answer at all, so the guard took its fallback path. Two defects were
-      found and fixed on the way here, both in fixtures rather than the mechanism: the simulated
-      checkout-ahead wrapped the registered tool, which made the tool manager classify an async tool
-      as sync and never await the call (case (a) failed on its own fixture, not the guard), and a tool
-      that <em>raises</em> left the child with no answer to print at all — its exception is now the
-      answer it returns. The remaining failure is unadjudicated: the likeliest cause is the child's
-      120-second bound expiring on the <code>crew</code> tool, whose call reaches further than
-      <code>edit_plan</code>'s, and it must be established from the child's own stderr rather than
-      assumed. No uncommitted work is left in the tree; the declared negative control was not run,
-      because its premise is a green head arm and the head arm is not green.</p>
+    <p>All six subprocess cases of the gate pass, and the case that was red for two attempts is the one
+      that exposed the deepest defect. Its call is <code>crew</code> rather than <code>edit_plan</code>,
+      and its <em>child</em> — a fresh import of the checkout, guard included — composed a refusal of
+      its own and handed that back as the answer the current code gave. The guard read a refusal where
+      an answer should have been and returned it, so the caller was told to reconnect for a call the
+      current code had answered. The child now runs the tool rather than a second copy of the decision,
+      and an answer that is the refusal itself is read as no answer at all, so this decision is made
+      once, in the server the client is talking to.</p>
+    <p>Three defects were found on the way, and the first two were in fixtures rather than the
+      mechanism: the simulated checkout-ahead wrapped the registered tool, which made the tool manager
+      classify an async tool as sync and never await the call; a tool that <em>raises</em> left the
+      child with no answer to print, so its exception is now the answer it returns; and the child's own
+      guard was the third.</p>
+    <p>The declared negative control was run at the node head: with the current-code re-run disabled so
+      the guard falls back, <code>test_a_call_on_a_moved_checkout_answers_on_the_current_code</code> fails
+      on <code>stale_server_code</code> — the log records it (<code>negative-control.log</code>), and the
+      mutation was reverted without being committed. The acceptance is therefore a check that can fail,
+      not a case that passes for want of anything to test. Two failures remain in the wider gate file set,
+      <code>test_every_module_fits_a_worker_window</code> and
+      <code>test_structural_invariants::test_only_the_shared_parser_calls_fromisoformat</code>; both fail at
+      the dispatch base as well, so neither is this node's, and neither is triaged here.</p>
   </section>
 </article>
