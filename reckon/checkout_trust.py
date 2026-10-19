@@ -270,7 +270,14 @@ def _committed_catalogue_blob(root: Path) -> str | None:
     """
     try:
         result = subprocess.run(
-            ["git", "-C", str(root), "rev-parse", "--verify", f"HEAD:{CATALOGUE_RELATIVE_PATH}"],
+            [
+                "git",
+                "-C",
+                str(root),
+                "rev-parse",
+                "--verify",
+                f"HEAD:{CATALOGUE_RELATIVE_PATH}",
+            ],
             capture_output=True,
             text=True,
             timeout=IMPORT_PROBE_TIMEOUT,

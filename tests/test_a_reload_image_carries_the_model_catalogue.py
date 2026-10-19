@@ -162,7 +162,8 @@ def test_reloaded_image_carries_the_model_catalogue(
     assert changed != identity
     _commit(root, "NOTES.txt", "outside every carried tree\n")
     assert (
-        checkout_trust.source_code_identity(root / "reckon", source_root=root) == changed
+        checkout_trust.source_code_identity(root / "reckon", source_root=root)
+        == changed
     )
 
 
