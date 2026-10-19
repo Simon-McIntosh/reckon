@@ -1,0 +1,37 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-19T17:53:48.082Z",
+  "dispatched_at": "2026-10-19T17:42:18Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_scope.py",
+      "line": 1776,
+      "severity": "follow-on",
+      "text": "_head_blob_bytes duplicates the capability reckon/crew/routing.py:981 _git_blob already owns: both run git against a revision:path in byte mode and return None on a non-zero exit. The module already imports several privates from reckon.crew.routing (_git, _git_blob's sibling _boundary_tree_roots), so the owner was reachable; the addition neither extends nor wraps it. git show HEAD:<path> used by the owner also reads the object store without taking the index lock, so the plumbing-vs-porcelain distinction the docstring draws is not load-bearing here."
+    },
+    {
+      "file": "reckon/crew/promotion_scope.py",
+      "line": 1683,
+      "severity": "follow-on",
+      "text": "_restore_landing_writes's docstring still states \"a tracked path whose restore is refused keeps its working-tree write \u2014 the retry commits that write, so taking it back would discard the recorded comment.\" That is the design this node reversed: _restore_tracked_landing_write (line 1748) now takes the write back by rewriting the working tree from HEAD's blob. The paragraph above the changed function is now stale and contradicts the code beneath it, so a reader trusts a rationale the node deliberately removed."
+    }
+  ],
+  "project": "reckon",
+  "review": "VERDICT goal: the node goal is to restore a tracked landing write while the index lock is held and name an unrestorable path; reckon/crew/promotion_scope.py:1748 _restore_tracked_landing_write and :2076 _unrestored_landing_writes land exactly that.\nVERDICT done_when: the done_when names a temporary repository, a held .git/index.lock, a restored content equal to HEAD's, a blob-unreadable second case, a negative control, EXIT= on every log, importer arms and ruff; the manifest records each of those and the gate tests/test_a_tracked_landing_write_restores_under_a_held_lock.py asserts them.\nVERDICT write_paths: the manifest declares reckon/crew/promotion_scope.py, tests/test_a_tracked_landing_write_restores_under_a_held_lock.py, the evidence fragment, the figure and the granted extension to tests/test_rollback_asks_head.py; every path in the diff is inside that set.\nVERDICT manifest: read; status complete, baseline_suite and after_suite objects present (1 failed/165 passed vs 1 failed/167 passed, same single pre-existing failure, added_failure_ids empty), focused-node.log EXIT=0, negative-control.log EXIT=1 naming the first case.\nVERDICT diff: read commit by commit from a346c2e1 to 048109234d; six commits, five files, the change confined to the restorer, its two refusal messages, one new test, one repaired test and the evidence artefacts.\nCALL_SITES: reckon/crew/promotion.py:1648, reckon/crew/promotion_scope.py:2252, reckon/crew/promotion_scope.py:2309\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_scope.py:1737 routes a HEAD-tracked path into _restore_tracked_landing_write, whose write_bytes at :1766 returns the working tree to HEAD's blob under a held lock.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate tests/test_a_tracked_landing_write_restores_under_a_held_lock.py holds a real .git/index.lock and asserts content == git show HEAD's blob, matching the done_when's \"content equals HEAD's\".\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the only file outside the plan's two named write paths, tests/test_rollback_asks_head.py, is the extension the manifest records the coordinator granted for test_head_path_survives_unrelated_restore_failure.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the old `return False` for a tracked path reddens tests/test_a_tracked_landing_write_restores_under_a_held_lock.py:76 (report[path] is not True) and :78 (content stays the landing write), and the negative-control log shows exactly that failure.\nSCORE fit: 15\nJUSTIFICATION fit: _head_blob_bytes at reckon/crew/promotion_scope.py:1776 calls subprocess.run directly instead of the module's _git wrapper / velocity.run_git, so it drops the 180 s bound every sibling git call carries, and the docstring above _restore_landing_writes is stale.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/promotion_scope.py:1776 re-implements reckon/crew/routing.py:981 _git_blob, the repository's owner of a byte-mode revision:path read, without extending it.\nFINDING reckon/crew/promotion_scope.py:1776 follow-on: _head_blob_bytes duplicates the existing _git_blob (reckon/crew/routing.py:981) capability instead of extending its owner.\nFINDING reckon/crew/promotion_scope.py:1683 follow-on: _restore_landing_writes's docstring still describes the reversed behaviour (a tracked path keeps its write), contradicting _restore_tracked_landing_write beneath it.",
+  "review_run_id": "r-20261019T174126607469-review-of-a-tracked-landing-write-restores-under-a-held-lock-048109234d53",
+  "reviewed_base_sha": "a346c2e1495c564e6c724a469ca8996ed3b7ff8d",
+  "reviewed_head_sha": "048109234d53766d91d7bb448c3666b77db4ca06",
+  "reviewed_run_id": "r-20261019T164023450593-a-tracked-landing-write-restores-under-a-held-lock",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T17:55:01.069653+00:00"
+}
