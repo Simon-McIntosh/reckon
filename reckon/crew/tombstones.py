@@ -31,8 +31,10 @@ from dataclasses import dataclass
 import click
 
 #: The exit code every tombstone exits with. It is documented in the crew
-#: group's help beside codes 0 to 8, and is distinct from each of them.
-TOMBSTONE_EXIT_CODE = 9
+#: group's help, and it is deliberately the lowest code above 9 that no crew
+#: command raises, so a caller may branch on it: 9 is member-in-flight, 75 is
+#: queue-full and lane-paused, and the codes below 9 are the group's own.
+TOMBSTONE_EXIT_CODE = 10
 
 #: The crew group's own help documents the retirement code with this phrase.
 TOMBSTONE_EXIT_HELP = (
@@ -105,11 +107,6 @@ _MCP_OPTION_PARAM = {
     "--run": "run_id",
     "--run-id": "run_id",
 }
-
-
-def retired_names() -> tuple[str, ...]:
-    """Every retired name, in registration order."""
-    return tuple(row.retired for row in TOMBSTONES)
 
 
 def _mcp_arguments(args: tuple[str, ...]) -> list[tuple[str, str]]:

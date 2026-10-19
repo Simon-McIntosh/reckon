@@ -11,8 +11,9 @@ tool (<code>mcp_view</code>/<code>mcp_action</code>). Three rows are seeded:
 <code>promote → crew complete</code>. Invoking a row writes nothing: it prints
 one JSON document naming the retired verb, the successor, the successor
 invocation with the caller's arguments carried across, and the exit code, then
-exits <code>9</code> — one code the crew group's help documents beside codes 0
-to 8.
+exits <code>10</code> — the lowest code above 9 that no crew command raises, and
+so one the crew group's help documents beside <code>9</code>, which is
+member-in-flight.
 
 The crew group in <code>reckon/crew_dispatch_commands.py</code> becomes
 <code>_CrewGroup</code>, whose <code>get_command</code> resolves a retired name
@@ -24,16 +25,20 @@ fold stays invisible until it is reached for. The command sets
 caller's arguments intact and answers <code>--help</code> with its successor
 rather than a help page.</p>
 <p id="cso-retired-verbs-name-successor-test"><strong>Test.</strong>
-<code>tests/test_a_retired_verb_names_its_successor.py</code> checks five
-properties. Every row exits <code>9</code> (the code the crew group's help
+<code>tests/test_a_retired_verb_names_its_successor.py</code> checks seven
+properties. Every row exits <code>10</code> (the code the crew group's help
 documents) and its JSON names the retired verb and the successor. No row is a
 listed command of the crew group. <code>crew review-plan --plan p --answer f
 --acted</code> prints the invocation <code>reckon crew review --plan p --answer
-f --acted</code>. Every row's successor resolves — a CLI successor by walking
-the live click tree, an MCP successor by asking the tool (an unknown view
-answers <code>invalid_view</code>, an unknown action <code>invalid_action</code>,
-so any other answer proves recognition). A row whose CLI successor is an
-unregistered verb is reported by name.
+f --acted</code> and, against literals written in the test rather than the row,
+reports the successor <code>crew review</code>. Every row's successor resolves
+— a CLI successor by walking the live click tree, an MCP successor by asking the
+tool (an unknown view answers <code>invalid_view</code>, an unknown action
+<code>invalid_action</code>, so any other answer proves recognition). A row
+whose CLI successor is an unregistered verb is reported by name. The retirement
+code is read against every literal code the crew commands raise
+(<code>reckon/crew_*.py</code> and <code>reckon/crew/</code>), so 9 — dispatch's
+member-in-flight — cannot be shared by a tombstone.
 
 <code>tests/test_cited_commands_exist.py</code> gains <code>_retired</code>,
 which walks the command tree and recognises the one shape a tombstone takes (the
@@ -50,7 +55,7 @@ on the current corpus.</p>
 Base arm at <code>f339f0eda7fb778034e050fea9d96ba35cb28e56</code>
 (<code>test_crew_help_names_its_state.py</code> and
 <code>test_skill_contracts.py</code>, the new files absent): 2 failed, 70 passed,
-<code>EXIT=1</code>. Head arm (all four files): 2 failed, 78 passed,
+<code>EXIT=1</code>. Head arm (all four files): 2 failed, 80 passed,
 <code>EXIT=1</code> — the same two failing ids as the base arm and zero added
 failures. The two failures are outside this node's scope:
 <code>test_every_crew_verb_help_names_its_state_or_condition</code> and
@@ -68,5 +73,9 @@ Appending a row whose successor names an unregistered CLI verb
 <code>test_every_rows_successor_resolves</code> — the failure id the head arm
 does not fail — with <code>negative-control-ghost: successor crew no-such-verb
 names no command</code>: <code>1 failed, 4 passed</code>, <code>EXIT=1</code>.
-Log <code>negative-control.log</code> under the run directory.</p>
+Setting the retirement code back to 9 reddens
+<code>test_the_retirement_code_is_raised_by_no_crew_command</code> with
+<code>AssertionError: 9</code> — the collision with dispatch's member-in-flight
+that motivated the move to 10. Log <code>negative-control.log</code> under the
+run directory.</p>
 </article>

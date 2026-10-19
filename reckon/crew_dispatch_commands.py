@@ -42,8 +42,9 @@ def crew():
     the named plan section is unavailable at the worktree base ref, 5 the
     selected worker configuration has a typed competence refusal, 6 terminal
     pointers need reconciliation, 7 a live run holds a conflicting write scope,
-    8 no live project watcher is waiting for the dispatched work, 9 the name is
-    retired and the output names its successor.
+    8 no live project watcher is waiting for the dispatched work, 9 a member is
+    already in flight so the dispatch was refused, 10 the name is retired and
+    the output names its successor.
     """
 
 

@@ -247,12 +247,17 @@ def _flag_problems(cite: Citation, help_text: str) -> list[str]:
     ]
 
 
-def test_every_cited_command_and_flag_resolves():
-    found = citations()
-    checked = [c for c in found if not c.planned]
-    problems: list[str] = []
+def _citation_problems(found: list[Citation]) -> list[str]:
+    """Every unplanned citation that names a retired verb or an unknown command.
 
-    for cite in checked:
+    A citation reaching a tombstone is drift and is reported with the successor
+    it must be repointed to, before the unknown-command arm would see it only as
+    a bare missing token.
+    """
+    problems: list[str] = []
+    for cite in found:
+        if cite.planned:
+            continue
         retired = _retired(cite.chain)
         if retired is not None:
             problems.append(
@@ -269,6 +274,13 @@ def test_every_cited_command_and_flag_resolves():
         if cite.flags and command is not None:
             help_text = _help(cite.chain[: _path_len(cite.chain)])
             problems.extend(_flag_problems(cite, help_text))
+    return problems
+
+
+def test_every_cited_command_and_flag_resolves():
+    found = citations()
+    checked = [c for c in found if not c.planned]
+    problems = _citation_problems(found)
 
     print(
         f"citations={len(found)} checked={len(checked)} "
@@ -329,3 +341,23 @@ def test_a_citation_naming_a_tombstone_is_refused_with_its_successor():
     # The guard is silent on the current corpus: no citation reaches a
     # tombstone, so every folded name still has its citations repointed.
     assert [c for c in citations() if _retired(c.chain) is not None] == []
+
+
+def test_a_document_citing_a_retired_verb_fails_the_check(tmp_path: Path):
+    """A document that cites ``reckon crew review-plan`` is reported, not passed.
+
+    The corpus is walked from a temporary root, so the check is shown to fire on
+    a document that reaches a tombstone and to name both the retired verb and
+    the successor it must be repointed to.
+    """
+    doc = tmp_path / "skills" / "example" / "SKILL.md"
+    doc.parent.mkdir(parents=True)
+    doc.write_text(
+        "Review a plan with `reckon crew review-plan --plan p`.\n", encoding="utf-8"
+    )
+
+    problems = _citation_problems(citations(tmp_path))
+
+    assert problems, "a citation of a retired verb passed the check"
+    assert "review-plan" in problems[0]
+    assert "crew review" in problems[0]
