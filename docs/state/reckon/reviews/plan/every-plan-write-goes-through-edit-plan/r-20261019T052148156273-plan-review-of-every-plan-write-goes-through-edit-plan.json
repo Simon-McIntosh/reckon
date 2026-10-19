@@ -1,0 +1,166 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T05:34:22.071Z",
+  "dispatched_at": "2026-10-19T05:23:24Z",
+  "findings": [
+    {
+      "anchor": "tests/test_skill_contracts.py:1768",
+      "id": "duplicate_owner-1",
+      "reason": "the broadened extraction belongs in the existing owner (extend its `<!-- landing-beat-examples -->` scope and table parse), not a parallel test file with a second copy of the extract-apply harness.",
+      "text": "\u00a72's `tests/test_skills_cite_ops_the_store_accepts.py` re-implements machinery this owner already holds: op objects extracted from the skills and applied verbatim to a plan synthesised under a temp dir, with each op checked against `_OP_VOCAB` (`_required_fields` reads `_OP_VOCAB[op]` at line 1782; `_documented_examples` and `_apply_example`/`test_each_skills_documented_examples_apply` at lines 1825-1918), and the op-reference table already parsed at line 1814; `tests/test_mcp_vocabulary_is_complete.py:21` separately holds `_OP_VOCAB` against `_OP_DISPATCH`",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/serve.py:1471",
+      "id": "duplicate_owner-2",
+      "reason": "the plan must extend or factor the existing reload owner (and name why an HTTP re-exec cannot carry a stdio session) rather than fork a second reload path.",
+      "text": "\u00a73 (plan \u00a73, write path `reckon/mcp_reload.py`) is a second owner of code-reload beside `reckon/serve.py`'s `_CodeReload`: `request_reload`/`finish` (lines 1508-1523) already detects a moved checkout (`_refuse_stale_code`, `_served_code_report`) and replaces the running image by re-exec on a stamp change; the plan does not cite it, and the snapshot owner `reckon/served_code.py` (`take_snapshot`/`served_report`/`drift`, used by serve.py) is likewise uncited",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_store.py:897",
+      "id": "duplicate_owner-3",
+      "reason": "a body writer must state how a stored plan review's fingerprint still covers the section, or reuse a mechanism that already does, or the removal it re-adds recurs.",
+      "text": "\u00a74's `set sections.<id>.body` (plan \u00a74) adds a second section-body writer beside `_collapse_authored_section` (the one mechanism that rewrites a section's rendered extent), and the codebase deliberately removed the `collapse_section` op that \"once rewrote the body\" precisely to keep one fingerprint form (`tests/test_the_fingerprint_has_one_form.py:189` refuses it; owner of the guarantee is `reckon/crew/plan_review.py:678` `_fingerprint_forms`) \u2014 the plan's done-when checks `audit-doc` and untouched sibling bytes but says nothing about the review fingerprint",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/mcp_deadlines.py:862",
+      "id": "reuse_search-1",
+      "reason": "\u00a77 already flags that the conflict payload may hold at base and requires reproduction before repair, so the design is unchanged; only the citation path needs correcting.",
+      "text": "\u00a77 (plan \u00a77) states \"`_conflict_response` in `reckon/_mcp_tools.py` returns `current_version`\", but `_conflict_response` is defined in `reckon/mcp_deadlines.py:862`; `reckon/_mcp_tools.py:248` is a `VersionConflictResult` Pydantic field, not the function",
+      "type": "reuse_search",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/every-plan-write-goes-through-edit-plan.html:116",
+      "id": "thin_wrapper-1",
+      "reason": "the honest change is to drop the alias or justify it, shrinking the added set-path surface rather than widening it twice.",
+      "text": "\u00a74's `status` field on `set sections.<id>.<field>` \"moves the declaration, as `set section_declarations.<id>` does\" (same `_move_section_record` machinery at `reckon/_store.py:2502`), making it a second spelling of an existing accepted path with no statement of why the existing path cannot serve a status change",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-plan-write-goes-through-edit-plan.html:144",
+      "id": "interface_budget-1",
+      "reason": "the sections must account for the added op surface in their own text, especially as the vocabulary was recently narrowed (`collapse_section` removed), not widened.",
+      "text": "\u00a7\u00a75 and 6 each add a new op verb to the tool's discoverable vocabulary \u2014 `{op:'unset', path}` (\u00a75) and `{op:'close', status, outcome, by[, superseded_by]}` (\u00a76) \u2014 which enter `_OP_DISPATCH` (`reckon/_store.py:3172`) and `_OP_VOCAB` (`reckon/mcp.py:1367`, injected to clients at `mcp.py:635`), and neither section names a surface it retires or merges; \u00a76 does not count, in its own text, the resolved-placeholder recipe as a retirement in the interface sense; the current week reads public_definitions 1824, cli_options 371, mcp_views 34, refusal_families 23",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "a28682c88abf5758361e294b52292845c07aa785660c7e469974b75c5c03c0f0",
+  "plan_slug": "every-plan-write-goes-through-edit-plan",
+  "plan_version": 3,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "duplicate_owner-1",
+      "reason": "",
+      "when": "2026-10-19T05:35:25.441018+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "duplicate_owner-2",
+      "reason": "",
+      "when": "2026-10-19T05:35:32.211078+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "duplicate_owner-3",
+      "reason": "",
+      "when": "2026-10-19T05:35:39.172445+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-1",
+      "reason": "",
+      "when": "2026-10-19T05:35:46.332396+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "thin_wrapper-1",
+      "reason": "",
+      "when": "2026-10-19T05:35:53.589148+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "interface_budget-1",
+      "reason": "",
+      "when": "2026-10-19T05:36:00.260139+00:00"
+    }
+  ],
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T05:35:25.441018+00:00"
+    },
+    "duplicate_owner-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T05:35:32.211078+00:00"
+    },
+    "duplicate_owner-3": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T05:35:39.172445+00:00"
+    },
+    "interface_budget-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T05:36:00.260139+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T05:35:46.332396+00:00"
+    },
+    "thin_wrapper-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T05:35:53.589148+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-plan-write-goes-through-edit-plan.v3.json",
+  "review_run_id": "r-20261019T052148156273-plan-review-of-every-plan-write-goes-through-edit-plan",
+  "reviewed_blob_sha": "45ece864fc53ba4e704e37446d2d4e52939f7927",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 `reckon/_store_section_ops.py` hides the section-title, body, followup, dependency, gate-measure, unset and close handlers behind the one op vocabulary, an interface smaller than the behaviour it carries.",
+    "duplicate_owner": "a finding \u2014 \u00a72's new test, \u00a73's new module and \u00a74's section-body writer each re-implement shared machinery whose owner already exists.",
+    "interface_budget": "a finding \u2014 public_definitions 1824, cli_options 371, mcp_views 34, refusal_families 23; \u00a7\u00a75 and 6 add the `unset` and `close` op verbs to the discoverable op vocabulary without naming what they retire or merge.",
+    "reuse_search": "a finding \u2014 the plan searched the store/mcp/skill area (\u00a74 cites `insert_section`; \u00a77 cites `_conflict_response`) but proposes `reckon/mcp_reload.py` without citing the reload machinery in `reckon/serve.py` or the snapshot owner `reckon/served_code.py`, and \u00a77's `_conflict_response` citation names the wrong file.",
+    "thin_wrapper": "a finding \u2014 \u00a74's `set sections.<id>.status` is a second spelling of the existing `set section_declarations.<id>` over the same declaration-move machinery, with no reason the existing path cannot serve."
+  },
+  "section_digests": {
+    "_document": "fe4a479ee96126b12c62c0412b79792f0a50e08659c72cafd18db1e0bd618c9a",
+    "s1": "7f96df198aae5b46c87f2d18f8eff17398ead36155ee67ba73607e91aa1d2fe3",
+    "s2": "d613ae96fa182f2cb4abfe3f3a2671ef5d943c9f99bda3d34b3d1e34c0a53f8c",
+    "s3": "357dd676e1c44f50529bb815e25fbbae4315a7aade264506a1063d0a4bdeddf9",
+    "s4": "88936237a7b3d471d4e4acc394d6c9682e11b7fb8b80f50815f8c56d6110ce4f",
+    "s5": "983a32ceb17979adf046580c161e8282d6da90080e5a90ae1ab45e38d326f4bb",
+    "s6": "3211914f4a95c38e70b1bf4f01b060e7a83f3c45e8ae1e5f6dfe898f92601aef",
+    "s7": "3171c8113b9b3d8ae7637f335e423becdd268f02decff758581f50d9517c578c",
+    "s8": "f9dd6299834b4d039fd1f45b37141d5e265075b4cfd7f341357bea21196f5b35"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T05:35:21.988128+00:00"
+}
