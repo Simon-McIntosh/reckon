@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:2243",
+    "reckon/crew/dispatch_sessions.py:1195",
+    "reckon/crew/dispatch_sessions.py:1650",
+    "reckon/crew/resumption.py:555"
+  ],
+  "completed_at": "2026-10-19T10:13:06.585Z",
+  "dispatched_at": "2026-10-19T10:00:08Z",
+  "findings": [
+    {
+      "file": "tests/test_a_fenced_codex_review_names_only_writable_roots.py",
+      "line": "31",
+      "severity": "follow-on",
+      "text": "follow-on: the module docstring claims the red log's first line is the declared mutation string verbatim, but logs/negative-control.log's first line is a paraphrase, so a reader comparing them is misled; no gate matches that string, so it does not hold the node."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against b97740c8; five files - the rule added in reckon/_worker_fence.py:1285 and reused by the grant loop at 1514, reckon/_backends.py:2197 handing the filtered set when fenced, a new 4-case test, one superseded assertion in tests/test_sandbox_delivery.py, and the fragment.",
+    "done_when": "the done_when names six properties (no --add-dir for the reports root or review store, one for the review-records path beneath the store, a --bind list equal to the base's, every --add-dir writable-or-outside-sealed, an unfenced launch unchanged) plus the named gate and the negative control; the new test asserts all six and the manifest records the gate's result.",
+    "goal": "the node's goal is to hand a fenced codex review only the declared roots the fence leaves writable through one fence_writable_roots rule; reckon/_worker_fence.py:1285 defines that rule and reckon/_backends.py:2197 hands it to the dialect.",
+    "manifest": "read; it records commits 9e9bd57..2919cb24, the eight-file gate (base b97740c8 82 passed EXIT=0, head a6046b43 86 passed EXIT=0) and the negative control at 3 failed EXIT=1, with log paths under logs/.",
+    "write_paths": "the declared scope is reckon/_worker_fence.py, reckon/_backends.py, tests/test_a_fenced_codex_review_names_only_writable_roots.py and the evidence fragment/figure; the diff touches those plus tests/test_sandbox_delivery.py, which the resume advice granted mid-run for the one superseded assertion."
+  },
+  "justifications": {
+    "durability": "the negative control at logs/negative-control.log reddens tests/test_a_fenced_codex_review_names_only_writable_roots.py:181 when the unfiltered set is restored, so the guard is shown to fire.",
+    "evidence": "the manifest's gate covers all six done_when properties and its logs at logs/baseline-suite.log and logs/after-suite.log end in the recorded EXIT=0 lines.",
+    "fit": "fence_writable_roots at reckon/_worker_fence.py:1285 follows the module idiom and names nothing forbidden, though the test docstring at line 31 overstates its own log claim.",
+    "goal_fidelity": "reckon/_worker_fence.py:1285 states the one rule and reckon/_backends.py:2197 hands the dialect only the roots it keeps writable for a fenced run.",
+    "reuse": "reckon/_worker_fence.py:1514 replaces the inline store-seal test with the shared rule and reckon/_backends.py:2197 reuses it, so the capability has a single owner and no fork.",
+    "scope_discipline": "every path in the diff is a declared path or tests/test_sandbox_delivery.py, which the resume advice at resume-1-advice.txt granted mid-run for the assertion it supersedes."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to hand a fenced codex review only the declared roots the fence leaves writable through one fence_writable_roots rule; reckon/_worker_fence.py:1285 defines that rule and reckon/_backends.py:2197 hands it to the dialect.\nVERDICT done_when: the done_when names six properties (no --add-dir for the reports root or review store, one for the review-records path beneath the store, a --bind list equal to the base's, every --add-dir writable-or-outside-sealed, an unfenced launch unchanged) plus the named gate and the negative control; the new test asserts all six and the manifest records the gate's result.\nVERDICT write_paths: the declared scope is reckon/_worker_fence.py, reckon/_backends.py, tests/test_a_fenced_codex_review_names_only_writable_roots.py and the evidence fragment/figure; the diff touches those plus tests/test_sandbox_delivery.py, which the resume advice granted mid-run for the one superseded assertion.\nVERDICT manifest: read; it records commits 9e9bd57..2919cb24, the eight-file gate (base b97740c8 82 passed EXIT=0, head a6046b43 86 passed EXIT=0) and the negative control at 3 failed EXIT=1, with log paths under logs/.\nVERDICT diff: read commit by commit against b97740c8; five files - the rule added in reckon/_worker_fence.py:1285 and reused by the grant loop at 1514, reckon/_backends.py:2197 handing the filtered set when fenced, a new 4-case test, one superseded assertion in tests/test_sandbox_delivery.py, and the fragment.\nCALL_SITES: reckon/crew/dispatch.py:2243, reckon/crew/dispatch_sessions.py:1195, reckon/crew/dispatch_sessions.py:1650, reckon/crew/resumption.py:555\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_worker_fence.py:1285 states the one rule and reckon/_backends.py:2197 hands the dialect only the roots it keeps writable for a fenced run.\nSCORE evidence: 19\nJUSTIFICATION evidence: the manifest's gate covers all six done_when properties and its logs at logs/baseline-suite.log and logs/after-suite.log end in the recorded EXIT=0 lines.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff is a declared path or tests/test_sandbox_delivery.py, which the resume advice at resume-1-advice.txt granted mid-run for the assertion it supersedes.\nSCORE durability: 19\nJUSTIFICATION durability: the negative control at logs/negative-control.log reddens tests/test_a_fenced_codex_review_names_only_writable_roots.py:181 when the unfiltered set is restored, so the guard is shown to fire.\nSCORE fit: 17\nJUSTIFICATION fit: fence_writable_roots at reckon/_worker_fence.py:1285 follows the module idiom and names nothing forbidden, though the test docstring at line 31 overstates its own log claim.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/_worker_fence.py:1514 replaces the inline store-seal test with the shared rule and reckon/_backends.py:2197 reuses it, so the capability has a single owner and no fork.\nFINDING tests/test_a_fenced_codex_review_names_only_writable_roots.py:31 follow-on: the module docstring claims the red log's first line is the declared mutation string verbatim, but logs/negative-control.log's first line is a paraphrase, so a reader comparing them is misled; no gate matches that string, so it does not hold the node.\n",
+  "review_run_id": "r-20261019T095852450936-review-of-a-fenced-codex-review-names-only-writable-roots-2919cb242114",
+  "reviewed_base_sha": "b97740c80e0e90fbc6d0a7d216e7ae988ccb908c",
+  "reviewed_head_sha": "2919cb242114414180bb42f1395b451a75f6daf5",
+  "reviewed_run_id": "r-20261019T084231626128-a-fenced-codex-review-names-only-writable-roots",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T10:16:10.342933+00:00",
+  "total": 112
+}
