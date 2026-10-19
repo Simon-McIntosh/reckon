@@ -22,11 +22,11 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-informs" content="the-crew-surface-is-one-tool-and-a-few-verbs">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;every-plan-write-goes-through-edit-plan#s2&quot;, &quot;every-plan-write-goes-through-edit-plan#s3&quot;], &quot;s5&quot;: [&quot;every-plan-write-goes-through-edit-plan#s4&quot;], &quot;s6&quot;: [&quot;every-plan-write-goes-through-edit-plan#s5&quot;], &quot;s7&quot;: [&quot;every-plan-write-goes-through-edit-plan#s6&quot;], &quot;s8&quot;: [&quot;every-plan-write-goes-through-edit-plan#s7&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>Every Plan Write Goes Through edit_plan | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="10">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -55,7 +55,7 @@
       the cheapest refusal to remove.</p>
 
     <h2 id="s2">§2 — The skills describe the ops the store accepts</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> Remove the instruction to set <code>impl</code> wherever it survives at <code>d8ff471c9</code>:
       the <code>set</code> row of the op table in <code>skills/reckon-edit/SKILL.md</code>; the meta-field and "Do NOT author" rows of
       <code>skills/reckon-create/SKILL.md</code>, which still call <code>plan-impl</code> "not server-computed";
@@ -190,11 +190,21 @@
       an implementable section, no evidence record and a pending transition gate is refused, naming all three in the same answer. A
       <code>set</code> of <code>status</code> to each value of <code>TERMINAL_STATUSES</code>, imported from <code>reckon/lifecycle.py</code>
       rather than listed, is refused naming <code>close</code>. The negative control reports only the first failing guard, and the second case
-      then fails for the guards it omits. Write paths: <code>reckon/_store.py</code>, <code>reckon/_store_section_ops.py</code>,
+      then fails for the guards it omits.</p>
+    <p>The refusal changes a write existing tests use as their subject. Before changing anything, the node greps <code>tests/</code> and
+      <code>reckon/</code> at its base for every write of a terminal status. Every hit moves to <code>close</code> in the same node, and every
+      test file it touches passes. A hit in a file outside the write paths below stops the node as blocked, naming the file, so the
+      coordinator can widen its fence. The base already shows <code>tests/test_terminal_status_needs_every_section_ticked.py</code>,
+      <code>tests/test_every_section_has_a_declaration.py</code>, <code>tests/test_closure_gates.py</code> and
+      <code>tests/test_continuation.py</code>. The gate log also carries a grep of the three recipe files and
+      <code>skills/reckon-create/SKILL.md</code> for an instruction to append a resolved placeholder followup or to set a terminal status, which
+      finds none. Write paths: <code>reckon/_store.py</code>, <code>reckon/_store_section_ops.py</code>,
       <code>reckon/mcp.py</code>, <code>skills/reckon-edit/SKILL.md</code>,
       <code>skills/reckon-build/references/coordinator-reference.md</code>,
       <code>skills/reckon-build/references/sprint-orchestration.md</code>, <code>AGENTS.md</code>,
-      <code>tests/test_a_plan_closes_in_one_op.py</code>.</p>
+      <code>skills/reckon-create/SKILL.md</code>, <code>tests/test_terminal_status_needs_every_section_ticked.py</code>,
+      <code>tests/test_every_section_has_a_declaration.py</code>, <code>tests/test_closure_gates.py</code>,
+      <code>tests/test_continuation.py</code>, <code>tests/test_a_plan_closes_in_one_op.py</code>.</p>
 
     <h2 id="s7">§7 — A refused or late write names the next step</h2>
 <section data-reckon="section" data-id="s7" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
@@ -269,6 +279,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261019T064945193139-review-of-epw-skills-cite-accepted-ops-2b1dfdcb1fcd" data-who="reckon-build" data-when="2026-10-19T06:57:29.205Z">
     <div class="r-comment-body"><p>Independent review of r-20261019T060159939214-epw-skills-cite-accepted-ops at head 2b1dfdcb1fcdbc601bb0f43c41c4843578002852 scored goal_fidelity 18, evidence 15, scope_discipline 20, durability 15, fit 18, reuse 19; four follow-on findings (gate EXIT=1 vs done_when EXIT=0 with the failing id pre-existing at base, the corrected prose asserted by no durable test, AGENTS.md omitting the quarter-hour/risk statement the plan asks for, and the ruff clause unmet on a pre-existing file); no blocking findings; added_failure_count 0 against base 027fe7688.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-19T07:10:00Z">
+    <div class="r-comment-body"><p>§2 landed: no skill or agent file tells a coordinator to set <code>impl</code>, and the widened contract test holds every op the skills cite against the store (commits <code>5f0a050eb</code>, <code>d0bdc8598</code>, <code>2b1dfdcb1</code>); zero added failures; reviewed 105/120. <a href="/reckon/evidence/archive/every-plan-write-goes-through-edit-plan-landed.html#s2">evidence</a></p></div>
 </div>
 </section>
 </main>
