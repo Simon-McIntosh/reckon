@@ -280,7 +280,13 @@ def complete(
     # possibly before that pick has answered. Wait for it here — outside the
     # pointer lock the picker itself must take — so the row carries the pick's
     # answer instead of reading as one the picker never gave.
-    _await_in_flight_shadow_pick(run_id)
+    # A dry run waits for nothing and attaches nothing: the pick's timeout is
+    # written onto the pointer, which is one of the writes a dry run promises
+    # not to make. A pick still in flight is reported instead, so the operator
+    # sees the wait a promotion would take rather than paying it here.
+    awaiting_pick = _shadow_pick_in_flight(run_id) if dry_run else False
+    if not dry_run:
+        _await_in_flight_shadow_pick(run_id)
     # The node-local pointer lock serialises a run's read-modify-write here; the
     # host lease, taken inside it, excludes a promotion of the same run on
     # another host for the whole span, before either store is written.
@@ -294,6 +300,23 @@ def complete(
         # is reported as the withdrawal it is rather than failing validation on
         # the empty project name further down.
         if not str(record.get("project") or "").strip():
+            if dry_run:
+                return _dry_run_report(
+                    run_id,
+                    record,
+                    verdict=verdict,
+                    gate_check=gate_check,
+                    refusals=(
+                        (
+                            "the run names no project, so its dispatch was "
+                            "refused before a project was resolved: a promotion "
+                            "would withdraw it — retiring its pointer and "
+                            "releasing its workspace — and write no ledger row"
+                        ),
+                    ),
+                    would_withdraw=True,
+                    would_wait_for_pick=awaiting_pick,
+                )
             return _complete_withdrawn_run(run_id, record)
         # A run review delivers its record inside its own run directory and the
         # supervisor files it into the store when the worker ends. A supervisor
@@ -301,7 +324,9 @@ def complete(
         # wrote it, and a record no store reader can find is a review that
         # never happened — so the filing is repeated here, which is the last
         # moment the run's own record still exists to be read from.
-        _file_delivered_run_reviews(record)
+        delivered_reviews = _delivered_review_records(record) if dry_run else ()
+        if not dry_run:
+            _file_delivered_run_reviews(record)
         # A review run's outcome is the review it stored, so the operator's
         # hand is not the only source for a non-passing gate's summary; the
         # refusal below stands for every run with no stored review to read.
@@ -568,6 +593,8 @@ def complete(
                 refusals=(),
                 no_commit=no_commit,
                 no_impl_change=no_impl_change,
+                would_file_reviews=delivered_reviews,
+                would_wait_for_pick=awaiting_pick,
             )
         result = _complete_locked(
             run_id,
@@ -682,6 +709,9 @@ def _dry_run_report(
     refusals: Sequence[BaseException],
     no_commit: str = "",
     no_impl_change: str = "",
+    would_withdraw: bool = False,
+    would_file_reviews: Sequence[str] = (),
+    would_wait_for_pick: bool = False,
 ) -> dict[str, Any]:
     """Report every refusal a promotion would raise, without writing any of it.
 
@@ -690,15 +720,26 @@ def _dry_run_report(
     for a run that would promote, and ``invocation`` names the one command that
     would pass for the state the run is in — which for a run with nothing to
     fix is the command that was just evaluated.
+
+    The three paths whose promotion writes before any guard is judged are
+    reported rather than taken: ``would_withdraw`` for a run naming no project,
+    ``would_file_reviews`` for the delivered review records a filing would move
+    into the store, and ``would_wait_for_pick`` for a deferred pick still to
+    answer. A withdrawn run has nothing to invoke — its promotion writes no
+    ledger row — so no command is offered for it.
     """
     messages = [str(refusal) for refusal in refusals]
-    invocation = _dry_run_invocation(
-        run_id,
-        verdict=verdict,
-        gate_check=gate_check,
-        refusals=messages,
+    invocation = (
+        ""
+        if would_withdraw
+        else _dry_run_invocation(
+            run_id,
+            verdict=verdict,
+            gate_check=gate_check,
+            refusals=messages,
+        )
     )
-    return {
+    report: dict[str, Any] = {
         "ok": not messages,
         "dry_run": True,
         "run_id": run_id,
@@ -708,7 +749,21 @@ def _dry_run_report(
         "refusal_count": len(messages),
         "refusals": messages,
         "invocation": invocation,
+        "would_withdraw": would_withdraw,
+        "would_file_reviews": [str(path) for path in would_file_reviews],
+        "would_wait_for_pick": would_wait_for_pick,
     }
+    if would_file_reviews:
+        # The filing runs before the guards, so a review check that reads the
+        # store here reads it without these records. Said plainly rather than
+        # left for the operator to infer from a refusal naming no review.
+        report["notes"] = [
+            (
+                "the checks read the review store before the delivered records "
+                "listed in would_file_reviews would be filed into it"
+            )
+        ]
+    return report
 
 
 def complete_dry_run(run_id: str, **kwargs: Any) -> dict[str, Any]:
@@ -756,6 +811,19 @@ def complete_dry_run(run_id: str, **kwargs: Any) -> dict[str, Any]:
 _SHADOW_PICK_SPEC_NAME = "shadow-picker.json"
 _SHADOW_PICK_WAIT_SECONDS = 5.0
 _SHADOW_PICK_POLL_SECONDS = 0.1
+
+
+def _shadow_pick_in_flight(run_id: str) -> bool:
+    """Whether a deferred shadow pick is still to answer for this run.
+
+    Dispatch starts the advisory pick detached, so a promotion landing inside
+    the pick's window would otherwise record no selection. Both the wait and the
+    dry run's report of what it would wait for are decided here, so the two
+    cannot disagree about whether a pick is outstanding.
+    """
+    if not (run_dir(run_id) / _SHADOW_PICK_SPEC_NAME).exists():
+        return False
+    return _pointer_awaits_shadow_pick(run_id)
 
 
 def _await_in_flight_shadow_pick(run_id: str) -> None:
@@ -1996,6 +2064,30 @@ def _marker_present_in(
         f"git could not search {target} in {checkout} for the marker: "
         f"{result.stderr.strip() or result.stdout.strip() or result.returncode}"
     )
+
+
+def _delivered_review_records(record: Mapping[str, Any]) -> list[str]:
+    """The delivered review records a filing would read, resolved but unread.
+
+    The filing's own resolution decides which records a promotion would move
+    into the store, so a dry run asks the same question without writing any of
+    them: the names it reports are the ones the filing would have opened.
+    """
+    from reckon.crew import recovery_review_delivery as delivery
+    from reckon.crew import review as review_module
+
+    directory = delivery._review_record_delivery_directory(
+        record, str(record.get("project") or "")
+    )
+    if directory is None:
+        return []
+    try:
+        return [
+            str(path)
+            for path in review_module.delivered_run_review_paths(record, directory)
+        ]
+    except (OSError, ValueError):
+        return []
 
 
 def _file_delivered_run_reviews(record: Mapping[str, Any]) -> list[str]:
