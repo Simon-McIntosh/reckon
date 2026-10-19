@@ -1,0 +1,70 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "`assert report['refusal_count'] == 3` reddens if the dry run stops at its first refusal instead of gathering the sweep. Independent of the value under test: the count is the code's output and the control is recorded (negative-control-declared.log: `_require_independently` mutated to keep only the first refusal, `assert 1 == 3`, 1 failed, 3 passed, EXIT=1). Verified by reinstating the regression, not by observing green.",
+      "lines": "tests/test_complete_reports_every_refusal.py:238"
+    },
+    {
+      "failure_condition": "`assert _stores(repository, config_home) == before` reddens if any of the pointer, ledger, review store or worktree bytes changes across the dry run. This is the byte comparison the prior review (cfb1d317, findings on promotion.py:283/297/304 and the pointer-only assertion) asked for, and it is negative-controlled by the second control, which made the withdrawn path unlink the pointer and reddened only test_a_dry_run_writes_nothing_on_any_of_its_three_paths on the pointer's bytes (negative-control.log, 1 failed, 3 passed, EXIT=1). It would catch a pointer rewritten to the same shape but different bytes, which the earlier `.exists()` assertion could not.",
+      "lines": "tests/test_complete_reports_every_refusal.py:244"
+    },
+    {
+      "failure_condition": "the emitted `invocation` is executed by the CLI and the test asserts exit_code 0 and that the pointer is gone. Independent of the generator: it fails if `_dry_run_invocation` names a wrong flag, omits the gate status the check needs, or the guards do not in fact pass on the state the dry run described; the two sides are the generator and a live promotion.",
+      "lines": "tests/test_complete_reports_every_refusal.py:247-254"
+    },
+    {
+      "failure_condition": "`after['home'] == before['home']`, `would_file_reviews == [str(record)]` and `would_wait_for_pick is True` redden if the filing or the picker-timeout path writes under a dry run, or if the delivered record is not resolved. `would_file_reviews` compares the code's output to the path the test placed, so it guards the resolution rather than re-asserting the input; a run where the owner's directory resolution returns nothing yields `[]` and reddens.",
+      "lines": "tests/test_complete_reports_every_refusal.py:329-340"
+    },
+    {
+      "failure_condition": "`assert result.exit_code != 0` and `'requires a reason' in result.output` redden if `_refuse_a_flag_as_a_reason` is dropped from the `--no-commit` option (crew_run_commands.py:1862): click would then accept `--gate` as the reason and exit 0. Reads the parser's own refusal output, independent of the value under test.",
+      "lines": "tests/test_complete_reports_every_refusal.py:360"
+    },
+    {
+      "failure_condition": "`assert result['ledger_path']` and `assert not pointer_path(run_id).exists()` redden if the contracted receipt stops being read from the manifest (the command from `tests:`, the status from the log's `EXIT=0`); the fixture's manifest inputs and the promotion's output are separate sources.",
+      "lines": "tests/test_complete_reports_every_refusal.py:384-385"
+    }
+  ],
+  "call_sites": "reckon/crew_run_commands.py:2121 (crew_complete --dry-run -> promotion.complete_dry_run), reckon/crew_run_commands.py:2149 (crew_complete -> crew_module.complete), reckon/crew_run_commands.py:1862-1996 (the eight option callbacks -> _refuse_a_flag_as_a_reason), reckon/crew/promotion.py:351 (complete -> _default_gate_evidence_from_manifest fill), reckon/crew/promotion.py:793 (complete_dry_run -> the same fill)",
+  "completed_at": "2026-10-19T14:18:15Z",
+  "dispatched_at": "2026-10-19T12:49:03Z",
+  "findings": [
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": "2017",
+      "severity": "follow-on",
+      "text": "follow-on: `_refuse_a_flag_as_a_reason` is attached to the eight flags the plan enumerates (`--no-commit`, `--no-impl-change`, the six `--waive-*`), but `--unplanned-reason` (crew_run_commands.py:2017) and `--outcome` (:1852) are also free-text reason-taking options on `crew complete` and carry no callback, so `crew complete --run R --gate passed --no-commit --unplanned-reason --gate passed` still reads `--gate` as the `--no-commit` reason and the swallow the plan names remains reachable through the option next to it. The plan's parenthetical bounds the set to the named family, so this does not hold the node, but the guard is narrower than the class it is described under."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "378",
+      "severity": "follow-on",
+      "text": "follow-on: a dry run is not literally write-free of the run directory. `_review_gate` calls `classify_pointer(record)` (promotion.py:378), which persists `classification.json` into the run directory, and the no-write test has to exclude that file (`_COORDINATION_DIRS`/`skip_names=(\"classification.json\",)` at tests/test_complete_reports_every_refusal.py:145-155) to compare byte-identical. The guard's own help text enumerates the stores it protects ('no ledger row, no plan comment, no pointer change', crew_run_commands.py:2026-2031), so the cache write does not contradict it and any reader of the pointer makes the same write; noted so a later reader does not read the byte-equality assertion as covering the whole run directory."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against base 79a5268f. Seven commits: 0117d3e0 (feature: complete_dry_run, _dry_run_report, _dry_run_invocation, _shadow_pick_in_flight, _delivered_review_records, the eight option callbacks, the fill's log-header recovery, the dispatch-contract wording in prompts.py), b61c6a25 (lint), cfb1d317 (landing fragment), c758246e (the repair round's write-free dry run: would_withdraw, would_file_reviews, would_wait_for_pick and the `_record_refusal` dry-run guard), 80bdd893 (the byte-for-byte no-write test), ce2bd59b (delete the duplicate gate-log reader, call reports._test_log_command), 1687b805c (landing fragment update). Every hunk belongs to the three deliverables; nothing extraneous.",
+    "done_when": "The fenced done_when (prompt.txt:99-108) names tests/test_complete_reports_every_refusal.py passing at the node head with zero added failures against the base arm and logs whose last line is EXIT=, plus the three-case behaviour. I re-ran the file myself at the reviewed head 1687b805c: `4 passed in 28.27s`, EXIT=0 (/tmp/reckon-crew-scratch/r-20261019T124718439574-review-of-cso-complete-reports-every-refusal-1687b805ce54/focused.log). The manifest's before/after arms (base-arm.log at 79a5268f, gate-final.log at ce2bd59b) both read to a summary and a bare EXIT=1, and both name the same two failures -- test_every_module_fits_a_worker_window and test_promotion_releases_only_the_integrated_clean_case -- so added_failure_count is 0. The gate arm ran one commit before the reviewed head (ce2bd59b vs 1687b805c); the intervening commit changes only the landing fragment, so it cannot move a test outcome.",
+    "goal": "The source GOAL (prompt.txt:30-33) is to make `crew complete` report every refusal it raises in one answer: a dry run listing all failing guards with the one passing invocation, reason flags that refuse a value beginning with two dashes, and a manifest receipt fill repaired where a seven-day measurement shows it missing. The landed diff delivers all three -- promotion.py `complete`/`complete_dry_run`/`_dry_run_report` gather every guard's refusal and emit an invocation; `_refuse_a_flag_as_a_reason` is attached to the eight reason-taking options (crew_run_commands.py:1862-1996); promotion_records.py `_command_from_gate_log` reads the gate log's own `# command:` header through reports._test_log_command and refuses recovered prose -- with the caveat that the dry run still writes classification.json (finding on promotion.py:378) and covers eight reason flags, not every free-text option (finding on crew_run_commands.py:2017).",
+    "manifest": "Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T105208473456-cso-complete-reports-every-refusal/manifest.md. It states status complete, seven commits from 0117d3e0 to 1687b805c, the gate command, gate-final.log and base-arm.log, the two negative-control logs, the fill-rate measurement (0.3373 -> 0.5254 over 845 promoted runs) with its script and log, and the two out-of-scope failures under follow_ons. The prior review's blocking finding on manifest.md:40 (a truncated after-arm log) is repaired: after_suite now cites gate-final.log, whose first line names ce2bd59b and which ends in a bare EXIT=1. I could not re-confirm `crew check-manifest` for the reviewed run -- it was storage-terminated twice (>150s) -- so I read the cited logs directly instead of the record.",
+    "write_paths": "The source fences six product paths, the new test file and the landing fragment (prompt.txt:69-78). `git diff --stat 79a5268f..1687b805c` names six paths -- reckon/crew/promotion.py, reckon/crew/promotion_records.py, reckon/crew/prompts.py, reckon/crew_run_commands.py, tests/test_complete_reports_every_refusal.py, docs/evidence/fragments/the-crew-surface-is-one-tool-and-a-few-verbs/cso-complete-reports-every-refusal.html -- every one inside the fence and nothing outside it. promotion_gate.py and reports.py were declared but not modified."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261019T124718439574-review-of-cso-complete-reports-every-refusal-1687b805ce54",
+  "reviewed_base_sha": "79a5268f5baffd6f861f030428982347a3fcd9e9",
+  "reviewed_head_sha": "1687b805ce543b15c571499ce085ab1afe77e928",
+  "reviewed_run_id": "r-20261019T105208473456-cso-complete-reports-every-refusal",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T14:25:07.506717+00:00"
+}
