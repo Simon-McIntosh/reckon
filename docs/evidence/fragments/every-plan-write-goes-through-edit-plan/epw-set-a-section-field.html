@@ -1,0 +1,52 @@
+<!-- Evidence anchor: epw-set-a-section-field -->
+
+<section id="epw-set-a-section-field-evidence">
+  <h2>An existing section is editable through one op</h2>
+
+  <p id="epw-set-a-section-field-mechanism">
+    <code>edit_plan</code> now accepts <code>{op:'set', path:'sections.&lt;id&gt;.&lt;field&gt;', value}</code>
+    over five fields. Three of them — <code>links</code>, <code>effort_hours</code> and
+    <code>capability</code> — are typed metadata the state writer already regenerates from the record,
+    so the handler validates the record whole through the same <code>SectionRecord</code> an
+    <code>insert_section</code> builds one from and changes only the working state. The other two —
+    the <code>h2</code> <code>title</code> and the authored <code>body</code> — are HTML the state
+    writer preserves untouched, so each queues an authored-HTML edit the same write consumes, applied
+    through the one replacement path the text editor uses (<code>_replace_authored_html</code>). The
+    preimage is located from the section's own heading rather than retyped by a caller, so an
+    apostrophe stored as <code>&amp;#x27;</code> cannot make the match miss — the failure that made a
+    hand text edit refuse.
+  </p>
+
+  <p id="epw-set-a-section-field-refusals">
+    Two guards keep the two write kinds from colliding with the store's own model. A section's status
+    stays a declaration: <code>sections.&lt;id&gt;.status</code> is refused naming
+    <code>section_declarations.&lt;id&gt;</code>, so no second spelling is added. A <code>body</code>
+    carrying a heading or a <code>data-reckon</code> section element is refused, because it would
+    forge structure. An unknown field is refused listing the accepted five, and a section id the plan
+    does not carry is refused naming it.
+  </p>
+
+  <p id="epw-set-a-section-field-measure">
+    The gate ran at head <code>c3b7d7605</code> over
+    <code>tests/test_edit_plan_sets_a_section_field.py</code>,
+    <code>tests/test_the_fingerprint_has_one_form.py</code>, <code>tests/test_skill_contracts.py</code>,
+    <code>tests/test_mcp_vocabulary_is_complete.py</code>, <code>tests/test_edit_plan.py</code> and
+    <code>tests/test_every_module_fits_a_worker_window.py</code>: 169 passed, 2 failed, both failing at
+    the base arm too (<code>test_every_registered_crew_verb_is_documented_or_exempt</code>,
+    <code>test_every_module_fits_a_worker_window</code>) — <strong>zero added failures</strong>. Each of
+    the five fields is set on a temporary plan through <code>edit_plan</code>, every other section's
+    authored bytes are asserted identical, and <code>reckon audit-doc</code> reports clean. The body
+    case replaces prose holding an apostrophe stored as <code>&amp;#x27;</code> and returns
+    <code>review_owed</code> naming that section, matching the equivalent text edit.
+  </p>
+
+  <p id="epw-set-a-section-field-negative-control">
+    The declared mutation — accept a body containing an <code>h2</code> element — was applied at the
+    node head and the forged-structure case then failed
+    (<code>test_a_body_containing_a_heading_is_refused</code>), logged at
+    <code>negative-control.log</code> with <code>EXIT=1</code>; the mutation was reverted without being
+    committed. Two further negative controls pass: a body containing a heading is refused, and
+    <code>set sections.s9.title</code> on a plan without <code>s9</code> is refused naming it. The
+    <code>reckon-edit</code> op table names the path, which the skill-contract sweep reads.
+  </p>
+</section>
