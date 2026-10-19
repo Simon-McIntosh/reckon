@@ -814,6 +814,37 @@ def _logged_producer_stop(project: str) -> str | None:
     return None
 
 
+def _read_seat_host(project: str) -> tuple[str, bool]:
+    """The host a project's held seat names, and whether it is a foreign one.
+
+    A seat record that names no host -- erased, or written before the field
+    existed -- is read exactly as a seat on this host always was, so the remedy
+    is unchanged for it. One reader for the two facts a follower needs about the
+    seat's host, so the one-line overrun choice and the advice it accompanies
+    never resolve the same seat differently.
+    """
+    from reckon.crew import runs
+
+    try:
+        with runs.watch_lock_path(project).open("rb") as handle:
+            record = runs._read_watch_record(handle)
+    except OSError:
+        return "", False
+    return runs._seat_host(record), runs._seat_names_a_foreign_host(record)
+
+
+def _producer_seat_is_foreign(project: str) -> bool:
+    """Whether a project's held seat names a host other than this one.
+
+    The one fact that chooses an overrun's one-line pane: a foreign seat's
+    reloading note is withheld because its host-specific advice already carries
+    the news in the same line, while a local seat draws both the reloading note
+    and the cycle command. It is read from the seat record rather than from the
+    shape of the advice dict, so a later change that adds a host field to the
+    local branch of the advice cannot collapse the local remedy line.
+    """
+    return _read_seat_host(project)[1]
+
 
 def _ticker_layout_signature() -> str:
     """Fingerprint the ticker's fixed grid geometry, not the code that emits rows.
@@ -2149,22 +2180,6 @@ def _follow_watch_lines(
     producer_reload_failure_reported = False
     producer_stop_reported = False
 
-    def _producer_seat_host() -> tuple[str, bool]:
-        """The host a project's held seat names, and whether it is a foreign one.
-
-        A seat record that names no host -- erased, or written before the field
-        existed -- is read exactly as a seat on this host always was, so the
-        remedy is unchanged for it. The distinction the caller needs is only
-        the one that changes the remedy: a seat known to belong to another
-        host, whose producer this process cannot cycle.
-        """
-        try:
-            with runs.watch_lock_path(project).open("rb") as handle:
-                record = runs._read_watch_record(handle)
-        except OSError:
-            return "", False
-        return runs._seat_host(record), runs._seat_names_a_foreign_host(record)
-
     def _producer_stale_event(identity: Mapping[str, Any]) -> dict[str, Any]:
         """Name a producer running old code and a remedy its reader can run.
 
@@ -2178,7 +2193,7 @@ def _follow_watch_lines(
         catch up on its own rather than one to cycle by hand. The line says so,
         and carries no command the reader's ``unwatch`` would refuse.
         """
-        host, foreign = _producer_seat_host()
+        host, foreign = _read_seat_host(project)
         stamps = (
             f"{_short_code_stamp(identity.get('code_stamp'))} vs "
             f"{_short_code_stamp(identity.get('current_stamp'))}"
@@ -2281,10 +2296,16 @@ def _follow_watch_lines(
         # The reload overran its window. A local seat needs both the reloading
         # note and the cycle remedy. A foreign seat's advice already says it
         # reloads itself and names its host, so only that line reaches the pane.
+        # The choice is the seat's own host, read from the seat record, rather
+        # than the shape of the advice dict: a later change that adds a host
+        # field to the local branch of the advice must not collapse the local
+        # remedy line.
         producer_stale_advised = True
         advice = _producer_stale_event(identity)
         return [
-            _producer_reloading_event(identity, pane_line="host" not in advice),
+            _producer_reloading_event(
+                identity, pane_line=not _producer_seat_is_foreign(project)
+            ),
             advice,
         ]
 

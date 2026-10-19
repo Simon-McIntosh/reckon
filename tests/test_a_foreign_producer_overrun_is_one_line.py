@@ -17,7 +17,15 @@ from reckon.crew import runs
 PROJECT = "pane-producer"
 SESSION = "pane-session"
 FOREIGN_HOST = "producer-elsewhere.invalid"
-OLD_STAMP = "0" * 64
+
+# Both stamps are planted by this test and asserted as literals. Reading the
+# follower stamp off the event the pane was rendered from would compare the
+# line against a field of that same event, so both sides would move together
+# and the assertion would hold for any stamp at all.
+SEAT_STAMP = "deadbeef" + "0" * 56
+FOLLOWER_STAMP = "cafef00d" + "1" * 56
+SEAT_STAMP_SHORT = "deadbeef"
+FOLLOWER_STAMP_SHORT = "cafef00d"
 
 
 @pytest.fixture()
@@ -38,10 +46,11 @@ def _overrun(monkeypatch, *, host: str) -> list[dict]:
                 "pid": os.getpid(),
                 "pid_start_time": runs._process_start_time(os.getpid()),
                 "host": host,
-                "code_stamp": OLD_STAMP,
+                "code_stamp": SEAT_STAMP,
             }
         )
     )
+    monkeypatch.setattr(runs, "follower_code_stamp", lambda: FOLLOWER_STAMP)
     now = [1000.0]
     waits = [0]
     stop = threading.Event()
@@ -103,8 +112,8 @@ def test_foreign_overrun_draws_one_host_line_and_keeps_both_events(
     pane = _producer_lines(_render(monkeypatch, events, json_output=False))
     assert len(pane) == 1, pane
     assert FOREIGN_HOST in pane[0]
-    assert OLD_STAMP[:8] in pane[0]
-    assert str(events[-1]["current_stamp"])[:8] in pane[0]
+    assert SEAT_STAMP_SHORT in pane[0]
+    assert FOLLOWER_STAMP_SHORT in pane[0]
     assert "reloads itself" in pane[0]
 
     stream = [
@@ -115,12 +124,14 @@ def test_foreign_overrun_draws_one_host_line_and_keeps_both_events(
     assert stream_kinds.count(cli_module.FOLLOWER_STALE_PRODUCER_EVENT) == 1
 
 
-def test_local_overrun_keeps_reloading_and_cycle_lines(
+def test_local_overrun_keeps_its_reloading_and_cycle_lines(
     isolated_home, monkeypatch
 ) -> None:
     events = _overrun(monkeypatch, host=socket.gethostname())
     pane = _producer_lines(_render(monkeypatch, events, json_output=False))
     assert len(pane) == 2, pane
+    assert SEAT_STAMP_SHORT in pane[0]
+    assert FOLLOWER_STAMP_SHORT in pane[0]
     assert "it is reloading itself" in pane[0]
     assert "cycle it with:" in pane[1]
     assert runs.watch_cycle_line(PROJECT) in pane[1]
