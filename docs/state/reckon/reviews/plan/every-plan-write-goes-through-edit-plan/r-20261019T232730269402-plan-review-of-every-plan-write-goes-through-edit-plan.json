@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T23:35:58.240Z",
+  "dispatched_at": "2026-10-19T23:28:14Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-plan-write-goes-through-edit-plan.html:300",
+      "id": "reasoning-1",
+      "reason": "the node cannot put the marker on the caller's answer with its declared fence, so it either stops blocked or writes a field the guard in reckon/mcp.py never surfaces.",
+      "text": "\u00a712's deliverable requires that \"an answer served by the image while the child is backed off says so\", but the caller-visible answer is composed in reckon/mcp.py (`_unanswered_on_current_code` at reckon/mcp.py:427-446, which attaches `current_code_note`, and `_served_on_current_code` at reckon/mcp.py:467-470), while \u00a712's write paths are only reckon/served_code.py and tests/test_a_dying_child_is_backed_off.py",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-plan-write-goes-through-edit-plan.html:301",
+      "id": "done_when-1",
+      "reason": "an unasserted clause is dropped at implementation with no refusal to name it, and every other clause of this section already carries its own case.",
+      "text": "the done-when's cases cover the spawn bound, the image answer, the readable stderr and the stamp reset, but no case asserts the deliverable's marker that an answer served while the child is backed off says so",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-plan-write-goes-through-edit-plan.html:24",
+      "id": "wiring-1",
+      "reason": "the meta leaves \u00a78 (ready at s7) and \u00a710 (ready at s6) concurrently ready on one file, so a re-dispatch of both would put two nodes on skills/reckon-edit/SKILL.md with no declared order.",
+      "text": "`plan-section-depends-on` gives \u00a78 no edge to \u00a710, although both list skills/reckon-edit/SKILL.md in their write paths, while every other shared-write-path pair in this plan does carry one (\u00a79\u2190\u00a76 for reckon/mcp.py, \u00a711\u2190\u00a79 for reckon/mcp.py and tests/test_mcp_server_serves_current_code.py, \u00a712\u2190\u00a711 for reckon/served_code.py)",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e31cd6f0073d44366b60ef2b8c6eddf1d4550847fbadd4f7c3269e895ae6c4df",
+  "plan_slug": "every-plan-write-goes-through-edit-plan",
+  "plan_version": 51,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261019T232730269402-plan-review-of-every-plan-write-goes-through-edit-plan",
+  "reviewed_blob_sha": "125147912b7762992759241236934e836f13ca1a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a712's citations resolve: CurrentCodeServer at reckon/served_code.py:1592, may_load at reckon/served_code.py:669, the unrecorded spawn at reckon/served_code.py:1453-1457 (stderr=subprocess.DEVNULL), the \u00a711 head 110f69ed1 (a real commit), and both named test files exist; the composed snapshot is byte-identical to the source plan.",
+    "done_when": "a finding \u2014 \u00a712's done-when has five cases and each names a control, but none asserts the deliverable's clause that an answer served by the image while the child is backed off says so.",
+    "evidence_paths": "pass \u2014 \u00a712's gate belongs to the run record and its only named artifact is a bounded stderr file the test reads back, not a session scratchpad; no section in this plan places evidence outside a durable path.",
+    "naming": "pass \u2014 \u00a712 names no plan label, stage name, ticket or version in code; CurrentCodeServer and tests/test_a_dying_child_is_backed_off.py describe the mechanism, and \u00a711/\u00a712 appear only as plan section anchors.",
+    "reasoning": "a finding \u2014 \u00a712's marker clause runs on a code path its fence excludes: the client-visible answer is composed in reckon/mcp.py, which is not a write path of \u00a712.",
+    "single_goal": "pass \u2014 \u00a712 carries one goal (a bounded backoff for a current-code child that dies after every spawn); the bounded stderr file and the image-answer note are parts of that one guard.",
+    "wiring": "a finding \u2014 plan-section-depends-on orders every shared-write-path pair (\u00a79\u2190\u00a76 for reckon/mcp.py, \u00a711\u2190\u00a79, \u00a712\u2190\u00a711) except \u00a78 and \u00a710, which both write skills/reckon-edit/SKILL.md with no edge between them."
+  },
+  "section_digests": {
+    "_document": "76d9f5c6754fe5df75b43f18bd3d1a6e73c87dbb9feb4646c47d4f5e0340db4a",
+    "s1": "7f96df198aae5b46c87f2d18f8eff17398ead36155ee67ba73607e91aa1d2fe3",
+    "s10": "fd786ebf0d880e15085a2e0ca5423504f73ce4c013e483f5e3cae145e3ad4079",
+    "s11": "19cc30d79534a21675c806c6d7006ea1e8e052fdccf4583b30258f699ee38e45",
+    "s12": "7e2f629ed7cd5dc5adadc5436414bca4edb40897d7812c8376a08046a3b2c270",
+    "s2": "737250903251177035b357be3d656b549480337bc454f97615634dada495e251",
+    "s3": "4150e9281b9c0fe1173e9c23f5582efb0662d22f1d36944861d3033f988d479c",
+    "s4": "e0390ff35ac5e425fa3060cede9882af598c54dc89e0a6069101b3971f8e8367",
+    "s5": "699b049fe374b1219d8b917168575594a5bcb9255bbe13efdbf1d0c928562a86",
+    "s6": "27f4d6436a652181a180df37fa1a640ebff9cb62418e856c86bc907ecda9778f",
+    "s7": "80062db679255aff5087534386e7372545e1cd3414916db8329aec79a1a8388d",
+    "s8": "f9dd6299834b4d039fd1f45b37141d5e265075b4cfd7f341357bea21196f5b35",
+    "s9": "bd2c3090ecc9a89ad8c0b2f7312aae077382dd2709954d9e27f449e984d622a8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T23:37:50.364296+00:00"
+}
