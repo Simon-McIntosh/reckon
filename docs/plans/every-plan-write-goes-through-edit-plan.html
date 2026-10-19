@@ -22,11 +22,11 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-informs" content="the-crew-surface-is-one-tool-and-a-few-verbs">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;every-plan-write-goes-through-edit-plan#s2&quot;,&quot;every-plan-write-goes-through-edit-plan#s3&quot;],&quot;s5&quot;:[&quot;every-plan-write-goes-through-edit-plan#s4&quot;],&quot;s6&quot;:[&quot;every-plan-write-goes-through-edit-plan#s5&quot;],&quot;s7&quot;:[&quot;every-plan-write-goes-through-edit-plan#s6&quot;],&quot;s8&quot;:[&quot;every-plan-write-goes-through-edit-plan#s7&quot;],&quot;s9&quot;:[&quot;every-plan-write-goes-through-edit-plan#s6&quot;],&quot;s10&quot;:[&quot;every-plan-write-goes-through-edit-plan#s6&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;}">
   <title>Every Plan Write Goes Through edit_plan | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="35">
+<meta name="plan-version" content="36">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -250,7 +250,7 @@
     <p><strong>Done when</strong> the three cases pass at the node's head, logged with <code>EXIT=0</code>, and each has a negative control that removes the branch it covers, after which that case fails. Write paths: <code>reckon/mcp.py</code>, <code>tests/test_mcp_server_serves_current_code.py</code>.</p>
 
     <h2 id="s10">§10 — The skills describe close and drop the retired instructions</h2>
-<section data-reckon="section" data-id="s10" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s10" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> Split from §6 on 2026-10-19. With these documents in its fence, the dispatch of §6's node (<code>epw-a-plan-closes-in-one-op</code>, 14:31 UTC) was refused as a competence refusal: a context estimate of 234,819 usable input tokens against the local lane's 230,144-token window. Once §6 lands, the store refuses a terminal <code>set</code> of <code>status</code>, so any document still showing that write, or the resolved-placeholder recipe, teaches a refused op.</p>
     <p><strong>Deliverable.</strong> <code>skills/reckon-edit/SKILL.md</code> documents <code>close</code> in its op table, and its archive example uses <code>close</code>. The instructions to set a terminal status, and the recipe of appending an already-resolved "done — no followup", are replaced by <code>close</code> in <code>skills/reckon-build/references/coordinator-reference.md</code>, <code>skills/reckon-build/references/sprint-orchestration.md</code>, <code>AGENTS.md</code> and <code>skills/reckon-create/SKILL.md</code>.</p>
     <p><strong>Done when</strong> <code>tests/test_skill_contracts.py</code> and <code>tests/test_cited_commands_exist.py</code> pass at the node's head. The contract harness applies every op object the skills cite to the store, which now accepts <code>close</code> and refuses a terminal plan <code>set</code>. The harness counts only a refusal for a path as a failure (<code>_REFUSAL_FOR_PATH</code>), so this node teaches it the refusal naming <code>close</code>, and a surviving example then fails it. The gate log carries a grep of the five files for an instruction to set a terminal status or append a resolved placeholder followup, which finds none. The negative control restores the archive example's <code>set</code> of <code>status</code> to <code>archived</code>, and the contract test then fails naming <code>skills/reckon-edit/SKILL.md</code>. Write paths: <code>skills/reckon-edit/SKILL.md</code>, <code>skills/reckon-build/references/coordinator-reference.md</code>, <code>skills/reckon-build/references/sprint-orchestration.md</code>, <code>AGENTS.md</code>, <code>skills/reckon-create/SKILL.md</code>, <code>tests/test_skill_contracts.py</code>.</p>
@@ -351,7 +351,10 @@
     <div class="r-comment-body"><p>docs/evidence/fragments/every-plan-write-goes-through-edit-plan/epw-a-plan-closes-in-one-op.html</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261019T173303533089-review-of-epw-skills-describe-close-20b6e6b56af4" data-who="reckon-build" data-when="2026-10-19T17:47:05.429Z">
-    <div class="r-comment-body"><p>Independent review of run r-20261019T171535993258-epw-skills-describe-close at head 20b6e6b56 lands fully positive: all six dimensions scored (goal_fidelity 20, evidence 19, scope_discipline 20, durability 16, fit 18, reuse 20), zero added failures derived from the reviewed run&#x27;s own baseline_suite/after_suite logs, one non-blocking follow-on finding, no blocking defect.</p></div>
+    <div class="r-comment-body"><p>Independent review of run r-20261019T171535993258-epw-skills-describe-close at head 20b6e6b56 lands fully positive: all six dimensions scored (goal_fidelity 20, evidence 19, scope_discipline 20, durability 16, fit 18, reuse 20), zero added failures derived from the reviewed run's own baseline_suite/after_suite logs, one non-blocking follow-on finding, no blocking defect.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-close-s10" data-who="reckon-build" data-when="2026-10-19T17:50:00Z">
+    <div class="r-comment-body"><p>§10 landed: the skills and agent files describe <code>close</code> and no longer teach a terminal plan <code>set</code> or the resolved-placeholder recipe, held by the contract harness (commits <code>1161f3735</code>, <code>20b6e6b56</code>); reviewed 113/120. <a href="/reckon/evidence/archive/every-plan-write-goes-through-edit-plan-landed.html#s10">evidence</a></p></div>
 </div>
 </section>
 </main>
