@@ -261,6 +261,7 @@ def test_the_index_endpoint_serves_only_row_fields(project_tree, parse_counter):
         "width",
         "height",
         "revision",
+        "impl",
     )
     assert tuple(metadata_index.ROW_FIELDS) == declared
     assert isinstance(payload, list)
