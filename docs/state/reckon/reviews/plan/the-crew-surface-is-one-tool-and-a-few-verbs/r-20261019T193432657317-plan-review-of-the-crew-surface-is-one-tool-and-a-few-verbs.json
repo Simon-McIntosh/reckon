@@ -1,0 +1,46 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T19:47:15.357Z",
+  "dispatched_at": "2026-10-19T19:35:30Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:205",
+      "id": "reasoning-1",
+      "reason": "\u00a77 check 5 (:277-280) pins `crew widen` as a live verb that must accept a non-running run and be the path `complete --accept-path` writes through, so a node cannot tombstone it without failing its own gate; the loose phrase names the reopening *procedure* (repair-status \u2192 widen \u2192 resume), not the verb.",
+      "text": "\u00a77's flag list reads \"`--reopen` replaces `repair-status`, `widen` and `resume`\", but \u00a77:266 excludes `widen` from the folded set (\"`widen`, which this section keeps and widens\") and \u00a77:206 gives it new behaviour, so the same paragraph both retires and retains the verb",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "eda65e978c473efd3ec5f09d635d8273cfa8a531ed7efd4fcb4abcbef2d59b8f",
+  "plan_slug": "the-crew-surface-is-one-tool-and-a-few-verbs",
+  "plan_version": 22,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261019T193432657317-plan-review-of-the-crew-surface-is-one-tool-and-a-few-verbs",
+  "reviewed_blob_sha": "acdf896ad8ad74de6597afcb960c324b9a4d5bed",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 verified against the tree: `reckon/crew/claims.py` exposes `narrow_claim` (:90) and `release_claim` (128), contradicting nothing; `reckon/cli.py` re-exports `crew_preflight` (:221), `crew_redispatch` (:494), `crew_repair_status` (:500) and `crew_unwatch` (:524); `crew_watch` lives in `reckon/crew_follow_commands.py` (:3562); every \u00a77 write-path module exists; and every folded-verb command string under `reckon/` (`preflight`/`resume-ready` in refusals.py, `check-manifest` in prompts.py, `repair-status` in recovery_classification.py, `repair-review` in obligations.py, `unwatch` in watch_unit.py, and the AGENTS.md rows) sits inside its folding node's fence, so no node hits the \"file outside my write paths\" stop the section anticipates.",
+    "done_when": "pass \u2014 each of the four nodes names a negative control that alters one of its successors' answers (\u00a77:282) and the resume node names a second control routing `complete --accept-path` around the claim owner (:283); the leaf-count measure excludes tombstones and is taken at each node's own base (:273-276), so it cannot be satisfied by a stale figure.",
+    "evidence_paths": "pass \u2014 \u00a77 names no scratchpad or node-local path; the plan's landed evidence accumulates at `docs/evidence/archive/the-crew-surface-is-one-tool-and-a-few-verbs-landed.html`, which the \u00a72/\u00a73/\u00a74 close comments already write.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches a symbol, filename or comment; the node ids (`cso-budget-family-folds` and the rest) and \"the five shared ones\" are plan-level dispatch identifiers, not code, and the files the nodes write are named by mechanism (`test_crew_families_fold.py`).",
+    "reasoning": "a finding \u2014 the flag list says `--reopen` replaces `widen`, while the section's own tombstone carve-out keeps and widens `widen`.",
+    "single_goal": "pass \u2014 each node folds one verb family; the `widen`/`complete --accept-path` claim change is the mechanism that makes `resume --reopen` work, and \u00a77 check 5 (:277-280) carries it as part of the resume node's own gate.",
+    "wiring": "pass \u2014 \u00a77's `depends-on` resolves to s6, and the node-level ordering for the two nodes that share \u00a75's files (`reckon/crew/obligations.py`, `reckon/mcp.py`) is stated at \u00a77:225 (\"Only the third and fourth write a file \u00a75 also writes, so they wait on \u00a75\") and enforced by the task-claim scope check rather than by a section edge that would over-hold the budget and watch nodes."
+  },
+  "section_digests": {
+    "_document": "26fd28404590af02aa2ebae125b81f4f7629f614fb6c2a72ea68b2d0d1aff496",
+    "s1": "df3ca327aa989333473f3456bef3fcb4304fc54d8ab37eb334a92448b8837aaa",
+    "s2": "be69292dc4744e91b19438c3129be40ac6c6138f02cd12656616dd3906a1d313",
+    "s3": "bfc4b93502cb69a2a5878f9c282da2cbab878f4f49482f263fdfc074dfce4ba8",
+    "s4": "2feb22a10d53f02161e33412c6f491a2718ee9b88ffede06e39b7fc15799f5d1",
+    "s5": "4a0b632aaec0c9b2538edeab874ccd9fd39723e2eef864da9ae65a3f72b6695c",
+    "s6": "77d39fe1cb51bc28d79918ed4f2d3851be11a57276b9a2e23324cac51736ddb7",
+    "s7": "dc3d6822924359f16c50f3cc9f4a73d1b1dcaf0aeb88e7973a1792bc373ad79e",
+    "s8": "beb6c1568fe326e8af87c393c93ac9e71dec60ad9a9247b47ffbec9d08fc76a6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T19:57:22.604833+00:00"
+}
