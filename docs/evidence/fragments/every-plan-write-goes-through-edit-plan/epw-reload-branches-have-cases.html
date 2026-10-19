@@ -1,0 +1,62 @@
+<!-- Evidence anchor: epw-reload-branches-have-cases -->
+
+<section id="epw-reload-branches-have-cases-evidence">
+  <h2>The reload's untested branches have cases, and one of them was a defect</h2>
+
+  <p id="epw-reload-branches-have-cases-mechanism">
+    The MCP server's current-code guard decides a failed call on three facts about the child
+    interpreter it runs behind the stdio front: whether the child's parameter list disagrees with
+    the registered one, whether the child reached the tool at all, and what the child answered. All
+    three now have a case in <code>tests/test_mcp_server_serves_current_code.py</code>, driven
+    through the same temp-checkout harness the file already used, over the <code>crew</code> tool
+    rather than <code>edit_plan</code>: a current-code answer that is itself a failure
+    (<code>crew_answers</code>), a child that never reaches the tool because the moved checkout no
+    longer serves it (<code>crew_never</code>), and a child that makes no answer at all because the
+    interpreter dies inside the call (<code>crew_silent</code>).
+  </p>
+
+  <p id="epw-reload-branches-have-cases-defect">
+    <strong>The second case exposed a defect, and it is the one this section's fix repairs.</strong>
+    The child protocol reported a tool's parameter names and its answer, but said nothing about
+    whether it ever found the tool. A child that found none therefore reported empty parameters —
+    which the guard already reads as no signature change — and its own crash was then served as the
+    checkout's answer, marked with the checkout's stamp. Reproduced at the node's base revision
+    (<code>2cbe964a</code>), the second call returned, with no code ever running the call; the
+    child's failure was a <code>StopIteration</code> from an empty tool lookup:
+  </p>
+
+  <pre id="epw-reload-branches-have-cases-reproduction"><code>{'ok': False, 'error': 'crew_error', 'detail': 'StopIteration: ',
+ 'served_by_code_stamp': 'a9f1646d7ec0dc1c8405395989deb27223ce7c047b30d3c143c8a283592d9593'}</code></pre>
+
+  <p id="epw-reload-branches-have-cases-fix">
+    The child now reports <code>reached</code>, set once the tool has been found and before it is
+    called, so a failure raised after that point is the tool's own answer and a failure raised
+    before it is the child's. <code>_current_code_answer</code> returns <code>None</code> for a
+    child that did not reach the tool, so the caller keeps the reconnect refusal rather than an
+    answer credited to code that never ran the call. The repair is additive: a child that reached
+    the tool is unaffected, which is why the crew-failure case passed before it and after it.
+  </p>
+
+  <p id="epw-reload-branches-have-cases-controls">
+    Each case has a negative control that removes the branch it covers, and each fails on its
+    control. Removing the branch that serves a failing current-code answer as the answer
+    (<code>_current_code_answer</code> restored to refusing a failure) returns the refusal instead of
+    <code>crew_view_refused</code>, so the first case fails. Removing the never-reached guard
+    restores exactly the served <code>StopIteration</code> above, so the second fails. Removing the
+    child-is-no-answer branch in <code>_answer_on_current_code</code> raises inside the guard and the
+    call answers as a tool error rather than the refusal, so the third fails. Logs, with the gate
+    arm and the pre-fix run, are under the run directory
+    <code>r-20261019T171408539976-epw-reload-branches-have-cases</code>.
+  </p>
+
+  <p id="epw-reload-branches-have-cases-gate">
+    The gate ran <code>tests/test_mcp_server_serves_current_code.py</code>,
+    <code>tests/test_one_check_trusts_a_moved_checkout.py</code> and
+    <code>tests/test_every_module_fits_a_worker_window.py</code> at the node head:
+    <strong>12 passed, 1 failed</strong>, against the base arm's <em>9 passed, 1 failed</em> — zero
+    added failures, three added cases. The carried failure is
+    <code>test_every_module_fits_a_worker_window</code> and is pre-existing at the base revision:
+    <code>reckon/crew/review.py</code> (51,584 estimated tokens) and <code>reckon/ledger.py</code>
+    (51,666) exceed the 50,000 bound, both outside this node's write scope.
+  </p>
+</section>
