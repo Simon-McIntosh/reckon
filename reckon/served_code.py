@@ -32,13 +32,15 @@ from __future__ import annotations
 import ast
 import copy
 import hashlib
+import json
 import os
+import queue
 import re
 import subprocess
 import sys
 import threading
 import time
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -1339,3 +1341,332 @@ def neighbourhood(repo, revision, paths) -> frozenset[str]:
         adjacent |= edges.get(module, set())
         adjacent |= {src for src, targets in edges.items() if module in targets}
     return frozenset(adjacent - named)
+
+
+# ── The persistent current-code child ──────────────────────────────────────
+#
+# A stdio MCP server cannot replace the image it runs the way the HTTP server
+# re-executes: the client holds the session it initialised, and a fresh process
+# has not received it. So the tree's current code runs behind the front in one
+# persistent child per code stamp. The child is started when the guard first
+# sees a stamp it does not hold, answers a readiness probe with every tool's
+# parameter names and runs no tool, and then takes one request per line until
+# the stamp moves again or its input pipe closes. Warming is by the probe rather
+# than by a caller's call, so a call made while the child is still cold is
+# served by the running image and never waits on the child.
+
+#: The child's program. It imports the tree, so it holds the current code; the
+#: probe reports the parameter names of every registered tool without running
+#: one, and each later request runs at most one tool. The loop ends at EOF on
+#: its stdin, which closing the server's end of the pipe delivers.
+SERVED_CHILD_PROGRAM = r"""
+import asyncio, json, sys
+
+root = sys.argv[1]
+sys.path.insert(0, root)
+
+import reckon.mcp as reckon_mcp
+
+
+def structured(result):
+    if isinstance(result, tuple):
+        for item in result:
+            if isinstance(item, dict):
+                return item
+        result = result[0]
+    if isinstance(result, list):
+        for block in result:
+            text = getattr(block, "text", None)
+            if text:
+                try:
+                    return json.loads(text)
+                except json.JSONDecodeError:
+                    return {"text": text}
+    return {"unstructured": repr(result)}
+
+
+def tool_params():
+    return {
+        item.name: sorted(item.fn_metadata.arg_model.model_fields)
+        for item in reckon_mcp.mcp._tool_manager.list_tools()
+    }
+
+
+def run_tool(name, arguments):
+    out = {"reached": False}
+    try:
+        tool = next(
+            item
+            for item in reckon_mcp.mcp._tool_manager.list_tools()
+            if item.name == name
+        )
+        out["params"] = sorted(tool.fn_metadata.arg_model.model_fields)
+        # A failure raised after this point is the tool's own answer; one
+        # raised before it belongs to no code the caller could retry on.
+        out["reached"] = True
+        inner = getattr(getattr(tool, "fn", None), "_stale_guard_inner", None)
+        if inner is None:
+            result = structured(asyncio.run(reckon_mcp.mcp.call_tool(name, arguments)))
+        else:
+            result = asyncio.run(inner(**arguments))
+            if not isinstance(result, dict):
+                result = structured(result)
+        out["answer"] = result
+    except BaseException as exc:  # noqa: BLE001 - any failure is the child's answer
+        reason = f"{type(exc).__name__}: {exc}"
+        return {
+            "reached": False,
+            "answer": {"ok": False, "error": "crew_error", "detail": reason},
+        }
+    return out
+
+
+for line in sys.stdin:
+    line = line.strip()
+    if not line:
+        continue
+    try:
+        message = json.loads(line)
+    except ValueError:
+        continue
+    ident = message.get("id")
+    if message.get("op") == "probe":
+        reply = {"id": ident, "op": "probe", "params": tool_params()}
+    else:
+        reply = {"id": ident, "op": "call"}
+        reply.update(run_tool(message.get("tool"), message.get("kwargs") or {}))
+    sys.stdout.write(json.dumps(reply) + "\n")
+    sys.stdout.flush()
+"""
+
+
+def spawn_served_child(root: Path) -> subprocess.Popen:
+    """Launch one persistent child holding the tree's current code.
+
+    The child inherits this process's environment so its interpreter and site
+    packages resolve the same way, and reads requests from a pipe the caller
+    writes and closes.
+    """
+
+    environment = dict(os.environ)
+    environment.setdefault("PYTHONUNBUFFERED", "1")
+    return subprocess.Popen(  # noqa: S603 - a stdio pipe to our own interpreter
+        [sys.executable, "-c", SERVED_CHILD_PROGRAM, str(root)],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
+        bufsize=1,
+        env=environment,
+    )
+
+
+def parse_child_reply(line: str) -> dict | None:
+    """One reply line, or None when it carries no whole request id."""
+    try:
+        message = json.loads(line)
+    except ValueError:
+        return None
+    if not isinstance(message, dict) or "id" not in message:
+        return None
+    return message
+
+
+class ServedChild:
+    """A persistent interpreter serving requests on one code stamp.
+
+    Every request carries an id and every reply echoes it, so a reply that
+    arrives after its caller gave up is discarded rather than misread as the
+    caller's own. A reader thread is the only reader of the child's stdout,
+    which is what lets a caller bound its own wait while the pipe stays drained.
+    """
+
+    def __init__(self, process: subprocess.Popen, *, timeout_s: float) -> None:
+        self._process = process
+        self._timeout_s = timeout_s
+        self._next_id = 0
+        self._probe_id: int | None = None
+        self._warm: dict | None = None
+        self._replies: dict[int, dict] = {}
+        self._condition = threading.Condition()
+        self._closed = False
+        self._write_lock = threading.Lock()
+        self._reader = threading.Thread(target=self._read, daemon=True)
+        self._reader.start()
+
+    def _read(self) -> None:
+        stream = self._process.stdout
+        try:
+            if stream is not None:
+                for line in stream:
+                    message = parse_child_reply(line)
+                    if message is None:
+                        continue
+                    with self._condition:
+                        self._replies[message["id"]] = message
+                        self._condition.notify_all()
+        except (OSError, ValueError):
+            pass
+        finally:
+            with self._condition:
+                self._closed = True
+                self._condition.notify_all()
+
+    def _send(self, op: str, **payload: object) -> int | None:
+        with self._write_lock:
+            stream = self._process.stdin
+            if stream is None:
+                return None
+            self._next_id += 1
+            ident = self._next_id
+            try:
+                stream.write(json.dumps({"id": ident, "op": op, **payload}) + "\n")
+                stream.flush()
+            except (OSError, ValueError):
+                return None
+            return ident
+
+    def _await(self, ident: int | None, timeout_s: float) -> dict | None:
+        if ident is None:
+            return None
+        deadline = time.monotonic() + timeout_s
+        with self._condition:
+            while ident not in self._replies:
+                if self._closed:
+                    return None
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    return None
+                self._condition.wait(remaining)
+            return self._replies.pop(ident)
+
+    def _take(self, ident: int | None) -> dict | None:
+        if ident is None:
+            return None
+        with self._condition:
+            return self._replies.pop(ident, None)
+
+    def probe(self) -> None:
+        """Ask the child to report every tool's parameters, without waiting."""
+        self._probe_id = self._send("probe")
+
+    def warm_answer(self) -> dict | None:
+        """The probe's answer once it has arrived; None while it is cold.
+
+        The answer is kept once read, so every later call reads the same one
+        rather than consuming it and reporting a warm child as cold.
+        """
+        if self._warm is not None:
+            return self._warm
+        answer = self._take(self._probe_id)
+        if isinstance(answer, dict):
+            self._warm = answer
+        return answer
+
+    def run(self, tool: str, kwargs: Mapping[str, object]) -> dict | None:
+        """Run one tool in the child, bounded; None means it made no answer."""
+        ident = self._send("call", tool=tool, kwargs=dict(kwargs))
+        return self._await(ident, self._timeout_s)
+
+    @property
+    def alive(self) -> bool:
+        """Whether the child is still running."""
+        return self._process.poll() is None
+
+    def stop(self) -> None:
+        """Close the child's input pipe, which is its instruction to end."""
+        with self._write_lock:
+            stream = self._process.stdin
+            if stream is not None:
+                try:
+                    stream.close()
+                except (OSError, ValueError):
+                    pass
+                self._process.stdin = None
+        try:
+            self._process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            self._process.kill()
+            try:
+                self._process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                pass
+
+
+class CurrentCodeServer:
+    """One persistent child per code stamp, behind the stdio front.
+
+    The child is started when the guard first sees a stamp it does not hold,
+    and is stopped and replaced when the stamp moves again, so a session pays
+    one import per commit rather than one per call. Warming is by the readiness
+    probe: until the probe has answered the child is cold and no call is routed
+    to it, which is what keeps a cold child from making a caller wait.
+    """
+
+    def __init__(
+        self,
+        root: Path,
+        *,
+        spawn: Callable[[Path], subprocess.Popen] | None = None,
+        timeout_s: float = 120.0,
+    ) -> None:
+        self._root = Path(root)
+        self._spawn = spawn or spawn_served_child
+        self._timeout_s = timeout_s
+        self._stamp: str | None = None
+        self._child: ServedChild | None = None
+        self._spawns = 0
+        self._lock = threading.Lock()
+
+    def _child_for(self, stamp: str) -> ServedChild | None:
+        with self._lock:
+            if self._child is not None and self._stamp == stamp:
+                return self._child
+            if self._child is not None:
+                self._child.stop()
+            self._stamp = stamp
+            try:
+                process = self._spawn(self._root)
+            except (OSError, subprocess.SubprocessError):
+                self._child = None
+                return None
+            if process is None:
+                self._child = None
+                return None
+            self._spawns += 1
+            child = ServedChild(process, timeout_s=self._timeout_s)
+            child.probe()
+            self._child = child
+            return child
+
+    def current_stamp(self) -> str | None:
+        """The stamp the live child was started for, or None when there is none."""
+        return self._stamp
+
+    def spawns(self) -> int:
+        """How many children this server has started, for a caller to count."""
+        return self._spawns
+
+    def warm(self, stamp: str) -> dict | None:
+        """Start the child for ``stamp`` and return its probe answer if it has
+        arrived. Never waits: a cold child answers nothing and serves no call."""
+        child = self._child_for(stamp)
+        if child is None:
+            return None
+        answer = child.warm_answer()
+        return answer if isinstance(answer, dict) else None
+
+    def run(self, stamp: str, tool: str, kwargs: Mapping[str, object]) -> dict | None:
+        """Run one tool in the child for ``stamp``; None when it made no answer."""
+        child = self._child_for(stamp)
+        if child is None:
+            return None
+        return child.run(tool, kwargs)
+
+    def stop(self) -> None:
+        with self._lock:
+            if self._child is not None:
+                child = self._child
+                self._child = None
+                self._stamp = None
+                child.stop()
