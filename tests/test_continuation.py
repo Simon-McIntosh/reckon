@@ -269,12 +269,25 @@ def test_only_plans_owe_a_continuation() -> None:
     Checked against the op applier directly: the schema separately forbids a
     non-plan artifact from holding followups or a terminal status at all, so the
     guard cannot be reached through a write and would otherwise go unverified.
+    The plan arm lands through close, which is the only way a plan reaches a
+    terminal status, and its outcome is left outside the chain-closing grammar
+    so the refusal is the continuation rule and nothing else.
     """
     landing = [{"op": "set", "path": "status", "value": "shipped"}]
     _store_module.apply_ops({"type": "evidence", "followups": []}, landing, False)
 
-    with pytest.raises(_store_module.OpError):
-        _store_module.apply_ops({"type": "plan", "followups": []}, landing, False)
+    close = [
+        {
+            "op": "close",
+            "status": "shipped",
+            "outcome": "the plan is closed",
+            "by": "reckon-build",
+        }
+    ]
+    with pytest.raises(_store_module.OpError) as refusal:
+        _store_module.apply_ops({"type": "plan", "followups": []}, close, False)
+
+    assert _store_module.CONTINUATION_REQUIRED in str(refusal.value)
 
 
 def test_the_http_patch_path_enforces_the_same_rule() -> None:
