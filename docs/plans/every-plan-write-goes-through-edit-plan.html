@@ -22,11 +22,11 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-informs" content="the-crew-surface-is-one-tool-and-a-few-verbs">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;every-plan-write-goes-through-edit-plan#s2&quot;, &quot;every-plan-write-goes-through-edit-plan#s3&quot;], &quot;s5&quot;: [&quot;every-plan-write-goes-through-edit-plan#s4&quot;], &quot;s6&quot;: [&quot;every-plan-write-goes-through-edit-plan#s5&quot;], &quot;s7&quot;: [&quot;every-plan-write-goes-through-edit-plan#s6&quot;], &quot;s8&quot;: [&quot;every-plan-write-goes-through-edit-plan#s7&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>Every Plan Write Goes Through edit_plan | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -79,7 +79,7 @@
       <code>skills/reckon-build/references/coordinator-reference.md</code>, <code>AGENTS.md</code>, <code>tests/test_skill_contracts.py</code>.</p>
 
     <h2 id="s3">§3 — The MCP server answers on current code without a reconnect</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
     <p><strong>Why.</strong> The guard <code>_refuse_when_stale</code> in <code>reckon/mcp.py</code> was built by
       <a href="/reckon/an-mcp-failure-names-its-cause#s14">an-mcp-failure-names-its-cause §14</a> and
       <a href="/reckon/an-mcp-failure-names-its-cause#s15">§15</a>. When a call fails on a moved, trusted checkout, it replaces the answer
@@ -239,6 +239,12 @@
     <p><strong>Deliverable.</strong> Once the lead locks <code>deferred-continuation</code> as <code>accept</code>, the continuation guard accepts a deferred section as a plan's continuation when an open decision names it among its sections, or an open gate holds it. A plan waiting on the lead then needs no followup. If the decision is locked as <code>require-followup</code>, the hides-work guard instead accepts a followup whose prompt names that deferred section.</p>
     <p><strong>Done when</strong> <code>tests/test_a_waiting_plan_needs_no_placeholder.py</code> lands a plan whose only remaining section is deferred under an open decision, and the landing succeeds with no new followup. The negative control locks that decision, and the same landing is then refused for want of a continuation. Write paths: <code>reckon/_store.py</code>, <code>reckon/_store_section_ops.py</code>, <code>skills/reckon-edit/SKILL.md</code>, <code>tests/test_a_waiting_plan_needs_no_placeholder.py</code>.</p>
 
+    <h2 id="s9">§9 — The reload&#x27;s untested branches have cases</h2>
+<section data-reckon="section" data-id="s9" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> §3 landed with three branches of the current-code answer that no test reaches. The worker and its review both named them. A failing current-code answer is tested for <code>edit_plan</code> but not for the crew tool, the path that first exposed the defect. A child interpreter that never reaches the tool returns empty params, which reads as no signature change. A child that makes no answer at all still yields the reconnect refusal.</p>
+    <p><strong>Deliverable.</strong> One case each in <code>tests/test_mcp_server_serves_current_code.py</code>: the crew tool's failure returned as the current code's answer with its stamp; a child that never reaches the tool, which is not reported as an unchanged signature; and a child that makes no answer, which gets the refusal naming why. If a case exposes a defect, the fix in <code>reckon/mcp.py</code> belongs to this section.</p>
+    <p><strong>Done when</strong> the three cases pass at the node's head, logged with <code>EXIT=0</code>, and each has a negative control that removes the branch it covers, after which that case fails. Write paths: <code>reckon/mcp.py</code>, <code>tests/test_mcp_server_serves_current_code.py</code>.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="stale-image-remedy" data-choice="self-reload" data-by="Simon McIntosh" data-when="2026-10-19">
@@ -287,7 +293,10 @@
     <div class="r-comment-body"><p>Corrected the impl guidance in the five files (impl now derives from the section records and moves when a section's declaration moves to done; section effort is quarter hours; section risk values listed) and widened the extract-and-apply harness in tests/test_skill_contracts.py to every documented op object and every op-reference `set` row path, with both sweeps applying through a single helper (_apply_example, retired the duplicated _apply_documented_op) and the op-object sweep carrying a positive floor of at least one op object from under skills/. Gate at the committed head: 74 passed / 1 pre-existing failure (0 added against base). Two negative controls: restoring impl to the `set` row names skills/reckon-edit/SKILL.md; pointing the extractor at an empty corpus fails the floor, naming the empty source.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261019T084349094481-review-of-epw-server-serves-current-code-cbe51df120ac" data-who="reckon-build" data-when="2026-10-19T08:58:53.512Z">
-    <div class="r-comment-body"><p>independent review of run r-20261019T062621653734-epw-server-serves-current-code at head cbe51df12 scored goal_fidelity 19, evidence 14, scope_discipline 19, durability 18, fit 18, reuse 18 with added_failure_count 0 (both remaining gate failures pre-exist at base a5d5eb6b3) and two follow-on findings on the gate&#x27;s EXIT code and its unlabelled head log; status parsed</p></div>
+    <div class="r-comment-body"><p>independent review of run r-20261019T062621653734-epw-server-serves-current-code at head cbe51df12 scored goal_fidelity 19, evidence 14, scope_discipline 19, durability 18, fit 18, reuse 18 with added_failure_count 0 (both remaining gate failures pre-exist at base a5d5eb6b3) and two follow-on findings on the gate's EXIT code and its unlabelled head log; status parsed</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-19T09:10:00Z">
+    <div class="r-comment-body"><p>§3 landed: a call that fails on a moved, trusted checkout is answered by the current code in a child interpreter, marked with its code stamp; only a changed tool signature still asks for a reconnect (commits <code>fad51085f</code>..<code>cbe51df12</code>); zero added failures; reviewed 106/120. Sessions get it at their next MCP reconnect. <a href="/reckon/evidence/archive/every-plan-write-goes-through-edit-plan-landed.html#s3">evidence</a></p></div>
 </div>
 </section>
 </main>
