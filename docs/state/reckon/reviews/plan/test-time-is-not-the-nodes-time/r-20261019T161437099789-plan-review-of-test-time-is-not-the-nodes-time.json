@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T16:22:08.995Z",
+  "dispatched_at": "2026-10-19T16:15:17Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/test-time-is-not-the-nodes-time.html:24",
+      "id": "wiring-1",
+      "reason": "\u00a75 adds a time-zone-free command to `time_fence_statement` and \u00a72 re-authors the same function, so without a relationship a builder of \u00a72 would rewrite the statement and silently drop \u00a75's command, leaving the worker's seconds-remaining figure wrong once \u00a72 extends the deadline.",
+      "text": "the `plan-section-depends-on` entry for s2 is `[s1, s3]` and omits s5, yet \u00a72 declares it rewrites the same statement \u00a75 owns (\"`time_fence_statement` states the deadline as launch plus budget plus the gate time recorded so far\", line 66; the gate-allowance shape likewise moves the stated deadline at line 65)",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "096132633fc6ecd9e26b14b9855b102c0d7f4d516c25e3065c106c335e958e2f",
+  "plan_slug": "test-time-is-not-the-nodes-time",
+  "plan_version": 19,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-19T16:23:09.497989+00:00"
+    }
+  ],
+  "responses": {
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T16:23:09.497989+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-test-time-is-not-the-nodes-time.v19.json",
+  "review_run_id": "r-20261019T161437099789-plan-review-of-test-time-is-not-the-nodes-time",
+  "reviewed_blob_sha": "c35fe43e8aa80e2227d81ba5d07caa24d327c222",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/prompts.py:382` is `time_fence_statement`, `reckon/crew/dispatch_sessions.py:1468` calls it from `_restate_time_fence`, and the cited run `r-20261019T150700496206-cs1-fast-discharge-playback` resolves on disk with the quoted prompt and stream lines.",
+    "done_when": "pass \u2014 \u00a75's four clauses are measurable, and \u00a75 declares a negative control (print `date` instead of an epoch difference; drop the command) that controls the two named cases.",
+    "evidence_paths": "pass \u2014 the arms' logs and the evidence fragment live under the crew run directory, not a session or node-local temporary path.",
+    "naming": "pass \u2014 the new test file and the statement's mechanism are named by what they do, with no plan label, stage name or ticket number.",
+    "reasoning": "pass \u2014 the root cause (a host-local stamp compared with a UTC deadline, admitted in the run's own words: \"I misread local CEST timestamps as UTC\") matches the cited stream, the mechanism (one epoch-arithmetic command that removes the two-reading comparison) produces the done-when, and the caller is named (`time_fence_statement` at `reckon/crew/prompts.py:382`, resumed via `_restate_time_fence` at `reckon/crew/dispatch_sessions.py:1468`).",
+    "single_goal": "pass \u2014 \u00a75 carries one deliverable, a zone-free command added to the deadline statement.",
+    "wiring": "a finding \u2014 \u00a72's gate-verb shape rewrites `time_fence_statement`, the same statement \u00a75 rewrites, but `plan-section-depends-on` gives s2 only `[s1, s3]` and never links it to s5."
+  },
+  "section_digests": {
+    "_document": "1a4f077a0dd0d7e01e7c495aebac352ec6bd28fe0c6d47a9a6d3c86a7dad985b",
+    "s1": "db87e9dc091adc1afc070dc0aef99a3806a457e6dc5e0e2a813fea5769fe65b4",
+    "s2": "5a0fb3df892e6e7a0e3ffe65cb4d4d3141028f5087a91a448c204ff9d28a8d4a",
+    "s3": "cd3dc051b230ab35b56efe7d9ffb4d36e13bf85c4bec1cee0d8ae02e8371178a",
+    "s4": "3ecba0ba9644607d22d9c2d91dfb3f22042d163919f276abb7f2bfa201173b0a",
+    "s5": "825ca06b82d9b25dde74e62cc97f0a36d807c17a6dec68007ef77f404beae733"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T16:23:05.804610+00:00"
+}
