@@ -9,7 +9,7 @@
   <meta name="plan-title" content="What Coordinators Report About The Reckon Surface">
   <meta name="plan-summary" content="Fifteen live coordinators and a census of 37 transcripts: why plans are hand-edited, which crew verbs cost turns, and which plan owns each fix.">
   <meta name="plan-tags" content="reckon-tooling,crew,measurement">
-  <meta name="plan-informs" content="every-plan-write-goes-through-edit-plan,the-crew-surface-is-one-tool-and-a-few-verbs,a-dry-run-must-resolve-what-the-real-call-resolves,an-orchestrator-is-bound-by-its-inbox,a-review-gate-judges-what-it-covers,the-monitor-shows-the-work-it-watches">
+  <meta name="plan-informs" content="every-plan-write-goes-through-edit-plan,the-crew-surface-is-one-tool-and-a-few-verbs,a-dry-run-must-resolve-what-the-real-call-resolves,an-orchestrator-is-bound-by-its-inbox,a-review-gate-judges-what-it-covers,the-monitor-shows-the-work-it-watches,lane-and-model-routing">
   <title>What Coordinators Report About The Reckon Surface | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -132,6 +132,10 @@
       the command line carries only overrides (imas-ambix 4fd309f5, fa77649b); <code>crew merge</code> pushing over port 22 from a compute node
       (reckon 67139f13); and SQLite <code>database is locked</code> inside <code>complete</code> and <code>verify-gate</code>, which a plain
       retry clears (reckon 67139f13, 7a8f07c4).</p>
+    <p>One defect arrived after the round, from power_convertor on 2026-10-19. The automatic review of a run dispatched with
+      <code>--backend codex</code> ran on codex (<code>r-20261019T044201986969-review-of-tf-supply-circuit-bd77c20bf092</code>), although the
+      host flight lists codex under <code>review_excluded_backends</code>. The review inherited the reviewed run's named lane instead of being
+      routed again. Reviews of local-lane runs ran locally as expected. It belongs to <a href="/reckon/lane-and-model-routing">lane-and-model-routing</a>.</p>
 
     <h2 id="s5">§5 — The reports</h2>
     <p>Reproduced as delivered, one per coordinator session.</p>
