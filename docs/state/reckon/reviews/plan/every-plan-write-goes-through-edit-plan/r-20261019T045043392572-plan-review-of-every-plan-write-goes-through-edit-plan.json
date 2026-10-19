@@ -1,0 +1,111 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T05:07:39.963Z",
+  "dispatched_at": "2026-10-19T04:51:59Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-plan-write-goes-through-edit-plan.html:153",
+      "id": "wiring-1",
+      "reason": "the roadmap will hold \u00a76 and \u00a77 while the dispatch plan expects them to run, so the wave silently stalls until someone locks `deferred-continuation`, and the plan names no owner or step to do it.",
+      "text": "\u00a76 is declared `implementable` (plan-section-declarations, line 25) while `deferred-continuation` is open and scoped `data-sections=\"s6\"` (line 212); an open decision scoped to a section holds that section and reports it non-dispatchable (reckon/roadmap.py:3313-3320), and \u00a77 depends on \u00a76 (line 24), yet the followup f-epw-001 (line 229) dispatches \"\u00a74 to \u00a77 run in order after them\" as ready and no step locks the decision",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-plan-write-goes-through-edit-plan.html:66",
+      "id": "done_when-1",
+      "reason": "the enforcement for two of \u00a72's six declared write paths (the op-table row and AGENTS.md) is unreachable by the extractor as specified, so the node's gate can pass with the wrong `impl` guidance restored in either place.",
+      "text": "\u00a72 says the new test \"extracts every edit_plan op object written in a code span or fenced block under skills/ and in AGENTS.md, in either the {op:'set', path:'\u2026'} or the JSON spelling\", but the fixes it must enforce are not op objects: the `impl` entry at skills/reckon-edit/SKILL.md:394 is a cell in a markdown op-reference table, and the AGENTS.md line to change (AGENTS.md:260, \"`impl` advanced toward 1.0\") is a prose checklist bullet in a file that contains zero op objects, so the stated negative control (line 71, \"restores impl to the reckon-edit set row, and the test then fails naming that file and line\") cannot make the test fail",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-plan-write-goes-through-edit-plan.html:176",
+      "id": "single_goal-1",
+      "reason": "three of \u00a77's four changes can land with no negative control and the node still closes on one verdict, and the conflict-payload change may already hold at 8d42ef7f8 (`_conflict_response` in reckon/_mcp_tools.py already returns `current_version`), so that change's positive test passes on the unfixed code and proves nothing.",
+      "text": "\u00a77 (\"A refused or late write names the next step\") carries four independent changes \u2014 the version-conflict payload, the batch reporting every refused op, the optional `request_id` idempotency key, and the enumerated-field refusal naming legal values \u2014 while its single negative control (line 195) exercises only `request_id`; \u00a75 (line 126) similarly bundles followup text, section dependencies, gate measures and a new `unset` verb",
+      "type": "single_goal",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "304b7b11cfcc6cc47e8d1ec5e9a44cf61ea6b58a15f8fb67a8fc729f0af69cee",
+  "plan_slug": "every-plan-write-goes-through-edit-plan",
+  "plan_version": 0,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-19T05:11:55.601270+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-19T05:12:08.653722+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "single_goal-1",
+      "reason": "",
+      "when": "2026-10-19T05:12:19.399240+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "single_goal-1",
+      "reason": "",
+      "when": "2026-10-19T05:12:33.662907+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T05:12:08.653722+00:00"
+    },
+    "single_goal-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T05:12:33.662907+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T05:11:55.601270+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-plan-write-goes-through-edit-plan.v0.json",
+  "review_run_id": "r-20261019T045043392572-plan-review-of-every-plan-write-goes-through-edit-plan",
+  "reviewed_blob_sha": "e9a128873ba8527ed37ad1ea1dcbe78921aefa42",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves: skills/reckon-edit/SKILL.md (op table at line 394), skills/reckon-create/SKILL.md (lines 570, 605), skills/reckon-build/references/sprint-orchestration.md:532, skills/reckon-build/references/coordinator-reference.md:205, AGENTS.md:260, reckon/mcp.py:317 (`_refuse_when_stale`), reckon/mcp_edit_plan.py:1439 (`_edit_plan_tool`), tests/test_every_module_fits_a_worker_window.py (BOUND = 50_000), tests/test_mcp_server_serves_current_code.py, an-mcp-failure-names-its-cause#s14 and #s15 (both `done`), the extensionless /reckon/what-coordinators-report-about-the-reckon-surface (docs/research/what-coordinators-report-about-the-reckon-surface.html, reckon-type=research), commit d8ff471c9, and `reckon audit-doc` (reckon/project_maintenance_commands.py:1565).",
+    "done_when": "a finding \u2014 \u00a72's negative control restores `impl` to the reckon-edit op table's `set` row, which the declared extractor (op objects in code spans or fenced blocks) never reads, so the control cannot fire.",
+    "evidence_paths": "pass \u2014 no gate log or evidence record is placed on a session scratchpad or a node-local path; \u00a76's evidence record is referred to by path (reckon/_store.py:3458).",
+    "naming": "pass \u2014 the new module and test names are mechanism-named (mcp_reload, _store_section_ops, test_skills_cite_ops_the_store_accepts) with no plan label, ticket number or version tag.",
+    "reasoning": "pass \u2014 \u00a71's counts match the census table (28 unsupported path, 37 text-mode overlap, 25 computed impl, 44 = 17 continuation + 27 hides-work, 52 stale_server_code, 3,308 = 2,134 + 1,174 edit_plan calls, 99 hand edits, 15 of 16 replied), each mechanism reaches its measure, and the consumers are named (roadmap reads the edge at reckon/roadmap.py:3357; the MCP tools are server-wrapped at reckon/mcp.py:2937-2967); but see the wiring finding on the \u00a76 decision hold.",
+    "single_goal": "a finding \u2014 \u00a77 carries four independent refusal-message changes with one negative control covering only one of them, and \u00a75 bundles three field families plus a new verb and unset semantics.",
+    "wiring": "a finding \u2014 \u00a76 is declared `implementable` while the open `deferred-continuation` decision is scoped to s6 and holds it (and \u00a77 behind it), and no step locks that decision before the wave runs."
+  },
+  "section_digests": {
+    "_document": "0fa0aab94140633992776f410c44e03f08aad9288c0e53654e155abe4221e37a",
+    "s1": "7f96df198aae5b46c87f2d18f8eff17398ead36155ee67ba73607e91aa1d2fe3",
+    "s2": "017a6d4adcba130b9a9174c7cf7d579a7990160cb9aae41799004490723c6f69",
+    "s3": "357dd676e1c44f50529bb815e25fbbae4315a7aade264506a1063d0a4bdeddf9",
+    "s4": "88936237a7b3d471d4e4acc394d6c9682e11b7fb8b80f50815f8c56d6110ce4f",
+    "s5": "983a32ceb17979adf046580c161e8282d6da90080e5a90ae1ab45e38d326f4bb",
+    "s6": "0af7e896cf6f1ce66b0b6c5a183bc6ecd76e8282502eaf9bb04688fa13bfdeff",
+    "s7": "9442482f18279cc00f688f174ac7fc21d92411d80e8de55242c478c4b9ab118d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T05:11:48.853106+00:00"
+}
