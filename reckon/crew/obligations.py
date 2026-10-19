@@ -411,6 +411,34 @@ def _review_tier_for_duty(row: Mapping[str, Any], pointer: Mapping[str, Any]) ->
         return review_tiers.FULL
 
 
+def _promotion_command(row: Mapping[str, Any]) -> str:
+    """The promotion a run owed no review is ready for.
+
+    A completed run's own action is composed for the reader who will clear the
+    review duty, so for a scoring run it names the review dispatch. A run the
+    tier rule exempts has no such review coming: leaving that action on the
+    duty would print a command nothing will ever run beside a kind that says
+    the run is ready to promote. The duty therefore names the completion
+    instead, over the citations the manifest carries, and the no-commit form
+    when it cites none — the same shape the classifier prints for a completed
+    run whose review is in hand.
+    """
+    run_id = str(row.get("run_id") or "")
+    citations = [
+        str(commit) for commit in (row.get("manifest_commits") or []) if commit
+    ]
+    if not citations:
+        return (
+            f"reckon crew complete --run {run_id} --gate not-run "
+            "--no-commit '<why the run produced no commit>' "
+            "--outcome '<what the run produced>'"
+        )
+    action = f"reckon crew complete --run {run_id} --gate <verdict>"
+    for commit in citations:
+        action += f" --commit {commit}"
+    return action
+
+
 def _review_duty_item(
     project: str,
     row: Mapping[str, Any],
@@ -435,7 +463,10 @@ def _review_duty_item(
     tier-none run reads the kind a reviewed run with a passing review would
     get, carrying its tier on the duty: the sweep dispatches no review for it
     and the merged-head gate checks it instead, so a duty left review-missing
-    would name a dispatch nothing will ever run.
+    would name a dispatch nothing will ever run. Its command is the promotion
+    for the same reason: the row's own action is the review dispatch, and a
+    duty that read ready to promote while printing that dispatch would name
+    the very work the tier rule decided against.
 
     A reviewer run owes no review of itself: the record it wrote is its own
     deliverable, so its kind stays the classifier's. A row whose live pointer
@@ -470,6 +501,7 @@ def _review_duty_item(
             now=now,
         )
         item["review_tier"] = review_tiers.NONE
+        item["next_command"] = _promotion_command(row)
         item["reason"] = (
             "the run changes no runtime source, so its review tier is none; no "
             "review is owed and the merged-head gate checks it instead"

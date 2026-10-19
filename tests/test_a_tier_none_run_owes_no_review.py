@@ -189,8 +189,16 @@ def test_a_tier_none_run_reads_a_promotable_kind_and_a_source_run_stays_missing(
     assert docs_item["kind"] == "review-ready", docs_item
     assert docs_item["review_tier"] == "none", docs_item
 
+    # The command is the promotion the run is ready for, not the review
+    # dispatch its own row carries: a duty that reads ready to promote while
+    # naming that dispatch offers work the tier rule has decided against.
+    assert docs_item["next_command"].startswith(
+        f"reckon crew complete --run {DOCS_RUN}"
+    ), docs_item
+
     # The runtime-source run owes a review still and reads it missing, so the
     # quietening above is keyed on the tier and not on something the read did
     # to every run.
     assert SOURCE_RUN in items, items
     assert items[SOURCE_RUN]["kind"] == "review-missing", items[SOURCE_RUN]
+    assert "crew complete" not in items[SOURCE_RUN]["next_command"], items[SOURCE_RUN]
