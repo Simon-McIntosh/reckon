@@ -26,7 +26,7 @@
   <title>Every Plan Write Goes Through edit_plan | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="22">
+<meta name="plan-version" content="23">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -173,7 +173,9 @@
       decision <code>deferred-continuation</code> holds; this section needs no decision.</p>
     <p><strong>Deliverable.</strong> <code>{op:'close', status, outcome, by[, superseded_by]}</code> is one write. It sets any status in
       <code>TERMINAL_STATUSES</code> (<code>reckon/lifecycle.py</code>) and resolves every open followup with the outcome. It runs every guard
-      a terminal transition fires and reports each one that fails, together:</p>
+      the transition to that status fires, as <code>validate_landing_patch</code> gates them today, and reports each one that fails,
+      together. The section-ticked guard and the continuation guard fire only for a landed status (<code>shipped</code>, <code>done</code>);
+      the others fire for every terminal status, so a <code>superseded</code> or <code>archived</code> close is not newly refused:</p>
     <ul>
       <li>a section still implementable, named;</li>
       <li>the evidence record that a terminal status needs, named by path;</li>
@@ -195,7 +197,9 @@
       rather than listed, is refused naming <code>close</code>. The negative control reports only the first failing guard, and the second case
       then fails for the guards it omits.</p>
     <p>The refusal changes a write existing tests use as their subject. Before changing anything, the node greps <code>tests/</code> and
-      <code>reckon/</code> at its base for every write of a terminal plan status (a sprint's or an inventory row's status is not one). Every hit moves to <code>close</code> in the same node, and every
+      <code>reckon/</code> at its base for every terminal plan status written through the op path: a <code>set</code> op whose path is
+      <code>status</code>, applied through <code>edit_plan</code> or the store's <code>apply_ops</code>. A fixture that writes a status
+      literal straight into a plan file is not reached by the refusal and is not a hit, nor is a sprint's or an inventory row's status. Every hit moves to <code>close</code> in the same node, and every
       test file it touches passes. A hit in a file outside the write paths below stops the node as blocked, naming the file, so the
       coordinator can widen its fence. The base already shows <code>tests/test_terminal_status_needs_every_section_ticked.py</code>,
       <code>tests/test_every_section_has_a_declaration.py</code>, <code>tests/test_closure_gates.py</code> and
@@ -320,7 +324,7 @@
     <div class="r-comment-body"><p>§4 landed: <code>set sections.ID.FIELD</code> edits title, links, effort, capability and body of an existing section, the body addressed by span and guarded by one shared forged-structure predicate (commits <code>634395541</code>..<code>e871d9694</code>); zero added failures; reviewed 111/120. <a href="/reckon/evidence/archive/every-plan-write-goes-through-edit-plan-landed.html#s4">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261019T093957788797-epw-set-a-section-field" data-who="reckon-build" data-when="2026-10-19T11:50:31Z">
-    <div class="r-comment-body"><p>edit_plan accepts a set path sections.&lt;id&gt;.&lt;field&gt; over title, links, effort_hours, capability and body — metadata validated through the one section record and written to state, title and body queued as a write effect and applied through the text editor&#x27;s own replacement path, addressed by the span located from the section&#x27;s own heading and record element rather than by a text match so a section holding no prose yet can be filled, with the write owing review_owed for that section and the fingerprint keeping one form — sections.&lt;id&gt;.status refused naming section_declarations.&lt;id&gt;, a body forging a heading, a data-reckon section element or a plan-* meta refused by one predicate shared with insert_section and append_evidence, an unknown field refused listing the five, and the gate at head, 193 passed / 2 failed against the base arm&#x27;s 181 passed / same 2 failed, zero added failures.</p></div>
+    <div class="r-comment-body"><p>edit_plan accepts a set path sections.&lt;id&gt;.&lt;field&gt; over title, links, effort_hours, capability and body — metadata validated through the one section record and written to state, title and body queued as a write effect and applied through the text editor's own replacement path, addressed by the span located from the section's own heading and record element rather than by a text match so a section holding no prose yet can be filled, with the write owing review_owed for that section and the fingerprint keeping one form — sections.&lt;id&gt;.status refused naming section_declarations.&lt;id&gt;, a body forging a heading, a data-reckon section element or a plan-* meta refused by one predicate shared with insert_section and append_evidence, an unknown field refused listing the five, and the gate at head, 193 passed / 2 failed against the base arm's 181 passed / same 2 failed, zero added failures.</p></div>
 </div>
 </section>
 </main>
