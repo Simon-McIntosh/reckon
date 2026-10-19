@@ -1,0 +1,28 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-19T23:22:43Z",
+  "dispatched_at": "2026-10-19T23:04:37Z",
+  "findings": [
+    "reckon/crew/dispatch.py:398 follow-on: _launch_yielded_queued_request re-implements the handover/launch/restore orchestration that admit_once performs inline at reckon/crew/queue_admission.py:939-968, so the failure-restore sequence now exists in two places; it calls the owner's _launch_queued and _record_queued_failure rather than duplicating the capability, but the surrounding block could be shared.",
+    "docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/a-dispatch-yields-to-its-sessions-older-request.html:0 follow-on: the landing evidence fragment the delivery contract names was not written; the manifest records this under artifacts and the change ships on the landing: line alone."
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a dispatch finding room spends the slot on its own session's oldest admissible queued request for that lane, launched through the admission pass's path, and queues itself behind it; reckon/crew/dispatch.py:1701 carries that guard.\nVERDICT done_when: the done_when names tests/test_a_dispatch_yields_to_its_sessions_older_request.py with three cases and a negative control; the manifest's tests line records that run and its result (1 failed, 8 passed, the lone failure present in the base arm too).\nVERDICT write_paths: the declared paths are reckon/crew/dispatch.py and tests/test_a_dispatch_yields_to_its_sessions_older_request.py; git diff --stat shows exactly those two files, 393 insertions, nothing else.\nVERDICT manifest: read; it states status complete, commits 3006d1fd0, the tests command, gate-final-head.log and gate-final-base.log, and a negative-control log with a bare EXIT=1.\nVERDICT diff: read commit by commit against a04bf93d3; one commit (3006d1fd0) adds _session_older_admissible_request and _launch_yielded_queued_request into dispatch.py and the whole test module is new.\nCALL_SITES: reckon/crew_dispatch_commands.py:1928 (crew_module.dispatch, the CLI crew-dispatch path), reckon/crew/queue_admission.py:179 (_launch_queued calls dispatch with admission_launch=True, which the new guard at reckon/crew/dispatch.py:1701 excludes).\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:1701-1745 selects the session's oldest admissible queued request, launches it through queue_admission._launch_queued, then queues itself and raises LaneHeld.\nSCORE evidence: 15\nJUSTIFICATION evidence: the three done-when cases are present in tests/test_a_dispatch_yields_to_its_sessions_older_request.py:155,196,225 and pass per gate-final-head.log, but the final named gate ran with -n 1 where the done-when names pytest -n 8, and the full base arm was never completed.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat a04bf93d3..3006d1fd0 shows only reckon/crew/dispatch.py and tests/test_a_dispatch_yields_to_its_sessions_older_request.py, both inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control.log (EXIT=1) shows the first case, tests/test_a_dispatch_yields_to_its_sessions_older_request.py:167, fails with DID NOT RAISE LaneHeld once the yield guard is removed, and the assertions at :178 compare disk state against a stubbed launcher, not against a value the test passed in.\nSCORE fit: 17\nJUSTIFICATION fit: the two helpers import their dependencies inside the function as the surrounding reckon/crew/dispatch.py:349 does, and no name carries a plan or version label; reaching into five underscore-private members of queue_admission is the one wrinkle.\nSCORE reuse: 13\nJUSTIFICATION reuse: reckon/crew/dispatch.py:398 duplicates the launch-restore orchestration inline at reckon/crew/queue_admission.py:179 rather than extending it, though it does call the owner's _launch_queued and _record_queued_failure; no owner exists for the session-ordered selector itself.\nFINDING reckon/crew/dispatch.py:398 follow-on: _launch_yielded_queued_request repeats the handover/launch/restore sequence inline at reckon/crew/queue_admission.py:939-968, so a future edit to the restore rule must be made in two places.\nFINDING docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/a-dispatch-yields-to-its-sessions-older-request.html:0 follow-on: the landing evidence fragment named by the delivery contract was not written, so the node ships only its landing: line.\n",
+  "review_run_id": "r-20261019T230351573434-review-of-a-dispatch-yields-to-its-sessions-older-request-3006d1fd05d7",
+  "reviewed_base_sha": "a04bf93d317e414f4c9d7d211af3cff47d63eb16",
+  "reviewed_head_sha": "3006d1fd05d700f57cd80c4f4704b550a1425414",
+  "reviewed_run_id": "r-20261019T212943222385-a-dispatch-yields-to-its-sessions-older-request",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 13,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T23:25:59.721470+00:00",
+  "total": 100
+}
