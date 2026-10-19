@@ -1,0 +1,126 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T06:38:44.886Z",
+  "dispatched_at": "2026-10-19T06:28:24Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-plan-write-goes-through-edit-plan.html:181",
+      "id": "anchors_resolve-1",
+      "reason": "a node following \u00a76 edits two files that do not carry the recipe and leaves it live in `sprint-orchestration.md:548`, so the section does not retire the surface it exists to retire.",
+      "text": "\u00a76 says \"The resolved-placeholder recipe goes too: `skills/reckon-edit/SKILL.md` and `skills/reckon-build/SKILL.md` describe `close` and drop it\", but neither file contains the recipe (`grep -rin 'placeholder|no followup'` over both returns nothing); it lives at `skills/reckon-build/references/coordinator-reference.md:1012,1024` and `AGENTS.md:266,295`, and at `skills/reckon-build/references/sprint-orchestration.md:548` (\"Appends a cross-plan followup when needed, or records `done \u2014 no followup`\"), which is not among \u00a76's write paths",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-plan-write-goes-through-edit-plan.html:176",
+      "id": "reasoning-1",
+      "reason": "the plan's stated purpose is that a coordinator learns every reason in one answer instead of one refusal at a time, and a pending transition gate still returns an enumeration that omits it.",
+      "text": "\u00a76's deliverable says the `close` op \"checks the existing guards together and reports every one that fails: a section still implementable (named), or the evidence record that a terminal status needs (named by path)\", but a terminal transition also fires `_require_transition_verdict(state, \"plan-terminal\")` (`reckon/_store.py:3433`) and `_refuse_appended_hiding_followups` (`reckon/_store.py:3426`); \u00a76's done-when builds its negative control on the two named guards alone, so the \"every one\" property is never exercised against the third",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-plan-write-goes-through-edit-plan.html:177",
+      "id": "reasoning-2",
+      "reason": "a node keying the refusal on the four-name list leaves `set status archived` as a second path into a terminal status, which is the surface \u00a76 says it retires, and the test's `set status shipped` case cannot catch it.",
+      "text": "\u00a76 enumerates the terminal values whose `set status` is refused as \"(shipped, done, superseded, abandoned)\", but `TERMINAL_STATUSES` at `reckon/lifecycle.py:9-19` is those four plus `archived`, `historical` and `reference`, all three of which are writable through `set status` (`STATUS_ENUM`, `reckon/_schema.py:95-108`, minus `blocked`, and `status` is in `_PLAN_SET_TOP`, `reckon/_store.py:2222`)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-plan-write-goes-through-edit-plan.html:177",
+      "id": "reasoning-3",
+      "reason": "it is a justification sentence that changes no node's work, since the deliverable already requires `close` and the vocabulary test already holds the table.",
+      "text": "\"The op retires two surfaces, so the vocabulary does not grow net\" does not hold: `close` is a new verb absent from `_OP_DISPATCH` (`reckon/_store.py:3172-3184`), and nothing in \u00a76 removes a verb \u2014 `set status` is refused only for terminal values, so its non-terminal values stay",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "d50789c0ac18f6784c92e4fc457304fc5a717d64565acbf595422f51b327f864",
+  "plan_slug": "every-plan-write-goes-through-edit-plan",
+  "plan_version": 5,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "",
+      "when": "2026-10-19T06:40:38.264703+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-19T06:40:45.977953+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-19T06:40:52.053780+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-3",
+      "reason": "",
+      "when": "2026-10-19T06:40:58.848188+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T06:40:38.264703+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T06:40:45.977953+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T06:40:52.053780+00:00"
+    },
+    "reasoning-3": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T06:40:58.848188+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-plan-write-goes-through-edit-plan.v5.json",
+  "review_run_id": "r-20261019T062743626278-plan-review-of-every-plan-write-goes-through-edit-plan",
+  "reviewed_blob_sha": "2416152d0b8f9da72ebc3798f7801cd3ebaca306",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a76 cites `skills/reckon-edit/SKILL.md` and `skills/reckon-build/SKILL.md` as carrying the resolved-placeholder recipe, and neither file contains it.",
+    "done_when": "pass \u2014 \u00a75 gives each of its four surfaces its own case and its own negative control, and \u00a76's three cases each name one, so no in-scope node rests on a measure that cannot fail.",
+    "evidence_paths": "pass \u2014 every gate in \u00a75 and \u00a76 writes to `tests/`, a durable repository path; no scratchpad or node-local temporary path is named.",
+    "naming": "pass \u2014 the new paths (`close`, `section_depends_on.<sid>`, `gates.<id>.measure`) are named by what they do, and no plan label, ticket number or changelog prose reaches a symbol or comment.",
+    "reasoning": "three findings \u2014 \u00a76 claims the `close` op reports *every* failing guard but enumerates two of the five that fire on a terminal transition; its enumeration of terminal statuses is 4 of the 7 in `TERMINAL_STATUSES`; and \"the vocabulary does not grow net\" is contradicted by the new `close` verb.",
+    "single_goal": "pass \u2014 \u00a75's four surfaces now each carry their own case and their own verdict line (\"closes on all four or records which did not land\"), which answers the earlier finding, and \u00a76 carries one deliverable.",
+    "wiring": "pass \u2014 the `plan-section-depends-on` map now carries the \u00a78\u2190\u00a77 edge the previous review asked for, and every in-scope unit's declared relationships resolve (`reckon/roadmap.py:423` reads `section_depends_on`)."
+  },
+  "section_digests": {
+    "_document": "fe4a479ee96126b12c62c0412b79792f0a50e08659c72cafd18db1e0bd618c9a",
+    "s1": "7f96df198aae5b46c87f2d18f8eff17398ead36155ee67ba73607e91aa1d2fe3",
+    "s2": "737250903251177035b357be3d656b549480337bc454f97615634dada495e251",
+    "s3": "4150e9281b9c0fe1173e9c23f5582efb0662d22f1d36944861d3033f988d479c",
+    "s4": "e0390ff35ac5e425fa3060cede9882af598c54dc89e0a6069101b3971f8e8367",
+    "s5": "699b049fe374b1219d8b917168575594a5bcb9255bbe13efdbf1d0c928562a86",
+    "s6": "d75112170eb079faa3917d20966151ccf5be9493004b8b274d280699f3e3e102",
+    "s7": "80062db679255aff5087534386e7372545e1cd3414916db8329aec79a1a8388d",
+    "s8": "f9dd6299834b4d039fd1f45b37141d5e265075b4cfd7f341357bea21196f5b35"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T06:40:34.862543+00:00"
+}
