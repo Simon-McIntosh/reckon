@@ -1906,15 +1906,33 @@ def _synthesized_checkout(checkout: Path) -> None:
     path.write_text(_plan_html.write_state(authored, state), encoding="utf-8")
 
 
-def _apply_example(checkout: Path, example: dict) -> dict:
-    path = checkout / "docs" / "plans" / "my-plan.html"
-    state = _plan_html.read_state(path.read_text(encoding="utf-8"))
+def _apply_example(
+    checkout: Path,
+    example: dict,
+    *,
+    slug: str = "my-plan",
+    doc_type: str | None = "plan",
+) -> dict:
+    """Apply one documented op to a resource of a synthesized checkout.
+
+    The single extract-and-apply path: the landing-beat examples and the widened
+    op sweeps all reach the store through this call, so a documented op is
+    applied the same way wherever it is read from. The plan fixture's version is
+    read from disk; any other resource starts at version 0.
+    """
+    if slug == "my-plan":
+        plan_path = checkout / "docs" / "plans" / "my-plan.html"
+        expected_version = _plan_html.read_state(plan_path.read_text(encoding="utf-8"))[
+            "version"
+        ]
+    else:
+        expected_version = 0
     return mcp_module._edit_plan_tool(
         "my-project",
-        "my-plan",
-        expected_version=state["version"],
+        slug,
+        expected_version=expected_version,
         checkout_path=str(checkout),
-        doc_type="plan",
+        doc_type=doc_type,
         mode="state",
         ops=[example],
     )
@@ -1987,4 +2005,286 @@ def test_each_skills_documented_landing_links_a_record_section(tmp_path: Path) -
         assert record.is_file(), f"{name}: {href} names no file"
         assert f'id="{fragment}"' in record.read_text(), (
             f"{name}: {href} names no section of {record.name}"
+        )
+
+
+# Every op object a skill or AGENTS.md shows in a code span or fenced block is
+# one a reader copies and submits, and every path the op-reference `set` row
+# lists is offered as settable. A documented op the store refuses as an
+# unsupported path — or a computed field it refuses outright — sends that
+# reader to a text-mode edit or a direct file write, the hand edit these ops
+# exist to replace. So each is applied to a synthesized resource and the
+# refusal, if any, must not be for its path.
+_REFUSAL_FOR_PATH = re.compile(
+    r"unsupported (?:plan|index) (?:set path|append target)"
+    r"|is (?:computed|counted) from"
+    r"|is not authorable"
+)
+
+
+def _refusal_is_for_path(result: dict) -> bool:
+    """True when the store refused an op for its path, not for its target.
+
+    A refusal naming an unsupported path, or a field the store computes rather
+    than accepts, is the defect this sweep exists to catch. A refusal for a
+    missing target is not: the synthesized fixture carries no followup, sprint
+    review or gate the example happens to address.
+    """
+    return bool(_REFUSAL_FOR_PATH.search(result.get("detail") or ""))
+
+
+_FENCED_BLOCK = re.compile(r"```[^\n]*\s*\n(?P<body>.*?)\n?```", re.DOTALL)
+_CODE_SPAN = re.compile(r"`(?P<body>[^`\n]+)`")
+_DOC_TYPE_IN_BODY = re.compile(r'doc_type\s*=\s*"(?P<value>[a-z_]+)"')
+_SLUG_IN_BODY = re.compile(r'slug\s*=\s*"(?P<value>[^"]+)"')
+
+
+def _documented_op_corpus() -> list[Path]:
+    """The files the op-object sweep reads: the skills tree and AGENTS.md."""
+    corpus = list((ROOT / "skills").rglob("*.md"))
+    corpus.append(ROOT / "AGENTS.md")
+    return sorted(corpus)
+
+
+def _code_bodies(text: str) -> list[str]:
+    """The fenced-block and inline-code-span bodies a document shows.
+
+    Only code is swept: an op object written in prose is a description, and the
+    one a reader pastes from is the one in a block or span.
+    """
+    return [match.group("body") for match in _FENCED_BLOCK.finditer(text)] + [
+        match.group("body") for match in _CODE_SPAN.finditer(text)
+    ]
+
+
+def _json_op_objects(body: str) -> list[dict]:
+    """Every balanced ``{...}`` in the body that parses as JSON and names an op.
+
+    Both a ```json block of bare op objects and a ```python block wrapping them
+    in an ``edit_plan(ops=[...])`` call yield the same dicts, because each op is
+    scanned as a balanced brace group rather than by parsing the whole body.
+    """
+    found: list[dict] = []
+    for opening in (match.start() for match in re.finditer(r"\{", body)):
+        depth = 0
+        for index in range(opening, len(body)):
+            char = body[index]
+            if char == "{":
+                depth += 1
+            elif char == "}":
+                depth -= 1
+                if depth == 0:
+                    chunk = body[opening : index + 1]
+                    try:
+                        candidate = json.loads(chunk)
+                    except ValueError:
+                        break
+                    if isinstance(candidate, dict) and isinstance(
+                        candidate.get("op"), str
+                    ):
+                        found.append(candidate)
+                    break
+    return found
+
+
+def _documented_op_objects() -> list[tuple[Path, dict, str | None, str | None]]:
+    """Each (file, op object, enclosing doc_type, enclosing slug) a doc shows.
+
+    The doc_type and slug come from the ``edit_plan(...)`` call whose body the
+    op sits in, so an example written against a sprint or a review resource is
+    applied to that resource rather than to a plan. An op in a bare ```json
+    block or an inline span carries no call and defaults to the plan.
+    """
+    pairs: list[tuple[Path, dict, str | None, str | None]] = []
+    seen: set[tuple[str, str]] = set()
+    for path in _documented_op_corpus():
+        for body in _code_bodies(path.read_text(encoding="utf-8")):
+            doc_match = _DOC_TYPE_IN_BODY.search(body)
+            slug_match = _SLUG_IN_BODY.search(body)
+            doc_type = doc_match.group("value") if doc_match else None
+            slug = slug_match.group("value") if slug_match else None
+            for obj in _json_op_objects(body):
+                key = (path.name, json.dumps(obj, sort_keys=True))
+                if key in seen:
+                    continue
+                seen.add(key)
+                pairs.append((path, obj, doc_type, slug))
+    return pairs
+
+
+_SECTION_CAPABILITY = {
+    "version": "1.0",
+    "class": "general",
+    "requirements": {
+        "reasoning": "standard",
+        "verification": "strict",
+        "risk": "low",
+    },
+}
+
+# One value per set-row path, so the path itself — never a refused value — is
+# what the sweep tests. A path absent here takes a plain string.
+_SET_ROW_VALUES: dict[str, object] = {
+    "status": "active",
+    "roi": "mid",
+    "effort": "M",
+    "effort_hours": 4.0,
+    "milestone": "M1",
+    "sprint": "S5",
+    "capability": _SECTION_CAPABILITY,
+    "owner": "Simon McIntosh",
+    "summary": "One-line synopsis.",
+    "title": "A title",
+    "type": "plan",
+    "archived": False,
+    "read": False,
+    "depends_on": [],
+    "blocks": [],
+    "informs": [],
+    "prompt": "/reckon-build my-plan",
+    "theme": "Foundation hardening",
+    "description": "Schema and tooling.",
+    "active_sprint_id": "S5",
+}
+
+_PLACEHOLDERS = {"<id>": "S5", "<sid>": "S5", "<field>": "theme", "<key>": "base-model"}
+
+
+def _set_row_value(path: str) -> object:
+    """The value the sweep writes to a documented path."""
+    return _SET_ROW_VALUES.get(path.rsplit(".", 1)[-1], "sweep")
+
+
+def _set_row_paths(edit_text: str) -> dict[str, list[str]]:
+    """The paths the op-reference `set` row lists, split into plan and index."""
+    match = re.search(
+        r"^\|\s*`set`\s*\|[^|]*\|(?P<notes>[^|]*)\|", edit_text, re.MULTILINE
+    )
+    assert match is not None, "reckon-edit op reference carries no `set` row"
+    notes = match.group("notes")
+    plan_part = notes.partition("Plan:")[2].partition("Index:")[0]
+    index_part = notes.partition("Index:")[2]
+
+    def paths(chunk: str) -> list[str]:
+        return list(re.findall(r"`([^`]+)`", chunk))
+
+    return {"plan": paths(plan_part), "index": paths(index_part)}
+
+
+def _resolve_placeholders(path: str) -> str:
+    for placeholder, value in _PLACEHOLDERS.items():
+        path = path.replace(placeholder, value)
+    return path
+
+
+def _write_index(state_root: Path, project: str, sprints: list[dict]) -> None:
+    """A project index envelope at the state root the store reads it from."""
+    project_state = state_root / project
+    project_state.mkdir(parents=True, exist_ok=True)
+    envelope = {
+        "project": project,
+        "doc": "index",
+        "data": {"_version": 0, "sprints": sprints, "milestones": []},
+    }
+    (project_state / "index.json").write_text(json.dumps(envelope), encoding="utf-8")
+
+
+def _candidate_resources(
+    doc_type: str | None, slug: str | None
+) -> list[tuple[str] | tuple[str, str | None, str]]:
+    """The resources an op may legitimately address, most specific first."""
+    candidates: list[tuple] = []
+    if doc_type:
+        candidates.append((doc_type, slug or "S5"))
+    candidates.append(("plan", "my-plan"))
+    return candidates
+
+
+def test_every_documented_op_object_is_supported_by_the_store(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Each op object a skill or AGENTS.md shows applies to some resource.
+
+    A documented op the store refuses as an unsupported path, or as a computed
+    field it will not accept, is one a reader cannot run — so the sweep applies
+    each to the resource its example addresses and to the plan, and passes when
+    a single application is refused for any other reason.
+
+    A floor keeps the sweep from passing vacuously: an empty corpus applies
+    nothing and reports green, so at least one op object must come from under
+    ``skills/`` and the run fails naming the empty source when none does.
+    """
+    monkeypatch.setenv("RECKON_STATE_ROOT", str(tmp_path / "state"))
+    _write_index(tmp_path / "state", "my-project", [{"id": "S5", "theme": "x"}])
+
+    objects = _documented_op_objects()
+    skills_root = ROOT / "skills"
+    assert any(path.is_relative_to(skills_root) for path, *_rest in objects), (
+        "the op-object sweep extracted no op object from under "
+        f"{skills_root}, so it would pass vacuously; the extractor or the "
+        "skills corpus is empty"
+    )
+
+    for ordinal, (path, op, doc_type, slug) in enumerate(objects):
+        checkout = tmp_path / f"op-{ordinal}"
+        _synthesized_checkout(checkout)
+        refusals: list[dict] = []
+        for candidate_type, candidate_slug in _candidate_resources(doc_type, slug):
+            result = _apply_example(
+                checkout, op, slug=candidate_slug, doc_type=candidate_type
+            )
+            if not _refusal_is_for_path(result):
+                break
+            refusals.append(result)
+        else:
+            pytest.fail(
+                f"{path} shows {op!r}, which the store refuses for its path: "
+                f"{[refusal.get('detail') for refusal in refusals]}",
+                pytrace=False,
+            )
+
+
+def test_the_op_reference_set_row_documents_supported_paths(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Every path the op-reference `set` row lists is one the store accepts.
+
+    The row is the reader's map of what is settable, so a path on it the store
+    refuses — an unsupported path, or a field it computes and discards — is a
+    documented write that cannot land. Plan paths are tried on a plan and index
+    paths on the project index, matching the row's own split.
+    """
+    monkeypatch.setenv("RECKON_STATE_ROOT", str(tmp_path / "state"))
+    checkout = tmp_path / "set-row"
+    _synthesized_checkout(checkout)
+    _write_index(tmp_path / "state", "my-project", [{"id": "S5", "theme": "x"}])
+
+    edit_path = "skills/reckon-edit/SKILL.md"
+    rows = _set_row_paths((ROOT / edit_path).read_text(encoding="utf-8"))
+    assert rows["plan"], "the op-reference `set` row lists no plan path"
+    assert rows["index"], "the op-reference `set` row lists no index path"
+
+    for path in rows["plan"]:
+        resolved = _resolve_placeholders(path)
+        result = _apply_example(
+            checkout,
+            {"op": "set", "path": resolved, "value": _set_row_value(path)},
+            slug="my-plan",
+        )
+        assert not _refusal_is_for_path(result), (
+            f"{edit_path} op-reference `set` row documents {path!r}, which the "
+            f"store refuses: {result.get('detail')}"
+        )
+
+    for path in rows["index"]:
+        resolved = _resolve_placeholders(path)
+        result = _apply_example(
+            checkout,
+            {"op": "set", "path": resolved, "value": _set_row_value(path)},
+            slug="index",
+            doc_type=None,
+        )
+        assert not _refusal_is_for_path(result), (
+            f"{edit_path} op-reference `set` row documents {path!r}, which the "
+            f"store refuses: {result.get('detail')}"
         )

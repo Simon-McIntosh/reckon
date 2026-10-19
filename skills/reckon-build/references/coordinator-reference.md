@@ -202,8 +202,10 @@ measured instances: `~/.agents/AGENTS.md`, *Name The Target*.
 9. **Update the plan at every node landing.** Immediately after EACH
    `reckon crew complete`, the orchestrator merges the worker's committed record —
    reading it, editing or appending to it as needed — then calls `edit_plan` once
-   with the advanced `impl` and the shared index additions. Nothing else may be
-   promoted or merged before this write.
+   with the node's landing state and the shared index additions. The write never
+   sets `impl`: it derives from the section records and moves when a section's
+   declaration moves to `done`. Nothing else may be promoted or merged before
+   this write.
    Dispatch of an unrelated ready node may continue; it does not wait on this
    plan-write beat. Collapse the evergreen section only when its final node lands;
    never wait for section closure to record earlier nodes.
@@ -920,6 +922,9 @@ anchored section to the cumulative landing record. `insert_section` —
 `{op:'insert_section', id, title, body, effort_hours, capability, links}` —
 writes a new `h2` for discovered work; `effort_hours`, `capability` (the
 versioned request object) and `links` are required, not defaulted.
+`effort_hours` is a positive number of quarter hours (`0.25` steps, for example
+`1.25`), and `capability.requirements.risk` is one of `low`, `moderate`,
+`elevated`, `critical`.
 
 <!-- landing-beat-examples -->
 ```json

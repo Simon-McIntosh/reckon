@@ -529,11 +529,13 @@ Immediately after each `reckon crew complete`, the orchestrator:
    could not state — the gate verdict and negative findings. Do not create
    per-node or per-section fragments; split a new evidence resource only for a
    materially independent artifact that stands on its own.
-2. Calls `edit_plan` once with the advanced node-based `impl`, the commit added
+2. Calls `edit_plan` once with the node's landing state — the commit added
    to `commits`, artifacts added to `artifacts`, and a section comment appended
    only where the worker did not author one — even then, only the gate verdict
    and quantitative measure rather than a transcription of its record. The
-   number and its evidence travel in one version-safe state write.
+   number and its evidence travel in one version-safe state write. The write
+   never sets `impl`: it derives from the section records and moves when a
+   section's declaration moves to `done`.
 3. Resolves the driving followup only when the node closes its section. A
    partially landed section remains open even though its plan ledger advanced.
 4. Collapses a section in the evergreen only when its final node has landed.
@@ -546,6 +548,11 @@ Immediately after each `reckon crew complete`, the orchestrator:
    the plan writeback. Item lifecycle status and implementation fraction are
    derived from plan HTML and must never be persisted in the sprint.
 7. Appends a cross-plan followup when needed, or records `done — no followup`.
+
+A section typed through `insert_section` carries `effort_hours` as a positive
+number of quarter hours (`0.25` steps, for example `1.25`), and its
+`capability.requirements.risk` is one of `low`, `moderate`, `elevated`,
+`critical`.
 
 ### Followup drain at every landing beat
 
