@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="Coordinators hand-edit plans when the MCP image is stale or an op is missing; the server serves current code and edit_plan writes every field they touch.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
-  <meta name="plan-effort-hours" content="11.0">
+  <meta name="plan-effort-hours" content="11.75">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-informs" content="the-crew-surface-is-one-tool-and-a-few-verbs">
-  <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;every-plan-write-goes-through-edit-plan#s2&quot;, &quot;every-plan-write-goes-through-edit-plan#s3&quot;], &quot;s5&quot;: [&quot;every-plan-write-goes-through-edit-plan#s4&quot;], &quot;s6&quot;: [&quot;every-plan-write-goes-through-edit-plan#s5&quot;], &quot;s7&quot;: [&quot;every-plan-write-goes-through-edit-plan#s6&quot;], &quot;s8&quot;: [&quot;every-plan-write-goes-through-edit-plan#s7&quot;], &quot;s9&quot;: [&quot;every-plan-write-goes-through-edit-plan#s6&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;every-plan-write-goes-through-edit-plan#s2&quot;,&quot;every-plan-write-goes-through-edit-plan#s3&quot;],&quot;s5&quot;:[&quot;every-plan-write-goes-through-edit-plan#s4&quot;],&quot;s6&quot;:[&quot;every-plan-write-goes-through-edit-plan#s5&quot;],&quot;s7&quot;:[&quot;every-plan-write-goes-through-edit-plan#s6&quot;],&quot;s8&quot;:[&quot;every-plan-write-goes-through-edit-plan#s7&quot;],&quot;s9&quot;:[&quot;every-plan-write-goes-through-edit-plan#s6&quot;],&quot;s10&quot;:[&quot;every-plan-write-goes-through-edit-plan#s6&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
   <title>Every Plan Write Goes Through edit_plan | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="27">
+<meta name="plan-version" content="29">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -187,9 +187,9 @@
       work is done satisfies the continuation guard through the close itself, with no placeholder followup.</p>
     <p>No guard is removed. The vocabulary gains one verb and <code>set</code> loses its terminal path: a <code>set</code> of
       <code>status</code> to any value in <code>TERMINAL_STATUSES</code> is refused, naming <code>close</code>, and every reckon caller that
-      sets one moves to <code>close</code> in the same node. The resolved-placeholder recipe is dropped where it lives:
-      <code>skills/reckon-build/references/coordinator-reference.md</code>, <code>skills/reckon-build/references/sprint-orchestration.md</code>
-      and <code>AGENTS.md</code>. <code>skills/reckon-edit/SKILL.md</code> documents <code>close</code> in its op table.</p>
+      sets one through code moves to <code>close</code> in the same node. The documents that describe the change (the op table, the
+      resolved-placeholder recipe and the instructions to set a terminal status) are §10's: with them in its fence this node exceeded the
+      local lane's context window.</p>
     <p><strong>Done when</strong> <code>tests/test_a_plan_closes_in_one_op.py</code> passes three cases. A plan whose sections are done and
       whose evidence record exists closes in one version step, with every followup resolved and no placeholder followup appended. A plan with
       an implementable section, no evidence record and a pending transition gate is refused, naming all three in the same answer. A
@@ -203,13 +203,8 @@
       test file it touches passes. A hit in a file outside the write paths below stops the node as blocked, naming the file, so the
       coordinator can widen its fence. The base already shows <code>tests/test_terminal_status_needs_every_section_ticked.py</code>,
       <code>tests/test_every_section_has_a_declaration.py</code>, <code>tests/test_closure_gates.py</code> and
-      <code>tests/test_continuation.py</code> and <code>tests/test_edit_plan.py</code>. The gate log also carries a grep of the three recipe files, <code>skills/reckon-create/SKILL.md</code>
-      and <code>skills/reckon-edit/SKILL.md</code> (whose archive example sets <code>status</code> to <code>archived</code>) for an instruction to append a resolved placeholder followup or to set a terminal status, which
-      finds none. Write paths: <code>reckon/_store.py</code>, <code>reckon/_store_section_ops.py</code>,
-      <code>reckon/mcp.py</code>, <code>skills/reckon-edit/SKILL.md</code>,
-      <code>skills/reckon-build/references/coordinator-reference.md</code>,
-      <code>skills/reckon-build/references/sprint-orchestration.md</code>, <code>AGENTS.md</code>,
-      <code>skills/reckon-create/SKILL.md</code>, <code>tests/test_terminal_status_needs_every_section_ticked.py</code>,
+      <code>tests/test_continuation.py</code> and <code>tests/test_edit_plan.py</code>. Write paths: <code>reckon/_store.py</code>,
+      <code>reckon/_store_section_ops.py</code>, <code>reckon/mcp.py</code>, <code>tests/test_terminal_status_needs_every_section_ticked.py</code>,
       <code>tests/test_every_section_has_a_declaration.py</code>, <code>tests/test_closure_gates.py</code>,
       <code>tests/test_continuation.py</code>, <code>tests/test_edit_plan.py</code>, <code>tests/test_a_plan_closes_in_one_op.py</code>.</p>
 
@@ -251,6 +246,12 @@
 <p><strong>Why.</strong> §3 landed with three branches of the current-code answer that no test reaches. The worker and its review both named them. A failing current-code answer is tested for <code>edit_plan</code> but not for the crew tool, the path that first exposed the defect. A child interpreter that never reaches the tool returns empty params, which reads as no signature change. A child that makes no answer at all still yields the reconnect refusal.</p>
     <p><strong>Deliverable.</strong> One case each in <code>tests/test_mcp_server_serves_current_code.py</code>: the crew tool's failure returned as the current code's answer with its stamp; a child that never reaches the tool, which is not reported as an unchanged signature; and a child that makes no answer, which gets the refusal naming why. If a case exposes a defect, the fix in <code>reckon/mcp.py</code> belongs to this section.</p>
     <p><strong>Done when</strong> the three cases pass at the node's head, logged with <code>EXIT=0</code>, and each has a negative control that removes the branch it covers, after which that case fails. Write paths: <code>reckon/mcp.py</code>, <code>tests/test_mcp_server_serves_current_code.py</code>.</p>
+
+    <h2 id="s10">§10 — The skills describe close and drop the retired instructions</h2>
+<section data-reckon="section" data-id="s10" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> Split from §6 on 2026-10-19. With these documents in its fence, §6's node needed 234,819 input tokens against the local lane's 230,144-token window. Once §6 lands, the store refuses a terminal <code>set</code> of <code>status</code>, so any document still showing that write, or the resolved-placeholder recipe, teaches a refused op.</p>
+    <p><strong>Deliverable.</strong> <code>skills/reckon-edit/SKILL.md</code> documents <code>close</code> in its op table, and its archive example uses <code>close</code>. The instructions to set a terminal status, and the recipe of appending an already-resolved "done — no followup", are replaced by <code>close</code> in <code>skills/reckon-build/references/coordinator-reference.md</code>, <code>skills/reckon-build/references/sprint-orchestration.md</code>, <code>AGENTS.md</code> and <code>skills/reckon-create/SKILL.md</code>.</p>
+    <p><strong>Done when</strong> <code>tests/test_skill_contracts.py</code> and <code>tests/test_cited_commands_exist.py</code> pass at the node's head. The contract harness applies every op object the skills cite to the store, which now accepts <code>close</code> and refuses a terminal <code>set</code>, so a surviving example fails it. The gate log carries a grep of the five files for an instruction to set a terminal status or append a resolved placeholder followup, which finds none. The negative control restores the archive example's <code>set</code> of <code>status</code> to <code>archived</code>, and the contract test then fails naming <code>skills/reckon-edit/SKILL.md</code>. Write paths: <code>skills/reckon-edit/SKILL.md</code>, <code>skills/reckon-build/references/coordinator-reference.md</code>, <code>skills/reckon-build/references/sprint-orchestration.md</code>, <code>AGENTS.md</code>, <code>skills/reckon-create/SKILL.md</code>.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
