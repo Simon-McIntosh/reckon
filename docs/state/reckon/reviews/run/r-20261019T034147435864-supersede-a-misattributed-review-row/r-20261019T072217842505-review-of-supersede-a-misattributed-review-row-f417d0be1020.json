@@ -1,0 +1,53 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/ledger.py:review_scores",
+    "reckon/capabilities.py:_arm_figures",
+    "reckon/crew/picker/snapshot.py:_candidates_scan",
+    "reckon/crew/picker/outcomes.py:summarize",
+    "reckon/crew_run_commands.py:crew_supersede_review"
+  ],
+  "completed_at": "2026-10-19T07:41:56.281Z",
+  "dispatched_at": "2026-10-19T07:23:33Z",
+  "findings": [
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": "780",
+      "severity": "blocking",
+      "text": "the newly registered supersede-review verb appears in no line of skills/reckon-build/SKILL.md and is absent from CREW_VERBS_OUTSIDE_ORCHESTRATION in tests/test_skill_contracts.py, so tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt -- named in the plan's done-when -- now lists three undocumented verbs (check-review, repair-review, supersede-review) where the base listed two; the plan directs that this out-of-scope registration be added with crew widen naming skills/reckon-build/SKILL.md, which was not done, so the node's own verb does not satisfy the named check."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against the base; three commits (b7c35ae8d, 63171c42e, f417d0be1) add review_block in reckon/ledger.py, round_node_head_suffix in reckon/crew/repair.py, the supersede-review verb in reckon/crew_run_commands.py, route four readers through review_block, and add the test file and landing fragment.",
+    "done_when": "the done_when names tests/test_a_corrected_review_row_reads_as_unreviewed.py, tests/test_crew_help_names_its_state.py and tests/test_skill_contracts.py's every-registered-verb check; the manifest records the first two passing (12 passed) but ran no gate for the third, which this node's own registration leaves failing.",
+    "goal": "the node goal is to add supersede-review and one reader accessor; reckon/crew_run_commands.py:825 supersede_run_review appends a review_correction and reckon/ledger.py:3675 review_block is the accessor every reader now reads through.",
+    "manifest": "read; it records 12 passed for the two named test files, an after_suite of 0 failures and a negative-control base arm failing 7 cases by id, but attributes the test_skill_contracts failure solely to pre-existing verbs when this node's own verb is a third cause.",
+    "write_paths": "read the manifest and the diff; every changed path (reckon/ledger.py, reckon/crew/repair.py, reckon/capabilities.py, reckon/crew/picker/snapshot.py, reckon/crew/picker/outcomes.py, reckon/crew_run_commands.py, tests/test_crew_help_names_its_state.py, tests/test_a_corrected_review_row_reads_as_unreviewed.py, docs/evidence/fragments/a-review-promotes-only-its-own-verdict/supersede-a-misattributed-review-row.html) is inside the declared scope; reckon/cli.py was declared and left unchanged."
+  },
+  "justifications": {
+    "durability": "tests/test_a_corrected_review_row_reads_as_unreviewed.py would redden if review_block returned the block again (accessor is None, medians empty) and shows 7 failing ids at base 49b9973b4, so it fails if the change regresses.",
+    "evidence": "the essential-gate.log records 12 passed for tests/test_a_corrected_review_row_reads_as_unreviewed.py and tests/test_crew_help_names_its_state.py, and the base arm fails the 7 new cases by id, but the done_when's named tests/test_skill_contracts.py every-registered-verb check was run by no gate and is violated at the head (see FINDING).",
+    "fit": "reckon/crew_run_commands.py:825 and reckon/ledger.py:3675 follow the surrounding docstring-and-structure idiom with no plan, ticket or version identifier, but the new verb is not carried into the skills/reckon-build contract its siblings honour.",
+    "goal_fidelity": "reckon/crew_run_commands.py:825 supersede_run_review appends review_correction {time, reason, dispatched_head, recorded_head, superseded_field} without rewriting recorded fields, and reckon/ledger.py:3675 review_block returns None for a corrected row so it drops out of totals and medians as the goal states.",
+    "reuse": "review_block is defined on the row owner (reckon/ledger.py) and the four readers call it; round_node_head_suffix sits beside round_node_source in reckon/crew/repair.py and the verb reuses _review_record_subject, carried_revision_pair, same_revision and _commit_landing_writes rather than re-implementing them.",
+    "scope_discipline": "every path in git diff 49b9973b4..f417d0be lies inside the SCOPE fence in prompt.txt:69-80, but the plan's requirement to crew widen for the SKILL.md registration line was not taken, leaving the node's own registration outside the contract test's coverage."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to add supersede-review and one reader accessor; reckon/crew_run_commands.py:825 supersede_run_review appends a review_correction and reckon/ledger.py:3675 review_block is the accessor every reader now reads through.\nVERDICT done_when: the done_when names tests/test_a_corrected_review_row_reads_as_unreviewed.py, tests/test_crew_help_names_its_state.py and tests/test_skill_contracts.py's every-registered-verb check; the manifest records the first two passing (12 passed) but ran no gate for the third.\nVERDICT write_paths: every changed path is inside the declared scope; reckon/cli.py was declared and left unchanged.\nVERDICT manifest: read; it records 12 passed, an after_suite of 0 failures and a negative-control base arm failing 7 cases by id, but misattributes the tests/test_skill_contracts.py failure.\nVERDICT diff: read commit by commit against the base; three commits add review_block, round_node_head_suffix, the supersede-review verb, four reader routings, the test file and the landing fragment.\nCALL_SITES: reckon/ledger.py:review_scores, reckon/capabilities.py:_arm_figures, reckon/crew/picker/snapshot.py:_candidates_scan, reckon/crew/picker/outcomes.py:summarize, reckon/crew_run_commands.py:crew_supersede_review\nSCORE goal_fidelity: 17\nSCORE evidence: 10\nSCORE scope_discipline: 15\nSCORE durability: 18\nSCORE fit: 16\nSCORE reuse: 20\nFINDING reckon/crew_run_commands.py:780 blocking: supersede-review is registered but neither documented in skills/reckon-build/SKILL.md nor exempted, so tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt now fails for three verbs instead of two; the plan required a crew widen for the SKILL.md line, which was not taken.",
+  "review_run_id": "r-20261019T072217842505-review-of-supersede-a-misattributed-review-row-f417d0be1020",
+  "reviewed_base_sha": "49b9973b488c4de54b9ad8bebf0b39ae99cdc868",
+  "reviewed_head_sha": "f417d0be1020b069dc18c66c81b4e88a07b7a887",
+  "reviewed_run_id": "r-20261019T034147435864-supersede-a-misattributed-review-row",
+  "scores": {
+    "durability": 18,
+    "evidence": 10,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T07:44:04.805207+00:00"
+}
