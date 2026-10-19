@@ -1109,6 +1109,15 @@ CREW_VERBS_OUTSIDE_ORCHESTRATION = {
         "the fleet service that launches queued dispatches when the lane opens "
         "a slot; the supervisor runs it, an orchestrator never calls it"
     ),
+    ("crew", "check-review"): (
+        "a review worker checks its own record against the refusal rules "
+        "delivery would apply, before it files it; the worker runs it, not the "
+        "orchestrator loop"
+    ),
+    ("crew", "repair-review"): (
+        "repairs a filed review record's status or missing subject identity in "
+        "place, a repair reached outside the orchestration loop"
+    ),
 }
 
 
