@@ -26,7 +26,7 @@
   <title>Every Plan Write Goes Through edit_plan | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="19">
+<meta name="plan-version" content="20">
 <meta name="plan-modified" content="2026-10-19">
 </head>
 <body>
@@ -311,7 +311,10 @@
     <div class="r-comment-body"><p>review of run r-20261019T093957788797-epw-set-a-section-field at head 9d06f4946 scored goal_fidelity 19, evidence 16, scope_discipline 20, durability 18, fit 17, reuse 14, with zero added failures and three follow-on findings (stale after_suite revision in the manifest, stale gate-head revision in the landing fragment, the queued-effect collection duplicating reckon/_store.py:770-817).</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261019T111916867132-review-of-epw-set-a-section-field-1c964c500d03" data-who="reckon-build" data-when="2026-10-19T11:28:27.455Z">
-    <div class="r-comment-body"><p>review of run r-20261019T093957788797-epw-set-a-section-field landed at head 1c964c500d039b262be85fd2a48cb57dfa6654ba, scored goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 18, reuse 14, added_failure_count 0 with no added ids, carrying one blocking finding at reckon/_store_section_ops.py:71 - the section-body forged-structure guard drops the meta[name^=&quot;plan-&quot;] clause that the sibling guards at reckon/_store.py:830 and :968 apply, so a section body can carry a plan-* meta that read_state at reckon/_plan_html.py:1221 accepts as plan state.</p></div>
+    <div class="r-comment-body"><p>review of run r-20261019T093957788797-epw-set-a-section-field landed at head 1c964c500d039b262be85fd2a48cb57dfa6654ba, scored goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 18, reuse 14, added_failure_count 0 with no added ids, carrying one blocking finding at reckon/_store_section_ops.py:71 - the section-body forged-structure guard drops the meta[name^="plan-"] clause that the sibling guards at reckon/_store.py:830 and :968 apply, so a section body can carry a plan-* meta that read_state at reckon/_plan_html.py:1221 accepts as plan state.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261019T115159253161-review-of-epw-set-a-section-field-e871d96948a2" data-who="reckon-build" data-when="2026-10-19T12:06:00.774Z">
+    <div class="r-comment-body"><p>review of run r-20261019T093957788797-epw-set-a-section-field at head e871d96948a2fb04b364c61278f01b23e82a1f10 (base fb8a53156da84ce443bea1fec8b3242d6f22dfdb) scores goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 18, reuse 19, added_failure_count 0 with no added ids, carrying one follow-on finding on the independence of the other-section byte-stability assertion at tests/test_edit_plan_sets_a_section_field.py:172; the prior review&#x27;s blocking finding at reckon/_store_section_ops.py:71 is repaired by commit 61e705aaa, which routes all three authored-body sites through one predicate, verified by a mutation control that reddens the head&#x27;s test; status parsed.</p></div>
 </div>
 </section>
 </main>
