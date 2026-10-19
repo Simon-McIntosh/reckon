@@ -20,13 +20,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-standalone" content="It changes how a node&#x27;s own time budget is stated and accounted; no live plan waits on it, and it consumes no plan&#x27;s pending evidence.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;deferred&quot;}">
-  <meta name="plan-section-depends-on" content="{&quot;s2&quot;: [&quot;test-time-is-not-the-nodes-time#s1&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;deferred&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;deferred&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s2&quot;: [&quot;test-time-is-not-the-nodes-time#s1&quot;], &quot;s4&quot;: [&quot;test-time-is-not-the-nodes-time#s1&quot;, &quot;test-time-is-not-the-nodes-time#s2&quot;]}">
   <title>Test Time Is Not The Node's Time | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="11">
-<meta name="plan-modified" content="2026-10-18">
+<meta name="plan-version" content="13">
+<meta name="plan-modified" content="2026-10-19">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
 <body>
@@ -67,6 +67,40 @@
 <p>Under either shape the gate's wall time is still recorded as a cost the picker can read, so Jev keeps seeing what a node costs. Until §2 lands, nova's briefs size <code>--time-budget</code> as the work plus the gate's wall time, and split nodes with more than three done-when clauses.</p>
 <p>The done-when, write paths and negative control are written once §1 has landed and the decision is locked, and the section is then reviewed before it is built.</p>
 
+    <h2 id="s3">At its deadline a worker checkpoints, then finishes only a bounded step it named</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> On 2026-10-19 the power_convertor session reported that the worker prompt is the only thing that stops a worker at its deadline. <code>fences.enforce_budget_watchdog</code> is false in <code>reckon/schema/flight-defaults.yaml:201</code>, and the prompt says "Exceeding it means stop and report, never push on" (<code>reckon/crew/prompts.py:635</code>). Its stop list repeats this: "the time budget is spent with the measure still unmet" (<code>reckon/crew/prompts.py:701</code>). Workers obey. A numerical node whose remaining step is one solver batch under <code>timeout 570</code> stops anyway, writes a partial manifest and waits for a resume. That session counts 163 of its 337 worker ledger rows as resumes, though repair rounds are among them. Across all projects, it counts 19 of 755 recent worker manifests that name a deadline stop. A hung worker is caught separately, by the 900-second stall window, so the deadline does not need to double as a hang detector. The rule should still stop a worker that has lost its way. It should let one whose next step is bounded, and already written down, finish that step.</p>
+<p><strong>Deliverable.</strong> One deadline rule, stated the same way at every place a worker is told it:</p>
+<ul>
+<li><strong>At the deadline, write the checkpoint.</strong> The manifest's <code>status</code>, <code>checkpoint</code> and remaining work are current on disk before anything else runs.</li>
+<li><strong>Continue only through a bounded step the manifest named before the deadline.</strong> That step is one command under its own timeout, or a stated number of them: a declared gate, its base arm, or a named solver batch. Finish it by the hard stop, then update the manifest and end the turn. Never start new work, a fresh fix or an unnamed step past the deadline.</li>
+<li><strong>The hard stop is the launch instant plus the budget times <code>fences.budget_grace_multiple</code>.</strong> This is the same instant the opt-in watchdog enforces (<code>reckon/crew/recovery_stream.py:333</code>). <code>time_fence_statement</code> (<code>reckon/crew/prompts.py:382</code>) states it beside the deadline, for a first attempt and a resumed one alike (<code>reckon/crew/dispatch_sessions.py:1468</code>). When the multiple is missing or at most 1.0, the hard stop is the deadline and the rule reads as it does today.</li>
+<li><strong>Otherwise stop and report.</strong> The stop list at line 701 names the hard stop, and a deadline passed with remaining work that is not a named bounded step, in place of "the time budget is spent".</li>
+</ul>
+<p>The two restatements in <code>skills/reckon-build/references/worker-protocol.md</code>, the fence table row at line 66 and the stop list at line 346, carry the same rule. Change nothing else. The dispatch ceiling (<code>fences.time_budget</code>), the watchdog and the stall window stay as they are; the ceiling is §4.</p>
+<p><strong>Write paths.</strong> <code>reckon/crew/prompts.py</code>, <code>reckon/crew/dispatch_claims.py</code> (the <code>compose_prompt</code> caller, which passes the multiple), <code>reckon/crew/dispatch_sessions.py</code> (the resumed attempt's fence), <code>skills/reckon-build/references/worker-protocol.md</code>, the new <code>tests/test_a_deadline_lets_a_named_batch_finish.py</code>, and the node's evidence fragment. Three existing test files are granted only to update an asserted fence sentence to the new rule: <code>tests/test_brief_prompt.py</code>, <code>tests/test_crew_prompts.py</code> and <code>tests/test_a_time_fence_names_its_clock.py</code>. Remove no other assertion.</p>
+<p><strong>Done when</strong> all of these hold:</p>
+<ul>
+<li>The new test composes a worker prompt through <code>compose_prompt</code> with a 60-minute budget, a stated launch instant and a multiple of 1.5. Its cases:
+<ul>
+<li>The prompt states the deadline at launch plus 60 minutes and the hard stop at launch plus 90 minutes.</li>
+<li>Its time fence says to write the checkpoint at the deadline and to continue only through a bounded step named in the manifest before the deadline. The phrase "never push on" is gone from every composed prompt.</li>
+<li>Its stop list names the hard stop and the unnamed remaining work, and no longer contains "the time budget is spent".</li>
+<li>A resumed attempt's fence, from the <code>dispatch_sessions.py</code> path, states the same hard stop measured from that attempt's own launch.</li>
+<li>With the multiple at 1.0, and with it absent, the hard stop equals the deadline and the prompt allows no continuation.</li>
+</ul></li>
+<li>Run pytest in the foreground with <code>-rA</code> over these files: the new file, the three granted files, <code>tests/test_every_resume_door_states_its_deadline.py</code>, <code>tests/test_time_fence_follows_the_attempt.py</code> and <code>tests/test_every_module_fits_a_worker_window.py</code>. It adds no failure against a base arm run at the dispatched base revision. Both arms' logs go in the run directory, and the manifest's <code>baseline_suite</code> names the base log and its failure ids exactly as pytest prints them.</li>
+<li><code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths, judged by delta against the base blobs.</li>
+</ul>
+<p><strong>Negative control.</strong> Restore the sentence "Exceeding it means stop and report, never push on." in <code>compose_prompt</code>, and the new test's fence case must fail. Separately, pass no multiple at the resumed-attempt call, and its resume case must fail on the hard stop. Apply each mutation alone and run it under pytest with the default short summary.</p>
+<p><strong>After it lands.</strong> Read the next numerical power_convertor node that passes its deadline. It should record a checkpoint, finish the named batch before the hard stop, and end without waiting for a resume.</p>
+
+    <h2 id="s4">The shipped time ceiling fits the work it bounds</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="moderate" data-status="deferred" data-links=""></section>
+<p><strong>Why.</strong> On 2026-10-19, dispatch refused a power_convertor window node budgeted at 120 minutes: "budget 120m exceeds the resolved fence 60m" (<code>reckon/crew/node.py:1294-1298</code>, which reads <code>fences.time_budget</code> through <code>resolved_time_ceiling</code>, <code>reckon/crew/routing.py:473</code>). The shipped ceiling is 60 minutes (<code>reckon/schema/flight-defaults.yaml:198</code>). Every project and every role inherits that value unless its own flight overrides it, as power_convertor now does at 180 minutes (power_convertor commit <code>441252a2</code>). Each numerical node there runs several bounded solver batches plus base and head test passes, and one such pass took 19 minutes. A single shipped figure cannot fit both a 4-minute review and that node.</p>
+<p><strong>Deliverable.</strong> Settled by the decision <code>time-ceiling-shape</code>: either one shipped figure that fits the longest ordinary node, a ceiling for each role, or a ceiling that grows with the compute the node declares. The section is deferred until §1 reports how much of a run's time its gates take and §2's shape is chosen. A gate allowance would itself move part of the time the ceiling now has to hold. Nothing is blocked meanwhile, because a project can raise the ceiling in its own flight.</p>
+<p>The done-when, write paths and negative control are written once the decision is locked. The section is then reviewed before it is built.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="gate-time-shape" data-choice="" data-by="" data-when="" data-sections="s2">
@@ -75,6 +109,16 @@
     <p class="r-dec-opts">
       <button class="r-opt" data-value="gate-allowance">A stated gate allowance extends the worker&#x27;s deadline</button>
       <button class="r-opt" data-value="gate-verb">A reckon gate verb whose time the supervisor excludes and records</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="time-ceiling-shape" data-choice="" data-by="" data-when="" data-sections="s4">
+    <p class="r-dec-q">What shape should the shipped time ceiling take?</p>
+    <p class="r-dec-ctx">Decide after §1 reports and gate-time-shape is locked. The shipped fences.time_budget is one 60-minute figure for every role, from a 4-minute review default to a numerical node whose base and head passes alone can take over half an hour. A project can raise it in its own flight, as power_convertor did at 180 minutes on 2026-10-19, so this decides only what a project gets without one.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="one-figure">One shipped figure, raised to fit the longest ordinary node</button>
+      <button class="r-opt" data-value="per-role">A ceiling for each role, beside each role&#x27;s default budget</button>
+      <button class="r-opt" data-value="declared-compute">A ceiling that grows with the bounded batches and gate the node declares</button>
       </p>
     <p class="r-dec-rat"></p>
     </div>
