@@ -51,18 +51,31 @@
   </p>
 
   <p id="epw-a-slow-child-never-forces-a-reconnect-cases">
-    <strong>The seven cases</strong> in
+    <strong>The eight cases</strong> in
     <code>tests/test_a_slow_child_never_forces_a_reconnect.py</code> drive the
     guard against a temporary tree with a spawn hook that launches a fake child
     the test can slow, silence or stop: an unanswered child leaves a
-    <code>version_conflict</code> a <code>version_conflict</code> with both
-    stamps and no reconnect field; twenty calls start one child and a further
-    stamp move stops it and starts exactly one more; a cold call is served by the
-    image without waiting and the child's call log is empty; a routed call runs
-    once, in the child, with the image's call count unchanged; a routed write the
-    child does not answer returns the may-have-landed timeout with the image's
-    write count unchanged; a changed signature still refuses; closing the pipe
-    ends the child.
+    <code>version_conflict</code> with both stamps and no reconnect field;
+    twenty calls start one child and a further stamp move stops it and starts
+    exactly one more; a cold call is served by the image without waiting and the
+    child's call log is empty; a routed call runs once, in the child, with the
+    image's call count unchanged; a routed write the child does not answer
+    returns the may-have-landed timeout with the image's write count unchanged;
+    a changed signature still refuses; a child killed while its stamp is current
+    is replaced exactly once and warms on its own probe, its next call served by
+    the image without waiting and a later call running once in the replacement;
+    closing the pipe ends the child.
+  </p>
+
+  <p id="epw-a-slow-child-never-forces-a-reconnect-liveness">
+    <strong>A dead child is not the child for its stamp.</strong> A stamp match
+    is not liveness, and a child that died within one code stamp used to be
+    handed back as that stamp's child, so every routed call met a dead pipe and
+    took the may-have-landed timeout until the stamp happened to move. The
+    server now asks whether the cached child is still running: a dead one is
+    returned to no caller, one replacement is started, and that replacement is
+    cold until its own readiness probe answers, so calls are served on the
+    running image meanwhile, exactly as for any cold child.
   </p>
 
   <p id="epw-a-slow-child-never-forces-a-reconnect-controls">
@@ -71,9 +84,10 @@
     child fails the first case, starting a child per call fails the second,
     making a cold call wait fails the third, running a routed call on the image
     as well fails the fourth, re-running a timed-out write on the image fails the
-    fifth, ignoring the probe's parameter names fails the sixth, and leaving the
-    child running after the pipe closes fails the seventh. Every control's log
-    ends in a non-zero <code>EXIT=</code> line.
+    fifth, ignoring the probe's parameter names fails the sixth, returning the
+    dead cached child fails the seventh, and leaving the child running after the
+    pipe closes fails the eighth. Every control's log ends in a non-zero
+    <code>EXIT=</code> line.
   </p>
 
   <p id="epw-a-slow-child-never-forces-a-reconnect-gate">
