@@ -323,7 +323,9 @@ try:
     result = asyncio.run(reckon_mcp.mcp.call_tool(name, json.loads(payload)))
     out["answer"] = structured(result)
 except BaseException as exc:  # noqa: BLE001 - any failure is the child's answer
-    out["error"] = f"{type(exc).__name__}: {exc}"
+    reason = f"{type(exc).__name__}: {exc}"
+    out["error"] = reason
+    out["answer"] = {"ok": False, "error": "crew_error", "detail": reason}
 print(json.dumps(out))
 """
 
@@ -395,13 +397,19 @@ def _run_on_current_code(name: str, kwargs: Mapping[str, Any]) -> dict[str, Any]
 
 
 def _current_code_signature_changed(name: str, child: Mapping[str, Any]) -> bool:
-    """Whether the child's parameter list differs from the registered one."""
+    """Whether the child's parameter list differs from the registered one.
+
+    A child that reported no parameter names at all did not reach the tool —
+    it failed to import the checkout, or died before reading the tool's
+    metadata — and only a list that disagrees with the registered one is a
+    signature change.
+    """
 
     registered = _REGISTERED_TOOL_PARAMS.get(name)
     if registered is None:
         return False
     params = child.get("params")
-    if not isinstance(params, list):
+    if not isinstance(params, list) or not params:
         return False
     return tuple(sorted(str(item) for item in params)) != tuple(sorted(registered))
 
