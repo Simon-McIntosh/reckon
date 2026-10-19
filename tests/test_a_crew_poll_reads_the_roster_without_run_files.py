@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
-import reckon.serve as serve
+from reckon import serve
 
 PROJECT = "polling"
 RUN_FILES = 200
@@ -75,7 +75,7 @@ def _pointer(project: str = PROJECT) -> dict:
         "role": "implement",
         "backend": "codex",
         "agent": {"model": "frontier", "effort": "high"},
-        "created_at": datetime.now(tz=timezone.utc).isoformat(),
+        "created_at": datetime.now(tz=UTC).isoformat(),
         "phase": "working",
         "node": {
             "plan": "visible-work",
