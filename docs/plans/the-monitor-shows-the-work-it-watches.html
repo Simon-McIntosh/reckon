@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="418">
+<meta name="plan-version" content="419">
 <meta name="plan-modified" content="2026-10-19">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1610,6 +1610,9 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
 <div class="r-comment" data-section="s66" data-id="c-close-s66" data-who="reckon-build" data-when="2026-10-19T15:45:00Z">
     <div class="r-comment-body"><p>§66 landed: the project-C clause publishes C's producer, so only the newest-transition selection keeps C's older entry out of the total; merged as <code>ae3077a9a</code>, review 106/120. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#the-project-c-clause-can-fail">evidence</a></p></div>
 </div>
+<div class="r-comment" data-section="s66" data-id="c-run-r-20261019T122014133920-the-project-c-clause-can-fail" data-who="reckon-build" data-when="2026-10-19T12:48:16.337Z">
+    <div class="r-comment-body"><p>§66 — the project-C clause publishes C&#x27;s producer through the obligation snapshot so the liveness gate no longer masks the newest-transition selection; with `_newest_session_event` mutated to return the oldest partition-carrying transition the C clause fails rendering 13w (1 failed, EXIT=1), and at the delivered head the test passes (1 passed, EXIT=0).</p></div>
+</div>
 <div class="r-comment" data-section="s65" data-id="c-run-r-20261019T131044317469-review-of-the-scoped-pane-reuses-the-events-path-owner-3f3796f05165" data-who="reckon-build" data-when="2026-10-19T13:29:33.874Z">
     <div class="r-comment-body"><p>§65 review stored: run r-20261019T122313863139 scored goal_fidelity 20, evidence 13, scope_discipline 20, durability 15, fit 18, reuse 20 (total 106) over base 002f85b4f and head 3f3796f05, with added_failure_count 4 derived from the run's own baseline_suite (9 ids) and after_suite (8 ids) logs and two follow-on findings — the importer-suite delta unmet by the recorded figures, and the watch-directory glob still duplicating query.watch_event_paths; neither blocks the node.</p></div>
 </div>
@@ -1620,7 +1623,7 @@ and the entry-point test because no trap removes it on <code>TERM</code>.</p>
     <div class="r-comment-body"><p>§65 landed: the scoped pane lists events files through <code>query.watch_event_paths</code> and resolves paths through <code>watch_stream_path</code>, and the duplicate suffix constant is gone; merged as <code>64b254cd8</code>, review 107/120. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#the-scoped-pane-reuses-the-events-path-owner">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s65" data-id="c-run-r-20261019T122313863139-the-scoped-pane-reuses-the-events-path-owner" data-who="reckon-build" data-when="2026-10-19T13:59:38Z">
-    <div class="r-comment-body"><p>§65: reckon/crew/recovery_watch.py&#x27;s other-project scan now resolves each project&#x27;s events file through watch_stream_path and lists the watch streams through query.watch_event_paths (function-local import, as query reaches this module through recovery.py), so the duplicate WATCH_EVENTS_SUFFIX constant and the inline glob both go and each spelling has one owner; the done-when grep git grep -n &#x27;\.events&quot;&#x27; reckon/crew/recovery_watch.py prints the WATCH_EVENTS_SUFFIX line at base 002f85b4f (EXIT=0) and nothing at head 30fc083ca (EXIT=1), the inline glob is absent there too, and tests/test_a_pane_counts_its_session_across_projects.py passes (1 passed in 5.43s).</p></div>
+    <div class="r-comment-body"><p>§65: reckon/crew/recovery_watch.py's other-project scan now resolves each project's events file through watch_stream_path and lists the watch streams through query.watch_event_paths (function-local import, as query reaches this module through recovery.py), so the duplicate WATCH_EVENTS_SUFFIX constant and the inline glob both go and each spelling has one owner; the done-when grep git grep -n '\.events"' reckon/crew/recovery_watch.py prints the WATCH_EVENTS_SUFFIX line at base 002f85b4f (EXIT=0) and nothing at head 30fc083ca (EXIT=1), the inline glob is absent there too, and tests/test_a_pane_counts_its_session_across_projects.py passes (1 passed in 5.43s).</p></div>
 </div>
 <div class="r-comment" data-section="s67" data-id="c-run-r-20261019T144103826587-review-of-a-failed-catalogue-read-is-not-an-absent-catalogue-30fd6bcbe74f" data-who="reckon-build" data-when="2026-10-19T14:56:10.263Z">
     <div class="r-comment-body"><p>review record for r-20261019T133039067330-a-failed-catalogue-read-is-not-an-absent-catalogue at head 30fd6bcbe74f stored parsed, base 12d236688eeaabb59a6585536473f0148fdca6bb, scores goal_fidelity 19, evidence 15, scope_discipline 18, durability 18, fit 19, reuse 20, added_failure_count 2</p></div>
