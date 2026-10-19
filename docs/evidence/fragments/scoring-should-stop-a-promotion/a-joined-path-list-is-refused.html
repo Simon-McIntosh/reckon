@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-evidence-for" content="reckon:scoring-should-stop-a-promotion">
+  <meta name="plan-verifies" content="reckon:scoring-should-stop-a-promotion#s16">
+  <meta name="plan-verdict" content="pass">
+  <title>A path list joined by an unsplit separator is refused | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-joined-path-list-is-refused-landing" data-node="a-joined-path-list-is-refused" data-reckon="landed" data-when="2026-10-19">
+  <h2>A path list joined by an unsplit separator is refused, not read as one path</h2>
+  <p>A manifest's list fields are split on commas and newlines only. A worker that wrote several entries on one bare line joined by <code>; </code> had that value read as a <em>single</em> entry: the first path satisfied the write-scope audit and every path after the separator was never scope-checked at all, so the guard looked applied while covering one path. The measured shape — a report path under the reports root, then scripts and logs under the run directory — parsed to <code>['docs/evidence/reports/x.html; scripts/foo.py; logs/bar.log']</code>, and the audit answered <code>ok: true</code> against a scope declaring only the reports root, with the out-of-scope <code>scripts/foo.py</code> and <code>logs/bar.log</code> never reported.</p>
+  <p><strong>What changed.</strong> <code>reckon/crew/reports.py</code> now refuses a list-field value whose entries a semicolon joins before a path-like token, at the parse, naming the field and the separator. Commas and a JSON array stay accepted forms and still split into separate entries; an entry that keeps a semicolon after its own split is refused the same way. A semicolon whose tail is a word rather than a path — a blocker written as one sentence — stays prose, so a list field's ordinary writing is not caught by the rule.</p>
+  <p><strong>The measure.</strong> A manifest whose <code>changed_paths</code> is <code>docs/evidence/reports/x.html; scripts/foo.py; logs/bar.log</code> with scope <code>docs/evidence/reports</code> is refused, the refusal naming <code>changed_paths</code> and <code>';'</code>; at base the same manifest parsed to one entry and answered <code>ok: true</code>. The same three paths comma-separated and as a JSON array parse into three entries, and <code>scripts/foo.py</code> and <code>logs/bar.log</code> are reported outside the write scope. The declared negative control — <em>restore the comma-only list reading; the semicolon-joined case then answers ok</em> — removes the refusal call and the two refusal tests fail (<code>2 failed, 3 passed</code>, <code>EXIT=1</code>).</p>
+  <p><strong>Evidence.</strong> New test <code>tests/test_a_joined_path_list_is_refused.py</code> (5 passed). The reports.py importer suite ran 247 tests at both arms with no added failure (<code>baseline_suite</code> and <code>after_suite</code>, <code>EXIT=0</code> each). The combined gate ran 252 tests, <code>EXIT=0</code>. <code>ruff check</code> and <code>ruff format --check</code> add no findings — the one <code>SIM102</code> finding in <code>reports.py</code> is present at base. One pre-existing failure, <code>test_one_function_resolves_a_citation</code> (a <code>merge.py</code> source assertion), reproduces identically at base and is recorded as a follow-on, not a regression here.</p>
+</article>
+</body>
+</html>
