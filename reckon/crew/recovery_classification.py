@@ -7,7 +7,7 @@ import re
 import shlex
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Mapping
+from typing import Any, Callable, Mapping, Sequence
 
 from reckon import ledger
 from reckon._timestamps import parse_utc
@@ -763,23 +763,7 @@ def classify_pointer(
                 "the worker manifest reports completion and an independent "
                 "parsed review is attached; the run is ready for promotion"
             )
-            commits = _canonical_commits(_review_tree(record), manifest_commits)
-            base = str(record.get("base_sha") or "").strip()
-            if len(commits) == 1 and base and same_revision(commits[0], base):
-                # A run that changed nothing records its dispatch base as its
-                # only commit. Promotion refuses a citation of the base — the
-                # base predates the run — so the offer names the declaration
-                # a commitless run promotes under instead of the citation
-                # that reproduces the refusal.
-                action = (
-                    f"reckon crew complete --run {run_id} --gate not-run "
-                    "--no-commit '<why the run produced no commit>' "
-                    "--outcome '<what the run produced>'"
-                )
-            else:
-                action = f"reckon crew complete --run {run_id} --gate <verdict>"
-                for commit in commits:
-                    action += f" --commit {commit}"
+            action = _promotion_command(run_id, record, manifest_commits)
         else:
             classification = "scoring"
             if review_error:
@@ -1642,6 +1626,39 @@ def classify_pointer(
     memo["inputs"] = memo_inputs
     _write_classification_memo(record, memo)
     return classified
+
+
+def _promotion_command(
+    run_id: str, record: Mapping[str, Any], manifest_commits: Sequence[Any]
+) -> str:
+    """The completion command a promotable run is promoted by.
+
+    One composition for both surfaces that offer a promotion: the classifier's
+    own action for a completed run whose review is in hand, and the duty a run
+    the tier rule owes no review carries. A duty that composed its own copy
+    would drift from the classifier's — most of all on the two reads it is
+    easy to leave out, the canonicalisation of the citations against the
+    run's own tree and the base-citation case below.
+
+    The citations are canonicalised against the run's tree, so a commit the
+    tree cannot resolve is dropped rather than offered. A run that changed
+    nothing records its dispatch base as its only commit, and promotion
+    refuses a citation of the base — the base predates the run — so the offer
+    names the declaration a commitless run promotes under instead of the
+    citation that reproduces the refusal.
+    """
+    commits = _canonical_commits(_review_tree(record), manifest_commits)
+    base = str(record.get("base_sha") or "").strip()
+    if len(commits) == 1 and base and same_revision(commits[0], base):
+        return (
+            f"reckon crew complete --run {run_id} --gate not-run "
+            "--no-commit '<why the run produced no commit>' "
+            "--outcome '<what the run produced>'"
+        )
+    action = f"reckon crew complete --run {run_id} --gate <verdict>"
+    for commit in commits:
+        action += f" --commit {commit}"
+    return action
 
 
 from .recovery_liveness import (  # noqa: E402

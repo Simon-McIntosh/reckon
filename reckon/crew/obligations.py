@@ -27,7 +27,13 @@ from typing import Any
 
 from reckon import _store, file_memo, flight, ledger, review_tiers
 from reckon._timestamps import parse_utc
-from reckon.crew import recovery, review_dispositions, review_lifecycle, runs
+from reckon.crew import (
+    recovery,
+    recovery_classification,
+    review_dispositions,
+    review_lifecycle,
+    runs,
+)
 from reckon.crew import review as review_module
 from reckon.crew.node import INTERRUPTED_RUN_PHASE, CrewError, parse_duration
 from reckon.crew.routing import (
@@ -501,7 +507,11 @@ def _review_duty_item(
             now=now,
         )
         item["review_tier"] = review_tiers.NONE
-        item["next_command"] = _promotion_command(row)
+        item["next_command"] = recovery_classification._promotion_command(
+            str(row.get("run_id") or ""),
+            pointer,
+            list(row.get("manifest_commits") or []),
+        )
         item["reason"] = (
             "the run changes no runtime source, so its review tier is none; no "
             "review is owed and the merged-head gate checks it instead"

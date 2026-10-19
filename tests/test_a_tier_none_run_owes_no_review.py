@@ -31,6 +31,7 @@ PLAN = "fixture"
 SESSION = "session-orchestrating"
 DOCS_RUN = "r-docs-only"
 SOURCE_RUN = "r-source"
+BASE_RUN = "r-base-only"
 
 # More changed source lines than the shipped light ceiling, so the runtime-source
 # run resolves to ``full`` rather than ``light`` and still owes a review.
@@ -106,6 +107,7 @@ def _write_pointer(
     *,
     commit: str,
     changed_paths: tuple[str, ...],
+    base: str = "",
 ) -> None:
     manifest = Path(runs.run_dir(run_id)) / "manifest.md"
     manifest.parent.mkdir(parents=True, exist_ok=True)
@@ -122,6 +124,7 @@ def _write_pointer(
         {
             "run_id": run_id,
             "project": PROJECT,
+            "base_sha": base,
             "repo": str(root),
             "worktree": str(root),
             "launch": "cli",
@@ -202,3 +205,33 @@ def test_a_tier_none_run_reads_a_promotable_kind_and_a_source_run_stays_missing(
     assert SOURCE_RUN in items, items
     assert items[SOURCE_RUN]["kind"] == "review-missing", items[SOURCE_RUN]
     assert "crew complete" not in items[SOURCE_RUN]["next_command"], items[SOURCE_RUN]
+
+
+def test_a_tier_none_run_citing_only_its_base_offers_the_no_commit_form(
+    project: Path,
+) -> None:
+    """A citation of the dispatch base is refused, so the duty offers none.
+
+    The base predates the run, so promotion refuses a citation of the base and
+    the offer takes the declaration a commitless run promotes under. The duty
+    reads that case from the same helper the classifier does, so the two agree
+    about it without a second reading of the rule here.
+    """
+    root = project
+    base = _git(root, "rev-parse", "HEAD")
+    _write_pointer(
+        root,
+        BASE_RUN,
+        commit=base,
+        changed_paths=("seed.txt",),
+        base=base,
+    )
+
+    items = _items(root)
+
+    assert BASE_RUN in items, items
+    base_item = items[BASE_RUN]
+    assert base_item["review_tier"] == "none", base_item
+    assert base_item["next_command"].startswith(
+        f"reckon crew complete --run {BASE_RUN} --gate not-run --no-commit"
+    ), base_item
