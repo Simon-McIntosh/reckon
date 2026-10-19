@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-standalone" content="It changes how a node&#x27;s own time budget is stated and accounted; no live plan waits on it, and it consumes no plan&#x27;s pending evidence.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;deferred&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;}">
-  <meta name="plan-section-depends-on" content="{&quot;s2&quot;: [&quot;test-time-is-not-the-nodes-time#s1&quot;, &quot;test-time-is-not-the-nodes-time#s3&quot;, &quot;test-time-is-not-the-nodes-time#s5&quot;], &quot;s4&quot;: [&quot;test-time-is-not-the-nodes-time#s1&quot;, &quot;test-time-is-not-the-nodes-time#s2&quot;], &quot;s5&quot;: [&quot;test-time-is-not-the-nodes-time#s3&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;deferred&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s2&quot;: [&quot;test-time-is-not-the-nodes-time#s1&quot;, &quot;test-time-is-not-the-nodes-time#s3&quot;, &quot;test-time-is-not-the-nodes-time#s5&quot;], &quot;s4&quot;: [&quot;test-time-is-not-the-nodes-time#s1&quot;, &quot;test-time-is-not-the-nodes-time#s2&quot;], &quot;s5&quot;: [&quot;test-time-is-not-the-nodes-time#s3&quot;], &quot;s6&quot;: [&quot;test-time-is-not-the-nodes-time#s5&quot;]}">
   <title>Test Time Is Not The Node's Time | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="30">
+<meta name="plan-version" content="32">
 <meta name="plan-modified" content="2026-10-19">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -128,6 +128,29 @@
 </ul>
 <p><strong>Negative control.</strong> Make the command print <code>date</code> rather than an epoch difference, and the two-zone case must fail. Separately, drop the command from the statement, and the extraction case must fail. Apply each mutation alone and run it under pytest with the default short summary.</p>
 <p><strong>After it lands.</strong> Read the next local-lane run that reaches its deadline. Its stream should show the stated command before any deadline judgment.</p>
+
+    <h2 id="s6">The time fence reads cleanly, and its tests assert what it says</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> Two defects were left behind when §3 and §5 landed.</p>
+<ul>
+<li><strong>The fence ends a sentence with two periods.</strong> <code>compose_prompt</code> writes the fence as <code>{time_fence}.</code> and then the next sentence. That period suits the bare-duration form, such as <code>20m.</code>. Since §3, though, the statement form ends with its own sentence, so a worker reads "and stop and report.." or "past the deadline..".</li>
+<li><strong>One test now guards the opposite of what it says.</strong> <code>tests/test_time_fence_follows_the_attempt.py:185</code> asserts that <code>`date -u`</code> appears in the prompt. It was written to check that the fence offers the worker a clock to read. After §5 it passes only because the statement quotes <code>`date -u`</code> as a reading not to use. Dropping that warning would fail it with no useful message, and dropping the seconds-left command would still pass it. §5's review found this and folded it here (finding 0 on run <code>r-20261019T174344205759-a-deadline-needs-no-time-zone</code>).</li>
+</ul>
+<p><strong>Deliverable.</strong></p>
+<ul>
+<li>The time-fence block of a composed prompt ends each sentence with exactly one period, in both the bare-duration form and the statement form. The bare-duration text stays <code>20m.</code>, so the brief-prompt golden snapshot is unchanged.</li>
+<li>The assertion at <code>tests/test_time_fence_follows_the_attempt.py:185</code> checks for the seconds-left command the statement gives, built from the attempt's own deadline, in place of <code>`date -u`</code>.</li>
+</ul>
+<p>Change nothing else in the fence's wording.</p>
+<p><strong>Write paths.</strong> <code>reckon/crew/prompts.py</code>, the new <code>tests/test_the_time_fence_reads_cleanly.py</code>, and the node's evidence fragment. <code>tests/test_time_fence_follows_the_attempt.py</code> is granted only to change the one assertion at line 185. Remove no other assertion.</p>
+<p><strong>Done when</strong> all of these hold:</p>
+<ul>
+<li>The new test composes prompts in three forms: with a launch instant and a multiple of 1.5, with a launch instant and no multiple, and with no launch instant. No time-fence block contains two consecutive periods, and the bare-duration form still reads <code>20m.</code> before its next sentence.</li>
+<li>The changed assertion fails when the seconds-left command is dropped from the statement. It passes whether or not the warning that quotes <code>`date -u`</code> is present.</li>
+<li>Run pytest in the foreground with <code>-rA</code> over these files: the new file, the granted file, <code>tests/test_brief_prompt.py</code>, <code>tests/test_crew_prompts.py</code>, <code>tests/test_a_time_fence_names_its_clock.py</code>, <code>tests/test_a_deadline_needs_no_time_zone.py</code>, <code>tests/test_a_deadline_lets_a_named_batch_finish.py</code> and <code>tests/test_every_module_fits_a_worker_window.py</code>. It adds no failure against a base arm run at the dispatched base revision. Both arms' logs go in the run directory, and the manifest's <code>baseline_suite</code> names the base log and its failure ids exactly as pytest prints them.</li>
+<li><code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths, judged by delta against the base blobs.</li>
+</ul>
+<p><strong>Negative control.</strong> Restore the unconditional period after <code>{time_fence}</code>, and the new test's statement-form cases must fail. Separately, drop the seconds-left command from the statement, and the changed assertion must fail. Apply each mutation alone and run it under pytest with the default short summary.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
