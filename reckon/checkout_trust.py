@@ -58,6 +58,17 @@ COMMITTED_TREE_RETENTION = 3
 # a value that moved, so nothing materialises an image from a partial read.
 IDENTITY_UNKNOWN = "unknown"
 
+# Every long-running reckon process -- the followers, the producers, the MCP
+# server and queue admission -- asks once a second whether the code has moved,
+# and each read of the identity runs ``git ls-tree`` twice and one ``git mktree``
+# per composed tree. ``git mktree`` freshens an object that already exists by
+# rewriting its mtime, so every reader on every node rewrites one shared inode
+# every second with no code having moved. The identity is a function of what
+# ``HEAD`` names, so the reading of this process's own checkout is held here
+# against a fingerprint of the files ``HEAD`` resolves through, and the git
+# reads run only when that fingerprint moves.
+_identity_hold: dict[str, tuple[tuple, str]] = {}
+
 
 class IdentityReadError(Exception):
     """A git read the identity depends on did not answer.
@@ -386,6 +397,94 @@ def _committed_reload_tree(root: Path) -> str | None:
     return tree
 
 
+def _git_directory(source_root: Path) -> Path | None:
+    """The git directory ``HEAD`` is read from, or None outside a checkout.
+
+    ``.git`` is a directory in a primary checkout and a file naming one in a
+    linked worktree, which is the shape a reloading process is dispatched into.
+    Nothing is spawned to find it: the file is read where it exists and its
+    ``gitdir:`` target is taken as written.
+    """
+    dot_git = source_root / ".git"
+    try:
+        if dot_git.is_dir():
+            return dot_git
+        if not dot_git.is_file():
+            return None
+        text = dot_git.read_text(encoding="utf-8", errors="replace").strip()
+    except OSError:
+        return None
+    if not text.startswith("gitdir:"):
+        return None
+    target = Path(text.split(":", 1)[1].strip())
+    if not target.is_absolute():
+        target = (source_root / target).resolve()
+    return target
+
+
+def _git_common_directory(git_dir: Path) -> Path:
+    """The directory a linked worktree shares with its owning repository.
+
+    A worktree keeps its own ``HEAD`` under ``.git/worktrees/<name>`` and names
+    the shared directory in ``commondir``; the ref ``HEAD`` names and
+    ``packed-refs`` live there, so a fingerprint reading only the worktree's own
+    directory would watch files that never move.
+    """
+    try:
+        text = (git_dir / "commondir").read_text(encoding="utf-8").strip()
+    except OSError:
+        return git_dir
+    if not text:
+        return git_dir
+    target = Path(text)
+    if not target.is_absolute():
+        target = (git_dir / target).resolve()
+    return target
+
+
+def _file_fingerprint(path: Path) -> tuple[int, int, int, int]:
+    """A fingerprint that moves when a file's content or identity is replaced.
+
+    A file that is absent is fingerprinted too, so the appearance of a
+    ``packed-refs`` or a loose ref is a move rather than an unchanged reading.
+    """
+    try:
+        metadata = path.stat()
+    except OSError:
+        return (-1, -1, -1, -1)
+    return (metadata.st_dev, metadata.st_ino, metadata.st_mtime_ns, metadata.st_size)
+
+
+def head_stamp(source_root: Path) -> tuple[tuple[int, int, int, int], ...] | None:
+    """Fingerprint the files ``HEAD`` resolves through, or None outside a checkout.
+
+    Every read of the code identity resolves ``HEAD`` to a commit, so the files
+    that commit is named by are the whole of its input: ``HEAD`` itself, the ref
+    it names, and ``packed-refs``, which a loose ref is folded into. A commit
+    rewriting the ref, a branch switch and a detach rewriting ``HEAD``, and
+    ``git pack-refs`` rewriting the packed file all move this fingerprint, so a
+    reading held against it is re-read exactly when the identity can have moved.
+
+    None outside a checkout, where there is no such file to watch and the
+    identity is the package content stamp instead.
+    """
+    git_dir = _git_directory(source_root)
+    if git_dir is None:
+        return None
+    common = _git_common_directory(git_dir)
+    watched = [git_dir / "HEAD"]
+    try:
+        head = (git_dir / "HEAD").read_text(encoding="utf-8", errors="replace").strip()
+    except OSError:
+        head = ""
+    if head.startswith("ref:"):
+        ref = head.split(":", 1)[1].strip()
+        if ref:
+            watched.append(common / ref)
+    watched.append(common / "packed-refs")
+    return tuple(_file_fingerprint(path) for path in watched)
+
+
 def source_code_identity(package_dir: Path, *, source_root: Path | None = None) -> str:
     """Identify the package and scripts, or hash a package outside Git.
 
@@ -396,16 +495,34 @@ def source_code_identity(package_dir: Path, *, source_root: Path | None = None) 
     than as a moved one. A checkout git cannot answer for at all is not
     unknown; it is a checkout outside Git, which the computation answers for
     with None and which is identified by its package content stamp.
+
+    A reading is held against :func:`head_stamp`, so the git reads run only
+    when a file ``HEAD`` resolves through moves. Only the checkout this process
+    runs from is held -- the root resolved here when no other is named. A
+    caller that names a source root is interrogating a tree that may have moved
+    a moment before the call, and is answered from that tree on every read. A
+    read that did not complete is never held either: it answers
+    :data:`IDENTITY_UNKNOWN` and the next read runs git, so a failure is
+    re-reported rather than frozen into a hold. A checkout outside Git has no
+    such file to watch and keeps its content-stamp behaviour on every read.
     """
+    own_root = source_root is None
     if source_root is None:
         source_root = Path(
             os.environ.get("RECKON_FOLLOWER_SOURCE_ROOT", str(package_dir.parent))
         )
+    stamp = head_stamp(source_root) if own_root else None
+    if stamp is not None:
+        held = _identity_hold.get(str(source_root))
+        if held is not None and held[0] == stamp:
+            return held[1]
     try:
         tree = _committed_reload_tree(source_root)
     except IdentityReadError:
         return IDENTITY_UNKNOWN
     if tree is not None:
+        if stamp is not None:
+            _identity_hold[str(source_root)] = (stamp, tree)
         return tree
     from reckon.crew.obligation_snapshot import code_stamp
 
