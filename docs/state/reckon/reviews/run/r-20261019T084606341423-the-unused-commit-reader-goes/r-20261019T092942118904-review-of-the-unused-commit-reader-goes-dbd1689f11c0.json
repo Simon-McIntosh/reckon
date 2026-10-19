@@ -1,0 +1,53 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [],
+  "completed_at": "2026-10-19T09:47:08.659Z",
+  "dispatched_at": "2026-10-19T09:31:18Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T084606341423-the-unused-commit-reader-goes/logs/importer-tests-base.log",
+      "line": 1,
+      "severity": "follow-on",
+      "text": "The base arm's provenance header (revision, tree, cwd, module.__file__) was stripped by relabel_logs.py, leaving only a '# command:' first line, and the scratch base tree under /tmp is gone, so the delivered log no longer shows which revision the base arm measured; the manifest's measurement_module/measurement_cwd fields carry it but the log a reader opens does not."
+    },
+    {
+      "file": "reckon/checkout_trust.py",
+      "line": 208,
+      "severity": "follow-on",
+      "text": "No test fails if committed_head is re-introduced; the done_when's guard is a one-shot git grep recorded only in logs/grep-head.log, so a future change restoring the dead reader passes the whole suite undetected."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against base b97740c8; 450ba34c4 deletes committed_head from reckon/checkout_trust.py and dbd1689f1 only trims a meta line in the new evidence fragment, nothing outside the declared scope.",
+    "done_when": "The done_when names git grep -nw committed_head -- reckon tests at base (prints the definition) and head (prints nothing) plus the checkout_trust importers' failure delta; I reproduced base EXIT=0 with the def at line 208 and head EXIT=1 with no output, and the importer logs record 101 passed on both arms.",
+    "goal": "The node goal is to remove the uncalled committed_head reader from reckon/checkout_trust.py; the diff deletes exactly that function, 16 lines, with no other change.",
+    "manifest": "The manifest reports committed_head removed, the grep base/head EXITs, the importer suite 101/101 with 0 added failures, and ruff clean; its test_logs resolve to the run's logs directory.",
+    "write_paths": "The declared write paths are reckon/checkout_trust.py and the two docs/evidence|figures fragment paths; every path the diff changes is inside them."
+  },
+  "justifications": {
+    "durability": "No test in the suite fails if committed_head is re-added; the done_when gate is a one-shot git grep recorded only in logs/grep-head.log, not a regression guard.",
+    "evidence": "Importer logs importer-tests-base.log and importer-tests-head.log both record 101 passed with 0 added failures, but the base arm's revision/tree/module header lines were stripped by relabel_logs.py, so the reviewed run's baseline_suite/after_suite arms carry no self-evident revision.",
+    "fit": "The deletion leaves reckon/checkout_trust.py:208 committed_reckon_tree in place with the surrounding module style intact, and both commits use conventional subjects with bodies and no AI attribution.",
+    "goal_fidelity": "reckon/checkout_trust.py loses only the 16-line committed_head def and its docstring, matching the goal to remove that reader exactly.",
+    "reuse": "The diff adds no definition or capability (it deletes a function and adds a doc fragment), so no repository-owned mechanism is forked; a search over reckon/ for a dead-code absence guard found none to duplicate.",
+    "scope_discipline": "The diff touches only reckon/checkout_trust.py and the always-permitted landing fragment docs/evidence/fragments/the-monitor-shows-the-work-it-watches/the-unused-commit-reader-goes.html, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "see item_verdicts, scores and justifications",
+  "review_run_id": "r-20261019T092942118904-review-of-the-unused-commit-reader-goes-dbd1689f11c0",
+  "reviewed_base_sha": "b97740c80e0e90fbc6d0a7d216e7ae988ccb908c",
+  "reviewed_head_sha": "dbd1689f11c0fd5c93500d82a711fc17b4b805ee",
+  "reviewed_run_id": "r-20261019T084606341423-the-unused-commit-reader-goes",
+  "scores": {
+    "durability": 10,
+    "evidence": 15,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T09:48:28.594685+00:00"
+}
