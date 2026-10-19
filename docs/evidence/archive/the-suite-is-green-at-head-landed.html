@@ -2963,6 +2963,11 @@ reckon/crew/dispatch.py:4535: TypeError
     <p><code>_ordered_review_lanes</code> in <code>reckon/crew/recovery_review_dispatch.py</code> judges every candidate through <code>_review_backend_excluded</code>, the lane-and-model pair resolver, including the preferred owning and local lanes. An exclusion spelled <code>claude-opus-5-5</code> or <code>opus 5.5</code> now removes the <code>claude-opus</code> lane, as <code>claude-opus</code> did. A new case pins the local-backend route.</p><p><strong>Repair round.</strong> The first review blocked on a clause that also dropped a preferred lane under a budget lift when no exclusion named it. The repair reflex resumed the worker, and the re-review scored 112 with no findings.</p><p><strong>Evidence.</strong> <code>tests/test_old_names_resolve.py</code> passes 36 tests. The negative control reverts the repair, and the two parameters and the local case fail. The importer population at merge (candidate <code>e31d9168</code>, 33 files) is green at the candidate. Its only base failures are the two parameters this section repairs. Merged as <code>7d50bf078</code>, which returns main to green on this test.</p>
   </section>
 
+  <section id="the-predecessor-is-published-through-the-owner">
+    <h2>§25 — the served log&#x27;s predecessor is published through the store&#x27;s owner</h2>
+    <p>§25's repair was already on main when its section was reviewed. Commit <code>3d1ce97c6</code> ("fix(serve): publish the rotated log's predecessor through the shared atomic writer", 2026-10-18 22:52 +02:00) makes <code>_bound_server_log</code> in <code>reckon/serve.py</code> publish the predecessor through <code>write_atomically(predecessor, stage_live, binary=True)</code>, and it is an ancestor of <code>a53665cbf</code>. The plan's content review (run <code>r-20261019T080753694997</code>) ran the section's gate at the reviewed head: <code>tests/test_staged_write_inventory.py</code> and <code>tests/test_request_duration_and_log_bound.py</code>, 54 passed, EXIT=0, logged as <code>review-s25-gate.log</code> in its report directory. No node was dispatched for it.</p>
+  </section>
+
 </main>
 </body>
 </html>
