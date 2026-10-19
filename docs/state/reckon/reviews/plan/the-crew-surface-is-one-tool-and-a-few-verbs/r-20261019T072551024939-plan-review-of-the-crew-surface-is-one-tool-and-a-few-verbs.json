@@ -1,0 +1,84 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T07:42:21.488Z",
+  "dispatched_at": "2026-10-19T07:27:17Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:210",
+      "id": "reasoning-1",
+      "reason": "the node is either blocked out-of-scope on the first import failure or lands a tree whose CLI will not start, so the write paths must name `reckon/cli.py` (house precedent: commit `18739912f` retired `crew review-plan` and edited `reckon/cli.py` for exactly this re-export).",
+      "text": "\u00a77 retires the crew commands whose symbols `reckon/cli.py` re-exports (`crew_preflight:221`, `crew_redispatch:494`, `crew_repair_completion:497`, `crew_repair_status:500`, `crew_resume_ready:506`, `crew_split_runs:509`, `crew_unwatch:524`), yet `reckon/cli.py` is in no section's write paths and the mechanism's grep for folded names as `reckon crew` commands cannot match `crew_repair_completion`; deleting `repair-completion`/`split-runs` or renaming the folded functions makes cli.py's `from reckon.crew_run_commands import crew_repair_completion as crew_repair_completion` raise ImportError, killing the whole CLI and every test that imports `reckon.cli`",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:222",
+      "id": "done_when-1",
+      "reason": "a builder following item 1 literally would either tombstone `widen` against the mechanism or leave the gate red, and the author has already had to extend this same exception list once (the `crew merge` clause now present).",
+      "text": "done-when item 1 says \"every old invocation in the table prints its successor through its tombstone, except the two deleted names and, unless \u00a74's evidence tombstones it, `crew merge`\", but \u00a71's resume row's \"today\" column (:70) names `widen`, which \u00a77's mechanism (:202-203) keeps and extends (\"widen accepts any run that is not running\") rather than tombstones, so the literal measure has a third unlisted exception",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "48b26625e6ffe975252aa69b542b9bd08ed09000fa4bbc9d96b607a4516c8b40",
+  "plan_slug": "the-crew-surface-is-one-tool-and-a-few-verbs",
+  "plan_version": 9,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-19T07:50:00.905782+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-19T07:50:16.206797+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T07:50:16.206797+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-19T07:50:00.905782+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-crew-surface-is-one-tool-and-a-few-verbs.v9.json",
+  "review_run_id": "r-20261019T072551024939-plan-review-of-the-crew-surface-is-one-tool-and-a-few-verbs",
+  "reviewed_blob_sha": "dfdaddd0749def0aef7b318d37dd105413cce6dd",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every module and symbol \u00a77 names resolves: `reckon/crew/prompts.py:561,563`, `reckon/crew/refusals.py:19,22`, `reckon/crew/watch_unit.py:940`, `reckon/crew/recovery_review_subject.py:416`, `reckon/crew/recovery_classification.py:703`, `reckon/crew/obligations.py:209`, `reckon/mcp.py:2148`, `reckon/crew/claims.py:90,128` (`narrow_claim`/`release_claim`), `reckon/crew/gc.py`, `reckon/crew/tombstones.py`.",
+    "done_when": "a finding \u2014 done-when item 1 requires every old invocation in \u00a71's table to print a successor through a tombstone, but `widen` is named in that row's \"today\" column and \u00a77's mechanism retains and generalizes it, so the stated exception list is incomplete.",
+    "evidence_paths": "pass \u2014 \u00a77 points its gate at the run's own evidence/report rather than a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 \u00a77's write paths and symbols carry command names (`crew repair`, `crew budget`, `crew check`), not plan labels, stage names or ticket numbers, and no changelog prose.",
+    "reasoning": "a finding \u2014 \u00a77's mechanism claims the enumerated seven modules cover every place a folded verb is named and that a hit outside the write paths blocks the node, but `reckon/cli.py` re-exports the retired command functions by name, is outside \u00a77's write paths, and is missed by the node's name-grep because it holds underscored symbols, not `reckon crew <verb>` strings.",
+    "single_goal": "pass \u2014 \u00a77's deliverable is one theme, applying the \u00a77 rows of \u00a71's fold table, gated as one by `tests/test_crew_families_fold.py`.",
+    "wiring": "pass \u2014 \u00a77 declares `depends-on` on s6 and s5, and its shared write of `reckon/crew_run_commands.py` with \u00a73 is covered transitively (s7\u2192s6\u2192s4\u2192s3); \u00a75's ownership of `reckon/crew/obligations.py` and `reckon/mcp.py` is stated in the mechanism and matches s5's write paths."
+  },
+  "section_digests": {
+    "_document": "26fd28404590af02aa2ebae125b81f4f7629f614fb6c2a72ea68b2d0d1aff496",
+    "s1": "df3ca327aa989333473f3456bef3fcb4304fc54d8ab37eb334a92448b8837aaa",
+    "s2": "be69292dc4744e91b19438c3129be40ac6c6138f02cd12656616dd3906a1d313",
+    "s3": "046c6ca210de727c41d8414a2ea42383717384c5a44aef78e262b9cf98763118",
+    "s4": "2feb22a10d53f02161e33412c6f491a2718ee9b88ffede06e39b7fc15799f5d1",
+    "s5": "530c6781675c3f9dccecf9f7e556fb74664afde36da3623d64a3b3c65e1e5267",
+    "s6": "9a81b03299612971ddf0ab0fbbfd90bae473369248b753fc1a02640f8a80bdd2",
+    "s7": "ac4bb71573d7f12d6e98b59b8d2441f2ad449c4151f5d3471923e90e4675939c",
+    "s8": "beb6c1568fe326e8af87c393c93ac9e71dec60ad9a9247b47ffbec9d08fc76a6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T07:49:53.602492+00:00"
+}
