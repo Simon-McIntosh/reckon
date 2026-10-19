@@ -1,0 +1,87 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "assert composed[SHIM_PYTHON_ENV] == sys.executable fails if _persisted_worker_environment stops writing RECKON_SHIM_PYTHON; the right-hand side is the interpreter running the test, independent of anything the test hands the code, and the declared negative control (renaming the module constant) reddens it exactly, recorded in negative-control.log.",
+      "lines": "tests/test_a_launch_names_its_composers_interpreter.py:126"
+    },
+    {
+      "failure_condition": "assert kept[SHIM_PYTHON_ENV] == chosen fails if the composer overwrites a value the caller already supplied; chosen is the value passed in, but the guarded defect (an unconditional assignment to sys.executable) is precisely an overwrite of the pass-through, so the assertion reddens on the regression even though both sides name the same literal.",
+      "lines": "tests/test_a_launch_names_its_composers_interpreter.py:132"
+    },
+    {
+      "failure_condition": "assert STUB_MARKER not in result.stderr fails if the shim resolves the stub python3.12 rather than the composing interpreter; the marker is emitted only by the planted stub, an independent artefact of the run, and negative-control.log shows it reddening with 'STUB-PYTHON3.12-RAN'.",
+      "lines": "tests/test_a_launch_names_its_composers_interpreter.py:174"
+    },
+    {
+      "failure_condition": "assert result.returncode == 0 and 'TOOL=srun' in result.stdout fail if the shim dies before reaching reckon.nested_launch.main or forwards nothing; TOOL=srun is printed by the planted fake srun, independent of the composed environment.",
+      "lines": "tests/test_a_launch_names_its_composers_interpreter.py:175-176"
+    }
+  ],
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:1942 _persisted_worker_environment (the launch spec's persisted environment)",
+    "reckon/crew/dispatch.py:2351 _persisted_worker_environment (the directive environment a supervisor runs)",
+    "reckon/host_shims/srun:22 reads $RECKON_SHIM_PYTHON first among candidate interpreters",
+    "reckon/host_shims/sbatch:22 reads $RECKON_SHIM_PYTHON",
+    "reckon/host_shims/salloc:22 reads $RECKON_SHIM_PYTHON",
+    "reckon/worker_shims/git:21 reads $RECKON_SHIM_PYTHON"
+  ],
+  "completed_at": "2026-10-19T13:18:07.022Z",
+  "dispatched_at": "2026-10-19T12:56:12Z",
+  "findings": [
+    {
+      "file": "tests/test_a_launch_names_its_composers_interpreter.py",
+      "line": "26",
+      "severity": "blocking",
+      "text": "blocking: the added test file carries ruff findings the done_when forbids. ruff-check.log reports tests/test_a_launch_names_its_composers_interpreter.py:26:8 PLR0402 (use 'from reckon.crew import dispatch_launch' in lieu of alias; the base had 1 finding, the head has 3) and :176:55 W292 (no newline at end of file), and ruff-format.log reports the same file would be reformatted in three hunks; section 62's done_when requires 'ruff check and ruff format --check add no findings on the changed Python files' and the repository rule forbids a commit adding findings. Both findings are in a file this node created, so neither is a pre-existing finding it merely passed through."
+    },
+    {
+      "file": "tests/test_worker_path_carries_shims.py",
+      "line": "211",
+      "severity": "blocking",
+      "text": "blocking: the diff edits tests/test_worker_path_carries_shims.py (lines 211, 216, 287) which is outside both the node's declared write paths and section 62's write paths, and check-manifest refuses the run on exactly this item; the edit is the correct consequence of widening the persisted-environment key set, but it needs a scope grant the node was not given."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-launch-names-its-composers-interpreter.html",
+      "line": "7",
+      "severity": "blocking",
+      "text": "blocking: the fragment's measure paragraph asserts 'ruff check and ruff format --check added no findings on the changed Python files', which is false for the file this node created \u2014 ruff check adds PLR0402 and W292 there and ruff format would rewrite it \u2014 so the durable evidence record misstates its own measurement; the file also has no trailing newline."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "630",
+      "severity": "follow-on",
+      "text": "follow-on: the done_when's clause 'the test files importing reckon/crew/dispatch_launch.py show no added failure against base' is not evidenced against that population. The recorded baseline_suite/after_suite are the 7-file launch-environment subset (44 and 46 passed, 0 failures), while the full importer population attempted in head-arm.log ended EXIT=124 before its summary line with three unattributed failing ids; the manifest carries this as a follow-on and the plan expects the population at merge, but the clause is currently unmet."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "630",
+      "severity": "follow-on",
+      "text": "follow-on: _SHIM_PYTHON_ENV = 'RECKON_SHIM_PYTHON' is declared here as a second, independent literal of the same constant already defined at reckon/crew_follow_commands.py:124 and hardcoded in the four shims; the name must stay identical across all of them and nothing fails if one drifts, so the shared contract has no single owner."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against b32f13f8: b94d926fd is the production fix plus the new 176-line test file plus the widened key-set assertions in tests/test_worker_path_carries_shims.py; c9ab1cdfa and c6716adc8 add and extend the evidence fragment. Four files changed, one of which is outside the declared scope.",
+    "done_when": "The done_when names two composed-environment tests, a shim-run test against a python3.12 stub, a negative control that reaches the stub, logs ending in EXIT=, no added importer failure against base, and no ruff findings; the manifest records the two focused tests and the negative control (EXIT=1, STUB reached), but its recorded suite is a 7-file launch-environment subset rather than the importer population the done_when names, and the ruff clause is unmet for the new test file (see findings).",
+    "goal": "The node goal (live pointer node.goal) is 'Set RECKON_SHIM_PYTHON in a composed launch environment to the composing process's own interpreter unless already set'; the landed change at reckon/crew/dispatch_launch.py:660-663 sets persisted[_SHIM_PYTHON_ENV] = sys.executable only when the persisted mapping carries no value, inside _persisted_worker_environment, which is the environment composed for a launch, and the four shims (reckon/host_shims/srun:22, sbatch:22, salloc:22, reckon/worker_shims/git:21) already read that variable first, so the goal is met.",
+    "manifest": "Read the manifest at the reviewed run directory: status complete, three commits b94d926fd, c9ab1cdfa, c6716adc8, baseline_suite 44 passed / 0 failures and after_suite 46 passed / 0 failures over the same 7 files, negative_control_log recorded, and a blockers line that itself declares tests/test_worker_path_carries_shims.py outside the declared scope.",
+    "write_paths": "The node's declared write paths are reckon/crew/dispatch_launch.py, tests/test_a_launch_names_its_composers_interpreter.py, the evidence fragment and the figures directory, and section 62 of the plan names only dispatch_launch.py and the new test file; the landed diff also edits tests/test_worker_path_carries_shims.py, which is inside neither list."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261019T125341832344-review-of-a-launch-names-its-composers-interpreter-c6716adc830b",
+  "reviewed_base_sha": "b32f13f8b194a7d4e830aa7500d81e371f27ac7c",
+  "reviewed_head_sha": "c6716adc830bb9583f0cb1930bd7fc932c7d4bf1",
+  "reviewed_run_id": "r-20261019T115629947225-a-launch-names-its-composers-interpreter",
+  "scores": {
+    "durability": 18,
+    "evidence": 12,
+    "fit": 15,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T13:32:55.426534+00:00"
+}
