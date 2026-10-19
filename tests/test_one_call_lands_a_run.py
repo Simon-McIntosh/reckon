@@ -17,6 +17,7 @@ which is the red log the manifest names.
 
 from __future__ import annotations
 
+import inspect
 import json
 import os
 from pathlib import Path
@@ -266,3 +267,54 @@ def test_the_marker_check_reads_what_the_change_introduced_and_removed(
     refusals = merge.surviving_change_refusals(repository, dropped, markers)
     assert refusals, "a merge that dropped the change was not refused"
     assert "the merge dropped it" in refusals[0]
+
+
+def test_the_landing_reuses_the_shared_merge_loop() -> None:
+    """The marker check rides the one landing loop rather than a copy of it.
+
+    Two copies of the pinned-HEAD build, the index.lock retry, the --ff-only
+    move and the push would have to be fixed twice, and the copy would drift
+    the first time one of them was. The count is asserted against the source
+    because that is what the defect is: a second loop, not a wrong result.
+    """
+    source = Path(merge.__file__).read_text(encoding="utf-8")
+    assert source.count('"--ff-only"') == 1
+    assert len(inspect.getsource(merge.land).splitlines()) < len(
+        inspect.getsource(merge.land_merge).splitlines()
+    )
+
+
+def test_the_marker_check_is_the_seam_the_shared_loop_calls(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``land`` hands its marker check to the shared loop, which runs it."""
+    _origin, repository = _write_origin_and_checkout(tmp_path)
+    base = _git(repository, "rev-parse", "HEAD")
+    _git(repository, "checkout", "-q", "-b", "reviewed")
+    (repository / "reviewed.txt").write_text(
+        "kept line one\n" + MARKER, encoding="utf-8"
+    )
+    _git(repository, "add", "reviewed.txt")
+    _git(repository, "commit", "-q", "-m", "add the reviewed change")
+    head = _git(repository, "rev-parse", "HEAD")
+    _git(repository, "checkout", "-q", "main")
+
+    seen: dict[str, object] = {}
+    real = merge.land_merge
+
+    def _recording_land_merge(repo, **kwargs):
+        seen.update(kwargs)
+        return real(repo, **kwargs)
+
+    monkeypatch.setattr(merge, "land_merge", _recording_land_merge)
+    report = merge.land(repository, head=head, message="land", body="the change lands")
+
+    assert callable(seen.get("verify")), "the shared loop was given no verify seam"
+    assert report["survived"]["checked"] is True
+    assert report["survived"]["paths"] == ["reviewed.txt"]
+    assert report["pushed"] is True
+    merged = _git(repository, "rev-parse", "HEAD")
+    assert merged != base
+    assert "the reviewed change survives" in _git(
+        repository, "show", f"{merged}:reviewed.txt"
+    )

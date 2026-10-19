@@ -35,6 +35,7 @@ import os
 import re
 import subprocess
 import time
+from collections.abc import Callable
 from pathlib import Path
 
 # The repository's own pre-push guard refuses a line-anchored ``co-authored-by``
@@ -445,6 +446,7 @@ def land_merge(
     attempts: int = DEFAULT_ATTEMPTS,
     retry_seconds: float = DEFAULT_RETRY_SECONDS,
     sleep=time.sleep,
+    verify: Callable[[Path, str, str, str], None] | None = None,
 ) -> dict:
     """Land ``head`` on the checked-out branch and push it, returning a report.
 
@@ -455,6 +457,14 @@ def land_merge(
     the fast-forward stays a fast-forward. With ``candidate`` the already-built
     merge is landed unchanged, provided its parents are the pinned HEAD and the
     head.
+
+    ``verify`` is the seam a caller judges the merge through before it becomes
+    reachable: it is called with the checkout, the pinned base, the head and the
+    built commit, once per attempt and before the branch moves. A caller that
+    refuses raises :class:`MergeError` from it, and because nothing has moved at
+    that point the refusal has touched neither the branch nor the remote. The
+    call is skipped on the already-landed path below, where the change is on the
+    branch already and no merge is built.
 
     A head already in ``HEAD`` is treated as a landed merge whose push is
     outstanding: it is pushed rather than merged a second time. A push that
@@ -487,6 +497,13 @@ def land_merge(
                     )
             else:
                 commit = build_merge_commit(repo, base, head_sha, message, body)
+
+            # The seam runs before the branch moves, so what a caller refuses
+            # here has touched neither the branch nor the remote. It is inside
+            # the loop because a retry rebuilds the commit against a fresh HEAD
+            # and the new commit is what must be judged.
+            if verify is not None:
+                verify(repo, base, head_sha, commit)
 
             result = _run(repo, "merge", "--ff-only", commit)
             if result.returncode == 0:
@@ -558,82 +575,39 @@ def land(
     """
     repo = Path(repo)
     head_sha = _rev_parse(repo, str(head))
-    branch = _current_branch(repo)
+    markers: dict[str, dict[str, object]] = {}
 
-    if _is_ancestor(repo, head_sha, "HEAD"):
-        landed = _rev_parse(repo, "HEAD")
-        base = _first_parent(repo, landed)
-        markers: dict[str, dict[str, object]] = {}
-    else:
-        if candidate is None:
-            _compose_message(message, body)
-        base = commit = ""
-        markers = {}
-        for attempt in range(1, attempts + 1):
-            base = _rev_parse(repo, "HEAD")
-            if candidate is not None:
-                commit = _rev_parse(repo, candidate)
-                parents = _parents(repo, commit)
-                if parents != [base, head_sha]:
-                    raise MergeError(
-                        f"candidate {commit} has parents {parents}, not the pinned "
-                        f"HEAD {base} and head {head_sha}"
-                    )
-            else:
-                commit = build_merge_commit(repo, base, head_sha, message, body)
-            # The check reads the commit's own tree, so a refused landing has
-            # moved neither the branch nor the remote.
-            markers = change_markers(repo, base, head_sha)
-            dropped = surviving_change_refusals(repo, commit, markers)
-            if dropped:
-                raise MergeError(
-                    "the merge dropped the reviewed change, so nothing was moved "
-                    "or pushed: " + "; ".join(dropped)
-                )
-            result = _run(repo, "merge", "--ff-only", commit)
-            if result.returncode == 0:
-                break
-            if _index_lock_held(repo):
-                if attempt == attempts:
-                    raise MergeError(
-                        "the checkout's index.lock stayed held for "
-                        f"{attempts} attempts; nothing was written"
-                    )
-                sleep(retry_seconds)
-                continue
-            if _rev_parse(repo, "HEAD") != base:
-                if attempt == attempts:
-                    raise MergeError("HEAD moved on each attempt; nothing was written")
-                continue
+    def _refuse_a_dropped_change(
+        checkout: Path, base: str, merged_head: str, commit: str
+    ) -> None:
+        """Judge the built merge by the tree it will put on the branch."""
+        nonlocal markers
+        markers = change_markers(checkout, base, merged_head)
+        dropped = surviving_change_refusals(checkout, commit, markers)
+        if dropped:
             raise MergeError(
-                "could not fast-forward: "
-                + (result.stderr.strip() or result.stdout.strip())
+                "the merge dropped the reviewed change, so nothing was moved "
+                "or pushed: " + "; ".join(dropped)
             )
-        else:  # pragma: no cover - the loop raises or breaks
-            raise MergeError(f"could not land after {attempts} attempts")
 
-        landed = _rev_parse(repo, commit)
-
-    report = {
-        "base": base,
-        "head": head_sha,
-        "commit": landed,
-        "branch": branch,
-        "remote": remote,
-        "pushed": False,
-        "survived": {
-            "checked": bool(markers),
-            "paths": sorted(markers),
-            "markers": sum(
-                len(expected["introduced"]) + len(expected["removed"])
-                for expected in markers.values()
-            ),
-        },
+    report = land_merge(
+        repo,
+        head=head_sha,
+        message=message,
+        body=body,
+        candidate=candidate,
+        remote=remote,
+        attempts=attempts,
+        retry_seconds=retry_seconds,
+        sleep=sleep,
+        verify=_refuse_a_dropped_change,
+    )
+    report["survived"] = {
+        "checked": bool(markers),
+        "paths": sorted(markers),
+        "markers": sum(
+            len(expected["introduced"]) + len(expected["removed"])
+            for expected in markers.values()
+        ),
     }
-    try:
-        remote_head = _push_and_confirm(repo, remote, landed, branch)
-    except _PushError as exc:
-        raise MergePushOutstandingError(report, exc.detail) from exc
-    report["remote_head"] = remote_head
-    report["pushed"] = True
     return report
