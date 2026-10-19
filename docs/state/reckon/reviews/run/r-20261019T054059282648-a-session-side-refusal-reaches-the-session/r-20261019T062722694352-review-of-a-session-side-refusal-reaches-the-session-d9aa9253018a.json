@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 10,
+  "added_failure_ids": [
+    "tests/test_held_worktree_records_match_each_record_once.py::test_the_held_trees_equal_the_whole_ledger_derivation",
+    "tests/test_held_worktree_records_match_each_record_once.py::test_a_record_that_names_no_tree_holds_none",
+    "tests/test_held_worktree_records_match_each_record_once.py::test_the_fixture_is_large_enough_to_expose_a_product",
+    "tests/test_held_worktree_records_match_each_record_once.py::test_each_record_is_filed_once_not_compared_per_tree",
+    "tests/test_held_worktree_records_match_each_record_once.py::test_the_index_agrees_with_the_naming_rule_for_every_pair",
+    "tests/test_the_held_worktree_read_is_bounded.py::test_one_derivation_reads_only_the_documents_that_can_change_it",
+    "tests/test_the_held_worktree_read_is_bounded.py::test_the_head_derivation_equals_the_whole_ledger",
+    "tests/test_the_held_worktree_read_is_bounded.py::test_a_refused_namings_reader_leaves_every_run_a_candidate",
+    "tests/test_the_held_worktree_read_is_bounded.py::test_a_damaged_aggregate_leaves_the_run_documents_readable",
+    "tests/test_the_held_worktree_read_is_bounded.py::test_a_run_retaining_a_tree_after_the_index_is_published_is_read"
+  ],
+  "added_failures_note": "derived by differencing the reviewed run's own arms: suite-base.log (rev 6a4cc82) reads '644 passed, 22 warnings' with 0 FAILED/ERROR lines; suite-head.log (rev 2705a7479) reads '634 passed, 22 warnings, 10 errors in 515.85s' and lists the 10 ERROR ids above, all setup errors inside the module-scoped held-worktree fixtures under -n 8. held-modules-head.log re-runs both modules alone at the committed head d9aa92530 and records 11 passed EXIT=0, so no failure is attributable to this change.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_run_commands.py:243",
+    "reckon/crew/recovery_watch.py:1228",
+    "reckon/crew/obligations.py:963",
+    "reckon/mcp.py:1888",
+    "reckon/crew/directory.py:71"
+  ],
+  "completed_at": "2026-10-19T06:41:54.730Z",
+  "dispatched_at": "2026-10-19T06:28:02Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "117",
+      "text": "follow-on: the follow command is composed a third time inline, duplicating the identical string already written in reckon/hooks/coordinator_obligations.py:823; a single helper would keep the session-arming instruction in one place, since the two must name the same command for either to be actionable."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T054059282648-a-session-side-refusal-reaches-the-session/ruff-head.log",
+      "line": "1",
+      "text": "follow-on: the log cited for the ruff term is stale \u2014 it reports W292 on the new test file and two obligations.py format hunks that are absent at the landed head, so the record's 'the change adds no finding' claim is true (my own ruff run at d9aa92530 shows only the pre-existing UP017 and the pre-existing obligations.py format delta) but is not demonstrated by the log the manifest names."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew_run_commands.py:243 (crew list classifies each live pointer), reckon/crew/recovery_watch.py:1228 (the live view projects next_action), reckon/crew/obligations.py:963 (the obligations view), reckon/mcp.py:1888 (the crew obligations MCP view) and reckon/crew/directory.py:71.",
+    "diff": "read d9aa92530 against its base 6a4cc82: reckon/crew/obligations.py +17 (a queued branch and the duty-kind constant), reckon/crew/recovery_classification.py +59/-2 (_queued_failure_remedy and the queued classification), the new 166-line test file, and 4 fragment lines.",
+    "done_when": "the done-when names a test with two queued pointers for one session (one _FollowerAdmissionUnmet, one lane hold) and a negative control that drops the failure from the classification; tests/test_a_session_side_refusal_reaches_the_session.py:118-166 is that test, gate-head.log records 4 passed EXIT=0, and gate-negative-control.log records 3 failed EXIT=1.",
+    "goal": "the node goal is to show a queued request's session-side admission refusal as its next action in the live view and list it as an obligation the session owes; reckon/crew/recovery_classification.py:625-628 sets the queued row's next_action to the follow command when the recorded failure is the session's, and reckon/crew/obligations.py:961-964 lists that row.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T054059282648-a-session-side-refusal-reaches-the-session/manifest.md; status complete, commit d9aa92530, tests 'PYTHONPATH=$PWD .venv/bin/python -m pytest ... tests/test_a_session_side_refusal_reaches_the_session.py -> 4 passed, EXIT=0', and it records the head suite arm as 634 passed / 10 errors with each attributed to a module-scoped fixture timeout.",
+    "write_paths": "the manifest declares four write paths; git show --stat d9aa92530 changes exactly those four files and nothing else."
+  },
+  "justifications": {
+    "durability": "reinstate the regression by dropping session_refusal from the queued branch at reckon/crew/recovery_classification.py:625 and tests/test_a_session_side_refusal_reaches_the_session.py:128 and :146 both redden, exactly as gate-negative-control.log records; the lane-hold half is guarded by the exact-equality assertion at :152.",
+    "evidence": "gate-head.log records 4 passed EXIT=0 at the near-head revision 2705a7479 and gate-negative-control.log records the red at EXIT=1, but the cited ruff-head.log is stale (it reports W292 on the new test file and two obligations.py format hunks that do not exist at d9aa92530; my own ruff run at head shows only the pre-existing UP017 and the pre-existing obligations.py format delta), and the head suite arm carries 10 fixture-timeout errors against the base arm's zero.",
+    "fit": "reckon/crew/recovery_classification.py:87 follows the module's remedy-dict idiom set by _resume_remedy, the duty kind at reckon/crew/obligations.py:77 is named by mechanism, and the commit carries a conventional subject with a body and no attribution.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:627 resolves the queued row's next action to the follow command and reckon/crew/obligations.py:961-964 files the same row as a queued-awaiting-session duty, which is exactly the goal's two surfaces.",
+    "reuse": "no owner function composes a session's follow command \u2014 a search over reckon/ for 'crew follow', 'follow --project', '_follow_command', 'attach_command' and 'follower_command' found only inline spellings (reckon/hooks/coordinator_obligations.py:823, reckon/crew/session_host.py:234) \u2014 so the addition forks no owner, but it adds a third inline spelling of that command.",
+    "scope_discipline": "every path in git show --stat d9aa92530 \u2014 reckon/crew/obligations.py, reckon/crew/recovery_classification.py, tests/test_a_session_side_refusal_reaches_the_session.py and docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/a-session-side-refusal-reaches-the-session.html \u2014 lies inside the manifest's declared write paths."
+  },
+  "node": "review-of-a-session-side-refusal-reaches-the-session-d9aa9253018a",
+  "node:reviewed": "a-session-side-refusal-reaches-the-session",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to show a queued request's session-side admission refusal as its next action in the live view and list it as an obligation the session owes; reckon/crew/recovery_classification.py:625-628 sets the queued row's next_action to the follow command when the recorded failure is the session's.\nVERDICT done_when: the done-when names a test with two queued pointers for one session (one _FollowerAdmissionUnmet, one lane hold) and a negative control that drops the failure; tests/test_a_session_side_refusal_reaches_the_session.py:118-166 is that test, gate-head.log records 4 passed EXIT=0, and gate-negative-control.log records 3 failed EXIT=1.\nVERDICT write_paths: the manifest declares four write paths; git show --stat d9aa92530 changes exactly those four files (reckon/crew/obligations.py, reckon/crew/recovery_classification.py, tests/test_a_session_side_refusal_reaches_the_session.py, docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/a-session-side-refusal-reaches-the-session.html) and nothing else.\nVERDICT manifest: read; status complete, commit d9aa92530, tests '4 passed, EXIT=0', and it records the head suite arm as 634 passed / 10 errors with each attributed to a module-scoped fixture timeout.\nVERDICT diff: read d9aa92530 against its base 6a4cc82: reckon/crew/obligations.py +17 (a queued branch and the duty-kind constant), reckon/crew/recovery_classification.py +59/-2 (_queued_failure_remedy and the queued classification), the new 166-line test file, and 4 fragment lines.\nCALL_SITES: reckon/crew_run_commands.py:243, reckon/crew/recovery_watch.py:1228, reckon/crew/obligations.py:963, reckon/mcp.py:1888, reckon/crew/directory.py:71\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:627 resolves the queued row's next action to the follow command and reckon/crew/obligations.py:961-964 files the same row as a queued-awaiting-session duty, which is exactly the goal's two surfaces.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate-head.log records 4 passed EXIT=0 at the near-head revision 2705a7479 and gate-negative-control.log records the red at EXIT=1, but the cited ruff-head.log is stale (it reports W292 on the new test file and two obligations.py format hunks that do not exist at d9aa92530; my own ruff run at head shows only the pre-existing UP017 and the pre-existing obligations.py format delta), and the head suite arm carries 10 fixture-timeout errors against the base arm's zero.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git show --stat d9aa92530 \u2014 reckon/crew/obligations.py, reckon/crew/recovery_classification.py, tests/test_a_session_side_refusal_reaches_the_session.py and docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/a-session-side-refusal-reaches-the-session.html \u2014 lies inside the manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: reinstate the regression by dropping session_refusal from the queued branch at reckon/crew/recovery_classification.py:625 and tests/test_a_session_side_refusal_reaches_the_session.py:128 and :146 both redden, exactly as gate-negative-control.log records; the lane-hold half is guarded by the exact-equality assertion at :152.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/recovery_classification.py:87 follows the module's remedy-dict idiom set by _resume_remedy, the duty kind at reckon/crew/obligations.py:77 is named by mechanism, and the commit carries a conventional subject with a body and no attribution.\nSCORE reuse: 14\nJUSTIFICATION reuse: no owner function composes a third inline spelling of the session follow command; a search over reckon/ for 'crew follow', 'follow --project', '_follow_command', 'attach_command' and 'follower_command' found only inline spellings (reckon/hooks/coordinator_obligations.py:823, reckon/crew/session_host.py:234), so the addition forks no owner but adds a third spelling.\nFINDING reckon/crew/recovery_classification.py:117 follow-on: the follow command is composed a third time inline, duplicating the identical string already written in reckon/hooks/coordinator_obligations.py:823; a single helper would keep the session-arming instruction in one place, since the two must name the same command for either to be actionable.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T054059282648-a-session-side-refusal-reaches-the-session/ruff-head.log:1 follow-on: the log cited for the ruff term is stale \u2014 it reports W292 on the new test file and two obligations.py format hunks that are absent at the landed head, so the record's 'the change adds no finding' claim is true (my own ruff run at d9aa92530 shows only the pre-existing UP017 and the pre-existing obligations.py format delta) but is not demonstrated by the log the manifest names.",
+  "review_run_id": "r-20261019T062722694352-review-of-a-session-side-refusal-reaches-the-session-d9aa9253018a",
+  "reviewed_base_sha": "6a4cc82aabca26dbacd527507de07cd4736b102e",
+  "reviewed_head_sha": "d9aa9253018a31cfaf9a098e1fbe0401b8b13e40",
+  "reviewed_run_id": "r-20261019T054059282648-a-session-side-refusal-reaches-the-session",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T06:52:00+00:00",
+  "total": 103
+}
