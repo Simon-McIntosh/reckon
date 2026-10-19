@@ -1,0 +1,73 @@
+{
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_spa_rendered_semantics.py::test_reader_renders_partial_source_status_missing_sections_and_retry",
+    "tests/test_spa_shell_geometry.py::test_rendered_topbar_children_follow_the_canvas_order"
+  ],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T214318686755-text-responses-are-compressed/logs/head-serve-tests.log",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T214318686755-text-responses-are-compressed/logs/base-serve-tests.log",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/serve.py:3686",
+    "reckon/serve.py:3736",
+    "reckon/serve.py:4305"
+  ],
+  "completed_at": "2026-10-18T22:41:45.272Z",
+  "dispatched_at": "2026-10-18T22:23:06Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261018T214318686755-text-responses-are-compressed/manifest.md",
+      "line": "20",
+      "severity": "follow-on",
+      "text": "follow-on: the recorded after_suite.failure_ids list tests/test_spa_composition.py::test_plans_surface_served_and_static_pages_request_only_their_own_origin, which appears in no FAILED line of the head-serve-tests.log it cites, while the log's own failing ids include tests/test_spa_composition.py::test_plans_surface_never_exceeds_its_window[1280] which the manifest omits; a reader deriving added_failure_ids from the manifest instead of the log computes a fabricated id, so the record and the log it names disagree."
+    },
+    {
+      "file": "reckon/serve.py",
+      "line": "3057",
+      "severity": "follow-on",
+      "text": "follow-on: _text_compression_cache_path re-derives the same sha256(source\\0identity)[:32] cache-path formula already owned by _thumbnail_cache_path at reckon/serve.py:2943, and _cached_gzip_text at :3061 repeats the read/compute/write_atomically/LOGGER.warning wrapper of _thumbnail_bytes at :3005, duplicating a per-revision blob-cache capability in two places instead of extending one owner; a third served-file cache will copy it again."
+    },
+    {
+      "file": "reckon/serve.py",
+      "line": "3072",
+      "severity": "follow-on",
+      "text": "follow-on: the except OSError branch that still serves the compressed bytes when the cache directory is unwritable is exercised by no test, so a regression that raised there instead of returning would not redden any assertion the node added."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 5b496700; commit f4737074 changes only reckon/serve.py (+85), tests/test_text_responses_are_compressed.py (+207) and the evidence fragment (+15), all inside the declared scope.",
+    "done_when": "the done_when names a temporary-project test asserting gzip content-encoding with a body that decompresses to the file, the uncompressed passthrough, a 304 on If-None-Match, and no second compression; tests/test_text_responses_are_compressed.py:138-207 asserts all four and logs/gate-text-compression.log records 5 passed EXIT=0.",
+    "goal": "the node goal is to gzip text responses sent by _send_file above the size threshold when the request accepts gzip, caching per revision; reckon/serve.py:3312-3327 does exactly that in _send_file.",
+    "manifest": "read; it records commit f4737074, the gate at 5 passed EXIT=0, the negative control red at EXIT=1, and baseline/after suite receipts, though its after_suite.failure_ids list a test that appears nowhere in head-serve-tests.log.",
+    "write_paths": "the source manifest declares reckon/serve.py, tests/test_text_responses_are_compressed.py and the evidence fragment (plus an unused docs/figures directory); the 5b496700..f4737074 diff touches exactly the three source files."
+  },
+  "justifications": {
+    "durability": "tests/test_text_responses_are_compressed.py:138-160 reddens on the negative control that removes the compression branch, but the OSError fallback at reckon/serve.py:3072 that serves compressed bytes on an unwritable cache has no test.",
+    "evidence": "logs/gate-text-compression.log ends EXIT=0 with 5 passed and logs/negative-control-text-compression.log ends EXIT=1 with the Content-Encoding assertion red, but the manifest's recorded after_suite.failure_ids do not reconcile with the head-serve-tests.log it cites.",
+    "fit": "reckon/serve.py:3048-3085 mirrors the established _thumbnail_cache_path/_thumbnail_bytes idiom at :2935-3027 in docstring, typing and write_atomically use, and introduces no plan, ticket or version name.",
+    "goal_fidelity": "reckon/serve.py:3312-3327 gzips a text response above _GZIP_MIN_BYTES when the request accepts gzip and caches the bytes per revision keyed by the same identity that builds the ETag, which is the goal verbatim.",
+    "reuse": "reckon/serve.py:3057 re-derives the sha256-truncated path formula already used by _thumbnail_cache_path at :2943 and _cached_gzip_text at :3061 repeats _thumbnail_bytes at :3005, so the per-revision cache capability now lives in two near-identical pairs without a shared owner.",
+    "scope_discipline": "git show --stat 5b496700..f4737074616d lists only reckon/serve.py, tests/test_text_responses_are_compressed.py and docs/evidence/fragments/the-site-answers-fast-and-agrees/text-responses-are-compressed.html, all three declared in the manifest."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to gzip text responses sent by _send_file above the size threshold when the request accepts gzip, caching the compressed bytes per revision; reckon/serve.py:3312-3327 implements that in _send_file.\nVERDICT done_when: the done_when names a temporary-project test asserting Content-Encoding: gzip with a body that decompresses to the file, the uncompressed passthrough, a 304 on If-None-Match and no second compression; tests/test_text_responses_are_compressed.py:138-207 asserts all four and logs/gate-text-compression.log records 5 passed EXIT=0.\nVERDICT write_paths: the source manifest declares reckon/serve.py, tests/test_text_responses_are_compressed.py and the evidence fragment (plus an unused docs/figures directory); the 5b496700..f4737074 diff touches exactly the three source files.\nVERDICT manifest: read; it records commit f4737074, the gate at 5 passed EXIT=0, the negative control red at EXIT=1, and baseline/after suite receipts, though its after_suite.failure_ids list a test that appears nowhere in head-serve-tests.log.\nVERDICT diff: read commit by commit against 5b496700; commit f4737074 changes only reckon/serve.py (+85), tests/test_text_responses_are_compressed.py (+207) and the evidence fragment (+15), all inside the declared scope.\nCALL_SITES: reckon/serve.py:3686, reckon/serve.py:3736, reckon/serve.py:4305\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/serve.py:3312-3327 gzips a text response above _GZIP_MIN_BYTES when the request accepts gzip and caches nothing unrequested, and the cache key is the identity that builds the ETag, which is the goal verbatim.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/gate-text-compression.log ends EXIT=0 with 5 passed and logs/negative-control-text-compression.log ends EXIT=1 with the Content-Encoding assertion red, but the manifest's after_suite.failure_ids do not reconcile with the head-serve-tests.log it cites.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --stat 5b496700..f4737074 lists only reckon/serve.py, tests/test_text_responses_are_compressed.py and docs/evidence/fragments/the-site-answers-fast-and-agrees/text-responses-are-compressed.html, all three declared in the manifest.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_text_responses_are_compressed.py:138-160 reddens on the negative control that removes the compression branch, but the OSError fallback at reckon/serve.py:3072 that serves compressed bytes on an unwritable cache has no test.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/serve.py:3048-3085 mirrors the established _thumbnail_cache_path/_thumbnail_bytes idiom at :2935-3027 in docstring, typing and write_atomically use, and introduces no plan, ticket or version name.\nSCORE reuse: 15\nJUSTIFICATION reuse: reckon/serve.py:3057 re-derives the sha256-truncated path formula of _thumbnail_cache_path at :2943 and :3061 repeats _thumbnail_bytes at :3005, so the per-revision cache capability lives in two near-identical pairs without a shared owner.\nFINDING manifest.md:20 follow-on: the recorded after_suite.failure_ids list tests/test_spa_composition.py::test_plans_surface_served_and_static_pages_request_only_their_own_origin, which appears in no FAILED line of the head-serve-tests.log it cites, while omitting tests/test_spa_composition.py::test_plans_surface_never_exceeds_its_window[1280] that the log does list, so a reader deriving added_failure_ids from the manifest computes a fabricated id.\nFINDING reckon/serve.py:3057 follow-on: _text_compression_cache_path duplicates the sha256 source+identity cache-path formula already owned by _thumbnail_cache_path at :2943, and _cached_gzip_text at :3061 repeats the read/compute/write_atomically wrapper of _thumbnail_bytes at :3005.\nFINDING reckon/serve.py:3072 follow-on: the except OSError fallback that still serves compressed bytes when the cache is unwritable is covered by no added test, so a regression there would redden nothing.\n",
+  "review_run_id": "r-20261018T222222954695-review-of-text-responses-are-compressed-f4737074616d",
+  "reviewed_base_sha": "5b496700a6b8d8612cc83c3bc08a02593f8deb06",
+  "reviewed_commits": [
+    "f4737074616d201614d6cd025f0f3f15a75b5106"
+  ],
+  "reviewed_head_sha": "f4737074616d201614d6cd025f0f3f15a75b5106",
+  "reviewed_run_id": "r-20261018T214318686755-text-responses-are-compressed",
+  "rubric": "dimensions",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-18T22:37:00Z"
+}
