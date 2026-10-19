@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-19T16:44:12.055Z",
+  "dispatched_at": "2026-10-19T16:36:59Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-site-answers-fast-and-agrees.html:136",
+      "id": "reasoning-1",
+      "reason": "without naming the hop that delivers the `fleet` event to `VelocityView`, a worker wires it into `refreshProjectState` (the one existing consumer) and the completion case is unimplementable in production, so the plan must state whether `VelocityView` subscribes itself or a shared event channel reaches it.",
+      "text": "\u00a7136 says \"`watchProjectStateChanges` in `docs/ui/state-loader.js` forwards that event to the page, and `VelocityView` re-requests when an event names the key it is computing\", but nothing carries the event to `VelocityView`: `watchProjectStateChanges` (docs/ui/state-loader.js:699) invokes a single `onChange` callback, which shell.jsx:160 binds to `refreshProjectState` (revalidate + inventory bump), and `VelocityView` (docs/ui/velocity.jsx:183) is rendered with only `visibleProjects`/`mountedProjectCount`/`selectedProject` (shell.jsx:483) and owns its fetch in local state with no subscription to any change channel \u2014 verified by reading those three call sites; so the done-when's VelocityView re-request-on-completion assertion has no named production path to pass through",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-site-answers-fast-and-agrees.html:139",
+      "id": "done_when-1",
+      "reason": "a worker reads the velocity paragraph's explicit `202` carve-out as the governing rule for that case, so the shared sentence sharpens the reading without altering the mechanism or any node's work; the same tension was already raised and declined when \u00a75 last changed.",
+      "text": "the opening clause collapses all four routes into \"each route's case stubs that route's computation with a delay of at least 200 ms\" and asserts \"the route itself answers in under 50 ms, from the prior result, with an age header\", but the velocity case's own first all-project request has no prior result and is stated to answer `202` with a `Retry-After` header instead, so that clause is unsatisfiable for the one case the section names",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "9ac6f8167ccf95a83ddaeea7363f9fa9c9cfb0c0b1d747e9d98df1c9f32d8f24",
+  "plan_slug": "the-site-answers-fast-and-agrees",
+  "plan_version": 67,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261019T163611776445-plan-review-of-the-site-answers-fast-and-agrees",
+  "reviewed_blob_sha": "839347938a7cc58b5577b9288879eae841fe5868",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_start_check_refresh` (reckon/serve.py:2187), `_spawn_check_refresh` (:2183), `_CHECK_REFRESHES` (:1027), `_FleetChangeWatch` (reckon/change_streams.py:238), `Handler._send_project_changes` (reckon/serve.py:2613), `Handler._serve_velocity` (:2702), `collect_projects` (:872), `compliance.project_checks` (reckon/compliance.py:247), `watchProjectStateChanges` (docs/ui/state-loader.js:699), `VelocityView` (docs/ui/velocity.jsx:183), `tests/test_spa_crew_cards.py` and \u00a78's 605.8 s anchor in the landed record all resolve.",
+    "done_when": "a finding \u2014 the shared clause that \"each of the four routes for a temporary project\" answers \"from the prior result, with an age header\" cannot hold for \u00a75's own newly stated first all-project velocity case, which has no prior result and answers `202` (plan line 139).",
+    "evidence_paths": "pass \u2014 \u00a75's gate logs are declared under the run directory and its live check is on srv-1006, not in a scratchpad or node-local temp path.",
+    "naming": "pass \u2014 the changed text adds no plan label, stage name, ticket number or version tag to any symbol or comment, and states mechanism (\"one owner starts each change-driven refresh\") rather than provenance.",
+    "reasoning": "a finding \u2014 \u00a7136 names the two ends of the `fleet`-event handoff (`watchProjectStateChanges`, `VelocityView`) but no path between them, and the existing caller delivers the event only to the shell's project-state refetch, which never reaches `VelocityView`.",
+    "single_goal": "pass \u2014 \u00a75 carries one deliverable, the generalised stored-result machinery, and every bullet and case measured is an aspect of it.",
+    "wiring": "pass \u2014 \u00a75's declared depends-on [s3, s8] both name sections that exist and are `done`, and each write path it lists (`reckon/serve.py`, `reckon/change_streams.py`, `reckon/compliance.py`, `docs/ui/velocity.jsx`, `docs/ui/state-loader.js`) resolves in the tree; \u00a716 having landed, `reckon/change_streams.py` already holds `_FleetChangeWatch` as \u00a75 assumes."
+  },
+  "section_digests": {
+    "_document": "16d4c01278e4d835bd6aef8170eee8ab98fb304a4302985dbe4539fa0b5c4fb1",
+    "s1": "119fda14843398660e67ce4dbc6d52b2466804be618c0bc58fe57d48c4364db4",
+    "s10": "aedffe9563719b3b93e2b36282e17d4d2aeabecf2938ffcbf516cfacc5887281",
+    "s11": "b9aa035553d395057dad26d5353e7b79c6bdec033a1ab82eb1042718d03592cd",
+    "s12": "3086e0ba68e51ca085e7178c914c92d64248be41088440dfa18abf077d5819ee",
+    "s13": "fa208e7c5f148ec329458a9824c867762bc66c986ccb7bc85745b08640484173",
+    "s14": "7f21ec58ce9adf4ba663f205fe60555a585a263354e7954c7dd99543a0d56139",
+    "s15": "884c8ab0e973894007385f537b51e29ef55bf2de18ef2cf6a25966e656f62bf2",
+    "s16": "68b4e68d648fe76ecff74c05d2cdfb995f2e13890befafc25046869d469abcac",
+    "s2": "f4d544c85c1a75bc7938448339d0239290de9ffaef0434766aa4baa2571d7436",
+    "s3": "50f2ca1f3b1277d5f4b2d70a240688387a89a3136ad2d6aee26f0b3f324b1afc",
+    "s4": "a1ad15bdafaed28134c2565ad8374bc91928064852c10da6661f2499ca286149",
+    "s5": "0bca45afe518c865772ae1f344b844ed58e021df7cb4704c45449663f723bfc7",
+    "s6": "fdb08d5e7b8272372c8ced83ee14c031730239025c2a13ccb211329d7951673e",
+    "s7": "90073ced7051cfae8f66fd6b78f99e6ace90b008ffc6c9e5559d87a2e5c31704",
+    "s8": "46535efa968faf1a9d457821c0b182e1f73fbc67570e478aa63cc7eb29d08e37",
+    "s9": "3df747cffcffa70e17ef701d032c7d4a87e78cd03759393f0efa74f96e5fde92"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T16:45:59.313683+00:00"
+}
