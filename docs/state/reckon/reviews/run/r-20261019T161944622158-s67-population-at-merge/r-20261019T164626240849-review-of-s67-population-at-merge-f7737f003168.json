@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_producer_takes_new_code.py::test_a_producer_defers_a_reload_onto_unimportable_code_and_keeps_producing"
+  ],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/review.py:2172"
+  ],
+  "completed_at": "2026-10-19T17:01:20.459Z",
+  "dispatched_at": "2026-10-19T16:47:05Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T161944622158-s67-population-at-merge/manifest.md",
+      "line": "8",
+      "severity": "follow-on",
+      "text": "the changed_paths field is semicolon-joined, which the manifest list parser does not split on, so reckon crew check-manifest reads it as one path and its scope audit checks only the first entry (report.md) \u2014 the run-directory scripts and logs listed after it are never scope-checked, and the manifest is accepted ok:true only because that first path happens to sit under the declared reports root."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "the node commits nothing and changes no product code, so there is no commit diff against base f7737f003168c9d023adf05d24a690ec3d5ca20c; the landed change is the recorded measurement, its report and its gate logs.",
+    "done_when": "the brief's Report measure is report.md plus each arm's pass/fail counts with its log path; base_arm.log ends '1 failed, 458 passed' EXIT=1 and cand_arm.log ends '2 failed, 462 passed' EXIT=1, matching baseline_suite/after_suite.",
+    "goal": "the node goal (brief.md:3) is to answer whether merging the stacked candidate onto main adds any failing test id over the importer population; report.md:9-11 answers 'yes, one id' and names it.",
+    "manifest": "read manifest.md: status complete, commits none, baseline_suite 1 failure and after_suite 2 failures with log paths; crew check-manifest --run returns ok:true, but its changed_paths on line 8 is semicolon-joined and parses as a single element, so the scope audit checked only its first entry.",
+    "write_paths": "the node's declared write path is the reports directory; report.md is written there and no product-code path is touched, the scripts and logs sitting under the run directory as the brief directs."
+  },
+  "justifications": {
+    "durability": "the node adds no test and changes no code, so no new assertion guards it; its correctness rests on reckon/crew/review.py:2172, a repository-owned function with its own tests, while measure.sh's two-arm procedure is unguarded.",
+    "evidence": "base_arm.log and cand_arm.log each carry their literal command on the header line and a bare EXIT=1, and I reproduced added_failures_from_gate_logs -> (1, [the one id]) plus the summary lines from those two logs; the added file defines 5 tests, reconciling 459 vs 464.",
+    "fit": "measure.sh and write_manifest.py follow the idiom of the sibling population-at-merge node run earlier today and name nothing the repository naming rules forbid.",
+    "goal_fidelity": "report.md:9-11 answers the brief's question with the single added id and its per-arm counts, and report.md:24-27 names the base-absent file and the follower-pane verdict the brief asked for.",
+    "reuse": "the added-id derivation delegates to the repository-owned reckon/crew/review.py:2172 added_failures_from_gate_logs rather than hand-diffing FAILED lines, as the brief prescribes; the bespoke arm harness has no repository owner.",
+    "scope_discipline": "no product-code path changed (manifest commits: none); every write is report.md at the declared reports path plus measure.sh, write_manifest.py and the arm/alone logs under the run directory the brief placed them in."
+  },
+  "node": "review-of-s67-population-at-merge-f7737f003168",
+  "node:reviewed": "s67-population-at-merge",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal (brief.md:3) is to answer whether merging the stacked candidate onto main adds any failing test id over the importer population; report.md:9-11 answers 'yes, one id' and names it.\nVERDICT done_when: the brief's Report measure is report.md plus each arm's pass/fail counts with its log path and each added id's alone counts; /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T161944622158-s67-population-at-merge/base_arm.log ends '1 failed, 458 passed in 114.93s (0:01:54)' EXIT=1 and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T161944622158-s67-population-at-merge/cand_arm.log ends '2 failed, 462 passed in 112.50s (0:01:52)' EXIT=1, matching the manifest's baseline_suite/after_suite and job-summary.txt added_count=1.\nVERDICT write_paths: the node's declared write path is the reports directory; report.md is written there and no product-code path is touched (manifest commits: none; the s67-population-at-merge worktree is clean), the scripts and logs sitting under the run directory as the brief directs.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T161944622158-s67-population-at-merge/manifest.md: status complete, commits none, baseline_suite 1 failure and after_suite 2 failures with log paths, failure_attribution and artifacts carrying the added id's alone counts 5/0; reconnaissance crew check-manifest --run returns ok:true, but its changed_paths field on line 8 is semicolon-joined and parses as a single element, so the scope audit checked only its first entry.\nVERDICT diff: the node commits nothing and changes no product code, so there is no commit diff against base f7737f003168c9d023adf05d24a690ec3d5ca20c; the landed change is the recorded measurement, its report and its gate logs.\nCALL_SITES: reckon/crew/review.py:2172\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: report.md:9-11 answers the brief's question with the single added id and its per-arm counts, and report.md:24-27 names the base-absent file and the follower-pane verdict the brief asked for.\nSCORE evidence: 18\nJUSTIFICATION evidence: base_arm.log and cand_arm.log each carry their literal command on the header line and a bare EXIT=1, and I reproduced added_failures_from_gate_logs -> (1, [the one id]) plus the summary lines from those two logs; the added file defines 5 tests, reconciling 459 vs 464.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: no product-code path changed (manifest commits: none); every write is report.md at the declared reports path plus measure.sh, write_manifest.py and the arm/alone logs under the run directory the brief placed them in.\nSCORE durability: 13\nJUSTIFICATION durability: the node adds no test and changes no code, so no new assertion guards it; its correctness rests on reckon/crew/review.py:2172, a repository-owned function with its own tests, while measure.sh's two-arm procedure is unguarded.\nSCORE fit: 18\nJUSTIFICATION fit: measure.sh and write_manifest.py follow the idiom of the sibling population-at-merge node run earlier today and name nothing the repository naming rules forbid.\nSCORE reuse: 19\nJUSTIFICATION reuse: the added-id derivation delegates to the repository-owned reckon/crew/review.py:2172 added_failures_from_gate_logs rather than hand-diffing FAILED lines, as the brief prescribes; the bespoke arm harness has no repository owner.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T161944622158-s67-population-at-merge/manifest.md:8 follow-on: the changed_paths field is semicolon-joined, which the manifest list parser does not split on, so reckon crew check-manifest reads it as one path and its scope audit checks only the first entry (report.md) \u2014 the run-directory scripts and logs listed after it are never scope-checked, and the manifest is accepted ok:true only because that first path happens to sit under the declared reports root.",
+  "review_run_id": "r-20261019T164626240849-review-of-s67-population-at-merge-f7737f003168",
+  "reviewed_base_sha": "f7737f003168c9d023adf05d24a690ec3d5ca20c",
+  "reviewed_head_sha": "f7737f003168c9d023adf05d24a690ec3d5ca20c",
+  "reviewed_run_id": "r-20261019T161944622158-s67-population-at-merge",
+  "scores": {
+    "durability": 13,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T17:00:29.261269+00:00",
+  "total": 104
+}
