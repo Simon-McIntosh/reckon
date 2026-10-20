@@ -1,0 +1,90 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "test_one_promoted_run_resolves_by_its_head_suffix asserts the grant equals (runs.run_dir('r-solo') / 'review-records').resolve(). The expectation is built from the same runs.run_dir('r-solo') helper as the declared path passed in on line 145, so it is not independently sourced; it still reddens on the regression it guards, because removing the durable fallback makes resolved the bare 'solo-node' and the grant returns None, which is not a Path.",
+      "lines": "tests/test_a_promoted_runs_review_resolves_its_run.py:145-154"
+    },
+    {
+      "failure_condition": "test_two_runs_sharing_a_node_resolve_by_their_own_suffixes asserts the resolver's answer equals the run-id literals r-twice-old and r-twice-new, while the head reaches the code only inside the node id; the two sides move independently, and the newest-durable-match mutation reddens it on the older run, recorded in negative-control-newest-durable-match.log.",
+      "lines": "tests/test_a_promoted_runs_review_resolves_its_run.py:176-188"
+    },
+    {
+      "failure_condition": "test_a_run_in_another_project_is_reached_only_without_a_project asserts the bare source for project 'here' and 'r-far' for None; the expectation is a literal, not a value fed to the code, and the reads-across-projects mutation reddens it, recorded in negative-control-reads-across-projects.log.",
+      "lines": "tests/test_a_promoted_runs_review_resolves_its_run.py:258-266"
+    },
+    {
+      "failure_condition": "test_a_live_pointer_still_wins writes the pointer itself and asserts the literal r-live-solo is returned; a change that sent the live case through the durable fallback instead would return r-solo and redden it, so it is a real guard rather than a restatement of its input.",
+      "lines": "tests/test_a_promoted_runs_review_resolves_its_run.py:195-203"
+    },
+    {
+      "failure_condition": "test_an_unreadable_store_returns_the_bare_source monkeypatches runs_for_node to raise OSError and asserts the literal 'raise-node'; it fails if the resolver propagates the error or resolves anything else, so it guards the except at recovery_review_delivery.py:287.",
+      "lines": "tests/test_a_promoted_runs_review_resolves_its_run.py:228-241"
+    },
+    {
+      "failure_condition": "test_the_real_crew_home_and_store_carry_nothing_this_test_minted asserts run_store.store_path() is the temporary store and that traces_naming over the real crew home returns []; both arms are independent of each other, and the no-durable-fallback mutation reddens it, recorded in negative-control-no-durable-fallback.log.",
+      "lines": "tests/test_a_promoted_runs_review_resolves_its_run.py:269-292"
+    }
+  ],
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:180",
+    "reckon/crew/recovery_review_dispatch.py:2243",
+    "reckon/crew/promotion_checks.py:2351",
+    "reckon/crew/dispatch_admission.py:1886",
+    "reckon/crew/recovery.py:201"
+  ],
+  "completed_at": "2026-10-20T01:26:53.680Z",
+  "dispatched_at": "2026-10-20T01:17:04Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_delivery.py",
+      "line": "287",
+      "severity": "follow-on",
+      "text": "follow-on: `except Exception` around the durable read swallows every failure, including a defect inside the new resolver itself (a bad record shape, a broken _run_head_for_review), and returns the bare source with nothing recorded. The direction is fail-safe \u2014 a grant refused, never one wrongly granted \u2014 but the symptom is byte-identical to the scoped refusal this node was filed to remove, so a fallback that silently never resolves is indistinguishable from the bug it repairs without reading the store by hand. The store is read-only; the test at tests/test_a_promoted_runs_review_resolves_its_run.py:228 covers only the deliberate OSError."
+    },
+    {
+      "file": "reckon/run_store.py",
+      "line": "587",
+      "severity": "follow-on",
+      "text": "follow-on: the plan's \u00a73 (docs/plans/a-paired-arm-is-reviewed-as-itself.html:96) names RunStore as the reader for the durable rows ('Read the durable records through RunStore in reckon/run_store.py ... Open the database nowhere else'); the landed runs_for_node is a module-level function opening its own read-only URI connection instead. The divergence is defensible and undocumented: RunStore.__init__ (reckon/run_store.py:191-195) does mkdir on the parent and runs _create(), so constructing it would create and migrate the store the resolver must only read, and the new function mirrors the pre-existing indexed_run_ids (reckon/run_store.py:628). Plan text and code nevertheless disagree, and no comment at either site says why."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T004245239090-a-promoted-runs-review-resolves-its-run/manifest.md",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "follow-on: baseline_suite.failure_ids records 'tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window', while base-arm.log prints the same failure as '../../../../../../../../tmp/reckon-crew-scratch/r-20261020T004245239090-.../tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window'. The plan's done-when (docs/plans/a-paired-arm-is-reviewed-as-itself.html:114) requires the base failure ids 'exactly as pytest prints them', so this clause is not literally met; the normalization is what makes the added-failure comparison against the head arm's unprefixed id possible, but a reader reconciling the manifest against the log finds two different strings."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T004245239090-a-promoted-runs-review-resolves-its-run/manifest.md",
+      "line": "24",
+      "severity": "follow-on",
+      "text": "follow-on: the artifacts line states 'ruff check 0 findings and ruff format --check clean on the three staged paths', but no ruff log appears in test_logs (manifest.md:16, six python gate logs only) and no ruff log exists in the run directory. The plan's done-when requires the ruff delta as a gate, so this is a claimed result with no recorded receipt behind it \u2014 the one class of evidence the review contract says must not be taken on the producer's word."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "The change is reached at runtime through _resolved_reviewed_run_id, whose production callers are recovery_review_dispatch.py:180 (the delivery reader), recovery_review_dispatch.py:2243 and recovery.py:201 (re-export), promotion_checks.py:2351, and dispatch_admission.py:1886 (_reviewed_run_id_for_node, the dispatch record-directory grant, which is the refusal the node was filed to fix); runs_for_node has exactly one non-test caller, recovery_review_delivery.py:286.",
+    "diff": "Read commit by commit: d35bae1fc adds _durable_reviewed_run_id to recovery_review_delivery.py with its call at the no-live-match branch, adds runs_for_node to run_store.py, and adds the new test file; ad8fe0511 adds the evidence fragment only; the two product files and the fragment are all inside the declared write paths.",
+    "done_when": "The source prompt.txt:98 names six cases and the nine-file pytest gate; tests/test_a_promoted_runs_review_resolves_its_run.py:137-292 asserts all six (one run by its suffix and its grant, two twice-node runs plus an unmatched suffix, two same-head runs refused, a live pointer winning, a raising reader, and the cross-project pair), and the gate's own run is recorded: head-arm.log ends '1 failed, 69 passed in 253.82s' with EXIT=1 and base-arm.log ends '1 failed, 62 passed in 209.65s' with EXIT=1, the single failure being test_every_module_fits_a_worker_window at both arms, so no failure is added.",
+    "goal": "The source prompt.txt:30 sets the goal as resolving a review node id whose run has no live pointer over the durable run records, chosen by the review's head suffix and scoped to the caller's project; recovery_review_delivery.py:254 routes the no-live-match branch to _durable_reviewed_run_id, which selects the rows by run_store.runs_for_node(source, project=project or None) and picks among them with round_node_head_suffix against _run_head_for_review, returning the bare source unless exactly one run id is named.",
+    "manifest": "The source manifest.md:5 records status complete and :15 the gate command; it states 1 failed/69 passed at head against 1 failed/62 passed at base with added failure ids none, which matches head-arm.log and base-arm.log line for line on the summary, and it records three negative-control logs whose declared cases each fail; its ruff claim at :24 and its normalized base failure id at :21 are recorded without a log behind them (findings below).",
+    "write_paths": "The source prompt.txt:69-74 fences reckon/crew/recovery_review_delivery.py, reckon/run_store.py, tests/test_a_promoted_runs_review_resolves_its_run.py and the node's evidence fragment; git diff --stat c83074a2..ad8fe0511 names exactly those four paths, 492 insertions and 2 deletions, with no figure directory written."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261020T011551349313-review-of-a-promoted-runs-review-resolves-its-run-ad8fe0511ce9",
+  "reviewed_base_sha": "c83074a2ccce406b09bf429e3157e4e574727912",
+  "reviewed_head_sha": "ad8fe0511ce99bf0232ee850ec9200845878393f",
+  "reviewed_run_id": "r-20261020T004245239090-a-promoted-runs-review-resolves-its-run",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T01:37:48.372181+00:00",
+  "total": 110
+}
