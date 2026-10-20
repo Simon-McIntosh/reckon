@@ -109,7 +109,8 @@ def _store(fixture: dict[str, Any], findings: list[dict[str, str]]) -> dict[str,
         "scores": dict.fromkeys(review.REVIEW_DIMENSIONS, 15),
         "findings": findings,
     }
-    review.store_review(record)
+    stored_path = review.store_review(record)
+    assert stored_path.is_relative_to(fixture["home"])
     return record
 
 
@@ -123,6 +124,7 @@ def _dispose(index: int, *, kind: str, target: str) -> None:
         reason=target if kind == "exempted" else None,
     )
     assert path.is_file()
+    assert path.is_relative_to(Path(os.environ["RECKON_HOME"]))
 
 
 def _round(fixture: dict[str, Any], monkeypatch: pytest.MonkeyPatch):
@@ -145,6 +147,7 @@ def _round(fixture: dict[str, Any], monkeypatch: pytest.MonkeyPatch):
             fixture["pointer"], config=CONFIG, launcher=lambda *a, **k: os.getpid()
         )
     assert dispatched == []
+    assert runs.pointer_path(RUN_ID).is_relative_to(fixture["home"])
     assert fixture["home"] != Path.home() / ".config" / "reckon"
     return result, resumed, runs.read_pointer(RUN_ID)["repair_dispatch"]
 
