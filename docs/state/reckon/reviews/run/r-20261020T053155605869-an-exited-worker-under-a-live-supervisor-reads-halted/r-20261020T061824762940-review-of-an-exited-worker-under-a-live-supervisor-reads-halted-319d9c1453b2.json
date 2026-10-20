@@ -1,0 +1,87 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T053155605869-an-exited-worker-under-a-live-supervisor-reads-halted/logs/head_importers.log",
+  "assertion_analysis": [
+    {
+      "failure_condition": "Reinstating the regression (removing the exit-record fold from local_liveness) makes process_alive read True again, as logs/negative_control.log shows reddening exactly this line.",
+      "lines": "179"
+    },
+    {
+      "failure_condition": "Removing the exit-unfinished classification of a dead worker with committed work and an in-progress manifest, or reaching the arm by another route, reddens the classification and the snapshot state.",
+      "lines": "181-195"
+    },
+    {
+      "failure_condition": "Ending a run whose worker record's pid is alive, or ending a resumed attempt on its predecessor's exit record, changes the running reading these two controls assert.",
+      "lines": "212-213,238"
+    }
+  ],
+  "base_log_revision": "0a5766aae72c87d9c34ac7c921c3771b7e9a1028",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T053155605869-an-exited-worker-under-a-live-supervisor-reads-halted/logs/base_importers.log",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:266",
+    "reckon/crew/recovery_watch.py:1061",
+    "reckon/crew/resumption.py:1012",
+    "reckon/sprint_liveness.py:147",
+    "reckon/crew/runs.py:1624"
+  ],
+  "completed_at": "2026-10-20T06:30:17.007Z",
+  "dispatched_at": "2026-10-20T06:19:10Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_liveness.py",
+      "line": "1018",
+      "severity": "follow-on",
+      "text": "follow-on: the new helper re-derives the attempt comparison _int_or_none(exit_record.get(\"attempt\")) == attempt, which _exit_record_names_attempt at recovery_liveness.py:505 already owns; it wraps that owner's concept (adding the no-attempt-record branch) but duplicates the comparison inline rather than delegating, so the two can drift."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T053155605869-an-exited-worker-under-a-live-supervisor-reads-halted/logs/reproduce_base.log",
+      "line": "7",
+      "severity": "follow-on",
+      "text": "follow-on: the base-arm reproduction log's JSON revision field reads the head sha 319d9c14 while the module under test is base-tree 0a5766aa, because the scratch script's REPO constant names the head worktree; the header line carries the correct base revision, so the evidence stands, but a value inside the recordable JSON disagrees with the arm it reports."
+    }
+  ],
+  "head_log_revision": "319d9c1453b22d8913a88d035bfefec8ef275ae8",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read commit by commit against 0a5766aa: 319d9c14 adds _recorded_end_of_the_current_attempt at recovery_liveness.py:1001 and its invocation at line 1083, the 238-line test file tests/test_an_exited_worker_under_a_live_supervisor_reads_halted.py, and a 19-line evidence fragment; three files, all inside the granted write paths.",
+    "done_when": "The done_when names the new test, a base-fails/head-passes delta, a live-worker control and a negative control; logs/head_importers.log (227 passed, 8 errors) against logs/base_importers.log (224 passed, 8 errors) adds three passes and no failure id, and the reproduction, negative-control and new-test logs each open with their revision and literal command and close with EXIT=.",
+    "goal": "The node goal is to reproduce a run whose worker exited with an in-progress manifest and an exit record while the pointer's supervisor pid stays alive, and make it classify exited-unfinished; logs/reproduce_head.log records classify_pointer returning exited-unfinished with process_alive false and exit_record_read true, against running and exit_record_read false in logs/reproduce_base.log.",
+    "manifest": "Read; it names commit 319d9c1453b22d8913a88d035bfefec8ef275ae8, the three changed paths, readable baseline_suite and after_suite receipts with zero failure ids, the negative-control log path, the reproduction, and follow_ons naming the concurrent mcp.py collection errors.",
+    "write_paths": "The node's declared write_paths grant four paths (recovery_liveness.py, the new test file, the evidence fragment, and a figures path); git diff 0a5766aa..319d9c14 touches only the first three, every one inside the grant."
+  },
+  "justifications": {
+    "durability": "tests/test_an_exited_worker_under_a_live_supervisor_reads_halted.py:179 asserts row[\"process_alive\"] is False, which logs/negative_control.log shows reddening when the exit-record fold is removed, and line 181 reddens at base.",
+    "evidence": "logs/reproduce_base.log reads running with process_alive true and exit_record_read false while logs/reproduce_head.log reads exited-unfinished with process_alive false, and logs/head_importers.log records 227 passed against logs/base_importers.log's 224 with no added failure id.",
+    "fit": "reckon/crew/recovery_liveness.py:1001 follows the private-helper-with-docstring idiom of the neighbouring _exit_record_names_attempt at line 505 and no symbol or comment carries a plan or issue identifier.",
+    "goal_fidelity": "reckon/crew/recovery_liveness.py:1083 folds the current attempt's exit record into local_liveness, so classify_pointer reads the measured fixture exited-unfinished with its obligation, as logs/reproduce_head.log records.",
+    "reuse": "reckon/crew/recovery_liveness.py:1018 re-implements the attempt comparison owned by _exit_record_names_attempt at recovery_liveness.py:505 rather than delegating to it.",
+    "scope_discipline": "git diff 0a5766aa..319d9c14 changes only reckon/crew/recovery_liveness.py, the new test file and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/an-exited-worker-under-a-live-supervisor-reads-halted.html, all inside the four granted write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to reproduce a run whose worker exited with an in-progress manifest and an exit record while the pointer's supervisor pid stays alive, and make it classify exited-unfinished; logs/reproduce_head.log records classify_pointer returning exited-unfinished with process_alive false and exit_record_read true, against running and exit_record_read false in logs/reproduce_base.log.\nVERDICT done_when: The done_when names the new test, a base-fails/head-passes delta, a live-worker control and a negative control; logs/head_importers.log (227 passed, 8 errors) against logs/base_importers.log (224 passed, 8 errors) adds three passes and no failure id, and every gate log opens with its revision and literal command and closes with EXIT=.\nVERDICT write_paths: The node's declared write_paths grant four paths; git diff 0a5766aa..319d9c14 touches only reckon/crew/recovery_liveness.py, tests/test_an_exited_worker_under_a_live_supervisor_reads_halted.py and the evidence fragment, all inside the grant.\nVERDICT manifest: Read; it names commit 319d9c1453b22d8913a88d035bfefec8ef275ae8, the three changed paths, readable baseline_suite and after_suite receipts with zero failure ids, the negative-control log path, the reproduction, and follow_ons naming the concurrent mcp.py collection errors.\nVERDICT diff: Read commit by commit against 0a5766aa; 319d9c14 adds _recorded_end_of_the_current_attempt at recovery_liveness.py:1001 with its invocation at line 1083, the 238-line test file, and a 19-line evidence fragment.\nCALL_SITES: reckon/crew/recovery_classification.py:266, reckon/crew/recovery_watch.py:1061, reckon/crew/resumption.py:1012, reckon/sprint_liveness.py:147, reckon/crew/runs.py:1624\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_liveness.py:1083 folds the current attempt's exit record into local_liveness, so classify_pointer reads the measured fixture exited-unfinished with its obligation, as logs/reproduce_head.log records.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/reproduce_base.log reads running with process_alive true and exit_record_read false while logs/reproduce_head.log reads exited-unfinished with process_alive false, and logs/head_importers.log records 227 passed against logs/base_importers.log's 224 with no added failure id.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 0a5766aa..319d9c14 changes only reckon/crew/recovery_liveness.py, the new test file and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/an-exited-worker-under-a-live-supervisor-reads-halted.html, all inside the four granted write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_an_exited_worker_under_a_live_supervisor_reads_halted.py:179 asserts row[\"process_alive\"] is False, which logs/negative_control.log shows reddening when the exit-record fold is removed, and line 181 reddens at base.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/recovery_liveness.py:1001 follows the private-helper-with-docstring idiom of the neighbouring _exit_record_names_attempt at line 505 and no symbol or comment carries a plan or issue identifier.\nSCORE reuse: 14\nJUSTIFICATION reuse: reckon/crew/recovery_liveness.py:1018 re-implements the attempt comparison owned by _exit_record_names_attempt at recovery_liveness.py:505 rather than delegating to it.\nFINDING reckon/crew/recovery_liveness.py:1018 follow-on: the new helper re-derives the attempt comparison _int_or_none(exit_record.get(\"attempt\")) == attempt, which _exit_record_names_attempt at recovery_liveness.py:505 already owns; it wraps that owner's concept but duplicates the comparison inline rather than delegating, so the two can drift.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T053155605869-an-exited-worker-under-a-live-supervisor-reads-halted/logs/reproduce_base.log:7 follow-on: the base-arm reproduction log's JSON revision field reads the head sha 319d9c14 while the module under test is base-tree 0a5766aa, because the scratch script's REPO constant names the head worktree.\n",
+  "review_run_id": "r-20261020T061824762940-review-of-an-exited-worker-under-a-live-supervisor-reads-halted-319d9c1453b2",
+  "reviewed_base_sha": "0a5766aae72c87d9c34ac7c921c3771b7e9a1028",
+  "reviewed_commits": [
+    "319d9c1453b22d8913a88d035bfefec8ef275ae8"
+  ],
+  "reviewed_head_sha": "319d9c1453b22d8913a88d035bfefec8ef275ae8",
+  "reviewed_run_id": "r-20261020T053155605869-an-exited-worker-under-a-live-supervisor-reads-halted",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T06:33:19.322064+00:00",
+  "total": 108
+}
