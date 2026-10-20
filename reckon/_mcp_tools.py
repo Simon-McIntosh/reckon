@@ -94,7 +94,7 @@ class CrewArgs(BaseModel):
         "lanes",
         "models",
     ] = "summary"
-    refresh: bool = False
+    refresh: bool | None = None
     checkout_path: str | None = None
     plan: str | None = None
     since: str | None = None
