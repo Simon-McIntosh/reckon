@@ -130,6 +130,7 @@ def take_snapshot(root: Path | None = None) -> SourceSnapshot:
 
 _HASH_MEMO: dict[tuple[str, _Signature], str] = {}
 _INDEX_MEMO: dict[tuple[str, str], _ModuleIndex | None] = {}
+_DEFINITION_MEMO: dict[tuple[str, _Signature, tuple[str, ...]], dict[str, str]] = {}
 _REPORTS: dict[int, tuple[float, dict]] = {}
 _LOCK = threading.Lock()
 
@@ -141,6 +142,7 @@ def forget_reports() -> None:
         _REPORTS.clear()
         _HASH_MEMO.clear()
         _INDEX_MEMO.clear()
+        _DEFINITION_MEMO.clear()
 
 
 def _current_hash(path: Path, signature: _Signature) -> str:
@@ -494,6 +496,93 @@ def _used_definitions(
             if _module_file(snapshot, submodule) is not None:
                 depend(submodule, attribute)
     return used
+
+
+def definition_fingerprints(
+    snapshot: SourceSnapshot, executed: Mapping[str, Iterable[str]]
+) -> dict[str, dict[str, object]]:
+    """Record the definitions reached by a derivation and their file revisions."""
+
+    result: dict[str, dict[str, object]] = {}
+    for relative, keys in _used_definitions(snapshot, executed).items():
+        source = snapshot.sources.get(relative)
+        known = snapshot.files.get(relative)
+        if source is None or known is None:
+            continue
+        index = _index(snapshot, relative, source)
+        result[relative] = {
+            "revision": list(known[0]),
+            "definitions": {
+                key: hashlib.sha256(
+                    (_definition(index, key) or "").encode()
+                ).hexdigest()
+                for key in sorted(keys)
+            },
+        }
+    return result
+
+
+def definitions_unchanged(root: Path, recorded: Mapping[str, object]) -> bool:
+    """Check only reached definitions in files whose revision has moved."""
+
+    if not recorded:
+        return False
+    for relative, entry in recorded.items():
+        if (
+            not isinstance(relative, str)
+            or Path(relative).is_absolute()
+            or ".." in Path(relative).parts
+            or not relative.endswith(".py")
+            or not isinstance(entry, dict)
+        ):
+            return False
+        expected = entry.get("definitions")
+        revision = entry.get("revision")
+        if (
+            not isinstance(expected, dict)
+            or not expected
+            or any(
+                not isinstance(key, str)
+                or not isinstance(digest, str)
+                or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+                for key, digest in expected.items()
+            )
+            or not isinstance(revision, list)
+            or len(revision) != 5
+            or any(not isinstance(part, int) for part in revision)
+        ):
+            return False
+        path = root / relative
+        try:
+            current_revision = file_signature(path)
+        except OSError:
+            return False
+        if list(current_revision) == revision:
+            continue
+        keys = tuple(sorted(expected))
+        memo_key = (str(path), current_revision, keys)
+        with _LOCK:
+            actual = _DEFINITION_MEMO.get(memo_key)
+        if actual is None:
+            try:
+                source = path.read_text(encoding="utf-8", errors="replace")
+                if file_signature(path) != current_revision:
+                    return False
+            except OSError:
+                return False
+            snapshot = SourceSnapshot(root=root)
+            index = _index(snapshot, relative, source)
+            actual = {
+                key: hashlib.sha256(
+                    (_definition(index, key) or "").encode()
+                ).hexdigest()
+                for key in keys
+            }
+            with _LOCK:
+                _DEFINITION_MEMO[memo_key] = actual
+        if actual != expected:
+            return False
+    return True
 
 
 # ── Reports ────────────────────────────────────────────────────────────────
