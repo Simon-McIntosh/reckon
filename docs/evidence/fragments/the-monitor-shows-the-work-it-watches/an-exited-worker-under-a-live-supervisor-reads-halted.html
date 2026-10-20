@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s69">
+  <title>An exited worker under a live supervisor reads halted</title>
+</head>
+<body>
+<article id="an-exited-worker-under-a-live-supervisor-reads-halted-landing" data-node="an-exited-worker-under-a-live-supervisor-reads-halted" data-reckon="landed">
+  <p><code>local_liveness</code> in <code>reckon/crew/recovery_liveness.py</code> now folds the run's own exit record into its reading. The pid a pointer records is the supervisor's for a supervised launch, and the supervisor outlives the worker it spawned, so a process table answering "alive" for that pid answered about the launcher. The exit record names the worker's end, and it is read where it names the attempt now running so a resumed run's predecessor record never ends the attempt in flight.</p>
+  <p>Reproduced in a temporary crew home: a run whose pointer pid is a live process, whose worker has exited with <code>exit.json</code> recording <code>ended_during working</code> and whose manifest still reads <code>status: in-progress</code>. At base the classifier read <code>running</code> with <code>exit_record_on_disk: true</code> but <code>exit_record_read: false</code> and <code>process_alive: true</code> — the live supervisor pid suppressed the exit record. At head the same fixture reads <code>exited-unfinished</code>, <code>process_alive: false</code>, <code>exit_record_read: true</code>, one commit beyond base.</p>
+  <p>The node's test finds the run classified <code>exited-unfinished</code> with its obligation present (state <code>exited-unfinished</code>, in the needs-action vocabulary, counted in the blocked bucket); a run whose worker is still alive keeps its <code>running</code> reading; and a resumed run whose predecessor recorded an exit is not ended by it. One of three cases fails at base and all three pass at head. The negative control removes the exit-record check and the first case reads working again.</p>
+</article>
+</body>
+</html>
