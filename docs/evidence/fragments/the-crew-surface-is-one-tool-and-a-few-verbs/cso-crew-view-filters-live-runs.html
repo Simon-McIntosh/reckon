@@ -1,0 +1,98 @@
+<article class="landed-report" data-node="cso-crew-view-filters-live-runs">
+<h3 id="cso-crew-view-filters-live-runs-summary">The live view takes crew list's two filters, and the view registry can fail again</h3>
+<p id="cso-crew-view-filters-live-runs-change"><strong>Change.</strong>
+<code>crew view live</code> and the crew tool's <code>live</code> view now
+answer <code>--phase</code> and <code>--mine</code> as <code>crew list</code>
+does. <code>serve_crew_view</code> in <code>reckon/mcp_views.py</code> gains
+both arguments and narrows the live pointers <em>before</em> classification, on
+the same two fields the listing reads — the pointer's own <code>phase</code>,
+and its own <code>session</code> for <code>mine</code> — so the rows kept are
+the rows the listing kept. <code>mine</code> compares against a session, so it
+is refused with <code>missing_session</code> when none is given rather than
+silently answering the whole project. The two options reach the tool through
+<code>reckon/_mcp_tools.CrewArgs</code> and <code>_crew</code> in
+<code>reckon/mcp.py</code>, and the command line through
+<code>crew view</code>'s <code>--phase</code> and <code>--mine</code> in
+<code>reckon/crew_run_commands.py</code>.
+
+The second half is the registry. The tool's <code>view</code> Literal listed ten
+names where the dispatcher serves nineteen, and the parity case compared
+<code>mcp.CREW_TOOL_VIEWS</code> — an alias of the dispatcher's
+<code>CREW_VIEWS</code> — with itself, so it could not fail. The Literal now
+lists all nineteen, and the registry case reads the schema's own annotation
+(<code>get_args(CrewArgs.model_fields["view"].annotation)</code>) against the
+dispatcher's list. The skill's view extractor in
+<code>tests/test_skill_contracts.py</code> becomes
+<code>\bcrew\((?:project, )?view="([a-z-]+)"</code>, anchored on
+<code>crew(</code> so it cannot match the skill's
+<code>roadmap(…, view="raw")</code> calls, and allowing a hyphen and further
+arguments, so the hyphenated <code>plan-review</code> and the
+<code>crew(view="obligations", session=…)</code> form are read rather than
+skipped; the skill then documents the six views it did not name
+(<code>findings</code>, <code>fleet</code>, <code>routing</code>,
+<code>runs</code>, <code>scores</code>, <code>velocity</code>) and the two new
+filters beside the <code>live</code> row.</p>
+<p id="cso-crew-view-filters-live-runs-test"><strong>Test.</strong>
+<code>tests/test_crew_view_serves_every_view.py</code> gains a
+<code>live_fleet</code> fixture — the synthesised repository plus three live
+pointers spanning two phases and two sessions, because a filter needs more than
+one value to be visible — and a case that drives <code>crew list</code> with
+each filter and requires both the command line and the crew tool to keep the
+same run ids, that an unfiltered live read is wider than the filtered one, and
+that <code>--mine</code> without a session is refused on both surfaces. The
+output-parity case now drives four argument vectors (plain, session, phase,
+mine) through both surfaces for every view and names the view and the vector
+that disagree, rather than comparing one argument vector. The registry case
+reads the schema annotation, and its control is two-sided: one case adds a view
+to the dispatcher's <code>CREW_VIEWS</code> alone, and a second stands in for
+editing the hand-written Literal by replacing the reader that names it, since a
+test cannot edit committed source.</p>
+<p id="cso-crew-view-filters-live-runs-measure"><strong>Measure.</strong> Gate:
+<code>PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest
+-p no:cacheprovider tests/test_crew_view_serves_every_view.py
+tests/test_skill_contracts.py tests/test_mcp_tools.py
+tests/test_crew_surface_parity.py tests/test_cited_commands_exist.py
+tests/test_crew_help_names_its_state.py
+tests/test_read_verbs_retire_behind_crew_view.py
+tests/test_every_module_fits_a_worker_window.py</code>. Head arm at
+<code>e52f3f01c</code>: 1 failed, 135 passed, <code>EXIT=1</code>. Base arm at
+<code>2e421b15f</code>, extracted with <code>git archive</code> under
+<code>$TMPDIR</code> and run over the same eight files: 1 failed, 133 passed,
+<code>EXIT=1</code>. Both arms fail the same single id and no others —
+<code>tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window</code>,
+over <code>reckon/budget.py</code>, <code>reckon/crew/review.py</code> and
+<code>reckon/ledger.py</code>, none of them a path this node touched — so the
+node adds zero failures; the two extra passes at head are the two cases this
+node added. <code>ruff check</code> over the six changed source and test paths
+reports 14 findings at head and 14 at base, and <code>ruff format --check</code>
+reports one unformatted file on both sides, the same pre-existing block in
+<code>tests/test_skill_contracts.py</code>. Logs <code>logs/gate-head.log</code>
+and <code>logs/gate-base.log</code> under the run directory, each opening with
+its revision, tree, working directory, the literal command, and the absolute
+<code>module.__file__</code> the run imported, and closing with a bare
+<code>EXIT=</code> line.</p>
+<p id="cso-crew-view-filters-live-runs-control"><strong>Negative control.</strong>
+Each mutation was applied to the source and reverted, and the case it must
+redden was run alone. Dropping the <code>mine</code> filter from the live view
+reddens <code>test_the_live_view_answers_the_list_filters</code>
+(<code>AssertionError: mine on command line</code>, 1 failed). Dropping one
+option from <code>crew view</code>'s CLI plumbing reddens
+<code>test_every_declared_view_answers_the_same_document_on_both_surfaces</code>
+naming it —
+<code>['live with mine']</code>. Adding a view to the dispatcher's
+<code>CREW_VIEWS</code> alone reddens
+<code>test_the_tool_and_the_dispatcher_declare_the_same_views</code>
+naming it —
+<code>the crew view dispatcher serves these views and the crew tool does not advertise: ['dispatcher-only-view']</code>.
+Log <code>logs/negative_control.log</code>, last line <code>EXIT=1</code>, none
+of the three failing ids failed in either gate arm.</p>
+<p id="cso-crew-view-filters-live-runs-followons"><strong>Follow-ons.</strong>
+None outside this node's scope. One observation for the section: the
+<code>budget</code> view's answer was seen to differ occasionally for the
+<em>same</em> argument vector within one comparison, before any mutation was
+applied — it reads a document that is republished on a fixed cadence, and the
+pre-existing §6 parity case already drove that view, so the flake is the
+document's and not this node's; it appeared once in roughly fourteen runs. It
+is named here rather than repaired because the fix belongs to the budget view,
+not to the parity harness.</p>
+</article>
