@@ -878,6 +878,38 @@ def _verdict_row(
     return row
 
 
+def _record_gated_verdicts(
+    result: dict[str, Any],
+    *,
+    gate: Mapping[str, Any],
+    lane: str,
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
+) -> None:
+    """Name every queued request a waiting fleet gate held, and the gate itself.
+
+    The gate is read before the queue is, so a pass that returns here would
+    otherwise record nothing for requests its own gate is holding — the same
+    empty trace as a request held for its session's allowance. The requests are
+    read only to name them: nothing is released, launched or rewritten.
+    """
+    state = str(gate.get("state") or "")
+    for pointer in runs.list_live():
+        if pointer.get("phase") != "queued":
+            continue
+        if lane and str(pointer.get("backend")) != lane:
+            continue
+        allowance, source = _session_allowance_read(pointer, config_for=config_for)
+        result["verdicts"].append(
+            _verdict_row(
+                pointer,
+                allowance=allowance,
+                allowance_source=source,
+                verdict="held-by-gate",
+                detail=state,
+            )
+        )
+
+
 def _trim_log_to_bound(path: Path, *, max_bytes: int) -> None:
     """Keep the newest whole lines of a log that has grown past its bound.
 
@@ -927,6 +959,7 @@ def _record_pass_verdicts(
             "at": _utc_now(),
             "lane": lane,
             "code_stamp": code_stamp,
+            "gate": result.get("gate"),
             "pointers": list(verdicts),
         },
     )
@@ -964,6 +997,7 @@ def admit_once(
     }
     if gate.get("state") in _LANE_GATE_WAITING_STATES:
         result["action"] = "gated"
+        _record_gated_verdicts(result, gate=gate, lane=lane, config_for=config_for)
         return result
     with _admit_lock() if lock else nullcontext():
         result["requeued"] = _requeue_admitted_failures(

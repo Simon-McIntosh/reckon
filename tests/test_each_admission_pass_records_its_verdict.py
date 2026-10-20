@@ -332,6 +332,45 @@ def test_a_pass_with_no_queued_pointer_writes_no_line(
     assert _read_verdict_lines(admit_repo) == []
 
 
+def test_a_pass_under_a_waiting_gate_records_the_pointer_as_gate_held(
+    admit_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A gated pass reads the queue before it returns, so the hold is recorded.
+
+    The pass returns as soon as the fleet gate is waiting, before it would
+    otherwise read the queued pointers. A request held there leaves the same
+    empty trace as one held for its allowance, so the gated pass must name the
+    request and the gate itself.
+    """
+    from click.testing import CliRunner
+
+    from reckon import cli
+
+    lane = tmp_path / "lane.json"
+    _config, resolve = _config_with_lane(lane)
+    runs.queue_dispatch(_queue(admit_repo))
+    paused = CliRunner().invoke(cli.main, ["crew", "gate", "--pause", "moving"])
+    assert paused.exit_code == 0, paused.output
+
+    _drive(
+        monkeypatch,
+        lane_document=lane,
+        resolve=resolve,
+        launcher=_launcher([]),
+        lanes=[_session_lane(2.0)],
+    )
+
+    lines = _read_verdict_lines(admit_repo)
+    assert len(lines) == 1, lines
+    assert lines[0]["gate"] == "paused"
+    pointer = lines[0]["pointers"][0]
+    assert pointer["run_id"] == RUN_ID
+    assert pointer["session"] == SESSION
+    assert pointer["verdict"] == "held-by-gate"
+    assert pointer["allowance"] == 2
+    assert pointer["allowance_source"] == "the session's own worker slots"
+
+
 def test_the_log_is_trimmed_within_its_size_bound(
     admit_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
