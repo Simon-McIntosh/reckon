@@ -1,0 +1,68 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "test_the_new_id_counts_its_own_runs_and_priors_the_keys_record compares sol.outcomes and sol.prior_outcomes against literal dicts the test builds itself ({'passed':1,'failed':1,...} and {'passed':17,'failed':2,'not-run':1,'unknown':0,'model_ids':['gpt-6-sol']}), not against any value handed to the code. Put back `_prior_block` returning the candidate's own id's tally, or keying by today's lane default, and the literal comparison reddens. Independent of the value under test.",
+      "lines": "tests/test_a_new_model_id_starts_from_its_keys_record.py:154-163"
+    },
+    {
+      "failure_condition": "test_enough_own_outcomes_means_no_prior_block asserts sum(sol.outcomes.values()) == 5 and sol.prior_outcomes is None with no routing config, so the shipped default of 5 is what the assertion rests on; change the default in snapshot.py:1295 or flip the comparison from `<` to `<=`, and prior_outcomes becomes non-null and the assertion reddens. The expected value is derived from the fixture rows, not from an argument the test passed to the code.",
+      "lines": "tests/test_a_new_model_id_starts_from_its_keys_record.py:172-177"
+    },
+    {
+      "failure_condition": "test_a_recorded_key_outranks_the_ids_current_default asserts astra.prior_outcomes['model_ids'] == ['gpt-6.1-sol'] and sol.prior_outcomes['model_ids'] == ['gpt-6-sol'] for a row whose recorded model_key is astra while its id is the codex default. Match prior runs by the id's resolved default instead of the recorded key and the two id lists swap, so the assertion fails; this is mutation 1 in negative-control.log and it did fail, on this test alone.",
+      "lines": "tests/test_a_new_model_id_starts_from_its_keys_record.py:225-234"
+    },
+    {
+      "failure_condition": "test_the_state_carries_the_prior_block_and_the_glossary_defines_it asserts the rendered state at entries[sol_key]['prior_outcomes'] and `'prior_outcomes' not in entries[astra_key]`, plus 'prior_outcomes' in the rendered glossary. Delete the sparse-key spread in prompts.py:321-326 and the first assertion raises KeyError; rename the glossary entry and the second reddens. Both read the code's output against constants held in the test.",
+      "lines": "tests/test_a_new_model_id_starts_from_its_keys_record.py:237-264"
+    },
+    {
+      "failure_condition": "test_a_declared_threshold_moves_the_point_a_prior_stops_being_shown passes config routing.prior_outcome_threshold = 1 and asserts sol.prior_outcomes is None. The assertion is against the code's derived candidate, not against the config value; a candidate with one own outcome and a non-empty prior would render a block if the code read the default instead of the config, and the assertion would fail. This is mutation 2's territory (rendering the block whatever the count) and both threshold-dependent tests failed under it, per negative-control.log.",
+      "lines": "tests/test_a_new_model_id_starts_from_its_keys_record.py:267-289"
+    }
+  ],
+  "call_sites": [
+    "reckon/crew/picker/snapshot.py:candidates",
+    "reckon/crew/picker/snapshot.py:_candidates_scan",
+    "reckon/crew/picker/snapshot.py:_prior_block",
+    "reckon/crew/picker/prompts.py:_candidate_state",
+    "reckon/crew/picker/prompts.py:build_state"
+  ],
+  "completed_at": "2026-10-20T14:25:37.028Z",
+  "dispatched_at": "2026-10-20T14:12:48Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/snapshot.py",
+      "line": "317",
+      "severity": "follow-on",
+      "text": "follow-on: the docstring at snapshot.py:306-317 states that a caller passing no key_counts 'pays nothing for the tally', but the row loop applies no such guard: at snapshot.py:369 every row that survives the role and spec_level filter is still handed to ledger.normalize_identity(row) and tallied into key_record, which at snapshot.py:323-325 is a throwaway dict allocated per call when key_counts is None. The two callers that pass none (tests/test_a_corrected_review_row_reads_as_unreviewed.py:174 and the counting wrapper at tests/test_outcomes_at_requirement.py:251) therefore pay the per-row normalize_identity cost the sentence denies. The statement is a mechanism claim the code does not implement; either guard the block on `key_counts is not None` or correct the sentence."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Production runtime code that reaches the landed change: reckon/crew/picker/snapshot.py:candidates builds the block (snapshot.py:1498-1509) and passes key_counts into _candidates_scan (snapshot.py:1289), which now calls ledger.normalize_identity per row (snapshot.py:369); _prior_block (snapshot.py:426-452) is the new helper; reckon/crew/picker/prompts.py:_candidate_state (prompts.py:321-326) renders it into the Jev state, reached from build_state. The two other callers of _candidates_scan (tests/test_outcomes_at_requirement.py:251, tests/test_a_corrected_review_row_reads_as_unreviewed.py:174) are test files and not counted; both were read and remain call-compatible with the new keyword-only key_counts default.",
+    "diff": "Read commit by commit against base 4306a8a08. 063b691af changes seven files: flight.yaml adds the prior_outcome_threshold slot, _flight_schema.py and docs/_shared/flight.schema.json carry its regenerated form, types.py adds Candidate.prior_outcomes, snapshot.py adds the key_counts out-parameter, the per-(lane, model_key) tally and _prior_block, prompts.py adds the sparse prior_outcomes key and its glossary entry, and the new test file adds six tests. 4ba2dd021 adds nine lines to the evidence fragment. Every path is inside the declared write paths.",
+    "done_when": "The source prompt.txt:100-101 done_when is the measure. Its four named cases are covered by the six tests (the 20-under-gpt-6-sol/2-under-gpt-6.1-sol fixture at tests/test_a_new_model_id_starts_from_its_keys_record.py:265-271, the threshold case at :172, the astra case at :180, the recorded-key case at :191). The replay arm is in replay-compare.log (20/20 identical route, 20 picks carrying no prior block). The base/head arm pair is run with -rA, both logs name their revision, tree, command, cwd and module.__file__, and both fail the same single pre-existing id. The ruff delta is in ruff-delta.log. All clauses are met; the evidence gap is that the replay exercised no pick carrying a prior block (see the evidence justification).",
+    "goal": "The source goal (prompt.txt:29) is to give a lane-model candidate with few outcomes of its own a prior block of its lane key's earlier model ids, shown until its own record passes a threshold. snapshot.py:1500-1509 builds exactly that block for a candidate whose own outcomes sum below the threshold, over key_counts tallied by the lane and model_key each row recorded; prompts.py:321-326 renders it and prompts.py:175-187 defines it for Jev. The astra/probe-lane cases confirm the block is scoped to the one key.",
+    "manifest": "Read manifest.md of run r-20261020T131953633828. It records status complete, the two commits (063b691af, 4ba2dd021), the changed paths, tests = the literal pytest command, test_logs = base-arm.log and head-arm.log, baseline_suite and after_suite as armed JSON with revision, command, exit_status, completed, failure_count and failure_ids, and the negative-control log path as a bare path. baseline_suite names failure_ids ['tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window'] at base 1 failed, 129 passed and after_suite names the same id at head 1 failed, 135 passed, so the added-failure delta is 0 and six tests were added. negative_control_note describes both mutations without restating them in the bare path line.",
+    "write_paths": "The source prompt.txt:69-78 fences reckon/crew/picker/snapshot.py, reckon/crew/picker/types.py, reckon/crew/picker/prompts.py, reckon/schema/flight.yaml, reckon/_flight_schema.py, docs/_shared/flight.schema.json, tests/test_a_new_model_id_starts_from_its_keys_record.py, the node's fragment under docs/evidence/fragments/lane-and-model-routing/ and docs/figures/lane-and-model-routing/a-new-model-id-starts-from-its-keys-record. git diff --stat 4306a8a08..4ba2dd021 names exactly the first seven plus the fragment, and no production file outside them. The declared figures directory was not written, which is permitted."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261020T141107147770-review-of-a-new-model-id-starts-from-its-keys-record-4ba2dd021269",
+  "reviewed_base_sha": "4306a8a08bf1cee9bea39c933722b064c1bd323f",
+  "reviewed_head_sha": "4ba2dd0212693e07c1060370fef2beebef6a008e",
+  "reviewed_run_id": "r-20261020T131953633828-a-new-model-id-starts-from-its-keys-record",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T14:37:22.239304+00:00",
+  "total": 110
+}
