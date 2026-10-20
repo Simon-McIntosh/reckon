@@ -20,7 +20,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;}">
   <meta name="plan-blocks" content="a-small-change-is-a-small-node">
   <title>A Review Is Sized To Its Risk | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -28,8 +28,9 @@
 <meta name="plan-commits" content="505c690b,9701e873,c45e7bac,dd19e201,31509127">
 <meta name="plan-artifacts" content="reckon/review_tiers.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,tests/test_review_tiers.py">
 <meta name="plan-impl" content="0.6666666666666666">
-<meta name="plan-version" content="178">
+<meta name="plan-version" content="179">
 <meta name="plan-modified" content="2026-10-20">
+<meta name="plan-section-depends-on" content="{&quot;s14&quot;:[&quot;a-review-is-sized-to-its-risk#s13&quot;]}">
 </head>
 <body>
   <main class="plan-doc">
@@ -200,6 +201,34 @@
 <section data-reckon="section" data-id="s13" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
 <p><strong>Why.</strong> On 2026-10-20 the review of run <code>r-20261020T013926648835-each-admission-pass-records-its-verdict</code> scored reuse 4 and carried four findings. One blocking finding cited the run's own gate log under the crew home, and two follow-on findings cited <code>reckon/crew/queue_admission.py</code> and the run's test file. The repair reflex recorded the round decline-only with the reason <code>no finding cites a repository path, so the round is decline-only</code>. The decision itself is deliberate: <code>reckon/crew/recovery_repair_dispatch.py</code> reads only the blocking findings, so a follow-on citing source cannot carry a round whose blocking findings cite only the fleet's record. But the reason says no finding cites a repository path, when two did. A coordinator reading it concludes the review raised nothing repairable, and a sub-floor dimension then has no stated next step in the round record.</p><p><strong>Deliverable.</strong> The decline-only reason states what was decided: that no blocking finding cites a repairable path. When the review also carries a dimension under its floor or follow-on findings citing repository paths, the reason names them, so the coordinator knows to dispose and resume by hand. The decision itself is unchanged. The change lives in <code>reckon/crew/recovery_repair_dispatch.py</code>.</p><p><strong>Done when</strong> a test drives the decline-only branch with a review whose blocking finding cites a crew-home log and whose follow-on findings cite a source file and a test file, with reuse under its floor. The recorded reason says no blocking finding cites a repairable path and names the sub-floor dimension and the two cited files. A review whose only findings cite crew-home paths records a reason naming neither, and a review with a blocking finding citing a source path still composes a repair. The negative control restores the old reason text, and the first case then fails. The test files importing <code>reckon/crew/recovery_repair_dispatch.py</code> show no added failure against base, run in place on the fleet allocation with <code>-n 8</code>, each log starting with its revision and the literal command and ending in <code>EXIT=</code>. <code>ruff check</code> and <code>ruff format --check</code> add no findings. Write paths: <code>reckon/crew/recovery_repair_dispatch.py</code> and <code>tests/test_a_decline_only_round_names_what_it_declined.py</code>.</p>
 
+    <h2 id="s14">§14 — A disposed finding ends its repair round</h2>
+<section data-reckon="section" data-id="s14" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> On 2026-10-20 the review <code>r-20261020T044113923490</code> of run <code>r-20261020T035609523314-cso-watch-family-folds</code>, at <code>6c1f03f8a</code>, stored two findings with no severity. Both texts began "follow-on:". The coordinator exempted both with <code>crew dispose --kind exempted</code> and promoted the review. Four seconds later the repair reflex resumed the worker. Its <code>repair_dispatch.status</code> read <code>resumed</code> under node <code>repair-of-cso-watch-family-folds-6c1f03f8a605</code>, and <code>resume-2-advice.txt</code> named "2 blocking finding(s)". The coordinator's answer was ignored.</p>
+<p>The cause is that the reflex never reads a disposition. <code>blocking_findings</code> (<code>reckon/crew/repair.py:224</code>) counts a finding that declares no severity as blocking. That is deliberate: <code>declared_severity</code> (<code>reckon/crew/review.py:128</code>) never defaults a severity, because a defaulted severity is a judgement nobody made. The reflex in <code>reckon/crew/recovery_repair_dispatch.py</code> builds its round from that list, around lines 690 and 720. It never consults the record's <code>finding_dispositions</code> (<code>FINDING_DISPOSITIONS_KEY</code>, <code>reckon/crew/review.py:3983</code>), which <code>crew dispose</code> writes and the findings reader already reads through <code>finding_disposition</code> (<code>reckon/crew/findings.py:206</code>). So neither a fold nor an exemption stops a repair round.</p>
+<p><strong>Deliverable.</strong> The repair reflex leaves out of its round every finding that carries a disposition on the review record it reads.</p>
+<ul>
+<li>Read each finding's disposition through <code>finding_disposition</code>, and write no second parse of the key.</li>
+<li>When every blocking finding is disposed, the round composes no repair and resumes nothing. It records the round decline-only, with a reason that names each disposed finding by its index, in the form §13 gives a decline-only reason.</li>
+<li>A blocking finding with no disposition is repaired as today. A finding that declares no severity still counts as blocking until it is disposed.</li>
+</ul>
+<p><strong>Out of scope.</strong> This section does not read a severity word out of a finding's text. The coordinator's disposition is the answer for an unmarked finding, and <code>declared_severity</code> keeps its rule.</p>
+<p><strong>Write paths:</strong> <code>reckon/crew/recovery_repair_dispatch.py</code>, <code>reckon/crew/repair.py</code>, the new <code>tests/test_a_disposed_finding_ends_its_repair_round.py</code>, and the node's evidence fragment. §13 writes <code>reckon/crew/recovery_repair_dispatch.py</code>, so §14 is dispatched only after §13 is merged.</p>
+<p><strong>Done when</strong> all of these hold:</p>
+<ul>
+<li>The new test points the crew home at a temporary directory. It builds a reviewed run whose stored review record carries findings, and records dispositions through the same writer <code>crew dispose</code> uses. It asserts four cases:
+  <ul>
+  <li>Two findings declare no severity and both are exempted. The reflex composes no repair, resumes nothing, and records the round decline-only, with a reason naming both indexes as disposed.</li>
+  <li>Two findings declare no severity, the first is folded and the second is not disposed. The round's brief and write scope name only the second.</li>
+  <li>Two findings declare no severity and neither is disposed. The round resumes with both, as today.</li>
+  <li>One finding declares <code>blocking</code> and is exempted. It is not repaired.</li>
+  </ul>
+The test asserts that the real crew home is untouched afterwards.</li>
+<li>Run pytest in the foreground with <code>-rA</code> over the new file, <code>tests/test_repair_answers_only_blocking_findings.py</code>, <code>tests/test_an_unmarked_finding_is_reported_not_repaired.py</code>, <code>tests/test_reflex_dispatches_one_repair.py</code>, <code>tests/test_review_findings_compose_a_repair.py</code>, <code>tests/test_one_automatic_repair_round_per_run.py</code>, <code>tests/test_a_folded_finding_widens_its_repair.py</code>, <code>tests/test_dispose_a_finding.py</code>, §13's <code>tests/test_a_decline_only_round_names_what_it_declined.py</code>, and <code>tests/test_every_module_fits_a_worker_window.py</code>. It adds no failure against a base arm run at the dispatched base revision. Both arms' logs go in the run directory, and the manifest's <code>baseline_suite</code> names the base log and its failure ids exactly as pytest prints them.</li>
+<li><code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths, judged by delta against the base blobs, with the log in the run directory.</li>
+</ul>
+<p><strong>Negative control.</strong> Stop the reflex reading dispositions, and the first case must fail on a resumed round. Run it under pytest with the default short summary.</p>
+<p><strong>After it lands.</strong> The next review whose findings a coordinator exempts before promotion should leave its run unresumed.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-arist-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-09-26" data-recommends-skill="" data-resolved-at="2026-10-02T09:27:35+00:00" data-resolved-by="">
@@ -283,6 +312,11 @@
     <h4 class="r-fu-title">Build §13: a decline-only repair round names what it declined</h4>
     <div class="r-fu-body"><p>The repair reflex's decline-only reason claimed no finding cited a repository path while two follow-on findings did. §13 makes the reason state the blocking-only decision and name the sub-floor dimension and cited files.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-review-is-sized-to-its-risk §13</pre>
+    </article>
+<article class="r-fu" data-id="f-arist-015" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-build" data-written-at="2026-10-20" data-recommends-skill="/reckon-build a-review-is-sized-to-its-risk §14" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Leave a disposed finding out of its repair round</h4>
+    <div class="r-fu-body"><p>Filed after the repair reflex resumed a worker four seconds after its coordinator exempted both of the review's findings: the reflex never reads <code>finding_dispositions</code>. §14 builds after §13, which writes the same module.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-review-is-sized-to-its-risk §14</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
