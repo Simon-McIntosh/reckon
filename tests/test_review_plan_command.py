@@ -364,7 +364,9 @@ def test_review_plan_real_dispatch_writes_the_composed_artifacts(project, monkey
         ],
     )
     assert result.exit_code == 0, result.output
-    assert json.loads(result.stdout)["review_run_id"] == "launched-review"
+    answer = json.loads(result.stdout)
+    assert answer["run_id"] == "launched-review"
+    assert "review_run_id" not in answer
     root = plan_review.review_report_directory("sample", "fixture", "unused").parent
     run_directories = sorted(path for path in root.iterdir() if path.is_dir())
     assert len(run_directories) == 1
@@ -402,7 +404,9 @@ def test_review_plan_launch_passes_session_and_local(project, monkeypatch):
         ],
     )
     assert result.exit_code == 0, result.output
-    assert json.loads(result.stdout)["review_run_id"] == "launched-review"
+    answer = json.loads(result.stdout)
+    assert answer["run_id"] == "launched-review"
+    assert "review_run_id" not in answer
     assert calls[0]["session"] == "named-session"
     assert calls[0]["local"] is True
 

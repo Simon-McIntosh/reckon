@@ -108,6 +108,34 @@ def _one_run_to_complete(result: Mapping[str, Any]) -> dict[str, Any]:
     return answer
 
 
+def _covering_review_identity(record: Mapping[str, Any]) -> str:
+    """Key one stored review so two reads of it count once, and two do not.
+
+    The candidates come from different readers — the newest stored review and
+    the newest design review — so the same file is returned twice as two
+    mappings. ``plan_review._plan_review_identity`` keys a review by the run
+    that produced it and is empty for a record naming none, so a record with no
+    review run falls back to the fields that name its content. Two reads of one
+    file then share a key, while two genuinely different reviews differ in at
+    least one of them.
+    """
+    from reckon.crew import plan_review
+
+    named = plan_review._plan_review_identity(record)
+    if named:
+        return named
+    return "|".join(
+        str(record.get(field) or "")
+        for field in (
+            "plan_slug",
+            "plan_version",
+            "rubric",
+            "reviewed_blob_sha",
+            "plan_fingerprint",
+        )
+    )
+
+
 @crew.command(name="gate")
 @click.option("--pause", default=None, metavar="REASON")
 @click.option("--open", "open_gate", is_flag=True)
@@ -2487,26 +2515,26 @@ def _run_review(
                 )
                 _emit({"error": "crew_error", "detail": detail}, pretty)
                 raise click.exceptions.Exit(1)
-            if answer not in plan_review.finding_ids(record):
-                # A finding of the plan's one design review stays owed after a
-                # later content review becomes the newest record, so it is
-                # answered on the design review that raised it.
-                design = plan_review.newest_design_review(project, plan_slug)
-                if design is not None and answer in plan_review.finding_ids(design):
-                    record = design
+            design = plan_review.newest_design_review(project, plan_slug)
+            # A finding of the plan's one design review stays owed after a later
+            # content review becomes the newest record, so it is answered on the
+            # design review that raised it.
+            if (
+                answer not in plan_review.finding_ids(record)
+                and design is not None
+                and answer in plan_review.finding_ids(design)
+            ):
+                record = design
             # Every stored review that raises this finding is a covering review.
             # A finding carried by two of them names an ambiguous answer.
             covering = []
             seen_identities = set()
-            for candidate in (
-                record,
-                plan_review.newest_design_review(project, plan_slug),
-            ):
+            for candidate in (record, design):
                 if candidate is None or answer not in plan_review.finding_ids(
                     candidate
                 ):
                     continue
-                identity = plan_review._plan_review_identity(candidate) or id(candidate)
+                identity = _covering_review_identity(candidate)
                 if identity in seen_identities:
                     continue
                 seen_identities.add(identity)
