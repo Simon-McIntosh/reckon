@@ -1,0 +1,97 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "artifacts": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T120054775988-prompt-hook-loads-plan-html/manifest.md (the reviewed report, read-only)",
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/prompt-hook-loads-plan-html/gate-81afebde.log (cited arm log, read-only)",
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/prompt-hook-loads-plan-html/gate-3280f08cc.log (cited arm log, read-only)",
+    "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/prompt-hook-loads-plan-html/negative-control-parent-25f5db63.log (cited arm log, read-only)",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T121447475991-review-of-prompt-hook-loads-plan-html-f93ef09e7e7b/logs/rerun-81afebde.log (re-run, EXIT=1)",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T121447475991-review-of-prompt-hook-loads-plan-html-f93ef09e7e7b/logs/rerun-3280f08cc.log (re-run, EXIT=1)",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T121447475991-review-of-prompt-hook-loads-plan-html-f93ef09e7e7b/logs/rerun-parent-25f5db63.log (re-run, EXIT=0)"
+  ],
+  "claim_lines": [
+    "CLAIM 1: reproduced: re-ran gate-81afebde.log's own `# command:` from the reviewed run's directory against its base81 scratch tree; it printed 1 failed, 1 passed in 121.71s, EXIT=1, AssertionError: ['reckon._plan_html'], LOADED COUNT 311 and the full CHAIN RECORDS stack (coordinator_obligations.py:966 -> checkout_trust.py:44 -> git_dates.py:10 -> metadata_index.py:41 -> resources.py:28 -> reckon._plan_html) - the run's stated-revision figure.",
+    "CLAIM 2: reproduced: re-ran gate-3280f08cc.log's own command against its child scratch tree at 3280f08ccbb7ec1ce1a847f5556463e70a4412d3; it printed 1 failed, 1 passed in 57.47s, EXIT=1 and LOADED reckon._plan_html (LOADED COUNT 311) - the same failure at the introducing commit the report names.",
+    "CLAIM 3: reproduced: re-ran negative-control-parent-25f5db63.log's own command against its parent scratch tree at 25f5db63adf2bdafe52f202e3009f025406a1efc; it printed 2 passed in 47.19s, EXIT=0, with grep -c reckon._plan_html = 0 and LOADED COUNT 252 - reckon._plan_html absent at the parent, as the report states.",
+    "CLAIM_SUMMARY: agrees: the report's summary line is its manifest.md landing line, which names the import chain link-by-link (coordinator_obligations.py:966 -> checkout_trust.py:44 -> git_dates.py:10 -> metadata_index.py:41 -> resources.py:28 -> reckon._plan_html), the introducing commit 3280f08ccbb7ec1ce1a847f5556463e70a4412d3 and the negative control at its parent 25f5db63adf2bdafe52f202e3009f025406a1efc; the table beneath it is the manifest's artifacts/test_logs block carrying the three arms' own gate logs with their figures - gate-81afebde 1 failed/1 passed EXIT=1, gate-3280f08cc 1 failed/1 passed EXIT=1, negative-control-parent-25f5db63 2 passed EXIT=0 - and the shas and arm verdicts the summary quotes are exactly the shas and figures the table carries; the three re-runs above reproduce every figure."
+  ],
+  "claim_summary": {
+    "detail": "The report is the reviewed run's manifest.md (the run wrote no separate report.md). Its summary line is the manifest's `landing` line, which names the import chain link-by-link ending in reckon._plan_html, the introducing commit 3280f08ccbb7ec1ce1a847f5556463e70a4412d3, and the negative control at its parent 25f5db63adf2bdafe52f202e3009f025406a1efc. The material beneath it is the manifest's artifacts and test_logs lines, which carry the three arms' own gate logs and their figures: gate-81afebde.log (1 failed, 1 passed; EXIT=1; AssertionError: ['reckon._plan_html']), gate-3280f08cc.log (1 failed, 1 passed; EXIT=1, at the introducing commit) and negative-control-parent-25f5db63.log (2 passed; EXIT=0; zero occurrences of reckon._plan_html). Every figure the summary asserts - the introducing commit sha, the parent sha, and the three arm verdicts (stated revision red, introducing commit red, parent green) - is the figure the artifacts table carries, and all three were re-run here identically. The summary quotes no numeric count beyond those arm verdicts; the counts it implies (three arms) match the three logs named beneath it.",
+    "verdict": "agrees"
+  },
+  "claim_summary_line": "CLAIM_SUMMARY: agrees: the report's manifest.md landing line names the chain (coordinator_obligations.py:966 -> checkout_trust.py:44 -> git_dates.py:10 -> metadata_index.py:41 -> resources.py:28 -> reckon._plan_html), introducing commit 3280f08ccbb7ec1ce1a847f5556463e70a4412d3 and parent 25f5db63adf2bdafe52f202e3009f025406a1efc; the artifacts table beneath carries those same three arm logs with 1 failed/1 passed EXIT=1, 1 failed/1 passed EXIT=1 and 2 passed EXIT=0 - the summary's shas and verdicts are the table's",
+  "claim_verdicts": {
+    "CLAIM 1": {
+      "cites": "manifest.md landing line; logs/gate-81afebde.log (its `# command:` header line)",
+      "detail": "Re-ran the log's own command from the reviewed run's directory: `env -C /tmp/reckon-crew-scratch/r-20261020T120054775988-prompt-hook-loads-plan-html/base81/src PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=<same>/base81/src /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q -s tests/test_import_chain_probe.py tests/test_obligations_hook_reads_the_snapshot.py::test_the_prompt_path_loads_no_derivation_module`. It printed `1 failed, 1 passed in 121.71s`, `EXIT=1`, `AssertionError: ['reckon._plan_html']` / `assert {'reckon._plan_html'} == set()`, `LOADED COUNT 311`, `LOADED reckon._plan_html`, and the full CHAIN RECORDS stack naming coordinator_obligations.py:966 -> obligation_snapshot.py:470 -> obligation_snapshot.py:425 -> checkout_trust.py:44 -> git_dates.py:10 -> metadata_index.py:41 -> resources.py:28 -> reckon._plan_html. Identical module set and chain to gate-81afebde.log. Log: logs/rerun-81afebde.log (EXIT=1).",
+      "finding": "rank 1 (headline): at the stated revision 81afebdeac78306914fd32f62850493b26bb9dc0 the prompt-path test fails with exactly ['reckon._plan_html']",
+      "verdict": "reproduced"
+    },
+    "CLAIM 1_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T121447475991-review-of-prompt-hook-loads-plan-html-f93ef09e7e7b/logs/rerun-81afebde.log",
+    "CLAIM 2": {
+      "cites": "manifest.md landing line (introducing commit 3280f08ccbb7ec1ce1a847f5556463e70a4412d3); logs/gate-3280f08cc.log (its `# command:` header line)",
+      "detail": "Re-ran the log's own command from the reviewed run's directory against the child tree: `env -C /tmp/reckon-crew-scratch/r-20261020T120054775988-prompt-hook-loads-plan-html/child/src ... /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest ... tests/test_import_chain_probe.py tests/test_obligations_hook_reads_the_snapshot.py::test_the_prompt_path_loads_no_derivation_module`. It printed `1 failed, 1 passed in 57.47s`, `EXIT=1`, `LOADED COUNT 311`, `LOADED reckon._plan_html` and the same `AssertionError module set ['reckon._plan_html']`, matching gate-3280f08cc.log. Log: logs/rerun-3280f08cc.log (EXIT=1).",
+      "finding": "rank 2 (the introducing commit): the same failure reproduces at 3280f08ccbb7ec1ce1a847f5556463e70a4412d3, the commit the report names as introducing the checkout_trust -> git_dates edge at reckon/checkout_trust.py:44",
+      "verdict": "reproduced"
+    },
+    "CLAIM 2_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T121447475991-review-of-prompt-hook-loads-plan-html-f93ef09e7e7b/logs/rerun-3280f08cc.log",
+    "CLAIM 3": {
+      "cites": "manifest.md landing line (negative control at parent 25f5db63adf2bdafe52f202e3009f025406a1efc); logs/negative-control-parent-25f5db63.log (its `# command:` header line)",
+      "detail": "Re-ran the log's own command from the reviewed run's directory against the parent tree: `env -C /tmp/reckon-crew-scratch/r-20261020T120054775988-prompt-hook-loads-plan-html/parent/src ... /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest ... tests/test_import_chain_probe.py tests/test_obligations_hook_reads_the_snapshot.py::test_the_prompt_path_loads_no_derivation_module`. It printed `2 passed in 47.19s`, `EXIT=0`, `LOADED COUNT 252`, and `grep -c reckon._plan_html` over the log returned 0 while reckon.checkout_trust is still loaded on the path. Identical to negative-control-parent-25f5db63.log. Log: logs/rerun-parent-25f5db63.log (EXIT=0).",
+      "finding": "rank 3 (the negative control): at the introducing commit's parent 25f5db63adf2bdafe52f202e3009f025406a1efc the same capture shows reckon._plan_html absent",
+      "verdict": "reproduced"
+    },
+    "CLAIM 3_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T121447475991-review-of-prompt-hook-loads-plan-html-f93ef09e7e7b/logs/rerun-parent-25f5db63.log"
+  },
+  "claims": [
+    {
+      "cites": "manifest.md landing line; logs/gate-81afebde.log (# command: header)",
+      "finding": "at 81afebdeac78306914fd32f62850493b26bb9dc0 the prompt-path test fails with exactly ['reckon._plan_html']",
+      "rank": "1",
+      "report_figure": "1 failed, 1 passed; EXIT=1; AssertionError: ['reckon._plan_html']; LOADED COUNT 311; LOADED reckon._plan_html; chain 966->470->425->checkout_trust:44->git_dates:10->metadata_index:41->resources:28->_plan_html",
+      "rerun_figure": "identical: 1 failed, 1 passed in 121.71s; EXIT=1; AssertionError: ['reckon._plan_html']; LOADED COUNT 311; LOADED reckon._plan_html; same chain",
+      "verdict": "reproduced"
+    },
+    {
+      "cites": "manifest.md landing line (introducing commit); logs/gate-3280f08cc.log (# command: header)",
+      "finding": "the same failure reproduces at the introducing commit 3280f08ccbb7ec1ce1a847f5556463e70a4412d3 (the checkout_trust -> git_dates edge)",
+      "rank": "2",
+      "report_figure": "1 failed, 1 passed; EXIT=1; LOADED COUNT 311; reckon._plan_html loaded",
+      "rerun_figure": "identical: 1 failed, 1 passed in 57.47s; EXIT=1; LOADED COUNT 311; LOADED reckon._plan_html",
+      "verdict": "reproduced"
+    },
+    {
+      "cites": "manifest.md landing line (negative control at the parent); logs/negative-control-parent-25f5db63.log (# command: header)",
+      "finding": "the parent 25f5db63adf2bdafe52f202e3009f025406a1efc is green, with reckon._plan_html absent from the capture",
+      "rank": "3",
+      "report_figure": "2 passed; EXIT=0; zero occurrences of reckon._plan_html; LOADED COUNT 252",
+      "rerun_figure": "identical: 2 passed in 47.19s; EXIT=0; grep -c reckon._plan_html = 0; LOADED COUNT 252",
+      "verdict": "reproduced"
+    }
+  ],
+  "completed_at": "2026-10-20T12:36:10.229Z",
+  "dispatched_at": "2026-10-20T12:15:42Z",
+  "findings": [],
+  "method": "The reviewed run is read-only: its manifest records commits: none, changed_paths: [] and its scope is 'Read-only investigation. Write nothing in the repository', so reviewed_base_sha == reviewed_head_sha == f93ef09e7e7b19b67cddf65aedd5728760cbc93f and there is no diff to read and no gate suite to count. The run wrote no separate report.md; its report is its manifest.md under its own run directory, whose `landing` line carries the ranked finding (the import chain linking reckon/hooks/coordinator_obligations.py:966 through reckon/checkout_trust.py:44 to reckon._plan_html), the introducing commit 3280f08ccbb7ec1ce1a847f5556463e70a4412d3, and the negative control at its parent 25f5db63adf2bdafe52f202e3009f025406a1efc. The three findings it ranks highest are its three measured arms, each carrying its own gate log in reports/reckon/prompt-hook-loads-plan-html/: the stated-revision failure (gate-81afebde.log), the introducing-commit failure (gate-3280f08cc.log) and the parent negative control (negative-control-parent-25f5db63.log). Each log's own `# command:` header is the command re-run here, from the report's own directory (/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T120054775988-prompt-hook-loads-plan-html), reading the same scratch trees the run left under /tmp/reckon-crew-scratch/r-20261020T120054775988-prompt-hook-loads-plan-html/{base81,child,parent}/src. All three reproduce.",
+  "project": "reckon",
+  "report_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T120054775988-prompt-hook-loads-plan-html/manifest.md",
+  "report_present": true,
+  "review_run_id": "r-20261020T121447475991-review-of-prompt-hook-loads-plan-html-f93ef09e7e7b",
+  "reviewed_base_sha": "f93ef09e7e7b19b67cddf65aedd5728760cbc93f",
+  "reviewed_head_sha": "f93ef09e7e7b19b67cddf65aedd5728760cbc93f",
+  "reviewed_run_id": "r-20261020T120054775988-prompt-hook-loads-plan-html",
+  "rubric": "claims",
+  "scores": {
+    "durability": 18,
+    "evidence": 20,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_delta_fields_omitted": "The reviewed run is read-only and ran no gate suite, so no failure delta exists: added_failure_count and added_failure_ids are carried as 0 and [] only because the delivery checker (reckon crew check --review) refuses a record without them. The six dimension scores are this reviewer's assessment of the reviewed report; the claims verdicts above are the record's substance, and the record carries no suite-delta derived from the reviewed run.",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T12:33:00Z"
+}
