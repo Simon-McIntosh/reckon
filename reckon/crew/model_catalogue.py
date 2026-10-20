@@ -16,7 +16,6 @@ from urllib.request import urlopen
 from reckon import flight
 from reckon._store import write_json_atomically
 from reckon.crew import obligation_snapshot
-from reckon.crew.runs import crew_home
 
 # The probe is one headless request through the lane's own command. Its prompt
 # is one line, and its bound is short because a refused model name fails fast
@@ -26,19 +25,27 @@ PROBE_TIMEOUT_SECONDS = 60.0
 
 
 def _root() -> Path:
-    return crew_home() / "model-catalogue"
+    """The catalogue's own directory, beside the snapshot it publishes.
+
+    Derived from the snapshot path rather than recomputed, so the snapshot,
+    the error record and the refresh lock cannot land in different homes.
+    """
+    return snapshot_path().parent
 
 
 def snapshot_path() -> Path:
-    return _root() / "snapshot.json"
+    """Where the catalogue snapshot lives, owned by the snapshot reader.
+
+    The coordinator hook reads this snapshot without importing this module, so
+    the path is defined once, in :mod:`reckon.crew.obligation_snapshot`, and
+    read from there by both.
+    """
+    return obligation_snapshot.model_catalogue_snapshot_path()
 
 
 def _read_snapshot() -> dict[str, Any]:
-    try:
-        value = json.loads(snapshot_path().read_text())
-    except FileNotFoundError:
-        return {}
-    return value if isinstance(value, dict) else {}
+    """The published snapshot as the reader reads it, or an empty mapping."""
+    return obligation_snapshot.read_model_catalogue_snapshot()
 
 
 def _fetch_list(url: str) -> dict[str, Any]:

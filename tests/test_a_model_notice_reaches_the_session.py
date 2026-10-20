@@ -38,6 +38,13 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     real_store_is_not_a_fixture_target(tmp_path / "home")
     assert model_catalogue.snapshot_path().is_relative_to(tmp_path)
     assert not model_catalogue.snapshot_path().is_relative_to(real_home)
+    # The hook reads the notices through the snapshot reader; the catalogue
+    # reaches the same file through its own delegating reader. Both must name
+    # the same path, so a future divergence in either reddens this gate.
+    assert (
+        coordinator_obligations.snapshot_module().model_catalogue_snapshot_path()
+        == model_catalogue.snapshot_path()
+    )
     return tmp_path
 
 
@@ -64,7 +71,13 @@ def _served(tmp_path: Path) -> Path:
 
 
 def _config(tmp_path: Path) -> dict:
-    """Lanes covering each probe branch: opt-in alone, served file, no opt-in."""
+    """Lanes covering each probe branch: opt-in alone, served file, no opt-in.
+
+    Every lane's command is a path that cannot exist, so a probe no test
+    stubbed fails instantly as an unrunnable command instead of spawning the
+    real CLI. Only the case about probing means to probe, and it passes its own
+    ``probe_run``.
+    """
     return {
         "model_catalogue": {
             "list_url": "https://example.invalid/models",
@@ -77,7 +90,7 @@ def _config(tmp_path: Path) -> dict:
         },
         "lanes": {
             "claude": {
-                "command": "claude",
+                "command": str(tmp_path / "no-lane-command"),
                 "probe_new_models": True,
                 "models": {
                     "sonnet": {
@@ -87,7 +100,7 @@ def _config(tmp_path: Path) -> dict:
                 },
             },
             "codex": {
-                "command": "codex",
+                "command": str(tmp_path / "no-lane-command"),
                 "probe_new_models": True,
                 "served_models": str(_served(tmp_path)),
                 "models": {
@@ -95,7 +108,7 @@ def _config(tmp_path: Path) -> dict:
                 },
             },
             "other": {
-                "command": "gemini",
+                "command": str(tmp_path / "no-lane-command"),
                 "models": {"gem": {"model": "gem-1", "catalog_id": "google/gem-1"}},
             },
         },
@@ -212,6 +225,10 @@ def test_two_producers_sweeping_at_once_fetch_once(
     model_catalogue.check_model_catalogue(PROJECT, config=config, fetch=slow_fetch)
     release.set()
     worker.join(10)
+    # The worker must be finished before the fixture home is torn down: a
+    # thread still running when the temporary home is restored would resolve
+    # the real crew home on its next write.
+    assert not worker.is_alive(), "the first producer did not finish"
     assert len(calls) == 1, calls
 
 
