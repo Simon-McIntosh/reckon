@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/reports.py:1754 _review_record_status_findings (docstring repointed)",
+    "reckon/crew/reports.py:2330 audit_manifest (comment repointed)",
+    "reckon/crew/promotion_scope.py:57 _manifest_cites_a_commit (docstring repointed)",
+    "reckon/crew/recovery_classification.py:703 emitting `reckon crew repair --run <id> --status complete`, the string the recovery test now pins"
+  ],
+  "completed_at": "2026-10-20T07:18:58.241Z",
+  "dispatched_at": "2026-10-20T07:04:48Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_families_fold.py",
+      "line": 737,
+      "severity": "follow-on",
+      "text": "follow-on: `assert retired <= _BASE_REPAIR_CHECK_LEAVES` (`:737`) and `assert {(\"repair\",), (\"check\",)}.isdisjoint(_BASE_REPAIR_CHECK_LEAVES)` (`:738`) compare the test's own REPAIR_AND_CHECK_NAMES dict against the test's own frozen census set, so neither can redden on any production regression \u2014 they guard the fixture against tampering, not the code, and should not be counted as durability coverage for the fold; the only production guard in the helper is the bound at `:740`."
+    },
+    {
+      "file": "tests/test_crew_families_fold.py",
+      "line": "526-528",
+      "severity": "follow-on",
+      "text": "follow-on: the comment on _BASE_REPAIR_CHECK_LEAVES claims \"A path census fixes the reference surface without baking in a total: an unrelated new leaf increases the live tree but not this base\", but the bound at `:739-740` is `len(leaves) <= |base| - |retired| + 2` = 42, exactly the live census I read at head, so an unrelated new visible crew leaf raises the live count to 43 and DOES redden the test; the census enumerates paths, it does not make the guard tolerant of growth, and the comment reads as though it does."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit from 1e46d492d; e6787e7f3 is a single commit changing the two recovery test cases to the folded command, replacing the tautological `len(visible_family) == len(REPAIR_AND_CHECK_NAMES) - 2` with an independent bound and a negative control, and repointing three manifest-check prose references.",
+    "done_when": "the fence's gate is the 22-file pytest command; repair-head-gate.log records 261 passed / 1 failed at e6787e7f3 and base-gate.log 251 passed / 1 failed at e65cc2eab with the same single failure id, so zero added; the leaf clause the prior review found unguarded is restored as `len(leaves) <= bound` at tests/test_crew_families_fold.py:740 with a cold census of 44-4+2=42 against a live 42.",
+    "goal": "the reviewed node's goal is to fold repair-status/repair-review behind `crew repair --status|--review` and check-manifest/check-review behind `crew check --manifest|--review`, tombstone four names and move every caller; this incremental commit resolves the one caller group the prior review held blocking \u2014 both cases in tests/test_run_state_reads_what_the_worker_reached.py now use `crew repair --run --status` \u2014 and repoints the last three stale prose references.",
+    "manifest": "read; it reads status complete, records base-gate.log/head-gate.log/final-gate.log/repair-head-gate.log, carries baseline_suite and after_suite as JSON with real log paths, records the negative control, and answers each of the four prior findings under the numbered keys.",
+    "write_paths": "read the run manifest's 30 declared paths against `git show --stat e6787e7f3`; the commit changes 4 paths and none falls outside the grant."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_families_fold.py:740 reddens if a visible crew leaf is added beyond the base:\"the negative control at :747-750 injects `extra-fixture` into crew.commands and the helper raises `visible crew leaves 43 exceed 42`, which I reproduced: the four named tests pass and the guard fires on the injected leaf; :737-738 are fixture-internal and guard nothing in production.",
+    "evidence": "repair-head-gate.log (header revision e6787e7f3, `1 failed, 261 passed`, EXIT=1) and base-gate.log (header revision e65cc2eab, `1 failed, 251 passed`, EXIT=1) carry the identical single failure id tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window, so added_failure_count is 0, and the done_when's leaf clause is now measured by the bound at tests/test_crew_families_fold.py:740 (live census 42 == bound 42, read from the tree at head).",
+    "fit": "tests/test_crew_families_fold.py:731 follows the file's existing `_leaf_commands` census idiom at :474 and the family-set style used by the sibling budget/watch tests, and adds no plan label, issue number or version suffix in any name or comment.",
+    "goal_fidelity": "the incremental commit does what its message states: tests/test_run_state_reads_what_the_worker_reached.py:198 now invokes `crew repair --run <id> --status complete` instead of the retired `repair-status` and :170 asserts the folded form in next_action, closing the prior blocking finding \u2014 `grep -rn 'check-manifest|repair-status|repair-review|check-review' reckon/` returns 0 live hits outside reckon/crew/tombstones.py (positive control: 4 hits there).",
+    "reuse": "the commit adds no production capability \u2014 promotion_scope.py and reports.py changes are comment-text only (`check-manifest` \u2192 `crew check --manifest` at reports.py:1760, :2390 and promotion_scope.py:77) and the tests reuse the existing `_leaf_commands at tests/test_crew_families_fold.py:474; a search over reckon/ for a command-census helper found none, the helper is the file's own.",
+    "scope_discipline": "`git show --stat e6787e7f3` touches exactly reckon/crew/promotion_scope.py, reckon/crew/reports.py, tests/test_crew_families_fold.py and tests/test_run_state_reads_what_the_worker_reached.py, all four of which are in the run manifest's declared write paths and are exactly the four paths this review was scoped to."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is to fold repair-status/repair-review behind `crew repair --status|--review` and check-manifest/check-review behind `crew check --manifest|--review`, tombstoning four names and moving every caller; this incremental commit resolves the one caller group the prior review held blocking \u2014 tests/test_run_state_reads_what_the_worker_reached.py:198 now invokes `crew repair --run <id> --status complete` and :170 asserts the folded form \u2014 and repoints the last three stale prose references.\nVERDICT done_when: the fence's gate is the 22-file pytest command; repair-head-gate.log (header revision e6787e7f3, `1 failed, 261 passed`, EXIT=1) and base-gate.log (header revision e65cc2eab, `1 failed, 251 passed`, EXIT=1) carry the identical single failure id tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window, so added_failure_count is 0; the done_when's leaf clause, unguarded at the prior head, is restored as `len(leaves) <= bound` at tests/test_crew_families_fold.py:740 against a cold base census of 42 and a live 42.\nVERDICT write_paths: `git show --stat e6787e7f3` changes exactly reckon/crew/promotion_scope.py, reckon/crew/reports.py, tests/test_crew_families_fold.py and tests/test_run_state_reads_what_the_worker_reached.py, all inside the run manifest's declared write paths and exactly the four paths this review was scoped to.\nVERDICT manifest: read; it reads status complete, records base-gate.log/head-gate.log/final-gate.log/repair-head-gate.log, carries baseline_suite and after_suite as JSON with real log paths, records the negative control, and answers each of the four prior findings under numbered keys.\nVERDICT diff: read commit by commit from 1e46d492d; e6787e7f3 is a single commit moving the two recovery test cases to the folded command, replacing the tautological family-count assertion with an independent census bound plus a negative control, and repointing three manifest-check prose references.\nCALL_SITES: reckon/crew/reports.py:1754 _review_record_status_findings, reckon/crew/reports.py:2330 audit_manifest, reckon/crew/promotion_scope.py:57 _manifest_cites_a_commit, reckon/crew/recovery_classification.py:703\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_run_state_reads_what_the_worker_reached.py:198 invokes `crew repair --run <id> --status complete`, closing the prior blocking finding, and `grep -rn 'check-manifest|repair-status|repair-review|check-review' reckon/` returns 0 live hits outside reckon/crew/tombstones.py (positive control: 4 there).\nSCORE evidence: 18\nJUSTIFICATION evidence: repair-head-gate.log (revision e6787e7f3, `1 failed, 261 passed`, EXIT=1) and base-gate.log (revision e65cc2eab, `1 failed, 251 passed`, EXIT=1) share the one base failure id, giving 0 added, and the leaf clause is measured at tests/test_crew_families_fold.py:740.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git show --stat e6787e7f3` touches only the four declared paths, all inside the run manifest's write grant.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_crew_families_fold.py:740 reddens on an added leaf and its negative control at :747-750 injects `extra-fixture` so the guard fires (`visible crew leaves 43 exceed 42`); :737-738 guard only the fixture.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_crew_families_fold.py:731 follows the file's existing `_leaf_commands` census idiom at :474 and adds no plan label or version suffix in any name or comment.\nSCORE reuse: 20\nJUSTIFICATION reuse: the commit adds no production capability \u2014 the promotion_scope.py and reports.py changes are comment-text only \u2014 and the tests reuse the file's own `_leaf_commands` at tests/test_crew_families_fold.py:474.\nFINDING tests/test_crew_families_fold.py:737 follow-on: `assert retired <= _BASE_REPAIR_CHECK_LEAVES` and `:738` compare the test's own REPAIR_AND_CHECK_NAMES against its own frozen census, so neither can redden on a production regression; they guard the fixture, not the code, and do not count as durability coverage.\nFINDING tests/test_crew_families_fold.py:526-528 follow-on: the comment claims the path census avoids baking in a total so an unrelated new leaf does not redden the test, but the bound at :739-740 is exactly the live census (42), so an unrelated new visible leaf does redden it and the comment misdescribes the guard.\n",
+  "review_run_id": "r-20261020T070401628636-review-of-cso-repair-and-check-families-fold-e6787e7f3d96",
+  "reviewed_base_sha": "1e46d492d27785d6dc881024e07851f32ddb564d",
+  "reviewed_head_sha": "e6787e7f3d966f3dd95b948535d2e8e563432a20",
+  "reviewed_run_id": "r-20261020T055723778677-cso-repair-and-check-families-fold",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T07:26:00.000000+00:00",
+  "total": 112
+}
