@@ -97,22 +97,44 @@ def admit_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return repository
 
 
-def _write_lane(path: Path, *, worker_slots: float) -> None:
-    """Publish the lane's allowance for this session, as the router would."""
-    path.write_text(
-        json.dumps(
-            {
-                "headroom": 4,
-                "admission": {
-                    "worker_slots": worker_slots,
-                    "observed_seconds": 900,
-                    "sessions": {SESSION: {"worker_slots": worker_slots}},
-                    "verdict": "open",
-                },
-            }
-        ),
-        encoding="utf-8",
-    )
+def _write_lane(path: Path, payload: dict[str, Any]) -> None:
+    """Publish one lane document, as the router would."""
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _session_lane(worker_slots: float) -> dict[str, Any]:
+    """A lane that publishes this session's own share of the worker slots."""
+    return {
+        "headroom": 4,
+        "admission": {
+            "worker_slots": worker_slots,
+            "observed_seconds": 900,
+            "sessions": {SESSION: {"worker_slots": worker_slots}},
+            "verdict": "open",
+        },
+    }
+
+
+def _new_session_lane(worker_slots: float) -> dict[str, Any]:
+    """A lane whose share for this session comes from another published figure.
+
+    The session is not listed in the admission block's ``sessions`` map, so the
+    router's own preference order reads the ``new_session_worker_slots`` figure
+    instead — a different field with a different source label. A pass that
+    echoed the figure it published last would record the name of the session it
+    had never seen, so the two lanes together show the read follows the
+    document rather than the test's own input.
+    """
+    return {
+        "headroom": 4,
+        "admission": {
+            "worker_slots": worker_slots,
+            "new_session_worker_slots": worker_slots,
+            "observed_seconds": 900,
+            "sessions": {"some-other-session": {"worker_slots": 1}},
+            "verdict": "open",
+        },
+    }
 
 
 def _config_with_lane(lane_document: Path) -> tuple[dict[str, Any], Any]:
@@ -197,27 +219,23 @@ def _drive(
     lane_document: Path,
     resolve: Any,
     launcher: Any,
-    slots: list[float | None],
-) -> list[float]:
-    """Drive the loop for ``len(slots)`` passes, publishing each pass's allowance.
+    lanes: list[dict[str, Any]],
+) -> list[int]:
+    """Drive the loop for ``len(lanes)`` passes, publishing each pass's lane.
 
     ``admit_once`` is wrapped so the loop is driven with a stub launch and a
     fixed config, and stops after the last pass the case asks for. The append
     under test stays inside ``admit_until_stopped``.
     """
-    calls: list[float] = []
+    calls: list[int] = []
     real_admit_once = queue_admission.admit_once
 
     def wrapper(*, lane: str = "") -> dict[str, Any]:
         number = len(calls) + 1
-        if number > len(slots):
+        if number > len(lanes):
             raise KeyboardInterrupt
-        slots_for_pass = slots[number - 1]
         calls.append(number)
-        if slots_for_pass is None:
-            lane_document.unlink(missing_ok=True)
-        else:
-            _write_lane(lane_document, worker_slots=slots_for_pass)
+        _write_lane(lane_document, lanes[number - 1])
         return real_admit_once(lane=lane, config_for=resolve, launcher=launcher)
 
     monkeypatch.setattr(queue_admission, "admit_once", wrapper)
@@ -239,7 +257,7 @@ def test_a_held_then_launched_pass_writes_one_line_each(
         lane_document=lane,
         resolve=resolve,
         launcher=_launcher(recorded),
-        slots=[0.0, 2.0],
+        lanes=[_session_lane(0.0), _new_session_lane(3.0)],
     )
 
     lines = _read_verdict_lines(admit_repo)
@@ -256,8 +274,11 @@ def test_a_held_then_launched_pass_writes_one_line_each(
     launched_pointer = launched["pointers"][0]
     assert launched_pointer["run_id"] == RUN_ID
     assert launched_pointer["verdict"] == "launched"
-    assert launched_pointer["allowance"] == 2
-    assert launched_pointer["allowance_source"] == "the session's own worker slots"
+    # The second pass publishes its figure from another field, so the allowance
+    # and its source both change: a pass that echoed what it read last, or the
+    # figure the test wrote, would report neither of these.
+    assert launched_pointer["allowance"] == 3
+    assert launched_pointer["allowance_source"] == "the new-session worker slots"
     assert recorded, "the stub launch was reached"
     still_queued = [
         str(pointer.get("run_id"))
@@ -279,7 +300,7 @@ def test_a_refused_launch_records_the_backoff_hold_with_its_retry_at(
         lane_document=lane,
         resolve=resolve,
         launcher=_failing_launcher,
-        slots=[2.0, 2.0],
+        lanes=[_session_lane(2.0), _session_lane(2.0)],
     )
 
     lines = _read_verdict_lines(admit_repo)
@@ -305,7 +326,7 @@ def test_a_pass_with_no_queued_pointer_writes_no_line(
         lane_document=lane,
         resolve=resolve,
         launcher=_launcher([]),
-        slots=[2.0],
+        lanes=[_session_lane(2.0)],
     )
 
     assert _read_verdict_lines(admit_repo) == []
@@ -326,7 +347,7 @@ def test_the_log_is_trimmed_within_its_size_bound(
         lane_document=lane,
         resolve=resolve,
         launcher=_launcher([]),
-        slots=[0.0] * passes,
+        lanes=[_session_lane(0.0)] * passes,
     )
 
     path = _verdict_log()

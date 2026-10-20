@@ -16,7 +16,6 @@ from __future__ import annotations
 import contextlib
 import copy
 import fcntl
-import json
 import os
 import sys
 import time
@@ -907,46 +906,32 @@ def _trim_log_to_bound(path: Path, *, max_bytes: int) -> None:
             temporary.unlink()
 
 
-def _append_bounded_log_line(
-    path: Path, row: Mapping[str, Any], *, max_bytes: int
-) -> None:
-    """Append one JSON line to a bounded log under the crew home, best effort.
-
-    The append never fails the pass it records, and the trim keeps the file
-    within its bound whatever the service's uptime.
-    """
-    try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        data = (json.dumps(row, separators=(",", ":"), default=str) + "\n").encode()
-        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
-        try:
-            os.write(descriptor, data)
-        finally:
-            os.close(descriptor)
-    except Exception:  # noqa: BLE001 - a pass never fails on its own record
-        return
-    _trim_log_to_bound(path, max_bytes=max_bytes)
-
-
 def _record_pass_verdicts(
     result: Mapping[str, Any], *, lane: str, code_stamp: str
 ) -> None:
     """Write one log line for a pass whose lane had a queued pointer.
 
     A pass that examined no queued pointer writes nothing: an idle pass is the
-    absence of a line, not a line saying so.
+    absence of a line, not a line saying so. The line goes through the shared
+    crew-home log writer, so this log and the picker's timings are written the
+    same way, and the trim that follows is what keeps it within its bound.
     """
     verdicts = result.get("verdicts") or []
     if not verdicts:
         return
-    _append_bounded_log_line(
-        runs.crew_home() / ADMISSION_VERDICT_LOG,
+    from reckon.crew.picker import _append_crew_log_line
+
+    _append_crew_log_line(
+        ADMISSION_VERDICT_LOG,
         {
             "at": _utc_now(),
             "lane": lane,
             "code_stamp": code_stamp,
             "pointers": list(verdicts),
         },
+    )
+    _trim_log_to_bound(
+        runs.crew_home() / ADMISSION_VERDICT_LOG,
         max_bytes=ADMISSION_VERDICT_LOG_MAX_BYTES,
     )
 
