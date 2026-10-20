@@ -49,4 +49,28 @@
     <code>negative-control-complete.log</code>. The mutation was removed
     before the implementation commit.
   </p>
+  <p>
+    An independent review found two cases the first landing did not settle.
+    A 404 or network rejection from the summary now shows a visible error
+    with a retry button and no count cards. Retry and a later
+    <code>reckon-fleet</code> rollup event can each replace the error with a
+    valid summary. A project whose summary omits
+    <code>plans_count</code> keeps its place in the header and gets its own
+    <em>plan count pending</em> row; the browser fixture reports two shown
+    projects and renders two project rows without inventing a zero count.
+  </p>
+  <p>
+    Both review cases failed before repair in
+    <code>review-reproduction.log</code>: no error state after the failed
+    request, and one row beneath a two-project header. At commit
+    <code>ac55c2a45004a08389768f1c29ee963cad3ada70</code>, the same
+    nine-file SPA gate reports <strong>41 passed, 4 failed, EXIT=1</strong>
+    in <code>review-spa-gate.log</code>. The four failure IDs are exactly
+    the inherited visibility browser cases named above. Removing the
+    failed-request handler makes the new error assertion fail
+    (<strong>1 failed, EXIT=1</strong> in
+    <code>review-negative-error.log</code>); restoring the home discovery
+    trigger still fails both request-order cases (<strong>2 failed,
+    EXIT=1</strong> in <code>review-negative-discovery.log</code>).
+  </p>
 </section>
