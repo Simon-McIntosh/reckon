@@ -17,8 +17,10 @@ and no other, which is what proves the parity test bites.
 
 from __future__ import annotations
 
+import ast
 import importlib
 import json
+import shlex
 from pathlib import Path
 
 import pytest
@@ -340,32 +342,152 @@ def test_an_option_the_form_cannot_carry_renders_no_form() -> None:
     assert obligations_module.action_form("reckon crew stop --run") is None
 
 
-def test_two_commits_reach_the_verb_as_a_list(config_home) -> None:
-    """The action passes a list of commits, the way the CLI passes two flags."""
-    cli = _cli_answer(
-        [
-            "complete",
-            "--run",
-            "run-missing",
-            "--gate",
-            "not-run",
-            "--commit",
-            "1111111",
-            "--commit",
-            "2222222",
-            "--dry-run",
-        ]
+def test_two_commits_reach_the_promotion_as_a_list(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The two commits an action passes are the two its CLI form presents.
+
+    The case is built on a run that exists in a temporary project, so the
+    commits reach the promotion's own checks: a run that is not there refuses
+    before any citation is read, and the same refusal would answer for two
+    commits, for one and for none. The commits are deliberately identifiers
+    that resolve to nothing, because that is what makes them visible — the
+    boundary check reports each one it was presented, so the answer states
+    which commits arrived.
+    """
+    run_id = "run-with-commits"
+    _seed_a_run(tmp_path, monkeypatch, run_id)
+    first, second = "1" * 40, "2" * 40
+    arguments = [
+        "complete",
+        "--run",
+        run_id,
+        "--gate",
+        "passed",
+        "--outcome",
+        "the run produced an answer",
+        "--dry-run",
+    ]
+    common = {
+        "action": "complete",
+        "run_id": run_id,
+        "gate": "passed",
+        "outcome": "the run produced an answer",
+        "dry_run": True,
+    }
+
+    both = mcp_module._crew(**common, commits=[first, second])
+    cli_both = _cli_answer([*arguments, "--commit", first, "--commit", second])
+
+    assert both == cli_both, (
+        "two commits reached the promotion differently through the two surfaces\n"
+        f"  cli : {cli_both}\n"
+        f"  tool: {both}"
     )
-    tool = mcp_module._crew(
-        action="complete",
-        run_id="run-missing",
-        gate="not-run",
-        commits=["1111111", "2222222"],
-        dry_run=True,
+    presented = " ".join(str(refusal) for refusal in both.get("refusals") or [])
+    assert first in presented and second in presented, (
+        "the answer did not present both commits the action passed: "
+        f"{both.get('refusals')}"
     )
 
-    assert tool == cli, (
-        "two commits reached the verb differently through the two surfaces\n"
-        f"  cli : {cli}\n"
-        f"  tool: {tool}"
+    one = mcp_module._crew(**common, commits=[first])
+    none = mcp_module._crew(**common)
+
+    assert one != both, "one commit and two commits answered identically"
+    assert second not in " ".join(str(r) for r in one.get("refusals") or []), (
+        "the second commit appeared in an answer that was not given it"
     )
+    assert none != both, "no commits and two commits answered identically"
+
+
+def test_action_form_renders_values_as_literals() -> None:
+    """A value carrying quotes or a backslash still renders a runnable call."""
+    from reckon.crew import obligations as obligations_module
+
+    for value in ('say "hi" now', "it's done", "a\\b", "tab\there"):
+        form = obligations_module.action_form(
+            "reckon crew complete --run run-x --gate not-run "
+            f"--outcome {shlex.quote(value)}"
+        )
+        assert form is not None
+        parsed = ast.parse(form, mode="eval")
+        assert isinstance(parsed.body, ast.Call)
+        passed = {
+            keyword.arg: keyword.value.value
+            for keyword in parsed.body.keywords
+            if isinstance(keyword.value, ast.Constant)
+        }
+        assert passed["outcome"] == value, (
+            f"{value!r} did not survive the render: {form}"
+        )
+
+
+def test_a_repeated_option_of_values_with_quotes_still_parses() -> None:
+    """A list-valued parameter escapes each value it carries."""
+    from reckon.crew import obligations as obligations_module
+
+    first, second = 'a"b.py', "c\\d.py"
+    form = obligations_module.action_form(
+        "reckon crew widen --run run-x "
+        f"--write-path {shlex.quote(first)} --write-path {shlex.quote(second)}"
+    )
+
+    assert form is not None
+    parsed = ast.parse(form, mode="eval")
+    assert isinstance(parsed.body, ast.Call)
+    paths = next(
+        keyword.value
+        for keyword in parsed.body.keywords
+        if keyword.arg == "write_paths"
+    )
+    assert isinstance(paths, ast.List)
+    assert [element.value for element in paths.elts] == [first, second]
+
+
+def _seed_a_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, run_id: str) -> Path:
+    """One live run in a temporary project, with a repository behind it.
+
+    The pointer names a repository the promotion can resolve commits against,
+    so a commit the action presents is judged rather than dropped for want of
+    a tree.
+    """
+    from reckon.crew import runs
+    from tests.helpers.git import git as _git
+
+    home = tmp_path / "config"
+    (home / "crew" / "live").mkdir(parents=True)
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    repo = tmp_path / "repo"
+    (repo / "docs" / "state" / PROJECT).mkdir(parents=True)
+    (repo / "seed.txt").write_text("seed\n", encoding="utf-8")
+    for arguments in (
+        ("init", "-q", "-b", "main"),
+        ("config", "user.email", "worker@example.invalid"),
+        ("config", "user.name", "Worker"),
+        ("add", "seed.txt"),
+        ("commit", "-q", "-m", "test: seed a promotion fixture"),
+    ):
+        _git(repo, *arguments)
+    base = _git(repo, "rev-parse", "HEAD")
+    (home / "mounts.json").write_text(
+        json.dumps({PROJECT: str(repo / "docs")}), encoding="utf-8"
+    )
+    runs._write_json(
+        runs.pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": PROJECT,
+            "session": "session-commits",
+            "process_alive": False,
+            "worktree": str(repo),
+            "base_sha": base,
+            "node": {
+                "id": "node-commits",
+                "plan": "fixture-plan",
+                "section": "fixture-section",
+                "time_budget": "20m",
+                "write_paths": ["seed.txt"],
+            },
+        },
+    )
+    return repo

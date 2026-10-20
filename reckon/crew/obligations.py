@@ -197,6 +197,10 @@ def action_form(command: str) -> str | None:
     whole command unrenderable. Half a command is worse than a printed one: it
     reads as callable and is refused, or is silently called without the
     argument that the command it came from carried.
+
+    Each value is written as a literal, escaped by ``json.dumps`` rather than
+    wrapped in quotes, so a reason carrying a quotation mark or a path carrying
+    a backslash renders a form the caller can still run.
     """
     tokens = shlex.split(command)
     if len(tokens) < 3 or tokens[0] != "reckon" or tokens[1] != "crew":
@@ -233,7 +237,7 @@ def action_form(command: str) -> str | None:
             order.append((parameter, False))
         values[parameter].append(value)
         index += 1
-    rendered = [f'action="{verb}"']
+    rendered = [f"action={json.dumps(verb)}"]
     for parameter, is_flag in order:
         if is_flag:
             rendered.append(f"{parameter}=True")
@@ -241,10 +245,10 @@ def action_form(command: str) -> str | None:
         found = values[parameter]
         if parameter in _ACTION_LIST_PARAM.values():
             rendered.append(
-                f"{parameter}=[" + ", ".join(f'"{one}"' for one in found) + "]"
+                f"{parameter}=[" + ", ".join(json.dumps(one) for one in found) + "]"
             )
         elif len(found) == 1:
-            rendered.append(f'{parameter}="{found[0]}"')
+            rendered.append(f"{parameter}={json.dumps(found[0])}")
         else:
             # A scalar repeated cannot be one call: the last would win and the
             # earlier values would vanish from the offered form.
