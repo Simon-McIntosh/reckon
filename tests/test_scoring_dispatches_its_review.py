@@ -15,6 +15,7 @@ would refuse a manual dispatch still refuses the automatic one.
 from __future__ import annotations
 
 import importlib
+import json
 import os
 import subprocess
 import time
@@ -25,7 +26,7 @@ import pytest
 from reckon import crew
 from reckon.crew import recovery, runs
 from reckon.crew import review as review_module
-from reckon.crew.dispatch import WATCHER_LOAD_BOUND_SECONDS
+from reckon.crew.dispatch import WATCHER_LOAD_BOUND_SECONDS, watch_lock_path
 
 # The reflex is gated by the watch admission, so these tests arm the producer
 # the gate reads rather than accepting the suite-wide waiver, which would let
@@ -162,6 +163,44 @@ def _wait_for_stopped_producer() -> None:
     pytest.fail("watch producer did not release its seat")
 
 
+def _seat_names_the_project(project: str) -> bool:
+    """Whether the project's watch seat record names the project it belongs to.
+
+    The producer rewrites this registration in place, so a read landing in its
+    truncate-to-write window sees no project. That is a transient read of a
+    live seat, not a seat owned by another project.
+    """
+    path = watch_lock_path(project)
+    try:
+        record = json.loads(path.read_text(encoding="utf-8") or "{}")
+    except (OSError, ValueError):
+        return False
+    return isinstance(record, dict) and record.get("project") == project
+
+
+def _release_armed_producer() -> None:
+    """Stop the producer a refused dispatch armed, once its seat is readable.
+
+    Arming happens before the delivery admission refuses a session that cannot
+    dispatch under it, so a refusal leaves a live producer behind. ``unwatch``
+    will not signal a seat whose registration names no project, and the producer
+    rewrites that registration in place at startup: releasing in the
+    truncate-to-write window refuses on a transient state rather than on the
+    refusal under test. Wait for the settled record, then release.
+    """
+    deadline = time.monotonic() + WATCHER_LOAD_BOUND_SECONDS
+    while time.monotonic() < deadline:
+        if not crew.watch_state("sample")["watcher_live"]:
+            return
+        if _seat_names_the_project("sample"):
+            recovery.unwatch("sample")
+            break
+        time.sleep(0.05)
+    else:
+        pytest.fail("the watch seat never settled to name the project it belongs to")
+    _wait_for_stopped_producer()
+
+
 def _scoring_pointer(config_home: Path, repo: Path, run_id: str) -> dict:
     manifest = config_home / "manifests" / (run_id + ".md")
     manifest.parent.mkdir(parents=True, exist_ok=True)
@@ -278,7 +317,5 @@ def test_an_unattached_session_refuses_the_automatic_dispatch_too(
             for row in runs.list_live(project="sample")
         )
     finally:
-        if crew.watch_state("sample")["watcher_live"]:
-            recovery.unwatch("sample")
-            _wait_for_stopped_producer()
+        _release_armed_producer()
 
