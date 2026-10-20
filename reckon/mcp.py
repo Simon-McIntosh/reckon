@@ -276,6 +276,13 @@ _RECONNECT_REMEDY = "reconnect the reckon MCP server: /mcp → reckon → reconn
 #: running an answer on the current code.
 _REGISTERED_TOOL_PARAMS: dict[str, tuple[str, ...]] = {}
 
+#: The subset of each tool's parameters that carried no default when it was
+#: registered. The guard hands these to the current code's probe with the names
+#: above, so the child decides whether a change is compatible — an added
+#: optional parameter needs no reconnect, but a registered one removed or made
+#: required does, and only the child's rule can tell the two apart.
+_REGISTERED_TOOL_REQUIRED: dict[str, tuple[str, ...]] = {}
+
 #: How long the persistent child gets to answer one request. It runs a whole
 #: tool, so it is generous; a request the child runs out of is one it made no
 #: answer to, and the caller then falls back or keeps its own result.
@@ -323,6 +330,62 @@ def _probe_signature_changed(name: str, probe: Mapping[str, Any]) -> bool:
     if not isinstance(reported, list) or not reported:
         return False
     return tuple(sorted(str(item) for item in reported)) != tuple(sorted(registered))
+
+
+def _registered_probe_payload() -> dict[str, dict[str, bool]]:
+    """This image's registered tools, each parameter with whether it is required.
+
+    Sent with the readiness probe so the child, which holds the tree's current
+    rule, decides whether a change is compatible. A later change to that rule
+    then reaches every running server without one.
+    """
+
+    return {
+        name: {
+            param: param in _REGISTERED_TOOL_REQUIRED.get(name, ()) for param in params
+        }
+        for name, params in _REGISTERED_TOOL_PARAMS.items()
+    }
+
+
+def _probe_incompatible(name: str, probe: Mapping[str, Any]) -> bool:
+    """Whether the child reports a change a reconnect is owed for.
+
+    The child's verdict governs whenever the probe carries one: it holds the
+    tree's current rule, so a change there is answered without the parent
+    re-deciding. A probe with no verdict — one from a server started before the
+    verdict existed — falls back to comparing the parameter names, which treats
+    any difference, an added parameter included, as a refusal.
+    """
+    verdicts = probe.get("compatible")
+    if isinstance(verdicts, Mapping) and name in verdicts:
+        return not verdicts[name]
+    return _probe_signature_changed(name, probe)
+
+
+def _schema_note(name: str, probe: Mapping[str, Any]) -> str | None:
+    """The parameters the current code accepts that this client cannot send.
+
+    A compatible change still leaves the client holding a schema that predates
+    it, so the parameters it cannot name until it reconnects are reported with
+    the answer. None when every parameter the current code takes is one the
+    client already holds.
+    """
+    registered = set(_REGISTERED_TOOL_PARAMS.get(name) or ())
+    current = probe.get("params")
+    if not isinstance(current, Mapping):
+        return None
+    accepted = current.get(name)
+    if not isinstance(accepted, list):
+        return None
+    extra = sorted(str(item) for item in accepted if str(item) not in registered)
+    if not extra:
+        return None
+    return (
+        "the current code also accepts "
+        + ", ".join(extra)
+        + "; this client cannot send them until it reconnects."
+    )
 
 
 #: The code of the refusal this guard composes, and of no tool's own answer.
@@ -465,10 +528,21 @@ def _write_may_have_landed(
     }
 
 
-def _served_on_current_code(answer: Mapping[str, Any], stamp: str) -> dict[str, Any]:
-    """Mark an answer as the current code's, naming the stamp that served it."""
+def _served_on_current_code(
+    answer: Mapping[str, Any], stamp: str, *, schema_note: str | None = None
+) -> dict[str, Any]:
+    """Mark an answer as the current code's, naming the stamp that served it.
 
-    return {**answer, SERVED_BY_CODE_STAMP: stamp}
+    A compatible signature change adds ``schema_note``, which names any
+    parameter the current code accepts that this client cannot send until it
+    reconnects. The answer is still served, because every call the client can
+    make is one the current code takes.
+    """
+
+    marked = {**answer, SERVED_BY_CODE_STAMP: stamp}
+    if schema_note:
+        marked["schema_note"] = schema_note
+    return marked
 
 
 #: Tools whose calls this session has started answering on the current code. A
@@ -511,7 +585,9 @@ def _answer_from_child(
     if answer is None:
         return None
     _SERVE_ON_CURRENT_CODE.add(name)
-    return _served_on_current_code(answer, state.disk_stamp)
+    return _served_on_current_code(
+        answer, state.disk_stamp, schema_note=_schema_note(name, probe)
+    )
 
 
 def _refuse_when_stale(tool: Callable[..., Any], *, name: str) -> Callable[..., Any]:
@@ -527,19 +603,25 @@ def _refuse_when_stale(tool: Callable[..., Any], *, name: str) -> Callable[..., 
     the child is warm, a call of a tool that has fallen back runs in the child
     instead of the image, so it runs once. A routed read the child does not
     answer falls back to the image; a routed write never does, because it may
-    have landed, and its timeout names the re-read to make first. A tool whose
-    probed parameters changed is the one refusal, and a reconnect is its remedy.
+    have landed, and its timeout names the re-read to make first. The child's
+    verdict decides whether a changed signature is compatible — an added
+    optional parameter is served with a ``schema_note``, and only a change the
+    client's calls cannot survive is refused, with a reconnect as its remedy.
     """
     signature = getattr(tool, "__signature__", None)
 
     async def guarded(**kwargs: Any) -> Any:
         state = _moved_checkout_state()
         server = _current_code_server() if state.may_load else None
-        probe = server.warm(state.disk_stamp) if server is not None else None
+        probe = (
+            server.warm(state.disk_stamp, _registered_probe_payload())
+            if server is not None
+            else None
+        )
         routed = False
 
         if probe is not None:
-            if _probe_signature_changed(name, probe):
+            if _probe_incompatible(name, probe):
                 refusal = _stale_code_response(None, tool=name)
                 if refusal is not None:
                     return refusal
@@ -2987,6 +3069,11 @@ def _reject_unknown_tool_arguments(tool_name: str) -> None:
     tool.fn_metadata.arg_model = StrictArguments
     tool.parameters = StrictArguments.model_json_schema(by_alias=True)
     _REGISTERED_TOOL_PARAMS[tool_name] = accepted
+    _REGISTERED_TOOL_REQUIRED[tool_name] = tuple(
+        name
+        for name, field in argument_model.model_fields.items()
+        if field.is_required()
+    )
 
 
 # ── Register tools with SDK ────────────────────────────────────────────────

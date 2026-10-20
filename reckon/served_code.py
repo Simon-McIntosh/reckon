@@ -1343,6 +1343,63 @@ def neighbourhood(repo, revision, paths) -> frozenset[str]:
     return frozenset(adjacent - named)
 
 
+def signature_compatible(
+    registered: Mapping[str, bool],
+    params: object,
+    required: object,
+) -> bool:
+    """Whether the current code accepts every parameter a client registered.
+
+    ``registered`` maps each parameter the client's schema holds to whether the
+    client marked it required. A change is compatible when every registered
+    parameter is still accepted, no registered optional parameter has become
+    required, and no parameter the client does not hold is required. A client
+    whose schema still covers every call the tool accepts needs no reconnect;
+    one that lost a parameter, or gained a client-invisible required one, has
+    calls it can make that the current code would refuse.
+    """
+    current = (
+        {str(item) for item in params}
+        if isinstance(params, (list, tuple, set, frozenset))
+        else set()
+    )
+    current_required = (
+        {str(item) for item in required}
+        if isinstance(required, (list, tuple, set, frozenset))
+        else set()
+    )
+    for name, was_required in registered.items():
+        if name not in current:
+            return False
+        if not was_required and name in current_required:
+            return False
+    return all(name in registered for name in current_required)
+
+
+def probe_reply(
+    params: Mapping[str, list[str]],
+    required: Mapping[str, list[str]],
+    registered: Mapping[str, Mapping[str, bool]] | None,
+) -> dict:
+    """The probe answer: each tool's parameters, their required subset, a verdict.
+
+    ``params`` is each tool's parameter names and ``required`` names the subset
+    that carries no default — both keyed by tool. The compatibility verdict,
+    keyed by tool, is present only when the request carried the caller's own
+    registered parameters, so a probe from a parent that predates the verdict
+    gets the answer it already understands and compares it itself.
+    """
+    reply: dict = {"params": params, "required": required}
+    if registered:
+        reply["compatible"] = {
+            name: signature_compatible(
+                registered.get(name) or {}, params.get(name), required.get(name)
+            )
+            for name in registered
+        }
+    return reply
+
+
 # ── The persistent current-code child ──────────────────────────────────────
 #
 # A stdio MCP server cannot replace the image it runs the way the HTTP server
@@ -1366,6 +1423,7 @@ root = sys.argv[1]
 sys.path.insert(0, root)
 
 import reckon.mcp as reckon_mcp
+from reckon import served_code as served_code_module
 
 
 def structured(result):
@@ -1388,6 +1446,17 @@ def structured(result):
 def tool_params():
     return {
         item.name: sorted(item.fn_metadata.arg_model.model_fields)
+        for item in reckon_mcp.mcp._tool_manager.list_tools()
+    }
+
+
+def tool_required():
+    return {
+        item.name: sorted(
+            field_name
+            for field_name, field in item.fn_metadata.arg_model.model_fields.items()
+            if field.is_required()
+        )
         for item in reckon_mcp.mcp._tool_manager.list_tools()
     }
 
@@ -1431,7 +1500,13 @@ for line in sys.stdin:
         continue
     ident = message.get("id")
     if message.get("op") == "probe":
-        reply = {"id": ident, "op": "probe", "params": tool_params()}
+        reply = {
+            "id": ident,
+            "op": "probe",
+            **served_code_module.probe_reply(
+                tool_params(), tool_required(), message.get("registered")
+            ),
+        }
     else:
         reply = {"id": ident, "op": "call"}
         reply.update(run_tool(message.get("tool"), message.get("kwargs") or {}))
@@ -1566,9 +1641,14 @@ class ServedChild:
         with self._condition:
             return self._replies.pop(ident, None)
 
-    def probe(self) -> None:
-        """Ask the child to report every tool's parameters, without waiting."""
-        self._probe_id = self._send("probe")
+    def probe(self, registered: Mapping[str, Mapping[str, bool]] | None = None) -> None:
+        """Ask the child to report every tool's parameters, without waiting.
+
+        ``registered`` is the caller's own parameter map, each parameter with
+        whether the caller marked it required, so the child can answer whether
+        the change is compatible without the caller re-deciding it.
+        """
+        self._probe_id = self._send("probe", registered=registered)
 
     def warm_answer(self) -> dict | None:
         """The probe's answer once it has arrived; None while it is cold.
@@ -1644,7 +1724,11 @@ class CurrentCodeServer:
         self._spawns = 0
         self._lock = threading.Lock()
 
-    def _child_for(self, stamp: str) -> ServedChild | None:
+    def _child_for(
+        self,
+        stamp: str,
+        registered: Mapping[str, Mapping[str, bool]] | None = None,
+    ) -> ServedChild | None:
         """The live child for ``stamp``, starting one while within the bound.
 
         A child that has died is not the child for this stamp however well its
@@ -1684,7 +1768,7 @@ class CurrentCodeServer:
                 return None
             self._spawns += 1
             child = ServedChild(process, timeout_s=self._timeout_s)
-            child.probe()
+            child.probe(registered)
             self._child = child
             return child
 
@@ -1706,10 +1790,19 @@ class CurrentCodeServer:
         """How many children this server has started, for a caller to count."""
         return self._spawns
 
-    def warm(self, stamp: str) -> dict | None:
+    def warm(
+        self,
+        stamp: str,
+        registered: Mapping[str, Mapping[str, bool]] | None = None,
+    ) -> dict | None:
         """Start the child for ``stamp`` and return its probe answer if it has
-        arrived. Never waits: a cold child answers nothing and serves no call."""
-        child = self._child_for(stamp)
+        arrived. Never waits: a cold child answers nothing and serves no call.
+
+        ``registered`` is handed to a freshly started child's probe, so the
+        child decides compatibility itself. An already-running child keeps the
+        verdict from the request that started it.
+        """
+        child = self._child_for(stamp, registered)
         if child is None:
             return None
         answer = child.warm_answer()

@@ -98,10 +98,35 @@ def _edit_plan(*args, **kwargs):  # noqa: F811
 
 _SIGNATURE = """
 
-# the checkout ahead of the running image adds a parameter to the tool
+# the checkout ahead of the running image stops accepting a parameter the
+# client registered, so a call the client can still make would be refused there
 _edit_plan_tool_before_the_change = _edit_plan_tool
-async def _edit_plan_tool(*args, added_parameter=None, **kwargs):  # noqa: F811
-    return await _edit_plan_tool_before_the_change(*args, **kwargs)
+async def _edit_plan_tool(  # noqa: F811
+    project,
+    slug,
+    expected_version,
+    mode="state",
+    ops=None,
+    old_html=None,
+    new_html=None,
+    replacements=None,
+    create=False,
+    checkout_path=None,
+    doc_type=None,
+):
+    return await _edit_plan_tool_before_the_change(
+        project,
+        slug,
+        expected_version,
+        mode,
+        ops,
+        old_html,
+        new_html,
+        replacements,
+        create,
+        checkout_path,
+        doc_type,
+    )
 """
 
 # The crew tool's equivalents. ``crew_answers`` fails the call the way the
@@ -374,7 +399,7 @@ def test_a_dirty_tree_keeps_serving_the_started_image(tmp_path: Path) -> None:
 def test_a_changed_tool_signature_returns_the_reconnect_refusal(
     tmp_path: Path,
 ) -> None:
-    """A parameter list the client does not hold owes a reconnect naming the tool."""
+    """A parameter the client registered and the current code dropped owes a reconnect."""
     root = _committed_checkout(tmp_path)
     payload = _run_server(tmp_path, root, "signature")
     _assert_served_from_the_copy(payload, root)
