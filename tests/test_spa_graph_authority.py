@@ -569,11 +569,15 @@ def test_index_rows_list_named_endpoints_before_unnamed() -> None:
     rows = _evaluate_graph_helpers(inventory, "endpoint")["rows"]
     assert [row["slug"] for row in rows] == ["named-endpoint", "endpoint"]
     assert [row["named"] for row in rows] == [True, False]
-    # A row carries the same shape figures the detail shows.
+    # A row carries the same shape figures the detail shows. The percent is
+    # the endpoint plan's served progress figure: the fallback path here is
+    # handed only an inventory, and the surface states a served figure rather
+    # than dividing shipped over total (no plan authors an impl in this
+    # inventory, so it reads zero).
     unnamed_row = rows[1]
     assert unnamed_row["total"] == 3
     assert unnamed_row["structuralDepth"] == 3
-    assert unnamed_row["shippedPercent"] == 33
+    assert unnamed_row["shippedPercent"] == 0
     # One blocked member, no open decisions.
     assert unnamed_row["flag"] == "1 held"
     assert rows[0]["flag"] == "ready"

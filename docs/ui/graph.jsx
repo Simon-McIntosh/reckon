@@ -114,7 +114,10 @@ function _graphEndpointView(endpoint, members, hopCount, fallbackProject) {
     shipped,
     held,
     total,
-    shippedPercent: total ? Math.round((shipped / total) * 100) : 0,
+    // The endpoint's progress figure, as served on the plan row. The surface
+    // states the figure, it never derives one: the closure's roll-up is
+    // computed server-side and the plan's own figure arrives in the inventory.
+    shippedPercent: Math.round(Number(endpoint.impl || 0) * 100),
     openDecisions,
     structuralDepth,
     averageWidth: total ? (total / structuralDepth).toFixed(2) : "0.00",
@@ -191,7 +194,10 @@ function _roadmapEndpointRows(endpoints) {
       shipped,
       held,
       total,
-      shippedPercent: Math.round(Number(endpoint.shipped_fraction || 0) * 100),
+      // The closure's progress roll-up, computed by the roadmap's one roll-up
+      // function over the member plans; the shipped/total counts above stay
+      // counts. The surface renders the served figure, it derives nothing.
+      shippedPercent: Math.round(Number(endpoint.progress || 0) * 100),
       openDecisions,
       structuralDepth,
       averageWidth: Number(endpoint.average_width || 0).toFixed(2),

@@ -101,6 +101,9 @@ def test_closure_reports_derived_progress_critical_path_and_average_width() -> N
 
     assert result["completion"] == {"shipped": 2, "total": 4}
     assert result["shipped_of_total"] == "2/4"
+    # The closure's progress is the roll-up over the member plans (their figures
+    # are one, one, zero, zero with no authored hours), not shipped/total.
+    assert result["progress"] == pytest.approx(0.5)
     assert result["critical_path"]["depth"] == 3
     assert result["critical_path"]["plans"] in (
         ["alpha:root", "alpha:left", "alpha:endpoint"],

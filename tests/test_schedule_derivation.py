@@ -302,7 +302,7 @@ window.__scheduleParity = { flowPackLanes, flowTicks };
             compiled,
             f"const bars = {json.dumps(served['bars'])};",
             ("const lanes = window.__scheduleParity.flowPackLanes(bars)"
-             ".map(lane => lane.items.map(item => item.slug));"),
+             ".map(lane => lane.items.map(item => item.plan));"),
             f"const ticks = window.__scheduleParity.flowTicks({served['low']}, {served['high']});",
             "process.stdout.write(JSON.stringify({ lanes, ticks: ticks.map(tick => tick.label) }));",
         )
@@ -327,7 +327,7 @@ window.__scheduleParity = { flowPackLanes, flowTicks };
         for slug, bar in _bars_by_slug(schedule).items()
     } == {
         slug: {"start": bar["start"], "end": bar["end"]}
-        for slug, bar in {item["slug"]: item for item in served["bars"]}.items()
+        for slug, bar in {item["plan"]: item for item in served["bars"]}.items()
     }
     assert served["low"] == schedule["low"]
     assert served["high"] == schedule["high"]
@@ -356,7 +356,7 @@ def test_roadmap_schedule_read_reports_far_end_and_lane_count() -> None:
     assert report["far_end_hours"] == 30
 
     assert report["reference"] == "2026-09-04T04:00:00+00:00"
-    assert [bar["slug"] for bar in report["bars"]] == [
+    assert [bar["plan"] for bar in report["bars"]] == [
         "recorded-wide",
         "recorded-early",
         "active-work",

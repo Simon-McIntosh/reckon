@@ -23,6 +23,7 @@ from reckon._plan_html import (
     SECTION_NUMBER_PATTERN,
     _read_plan_text,
     authored_section_headings,
+    derive_fleet_impl_imputing_effort,
     open_sections,
     read_state_and_text_file,
 )
@@ -1871,7 +1872,6 @@ def _schedule_bars(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
     return [
         {
-            "slug": item["slug"],
             "plan": item["slug"],
             "start": item["start"],
             "end": item["end"],
@@ -2256,6 +2256,12 @@ def resolve_graph_target(
         "repositories": sorted({project for project, _slug in member_keys}),
         "completion": {"shipped": shipped, "total": total},
         "shipped_of_total": f"{shipped}/{total}",
+        # The closure's progress, from the one roll-up function over the
+        # endpoint's member plans. The counts above stay counts; this is the
+        # figure every surface renders in their place.
+        "progress": derive_fleet_impl_imputing_effort(
+            plans[key] for key in member_keys
+        ),
         "critical_path": {"plans": critical_refs, "depth": depth},
         "average_width": round(total / depth, 3) if depth else 0.0,
         "ready": sorted(ready),
@@ -2445,6 +2451,14 @@ def _dependency_endpoints(
                 ],
                 "completion": {"shipped": shipped, "total": total},
                 "shipped_fraction": round(shipped / total, 3) if total else 0.0,
+                # The closure's progress: the same roll-up the fleet summary
+                # serves, over this endpoint's own member plans. The roadmap
+                # weights nothing itself — one function owns the figure so every
+                # surface reading this endpoint answers with the plan list's
+                # number rather than a shipped-over-total count.
+                "progress": derive_fleet_impl_imputing_effort(
+                    plans[slug] for slug in sorted(member_slugs)
+                ),
                 "held": held,
                 "open_decision_count": open_decision_count,
                 "structural_depth": depth,
