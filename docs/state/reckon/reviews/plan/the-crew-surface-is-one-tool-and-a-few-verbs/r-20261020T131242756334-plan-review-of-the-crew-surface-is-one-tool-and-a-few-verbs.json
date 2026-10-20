@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T13:23:21.177Z",
+  "dispatched_at": "2026-10-20T13:13:40Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-crew-surface-is-one-tool-and-a-few-verbs/r-20261020T131242756334-plan-review-of-the-crew-surface-is-one-tool-and-a-few-verbs/plan.html:325",
+      "id": "reasoning-1",
+      "reason": "with the write path missing, the node either stops blocked under the rule at plan:223-224 (which requires a hit outside its fence to stop it) or lands a tool-side flag it cannot plumb, so the fence must gain `reckon/mcp.py` before dispatch.",
+      "text": "`cso-crew-view-filters-live-runs` must give the MCP `live` view `--phase` and `--mine`, but its write paths (plan:326) omit `reckon/mcp.py`, which owns the tool's parameter list (`_crew`, `reckon/mcp.py:1936-1990`) and the forwarding call to `serve_crew_view` (`reckon/mcp.py:2169`); the parity case it must make pass drives the tool as `mcp._crew(view=name, ...)` (`tests/test_crew_view_serves_every_view.py:139`), so a filter added only in `reckon/mcp_views.py` and `reckon/crew_run_commands.py` is unreachable from the MCP surface",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e147e4d3fe373b2a06f9f422bf03bb1f69fb7b1a6e48737a3b4efb8ea83644a4",
+  "plan_slug": "the-crew-surface-is-one-tool-and-a-few-verbs",
+  "plan_version": 65,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T131242756334-plan-review-of-the-crew-surface-is-one-tool-and-a-few-verbs",
+  "reviewed_blob_sha": "e365524f5be1c6cad961480dafac35ebf613f798",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every file, module, flag and test name \u00a79 cites resolves (verified above), including the extensionless in-plan hrefs resolved as `<path>.html`.",
+    "done_when": "pass \u2014 every \u00a79 node's measure names a declared negative control: the filter node's fixture case (plan:339), its second output-parity control, the mover node's `crew list` scan case, and each retiring node's wrong-successor control; the gate also names the three contract tests it must keep green.",
+    "evidence_paths": "pass \u2014 no \u00a79 node writes to a session scratchpad or a node-local path, and the gate logs and fragment evidence stay on the repository's durable paths.",
+    "naming": "pass \u2014 \u00a79 carries node identifiers (`cso-list-retires`) as plan document data, and prescribes no plan label, stage name, ticket number or version tag into a symbol, filename or comment.",
+    "reasoning": "a finding \u2014 \u00a79's root cause and the retiring mechanism match the cited census, but the filter node's mechanism reaches the MCP surface through a file its fence omits: `_crew` in `reckon/mcp.py:1936` declares the crew tool's parameters and forwards them to `serve_crew_view` at `reckon/mcp.py:2169`, so \"the MCP `live` view\" cannot take `--phase`/`--mine` (plan:325) without editing `reckon/mcp.py`. The same omission appears in the serial-reason sentence at plan:319, which attributes the mover node's ordering to its *fixtures* needing the filter node's flags; the fixtures are `crew list --phase/--mine` answers, which exist at either base \u2014 what needs the filter node is the head-side comparison against `crew view live`.",
+    "single_goal": "pass \u2014 each of the four nodes names one deliverable (retire `ledger`/`velocity`; give the `live` view its filters and make \u00a76's parity case able to fail; move `crew list`'s callers; tombstone `crew list`). Node 2's three edits (plan:325) serve the single goal of making the `live` view's parity real.",
+    "wiring": "pass \u2014 \u00a79 declares `depends-on` `s7` and `s8` (plan:24), the driving followup orders \u00a78 before \u00a79 (plan:383), and the serial order inside \u00a79 is justified by real shared files (nodes 1, 2 and 4 write `reckon/crew_run_commands.py`, and each adjacent pair shares `skills/reckon-build/SKILL.md` or `tests/test_read_verbs_retire_behind_crew_view.py`, plan:319)."
+  },
+  "section_digests": {
+    "_document": "4d4b24f4aec9178fd9d24a7442e96788d260da61249c8afd730e02ffe7cc56f6",
+    "s1": "7964ee282f4a5255288aa84785a54dbc6a5fec9660f4cee9f9c892a0807894ee",
+    "s10": "033277f14414ff9bc6f07d5fabef9354ec643b0bcb31a42018a8bb7153544427",
+    "s2": "be69292dc4744e91b19438c3129be40ac6c6138f02cd12656616dd3906a1d313",
+    "s3": "bfc4b93502cb69a2a5878f9c282da2cbab878f4f49482f263fdfc074dfce4ba8",
+    "s4": "2feb22a10d53f02161e33412c6f491a2718ee9b88ffede06e39b7fc15799f5d1",
+    "s5": "4a0b632aaec0c9b2538edeab874ccd9fd39723e2eef864da9ae65a3f72b6695c",
+    "s6": "e037f188e4e0784a7a39a208f621ec226cacdda5308e5f226d6ba3e104345522",
+    "s7": "7a66876ae7177f3cc833a9fc9c2885beceef03cf567843584a885f144155809b",
+    "s8": "beb6c1568fe326e8af87c393c93ac9e71dec60ad9a9247b47ffbec9d08fc76a6",
+    "s9": "1b9b2d4fac11ed35c9d1a33f9cd251c58dfdcddbd45404dfc6871c724da5ba45"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T13:32:20.632782+00:00"
+}
