@@ -1067,6 +1067,14 @@ WIDENABLE_PHASE = "blocked"
 WIDEN_REFUSING_MANIFEST_STATUSES = frozenset({"complete", "failed"})
 
 
+# The one refusing status a review's own fold answers. A run that ended
+# normally left scope work outstanding for the review that read it, so a review
+# that folded a finding back into that same node is a scope decision the
+# boundary can be moved for. A run reporting failed states no such decision, so
+# the fold does not reach it.
+WIDEN_FOLDED_MANIFEST_STATUS = "complete"
+
+
 WIDEN_RULE = (
     "only a run whose worker process has stopped on a blocked fence is widened, "
     "because a live worker is already writing against the boundary a widening "
@@ -1109,6 +1117,63 @@ def _manifest_reported_status(record: Mapping[str, Any]) -> str:
     return "" if manifest_status_is_template(status) else status
 
 
+def _widen_folded_disposition(record: Mapping[str, Any]) -> dict[str, Any] | None:
+    """The folded dimension authorising this run's fence, or ``None``.
+
+    A review that scored a dimension below its floor records what answered it in
+    the run's own review record, and one of the closed kinds names the node the
+    finding was folded into. When the node it names is the run's own node, the
+    finding is the run's to repair, and the repair resume is the only moment the
+    boundary can be moved for it: after the resume the run reads working and a
+    widening refuses a live worker. So this read is what makes that grant
+    reachable, and it is scoped as narrowly as the finding is -- a fold naming
+    any other node is a finding some other run carries, and answers nothing here.
+
+    The record read is the one the disposition writers rewrite, so a code review
+    and a run review are both reached, and it is selected by the run's own id
+    rather than by a head: the finding is about the run, not about one revision
+    of it. A run with no stored record, a store that cannot be read, and a
+    record carrying no dispositions all answer ``None``, which is the absence of
+    a fold rather than an unreadable one, because the refusal a fold answers is
+    stated elsewhere and a raise here would replace it.
+
+    The returned row carries the dimension, the folded node and the recorded
+    kind, so a caller records the grant against the finding that needed it.
+    """
+    project = str(record.get("project") or "").strip()
+    run_id = str(record.get("run_id") or "").strip()
+    node = record.get("node")
+    node_id = str(node.get("id") or "").strip() if isinstance(node, Mapping) else ""
+    if not project or not run_id or not node_id:
+        return None
+    from reckon.crew.review import DIMENSION_DISPOSITIONS_KEY
+    from reckon.crew.review_dispositions import stored_record_for_disposition
+
+    try:
+        stored = stored_record_for_disposition(project, run_id)
+    except (OSError, ValueError):
+        return None
+    if not isinstance(stored, Mapping):
+        return None
+    dispositions = stored.get(DIMENSION_DISPOSITIONS_KEY)
+    if not isinstance(dispositions, Mapping):
+        return None
+    for dimension in sorted(dispositions):
+        entry = dispositions.get(dimension)
+        if not isinstance(entry, Mapping):
+            continue
+        if str(entry.get("kind") or "").strip() != "folded":
+            continue
+        if str(entry.get("node") or "").strip() != node_id:
+            continue
+        return {
+            "dimension": str(dimension),
+            "node": node_id,
+            "kind": "folded",
+        }
+    return None
+
+
 def _widen_eligibility(record: Mapping[str, Any]) -> tuple[str, str, str]:
     """The state refusing this run's fence, its manifest status, and its remedy.
 
@@ -1128,16 +1193,28 @@ def _widen_eligibility(record: Mapping[str, Any]) -> tuple[str, str, str]:
     folded phase and from the manifest the run delivered. A run is wideniable
     when either reports ``blocked``, because a run launched through a backend
     folds its phase from a terminal stream event and a worker that writes
-    ``status: blocked`` before ending its turn leaves the two disagreeing. A
-    manifest reporting complete or failed refuses on its own -- a finished run
-    has no scope decision outstanding, and a wider fence would be granted to
-    work that has already ended.
+    ``status: blocked`` before ending its turn leaves the two disagreeing.
+
+    A manifest reporting ``complete`` or ``failed`` refuses on its own -- a
+    finished run has no scope decision outstanding -- with one exception: a
+    review that read the run may have folded a sub-floor finding back into the
+    run's own node, which is exactly such a decision, and the ``complete``
+    refusal then yields through :func:`_widen_folded_disposition`. Only
+    ``complete`` yields, and only to a fold naming this run's own node; a
+    ``failed`` run states no decision a fold could answer, so it is refused as
+    before.
     """
     phase = str(record.get("phase") or "")
     reported = _manifest_reported_status(record)
-    if reported in WIDEN_REFUSING_MANIFEST_STATUSES:
+    # A fold recorded against the finding's own node answers exactly the
+    # ``complete`` refusal: the run ended with scope work outstanding, and the
+    # review that read it sent that work back. Any other refusing status, and
+    # any complete run carrying no such fold, is refused as before.
+    folded = _widen_folded_disposition(record)
+    folded_authorises = folded is not None and reported == WIDEN_FOLDED_MANIFEST_STATUS
+    if reported in WIDEN_REFUSING_MANIFEST_STATUSES and not folded_authorises:
         return f"it reports {reported!r} in its own manifest", reported, ""
-    if WIDENABLE_PHASE not in (phase, reported):
+    if not folded_authorises and WIDENABLE_PHASE not in (phase, reported):
         label = phase or "unphased"
         return f"it reads {label!r}, not {WIDENABLE_PHASE!r}", reported, ""
     running = _widen_running_worker(record)
@@ -1219,8 +1296,18 @@ def crew_widen(run_id, write_paths, pretty):
     its phase from its stream's terminal event -- so a worker that ends its turn
     after writing ``status: blocked`` folds to ``complete``, and its own
     delivery is the only place the block is stated. A manifest reporting
-    ``complete`` or ``failed`` is refused, because a finished run has no scope
-    decision outstanding. Eligibility is read twice -- once on the pointer as it
+    ``failed`` is refused, because a run that ended abnormally states no scope
+    decision to widen for. A manifest reporting ``complete`` is refused too --
+    unless the run's newest review record folds a sub-floor finding back into
+    the run's own node. A review that scored a dimension below its declared
+    floor records what answered it, and a fold naming this run's node is the one
+    kind that sends that work back: the run ended with a finding to repair, and
+    the repair resume is the only moment the boundary can be moved for it --
+    after the resume the run reads ``working`` and a widening refuses a live
+    worker. The grant is recorded in this command's reply, naming the dimension
+    and the node the finding was folded into. A complete run whose review
+    carries no such fold, and one whose fold names any other node, is refused as
+    before. Eligibility is read twice -- once on the pointer as it
     stands and again on the record read under the per-run lock -- so a run that
     reaches either read in a non-wideniable state is refused rather than widened
     in place. Added paths are checked against other binding live claims during
@@ -1279,6 +1366,10 @@ def crew_widen(run_id, write_paths, pretty):
         return pointer
 
     updated = crew_module._mutate_pointer(run_id, widen)
+    # Read the authorising fold from the pointer as it stands after the write,
+    # so the grant this command reports names the same finding eligibility was
+    # decided on. A run admitted off its manifest or its phase carries none.
+    folded = _widen_folded_disposition(updated)
     _emit_crew_result(
         {
             "run_id": run_id,
@@ -1290,6 +1381,10 @@ def crew_widen(run_id, write_paths, pretty):
             "manifest_status": manifest_status,
             "node": str((updated.get("node") or {}).get("id") or ""),
             "session_id": str(updated.get("session_id") or ""),
+            # The finding this grant answers, or null when the run was admitted
+            # on its own block. The grant is recorded against it so a reader can
+            # see which finding needed the boundary moved.
+            "folded_disposition": folded,
             "added": added,
             "write_paths": [
                 str(path)

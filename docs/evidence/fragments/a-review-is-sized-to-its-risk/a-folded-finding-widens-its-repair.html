@@ -1,0 +1,49 @@
+<article class="landed-report" data-run-id="r-20261019T235023398874-a-folded-finding-widens-its-repair" data-node="a-folded-finding-widens-its-repair">
+      <h3 id="a-folded-finding-widens-its-repair-heading">a-folded-finding-widens-its-repair — a folded review finding lets its run's fence widen</h3>
+      <p id="a-folded-finding-widens-its-repair-anchor">
+        <code>crew widen</code> refused a run whose manifest reads
+        <code>complete</code>, on the reasoning that a finished run has no scope
+        decision outstanding. A review that read the run can leave exactly such a
+        decision: a dimension scored below its declared floor, disposed as
+        <em>folded</em> back into the run's own node. The repair resume is the
+        only moment to grant the wider fence — after it the run reads
+        <code>working</code> and a widening refuses a live worker — so the repair
+        ran outside its fence and the path could only be accepted at promotion,
+        after the work was done and reviewed against a scope that never named it.
+      </p>
+      <p id="a-folded-finding-widens-its-repair-fix">
+        <code>_widen_folded_disposition</code> reads the run's own review record
+        and returns the dimension whose entry is of kind <code>folded</code> and
+        names the run's own node id, or <code>None</code>. That read admits the
+        <code>complete</code> refusal only, and only for a fold naming this run's
+        node; a <code>failed</code> run, a fold naming another node, and a fold
+        over a worker that is still running are all refused as before. The grant
+        is recorded in the command's reply under <code>folded_disposition</code>,
+        naming the dimension and the node, so the widening names the finding that
+        needed it. No field was added to the live pointer, so the session id, the
+        recorded commits and the worktree are carried through unchanged.
+      </p>
+      <p id="a-folded-finding-widens-its-repair-measure">
+        <strong>Measure.</strong> In
+        <code>tests/test_a_folded_finding_widens_its_repair.py</code>, a stopped
+        run whose manifest reads <code>complete</code> and whose review record
+        folds <code>reuse</code> into its own node widens: the reply's
+        <code>added</code> holds the new path, the pointer's
+        <code>node.write_paths</code> carries it, and
+        <code>folded_disposition</code> reads
+        <code>{"dimension": "reuse", "node": ..., "kind": "folded"}</code>. The
+        same run with the dimension exempted instead is refused, and so is a
+        folded run whose worker process is alive. Gate over the ten test files
+        importing <code>reckon/crew_run_commands.py</code> with
+        <code>pytest -n 8</code>: head <code>1 failed, 308 passed</code> EXIT=1
+        against base <code>4 failed, 305 passed</code> EXIT=1 — the head and base
+        arms share the one failure
+        (<code>test_preflight_hold_and_clear_result_have_matching_exit_codes</code>,
+        pre-existing and outside this node's scope), and the three failures unique
+        to the base arm are this node's new cases failing where the door does not
+        exist. <code>ruff check</code> and <code>ruff format --check</code> add no
+        findings on the two changed Python files. Negative control — dropping the
+        folded-disposition check from widen's eligibility, so the first case is
+        refused — logs <code>3 failed, 2 passed</code> EXIT=1.
+      </p>
+    </article>
