@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T07:04:46.945Z",
+  "dispatched_at": "2026-10-20T06:53:49Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-site-answers-fast-and-agrees.html:23",
+      "id": "wiring-1",
+      "reason": "a coordinator ordering the chain from the declared edges dispatches \u00a711 without \u00a717 and it re-fails the home-view gate that \u00a717 exists to clear.",
+      "text": "\u00a711's plan-section-depends-on entry is [\"the-site-answers-fast-and-agrees#s20\"] and names no s17, yet \u00a717 line 287 states \"After the served process carries it, \u00a711 runs again\" and \u00a711's own first-pass comment (c-s11-pass-1) records the home-view gate line failing at 895,709 B against 500 KB with \"\u00a717 now owns it\" \u2014 so \u00a711 cannot pass until \u00a717 lands",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-site-answers-fast-and-agrees.html:327",
+      "id": "done_when-1",
+      "reason": "a node implementing \u00a720 to its done-when leaves the research row still winning the shared slug, so the fifth row of \u00a720's own table would still draw \"\u2013 0%\" after \u00a720 lands.",
+      "text": "\u00a720's Why bullet 4 names the SPA's slug-keyed map as the cause of the \"\u2013 0%\" bar, but the crew.jsx deliverable bullet retires only the status-to-state mapping, run lookup and lane packing, never the slug-keyed resolution, and done-when case 6 asserts merely that the bar carries the plan's typed key \u2014 a payload assertion the server satisfies without the SPA ever reading it",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "6afe3a739a7adf8bac794f64a394f0fb26be19f3fa1b9ff9b9fd821944fc58b9",
+  "plan_slug": "the-site-answers-fast-and-agrees",
+  "plan_version": 93,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T065212278582-plan-review-of-the-site-answers-fast-and-agrees",
+  "reviewed_blob_sha": "480ce93de7dfdad184d6f918fa575f24ccace1c5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 _GZIP_MIN_BYTES/_send/_send_file/_render_spa_html (reckon/serve.py), served_spa (tests/spa_browser_harness.py:760) and the six named callers (grep -c served_spa: test_build.py 4, test_spa_home_view_loads_a_summary.py 2, test_spa_plans_geometry.py 4, test_spa_project_visibility.py 2, test_spa_rendered_semantics.py 2, test_spa_shell_geometry.py 2), _refresh_store_path (reckon/route_results.py), _SOURCE_SNAPSHOT (reckon/serve.py:1020), derive_schedule (reckon/schedule.py), nav_key (reckon/resources.py:190), flowPackLanes and \"session {index+1}\" (docs/ui/crew.jsx), _crew_rows (reckon/serve.py:758) all resolve; and \u00a717's figures reproduce exactly over the shell's own tags \u2014 34 tags, 784,186 B, 203,941 B gzipped at level 5, largest compiled script /_ui/plan.js at 63,662 B (verified with the server's own compile_jsx and _client_asset, gzip level 5).",
+    "done_when": "a finding \u2014 \u00a720 identifies the SPA's slug-keyed resolution as the cause of the \"\u2013 0%\" bar (Why bullet 4) but its crew.jsx deliverable bullet never retires that map, and case 6 asserts only that the payload carries the typed key.",
+    "evidence_paths": "pass \u2014 s17\u2013s20 each write logs under the run directory ending in EXIT=, and the only repository artifact named is \u00a711's docs/evidence/archive/the-site-answers-fast-and-agrees-landed.html; no scratchpad or node-local path is named.",
+    "naming": "pass \u2014 s17\u2013s20 introduce no plan labels, stage names, ticket numbers or version tags; their new names (_shell_assets.py, the new test files, the served bar fields) are named by mechanism, and the run id r-20261020T053852305957 in s17's Why is an evidence citation, not a name in code.",
+    "reasoning": "pass \u2014 s17's root cause (the shell's asset routes answer through _send, no-store, uncompressed) matches its cited measurement and its numbers reproduce; s18's cause (served_spa's whole-tree copytree of docs/state/<project>) matches; s19's condition (\u00a75's _refresh_store_path records no code identity) matches, and its mechanism is reachable because route_results already imports from reckon.serve lazily at call time; s20's five mechanisms each match a row of its table.",
+    "single_goal": "pass \u2014 s17 carries one deliverable (the shell's asset routes answer per revision and compressed), s18 one (the harness copies only what the page reads), s19 one (a stored result names its deriving code), s20 one (the flow draws each plan from served state/position/split/lane); each is one closeable verdict.",
+    "wiring": "a finding \u2014 \u00a717's own text gates \u00a711 (\"After the served process carries it, \u00a711 runs again\", s17 line 287) and \u00a711's home-view line failed at first pass with its cause assigned to \u00a717 (comment c-s11-pass-1), but \u00a711's declared depends-on is [s20] alone and names no s17."
+  },
+  "section_digests": {
+    "_document": "1e57e46696616804fc288bc33252cf2755d2479f8fb1aafdc373a6d87590186d",
+    "s1": "119fda14843398660e67ce4dbc6d52b2466804be618c0bc58fe57d48c4364db4",
+    "s10": "aedffe9563719b3b93e2b36282e17d4d2aeabecf2938ffcbf516cfacc5887281",
+    "s11": "b9aa035553d395057dad26d5353e7b79c6bdec033a1ab82eb1042718d03592cd",
+    "s12": "3086e0ba68e51ca085e7178c914c92d64248be41088440dfa18abf077d5819ee",
+    "s13": "fa208e7c5f148ec329458a9824c867762bc66c986ccb7bc85745b08640484173",
+    "s14": "7f21ec58ce9adf4ba663f205fe60555a585a263354e7954c7dd99543a0d56139",
+    "s15": "884c8ab0e973894007385f537b51e29ef55bf2de18ef2cf6a25966e656f62bf2",
+    "s16": "68b4e68d648fe76ecff74c05d2cdfb995f2e13890befafc25046869d469abcac",
+    "s17": "ac2da828cc6e329bb2d7e56d6983c2cb58531dd49711fa439cc540251e215680",
+    "s18": "24d67d89b37511179c52ceeab7171c15ecf50ae262fe437e8b1c7e85b39f013a",
+    "s19": "148ad5763a772b476be3d3476ef6369a24fae8df34da8415bcbfb333c5b505e9",
+    "s2": "f4d544c85c1a75bc7938448339d0239290de9ffaef0434766aa4baa2571d7436",
+    "s20": "b9dfd61298e77e45579e9bc53f5bc3e09301ce133f843df52411c6181bca8aef",
+    "s3": "50f2ca1f3b1277d5f4b2d70a240688387a89a3136ad2d6aee26f0b3f324b1afc",
+    "s4": "a1ad15bdafaed28134c2565ad8374bc91928064852c10da6661f2499ca286149",
+    "s5": "ccf5b231d2e5d7e02747b8419b3e95dae4622acb080e6eb52c536f2ea9539903",
+    "s6": "fdb08d5e7b8272372c8ced83ee14c031730239025c2a13ccb211329d7951673e",
+    "s7": "90073ced7051cfae8f66fd6b78f99e6ace90b008ffc6c9e5559d87a2e5c31704",
+    "s8": "46535efa968faf1a9d457821c0b182e1f73fbc67570e478aa63cc7eb29d08e37",
+    "s9": "3df747cffcffa70e17ef701d032c7d4a87e78cd03759393f0efa74f96e5fde92"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T07:07:16.270029+00:00"
+}
