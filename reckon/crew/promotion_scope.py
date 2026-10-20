@@ -8,6 +8,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextlib import contextmanager
 from datetime import UTC
@@ -1214,7 +1215,9 @@ def _declared_manifest_commits(record: Mapping[str, Any]) -> list[str]:
         declared = parse_manifest(Path(manifest_path).read_text(encoding="utf-8"))
     except (OSError, KeyError, ValueError):
         return []
-    return [str(sha).strip() for sha in (declared.get("commits") or []) if str(sha).strip()]
+    return [
+        str(sha).strip() for sha in (declared.get("commits") or []) if str(sha).strip()
+    ]
 
 
 def _declared_manifest_landing(record: Mapping[str, Any]) -> str:
@@ -1255,14 +1258,18 @@ def _worker_authored_landing_record(
     revisions = [str(sha).strip() for sha in commits if str(sha).strip()]
     if not revisions:
         return False
-    plan_file = _store._resolve_html_file(project, plan, root=tree, artifact_type="plan")
+    plan_file = _store._resolve_html_file(
+        project, plan, root=tree, artifact_type="plan"
+    )
     if plan_file is None:
         return False
     try:
         relative = plan_file.resolve().relative_to(tree.resolve())
     except ValueError:
         return False
-    shown = _git(tree, "show", f"{revisions[-1]}:{'/'.join(relative.parts)}", check=False)
+    shown = _git(
+        tree, "show", f"{revisions[-1]}:{'/'.join(relative.parts)}", check=False
+    )
     return shown.returncode == 0 and f'data-id="{comment_id}"' in shown.stdout
 
 
@@ -1671,9 +1678,7 @@ def _plan_comment_store_path(
     return [plan_file]
 
 
-def _restore_landing_writes(
-    checkout: Path, paths: Sequence[Path]
-) -> dict[str, bool]:
+def _restore_landing_writes(checkout: Path, paths: Sequence[Path]) -> dict[str, bool]:
     """Best-effort reversal of a refused landing's uncommitted store writes.
 
     Each path promotion wrote returns to its committed state: tracked paths
@@ -1798,6 +1803,12 @@ def _path_has_a_staged_change(checkout: Path, path: Path) -> bool:
 
 LANDING_RECORD_NAME = "landing.json"
 _LANDING_SUBJECT_PREFIXES = ("promote(", "release(")
+# A staging ``git add`` that fails because another process holds the index lock
+# is retried for this window, at this spacing, before the landing refuses. Both
+# are bounded so a lock that is never released ends in the same refusal as a
+# staging failure that names no lock, just a few seconds later.
+_INDEX_LOCK_RETRY_WINDOW_SECONDS = 5.0
+_INDEX_LOCK_RETRY_INTERVAL_SECONDS = 0.5
 
 
 def _landing_record_path(run_id: str) -> Path:
@@ -2187,6 +2198,56 @@ def _report_landing_check(landing: Mapping[str, Any]) -> dict[str, Any]:
     return dict(check)
 
 
+def _staging_names_a_held_index_lock(message: str) -> bool:
+    """Whether a staging failure's message names a held ``index.lock``.
+
+    git reports a held lock as a ``fatal: Unable to create
+    '.../.git/index.lock': File exists.`` line, so the lock's own path is the
+    marker. Every other staging failure - an unreadable file, a bad path - is
+    matched by nothing here and refuses at once, which is what keeps a real
+    error from being hidden behind a retry window.
+    """
+    return "index.lock" in message
+
+
+def _stage_landing_writes(
+    run_id: str, checkout: Path, targets: Sequence[Path]
+) -> subprocess.CompletedProcess:
+    """Stage the landing writes, waiting out a briefly held index lock.
+
+    The single ``git add`` a landing makes is the step a peer's transient
+    ``index.lock`` turns into a refused landing, so a failure whose message
+    names a held lock is retried for a bounded window before it is returned to
+    the caller to refuse on. Each retry is appended to the run's landing
+    record, so a landing that waited says how long and how often. A failure
+    that names no lock, and a lock that outlasts the window, return the failing
+    result unchanged.
+    """
+    deadline = time.monotonic() + _INDEX_LOCK_RETRY_WINDOW_SECONDS
+    attempt = 0
+    while True:
+        result = _git(checkout, "add", "--", *(str(p) for p in targets), check=False)
+        if result.returncode == 0:
+            return result
+        message = result.stderr.strip() or result.stdout.strip()
+        if (
+            not _staging_names_a_held_index_lock(message)
+            or time.monotonic() >= deadline
+        ):
+            return result
+        attempt += 1
+        _append_landing_record(
+            run_id,
+            {
+                "time": _utc_now(),
+                "step": "stage_retry",
+                "attempt": attempt,
+                "message": message,
+            },
+        )
+        time.sleep(_INDEX_LOCK_RETRY_INTERVAL_SECONDS)
+
+
 def _commit_landing_writes(
     *,
     run_id: str,
@@ -2218,6 +2279,11 @@ def _commit_landing_writes(
     the integrated revision, a release outcome) passes its own subject naming
     what it did.
 
+    Staging waits out a briefly held index lock: a ``git add`` whose failure
+    names a held ``index.lock`` is retried for a bounded window and each retry
+    is recorded, so a lock a peer releases in seconds no longer turns a
+    completed promotion into a failed verb.
+
     Two checks bracket the commit. Before staging, the shared index is read for
     paths already staged in reverse of an earlier landing; they are reported
     and never repaired, because restoring them would write to an index other
@@ -2234,7 +2300,7 @@ def _commit_landing_writes(
     if not targets:
         return {"committed": False, "reason": "no_write"}
     reversals = _staged_reversals(checkout)
-    staged = _git(checkout, "add", "--", *(str(p) for p in targets), check=False)
+    staged = _stage_landing_writes(run_id, checkout, targets)
     if staged.returncode != 0:
         head = _head_revision(checkout)
         rollback = _restore_landing_writes(checkout, targets)
@@ -2336,7 +2402,6 @@ def _commit_landing_writes(
     }
 
 
-
 def _revision_is_ancestor(checkout: Path, revision: str, target: str) -> bool:
     """Report whether ``revision`` is an ancestor of ``target`` in ``checkout``.
 
@@ -2358,7 +2423,6 @@ def _revision_is_ancestor(checkout: Path, revision: str, target: str) -> bool:
         f"git could not compare {revision} against {target} in {checkout}: "
         f"{result.stderr.strip() or result.stdout.strip() or result.returncode}"
     )
-
 
 
 from reckon.crew.promotion_evidence import (
