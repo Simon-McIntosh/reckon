@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1212",
+    "reckon/crew_run_commands.py:1738",
+    "reckon/cli.py:521",
+    "reckon/mcp_crew_actions.py:230"
+  ],
+  "completed_at": "2026-10-20T13:02:56Z",
+  "dispatched_at": "2026-10-20T12:54:44Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_families_fold.py",
+      "line": "579",
+      "severity": "blocking",
+      "text": "blocking: derived_base is set to len(leaves) + len(retired) at line 578, so this assertion simplifies to len(leaves) <= len(leaves); adding any unrelated visible leaf leaves it green, and the requested base-to-head leaf bound remains unguarded."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Verified four production entry or routing sites at the reviewed head.",
+    "diff": "I read all five commits from 4c056ffbcdbbff4a63a1f97fc3043c4136b95d4c to 7cbfc4674210df1d5fc2221f281166430432edfb; tests/test_crew_families_fold.py:577-579 adds a useful tombstone membership check followed by an identity that is always true.",
+    "done_when": "The brief's five-file gate is recorded in baseline-suite.log and head-suite.log as 45 passed at base 4c056ffbcdbbff4a63a1f97fc3043c4136b95d4c and code head 25af977123ed271b2582bb0b0e61bb12f49b5a6e, while tests/test_crew_families_fold.py:579 cannot detect a leaf-count regression.",
+    "goal": "The source brief names four corrections; the diff removes the five unreachable widen names and strengthens model and remedy checks, but tests/test_crew_families_fold.py:579 leaves the requested leaf-count bound tautological.",
+    "manifest": "The reviewed run's manifest.md:10-23 names five commits, five changed paths, the base and head gate logs, and two controls; its after_suite revision is the last code commit, with only evidence-fragment commits following.",
+    "write_paths": "The reviewed run's manifest.md:3 declares reckon/crew_run_commands.py, reckon/cli.py, two test files, and the evidence fragment; git diff --name-only 4c056ff..7cbfc46 lists only those five paths."
+  },
+  "justifications": {
+    "durability": "At tests/test_crew_families_fold.py:577 a missing tombstone fails, at :708 an empty resolver model fails, at :709 a wrong selector argument fails, and at tests/test_widen_reaches_a_blocked_run.py:488 an omitted remedy fails, while the count check at tests/test_crew_families_fold.py:579 cannot fail for any leaf count.",
+    "evidence": "baseline-suite.log and head-suite.log each end with 45 passed and EXIT=0, and negative-model-suite.log plus negative-remedy.log show the intended failures, though the leaf-count inequality at tests/test_crew_families_fold.py:579 has no failing input.",
+    "fit": "The removed names were only defined in reckon/crew_run_commands.py and re-exported in reckon/cli.py at base, and the replacement call checks in tests/test_crew_families_fold.py:670-709 follow the file's existing CliRunner and monkeypatch idiom.",
+    "goal_fidelity": "reckon/crew_run_commands.py:1230-1237 supplies the missing remedy and the diff deletes the unreachable helpers, but tests/test_crew_families_fold.py:579 does not enforce the requested leaf-count reduction.",
+    "reuse": "The added test stubs in tests/test_crew_families_fold.py:672-683 only observe calls to the existing ledger.backend_serving_model and flight.select_lane_model owners, while reckon/crew_run_commands.py:1233 continues to delegate claim mutation to reckon/crew/claims.py:63.",
+    "scope_discipline": "The five paths in git diff --name-only 4c056ff..7cbfc46 are all listed in the reviewed run's manifest.md:3 orientation_write_paths, including the evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source brief names four corrections; the diff removes the five unreachable widen names and strengthens model and remedy checks, but tests/test_crew_families_fold.py:579 leaves the requested leaf-count bound tautological.\nVERDICT done_when: The brief's five-file gate is recorded in baseline-suite.log and head-suite.log as 45 passed at base 4c056ffbcdbbff4a63a1f97fc3043c4136b95d4c and code head 25af977123ed271b2582bb0b0e61bb12f49b5a6e, while tests/test_crew_families_fold.py:579 cannot detect a leaf-count regression.\nVERDICT write_paths: The reviewed run's manifest.md:3 declares reckon/crew_run_commands.py, reckon/cli.py, two test files, and the evidence fragment; git diff --name-only 4c056ff..7cbfc46 lists only those five paths.\nVERDICT manifest: The reviewed run's manifest.md:10-23 names five commits, five changed paths, the base and head gate logs, and two controls; its after_suite revision is the last code commit, with only evidence-fragment commits following.\nVERDICT diff: I read all five commits from 4c056ffbcdbbff4a63a1f97fc3043c4136b95d4c to 7cbfc4674210df1d5fc2221f281166430432edfb; tests/test_crew_families_fold.py:577-579 adds a useful tombstone membership check followed by an identity that is always true.\nCALL_SITES: reckon/crew_run_commands.py:1212, reckon/crew_run_commands.py:1738, reckon/cli.py:521, reckon/mcp_crew_actions.py:230\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:1230-1237 supplies the missing remedy and the diff deletes the unreachable helpers, but tests/test_crew_families_fold.py:579 does not enforce the requested leaf-count reduction.\nSCORE evidence: 17\nJUSTIFICATION evidence: baseline-suite.log and head-suite.log each end with 45 passed and EXIT=0, and negative-model-suite.log plus negative-remedy.log show the intended failures, though the leaf-count inequality at tests/test_crew_families_fold.py:579 has no failing input.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The five paths in git diff --name-only 4c056ff..7cbfc46 are all listed in the reviewed run's manifest.md:3 orientation_write_paths, including the evidence fragment.\nSCORE durability: 13\nJUSTIFICATION durability: At tests/test_crew_families_fold.py:577 a missing tombstone fails, at :708 an empty resolver model fails, at :709 a wrong selector argument fails, and at tests/test_widen_reaches_a_blocked_run.py:488 an omitted remedy fails, while the count check at tests/test_crew_families_fold.py:579 cannot fail for any leaf count.\nSCORE fit: 18\nJUSTIFICATION fit: The removed names were only defined in reckon/crew_run_commands.py and re-exported in reckon/cli.py at base, and the replacement call checks in tests/test_crew_families_fold.py:670-709 follow the file's existing CliRunner and monkeypatch idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: The added test stubs in tests/test_crew_families_fold.py:672-683 only observe calls to the existing ledger.backend_serving_model and flight.select_lane_model owners, while reckon/crew_run_commands.py:1233 continues to delegate claim mutation to reckon/crew/claims.py:63.\nFINDING tests/test_crew_families_fold.py:579 blocking: derived_base is set to len(leaves) + len(retired) at line 578, so this assertion simplifies to len(leaves) <= len(leaves); adding any unrelated visible leaf leaves it green, and the requested base-to-head leaf bound remains unguarded.",
+  "review_run_id": "r-20261020T125332661534-review-of-cso-resume-follow-ons-7cbfc4674210",
+  "reviewed_base_sha": "4c056ffbcdbbff4a63a1f97fc3043c4136b95d4c",
+  "reviewed_head_sha": "7cbfc4674210df1d5fc2221f281166430432edfb",
+  "reviewed_run_id": "r-20261020T123408094819-cso-resume-follow-ons",
+  "rubric": "landed-node",
+  "scores": {
+    "durability": 13,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T13:04:55.776186+00:00",
+  "total": 104
+}
