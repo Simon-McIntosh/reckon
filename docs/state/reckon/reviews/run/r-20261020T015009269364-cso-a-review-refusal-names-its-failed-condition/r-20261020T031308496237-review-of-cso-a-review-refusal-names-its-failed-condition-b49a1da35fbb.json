@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-20T03:26:36.667Z",
+  "dispatched_at": "2026-10-20T03:14:50Z",
+  "emission": [
+    "VERDICT goal: the delta repairs the five follow-ons of the prior review while keeping the source goal -- crew complete's refusal naming the failed delivery condition, path and remedy -- intact at reckon/crew/promotion_checks.py:1165.",
+    "VERDICT done_when: the repair brief's measure is all five findings fixed and zero added failures; gate/head-arm.log records 25 passed / 1 pre-existing failed at EXIT=1 against gate/base-arm.log's identical single failure id.",
+    "VERDICT write_paths: read the source manifest's seven declared paths; the delta's four changed files (reckon/crew/recovery.py, recovery_review_delivery.py, recovery_review_subject.py, tests/test_a_review_refusal_names_its_failed_condition.py) are all inside them.",
+    "VERDICT manifest: read; it records commits e3010ebb, b520f7339 and b49a1da3, the head, base and negative-control arms with their logs and EXIT lines, and answers findings 0-4.",
+    "VERDICT diff: read the single commit b49a1da3 against b520f7339; it fixes the verdict docstring count, the absent TypeError, the path type split, the missing unreadable-record test, and deletes the dead _read_complete_review.",
+    "CALL_SITES: reckon/crew/promotion_checks.py:1164, reckon/crew/promotion_checks.py:1179, reckon/crew/recovery_review_acceptance.py:330, reckon/crew/recovery.py:198, reckon/crew/recovery_classification.py:618, reckon/crew/obligations.py:453",
+    "SCORE goal_fidelity: 19",
+    "JUSTIFICATION goal_fidelity: the delta repairs all five follow-ons and leaves the refusal behaviour at reckon/crew/promotion_checks.py:1165 and the single delivery owner at reckon/crew/recovery_review_delivery.py:360 intact.",
+    "SCORE evidence: 19",
+    "JUSTIFICATION evidence: gate/head-arm.log names revision b49a1da3 with 25 passed / 1 pre-existing failed at EXIT=1, the base arm carries the identical failure id, and the two added tests re-run green at the reviewed head.",
+    "SCORE scope_discipline: 20",
+    "JUSTIFICATION scope_discipline: git diff b520f7339 b49a1da3 touches only the four declared source and test paths.",
+    "SCORE durability: 19",
+    "JUSTIFICATION durability: the unreadable-record test asserts the literal condition string and reddens under the collapse mutation at gate/negative-control.log, and the absent test reddens on the reinstated iteration line at reckon/crew/recovery_review_subject.py:1075.",
+    "SCORE fit: 17",
+    "JUSTIFICATION fit: the repairs follow the module idiom and add no forbidden name, but the count mismatch the commit fixed at reckon/crew/recovery_review_delivery.py:352 survives as 'Five conditions' at tests/test_a_review_refusal_names_its_failed_condition.py:9.",
+    "SCORE reuse: 20",
+    "JUSTIFICATION reuse: the delta deletes the duplicate _read_complete_review so _review_delivery_verdict at reckon/crew/recovery_review_delivery.py:347 remains the sole delivery owner, and the absent guard extends the existing completeness owner rather than forking it.",
+    "FINDING tests/test_a_review_refusal_names_its_failed_condition.py:9 follow-on: the module docstring says 'Five conditions' and lists five while the verdict now counts six and this commit's new test builds the sixth ('record cannot be read'), so a reader counting conditions from the test docstring disagrees with the code it exercises."
+  ],
+  "findings": [
+    {
+      "file": "tests/test_a_review_refusal_names_its_failed_condition.py",
+      "line": 9,
+      "severity": "follow-on",
+      "text": "The test module docstring still reads 'Five conditions make a record no delivery' and lists five, omitting the 'a record there reads as a review' / 'record cannot be read' condition that the verdict now counts as the second of six (reckon/crew/recovery_review_delivery.py:352) and that this same commit's new test test_an_unreadable_record_is_refused_saying_it_cannot_be_read builds. The count mismatch is the exact defect the commit repaired in the verdict docstring, surviving in a file the commit touched, so a reader counting conditions from the test docstring disagrees with the code it exercises."
+    }
+  ],
+  "justifications": {
+    "durability": "test_an_unreadable_record_is_refused_saying_it_cannot_be_read asserts the literal condition string and the record path name, so it reddens if the branch is removed or reworded (shown red under the collapse mutation at gate/negative-control.log), and test_an_absent_value_that_is_not_a_list_reads_as_incomplete reddens because reinstating the replaced line missing.extend(str(dimension) for dimension in absent) raises TypeError for absent True and 1 (verified directly); no assertion compares a value against the same variable the test passed in.",
+    "evidence": "The gate log gate/head-arm.log names revision b49a1da3 and the literal command and ends in EXIT=1 with 25 passed / 1 pre-existing failed, the base arm gate/base-arm.log carries the identical single failure id tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window so added_failure_count is 0, and re-running the two added tests at the reviewed head gives 2 passed (EXIT=0) importing reckon/crew/recovery_review_subject.py from the reviewed worktree.",
+    "fit": "The repairs follow the file's existing idiom and the added names (_write_corrupt_record, the two test functions) carry no plan label, but the delta fixed the four-vs-six count in the verdict docstring while leaving the mismatched 'Five conditions' count in the test docstring it also touched.",
+    "goal_fidelity": "The delta is the repair of the five recorded review follow-ons and leaves the node's refusal behaviour intact -- condition, path and remedy at reckon/crew/promotion_checks.py:1165 and the single delivery owner at reckon/crew/recovery_review_delivery.py:360 -- so the goal is met; the one deduction is the surviving 'Five conditions' count at tests/test_a_review_refusal_names_its_failed_condition.py:9.",
+    "reuse": "The delta removes a duplicate rather than adding one -- _read_complete_review is deleted with its re-export (reckon/crew/recovery.py:198 region) so _review_delivery_verdict stays the single delivery owner -- and the absent guard extends the existing _landed_missing_measures rather than forking a second completeness rule; a capability search over reckon/crew for a delivery-refusal mechanism finds only this verdict and the separately declared dispatch refusal registry in reckon/crew/refusals.py, which does not cover crew complete.",
+    "scope_discipline": "git diff b520f7339 b49a1da3 touches exactly the four source and test paths named in the brief and adds nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261020T031308496237-review-of-cso-a-review-refusal-names-its-failed-condition-b49a1da35fbb",
+  "reviewed_base_sha": "b520f7339a327834c35a96ddf6e61ed5b0b75311",
+  "reviewed_head_sha": "b49a1da35fbbf0e582bc0201725b56ec197780bf",
+  "reviewed_run_id": "r-20261020T015009269364-cso-a-review-refusal-names-its-failed-condition",
+  "rubric": "landed-node",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T03:32:32.659579+00:00",
+  "total": 114,
+  "verdicts": {
+    "call_sites": "reckon/crew/promotion_checks.py:1164 reads refusal['condition'/'detail'/'remedy'] and :1179 opens the Path from _delivered_review_record, reckon/crew/recovery_review_acceptance.py:330 unpacks the same tuple, reckon/crew/recovery.py:198 re-exports the reader, and reckon/crew/recovery_classification.py:618, obligations.py:453, recovery_repair_dispatch.py:586 and recovery_review_acceptance.py:38 reach the completeness rule the absent guard sits in.",
+    "diff": "Read commit by commit (the delta is the single commit b49a1da3): it rewrites the verdict docstring to six conditions (recovery_review_delivery.py:349-361), deletes _read_complete_review and its recovery.py re-export, returns str(path) from every verdict branch with _delivered_review_record converting back to Path, guards a non-list absent in _landed_missing_measures (recovery_review_subject.py:1071-1078), and adds two tests; every hunk maps to one of the five follow-ons.",
+    "done_when": "The repair brief required all five follow-ons fixed, each answered by number in the manifest, nothing else changed, the gate re-run at the new head with zero added failures against the base arm, the negative control re-run, and check-manifest ok; the delta runs the four-file pytest gate at b49a1da3 (gate/head-arm.log: 25 passed, 1 pre-existing failed, EXIT=1) against the base arm (gate/base-arm.log: 12 passed, 1 failed, EXIT=1) with the same single failure id, and the manifest answers findings 0-4.",
+    "goal": "The source node's goal (prompt.txt:30) is to make crew complete's refusal for a review whose record does not deliver name the one failed condition with its path and remedy, keeping the delivery rule and the completeness rule each the single owner of its decision; the delta is the repair round for the five follow-ons of the prior review, and it preserves that goal while answering each finding.",
+    "manifest": "Read; it records commits e3010ebb, b520f7339 and b49a1da3, head arm 25 passed / 1 pre-existing failed at EXIT=1, base arm 12 passed / 1 failed at EXIT=1, the negative control at b49a1da3 logging 11 failed / 2 passed at EXIT=1, and test_logs and negative_control_log on disk.",
+    "write_paths": "The source manifest declares seven write paths; the delta touches four of them (reckon/crew/recovery.py, reckon/crew/recovery_review_delivery.py, reckon/crew/recovery_review_subject.py, tests/test_a_review_refusal_names_its_failed_condition.py) and no path outside them."
+  }
+}
