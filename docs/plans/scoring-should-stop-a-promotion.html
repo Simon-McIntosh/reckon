@@ -22,14 +22,14 @@
   <title>Scoring Should Stop A Promotion | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="240">
+<meta name="plan-version" content="242">
 <meta name="plan-modified" content="2026-10-20">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;done&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;implementable&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
 <meta name="plan-commits" content="c535b07461ca62998cefcd3738c03f1f472e0296,eb848a591843dd1ce11bc10a1ad0abd08e4653ad,3c4e0326ae5128b72e3defd4a6e35a7f3423fa80,51589acde2aba08be2d2ab036f7113acc65a1df2,f407e072,85495f3baf7fed98a8fadac42e331267d88bc3a4">
 <meta name="plan-impl" content="0.98">
 <meta name="plan-sprint" content="S22">
-<meta name="plan-section-depends-on" content="{&quot;s18&quot;:[&quot;scoring-should-stop-a-promotion#s6&quot;]}">
+<meta name="plan-section-depends-on" content="{&quot;s18&quot;:[&quot;scoring-should-stop-a-promotion#s6&quot;],&quot;s6&quot;:[&quot;a-review-can-see-the-figure#s10&quot;]}">
 </head>
 <body>
   <main class="plan-doc">
@@ -2557,13 +2557,15 @@
     <code>tests/test_figure_review.py</code> (new).</p>
 
     <p><strong>Done when</strong> a run whose commits add or change <code>docs/figures/p/a.svg</code>
-    has a figure review dispatched with that figure among its images and the figure profile;
-    a run that changes only source has its text review and no figure review; with no lane
-    declaring image input the figure review is held and its reason names the image modality;
-    the composed brief states each figure rule above and that the reviewer writes nothing;
-    the test builds its repository and flight in a temporary directory and reads nothing
-    outside it; <code>ruff check</code> and <code>ruff format --check</code> add no findings on
-    changed files; the coordinator runs the importer population of
+    has a figure review dispatched with the figure profile and, among its images, a PNG
+    rendered from that SVG rather than the SVG itself; a run that changes only source has its
+    text review and no figure review; with no lane declaring image input the figure review is
+    held and its reason names the image modality; the composed brief states each figure rule
+    above and that the reviewer writes nothing; the test builds its repository and flight in
+    a temporary directory and reads nothing outside it; <code>ruff check</code> and
+    <code>ruff format --check</code> add no findings on changed files; every log is written
+    under the run directory, starts with its revision and the literal command, and ends in
+    <code>EXIT=</code>; the coordinator runs the importer population of
     <code>reckon/crew/recovery_review_dispatch.py</code> at merge. <strong>Negative
     control:</strong> with the figure trigger removed, the first case dispatches no figure
     review and the test fails.</p>
@@ -2629,10 +2631,11 @@
 
     <h2 id="s18">§18 — A blocking figure finding holds promotion</h2>
 <section data-reckon="section" data-id="s18" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
-<p>A figure review protects nothing unless promotion reads it. §6 dispatches it; this section makes its verdict count. The figure review's findings are stored in the run's review records beside the text review's and attributed to the figure review, so a reader can tell which half failed. A blocking figure finding refuses <code>crew complete</code> as a blocking text finding does, naming the figure, and the repair reflex resumes the worker on it as it does for a text finding (<code>blocking_findings</code> in <code>reckon/crew/repair.py</code>). A run that drew no figure is promoted exactly as before.</p>
+<p>A figure review protects nothing unless promotion reads it. §6 dispatches it; this section makes its verdict count. Today no promotion check reads a finding's severity: the review guards in <code>reckon/crew/promotion_checks.py</code> key on a stored record's status and reviewed head, so a store holding a blocking finding still satisfies them, and a blocking text finding is acted on only by the repair reflex (<code>blocking_findings</code> in <code>reckon/crew/repair.py</code>), which resumes the worker. There is no existing refusal to extend, so this section adds one.</p>
+<p><strong>The read.</strong> <code>crew complete</code> refuses a run whose newest figure review carries a blocking finding with no disposition, naming the figure and the finding; a finding answered through <code>crew dispose</code> no longer refuses. The repair reflex resumes the worker on a blocking figure finding as it does for a text finding. A run that drew no figure is promoted exactly as before, and text reviews keep their present behaviour; whether a blocking text finding should also hold promotion is a separate question this section does not settle.</p>
 <p><strong>The hazard.</strong> <code>reckon/crew/review_lifecycle.py</code> treats a run review as superseded by any later review of the same run. A figure review is a later review of the same run, so without a change it would supersede the run's text review and drop that review's findings from every reader. The two are separate subjects, as a plan's design and content reviews are, and neither supersedes the other.</p>
 <p><strong>Write paths:</strong> <code>reckon/crew/review_lifecycle.py</code>, <code>reckon/crew/repair.py</code>, <code>reckon/crew/promotion_checks.py</code>, <code>tests/test_a_blocking_figure_finding_holds_promotion.py</code> (new).</p>
-<p><strong>Done when</strong> a run carrying a stored text review with no blocking finding and a stored figure review with one blocking finding is refused by <code>crew complete</code> with a reason naming the figure; the same run with that finding disposed is promoted; the text review is not superseded by the figure review, and a later text review still supersedes the earlier one; a run with no figure review is promoted as before; the test builds its stores in a temporary directory and reads nothing outside it; <code>ruff check</code> and <code>ruff format --check</code> add no findings on changed files; the coordinator runs the importer population of the changed modules at merge. <strong>Negative control:</strong> with the figure review left out of the promotion read, the first case is promoted and the test fails.</p>
+<p><strong>Done when</strong> a run carrying a stored text review with no blocking finding and a stored figure review with one undisposed blocking finding is refused by <code>crew complete</code> with a reason naming the figure; the same run with that finding disposed is promoted; a run whose text review carries a blocking finding and which has no figure review is promoted as it is today; the text review is not superseded by the figure review, and a later text review still supersedes the earlier one; the test builds its stores in a temporary directory and reads nothing outside it; <code>ruff check</code> and <code>ruff format --check</code> add no findings on changed files; every log is written under the run directory, starts with its revision and the literal command, and ends in <code>EXIT=</code>; the coordinator runs the importer population of the changed modules at merge. <strong>Negative control:</strong> with the figure review left out of the promotion read, the first case is promoted and the test fails.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -3351,6 +3354,10 @@
     <p class="r-gate-required-evidence">a-review-can-see-the-figure#s1</p>
     <a class="r-gate-evidence" href="a-review-can-see-the-figure §1, promoted run r-20260922T204207559107-a-lane-declares-its-input-modalities (commits f2ea9301, 428477c7): BackendConfig declares input_modalities, and select_profile_backend refuses a figure profile on a lane declaring no image by name, never falling through to default_backend. tests/test_flight.py asserts both, and the fall-through mutation turns them red. The refusal lives in the resolver; this plan&#x27;s §6 is its first dispatch caller and must route through select_profile_backend.">Evidence</a>
 </div>
+<div class="r-gate" data-id="g-ssp-figure-review-lane" data-section="s6" data-gated-sections="s6" data-status="open" data-verdict="">
+    <h4 class="r-gate-measure">a review that requires image input takes only lanes that declare it, admitted despite review_excluded_backends, and is held with the image modality named when no lane declares it; this replaces the per-lane refusal of the retired select_profile_backend that g-ssp-figure-lane recorded</h4>
+    <p class="r-gate-required-evidence">a-review-can-see-the-figure#s12</p>
+    </div>
 </section>
 </main>
 </body>
