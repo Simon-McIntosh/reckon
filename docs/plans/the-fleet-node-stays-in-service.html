@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="Our own step cancels drained three nodes; end a stopped worker inside its step, let migrate start a second move, bound step memory, then move">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
-  <meta name="plan-effort-hours" content="9.0">
+  <meta name="plan-effort-hours" content="14.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
@@ -23,7 +23,7 @@
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="50">
+<meta name="plan-version" content="51">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -598,8 +598,12 @@
     </p>
     <p>
       The liveness read takes one walk of the process table per beat. The walk maps
-      each run mark it sees to its pids, and every run asked in that beat is answered
-      from the map. A run asked in a later beat triggers a fresh walk, so a worker that
+      each pair it sees, a run mark and the crew home that process's own environment
+      places it in, to its pids. Every run asked in that beat is answered from that
+      map, under its own run id and crew home. The key is the pair, never the run mark
+      alone: <code>_processes_owning_run</code> qualifies a process on both, so that a
+      process carrying another crew home's run id is never named as this run's
+      worker. A run asked in a later beat triggers a fresh walk, so a worker that
       started mid-beat is found on the next beat. The stop path does not use the
       per-beat map: it walks afresh at signal time, and keeps its start-tick floor and
       crew-home checks, because a map up to one beat old must never select a process
