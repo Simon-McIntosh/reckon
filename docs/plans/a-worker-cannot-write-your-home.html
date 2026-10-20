@@ -23,10 +23,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5,6dcb6cc1d,31e84061f">
 <meta name="plan-impl" content="0.99">
-<meta name="plan-version" content="205">
+<meta name="plan-version" content="206">
 <meta name="plan-modified" content="2026-10-20">
 <meta name="plan-section-depends-on" content="{&quot;s17&quot;: [&quot;a-worker-cannot-write-your-home#s15&quot;], &quot;s16&quot;: [&quot;a-worker-cannot-write-your-home#s15&quot;]}">
 </head>
@@ -1557,7 +1557,7 @@
 <p><strong>After it lands.</strong> The coordinator retries the codex CLI upgrade once no codex review is live. It first runs one review on the new client outside the fleet, from a read-only working directory, and scans every stream newer than the swap for the <code>.aws</code> error.</p>
 
     <h2 id="s17">§17 — The node-tmp seal has one directory-creation rule and a probe that can fail</h2>
-<section data-reckon="section" data-id="s17" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s17" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> The review of §15 at <code>b8c27abd3</code> (run <code>r-20261018T175234018263</code>, 88/120) raised two follow-ons that bear on how long the seal stays right. First, <code>create_node_tmp_runtime_paths</code> in <code>reckon/_worker_fence.py</code> re-implements the module's own <code>create_write_roots</code>: the same resolved-destination existence check, <code>mkdir(parents=True, exist_ok=True)</code> and <code>BackendError</code> loop for each directory a fence is about to bind writable. So the rule now has two copies that can drift. Second, the assertion in <code>tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py</code> that no probe file exists in the node-tmp root guards nothing. The stub writes its probes only into its own scratch and the runtime paths, never into the node-tmp root, so the assertion holds whatever the fence does.</p><p><strong>Deliverable.</strong> <code>create_node_tmp_runtime_paths</code> creates its directories through <code>create_write_roots</code>, keeping only what is specific to the runtime paths, and the fence's binds do not change. A new test function in the §15 test file has its stub write a probe directly into the node-tmp root, outside its own scratch and the runtime paths, and asserts that the write is refused and that no probe lands there. It is a test of its own, so no earlier assertion stands between the seal and the probe check.</p><p><strong>Done when</strong> <code>tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py</code> passes, including the new direct-probe test with the probe refused. The negative control removes the node-tmp seal from <code>fence_argv</code>, and the direct-probe test then fails at its probe assertion, as the failing line in the logged output shows. The control is run at the delivered head and logged under the run directory. A test intercepts <code>create_write_roots</code> and asserts that creating the runtime paths goes through it, with every runtime path among the roots it receives. A second negative control restores the separate creation loop, and that test then fails. A test also finds that the composed fence argv for a fixed set of roots equals the literal argv that fixture determines. The test files naming <code>_worker_fence</code> or <code>fence_argv</code> show no added failure against base, run on node-local <code>/tmp</code> under <code>sbatch --partition=all_debug --exclusive</code>, and every log ends in EXIT=. <code>ruff check</code> and <code>ruff format --check</code> add no findings on the changed Python files. Build it after §15 merges, and not while §16 is in flight, because all three write <code>reckon/_worker_fence.py</code>. Write paths: <code>reckon/_worker_fence.py</code> and <code>tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py</code>.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
@@ -1736,10 +1736,11 @@
     <pre class="r-fu-prompt">/reckon-build a-worker-cannot-write-your-home §16</pre>
     <p class="r-fu-outcome">§16 landed: one rule, <code>fence_writable_roots</code>, says which declared roots stay writable inside the fence, and a fenced launch is handed only those; merged as <code>ec5e0f441</code>, review 110/120, no reproducible added failure over 253 importer files.</p>
     </article>
-<article class="r-fu" data-id="f-awcwyh-018" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build" data-written-at="2026-10-18" data-recommends-skill="/reckon-build a-worker-cannot-write-your-home §17" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-awcwyh-018" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build" data-written-at="2026-10-18" data-recommends-skill="/reckon-build a-worker-cannot-write-your-home §17" data-resolved-at="2026-10-20T13:18:12+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Build §17 — the node-tmp seal has one directory-creation rule and a probe that can fail</h4>
     <div class="r-fu-body"><p>The follow-ons from §15's review. Not while §16 is in flight, since both write <code>reckon/_worker_fence.py</code>.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-worker-cannot-write-your-home §17</pre>
+    <p class="r-fu-outcome">§17 landed as merge 84b176ef1.</p>
     </article>
 </section>
 
@@ -2211,6 +2212,9 @@
 </div>
 <div class="r-comment" data-section="s17" data-id="c-run-r-20261020T124754546697-review-of-the-node-tmp-seal-has-one-directory-rule-d01e47ee1d6e" data-who="reckon-build" data-when="2026-10-20T12:57:30.900Z">
     <div class="r-comment-body"><p>review of run r-20261020T120938882269-the-node-tmp-seal-has-one-directory-rule at review-record path under review-records/; scores goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 20, reuse 20; added_failure_count 0; two follow-on findings; status parsed; reckon crew check --review --record passes.</p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-close-s17" data-who="reckon-build" data-when="2026-10-20T13:20:00Z">
+    <div class="r-comment-body"><p>§17 landed: the node-tmp runtime paths are created through <code>create_write_roots</code>, and a direct probe into the node-tmp root is proved refused (head <code>d01e47ee</code>, merge <code>84b176ef1</code>); review 117/120; the 20-file population adds no failing test. <a href="/reckon/evidence/archive/a-worker-cannot-write-your-home-landed.html#the-node-tmp-seal-has-one-directory-rule">evidence</a></p></div>
 </div>
 </section>
 </main>
