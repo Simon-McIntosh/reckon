@@ -1,0 +1,83 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/serve.py:1722",
+    "reckon/mcp.py:1694",
+    "reckon/roadmap.py:1909",
+    "reckon/roadmap.py:3123"
+  ],
+  "completed_at": "2026-10-20T04:37:25.512Z",
+  "dispatched_at": "2026-10-20T04:20:10Z",
+  "findings": [
+    {
+      "file": "docs/ui/crew.jsx",
+      "line": "140",
+      "severity": "follow-on",
+      "text": "follow-on: the new span's class \"r-derived-flow-progress\" has no stylesheet rule anywhere in docs/ (docs/ui/crew.css styles r-derived-flow-sprint-chip at :258 and r-derived-flow-hours at :274 but not this class), so the added progress readout renders unstyled and unspaced beside its styled siblings."
+    },
+    {
+      "file": "docs/ui/graph.jsx",
+      "line": "120",
+      "severity": "follow-on",
+      "text": "follow-on: the inventory-only fallback view reads the endpoint plan's own \"impl\", while the primary _roadmapEndpointRows path at :200 reads the closure roll-up \"endpoint.progress\", so the same endpoint row can display two different figures depending on which payload the page holds."
+    },
+    {
+      "file": "tests/test_every_surface_shows_the_one_progress_figure.py",
+      "line": "281",
+      "severity": "follow-on",
+      "text": "follow-on: the primary graph render (endpoint.progress) and the crew bar render are guarded only by substring matches over the JSX source, so a source that still names endpoint.progress while rendering a different value would pass the guard."
+    },
+    {
+      "file": "docs/figures/the-site-answers-fast-and-agrees/every-surface-shows-the-one-progress-figure",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the declared figure path was never written; this doc-producing node argues its change in prose only, against the standing mandate to illustrate planning and research documents with a figure."
+    }
+  ],
+  "gate_evidence": {
+    "base_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T033509554637-every-surface-shows-the-one-progress-figure/base-focused.log",
+    "head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T033509554637-every-surface-shows-the-one-progress-figure/final-suite-clean.log",
+    "negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T033509554637-every-surface-shows-the-one-progress-figure/negative-control.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read both commits (d0ff39beb, d9d9c3a69) against 7f1360eca; the code change is the _plan_html import and the two \"progress\" additions in reckon/roadmap.py:2259 and :2454, the dropped duplicate \"slug\" key in _schedule_bars at :1874, two shippedPercent rewrites in docs/ui/graph.jsx:120 and :200, the progress span in docs/ui/crew.jsx:140, with the rest updated test files and the evidence fragment.",
+    "done_when": "read the reviewed manifest and its logs; the new parity test tests/test_every_surface_shows_the_one_progress_figure.py:200 reads the figure through the index row, discovery row, graph endpoint, schedule bar and fleet summary, the arms are 55 passed at base (base-focused.log, EXIT=0) and 57 passed at head (final-suite-clean.log, EXIT=0), and the declared negative control reddens the endpoint parity assertion (negative-control.log, 1 failed, EXIT=1), so the gate asserts the measure it names.",
+    "goal": "read the node goal (show the one progress figure on every surface, a graph endpoint carrying the shared roll-up and crew flow items their plan's figure) against the landed diff; reckon/roadmap.py:2259 and :2454 attach \"progress\" from derive_fleet_impl_imputing_effort, docs/ui/graph.jsx:200 renders endpoint.progress, and docs/ui/crew.jsx:123 renders the resolved inventory row's impl, so every named surface states a served figure.",
+    "manifest": "read the reviewed manifest; status complete with the gate lines for head, base, ruff and the negative control all resolving on disk, and its own follow_ons correctly names the missing figure.",
+    "write_paths": "read both commits against the declared fence; every changed path \u2014 reckon/roadmap.py, docs/ui/graph.jsx, docs/ui/crew.jsx, the six updated test files, tests/test_every_surface_shows_the_one_progress_figure.py and docs/evidence/fragments/the-site-answers-fast-and-agrees/every-surface-shows-the-one-progress-figure.html \u2014 is inside the fence, and the declared figures path docs/figures/the-site-answers-fast-and-agrees/every-surface-shows-the-one-progress-figure was left unused."
+  },
+  "justifications": {
+    "durability": "the server-side figure is guarded by a parity assertion whose negative control reddens it (negative-control.log, 1 failed, EXIT=1), but the primary JSX render paths are guarded only by source-substring matches at tests/test_every_surface_shows_the_one_progress_figure.py:278-281.",
+    "evidence": "tests/test_every_surface_shows_the_one_progress_figure.py:200 reads all five named surfaces against a reference computed from the plan file, and final-suite-clean.log:5 records 57 passed EXIT=0 against base-focused.log:5 55 passed EXIT=0.",
+    "fit": "the landed code matches the surrounding idiom and carries no plan label, but the new span at docs/ui/crew.jsx:140 names a class with no rule in docs/ui/crew.css while its siblings are styled there at :258 and :274.",
+    "goal_fidelity": "reckon/roadmap.py:2259 attaches the closure roll-up under \"progress\" and docs/ui/graph.jsx:200 paints it, while docs/ui/graph.jsx:120 still paints the endpoint plan's own impl on the inventory-only fallback.",
+    "reuse": "derive_fleet_impl_imputing_effort is owned once at reckon/_plan_html.py:853 and both consumers, reckon/fleet_index.py and reckon/roadmap.py:2259, call it rather than forking a weighting.",
+    "scope_discipline": "every path in the diff at 7f1360eca..d9d9c3a69 is inside the declared write paths listed in the reviewed manifest."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal (show the one progress figure on every surface, a graph endpoint carrying the shared roll-up and crew flow items their plan's figure) against the landed diff; reckon/roadmap.py:2259 and :2454 attach \"progress\" from derive_fleet_impl_imputing_effort, docs/ui/graph.jsx:200 renders endpoint.progress, and docs/ui/crew.jsx:123 renders the resolved inventory row's impl, so every named surface states a served figure.\nVERDICT done_when: read the reviewed manifest and its logs; the new parity test tests/test_every_surface_shows_the_one_progress_figure.py:200 reads the figure through the index row, discovery row, graph endpoint, schedule bar and fleet summary, the arms are 55 passed at base (base-focused.log, EXIT=0) and 57 passed at head (final-suite-clean.log, EXIT=0), and the declared negative control reddens the endpoint parity assertion (negative-control.log, 1 failed, EXIT=1), so the gate asserts the measure it names.\nVERDICT write_paths: read both commits against the declared fence; every changed path \u2014 reckon/roadmap.py, docs/ui/graph.jsx, docs/ui/crew.jsx, the six updated test files, tests/test_every_surface_shows_the_one_progress_figure.py and docs/evidence/fragments/the-site-answers-fast-and-agrees/every-surface-shows-the-one-progress-figure.html \u2014 is inside the fence, and the declared figures path docs/figures/the-site-answers-fast-and-agrees/every-surface-shows-the-one-progress-figure was left unused.\nVERDICT manifest: read the reviewed manifest; status complete with the gate lines for head, base, ruff and the negative control all resolving on disk, and its own follow_ons correctly names the missing figure.\nVERDICT diff: read both commits (d0ff39beb, d9d9c3a69) against 7f1360eca; the code change is the _plan_html import and the two \"progress\" additions in reckon/roadmap.py:2259 and :2454, the dropped duplicate \"slug\" key in _schedule_bars at :1874, two shippedPercent rewrites in docs/ui/graph.jsx:120 and :200, the progress span in docs/ui/crew.jsx:140, with the rest updated test files and the evidence fragment.\nCALL_SITES: reckon/serve.py:1722, reckon/mcp.py:1694, reckon/roadmap.py:1909, reckon/roadmap.py:3123\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/roadmap.py:2259 attaches the closure roll-up under \"progress\" and docs/ui/graph.jsx:200 paints it, while docs/ui/graph.jsx:120 still paints the endpoint plan's own impl on the inventory-only fallback.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_every_surface_shows_the_one_progress_figure.py:200 reads all five named surfaces against a reference computed from the plan file, and final-suite-clean.log:5 records 57 passed EXIT=0 against base-focused.log:5 55 passed EXIT=0.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff at 7f1360eca..d9d9c3a69 is inside the declared write paths listed in the reviewed manifest.\nSCORE durability: 16\nJUSTIFICATION durability: the server-side figure is guarded by a parity assertion whose negative control reddens it (negative-control.log, 1 failed, EXIT=1), but the primary JSX render paths are guarded only by source-substring matches at tests/test_every_surface_shows_the_one_progress_figure.py:278-281.\nSCORE fit: 15\nJUSTIFICATION fit: the landed code matches the surrounding idiom and carries no plan label, but the new span at docs/ui/crew.jsx:140 names a class with no rule in docs/ui/crew.css while its siblings are styled there at :258 and :274.\nSCORE reuse: 20\nJUSTIFICATION reuse: derive_fleet_impl_imputing_effort is owned once at reckon/_plan_html.py:853 and both consumers, reckon/fleet_index.py and reckon/roadmap.py:2259, call it rather than forking a weighting.\nFINDING docs/ui/crew.jsx:140 follow-on: the new span's class \"r-derived-flow-progress\" has no stylesheet rule anywhere in docs/ (docs/ui/crew.css styles r-derived-flow-sprint-chip at :258 and r-derived-flow-hours at :274 but not this class), so the added progress readout renders unstyled and unspaced beside its styled siblings.\nFINDING docs/ui/graph.jsx:120 follow-on: the inventory-only fallback view reads the endpoint plan's own \"impl\", while the primary _roadmapEndpointRows path at :200 reads the closure roll-up \"endpoint.progress\", so the same endpoint row can display two different figures depending on which payload the page holds.\nFINDING tests/test_every_surface_shows_the_one_progress_figure.py:281 follow-on: the primary graph render (endpoint.progress) and the crew bar render are guarded only by substring matches over the JSX source, so a source that still names endpoint.progress while rendering a different value would pass the guard.\nFINDING docs/figures/the-site-answers-fast-and-agrees/every-surface-shows-the-one-progress-figure:1 follow-on: the declared figure path was never written; this doc-producing node argues its change in prose only, against the standing mandate to illustrate planning and research documents with a figure.",
+  "review_run_id": "r-20261020T041828726795-review-of-every-surface-shows-the-one-progress-figure-d9d9c3a69ba5",
+  "reviewed_base_sha": "7f1360eca343fe0efb7c0f5924e0b04d48d82d2e",
+  "reviewed_commit": "d9d9c3a69ba5a25378a20d6b0ede20ca15201944",
+  "reviewed_head_sha": "d9d9c3a69ba5a25378a20d6b0ede20ca15201944",
+  "reviewed_run_id": "r-20261020T033509554637-every-surface-shows-the-one-progress-figure",
+  "reviewer_run_id": "r-20261020T041828726795-review-of-every-surface-shows-the-one-progress-figure-d9d9c3a69ba5",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T04:43:09.422200+00:00",
+  "total": 105
+}
