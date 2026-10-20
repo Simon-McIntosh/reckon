@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:825",
+    "reckon/crew/promotion.py:586"
+  ],
+  "completed_at": "2026-10-20T09:40:50.450Z",
+  "dispatched_at": "2026-10-20T09:29:26Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T083509287698-promotion-refuses-a-png-twin-of-an-svg/logs/head-arm-reports-surface.txt",
+      "line": "1",
+      "severity": "blocking",
+      "text": "blocking: the head-arm after_suite log the manifest cites was rewritten after the manifest (log mtime 11:27:11 vs manifest 11:22:11) and the run ended four seconds later (exit.json 11:27:15), leaving the file truncated at 63% with no summary line and no EXIT= line, so the 562-passed/1-failed result and the gate exit status the manifest records for the head arm cannot be read from the log it names."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T083509287698-promotion-refuses-a-png-twin-of-an-svg/manifest.md",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "follow-on: the baseline_suite and after_suite records carry an angle-bracket placeholder in their command fields (`-q <29 reports-surface test files>`), which the armed-suite record contract forbids; the two logs themselves carry the literal command, so this is a recording defect rather than a missing measurement."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read against base 5af4cf2fd; the single commit b09a26b15 adds `_committed_paths_added_since` and `_committed_head_paths` (git path probes), `_png_twin_findings_for_base` and `_png_twin_findings` in reckon/crew/reports.py:1528-1630, `_require_no_png_twin_of_an_svg` in reckon/crew/promotion_checks.py:521, its call and import in reckon/crew/promotion.py, the five-case test file and the landing fragment.",
+    "done_when": "The source done_when names tests/test_a_png_twin_of_an_svg_is_refused.py and a by-delta reports-surface arm; the gate log records 5 passed EXIT=0, the negative control is red and the base arm is complete, but the head-arm log the manifest cites for the after_suite is truncated at 63% and carries neither its summary nor its EXIT= line.",
+    "goal": "The source node's goal is to make the shared manifest audit report a PNG committed beside an SVG of the same stem so `crew check --manifest` reports it and `crew complete` refuses it; reckon/crew/reports.py:2580 wires `_png_twin_findings` into `audit_manifest` and reckon/crew/promotion.py:586 wires `_require_no_png_twin_of_an_svg` into `complete`, one shared predicate `_png_twin_findings_for_base` at reckon/crew/reports.py:1571.",
+    "manifest": "Read; it records commit b09a26b15, status complete, the gate at 5 passed, the reports-surface head/base arms, the declared negative control and ruff by delta, but its after_suite cites logs/head-arm-reports-surface.txt as completed with exit_status 1 while that file ends mid-suite, and both armed-suite records carry an angle-bracket placeholder in their command fields.",
+    "write_paths": "The source dispatch fences reckon/crew/reports.py, reckon/crew/promotion_checks.py, reckon/crew/promotion.py, tests/test_a_png_twin_of_an_svg_is_refused.py, the fragment under docs/evidence/fragments/a-review-can-see-the-figure/ and docs/figures/a-review-can-see-the-figure/promotion-refuses-a-png-twin-of-an-svg; the base..head diff changes exactly those first four and the fragment, all inside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_a_png_twin_of_an_svg_is_refused.py:167-177 asserts the exit code, the single twin finding and both paths independently of the value under test, and the declared negative control (logs/negative-control.txt) shows that removing the check reddens test_a_png_beside_its_svg_is_reported_and_refused at the removal.",
+    "evidence": "The gate log records 5 passed EXIT=0 and the negative control is red as declared, but the after_suite log the manifest cites at logs/head-arm-reports-surface.txt is truncated at 63% with no EXIT= line, so the head-arm result is not readable from the artifact it names.",
+    "fit": "The new helpers follow the module's existing local `_...findings` idiom in reckon/crew/reports.py and introduce no plan, sprint or version label; the commit subject names no plan identifier.",
+    "goal_fidelity": "reckon/crew/reports.py:2580 adds the twin findings to `audit_manifest` and reckon/crew/promotion.py:586 adds the refusal to `complete`, so both surfaces the goal names are reached through one predicate.",
+    "reuse": "A capability search over reckon/ for a PNG-twin or figure-rule check and for a committed-path lister found none; the addition reuses the module's own `_citation_stores`, `_run_diff_store` and `_NONE_VALUES`, and its two small git probes match reports.py's existing local-helper style rather than forking an owned mechanism.",
+    "scope_discipline": "Every path in `git diff --stat 5af4cf2fd..b09a26b15` (reckon/crew/reports.py, promotion.py, promotion_checks.py, the new test and the fragment) is inside the source dispatch's declared write paths, and the granted figures directory was not used."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node's goal is to make the shared manifest audit report a PNG committed beside an SVG of the same stem so `crew check --manifest` reports it and `crew complete` refuses it; reckon/crew/reports.py:2580 wires `_png_twin_findings` into `audit_manifest` and reckon/crew/promotion.py:586 wires `_require_no_png_twin_of_an_svg` into `complete`, one shared predicate `_png_twin_findings_for_base` at reckon/crew/reports.py:1571.\nVERDICT done_when: The source done_when names tests/test_a_png_twin_of_an_svg_is_refused.py and a by-delta reports-surface arm; the gate log records 5 passed EXIT=0, the negative control is red and the base arm is complete, but the head-arm log the manifest cites for the after_suite is truncated at 63% and carries neither its summary nor its EXIT= line.\nVERDICT write_paths: The source dispatch fences reckon/crew/reports.py, reckon/crew/promotion_checks.py, reckon/crew/promotion.py, tests/test_a_png_twin_of_an_svg_is_refused.py, the fragment under docs/evidence/fragments/a-review-can-see-the-figure/ and docs/figures/a-review-can-see-the-figure/promotion-refuses-a-png-twin-of-an-svg; the base..head diff changes exactly those first four and the fragment, all inside the fence.\nVERDICT manifest: Read; it records commit b09a26b15, status complete, the gate at 5 passed, the reports-surface head/base arms, the declared negative control and ruff by delta, but its after_suite cites logs/head-arm-reports-surface.txt as completed with exit_status 1 while that file ends mid-suite, and both armed-suite records carry an angle-bracket placeholder in their command fields.\nVERDICT diff: Read against base 5af4cf2fd; the single commit b09a26b15 adds `_committed_paths_added_since` and `_committed_head_paths` (git path probes), `_png_twin_findings_for_base` and `_png_twin_findings` in reckon/crew/reports.py:1528-1630, `_require_no_png_twin_of_an_svg` in reckon/crew/promotion_checks.py:521, its call and import in reckon/crew/promotion.py, the five-case test file and the landing fragment.\nCALL_SITES: reckon/crew_run_commands.py:825, reckon/crew/promotion.py:586\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/reports.py:2580 adds the twin findings to `audit_manifest` and reckon/crew/promotion.py:586 adds the refusal to `complete`, so both surfaces the goal names are reached through one predicate.\nSCORE evidence: 11\nJUSTIFICATION evidence: The gate log records 5 passed EXIT=0 and the negative control is red as declared, but the after_suite log the manifest cites at logs/head-arm-reports-surface.txt is truncated at 63% with no EXIT= line, so the head-arm result is not readable from the artifact it names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Every path in `git diff --stat 5af4cf2fd..b09a26b15` (reckon/crew/reports.py, promotion.py, promotion_checks.py, the new test and the fragment) is inside the source dispatch's declared write paths, and the granted figures directory was not used.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_png_twin_of_an_svg_is_refused.py:167-177 asserts the exit code, the single twin finding and both paths independently of the value under test, and the declared negative control (logs/negative-control.txt) shows that removing the check reddens test_a_png_beside_its_svg_is_reported_and_refused at the removal.\nSCORE fit: 18\nJUSTIFICATION fit: The new helpers follow the module's existing local `_...findings` idiom in reckon/crew/reports.py and introduce no plan, sprint or version label; the commit subject names no plan identifier.\nSCORE reuse: 17\nJUSTIFICATION reuse: A capability search over reckon/ for a PNG-twin or figure-rule check and for a committed-path lister found none; the addition reuses the module's own `_citation_stores`, `_run_diff_store` and `_NONE_VALUES`, and its two small git probes match reports.py's existing local-helper style rather than forking an owned mechanism.\nFINDING logs/head-arm-reports-surface.txt:1 blocking: the head-arm after_suite log the manifest cites was rewritten after the manifest (11:27:11 vs 11:22:11) and the run ended four seconds later, leaving it truncated at 63% with no summary or EXIT= line, so the head arm's recorded result and exit status cannot be read from the log it names.\nFINDING manifest.md:21 follow-on: the baseline_suite and after_suite records carry an angle-bracket placeholder in their command fields (`-q <29 reports-surface test files>`), which the armed-suite record contract forbids.\n",
+  "review_run_id": "r-20261020T092838254161-review-of-promotion-refuses-a-png-twin-of-an-svg-b09a26b15635",
+  "reviewed_base_sha": "5af4cf2fd43627b1bc20b2407b2b2433bf23de9d",
+  "reviewed_commits": [
+    "b09a26b15635a5e3f4d01f16591fb991c471d59e"
+  ],
+  "reviewed_head_sha": "b09a26b15635a5e3f4d01f16591fb991c471d59e",
+  "reviewed_run_id": "r-20261020T083509287698-promotion-refuses-a-png-twin-of-an-svg",
+  "scores": {
+    "durability": 18,
+    "evidence": 11,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T09:44:44.406134+00:00",
+  "total": 103
+}
