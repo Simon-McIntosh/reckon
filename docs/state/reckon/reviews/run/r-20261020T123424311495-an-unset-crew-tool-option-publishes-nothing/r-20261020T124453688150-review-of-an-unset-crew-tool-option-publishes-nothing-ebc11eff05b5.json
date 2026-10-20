@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "after_suite (head.log) failure_ids minus baseline_suite (base_arm.log) failure_ids is empty: the base arm failed test_tool_argument_models_publish_cheap_observation_options and test_every_module_fits_a_worker_window, the head arm fails only test_every_module_fits_a_worker_window, so this node added no failure.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-20T12:57:50.998Z",
+  "dispatched_at": "2026-10-20T12:45:41Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the reviewer ran ruff 0.16.4 over the head blob of reckon/_mcp_tools.py and both check and format exit 0; the claim stands with the review as its receipt",
+      "recorded_at": "2026-10-20T12:59:03.590100+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T123424311495-an-unset-crew-tool-option-publishes-nothing/manifest.md",
+      "line": "19",
+      "text": "follow-on: the done_when requires the ruff check/format result 'with the log in the run directory', but test_logs names only the two pytest logs and no ruff log exists under the run directory; the artifacts line asserts clean ruff with no log a reader can open. I confirmed the claim myself by running ruff 0.16.4 over the head blob of reckon/_mcp_tools.py (check and format both exit 0)."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call site reaches the landed change: CrewArgs is read only by tests, and the crew tool registers from _crew's signature at reckon/mcp.py:3130.",
+    "diff": "read both commits against base 4c056ffb commit by commit: ee306a9d1 changes one line in reckon/_mcp_tools.py (`refresh: bool = False` -> `bool | None = None`), ebc11eff0 adds the 31-line landing fragment; tests/test_mcp_tools.py is untouched (empty diff base..head for that file).",
+    "done_when": "\u00a745's measure names tests/test_mcp_tools.py::test_tool_argument_models_publish_cheap_observation_options passing at head and failing at the base arm, a six-file gate removing that one failure and adding none against the base arm, and a ruff clause with its log in the run directory; the two pytest logs confirm the failure counts (head.log 1 failed /137 passed, base_arm.log 2 failed/136 passed), but no ruff log exists in the run directory.",
+    "goal": "the node goal is to declare CrewArgs.refresh as bool | None = None so an unset option publishes nothing; the landed commit ee306a9d1 changes exactly that field at reckon/_mcp_tools.py:97, and a repo-wide search at the head found no production reader of CrewArgs (the crew tool registers from _crew's own signature at reckon/mcp.py:3130), so the field is a typed-surface mirror held by the tests.",
+    "manifest": "read the manifest at the run directory; status complete, commits ee306a9d1 and ebc11eff0, landing line recorded, baseline_suite and after_suite JSON both completed with their failure ids, and test_logs naming head.log and base_arm.log.",
+    "write_paths": "the declared write paths are reckon/_mcp_tools.py and the landing fragment docs/evidence/fragments/lane-and-model-routing/an-unset-crew-tool-option-publishes-nothing.html; git diff --stat 4c056ffb..ebc11eff0 touches only those two, and no figure path was used."
+  },
+  "justifications": {
+    "durability": "tests/test_mcp_tools.py:43 fails whenever the dump carries an unset option, and the base arm reinstating `= False` reddens exactly test_tool_argument_models_publish_cheap_observation_options, so the guard is demonstrated to fire.",
+    "evidence": "tests/test_mcp_tools.py:43 asserts the dumped model equals a literal without `refresh`, and head.log (1 failed, 137 passed) versus base_arm.log (2 failed, 136 passed) shows exactly the in-scope failure removed, but the done_when's ruff clause has no log in the run directory.",
+    "fit": "reckon/_mcp_tools.py:97 now matches the None-default idiom of its sibling optional fields, but the two commit bodies carry plan-section references (\u00a742, \u00a745) that the repository's commit rules forbid.",
+    "goal_fidelity": "reckon/_mcp_tools.py:97 now reads `refresh: bool | None = None`, so model_dump(exclude_none=True) omits an unset refresh and the exact deliverable the goal names is met.",
+    "reuse": "the diff adds no function, class or module; it changes the default of the existing CrewArgs.refresh field, so no capability is forked or duplicated.",
+    "scope_discipline": "git diff --stat 4c056ffb..ebc11eff0 changes only reckon/_mcp_tools.py (1 line) and the declared landing fragment (31 lines)."
+  },
+  "node": "review-of-an-unset-crew-tool-option-publishes-nothing-ebc11eff05b5",
+  "node:reviewed": "an-unset-crew-tool-option-publishes-nothing",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to declare CrewArgs.refresh as bool | None = None so an unset option publishes nothing; the landed commit ee306a9d1 changes exactly that field at reckon/_mcp_tools.py:97, and a repo-wide search at the head found no production reader of CrewArgs (the crew tool registers from _crew's own signature at reckon/mcp.py:3130), so the field is a typed-surface mirror held by the tests.\nVERDICT done_when: \u00a745's measure names tests/test_mcp_tools.py::test_tool_argument_models_publish_cheap_observation_options passing at head and failing at the base arm, a six-file gate removing that one failure and adding none against the base arm, and a ruff clause with its log in the run directory; the two pytest logs confirm the failure counts (head.log 1 failed /137 passed, base_arm.log 2 failed/136 passed), but no ruff log exists in the run directory.\nVERDICT write_paths: the declared write paths are reckon/_mcp_tools.py and the landing fragment docs/evidence/fragments/lane-and-model-routing/an-unset-crew-tool-option-publishes-nothing.html; git diff --stat 4c056ffb..ebc11eff0 touches only those two, and no figure path was used.\nVERDICT manifest: read the manifest at the run directory; status complete, commits ee306a9d1 and ebc11eff0, landing line recorded, baseline_suite and after_suite JSON both completed with their failure ids, and test_logs naming head.log and base_arm.log.\nVERDICT diff: read both commits against base 4c056ffb commit by commit: ee306a9d1 changes one line in reckon/_mcp_tools.py (`refresh: bool = False` -> `bool | None = None`), ebc11eff0 adds the 31-line landing fragment; tests/test_mcp_tools.py is untouched (empty diff base..head for that file).\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/_mcp_tools.py:97 now reads `refresh: bool | None = None`, so model_dump(exclude_none=True) omits an unset refresh and the exact deliverable the goal names is met.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_mcp_tools.py:43 asserts the dumped model equals a literal without `refresh`, and head.log (1 failed, 137 passed) versus base_arm.log (2 failed, 136 passed) shows exactly the in-scope failure removed, but the done_when's ruff clause has no log in the run directory.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 4c056ffb..ebc11eff0 changes only reckon/_mcp_tools.py (1 line) and the declared landing fragment (31 lines).\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_mcp_tools.py:43 fails whenever the dump carries an unset option, and the base arm reinstating `= False` reddens exactly test_tool_argument_models_publish_cheap_observation_options, so the guard is demonstrated to fire.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/_mcp_tools.py:97 now matches the None-default idiom of its sibling optional fields, but the two commit bodies carry plan-section references (\u00a742, \u00a745) that the repository's commit rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module; it changes the default of the existing CrewArgs.refresh field, so no capability is forked or duplicated.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T123424311495-an-unset-crew-tool-option-publishes-nothing/manifest.md:19 follow-on: the done_when requires the ruff check/format result 'with the log in the run directory', but test_logs names only the two pytest logs and no ruff log exists under the run directory; the artifacts line asserts clean ruff with no log a reader can open. I confirmed the claim myself by running ruff 0.16.4 over the head blob of reckon/_mcp_tools.py (check and format both exit 0).",
+  "review_run_id": "r-20261020T124453688150-review-of-an-unset-crew-tool-option-publishes-nothing-ebc11eff05b5",
+  "reviewed_base_sha": "4c056ffbcdbbff4a63a1f97fc3043c4136b95d4c",
+  "reviewed_head_sha": "ebc11eff05b58faba7abc22026668830e1b1ab4f",
+  "reviewed_run_id": "r-20261020T123424311495-an-unset-crew-tool-option-publishes-nothing",
+  "scores": {
+    "durability": 20,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T12:52:00+00:00",
+  "total": 114
+}
