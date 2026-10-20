@@ -1245,13 +1245,12 @@ def _walk_discovery_signature(
     # discovery's counted set cannot drift apart.
     count = 0
     newest = 0
-    for _relative, path in metadata_index._covered_files_for_project(docs_dir, project):
-        try:
-            mtime = path.stat().st_mtime_ns
-        except OSError:
+    for relative, path in metadata_index._covered_files_for_project(docs_dir, project):
+        observed = metadata_index.covered_stat(docs_dir, project, relative, path)
+        if observed is None:
             continue
         count += 1
-        newest = max(newest, mtime)
+        newest = max(newest, observed.st_mtime_ns)
     for path in (
         docs_dir / ".reckon" / "project-state-migration.json",
         docs_dir / "state" / project / "project.json",
@@ -1415,10 +1414,12 @@ def discover_plans(docs_dir: Path, project: str, state_root: Path | None) -> dic
     signature so an unchanged docs tree returns instantly.
     """
     cache_key = (project, str(docs_dir.resolve()))
-    _, result = _fresh_discovery(cache_key, docs_dir, project, state_root)
-    if result is not None:
-        return result
-    with _discovery_lock(cache_key):
+    if cache_key in _DISC_CACHE:
+        with metadata_index.discovery_file_scope():
+            _, result = _fresh_discovery(cache_key, docs_dir, project, state_root)
+            if result is not None:
+                return result
+    with _discovery_lock(cache_key), metadata_index.discovery_file_scope():
         # A concurrent request may have finished the same scan while this one
         # waited; reuse it rather than scanning the tree a second time.
         sig, result = _fresh_discovery(cache_key, docs_dir, project, state_root)
@@ -1444,15 +1445,16 @@ def _discover_plans_uncached(
     git_last_times = _git_last_committed(repo_dir, docs_dir)
 
     inventory: list[dict] = []
-    resources = sorted(
-        resource_map(
-            docs_dir,
-            project,
-            include_archived=True,
-            ignore_invalid=True,
-        ).values(),
-        key=lambda item: str(item.relative_path),
-    )
+    with metadata_index.resource_candidate_scope():
+        resources = sorted(
+            resource_map(
+                docs_dir,
+                project,
+                include_archived=True,
+                ignore_invalid=True,
+            ).values(),
+            key=lambda item: str(item.relative_path),
+        )
     # Each document's parsed meta and readiness, persisted across processes by
     # the metadata index. A fresh process reads them for every unchanged file
     # and only parses the ones whose bytes moved, so a restart no longer
@@ -1572,7 +1574,10 @@ def _discover_plans_uncached(
     # Figure rows are appended after the typed resources; figures are
     # infrastructure to resource_map, so they never collide with a plan slug.
     plan_slugs = {item["slug"] for item in inventory if item.get("type") == "plan"}
-    for figure in figure_rows(docs_dir, project, plan_slugs):
+    covered_files = metadata_index._covered_files_for_project(docs_dir, project)
+    for figure in figure_rows(
+        docs_dir, project, plan_slugs, covered_files=covered_files
+    ):
         figure_path = figure.pop("path")
         figure["created"], figure["edited"] = _row_times(
             figure_path, repo_dir, git_times, git_last_times
@@ -1580,10 +1585,9 @@ def _discover_plans_uncached(
         # The revision addresses this figure's bytes, so the surface can build a
         # URL the server will answer immutable while the file still matches. An
         # unreadable file carries none, and its URL falls back to revalidation.
-        try:
-            figure["revision"] = file_revision(figure_path.stat())
-        except OSError:
-            figure["revision"] = ""
+        relative = figure_path.relative_to(docs_dir).as_posix()
+        observed = metadata_index.covered_stat(docs_dir, project, relative, figure_path)
+        figure["revision"] = file_revision(observed) if observed is not None else ""
         inventory.append(figure)
 
     # ── Distributed project state ──────────────────────────────────────────

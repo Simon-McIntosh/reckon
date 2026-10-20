@@ -132,7 +132,13 @@ def _capture_metadata(path: Path) -> tuple[str | None, str]:
 _DIMS_BY_SUFFIX = {".png": _png_dims, ".svg": _svg_dims, ".gif": _gif_dims}
 
 
-def figure_rows(docs_dir: Path, project: str, plan_slugs: set[str]) -> list[dict]:
+def figure_rows(
+    docs_dir: Path,
+    project: str,
+    plan_slugs: set[str],
+    *,
+    covered_files: list[tuple[str, Path]] | None = None,
+) -> list[dict]:
     """Return one inventory row per PNG/SVG/GIF under ``docs_dir/figures``.
 
     A PNG or an SVG yields a row whose kind is ``figure``; a GIF's row is
@@ -144,17 +150,21 @@ def figure_rows(docs_dir: Path, project: str, plan_slugs: set[str]) -> list[dict
     """
 
     figures_dir = docs_dir / "figures"
-    if not figures_dir.is_dir():
-        return []
-
-    paths = sorted(
-        [
+    if covered_files is None:
+        if not figures_dir.is_dir():
+            return []
+        paths = [
             *figures_dir.rglob("*.png"),
             *figures_dir.rglob("*.svg"),
             *figures_dir.rglob("*.gif"),
-        ],
-        key=lambda p: p.relative_to(figures_dir).as_posix(),
-    )
+        ]
+    else:
+        paths = [
+            path
+            for relative, path in covered_files
+            if relative.startswith("figures/") and path.suffix in _DIMS_BY_SUFFIX
+        ]
+    paths.sort(key=lambda p: p.relative_to(figures_dir).as_posix())
 
     rows = []
     for path in paths:
