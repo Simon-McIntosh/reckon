@@ -1411,6 +1411,17 @@ def candidates(
     group_by_backend = {
         member: group for group in view["groups"] for member in group["members"]
     }
+    # Each metered lane's burn is derived once, for every group the view names,
+    # rather than per candidate: the readings behind it are the project's
+    # recorded series, and reading them once per model would re-scan the same
+    # stores for each model sharing one account. A candidate is handed its
+    # group's block below, so no figure is computed in the picker.
+    burn_by_group = budget.burn_blocks(
+        request.project,
+        config=config,
+        groups=[group["group"] for group in view["groups"]],
+        now=now,
+    )
     # A review never runs on a backend the flight configuration withdraws from
     # review routing, so the candidate is removed here rather than offered for
     # Jev to weigh: an exclusion is a rule about what cannot run, not a
@@ -1665,6 +1676,11 @@ def candidates(
                 budget_age_s=budget_age_s,
                 context=context_block,
                 prior_outcomes=prior_block,
+                burn=(
+                    None
+                    if local or group is None
+                    else burn_by_group.get(str(group.get("group") or ""))
+                ),
             )
         )
     return result

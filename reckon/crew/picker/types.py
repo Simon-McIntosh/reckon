@@ -73,6 +73,12 @@ class Candidate:
     # already carries at least the configured threshold of outcomes, so a
     # candidate with enough history of its own renders unchanged.
     prior_outcomes: dict[str, Any] | None = None
+    # The metered lane's own burn block, derived in ``reckon.budget``: how fast
+    # its window is spending now, the even share it may afford for the coming
+    # period, and -- under a credits lift -- the pool, the balance's fall and
+    # the runway that pool buys. Absent on a lane with no metered account, which
+    # has no window to burn.
+    burn: dict[str, Any] | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
