@@ -1,0 +1,63 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "test_twenty_calls_start_no_more_children_than_the_bound asserts rig.spawner.count <= rig.server.death_bound; the two sides are independent (a spawn counter the test's hook increments vs a server property), and the carried negative control (negative-control.log, EXIT=1, RECKON_DYING_CHILD_CONTROL=no-death-bound) shows it reddens: with the bound removed count is 20 against death_bound 3. The id it fails, test_twenty_calls_start_no_more_children_than_the_bound, is an id the head arm does not fail.",
+      "lines": "tests/test_a_dying_child_is_backed_off.py:155-166"
+    },
+    {
+      "failure_condition": "test_the_last_deaths_stderr_is_readable asserts text.count('dying-child-marker') == 1 over the file at child_stderr_path(rig.root); the count is read from disk, independently of any value the test handed the code. The assertion reddens if spawn_served_child ever appended (the marker would accumulate across deaths) or reused a stale file; it cannot be satisfied by any single-line change in the code under test, because the file content is produced by the spawned child.",
+      "lines": "tests/test_a_dying_child_is_backed_off.py:198-201"
+    },
+    {
+      "failure_condition": "test_a_stamp_move_resets_the_bound_and_starts_a_fresh_child asserts rig.spawner.count == backed_off_spawns + 1 and not rig.server.backed_off; the expected count is derived from the observed pre-move count (an independent measurement), so the assertion reddens if the stamp-move branch failed to clear _deaths/_backed_off (count would not advance) or started more than one child (count would exceed by more than one).",
+      "lines": "tests/test_a_dying_child_is_backed_off.py:212-217"
+    },
+    {
+      "failure_condition": "assert result == {\"ok\": True, \"served_by\": \"image\"} compares the guard's returned answer against the constant the test's inner stub returns; its two sides are supplied and produced by the test itself, so it is not an independently sourced value. It is not vacuous: it fails if the guard routes to the child, raises, or replaces the answer with a refusal, which is the fall-through the done_when's 'every call is answered by the image' clause names, but it cannot detect a defect inside the image's own answer, because that answer is the test's own literal.",
+      "lines": "tests/test_a_dying_child_is_backed_off.py:161-163"
+    }
+  ],
+  "call_sites": [
+    "reckon/mcp.py:492 (_current_code_server -> served_code.CurrentCodeServer)",
+    "reckon/mcp.py:507 (_answer_from_child -> server.run(state.disk_stamp, name, kwargs))",
+    "reckon/mcp.py:533 (_refuse_when_stale -> server.warm(state.disk_stamp))",
+    "reckon/served_code.py:1636 (CurrentCodeServer.__init__ -> spawn_served_child default)"
+  ],
+  "completed_at": "2026-10-20T00:17:08.809Z",
+  "dispatched_at": "2026-10-20T00:08:21Z",
+  "findings": [
+    {
+      "file": "reckon/served_code.py",
+      "line": "1725",
+      "severity": "follow-on",
+      "text": "follow-on: CurrentCodeServer.stop() clears _child and _stamp but leaves _deaths and _backed_off untouched. Because the stamp-move reset branch at line 1659 is gated on `self._stamp is not None`, a server that has been stopped and then reused for a *different* stamp never re-enters the reset branch: _stamp is None, _backed_off is still True, and _child_for returns None forever, so a backed-off server that is stopped and restarted never spawns again. This is unreachable in production \u2014 reckon/mcp.py:484-495 holds one server per process and never calls stop(), so only the node's own tests call it, and they discard the rig afterwards \u2014 but the new fields were added without extending stop() to clear them, so the method is no longer a complete reset."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Production call sites reaching the change are reckon/mcp.py:492 (_current_code_server constructs CurrentCodeServer) and reckon/mcp.py:507-536 (_answer_from_child calls server.run and warm calls server.warm); spawn_served_child is the server's default spawner, reached from CurrentCodeServer.__init__ at reckon/served_code.py:1636.",
+    "diff": "Read commit by commit: 3b69586db changes reckon/served_code.py (the count, the bound, the stamp reset, and stderr to a bounded file) and adds tests/test_a_dying_child_is_backed_off.py; 835347afd adds the evidence fragment; three files, all inside the declared scope.",
+    "done_when": "The s12 done_when names tests/test_a_dying_child_is_backed_off.py with three cases (twenty calls start no more children than the bound, the last death's stderr is readable at the named path, a stamp move resets and starts a fresh child) plus a negative control; all three cases are present in the file and the gate ran it.",
+    "goal": "Plan s12 (docs/plans/every-plan-write-goes-through-edit-plan.html:297-301) asks for a CurrentCodeServer that stops respawning a child after a bounded number of consecutive deaths within one code stamp and keeps the last death's stderr in a bounded file; reckon/served_code.py:1647-1672 adds death_bound (default 3), _deaths, _backed_off and a per-stamp reset, exactly that deliverable.",
+    "manifest": "Read; the source manifest.md names commits 3b69586db and 835347afd, the gate command and its result (14 passed / 1 pre-existing failed against base 11 passed / 1 failed), and the negative control at EXIT=1 with the failing id the head arm does not fail.",
+    "write_paths": "The dispatch declared reckon/served_code.py, tests/test_a_dying_child_is_backed_off.py and the evidence fragment; git diff --stat 2b5c5ce2e..835347afd names exactly those three files and no other path."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261020T000718109402-review-of-epw-a-dying-child-is-backed-off-835347afd3c5",
+  "reviewed_base_sha": "2b5c5ce2ebea0f649d91116b480974874fa08a16",
+  "reviewed_head_sha": "835347afd3c55f94bd39b354a811a6aaa2944c69",
+  "reviewed_run_id": "r-20261019T234011292854-epw-a-dying-child-is-backed-off",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T00:24:00.094920+00:00",
+  "total": 113
+}
