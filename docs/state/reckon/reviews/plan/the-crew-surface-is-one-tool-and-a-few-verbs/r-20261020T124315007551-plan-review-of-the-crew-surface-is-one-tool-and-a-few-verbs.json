@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T12:50:46.780Z",
+  "dispatched_at": "2026-10-20T12:44:02Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html#s9",
+      "id": "done_when-1",
+      "reason": "as written the mover node must either fail its gate or edit a surface outside its fence, so the plan must say which node makes the two documents agree, or that the fixture comparison is over the shared row vocabulary as the existing parity test defines it.",
+      "text": "`plan.html:335` says \"At the head, `crew view` gives each fixture's answer\" for `crew list` captured \"at the base of the node that moves its callers\", but `crew list` and `crew view live` do not emit the same document: `crew_list` (`reckon/crew_run_commands.py:184-249`) builds its own rows (`run_id`, `node` as an id string, `agent`, `launch`, `manifest_path`, \u2026) into `{\"runs\": \u2026, \"watcher\"/\"watchers\": \u2026}`, while the live view returns `{\"ok\": True, \"project\": \u2026, \"view\": \"live\", \"session\": \u2026, \"watcher\": \u2026, \"runs\": project_live_rows(\u2026)}` from a different builder (`reckon/mcp_views.py:3962-3982`, `reckon/crew/query.py:164`), and the repository's own parity test compares them over a field subset only (`tests/test_crew_surface_parity.py:35,78-80`, `test_crew_list_matches_live_view_classification`) \u2014 so a whole-document fixture equality is unsatisfiable as written, and the mover node, which owns the fixture, has neither `reckon/mcp_views.py` nor `reckon/crew/query.py` nor `crew_list`'s builder in its write paths (`plan.html:328`); the filter node, which does write `reckon/mcp_views.py` and `reckon/crew_run_commands.py`, is told only to add `--phase` and `--mine` and to answer \"what `crew list` answers for them\" (`plan.html:325`), not to reconcile the two row shapes",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c9c88768113f6b695b603f9b1a973d71865a9fbd80be73c952dbb84e1a08f3f8",
+  "plan_slug": "the-crew-surface-is-one-tool-and-a-few-verbs",
+  "plan_version": 62,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T124315007551-plan-review-of-the-crew-surface-is-one-tool-and-a-few-verbs",
+  "reviewed_blob_sha": "bb53455541ee2e6135bf5112364329f43a8c406e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor resolves: `reckon/mcp_deadlines.py:184` (\"reckon crew list --project <project>\"), `reckon/crew/refusals.py:78` (\"`reckon crew ledger --view records`\"), `tests/test_findings_read_by_path.py:282`, `tests/test_crew_velocity_cli.py:168`, `/home/ITER/mcintos/Code/imas-ambix/ops/lane-cycle/AGENTS.md:40`, `skills/reckon-build/scripts/worktree_fleet.py:126-131` (reads the live pointer directory directly), `reckon/_mcp_tools.py` view Literal (ten names) against `reckon/mcp_views.py:3598` `CREW_VIEWS` (nineteen), and `tests/test_skill_contracts.py:1165` `test_ship_crew_views_match_the_typed_mcp_surface`.",
+    "done_when": "a finding \u2014 the fixture done-when at `plan.html:335` requires that at the head `crew view` \"gives each fixture's answer\" for `crew list` captured at its own base, but the two surfaces emit different documents and no \u00a79 node is given the write path to reconcile them.",
+    "evidence_paths": "pass \u2014 \u00a79's fixtures live in `tests/test_read_verbs_retire_behind_crew_view.py` and its gate logs on the repository's normal evidence path; no scratchpad or node-local temporary path is named.",
+    "naming": "pass \u2014 \u00a79's symbols and file names carry no plan labels, stage names, ticket numbers or version tags; the node ids in the table are the plan's own node identifiers, not code.",
+    "reasoning": "pass \u2014 the stated cause matches the cited evidence for each of the five verbs (each was re-checked against the repository and holds), and each caller it relies on exists on the production path; the one defect it leaves is a measure/mechanism mismatch, carried on the done_when finding below.",
+    "single_goal": "pass \u2014 each of the four \u00a79 nodes carries one deliverable over one mechanism (move callers, then tombstone the name), reviewed and closed on one tuple, matching the family-folding node pattern \u00a77 already landed.",
+    "wiring": "pass \u2014 \u00a79 declares `depends-on` s7 and s8 (`plan.html:24`), both resolving to nodes that exist, and the overlap is real: \u00a79's nodes write `reckon/crew_run_commands.py`, `reckon/crew/tombstones.py`, `reckon/cli.py`, `tests/test_crew_help_names_its_state.py`, `reckon/crew/refusals.py` and `skills/reckon-build/SKILL.md`, every one of which \u00a77's four nodes write; \u00a76/\u00a77 are reached transitively, and the driving followup (`plan.html:383`) now places \u00a79's four nodes in the serial order after \u00a78."
+  },
+  "section_digests": {
+    "_document": "4d4b24f4aec9178fd9d24a7442e96788d260da61249c8afd730e02ffe7cc56f6",
+    "s1": "7964ee282f4a5255288aa84785a54dbc6a5fec9660f4cee9f9c892a0807894ee",
+    "s10": "033277f14414ff9bc6f07d5fabef9354ec643b0bcb31a42018a8bb7153544427",
+    "s2": "be69292dc4744e91b19438c3129be40ac6c6138f02cd12656616dd3906a1d313",
+    "s3": "bfc4b93502cb69a2a5878f9c282da2cbab878f4f49482f263fdfc074dfce4ba8",
+    "s4": "2feb22a10d53f02161e33412c6f491a2718ee9b88ffede06e39b7fc15799f5d1",
+    "s5": "4a0b632aaec0c9b2538edeab874ccd9fd39723e2eef864da9ae65a3f72b6695c",
+    "s6": "e037f188e4e0784a7a39a208f621ec226cacdda5308e5f226d6ba3e104345522",
+    "s7": "7a66876ae7177f3cc833a9fc9c2885beceef03cf567843584a885f144155809b",
+    "s8": "beb6c1568fe326e8af87c393c93ac9e71dec60ad9a9247b47ffbec9d08fc76a6",
+    "s9": "b83727c6c2bf085a0f43fe80cc51303bf71259d6f591f4e12633e283bd72bfb7"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T12:54:14.549508+00:00"
+}
