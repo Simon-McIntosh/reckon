@@ -632,6 +632,21 @@ def services_config_path(environ: Mapping[str, str] | None = None) -> Path:
     return config_directory(environ) / SERVICES_FILE_NAME
 
 
+def service_lease_directory(environ: Mapping[str, str] | None = None) -> Path:
+    """Where declared services' host leases live: one place for every fleet.
+
+    A declared service runs once across the workstation, whichever fleet's node
+    runs it, so a lease one fleet holds must be visible to every other. A named
+    fleet therefore takes its leases in the catch-all's state directory rather
+    than its own; the catch-all keeps its state directory, which a caller may
+    point elsewhere.
+    """
+    environ = os.environ if environ is None else environ
+    if fleet_name(environ) == CATCH_ALL_FLEET:
+        return state_directory(environ)
+    return fleet_state_directory(None)
+
+
 def service_log_directory(environ: Mapping[str, str] | None = None) -> Path:
     """Where a declared service's log is appended.
 
@@ -1165,7 +1180,7 @@ class DeclaredServices:
         lease = self._leases.get(name)
         if lease is None:
             lease = HostLease(
-                state_directory(self._environ),
+                service_lease_directory(self._environ),
                 name,
                 self._host,
                 os.getpid(),
