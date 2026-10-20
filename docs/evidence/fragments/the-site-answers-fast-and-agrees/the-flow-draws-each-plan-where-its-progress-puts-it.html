@@ -1,0 +1,126 @@
+<section id="the-flow-draws-each-plan-where-its-progress-puts-it">
+  <h2>The flow draws each plan where its progress puts it</h2>
+  <p>
+    The derived flow figure placed a bar from its plan's status and its live
+    runs, but only the placement was computed in Python: the surface then
+    re-derived the bar's state from the plan row, re-packed the lanes from the
+    bars it drew, and resolved each bar against an inventory keyed by bare
+    slug. Three readers of the same figure could therefore disagree with the
+    schedule report and with each other, and a plan and a research document
+    sharing a slug resolved to whichever row the surface saw last.
+  </p>
+  <p>
+    The derivation now decides all four facts and the surface draws them. In
+    <code>reckon/schedule.py</code>, <code>derive_schedule</code> gives every
+    bar a <strong>state</strong>: <em>recorded</em> when the plan's status is
+    terminal (<code>shipped</code>, <code>done</code>,
+    <code>superseded</code>, <code>historical</code>); <em>in flight</em> when
+    a run serving the plan is in a live phase
+    (<code>working</code>, <code>starting</code>, <code>dispatched</code>);
+    <em>held</em> when the effective status is <code>blocked</code> or when the
+    plan's only pointers sit in a held phase; and <em>predicted</em>
+    otherwise. A pointer in any other phase sets no state at all, so a stalled
+    or abandoned pointer neither invents a state nor moves a bar.
+  </p>
+  <p>
+    Position is anchored on progress. A bar that is not recorded is anchored at
+    the reference instant, or at the latest end of its prerequisites when that
+    is later; its done share sits behind the anchor for <code>p · w</code> and
+    its remaining share runs ahead of it for <code>(1 − p) · w</code>, where
+    <code>p</code> is the plan's effort-weighted progress and <code>w</code> is
+    its wall-clock hours. A half-done eighteen-hour plan therefore spans
+    <code>−9</code> to <code>+9</code> with its split at <code>0</code>, and a
+    plan whose progress has reached <code>1.0</code> ends at the anchor rather
+    than running its full length ahead of it. A recorded bar ends where it
+    landed, as it always has. Every bar carries its split point.
+  </p>
+  <p>
+    Each bar carries its plan's <strong>typed key</strong> — the
+    <code>nav_key</code> from <code>reckon/resources.py</code>, which is the
+    bare slug for a live plan and a type-prefixed key otherwise, so a plan and
+    a research document that share a slug can no longer resolve to one another
+    — and the <strong>lane index</strong> the server's best-fit packing placed
+    it in. The packing writes the index back onto the bar, so a reader renders
+    the packing the server chose rather than repeating it. The schedule report
+    in <code>reckon/roadmap.py</code> serves the same four fields and names the
+    lane count.
+  </p>
+  <p>
+    <code>docs/ui/crew.jsx</code> now draws what it is served and computes none
+    of it: the status-to-state mapping, the live-run lookup and the lane
+    packing are gone (<code>RECORDED_FLOW_STATUSES</code>,
+    <code>ACTIVE_FLOW_STATUSES</code>, <code>flowPackLanes</code>,
+    <code>flowPlanLiveRun</code>). <code>flowLanes</code> groups the served
+    bars by the lane index they already carry, <code>flowDonePercent</code>
+    shades the done share from the served start and split, and the inventory
+    map keys on <code>row.nav_key || row.slug</code> so each bar resolves to
+    its own typed row. The rows are labelled as lanes rather than as sessions,
+    and a lane is marked live only from a bar the payload served as in flight.
+  </p>
+  <p>
+    The gate is
+    <code>tests/test_the_flow_draws_each_plan_where_its_progress_puts_it.py</code>,
+    nine cases over a temporary project at a fixed reference instant. Five read
+    the derivation directly: the half-done plan spans its progress around the
+    reference; a plan at full progress that is not recorded ends at now.
+    A working run puts the bar in flight at the same position, and an older
+    held pointer beside it moves neither the state nor the start, while that
+    held pointer alone does hold the bar; an in-progress plan whose effective
+    status is blocked reads held without its position moving; and a draft plan
+    with a working run reads in flight. A shared slug leaves the plan's typed
+    key on the bar and the research document no bar at all. Every bar carries a
+    lane index and no two bars in one lane overlap. Two cases run the shipped
+    surface over a served payload: one asserts each drawn bar's state class,
+    position and shaded done share come from the payload (a 50% and a 25% done
+    share, both plans in progress, only the one with a working run drawn in
+    flight) and that the rows read as lanes; the other asserts a bar whose plan
+    and research document share a slug draws the plan's sprint and progress and
+    not the research row's.
+  </p>
+  <p>
+    <code>tests/test_schedule_derivation.py</code>,
+    <code>tests/test_served_schedule_payload.py</code>,
+    <code>tests/test_spa_derived_flow.py</code> and
+    <code>tests/test_every_surface_shows_the_one_progress_figure.py</code> are
+    updated to this contract without deleting or loosening a case. The fixture
+    takes an <code>impl</code> and its run a phase, so the cases assert the
+    served state, split and typed key rather than a status-to-state mapping;
+    the parity case now compares the served bars against the derivation on
+    state, typed key and lane as well as position. At the head the five-file
+    population is <strong>27 passed, EXIT=0</strong> against <strong>18 passed,
+    EXIT=0</strong> at the base revision — the nine added cases are this node's
+    new file, and no case was deleted or loosened, so no case is added to the
+    failure set. The SPA cases drive <code>node</code> over the compiled
+    surface and run rather than skip. Logs:
+    <code>logs/head_gate.log</code> (head), <code>logs/base_gate.log</code>
+    (base, extracted from the parent commit with <code>git archive</code>).
+  </p>
+  <p>
+    The declared negative control — restore full-length placement from the
+    reference instant, a bar drawn at its anchor for its whole wall-clock
+    length — was applied and reverted by an exact second edit rather than a
+    checkout, leaving <code>git diff --stat</code> on
+    <code>reckon/schedule.py</code> empty. It turns the population red:
+    <strong>5 failed, EXIT=1</strong>, led by
+    <code>test_a_half_done_plan_spans_its_progress_around_the_reference</code>,
+    which is the divergence the cases exist to catch. Log:
+    <code>logs/negative_control.log</code>.
+  </p>
+  <p>
+    <code>ruff check</code> adds no finding on the changed Python files: both
+    findings on <code>reckon/roadmap.py</code> at this head are present at the
+    base revision of the same file, and the new case file is clean of the three
+    findings it carried before this node's own format and lint pass.
+    <code>ruff format --check</code> reports all seven changed Python files
+    already formatted. Log: <code>logs/ruff.log</code>.
+  </p>
+  <p>
+    One breakage outside this node's write scope is reported rather than
+    repaired: <code>tests/spa_parity_harness.py</code> calls
+    <code>flowPackLanes(...)</code> at lines 323 and 515, which the surface no
+    longer defines, so <code>tests/test_surface_parity.py</code> fails with a
+    <code>ReferenceError</code>. The repair is to call
+    <code>flowLanes(...)</code> at those two sites, which is the served-packing
+    call the surface now exposes.
+  </p>
+</section>

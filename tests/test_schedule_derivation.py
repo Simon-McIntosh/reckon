@@ -44,8 +44,8 @@ window.flashSaved = noop;
 
 def _fixture() -> tuple[list[dict], list[dict]]:
     """The five-plan surface fixture: two shipped at edited stamps 30 and 10
-    hours before the reference, one active with a live run dispatched 4 hours
-    before it, two pending chained behind the active plan."""
+    hours before the reference, one active plan half done with a working run,
+    two pending chained behind the active plan."""
 
     plans = [
         {
@@ -69,6 +69,7 @@ def _fixture() -> tuple[list[dict], list[dict]]:
             "title": "Active work",
             "status": "active",
             "wall_clock_hours": 8,
+            "impl": 0.5,
             "sprint": "beta",
         },
         {
@@ -94,6 +95,7 @@ def _fixture() -> tuple[list[dict], list[dict]]:
             "project": "reckon",
             "plan": "active-work",
             "role": "implement",
+            "phase": "working",
             "dispatched_at": "2026-09-04T00:00:00Z",
         }
     ]
@@ -109,29 +111,37 @@ def test_pending_plan_starts_at_the_later_of_its_prerequisite_and_reference() ->
     schedule = derive_schedule(plans, runs, "reckon", REFERENCE)
     bars = _bars_by_slug(schedule)
 
-    # The active plan starts at its live run's dispatch, 4 hours before the
-    # reference instant.
+    # The active plan is half done over 8 wall-clock hours, so its done share
+    # sits 4 hours behind the anchor and its remaining share runs 4 hours
+    # ahead of it.
     assert bars["active-work"]["start"] == -4
     assert bars["active-work"]["end"] == 4
-    # Each pending plan starts exactly at its prerequisite's end, which is
-    # later than the reference instant.
+    assert bars["active-work"]["split"] == 0
+    # Each pending plan is anchored at its prerequisite's end, which is later
+    # than the reference instant, and has no progress to place behind it.
     assert bars["pending-first"]["start"] == bars["active-work"]["end"]
     assert bars["pending-first"]["end"] == 18
+    assert bars["pending-first"]["split"] == 4
     assert bars["pending-second"]["start"] == bars["pending-first"]["end"]
     assert bars["pending-second"]["end"] == 30
 
 
-def test_active_plan_uses_elapsed_time_when_live_row_omits_dispatch_stamp() -> None:
+def test_live_row_without_a_dispatch_stamp_still_marks_the_bar_in_flight() -> None:
     plans = [
-        {"slug": "active-work", "status": "active", "wall_clock_hours": 8},
+        {"slug": "active-work", "status": "active", "wall_clock_hours": 8, "impl": 0.5},
     ]
+    # The pointer carries no dispatch stamp and no elapsed time, only its
+    # phase. A run's phase decides a bar's state and never its position, so
+    # the bar is in flight and still placed by the plan's own progress.
     runs = [
-        {"project": "reckon", "plan": "active-work", "elapsed_seconds": 14_400},
+        {"project": "reckon", "plan": "active-work", "phase": "working"},
     ]
     schedule = derive_schedule(plans, runs, "reckon", REFERENCE)
     bar = _bars_by_slug(schedule)["active-work"]
+    assert bar["state"] == "in-flight"
     assert bar["start"] == -4
     assert bar["end"] == 4
+    assert bar["split"] == 0
 
 
 def test_reference_is_a_parameter_never_the_wall_clock() -> None:
@@ -151,25 +161,26 @@ def test_reference_is_a_parameter_never_the_wall_clock() -> None:
         "pending-second": (18.0, 30.0),
     }
 
-    # Moving the reference re-anchors every bar. Stamp-anchored bars (recorded
-    # and active) shift by exactly the delta; dependent bars take the later of
-    # their prerequisite end and the reference, so a prerequisite that crossed
-    # the reference clamps the chain at the reference instead. A clock-reading
-    # implementation would return the same clock-anchored values on both calls
-    # and fail every shifted assertion below.
+    # Moving the reference shifts the recorded bars by exactly the delta:
+    # their landing stamps are fixed, so their distance from the reference
+    # changes. A bar that is not recorded is anchored at the reference instant
+    # itself, hour zero by construction, so its own position does not move. A
+    # clock-reading implementation would place both kinds against the real
+    # clock and fail every assertion below.
     shifted = REFERENCE + timedelta(hours=6)
     shifted_schedule = derive_schedule(plans, runs, "reckon", shifted)
     moved = _bars_by_slug(shifted_schedule)
     assert moved["recorded-early"]["start"] == -38 - 6
     assert moved["recorded-early"]["end"] == -30 - 6
     assert moved["recorded-wide"]["start"] == -42 - 6
-    assert moved["active-work"]["start"] == -4 - 6
-    assert moved["active-work"]["end"] == 4 - 6
-    assert moved["pending-first"]["start"] == 0
-    assert moved["pending-first"]["end"] == 14
-    assert moved["pending-second"]["start"] == 14
-    assert moved["pending-second"]["end"] == 26
-    assert shifted_schedule["latest_end"] == 26
+    assert moved["recorded-wide"]["end"] == -10 - 6
+    assert moved["active-work"]["start"] == -4
+    assert moved["active-work"]["end"] == 4
+    assert moved["pending-first"]["start"] == moved["active-work"]["end"]
+    assert moved["pending-first"]["end"] == 18
+    assert moved["pending-second"]["start"] == moved["pending-first"]["end"]
+    assert moved["pending-second"]["end"] == 30
+    assert shifted_schedule["latest_end"] == 30
 
 
 def test_bars_pack_into_best_fit_lanes() -> None:
@@ -285,13 +296,14 @@ def test_python_schedule_matches_the_surface_render_of_the_served_payload() -> N
     plans, runs = _fixture()
     served = schedule_report("reckon", plans, runs, reference=REFERENCE)
 
-    # The surface derives nothing: it packs the served bars into lanes and
-    # draws ticks from the served low/high. Feed the payload a server would
-    # serve to the surface's own layout functions and require the same lanes
-    # and ticks the derivation produces.
+    # The surface derives nothing: it groups the served bars by the lane index
+    # the server stamped on each one, and draws ticks from the served
+    # low/high. Feed the payload a server would serve to the surface's own
+    # layout functions and require the same lanes and ticks the derivation
+    # produces — and that the surface re-packs nothing.
     source = CREW.read_text(encoding="utf-8")
     test_exports = """
-window.__scheduleParity = { flowPackLanes, flowTicks };
+window.__scheduleParity = { flowLanes, flowTicks };
 """
     compiled = serve.compile_jsx(
         source + test_exports, filename="schedule-parity.jsx"
@@ -301,8 +313,10 @@ window.__scheduleParity = { flowPackLanes, flowTicks };
             NODE_PRELUDE,
             compiled,
             f"const bars = {json.dumps(served['bars'])};",
-            ("const lanes = window.__scheduleParity.flowPackLanes(bars)"
-             ".map(lane => lane.items.map(item => item.plan));"),
+            (
+                "const lanes = window.__scheduleParity.flowLanes(bars)"
+                ".map(lane => lane.items.map(item => item.plan));"
+            ),
             f"const ticks = window.__scheduleParity.flowTicks({served['low']}, {served['high']});",
             "process.stdout.write(JSON.stringify({ lanes, ticks: ticks.map(tick => tick.label) }));",
         )
@@ -329,12 +343,25 @@ window.__scheduleParity = { flowPackLanes, flowTicks };
         slug: {"start": bar["start"], "end": bar["end"]}
         for slug, bar in {item["plan"]: item for item in served["bars"]}.items()
     }
+    # Every served bar names its plan by the typed key and carries the state
+    # and lane the derivation decided, so the surface never re-derives any of
+    # the three.
+    assert {bar["plan"]: bar["nav_key"] for bar in served["bars"]} == {
+        slug: bar["nav_key"] for slug, bar in _bars_by_slug(schedule).items()
+    }
+    assert {bar["plan"]: bar["state"] for bar in served["bars"]} == {
+        slug: bar["state"] for slug, bar in _bars_by_slug(schedule).items()
+    }
+    assert {bar["plan"]: bar["lane"] for bar in served["bars"]} == {
+        slug: bar["lane"] for slug, bar in _bars_by_slug(schedule).items()
+    }
     assert served["low"] == schedule["low"]
     assert served["high"] == schedule["high"]
     assert served["lane_count"] == len(schedule["lanes"])
     assert served["latest_end_hours"] == schedule["latest_end"]
-    # And the surface's own layout over that payload reproduces the lanes and
-    # ticks the derivation reports.
+    # And the surface's layout over that payload reproduces the lanes the
+    # derivation packed from the served lane indices, and the ticks it draws
+    # from the served bounds.
     assert [
         [item["slug"] for item in lane["items"]] for lane in schedule["lanes"]
     ] == jsx["lanes"]

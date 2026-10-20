@@ -320,7 +320,7 @@ def rendered_read(*, returned: dict, inventory: list[dict]) -> dict:
     lane_count = _eval(
         CREW_SLICE,
         {"__bars": returned["schedule"]["bars"]},
-        "flowPackLanes(__bars).length",
+        "flowLanes(__bars).length",
         filename="crew_lane_parity_probe.jsx",
     )
 
@@ -512,7 +512,7 @@ def build_pairs(rendered: dict, returned: dict) -> list[Pair]:
         Pair(
             "schedule",
             "lane count",
-            "flowPackLanes(served.schedule.bars).length",
+            "flowLanes(served.schedule.bars).length",
             "schedule_report(...)['lane_count']",
             rendered["schedule"]["lane_count"],
             returned["schedule"]["lane_count"],

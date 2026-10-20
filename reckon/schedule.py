@@ -1,15 +1,18 @@
 """The dependency-derived schedule, computed once for every reader.
 
 Positions every plan of a project on a wall-clock axis in hours relative to a
-caller-supplied reference instant: a recorded plan ends when it landed and
-starts wall-clock hours before that; an active plan starts at the earliest
-live run dispatched for it (else the reference instant) and runs for its
-wall-clock hours; a pending or draft plan starts at the later of its
-prerequisite ends and the reference instant. Bars past the retention window
-are excluded; remaining bars pack into best-fit lanes; the axis range and the
-chain's far end are reported with the bars. The reference instant is a
-parameter and never the wall clock, so any reader and the rendered surface
-compute the same numbers from the same input.
+caller-supplied reference instant. A recorded plan ends when it landed. Every
+other plan is anchored at the reference instant, or at the latest end of its
+prerequisites when that is later, and its progress splits the bar around that
+anchor: the done share sits behind it for ``p`` wall-clock hours and the
+remaining share runs ahead of it for ``(1 - p)``. A plan's state is decided
+here — recorded, in flight, held or predicted — from its status and the live
+pointers that serve it, and each bar carries its plan's typed inventory key and
+the lane the packing placed it in. Bars past the retention window are excluded;
+remaining bars pack into best-fit lanes; the axis range and the chain's far end
+are reported with the bars. The reference instant is a parameter and never the
+wall clock, so any reader and the rendered surface compute the same numbers
+from the same input.
 """
 
 from __future__ import annotations
@@ -19,9 +22,17 @@ from datetime import UTC, datetime
 from typing import Any
 
 from reckon._timestamps import parse_utc
+from reckon.resources import nav_key
+from reckon.sprint_liveness import HELD_CLASSIFICATIONS, LIVE_STATES
 
 RECORDED_STATUSES = frozenset({"shipped", "done", "superseded", "historical"})
-ACTIVE_STATUSES = frozenset({"active", "in-progress"})
+
+HELD_STATUS = "blocked"
+
+STATE_RECORDED = "recorded"
+STATE_IN_FLIGHT = "in-flight"
+STATE_HELD = "held"
+STATE_PREDICTED = "predicted"
 
 _MS_PER_HOUR = 3_600_000.0
 
@@ -52,6 +63,15 @@ def _wall_hours(plan: dict[str, Any]) -> float:
     return effort if effort is not None and effort > 0 else 0.0
 
 
+def _progress(plan: dict[str, Any]) -> float:
+    """The plan's effort-weighted progress, clamped to a share of its own bar."""
+
+    value = _as_number(plan.get("impl"))
+    if value is None:
+        return 0.0
+    return min(1.0, max(0.0, value))
+
+
 def _dependency_slug(ref: Any, project: str | None) -> str | None:
     value = ref.get("slug") if isinstance(ref, dict) else ref
     if not value:
@@ -74,25 +94,69 @@ def _hours_from_now(stamp: Any, now_millis: float) -> float | None:
     return (stamp_millis - now_millis) / _MS_PER_HOUR
 
 
-def _run_stamp(run: dict[str, Any]) -> Any:
-    return (
-        run.get("dispatched_at")
-        or run.get("attempt_started_at")
-        or run.get("started_at")
-        or run.get("created_at")
-    )
+def _run_phase(run: dict[str, Any]) -> str:
+    return str(run.get("phase") or "").lower()
 
 
-def _run_start_hours(run: dict[str, Any], now_millis: float) -> float | None:
-    stamp = _run_stamp(run)
-    if stamp:
-        stamped_hours = _hours_from_now(stamp, now_millis)
-        if stamped_hours is not None:
-            return stamped_hours
-    elapsed = _as_number(run.get("elapsed_seconds"))
-    if elapsed is not None:
-        return -max(0.0, elapsed) / 3600.0
-    return None
+def _bar_state(plan: dict[str, Any], plan_runs: list[dict[str, Any]]) -> str:
+    """Classify a bar from its plan's status and the pointers serving it.
+
+    A terminal status is recorded however the pointers read. A pointer in a
+    live state — the fleet's own live states, taken from ``sprint_liveness`` —
+    puts the bar in flight. Otherwise a blocked effective status, persisted or
+    derived from a dependency, or a plan whose every pointer is held reads as
+    held; the held states are that module's too, so a run waiting on a person
+    and a completion nobody has promoted yet both hold the bar. Everything else
+    is predicted. A pointer whose state is stalled, waiting or abandoned is in
+    neither set and decides nothing here.
+    """
+
+    status = str(plan.get("status") or "pending").lower()
+    if status in RECORDED_STATUSES:
+        return STATE_RECORDED
+    phases = [_run_phase(run) for run in plan_runs]
+    if any(phase in LIVE_STATES for phase in phases):
+        return STATE_IN_FLIGHT
+    effective = str(plan.get("effective_status") or status).lower()
+    if effective == HELD_STATUS:
+        return STATE_HELD
+    if phases and all(phase in HELD_CLASSIFICATIONS for phase in phases):
+        return STATE_HELD
+    return STATE_PREDICTED
+
+
+def _typed_key(plan: dict[str, Any]) -> str:
+    """The plan's inventory key, carrying its type so a shared slug cannot
+    resolve to another document's row."""
+
+    return nav_key("plan", str(plan["slug"]), archived=bool(plan.get("archived")))
+
+
+def _pack_lanes(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Best-fit pack bars into lanes, stamping each bar with its lane index.
+
+    A bar joins the free lane that ended latest; a bar that fits none opens a
+    new lane. The lane index is written back onto the bar so a reader can
+    render the packing the server chose without re-deriving it.
+    """
+
+    lanes: list[dict[str, Any]] = []
+    for item in items:
+        free = [
+            (index, lane)
+            for index, lane in enumerate(lanes)
+            if lane["last_end"] <= item["start"] + 0.01
+        ]
+        if free:
+            index, lane = max(free, key=lambda pair: pair[1]["last_end"])
+        else:
+            index = len(lanes)
+            lane = {"last_end": float("-inf"), "items": []}
+            lanes.append(lane)
+        item["lane"] = index
+        lane["items"].append(item)
+        lane["last_end"] = item["end"]
+    return lanes
 
 
 def derive_schedule(
@@ -121,73 +185,66 @@ def derive_schedule(
         for run in (runs or [])
         if not project or not run.get("project") or run.get("project") == project
     ]
+    runs_by_slug: dict[str, list[dict[str, Any]]] = {}
+    for run in matching_runs:
+        plan_slug = str(run.get("plan") or "")
+        if plan_slug:
+            runs_by_slug.setdefault(plan_slug, []).append(run)
 
-    starts: dict[str, float] = {}
-    ends: dict[str, float] = {}
+    bars: dict[str, dict[str, Any]] = {}
 
-    def resolve_end(slug: str, seen: frozenset[str] = frozenset()) -> float:
-        if slug in ends:
-            return ends[slug]
+    def resolve(slug: str, seen: frozenset[str] = frozenset()) -> dict[str, Any] | None:
+        if slug in bars:
+            return bars[slug]
         plan = by_slug.get(slug)
         if plan is None or slug in seen:
-            return 0.0
+            return None
         wall_hours = _wall_hours(plan)
         status = str(plan.get("status") or "pending").lower()
+
         if status in RECORDED_STATUSES:
+            # A recorded bar ends where it landed, as it always has.
             landed = plan.get("edited") or plan.get("modified") or plan.get("last")
             end = _hours_from_now(landed, now_millis)
             end = 0.0 if end is None else end
+            split = end
             start = end - wall_hours
-        elif status in ACTIVE_STATUSES:
-            dispatch_hours = [
-                hours
-                for run in matching_runs
-                if run.get("plan") == slug
-                for hours in [_run_start_hours(run, now_millis)]
-                if hours is not None
-            ]
-            start = min(dispatch_hours) if dispatch_hours else 0.0
-            end = start + wall_hours
         else:
-            dependency_ends = [
-                resolve_end(dep, seen | {slug})
-                for dep in (
-                    _dependency_slug(ref, project)
-                    for ref in plan.get("depends_on") or []
-                )
-                if dep and dep in by_slug
-            ]
-            start = max([0.0, *dependency_ends])
-            end = start + wall_hours
-        starts[slug] = start
-        ends[slug] = end
-        return end
+            dependency_ends: list[float] = []
+            for dep in (
+                _dependency_slug(ref, project) for ref in plan.get("depends_on") or []
+            ):
+                if not dep or dep not in by_slug:
+                    continue
+                dependency_bar = resolve(dep, seen | {slug})
+                if dependency_bar is not None:
+                    dependency_ends.append(dependency_bar["end"])
+            anchor = max([0.0, *dependency_ends])
+            progress = _progress(plan)
+            start = anchor - progress * wall_hours
+            split = anchor
+            end = anchor + (1.0 - progress) * wall_hours
+
+        bar = {
+            "slug": slug,
+            "plan": plan,
+            "state": _bar_state(plan, runs_by_slug.get(slug, [])),
+            "nav_key": _typed_key(plan),
+            "wall_hours": wall_hours,
+            "start": start,
+            "split": split,
+            "end": end,
+        }
+        bars[slug] = bar
+        return bar
 
     for plan in project_plans:
-        resolve_end(plan["slug"])
+        resolve(plan["slug"])
 
-    items = [
-        {
-            "slug": plan["slug"],
-            "plan": plan,
-            "start": starts.get(plan["slug"], 0.0),
-            "end": ends.get(plan["slug"], _wall_hours(plan)),
-            "wall_hours": _wall_hours(plan),
-        }
-        for plan in project_plans
-    ]
+    items = [bars[plan["slug"]] for plan in project_plans if plan["slug"] in bars]
     items = [item for item in items if item["start"] > -retention_hours]
     items.sort(key=lambda item: (item["start"], item["end"], item["slug"]))
-
-    lanes: list[dict[str, Any]] = []
-    for item in items:
-        free = [lane for lane in lanes if lane["last_end"] <= item["start"] + 0.01]
-        lane = max(free, key=lambda candidate: candidate["last_end"]) if free else None
-        if lane is None:
-            lane = {"last_end": float("-inf"), "items": []}
-            lanes.append(lane)
-        lane["items"].append(item)
-        lane["last_end"] = item["end"]
+    lanes = _pack_lanes(items)
 
     earliest_start = min(item["start"] for item in items) if items else 0.0
     latest_end = max(item["end"] for item in items) if items else 0.0
