@@ -573,7 +573,10 @@ def test_resume_successors_preserve_base_answers(isolated_reckon_home: Path) -> 
 
 def test_resume_family_reduces_the_visible_leaf_count() -> None:
     leaves = _leaf_commands(crew)
-    assert len(leaves) <= 42 - 2
+    retired = {"resume-ready", "redispatch"}
+    assert retired <= TOMBSTONE_BY_NAME.keys()
+    derived_base = len(leaves) + len(retired)
+    assert len(leaves) <= derived_base - len(retired)
     assert ("resume",) in leaves
     assert not {("resume-ready",), ("redispatch",)} & leaves.keys()
     assert {("repair-completion",), ("split-runs",)} <= leaves.keys()
@@ -664,18 +667,20 @@ def test_resume_backend_carries_the_selected_model(
     monkeypatch.setattr(
         "reckon.crew_run_commands._resolved_flight", lambda *args: config
     )
-    monkeypatch.setattr(
-        ledger,
-        "backend_serving_model",
-        lambda *args, **kwargs: ("destination", "destination", "chosen"),
-    )
-    monkeypatch.setattr(
-        flight,
-        "select_lane_model",
-        lambda config, backend, lane, key: {
-            "backends": {backend: {"lane": lane, "model_key": key}}
-        },
-    )
+    resolver_calls = []
+
+    def backend_serving_model(*args, **kwargs):
+        resolver_calls.append((args, kwargs))
+        return "destination", "destination", "chosen"
+
+    monkeypatch.setattr(ledger, "backend_serving_model", backend_serving_model)
+    selection_calls = []
+
+    def select_lane_model(config, backend, lane, key):
+        selection_calls.append((config, backend, lane, key))
+        return {"backends": {backend: {"lane": lane, "model_key": key}}}
+
+    monkeypatch.setattr(flight, "select_lane_model", select_lane_model)
     moved = []
 
     def change_lane(*args, **kwargs):
@@ -700,6 +705,8 @@ def test_resume_backend_carries_the_selected_model(
         ],
     )
     assert result.exit_code == 0, result.output
+    assert resolver_calls == [((config,), {"lane": "destination", "model": "chosen"})]
+    assert selection_calls == [(config, "destination", "destination", "chosen")]
     assert moved[0][0][:2] == (run_id, "destination")
     assert moved[0][1]["config"]["backends"]["destination"]["model_key"] == "chosen"
     assert moved[0][1]["launch"] is False

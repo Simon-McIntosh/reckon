@@ -1102,12 +1102,6 @@ def supersede_run_review(project: str, run_id: str, reason: str) -> dict[str, An
     }
 
 
-WIDENABLE_PHASE = "blocked"
-
-
-WIDEN_REFUSING_MANIFEST_STATUSES = frozenset({"complete", "failed"})
-
-
 # The one refusing status a review's own fold answers. A run that ended
 # normally left scope work outstanding for the review that read it, so a review
 # that folded a finding back into that same node is a scope decision the
@@ -1213,51 +1207,6 @@ def _widen_folded_disposition(record: Mapping[str, Any]) -> dict[str, Any] | Non
             "kind": "folded",
         }
     return None
-
-
-def _widen_eligibility(record: Mapping[str, Any]) -> tuple[str, str, str]:
-    """Refuse a live worker; phase and manifest status are descriptive only."""
-    reported = _manifest_reported_status(record)
-    running = _widen_running_worker(record)
-    if running:
-        return (
-            f"it records a worker still running as pid {running}",
-            reported,
-            (
-                "Wait for that process to exit and widen again, or resume the "
-                "run with `crew resume` once its turn has ended"
-            ),
-        )
-    return "", reported, ""
-
-
-def _widen_running_worker(record: Mapping[str, Any]) -> str:
-    """The pid of this run's worker while it is still running, or ``""`` once gone.
-
-    The fence a widening moves is the boundary the run's worker writes against,
-    so the process that must no longer exist is the one the record names, and the
-    read goes through the single helper every liveness decision about a run
-    takes: a pid the kernel has since handed to a different process does not
-    answer for the worker this record means.
-
-    A record that names no process is admitted rather than refused. ``None`` is
-    not a running worker, the pointer is written before its worker is spawned,
-    and a widening already requires a block stated in a manifest the run itself
-    delivered -- which no unspawned worker can have written.
-    """
-    from reckon.crew.runs import record_process_alive
-
-    if record_process_alive(record) is not True:
-        return ""
-    return str(record.get("pid") or "")
-
-
-def _widen_refusal(run_id: str, state: str, remedy: str, *, where: str) -> str:
-    """Compose the refusal naming the state, where it was read, and the next move."""
-    message = (
-        f"run {run_id!r} cannot have its fence widened{where}: {state}; {WIDEN_RULE}"
-    )
-    return f"{message}. {remedy}" if remedy else message
 
 
 @crew.command(name="widen")
