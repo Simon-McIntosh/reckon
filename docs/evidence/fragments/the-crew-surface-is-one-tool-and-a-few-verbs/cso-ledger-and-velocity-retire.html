@@ -72,25 +72,35 @@ are registered tombstones.</p>
 <code>tests/test_crew_help_names_its_state.py</code>,
 <code>tests/test_cited_commands_exist.py</code>,
 <code>tests/test_crew_families_fold.py</code>,
-<code>tests/test_a_retired_verb_names_its_successor.py</code> and
-<code>tests/test_every_module_fits_a_worker_window.py</code>, run with the main
-checkout's <code>.venv/bin/python -m pytest -p no:cacheprovider</code>. Head
-arm: 1 failed, 122 passed, <code>EXIT=1</code>. Base arm at
-<code>33bb77708db6069b7ce6fc018e2cc47c146fffd2</code> over the same eight
-pre-existing files (the new file is absent): 1 failed, 115 passed,
-<code>EXIT=1</code>. Both arms fail the same single id,
-<code>test_every_module_fits_a_worker_window</code> — <code>reckon/budget.py</code>,
-<code>reckon/crew/review.py</code> and <code>reckon/ledger.py</code> exceed the
-bound and none of the three is a path this node touched — so the node adds zero
-failures. <code>ruff check</code> on the changed paths reports one finding at
-head and one at base (the same pre-existing <code>RUF005</code> in
-<code>tests/test_skill_contracts.py</code>); <code>ruff format --check</code>
-reports one unformatted file at head and one at base (the same pre-existing
-<code>_CARDINAL_WORDS</code> block). Logs
-<code>logs/gate-head.log</code>, <code>logs/gate-base.log</code>,
-<code>logs/base-window.log</code> and <code>logs/negative-control.log</code>
-under the run directory, each opening with its revision and closing with a bare
-<code>EXIT=</code> line.</p>
+<code>tests/test_a_retired_verb_names_its_successor.py</code>,
+<code>tests/test_every_module_fits_a_worker_window.py</code>,
+<code>tests/test_derived_figures_reach_a_reader.py</code>,
+<code>tests/test_old_names_resolve.py</code> and
+<code>tests/test_ledger.py</code>, run with the main checkout's
+<code>.venv/bin/python -m pytest -p no:cacheprovider -q -n 6</code>. Head arm
+at <code>a50b336e962d9b81bac8a5323391b479bfccb3fe</code>: 2 failed, 264 passed,
+<code>EXIT=1</code>. Base arm at
+<code>33bb77708db6069b7ce6fc018e2cc47c146fffd2</code> over the same set minus
+the file this node added (it does not exist there): 2 failed, 257 passed,
+<code>EXIT=1</code>. Both arms fail the same two ids and no others, so the node
+adds zero failures: <code>test_every_module_fits_a_worker_window</code> —
+<code>reckon/budget.py</code>, <code>reckon/crew/review.py</code> and
+<code>reckon/ledger.py</code> exceed the bound, none of the three a path this
+node touched — and
+<code>tests/test_ledger.py::test_an_unknown_crew_view_names_every_view_it_has</code>,
+whose literal view list predates a <code>models</code> view that neither arm
+removes; it is red on the base copy of the same file, so it is the file's, not
+this change's. The arms run six workers each because a single-process arm
+outlives the ten-minute ceiling a background command is held to and is killed
+without writing its summary; <code>-n 6</code> completes an arm in about four
+minutes. <code>ruff check</code> on the three repointed files reports ten
+findings at head and ten at base (the same <code>UP017</code> and
+<code>FURB162</code> rows in <code>tests/test_ledger.py</code>), and
+<code>ruff format --check</code> reports one unformatted file on both sides, the
+same pre-existing block. Logs <code>logs/gate-head.log</code>,
+<code>logs/gate-base.log</code>, <code>logs/base-window.log</code> and
+<code>logs/negative-control.log</code> under the run directory, each opening
+with its revision and closing with a bare <code>EXIT=</code> line.</p>
 <p id="cso-ledger-and-velocity-retire-control"><strong>Negative control.</strong>
 Pointing the <code>ledger</code> tombstone at the wrong view
 (<code>successor="crew view velocity"</code>,
@@ -101,18 +111,27 @@ a failure id the head arm does not fail: <code>1 failed</code>,
 <code>EXIT=1</code>. Log <code>logs/negative-control.log</code> under the run
 directory; the mutation was reverted before the commit.</p>
 <p id="cso-ledger-and-velocity-retire-followons"><strong>Follow-ons.</strong>
-Two test files drive <code>crew ledger --view records</code> through the CLI
-and are <em>outside this node's write scope and the plan's census for it</em>.
-They pass at the base revision and fail at this head, six ids between them, so
-the section cannot close without them:
+Three test files drove <code>crew ledger --view records</code> through the CLI
+and sat outside this node's first write scope. The scope was extended and all
+three now drive <code>crew view records</code>:
 <code>tests/test_derived_figures_reach_a_reader.py</code> (five ids, in
-<code>_rows("cli", …)</code>) and <code>tests/test_old_names_resolve.py</code>
-(<code>test_ledger_and_cli_report_pair_and_keep_stored_bytes</code>). Each needs
-one mechanical repoint — <code>["crew", "ledger", "--project", P, "--view",
-"records", "--checkout-path", R]</code> becomes <code>["crew", "view",
-"records", "--project", P, "--checkout-path", R]</code>. Evidence:
+<code>_rows("cli", …)</code>),
+<code>tests/test_old_names_resolve.py</code>
+(<code>test_ledger_and_cli_report_pair_and_keep_stored_bytes</code>) and
+<code>tests/test_ledger.py</code>
+(<code>test_hold_history_is_exposed_with_count_and_total_duration</code>). No
+case was deleted or skipped. The third needed more than a repoint: the records
+document carries the committed rows and never carried the hold history that
+call site asserted, so the hold count and total duration are read there from
+<code>crew view ledger</code>, the document that does carry them, and the
+records document is compared against the same read over MCP so both surfaces
+of one document stay asserted. Evidence from before the repoint:
 <code>logs/out-of-scope-callers-base.log</code> (46 passed,
 <code>EXIT=0</code>) against
 <code>logs/out-of-scope-callers-head.log</code> (6 failed, 40 passed,
-<code>EXIT=1</code>).</p>
+<code>EXIT=1</code>). The remaining red in the two gate arms is
+<code>tests/test_ledger.py::test_an_unknown_crew_view_names_every_view_it_has</code>,
+which is red on the base copy too and asks the section to decide whether that
+literal view list should be derived from the registry rather than written
+out.</p>
 </article>
