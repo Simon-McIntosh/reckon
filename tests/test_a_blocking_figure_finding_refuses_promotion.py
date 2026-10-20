@@ -10,9 +10,14 @@ naming the figure the finding concerns.
 The severity is read through the one owner that decides it
 (:func:`reckon.crew.repair.blocking_findings`), so an answered finding no longer
 refuses, and a run with no figure review is promoted exactly as it is today —
-text reviews keep their present behaviour. Every record is built through the
-store's own writer, :func:`reckon.crew.review.store_review`, so the field the
-store writes and the field this reader reads cannot drift apart. The stores and
+text reviews keep their present behaviour. A figure review that cannot be read
+refuses as well, because the store answers "no figure review" the same way for a
+record it could not parse, and the record that could not be read is the one that
+might hold the finding.
+
+Every record is built through the store's own writer,
+:func:`reckon.crew.review.store_review`, so the field the store files a record
+under and the field this reader selects on cannot drift apart. The stores and
 the configuration home live under a temporary directory, so nothing here reads
 or writes outside it.
 """
@@ -192,6 +197,51 @@ def test_a_blocking_text_finding_with_no_figure_review_promotes(
             ],
         )
     )
+
+    promotion_checks._require_no_undisposed_blocking_figure_finding(
+        RUN, {"project": PROJECT}
+    )
+
+
+def test_a_figure_review_that_cannot_be_read_refuses_the_promotion(
+    fixture: Fixture,
+) -> None:
+    """A figure record that exists but does not parse holds the promotion.
+
+    The store answers ``None`` for a record it cannot read just as it does for a
+    run carrying none, so a guard acting on that answer alone lands a run whose
+    figure review — the one place a blocking finding could sit — was never read.
+    The refusal names the file and the error the store met, which is what an
+    operator needs to repair or remove it.
+    """
+    fixture.figure_path.write_text("{ not a review record", encoding="utf-8")
+
+    with pytest.raises(CrewError) as error:
+        promotion_checks._require_no_undisposed_blocking_figure_finding(
+            RUN, fixture.record
+        )
+
+    refusal = str(error.value)
+    assert str(fixture.figure_path) in refusal
+    assert "cannot be read" in refusal
+
+
+def test_a_text_review_that_cannot_be_read_does_not_refuse(
+    tmp_path: Path, isolated_reckon_home: Path
+) -> None:
+    """A figure-marked name is what makes an unreadable record this guard's subject.
+
+    A run with no figure review is promoted whatever state its text review is
+    in, so a text record met mid-write must not hold the promotion: the guard
+    reads the figure rubric alone, and it recognises a figure record by the name
+    the store files it under rather than by parsing it — which is the reading an
+    unreadable file does not allow.
+    """
+    text_path = review_module.review_path(
+        PROJECT, RUN, reviewed_head_sha=HEAD, rubric=None
+    )
+    text_path.parent.mkdir(parents=True, exist_ok=True)
+    text_path.write_text("{ not a review record", encoding="utf-8")
 
     promotion_checks._require_no_undisposed_blocking_figure_finding(
         RUN, {"project": PROJECT}
