@@ -16,6 +16,7 @@ from pathlib import Path
 from reckon._plan_html import derive_fleet_impl_imputing_effort
 from reckon._timestamps import parse_iso
 from reckon.lifecycle import COMPLETED_STATUSES
+from reckon.resources import nav_key
 
 _ACTIVITY_WINDOW_DAYS = 30
 _ACTIVITY_SUBPATHS = ("plans", "research", "evidence")
@@ -124,6 +125,14 @@ def _last_edited(inventory: list[dict]) -> str:
     return max(stamps) if stamps else ""
 
 
+def _local_naive_stamp(value: object) -> datetime | None:
+    """Read an edited stamp on the local clock used by the fleet row."""
+    parsed = parse_iso(value)
+    if parsed is not None and parsed.tzinfo is not None:
+        return parsed.astimezone().replace(tzinfo=None)
+    return parsed
+
+
 def _recent_landed(
     inventory: list[dict], project: str, reference: datetime
 ) -> list[dict]:
@@ -143,12 +152,9 @@ def _recent_landed(
         edited = item.get("edited") or item.get("last")
         if not slug or not edited:
             continue
-        parsed = parse_iso(edited)
+        parsed = _local_naive_stamp(edited)
         if parsed is None:
             continue
-        # Discovery stamps are local-naive; zoned inputs join that same clock.
-        if parsed.tzinfo is not None:
-            parsed = parsed.astimezone().replace(tzinfo=None)
         try:
             stamp = parsed.timestamp()
         except (ValueError, OverflowError, OSError):
@@ -156,18 +162,14 @@ def _recent_landed(
         if not start <= stamp <= end:
             continue
         archived = item.get("archived") in {True, "1", "true"}
-        nav_key = (
-            slug
-            if kind == "plan" and not archived
-            else f"{kind}:{'archive:' if archived else ''}{slug}"
-        )
+        key = nav_key(kind, slug, archived=archived)
         candidates.append(
             (
                 stamp,
                 {
                     "type": kind,
                     "slug": slug,
-                    "nav_key": nav_key,
+                    "nav_key": key,
                     "title": item.get("title") or slug,
                     "edited": edited,
                     "project": project,

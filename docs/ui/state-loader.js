@@ -95,6 +95,7 @@ const mapInventoryRow = (inv) => {
     effective_status: inv.effective_status || workflowStatus,
     status: workflowStatus,
     type,
+    // Client spelling of reckon.resources.nav_key; the browser cannot import Python.
     nav_key: type === "plan" && !archived
       ? inv.slug
       : `${type}:${archived ? "archive:" : ""}${inv.slug}`,

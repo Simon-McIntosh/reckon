@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 
 from reckon import crew as crew_module
+from reckon import fleet_index as fleet_index_module
 from reckon.fleet_index import _recent_landed, compute_project_row
 
 _NOW = datetime(2026, 3, 15, 12, 0, 0)  # noqa: DTZ001 — naive, matches GIT_AUTHOR_DATE below
@@ -101,10 +102,13 @@ def test_status_counts_use_the_spa_effective_status_rule(repo):
     )
 
 
-def test_recent_deliveries_use_effective_status_and_the_compute_time_window():
+def test_recent_deliveries_use_effective_status_and_the_compute_time_window(
+    monkeypatch: pytest.MonkeyPatch,
+):
     def stamp(delta: timedelta) -> str:
         return (_NOW + delta).isoformat(timespec="seconds")
 
+    zoned_edited = (_NOW - timedelta(hours=4)).astimezone(UTC).isoformat()
     inventory = [
         {"slug": "untagged", "status": "done", "edited": stamp(-timedelta(hours=1))},
         {
@@ -123,7 +127,7 @@ def test_recent_deliveries_use_effective_status_and_the_compute_time_window():
         {
             "slug": "zoned-proof",
             "type": "evidence",
-            "edited": (_NOW - timedelta(hours=4)).astimezone(UTC).isoformat(),
+            "edited": zoned_edited,
         },
         {"slug": "boundary", "type": "evidence", "edited": stamp(-timedelta(hours=72))},
         {
@@ -134,7 +138,21 @@ def test_recent_deliveries_use_effective_status_and_the_compute_time_window():
         {"slug": "future", "type": "evidence", "edited": stamp(timedelta(seconds=1))},
     ]
 
+    observed = []
+    shared_parser = fleet_index_module.parse_iso
+
+    def observe_parse(value):
+        observed.append(value)
+        return shared_parser(value)
+
+    monkeypatch.setattr(fleet_index_module, "parse_iso", observe_parse)
+    parsed = fleet_index_module._local_naive_stamp(zoned_edited)
+    assert observed == [zoned_edited]
+    assert parsed == _NOW - timedelta(hours=4)
+    assert parsed.tzinfo is None
+
     rows = _recent_landed(inventory, "sample", _NOW)
+    assert observed.count(zoned_edited) == 2
 
     assert [row["slug"] for row in rows] == [
         "untagged",
