@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S26">
-<meta name="plan-version" content="72">
+<meta name="plan-version" content="73">
 <meta name="plan-modified" content="2026-10-20">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;deferred&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;deferred&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="f2ea9301,5b1759ab,428477c7">
 <meta name="plan-impl" content="0.4">
 </head>
@@ -227,7 +227,7 @@
 <p><strong>Why.</strong> §7 declared <code>input_modalities: [text, image]</code> on <code>backends.codex</code> in <code>docs/state/reckon/flight.yaml</code> after a measured delivery, and §8 measured that the lane judges five known PNG pairs correctly. Nothing tests the declaration itself. An edit to the project layer could drop it, and nothing would turn red until a figure review was refused at dispatch.</p><p><strong>Deliverable.</strong> One test resolves reckon's project flight layer from the repository under test, with the user layer pointed at an empty file in the test's temporary directory. It asserts that <code>reckon.flight.declared_input_modalities</code> returns image input for <code>codex</code>. The layer path is a parameter, so the negative control can point it at a copy.</p><p><strong>Done when</strong> <code>tests/test_codex_declares_image_input.py</code> passes. The test reads no file outside the repository and its temporary directory, and the test files importing <code>reckon/flight.py</code> show no added failure against base. The negative control points the test at a scratch copy of the layer with the <code>input_modalities</code> line removed, and the test must then fail. It is logged under the run directory. Write paths: <code>tests/test_codex_declares_image_input.py</code>.</p>
 
     <h2 id="s10">§10 — The dispatch renders an SVG figure to PNG</h2>
-<section data-reckon="section" data-id="s10" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s10" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p>Decided by <code>svg-figure-delivery</code>. Codex receives nothing from an attached SVG: in §8 all ten SVG runs answered <code>NO IMAGE RECEIVED</code> with the file on their argv. The figure rule keeps one SVG per figure. So the dispatch rasterises each SVG image a node carries to a PNG and attaches the PNG. The PNG is written under the run directory, never into the repository, and the run's recorded images name it, so a fresh launch, a resume and a lane change all attach the same PNG.</p>
 <p><strong>Reuse.</strong> The server already rasterises SVG with <code>resvg_py</code> for figure thumbnails (<code>_rasterise_svg</code> in <code>reckon/serve.py</code>), and <code>resvg-py</code> and <code>pillow</code> are declared dependencies, so the render needs no external tool on a login or compute node. That removes the cost the decision recorded: it assumed <code>rsvg-convert</code> on login nodes and a <code>convert</code> fallback on compute nodes, and neither is needed. Move the rasteriser into <code>reckon/figures.py</code> with the output width as a parameter, and call it from both the thumbnail route and the dispatch. Do not add a second renderer. The image list is <code>TaskNode.images</code>, filled from <code>crew dispatch --image</code> (§6).</p>
 <p><strong>Write paths:</strong> <code>reckon/figures.py</code>, <code>reckon/serve.py</code>, <code>reckon/crew/dispatch.py</code>, <code>reckon/crew_dispatch_commands.py</code>, <code>tests/test_dispatch_renders_svg_figures.py</code> (new).</p>
@@ -281,10 +281,11 @@
     <pre class="r-fu-prompt">/reckon-build a-review-can-see-the-figure §9</pre>
     <p class="r-fu-outcome"><p>§9 landed: a test now holds codex's image declaration (<code>a68042d64</code>). Every section that can run without the lead has landed. What remains waits on the lead's two open decisions, <code>svg-figure-delivery</code> and <code>figure-review-on-metered-lane</code>, which hold §4. If <code>render-to-png</code> is chosen, the lock adds a section that renders an SVG figure to PNG on the dispatch's image path before §4 is rewritten.</p></p>
     </article>
-<article class="r-fu" data-id="f-arcstf-006" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build" data-written-at="2026-10-20 07:53" data-recommends-skill="/reckon-build a-review-can-see-the-figure §10" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-arcstf-006" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build" data-written-at="2026-10-20 07:53" data-recommends-skill="/reckon-build a-review-can-see-the-figure §10" data-resolved-at="2026-10-20T11:03:25+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Build §10 to §12</h4>
     <div class="r-fu-body"><p>Both decisions are locked. §10 renders SVG figures to PNG on the dispatch, §11 refuses a PNG twin at promotion, and §12 lets a figure review take an image lane. The three write disjoint files and can run together. <code>scoring-should-stop-a-promotion</code> §6 follows §12.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-review-can-see-the-figure §10</pre>
+    <p class="r-fu-outcome">§10 (f1d444cb3), §11 (bcdace7c1) and §12 (b5c3c6fd7) landed. The remaining work, a figure review that promotion dispatches and reads, is carried by scoring-should-stop-a-promotion §6 and §18 to §20, whose §6 now depends on this plan's §10 and §12.</p>
     </article>
 </section>
 
@@ -468,6 +469,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261020T100244296522-the-dispatch-renders-an-svg-figure-to-png" data-who="reckon-build" data-when="2026-10-20T10:38:38Z">
     <div class="r-comment-body"><p>Dispatch renders SVG attachments before worktree creation and stores run-local PNGs at 1400 px width; 16 dispatch, attachment and thumbnail tests passed at the repair head, and the declared mutation failed the argv test.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-close-s10" data-who="reckon-build" data-when="2026-10-20T11:00:00Z">
+    <div class="r-comment-body"><p>§10 landed. The dispatch rasterises each SVG image to a 1400 px PNG in the run directory before any worktree exists, attaches the PNG, and reuses it on resume; the rasteriser is shared with the thumbnail route in <code>reckon/figures.py</code>. Merged as <code>f1d444cb3</code>; <code>verify-gate</code> passed. 16 passed on the gate, the negative control fails the argv case, and 0 failures were added over 36 dispatch and figure test files. Review: 99/120. <a href="/reckon/evidence/archive/a-review-can-see-the-figure-landed.html#s10-dispatch-renders-svg-to-png">evidence</a></p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
