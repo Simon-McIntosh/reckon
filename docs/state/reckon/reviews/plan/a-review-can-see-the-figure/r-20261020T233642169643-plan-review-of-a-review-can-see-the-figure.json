@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T23:53:26.282Z",
+  "dispatched_at": "2026-10-20T23:37:29Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:258",
+      "id": "done_when-1",
+      "reason": "as written the node cannot satisfy its own first done-when clause for the blank probe, which is the section's negative control, so a worker must either invent the control's provenance or fail the clause.",
+      "text": "the done-when requires \"each copy's sha256 against its source\", but only the figure probe opens a copy of a repository file; the blank probe opens \"a PNG of the same size with no marks\", which is synthesised rather than copied, so it has no source to hash against, and no node is granted its creation anywhere in \u00a713 (the section's write paths grant the matching node \"its own evidence fragment and report only\")",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:256",
+      "id": "done_when-2",
+      "reason": "the counted-claim list must name which title(s) count, or a correctly-seeing lane is graded a false negative and the section's verdict inverts.",
+      "text": "\"the image's title\" (deliverable) and \"the figure's title\" (done-when) name a single title \u2014 but `exposure_counts.py` renders a figure-level suptitle plus one `set_title` per panel (three titles on the PNG the probe opens), so a lane that correctly reports a panel title, or all three, can be scored against a counted claim set that expects one and read as <em>misreads</em>",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "eb23c63d2fa8a5c81056cf1cbc4f012901db72330478a0a2d5256721f31ad835",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 77,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T233642169643-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "6f3dcb93535b7d89b410e16af2bf3e65ce5bfaf6",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `docs/figures/unreviewed-promotion-exposure/exposure_counts.png` and `.py` both exist and agree (1564\u00d7612 at dpi 170, both committed at c535b0746), `_refuse_images` resolves at `reckon/_backends.py:1071` and is reached from `_ClaudeDialect.argv` (`reckon/_backends.py:1594`), and `artifact-feeds-and-reader.html:281` records the cited \"deepseek-v4-flash is not a multimodal model\" death.",
+    "done_when": "a finding \u2014 \u00a713's done-when makes the blank probe's PNG a hashed copy of a source that no node is granted to create.",
+    "evidence_paths": "pass \u2014 every log is placed under the run directory and the matching report under the plan's evidence fragment, not a session scratchpad or node-local temporary.",
+    "naming": "pass \u2014 \u00a713 introduces no plan label, stage name, ticket number or version tag; its `\u00a71`/`\u00a76`/`\u00a77` are plan-internal section references and the symbols it cites are real.",
+    "reasoning": "pass \u2014 the Read-tool path \u00a713 measures is the one the cited failure took, `--local` does resolve to the clive lane (`local_backend: clive`), and \u00a713 correctly declines to declare a modality the dispatch cannot yet deliver to clive.",
+    "single_goal": "pass \u2014 \u00a713 measures one thing (whether the local lane's model receives an image its worker opens); the two probes plus the matching node are the instrument for that one verdict.",
+    "wiring": "pass \u2014 the plan's only declared relationship (`plan-informs scoring-should-stop-a-promotion`) resolves, and \u00a713 declares no `depends-on`/`gates` edge that points at a wrong node; its forward \"later section, if the probe holds\" is deliberately unnamed."
+  },
+  "section_digests": {
+    "_document": "b2ac12e22a62f1a04b381606e910962e4836edc1958594c258fdf7587d8d0380",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s10": "aee314dbe26192cd678dc467a9b229b8cb46873cacefcd4ce369fcbe469a1e37",
+    "s11": "22d519df0a82a0edfb23ceef10d63c14a08f3d8d656ce95a4cd03e5049d4e228",
+    "s12": "234f9999257c9e64bf69518cdf0b98e319850465374deeac091e90b1ed118647",
+    "s13": "3c70ab25b94c88652d708d62729ce2df4022e9d857d8c8118b912a3511e4e6c1",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "ce9705dbaad70ab2b3a9425eead9900cc284deb7f1d5ecacb553d3745679b3d7",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a",
+    "s8": "2c200fdd964f328342811e9362e4cd14da60f3c8352368899ccf87797d9e7f5b",
+    "s9": "b62ffeb55dd71d5f62b49f372e069f227a57c7caec9c6c3b45f81a945d284e11"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T23:55:38.451851+00:00"
+}
