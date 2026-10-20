@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T22:03:10.610Z",
+  "dispatched_at": "2026-10-20T21:55:29Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:258",
+      "id": "done_when-1",
+      "reason": "the node's positive verdict is its whole product, and a false \"receives\" is exactly the claim a later section would declare `input_modalities` on clive from, so the plan would be built on a measurement that cannot distinguish a lane that sees from one that sees nothing.",
+      "text": "the \"receives\" verdict (\"every probe claim matches, the blank control reports no content, and each run opened only its PNG\") is satisfied vacuously by a probe that reports \"shows none\", because the brief explicitly offers that answer and an empty claim set makes \"every probe claim matches\" trivially true, while \"not delivered\" is defined to require the Read to have failed \u2014 so a lane that receives no image and honestly says so is scored \"receives\"",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:258",
+      "id": "done_when-2",
+      "reason": "a worker hitting this case must either invent a verdict or stop, and the recorded result would not be comparable with the definition the plan states.",
+      "text": "the three named verdicts do not cover a probe that receives the image but misstates a claim (some bar values match, one wrong): that outcome satisfies neither \"every probe claim matches\", nor \"confabulates\" (defined only as the blank control describing content), nor \"not delivered\" (defined only as a failed Read or a refusal), so the report requirement to \"state one verdict\" is unsatisfiable for the most likely partial outcome",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "57093cf2d047d3c1f02c2bd3b3606f02acc63dc337bc495c3976c6a22b473f00",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 75,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T214912376774-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "c13856cafd97715d1111656fe6212872299da6f8",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_refuse_images` (reckon/_backends.py:1071) is reached from `_ClaudeDialect.argv` (line 1594) which `_CliveDialect` (line 2006) inherits; `docs/figures/unreviewed-promotion-exposure/exposure_counts.png` and `.py` both exist; the \"API Error 400, deepseek-v4-flash is not a multimodal model\" quote resolves in docs/plans/artifact-feeds-and-reader.html:281; `--local` is a real option.",
+    "done_when": "a finding \u2014 \u00a713's done-when defines its \"receives\" verdict as \"every probe claim matches\", which is vacuously true when the probe makes no claims.",
+    "evidence_paths": "pass \u2014 the deliverable writes every log under the run directory and the write path is the matching node's own evidence fragment/report, not a scratchpad or node-local temp.",
+    "naming": "pass \u2014 \u00a713's prose carries no plan labels, ticket numbers or version tags, and it adds no code symbols.",
+    "reasoning": "pass \u2014 the stated root cause matches its cited evidence (artifact-feeds-and-reader records the Read-opened PNG dying on a non-multimodal 400), the Read-probe mechanism is the path the cited failure and the 2026-10-13 nodes took, and the caller is named (`--local` dispatch).",
+    "single_goal": "pass \u2014 \u00a713 carries one deliverable, a recorded measurement of whether the local lane receives an opened image.",
+    "wiring": "pass \u2014 \u00a713 names no depends-on/gates of its own, but it references the refusal \u00a76 asserts and the local lane's dialect, both of which resolve, and the plan carries no node-relationship table for the s10\u2013s13 band to be inconsistent with."
+  },
+  "section_digests": {
+    "_document": "b2ac12e22a62f1a04b381606e910962e4836edc1958594c258fdf7587d8d0380",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s10": "aee314dbe26192cd678dc467a9b229b8cb46873cacefcd4ce369fcbe469a1e37",
+    "s11": "22d519df0a82a0edfb23ceef10d63c14a08f3d8d656ce95a4cd03e5049d4e228",
+    "s12": "234f9999257c9e64bf69518cdf0b98e319850465374deeac091e90b1ed118647",
+    "s13": "ca68888ce58ea923dccf3f2c653c05ad0e47816cf5f5274edae228c61833c3f6",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "ce9705dbaad70ab2b3a9425eead9900cc284deb7f1d5ecacb553d3745679b3d7",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a",
+    "s8": "2c200fdd964f328342811e9362e4cd14da60f3c8352368899ccf87797d9e7f5b",
+    "s9": "b62ffeb55dd71d5f62b49f372e069f227a57c7caec9c6c3b45f81a945d284e11"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T22:05:22.062675+00:00"
+}
