@@ -1,0 +1,37 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-20T10:05:34.938Z",
+  "dispatched_at": "2026-10-20T09:53:37Z",
+  "findings": [
+    {
+      "file": "reckon/crew/model_catalogue.py",
+      "line": 35,
+      "severity": "follow-on",
+      "text": "follow-on: _write_json hand-rolls the atomic JSON write (NamedTemporaryFile + json.dump + os.replace) that the repository already owns as reckon/_store.py:584 write_json_atomically (78 call sites across reckon/), a capability fork that does not extend the owner; it should call write_json_atomically(path, value, indent=2, sort_keys=True)."
+    },
+    {
+      "file": "tests/test_a_new_model_is_noticed.py",
+      "line": 22,
+      "severity": "follow-on",
+      "text": "follow-on: the plan's done-when requires the test to assert the real crew home is untouched; the fixture asserts the patched home resolves under tmp_path before any write but adds no assertion that the real crew home is unchanged afterward."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261020T095247411030-review-of-a-new-model-is-noticed-2ce0352fb7c7",
+  "reviewed_base_sha": "2ba55855e4594f38eaff9ffd452c8f2f837a2a74",
+  "reviewed_head_sha": "2ce0352fb7c7b028184eb756ad7920c1ace76027",
+  "reviewed_run_id": "r-20261020T090324650169-a-new-model-is-noticed",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T10:09:34.709376+00:00",
+  "total": 99
+}
