@@ -11,7 +11,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
-from reckon import serve
+from reckon import serve, shell_assets
 from reckon.file_memo import file_revision
 
 
@@ -131,3 +131,21 @@ def test_shell_assets_are_revisioned_and_revalidated(tmp_path: Path, monkeypatch
         status, old_headers, _ = _get(port, compiled_url)
         assert status == 200
         assert old_headers["Cache-Control"] == "no-cache"
+
+
+def test_authored_shell_links_resolve_to_revisioned_assets():
+    root = Path(__file__).resolve().parents[1]
+    html = serve._render_spa_html("sample")
+    revisions = {
+        name: serve.CLIENT_ASSETS[name][1] for name in ("react.js", "react-dom.js")
+    }
+    served = shell_assets.revisioned_html(
+        html, root / "docs" / "_shared", root / "docs" / "ui", revisions
+    )
+    scripts, styles = _links(served)
+    assert len(scripts) == 22 and len(styles) == 12
+    assert all(parse_qs(urlsplit(url).query).get("rev") for url in scripts + styles)
+    shell_script = next(url for url in scripts if url.startswith("/_ui/shell.js"))
+    assert parse_qs(urlsplit(shell_script).query)["rev"] == [
+        file_revision((root / "docs" / "ui" / "shell.jsx").stat())
+    ]
