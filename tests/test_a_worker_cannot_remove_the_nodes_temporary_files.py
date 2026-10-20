@@ -63,9 +63,7 @@ RUNTIME_PATHS_NEGATIVE_MUTATION = (
     "creates its directories itself and never calls create_write_roots; the "
     "interception test then fails because create_write_roots was never called"
 )
-RUNTIME_PATHS_NEGATIVE = (
-    os.environ.get("RECKON_TEST_RUNTIME_PATHS_NEGATIVE") == "1"
-)
+RUNTIME_PATHS_NEGATIVE = os.environ.get("RECKON_TEST_RUNTIME_PATHS_NEGATIVE") == "1"
 
 requires_bwrap = pytest.mark.skipif(
     shutil.which("bwrap") is None, reason="bubblewrap is not installed"
@@ -451,7 +449,9 @@ def test_creating_the_runtime_paths_goes_through_create_write_roots(
             f"{runtime} was not among the roots handed to create_write_roots: {roots}"
         )
         assert runtime.is_dir(), f"the runtime path {runtime} was not created"
-    assert sorted(created) == sorted(_worker_fence.resolved_destination(p) for p in roots)
+    assert sorted(created) == sorted(
+        _worker_fence.resolved_destination(p) for p in roots
+    )
 
 
 def test_the_composed_fence_argv_for_a_fixed_root_set_is_literal(
@@ -469,7 +469,7 @@ def test_the_composed_fence_argv_for_a_fixed_root_set_is_literal(
     """
     node = NodeTmp(tmp_path)
     node.point_the_node_tmp(monkeypatch)
-    monkeypatch.setattr(_worker_fence, "shared_store_seal_roots", lambda: [])
+    monkeypatch.setattr(_worker_fence, "shared_store_seal_roots", list)
     resolve = _worker_fence.resolved_destination
     argv = node.argv()
     expected = [
