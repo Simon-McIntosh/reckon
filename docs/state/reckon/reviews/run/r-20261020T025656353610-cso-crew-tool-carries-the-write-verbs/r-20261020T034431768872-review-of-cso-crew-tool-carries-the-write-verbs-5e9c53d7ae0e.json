@@ -1,0 +1,82 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-20T04:07:11.556Z",
+  "dispatched_at": "2026-10-20T03:46:44Z",
+  "emission": [
+    "VERDICT goal: the node goal (prompt.txt:30) is eight write actions on the crew MCP tool plus the obligations view printing the action form; reckon/mcp.py:2109 routes the eight names to reckon/mcp_crew_actions.py:317, which calls each verb's own callback and returns its emitted document, so the eight actions are delivered.",
+    "VERDICT done_when: the manifest's tests line is the FENCE EVIDENCE gate verbatim; after_suite.log's header names revision 5e9c53d7a and its last line is EXIT=1 with 88 passed / 1 failed, the failure identical at the base arm (baseline_suite.log: 74 passed / 1 failed / 1 error), and negative_control.log is red on exactly ack; the obligation that the obligations view's printed commands use the action form is met only by an added field, and the form itself is wrong for the commands the view actually prints (findings 1 and 2).",
+    "VERDICT write_paths: the manifest declares seven paths; the diff touches five of them \u2014 reckon/mcp.py, reckon/mcp_crew_actions.py, reckon/crew/obligations.py, tests/test_crew_tool_carries_the_write_verbs.py and docs/evidence/fragments/the-crew-surface-is-one-tool-and-a-few-verbs/cso-crew-tool-carries-the-write-verbs.html \u2014 and no path outside them; reckon/_mcp_tools.py and the figure directory are declared but untouched.",
+    "VERDICT manifest: read; it records commits d87b44154 and 5e9c53d7a, the parity test at 12 passed, the negative control at EXIT=1 with 1 failed (test_each_action_matches_its_cli_verb[ack]) and 11 passed, the focused gate at 88 passed / 1 failed against a base arm of 74 passed / 1 failed / 1 error, the three log paths, and one landing line.",
+    "VERDICT diff: read both commits against 703f29bde; d87b44154 adds reckon/mcp_crew_actions.py, extends the crew tool's signature and docstring in reckon/mcp.py, adds action_form to reckon/crew/obligations.py, and adds the parity test; 5e9c53d7a adds the landing fragment only.",
+    "CALL_SITES: reckon/mcp.py:3042, reckon/mcp_crew_actions.py:317, reckon/mcp_views.py:3818, reckon/crew/obligations.py:1178",
+    "SCORE goal_fidelity: 15",
+    "JUSTIFICATION goal_fidelity: the eight actions run the functions their CLI verbs run, at reckon/mcp_crew_actions.py:317, but the obligations half of the goal is delivered as an added next_action field whose rendering is wrong for the commands reckon/crew/recovery_classification.py:1653 and :1660 compose, so the printed commands do not use the action form in the sense the plan's \u00a75 requires.",
+    "SCORE evidence: 15",
+    "JUSTIFICATION evidence: the gate log at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T025656353610-cso-crew-tool-carries-the-write-verbs/logs/after_suite.log carries its revision header, its summary and a bare EXIT=1 beside a base arm with the same single failure, but every parity case at tests/test_crew_tool_carries_the_write_verbs.py:130 drives a refusal ('run-missing'), so no successful call is compared, and tests/test_crew_tool_carries_the_write_verbs.py:180 asserts a guard list names the run rather than that it carries every failing guard.",
+    "SCORE scope_discipline: 19",
+    "JUSTIFICATION scope_discipline: every path in the diff (reckon/mcp.py, reckon/mcp_crew_actions.py, reckon/crew/obligations.py, the parity test and the landing fragment) is inside the manifest's declared write paths, with no out-of-scope edit.",
+    "SCORE durability: 10",
+    "JUSTIFICATION durability: the parity assertion at tests/test_crew_tool_carries_the_write_verbs.py:172 is a real comparison and its declared mutation (mcp_crew_actions.py:102) reddens it on ack alone as the negative-control log shows, but nothing fails if action_form drops an unmapped option or repeats a keyword \u2014 both defects in the change's own new output survive the suite at tests/test_crew_tool_carries_the_write_verbs.py:246, which only exercises single-option commands.",
+    "SCORE fit: 14",
+    "JUSTIFICATION fit: the modules follow the surrounding idiom, but the added key at reckon/crew/obligations.py:171 collides with the established meaning of next_action (reckon/crew/recovery_classification.py:1564) and reckon/mcp.py:50 adds an import that production never reads.",
+    "SCORE reuse: 12",
+    "JUSTIFICATION reuse: the diff adds no second implementation of the verb-dispatch capability, extending the CLI's own callbacks at reckon/mcp_crew_actions.py:317, but it declares the eight-action set three times (reckon/mcp.py:2109, reckon/mcp_crew_actions.py:30, reckon/crew/obligations.py:122) and action_form is a new parser for a command string that no owner existed for.",
+    "FINDING reckon/crew/obligations.py:150 blocking: action_form silently drops any option it does not map, so the action form offered for the commitless-promotion command loses --no-commit and no longer matches the printed command it accompanies.",
+    "FINDING reckon/crew/obligations.py:155 blocking: a repeated option appends a duplicate keyword, so a promotion duty for a run with two commits renders an action string that is not a callable form.",
+    "FINDING reckon/crew/obligations.py:171 follow-on: next_action on a duty row now means the MCP action form while the same key elsewhere means a CLI command string.",
+    "FINDING reckon/mcp.py:50 follow-on: an import unused by production was added to serve a test seam in tests/test_mcp_crew_obligations.py:44.",
+    "FINDING reckon/mcp.py:2109 follow-on: the eight action names are declared in three places by one change."
+  ],
+  "findings": [
+    {
+      "anchor": "reckon/crew/obligations.py:150",
+      "id": "action-form-drops-an-unmapped-option",
+      "severity": "blocking",
+      "text": "action_form drops every option that is not in _ACTION_OPTION_PARAM rather than refusing the command, so the action it prints beside a commitless promotion is not the printed command: reckon/crew/recovery_classification.py:1653 composes `reckon crew complete --run X --gate not-run --no-commit '<why the run produced no commit>' --outcome '<what the run produced>'`, and action_form renders that as `crew(action=\"complete\", run_id=\"X\", gate=\"not-run\", outcome=\"<what the run produced>\")` with no `no_commit`; a coordinator following the offered action runs a promotion that lacks the declaration the commitless run is promoted under and is refused. Rendered against the real function in the node's own tree, the value is exactly that string."
+    },
+    {
+      "anchor": "reckon/crew/obligations.py:155",
+      "id": "action-form-repeats-a-keyword",
+      "severity": "blocking",
+      "text": "a repeated option appends the same parameter name twice, so a run carrying two commits renders `crew(action=\"complete\", run_id=\"X\", gate=\"passed\", commits=\"1111111\", commits=\"2222222\")` \u2014 a duplicate keyword argument, which is not a callable form for the surface the field is offered as. reckon/crew/recovery_classification.py:1660 appends one `--commit` per commit, so any promotion duty for a run with more than one commit is affected. Verified by running action_form on that literal command in the node's tree."
+    },
+    {
+      "anchor": "reckon/crew/obligations.py:171",
+      "id": "next-action-has-two-meanings",
+      "severity": "follow-on",
+      "text": "the added `next_action` on a duty row carries the MCP action form, while `next_action` is an established key elsewhere in the repository for a CLI command string \u2014 reckon/crew/recovery_classification.py:1564 produces it and reckon/crew/obligations.py:397 itself reads a recovery row's `next_action` as the duty's `next_command`. The same key now names two different kinds of value, and a reader that knows the established meaning will read the action form as a command. No consumer reads the duty row's `next_action` as a command today, so this is a readability hazard rather than a live break."
+    },
+    {
+      "anchor": "reckon/mcp.py:50",
+      "id": "an-unused-import-added-as-a-test-seam",
+      "severity": "follow-on",
+      "text": "`from reckon.crew import obligations as obligations_module  # noqa: F401` is unused by reckon/mcp.py; the obligations view is dispatched in reckon/mcp_crew_views.py (reckon/mcp_views.py:3818). It was added so tests/test_mcp_crew_obligations.py:44 can read `mcp_module.obligations_module`, which fixes a real pre-existing collection error but leaves production code carrying an import that exists only for a test. The surrounding writer of the obligations view is reckon/mcp_views.py, which is outside this node's fence, so the in-fence fix is understandable and is recorded in the manifest's evidence_inputs."
+    },
+    {
+      "anchor": "reckon/mcp.py:2109",
+      "id": "the-eight-action-set-is-declared-three-times",
+      "severity": "follow-on",
+      "text": "the same eight action names are declared three times by one change: reckon/mcp.py:2109 `_WRITE_ACTIONS`, reckon/mcp_crew_actions.py:30 `CREW_WRITE_ACTIONS` and reckon/crew/obligations.py:122 `_ACTION_VERBS`. reckon/mcp_crew_actions.py is the owner of the set (it is the module that dispatches on it), and the other two could read it; four copies of one list are what a later ninth action has to be remembered in."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261020T034431768872-review-of-cso-crew-tool-carries-the-write-verbs-5e9c53d7ae0e",
+  "reviewed_base_sha": "703f29bdebdf7048914a2c33334bd6b648ec2207",
+  "reviewed_commit": "5e9c53d7ae0ec2ebbdbfa04db0e7506423fecd5c",
+  "reviewed_head_sha": "5e9c53d7ae0ec2ebbdbfa04db0e7506423fecd5c",
+  "reviewed_run_id": "r-20261020T025656353610-cso-crew-tool-carries-the-write-verbs",
+  "rubric": "node",
+  "scores": {
+    "durability": 10,
+    "evidence": 15,
+    "fit": 14,
+    "goal_fidelity": 15,
+    "reuse": 12,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T04:36:34.084811+00:00",
+  "total": 85
+}
