@@ -1,0 +1,43 @@
+<article class="landed-report" data-run-id="r-20261020T104551937288-a-model-notice-reaches-the-session" data-node="a-model-notice-reaches-the-session">
+  <h3 id="a-model-notice-reaches-the-session-summary">A model notice reaches the session</h3>
+  <p id="a-model-notice-reaches-the-session-change">
+    <strong>Change.</strong> Commit <code>072895ccd</code> makes the model
+    catalogue check refresh on the producer's clock cadence
+    (<code>WATCHER_SWEEP_INTERVAL_SECONDS</code>): a sweep past the refresh age
+    fetches once under an exclusive lock, so one producer fetches however many
+    projects are watched, and a refresh that raises is printed without ending
+    the seat. A released notice on a lane that opts in with
+    <code>probe_new_models</code> and declares no served-model file is probed
+    once through that lane's own command with the model spelled as the command
+    accepts it (<code>anthropic/claude-sonnet-9.9</code> &rarr;
+    <code>claude-sonnet-9-9</code>), and the result is recorded on the notice.
+    The coordinator obligations hook adds one line naming the unacknowledged
+    count and <code>crew(view="models")</code>, reading the published snapshot
+    only. The real-home fixture guard asserts no write target resolves into the
+    workstation's crew home instead of comparing the live snapshot's mtime.
+  </p>
+  <p id="a-model-notice-reaches-the-session-measure">
+    <strong>Measure.</strong> Base arm at
+    <code>81afebdeac78306914fd32f62850493b26bb9dc0</code> over the nine
+    pre-existing files: <code>2 failed, 227 passed</code>, failures
+    <code>test_the_prompt_path_loads_no_derivation_module</code> and
+    <code>test_every_module_fits_a_worker_window</code>. Head arm over those nine
+    plus the new file: <code>3 failed, 231 passed</code> &mdash; the same two
+    failures, plus <code>test_quiet_cycles_list_nothing_and_spawn_no_git</code>,
+    which is environmental and not introduced here (see below). The new file
+    passed all five cases. Both negative controls failed only their named case:
+    dropping the age gate fetched four times where one was asserted; probing on
+    every refresh probed twice where once was asserted. Ruff check and format
+    add no finding on the staged paths.
+  </p>
+  <p id="a-model-notice-reaches-the-session-follow">
+    <strong>Follow-on.</strong> <code>test_quiet_cycles_list_nothing_and_spawn_no_git</code>
+    fails in this worktree but not in a clean extraction of the same revision:
+    with all three changed modules restored to their base contents the pair
+    <code>test_crew_recovery.py</code> then that test still fails here, and the
+    same pair passes in an extraction of the base commit. So the failure is a
+    property of the worktree (an isolated checkout, not this node's change) and
+    belongs to whoever owns that test file. The gate's base arm ran in an
+    extraction and does not show it.
+  </p>
+</article>
