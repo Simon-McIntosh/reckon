@@ -517,6 +517,11 @@ base revision rather than against the head with the change reverted.</p>
     <p><code>CrewArgs.refresh</code> (<code>reckon/_mcp_tools.py</code>) is declared <code>bool | None = None</code>. An unset refresh option no longer publishes, and <code>tests/test_mcp_tools.py::test_tool_argument_models_publish_cheap_observation_options</code> is green again on main. §42 had made it red, and its gate had not included that test. Commits <code>ee306a9d1</code> and <code>ebc11eff0</code>, merged at <code>c45cd09be</code>. Gate: the base arm failed that case and the window guard; the head failed only the window guard, 137 passed. The review scored goal 20, scope 20, durability 20, reuse 20, fit 18, evidence 16, with no added failures. Its one follow-on, a missing ruff log, was exempted on the reviewer's own ruff run.</p>
   </section>
 
+  <section id="s44">
+    <h2>§44 — A new model id starts from its key&#x27;s record</h2>
+    <p>A lane-model candidate whose own model id has fewer recorded outcomes than <code>routing.prior_outcome_threshold</code> (default 5) now carries a prior block: the tallies of runs recorded under the same lane and model key with earlier model ids, naming each id. Runs are matched by the recorded lane and key, never by today's lane default, and at or above the threshold no block is rendered. Commits <code>063b691af</code> and <code>4ba2dd021</code>, merged at <code>dccd5e509</code>. Gate: 129 passed at base and 135 at head, with the same pre-existing window-guard failure. Negative controls: matching by today's lane default fails the recorded-key case, and always rendering the block fails the threshold cases. A replay of 20 live picks kept every route; none carries a prior block today. The review scored scope 20, goal 19, durability 19, reuse 19, evidence 17, fit 16, with no added failures and one follow-on exempted.</p>
+  </section>
+
 </main>
 </body>
 </html>
