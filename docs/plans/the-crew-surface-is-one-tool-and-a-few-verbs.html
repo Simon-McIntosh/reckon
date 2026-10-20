@@ -26,7 +26,7 @@
   <title>The Crew Surface Is One Tool And A Few Verbs | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="89">
+<meta name="plan-version" content="91">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -467,6 +467,12 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-cso-ledger-and-velocity-retire" data-who="reckon-build" data-when="2026-10-21T00:12:00Z">
     <div class="r-comment-body"><p>First of §9's four nodes landed at merge <code>4af0f5d1a</code>, run <code>r-20261020T161011580050-cso-ledger-and-velocity-retire</code>. <code>crew ledger</code> and <code>crew velocity</code> are now tombstones whose printed invocation runs as written:</p><ul><li>bare and <code>--view summary</code> → <code>crew view ledger</code>;</li><li><code>--view records</code> → <code>crew view records</code>;</li><li><code>--view findings</code> → <code>crew view findings</code>.</li></ul><p>Every reckon caller and citation has moved. That includes three tests whose argv spans several lines, which a line-based census missed. The gate adds no failures; the two it shows were already failing at base.</p><p>It took four repair rounds. They fixed:</p><ul><li>the missed callers;</li><li>a successor that forwarded <code>--view</code> and exited 2;</li><li>a plan label in a test comment;</li><li>self-comparing assertions;</li><li>a gate command placeholder;</li><li><code>--view summary</code> reaching the fleet summary instead of the ledger rollup.</li></ul><p>Final review 112/120. Its one finding is a stale view-list literal in <code>tests/test_ledger.py</code>, failing at base and at head, and is folded into the filter node, which dispatches next. This supersedes the in-flight note <code>c-s9-handoff-fleet-move</code>.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261020T222625755321-cso-crew-view-filters-live-runs" data-who="reckon-build" data-when="2026-10-20T23:07:16.274Z">
+    <div class="r-comment-body"><p>crew view live and the crew tool live view take --phase and --mine as crew list does, the schema view Literal widened from ten names to the dispatcher's nineteen with the skill documenting all nineteen, and the registry case now reads the schema's own annotation with a control on each side; head 1 failed / 135 passed against base 1 failed / 133 passed, the same single pre-existing id in neither arm's changed paths</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261020T230812471741-review-of-cso-crew-view-filters-live-runs-484045e1d4bb" data-who="reckon-build" data-when="2026-10-20T23:21:17.647Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261020T222625755321-cso-crew-view-filters-live-runs (head 484045e1d4bbc795f6135023e3213649ea1258dc, base 2e421b15f20ed96ff5c6ed80264010174f39cbf3) stored as a parsed record scoring goal_fidelity 19, evidence 15, scope_discipline 20, durability 18, fit 18, reuse 16 (total 106), with added_failure_count 0 and one follow-on finding on the unreadable base-arm gate log.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261019T220254082188-review-of-cso-budget-family-folds-0274b1227df3" data-who="reckon-build" data-when="2026-10-19T22:24:20.259Z">
     <div class="r-comment-body"><p>Reviewed run r-20261019T202350268699-cso-budget-family-folds at 0274b1227df3acf495023b12695d143ed6c129ab against base 0fa62dca44a63a65382c140c82a003dd7a660e02: the budget fold is complete and its gate is green at both arms with zero added failures, but the run's own manifest and gate logs fail its own `crew check-manifest` audit (ok:false, three findings), so the node cannot promote until the negative_control_log and the two gate-log command headers are repaired.</p></div>
