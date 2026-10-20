@@ -84,13 +84,39 @@ MINIMAL_OPTIONS: dict[str, list[str]] = {
     "observe": [],
     "path": ["--kind", "runs"],
     "repair": ["--status", "complete", "--reason", "sweep fixture"],
-    "resume": [],
+    "resume": ["--advice", "sweep fixture"],
     "shadow": ["--session", "sweep-session", "--backend", "local-worker"],
     "stop": [],
     "supersede-review": ["--reason", "sweep fixture"],
     "verify-gate": ["--checkout-path", "."],
     "view": [],
     "widen": ["--write-path", "reckon/sweep_fixture.py"],
+}
+
+# What the matching-project arm expects to reach: the exit code, and the verb's
+# own words where it refuses the fixture run for a reason of its own. A live
+# pointer carrying a project and nothing else is all the fixture run is, so a
+# verb reading state the run does not hold refuses it; the empty reason marks a
+# verb that completes on that fixture.
+ACCEPTED: dict[str, tuple[int, str]] = {
+    "ack": (0, ""),
+    "attach": (1, "is a None launch"),
+    "check": (1, "records no node definition"),
+    "complete": (1, "cannot be promoted"),
+    "directory": (0, ""),
+    "discard": (0, ""),
+    "dispose": (1, "no stored review for run"),
+    "gc": (1, "no record names a worktree"),
+    "observe": (0, ""),
+    "path": (0, ""),
+    "repair": (1, "has no manifest to repair"),
+    "resume": (1, "is not a spawned run"),
+    "shadow": (1, "is not a committed ledger record"),
+    "stop": (1, "has no process to stop"),
+    "supersede-review": (1, "names no committed row"),
+    "verify-gate": (1, "has no row in the"),
+    "view": (0, ""),
+    "widen": (1, "records no node holding a write scope"),
 }
 
 
@@ -143,6 +169,23 @@ def test_a_matching_project_is_accepted_and_a_disagreeing_one_refused(
     common = ["crew", *verb.split(), "--run", resolvable_run, *extra]
 
     agreed = CliRunner().invoke(cli_module.main, [*common, "--project", SAMPLE_PROJECT])
+    # Accepting the project means the invocation reaches the verb, so this arm
+    # asserts the exit code it reaches there and, where the fixture run lacks
+    # the state a verb acts on, the verb's own refusal by its own words. A verb
+    # that answered the identity check with anything else failed this arm: a
+    # fixture run carries a live pointer and nothing more, so a verb reading a
+    # manifest, a stored review, a ledger row, a worktree or a spawned process
+    # legitimately refuses it, and only for that reason.
+    expected_code, expected_refusal = ACCEPTED[verb]
+    assert agreed.exit_code == expected_code, (
+        f"{verb} did not reach its own behaviour with a matching --project, "
+        f"expected exit {expected_code}:\n{agreed.output}"
+    )
+    if expected_refusal:
+        assert expected_refusal in agreed.output, (
+            f"{verb} refused a matching --project for a reason other than its "
+            f"own ({expected_refusal!r}):\n{agreed.output}"
+        )
     assert DISAGREEMENT not in agreed.output, (
         f"{verb} refused a --project that agrees with the run:\n{agreed.output}"
     )
@@ -299,3 +342,17 @@ def test_review_run_selects_which_covering_review_answers_the_finding(
     assert result.exit_code == 0, result.output
     payload = json.loads(result.stdout)
     assert finding not in payload["unanswered"], payload
+    # The answer must land on the review --review-run named. Both covering
+    # reviews raise the finding, so a refusal read from the payload cannot tell
+    # which one was answered: the stores must say it.
+    stored = {
+        plan_review._record_run_id(record): record
+        for record in plan_review.list_plan_reviews(
+            "sample", base_dir=config_home / "crew" / "reviews"
+        )
+    }
+    assert set(stored) == {"r-design-0", "r-content-1"}, sorted(stored)
+    assert stored["r-design-0"]["responses"][finding]["action"] == "acted", stored[
+        "r-design-0"
+    ]
+    assert stored["r-content-1"]["responses"] == {}, stored["r-content-1"]
