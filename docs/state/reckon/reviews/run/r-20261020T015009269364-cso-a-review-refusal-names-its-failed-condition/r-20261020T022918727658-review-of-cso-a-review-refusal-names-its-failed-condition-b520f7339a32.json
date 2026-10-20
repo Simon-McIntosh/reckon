@@ -1,0 +1,97 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-20T02:50:42.805Z",
+  "dispatched_at": "2026-10-20T02:31:06Z",
+  "emission": [
+    "VERDICT goal: the node's goal is to make crew complete's review refusal name the one failed delivery condition with its path and remedy; reckon/crew/promotion_checks.py:1165 emits condition; detail; remedy from review_delivery_refusal.",
+    "VERDICT done_when: the done_when names tests/test_a_review_refusal_names_its_failed_condition.py and the five refusals; the manifest records the run and gate/head-arm.log records 23 passed / 1 pre-existing failed at EXIT=1.",
+    "VERDICT write_paths: read the source manifest's declared paths; every path in the diff (reckon/crew/recovery_review_delivery.py, reckon/crew/recovery_review_subject.py, reckon/crew/promotion_checks.py, tests/test_a_review_refusal_names_its_failed_condition.py, the evidence fragment) is inside them.",
+    "VERDICT manifest: read; it records commits e3010ebb and b520f7339, the base, head and negative-control arms with their logs, and reckon crew check-manifest exits 0.",
+    "VERDICT diff: read commit by commit against 64b0c433; e3010ebb carries the three source files and the test, b520f7339 carries only the fragment, and the five delivery conditions are unchanged.",
+    "CALL_SITES: reckon/crew/promotion_checks.py:1164, reckon/crew/promotion_checks.py:2345, reckon/crew/recovery_review_acceptance.py:330, reckon/crew/obligations.py:453, reckon/crew/recovery_classification.py:618",
+    "SCORE goal_fidelity: 18",
+    "JUSTIFICATION goal_fidelity: reckon/crew/promotion_checks.py:1165 names the condition, path and remedy, and the delivery rule has one owner at reckon/crew/recovery_review_delivery.py:360.",
+    "SCORE evidence: 18",
+    "JUSTIFICATION evidence: the per-condition refusals are asserted end-to-end in tests/test_a_review_refusal_names_its_failed_condition.py and re-running that file at this head gives 11 passed against the manifest's recorded head arm.",
+    "SCORE scope_discipline: 19",
+    "JUSTIFICATION scope_discipline: every path in git diff 64b0c433 b520f7339 is inside the declared write paths, and the one shared failure is a pre-existing bound on reckon/crew/review.py and reckon/ledger.py.",
+    "SCORE durability: 17",
+    "JUSTIFICATION durability: gate/negative-control.log fails 10 tests when the refusal collapses to one message, so the per-condition assertions at tests/test_a_review_refusal_names_its_failed_condition.py:240 redden on the regression, while the 'record cannot be read' arm carries no test.",
+    "SCORE fit: 16",
+    "JUSTIFICATION fit: the refusal follows the inline condition-and-remedy idiom at reckon/crew/promotion_checks.py:2224, with the stale 'all four hold' count at reckon/crew/recovery_review_delivery.py:365 and the Path/str path key at line 474 as the deductions.",
+    "SCORE reuse: 17",
+    "JUSTIFICATION reuse: the verdict at reckon/crew/recovery_review_delivery.py:360 extends the existing delivery owner rather than forking it, and the nearest owner, the dispatch-scoped registry in reckon/crew/refusals.py, does not cover crew complete.",
+    "FINDING reckon/crew/recovery_review_delivery.py:365 follow-on: the docstring says 'all four hold' while enumerating five conditions and the function emits six condition strings, so a reader counting from the docstring disagrees with the code.",
+    "FINDING reckon/crew/recovery_review_subject.py:1067 follow-on: iterating review['absent'] raises TypeError on a truthy non-iterable value where the replaced rule returned False, turning a malformed record into a crash on the classification path.",
+    "FINDING reckon/crew/recovery_review_delivery.py:474 follow-on: 'path' is a Path when delivered and a str or empty string in every refusal branch, so one key carries two types and a Path-using caller breaks on the refusal arms.",
+    "FINDING tests/test_a_review_refusal_names_its_failed_condition.py:56 follow-on: no case stores an unreadable record, so the 'record cannot be read' arm is unguarded and the fragment's claim about a corrupt file is not pinned by the gate.",
+    "FINDING reckon/crew/recovery_review_delivery.py:347 follow-on: _read_complete_review has no reader left in the module after its logic moved into _review_delivery_verdict, so the file carries a second path to the completeness judgement."
+  ],
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_delivery.py",
+      "line": 365,
+      "severity": "follow-on",
+      "text": "The _review_delivery_verdict docstring still reads 'record is this run's delivery only when all four hold' while enumerating five conditions, and the function returns six distinct condition strings (the path condition splits into 'no head-keyed record path' and 'record cannot be read'), so a reader counting conditions from the docstring disagrees with the code it documents."
+    },
+    {
+      "file": "reckon/crew/recovery_review_subject.py",
+      "line": 1067,
+      "severity": "follow-on",
+      "text": "_review_missing_measures iterates review['absent'], which the replaced rule only tested for truthiness, so a stored record carrying a truthy non-iterable absent (absent: true or 1) now raises TypeError instead of reading as incomplete; _review_is_complete is called from recovery_classification.py:618, obligations.py:453, recovery_repair_dispatch.py:586 and recovery_review_acceptance.py:38, so a malformed record crashes a classification pass rather than being refused. Measured at this head: _review_missing_measures({'status':'parsed','scores':{},'absent':True,'total':1}) raises TypeError: 'bool' object is not iterable, where the base rule returned False. The fleet's own writer emits a list (reckon/crew/review.py:880), so reachability needs a malformed or hand-written record."
+    },
+    {
+      "file": "reckon/crew/recovery_review_delivery.py",
+      "line": 474,
+      "severity": "follow-on",
+      "text": "The delivered verdict sets 'path' to the Path from _declared_head_keyed_record (typed tuple[Path, str] at recovery_review_delivery.py:104) while every refusal branch sets it to str(path), or to \"\" for the no-path condition, so one dict has two types under one key and a caller asking verdict['path'].exists() breaks only on the refusal arms."
+    },
+    {
+      "file": "tests/test_a_review_refusal_names_its_failed_condition.py",
+      "line": 56,
+      "severity": "follow-on",
+      "text": "CASES builds five conditions and none of them stores an unreadable record, so the 'record cannot be read' arm (_review_delivery_refusal, recovery_review_delivery.py:404) has no test that reddens if it is removed or reworded, and the fragment's claim that a corrupt file still says the record 'cannot be read' is not pinned by the gate; only the parsing half of that claim is asserted."
+    },
+    {
+      "file": "reckon/crew/recovery_review_delivery.py",
+      "line": 347,
+      "severity": "follow-on",
+      "text": "_read_complete_review survives the move of its logic into _review_delivery_verdict with no reader left inside the module (the verdict calls _read_review_record and _review_missing_measures directly at lines 400 and 410), and a search over reckon/ and tests/ finds only its definition and the recovery.py:200 re-export, so the file carries a second path to the completeness judgement beside the verdict's."
+    }
+  ],
+  "justifications": {
+    "durability": "Each of the five per-condition assertions at tests/test_a_review_refusal_names_its_failed_condition.py:240 fails if the refusal collapses to one message -- demonstrated, not assumed, by the negative control at gate/negative-control.log where 10 tests fail and only the delivered case passes -- so the guard reddens on the exact regression it was added to catch; the 'record cannot be read' arm is untested and the delivered case asserts against the TOTAL the test itself stored.",
+    "evidence": "The done_when's five per-condition refusals, the six-dimension no-total case, the parsing split and the delivered case are all asserted end-to-end through crew.complete in tests/test_a_review_refusal_names_its_failed_condition.py, the base, head and negative-control arms are on disk with revision headers and EXIT lines, and re-running the named file at this head gives 11 passed (EXIT=0) against the manifest's head arm of 23 passed / 1 pre-existing failed.",
+    "fit": "The change follows the inline condition-and-remedy refusal idiom already used at reckon/crew/promotion_checks.py:2224 and every added name (_review_delivery_verdict, _review_missing_measures, review_delivery_refusal, _read_review_record) states its mechanism with no plan label or identifier; the stale 'all four hold' count and the Path/str path key are the deductions.",
+    "goal_fidelity": "The refusal at reckon/crew/promotion_checks.py:1165 names the condition, the record path and the remedy, and the delivery rule has one owner at reckon/crew/recovery_review_delivery.py:360 with _delivered_review_record and review_delivery_refusal as its projections, so the goal's stated behaviour is delivered; the literal 'all four hold' at line 365 and the owner moving out of _delivered_review_record are the only deductions.",
+    "reuse": "The change extends the existing delivery owner rather than forking it -- _review_delivery_verdict is the one evaluation and _delivered_review_record and _review_is_complete become projections of it -- and the search by capability over reckon/ for a refusal carrying a named condition and remedy found reckon/crew/refusals.py, whose registry is scoped to the dispatch families D01-D23 and policed over dispatch sources by tests/test_crew_refusal_visibility.py:32, and the inline condition-and-remedy refusals already in promotion_checks.py, so a second refusal-rendering mechanism was not introduced.",
+    "scope_discipline": "Every path in the diff -- three source files, one test file and the evidence fragment -- is inside the declared write paths read from the source manifest, the node wrote no figure and no prose outside its fragment as its prompt required, and the one failure in both arms is a pre-existing module-size bound on reckon/crew/review.py and reckon/ledger.py reported under follow_ons."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261020T022918727658-review-of-cso-a-review-refusal-names-its-failed-condition-b520f7339a32",
+  "reviewed_base_sha": "64b0c433ff1217cbfa5d888a28c0def776277bb7",
+  "reviewed_head_sha": "b520f7339a327834c35a96ddf6e61ed5b0b75311",
+  "reviewed_run_id": "r-20261020T015009269364-cso-a-review-refusal-names-its-failed-condition",
+  "rubric": "landed-node",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T02:55:27.023893+00:00",
+  "total": 105,
+  "verdicts": {
+    "call_sites": "reckon/crew/promotion_checks.py:1164 _resolve_promotion_outcome, reckon/crew/promotion_checks.py:2345 _require_plan_review_delivered_in_its_directory, reckon/crew/recovery_review_acceptance.py:330, reckon/crew/obligations.py:453 and reckon/crew/recovery_classification.py:618 reach the changed code.",
+    "diff": "Read commit by commit against 64b0c433: e3010ebb changes recovery_review_delivery.py, recovery_review_subject.py, promotion_checks.py and adds the test; b520f7339 adds only the 63-line evidence fragment. The five delivery conditions are unchanged and only the refusal text and the completeness projection moved.",
+    "done_when": "The done_when names the four pytest files and the five per-condition refusals, the no-total incomplete case, the parsing-vs-unreadable split, the delivered-record promotion and the negative control; tests/test_a_review_refusal_names_its_failed_condition.py:56-71 and 240-299 assert each of those, and the gate log records the run.",
+    "goal": "The goal is to make crew complete's review refusal name the one failed delivery condition with its path and remedy while the delivery and completeness rules each keep one owner; verified at reckon/crew/promotion_checks.py:1164 and reckon/crew/recovery_review_delivery.py:360, where review_delivery_refusal names the condition and _review_is_complete is the negation of _review_missing_measures.",
+    "manifest": "Read; it records commits e3010ebb and b520f7339, head arm 23 passed / 1 pre-existing failed at EXIT=1, base arm 12 passed / 1 failed, the negative control 1 passed / 10 failed, and negative_control_log and test_logs on disk; reckon crew check-manifest --run r-20261020T015009269364... exits 0.",
+    "write_paths": "Read the source manifest's six declared paths; every path in the diff is inside them, the only additions being the three named source files, the named test file and the named evidence fragment."
+  }
+}
