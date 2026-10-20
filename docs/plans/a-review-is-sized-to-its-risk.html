@@ -28,7 +28,7 @@
 <meta name="plan-commits" content="505c690b,9701e873,c45e7bac,dd19e201,31509127">
 <meta name="plan-artifacts" content="reckon/review_tiers.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,tests/test_review_tiers.py">
 <meta name="plan-impl" content="0.6666666666666666">
-<meta name="plan-version" content="185">
+<meta name="plan-version" content="186">
 <meta name="plan-modified" content="2026-10-20">
 <meta name="plan-section-depends-on" content="{&quot;s14&quot;:[&quot;a-review-is-sized-to-its-risk#s13&quot;]}">
 </head>
@@ -209,7 +209,7 @@
 <p><strong>Deliverable.</strong> A repair round leaves out every finding that carries a disposition on the review record it is composed from.</p>
 <ul>
 <li><code>blocking_findings</code> (<code>reckon/crew/repair.py:224</code>) leaves out every finding whose disposition, read through <code>finding_disposition</code>, is not open. It is the one list the round is built from. <code>compose_repair_node</code> (<code>reckon/crew/repair.py:476</code>) derives the brief, the finding ids and <code>repair_write_scope</code> (<code>reckon/crew/repair.py:392</code>) from it, and the reflex's decline-only branch in <code>reckon/crew/recovery_repair_dispatch.py</code> is gated on it. So the filter lives there, not in a local list in the reflex. Write no second parse of the key.</li>
-<li>When every blocking finding is disposed, the round composes no repair and resumes nothing. It records the round decline-only, with a reason that names each disposed finding by its index, in the form §13 gives a decline-only reason.</li>
+<li>When every blocking finding is disposed, the round composes no repair and resumes nothing. The round is recorded decline-only through the branch that fires when <code>blocking_findings</code> returns nothing (<code>reckon/crew/recovery_repair_dispatch.py:765</code>), whose reason reads "the review round carried no blocking finding" today. For a round whose findings were all disposed, that reason instead says every blocking finding was disposed, and names each by its index and its disposition kind. It never uses §13's "no blocking finding cites a repairable path", which would be false for such a round.</li>
 <li>A finding disposition survives every re-store of its review record. <code>_merge_record_answers</code> carries <code>FINDING_DISPOSITIONS_KEY</code> beside the dimension dispositions, keyed by finding index. An entry present in any copy survives. Where copies disagree on one index, the entry with the later <code>recorded_at</code> wins, as it does for a dimension disposition.</li>
 <li>A blocking finding with no disposition is repaired as today. A finding that declares no severity still counts as blocking until it is disposed.</li>
 </ul>
