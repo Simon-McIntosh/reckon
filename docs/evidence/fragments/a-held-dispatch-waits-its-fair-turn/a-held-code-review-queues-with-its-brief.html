@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-held-dispatch-waits-its-fair-turn">
+  <meta name="plan-title" content="A held code review queues with its brief kept">
+  <meta name="plan-summary" content="Both reproduction arms queue at base. A composed code review held by the router's zero-worker grant, dispatched through plan_review.dispatch_code_review and through the crew review --around verb, writes one queued pointer carrying the composed brief's path; the hold is raised on the queueing branch of dispatch.">
+  <meta name="plan-evidence-for" content="reckon:a-held-dispatch-waits-its-fair-turn">
+  <meta name="plan-recorded-at" content="2026-10-20">
+  <meta name="plan-verdict" content="negative">
+  <meta name="plan-tags" content="crew,review,queue,lane-allowance">
+  <title>A held code review queues with its brief kept — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-held-code-review-queues-with-its-brief" data-reckon="landed" data-when="2026-10-20">
+  <h2>A held code review queues with its brief kept — negative result at base</h2>
+  <p id="a-held-code-review-queues-with-its-brief-summary">Both arms queue at base, so the defect does not reproduce and no product or test file changed. The report under the run directory is the deliverable. Each arm was driven in a temporary crew home whose <code>local_backend</code> is <code>clive</code> and whose lane document's router grants session <code>f653840f</code> zero worker slots at <code>verdict: full</code>, with the gate not paused.</p>
+  <table id="a-held-code-review-queues-with-its-brief-arms">
+    <tr><th>arm</th><th>entry point</th><th>resolved backend</th><th>is_local</th><th>frame that raised the hold</th><th>queued pointers</th></tr>
+    <tr><td>1</td><td><code>plan_review.dispatch_code_review</code></td><td>clive</td><td>held</td><td><code>reckon/crew/dispatch.py:1690</code>, <code>LaneHeld</code> carrying <code>.queued</code> phase <code>queued</code></td><td>1, brief <code>…/code-review/f4622831e7ad/brief.md</code></td></tr>
+    <tr><td>2</td><td><code>reckon crew review --around</code></td><td>clive</td><td>held</td><td><code>reckon/crew/dispatch.py:1690</code>, <code>LaneHeld</code> carrying <code>.queued</code> phase <code>queued</code></td><td>1, brief <code>…/code-review/f4622831e7ad/brief.md</code></td></tr>
+  </table>
+  <p id="a-held-code-review-queues-with-its-brief-report">Arm 2, the verb the peer ran, exits 0 reporting <code>ok: true</code>, <code>queued: true</code>, <code>position: 1</code> and <code>report_run_id</code> for the composed directory. The reason on the hold is the router allowance's own, character for character the one observed at 11:49:59 local on 2026-10-19 — carried on the queueing branch, not the arm that writes nothing.</p>
+  <p id="a-held-code-review-queues-with-its-brief-candidate">The section's leading candidate is refuted. <code>_config_without_lane</code> in <code>reckon/crew/dispatch_picker.py</code> returns <code>{**config, "backends": …}</code>, so <code>local_backend</code> and <code>default_backend</code> are carried through unchanged, and the resolved backend in both arms is the lane itself rather than a <code>&lt;lane&gt;-&lt;model&gt;</code> entry, so <code>is_local</code> holds. <code>plan_review.dispatch_code_review</code> passes no <code>lineage_override</code>, so no shadow lineage suppresses the queue branch either.</p>
+  <p id="a-held-code-review-queues-with-its-brief-window">Commits since 2026-10-19 11:00 local touching the compose and queue paths, <code>74f38b880</code> first: <code>74f38b880</code>, <code>6dc83c470</code>, <code>75f7c3436</code>, <code>d7e392b08</code>, <code>cc49bc863</code>, <code>1b827f3bd</code>, <code>c81cbcf8e</code>, <code>8e0480392</code>, <code>3006d1fd0</code>, <code>e8a9f4b35</code>. The 11:49:59 refusal predates all but the first; the missing pointer and the <code>crew_error</code> carrying the router's reason are the pre-<code>6dc83c470</code> report of a hold, which the command's own <code>LaneHeld</code> branch now reports as queued.</p>
+  <p id="a-held-code-review-queues-with-its-brief-evidence">Report and arm logs: <code>report.md</code> and <code>logs/</code> under the run directory <code>r-20261020T005157770643-a-held-code-review-queues-with-its-brief</code>. Each log names its revision and command and ends in <code>EXIT=0</code>.</p>
+</article>
+</body>
+</html>
