@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="428">
+<meta name="plan-version" content="429">
 <meta name="plan-modified" content="2026-10-20">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1676,7 +1676,10 @@ Both cases run under the file's existing temporary crew home.</li>
     <div class="r-comment-body"><p>reviewed run r-20261020T002010904282-a-discarded-request-is-never-reported-queued at base 86650a114f70a099423e871a6f8f8b19af73b106 / head bd4ad8d50ce72bd97890a8806d0a125e809b342f; scored goal_fidelity 20, evidence 17, scope_discipline 20, durability 19, fit 18, reuse 5; added_failure_count 0 derived from the reviewed run's own base arm (1 failed, 55 passed) and head arm (1 failed, 57 passed) sharing the single id tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window, both outside the node's scope; one follow-on finding: the added _stream_rows helper forks _stream_file_rows owned at tests/test_a_held_request_stays_queued.py:74.</p></div>
 </div>
 <div class="r-comment" data-section="s68" data-id="c-run-r-20261020T010543983840-review-of-a-discarded-request-is-never-reported-queued-b4e18fe0629e" data-who="reckon-build" data-when="2026-10-20T01:18:53.072Z">
-    <div class="r-comment-body"><p>reviewed run r-20261020T002010904282-a-discarded-request-is-never-reported-queued at base 86650a114f70a099423e871a6f8f8b19af73b106 / head b4e18fe0629ed0e2c6130f002e2ec61cf61644dc; scored goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 20, reuse 20; added_failure_count 0 derived from the reviewed run&#x27;s own base arm (1 failed, 55 passed in 513.00s) and head arm (1 failed, 57 passed in 304.91s) sharing the single pre-existing id tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window, both outside the node&#x27;s write scope; one follow-on finding: the declared negative-control log and the eight-file arm predate the reviewed head b4e18fe06, so the red log is not reproducible from the reviewed revision though the mutation and the same failing id hold.</p></div>
+    <div class="r-comment-body"><p>reviewed run r-20261020T002010904282-a-discarded-request-is-never-reported-queued at base 86650a114f70a099423e871a6f8f8b19af73b106 / head b4e18fe0629ed0e2c6130f002e2ec61cf61644dc; scored goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 20, reuse 20; added_failure_count 0 derived from the reviewed run's own base arm (1 failed, 55 passed in 513.00s) and head arm (1 failed, 57 passed in 304.91s) sharing the single pre-existing id tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window, both outside the node's write scope; one follow-on finding: the declared negative-control log and the eight-file arm predate the reviewed head b4e18fe06, so the red log is not reproducible from the reviewed revision though the mutation and the same failing id hold.</p></div>
+</div>
+<div class="r-comment" data-section="s68" data-id="c-run-r-20261020T002010904282-a-discarded-request-is-never-reported-queued" data-who="reckon-build" data-when="2026-10-20T01:04:03Z">
+    <div class="r-comment-body"><p>_report_queued_failure now reads the discard record before building its row and returns early when one exists, so a request the operator discarded while the admission pass held it appends no watch-stream row and is reported nowhere, while a kept request still gains exactly one row at state queued with failure_reported_at on the restored pointer; tests/test_a_discarded_request_stays_discarded.py 5 passed, gate arm 57 passed with the one pre-existing window-guard failure unchanged, declared negative control EXIT=1.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
