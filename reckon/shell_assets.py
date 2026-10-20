@@ -2,15 +2,12 @@
 
 from __future__ import annotations
 
-import gzip
-import hashlib
 import re
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import quote
 
-from reckon._store import _config_home, write_atomically
 from reckon.file_memo import file_revision
 
 SHELL_GZIP_MIN_BYTES = 1024
@@ -43,7 +40,10 @@ def revisioned_html(
         if tag == "link" and 'rel="stylesheet"' not in match.group(0):
             return match.group(0)
         url = match.group("url")
-        token = quote(_revision(url, shared_root, ui_root, runtimes), safe="")
+        try:
+            token = quote(_revision(url, shared_root, ui_root, runtimes), safe="")
+        except (OSError, KeyError):
+            return match.group(0)
         return match.group(0).replace(f'"{url}"', f'"{url}?rev={token}"')
 
     return _LINK.sub(add_revision, html)
@@ -56,24 +56,6 @@ class ScriptResponse:
     headers: Mapping[str, str]
 
 
-def _cached_gzip(source: Path, revision: str, body: bytes) -> bytes:
-    key = hashlib.sha256(f"{source}\0{revision}".encode()).hexdigest()[:32]
-    cached = _config_home() / "cache" / "gzip-shell" / f"{key}.gz"
-    try:
-        return cached.read_bytes()
-    except OSError:
-        pass
-    compressed = gzip.compress(body, compresslevel=5)
-    try:
-        cached.parent.mkdir(parents=True, exist_ok=True)
-        write_atomically(
-            cached, lambda handle: handle.write(compressed), fsync=False, binary=True
-        )
-    except OSError:
-        pass
-    return compressed
-
-
 def script_response(
     source: Path,
     revision: str,
@@ -81,6 +63,7 @@ def script_response(
     if_none_match: str,
     accept_encoding: str,
     load_body: Callable[[], bytes],
+    compressor: Callable[[Path, str, bytes], bytes],
 ) -> ScriptResponse:
     """Answer current and stale script URLs with validators and gzip variants."""
     etag = f'"{revision}"'
@@ -95,7 +78,7 @@ def script_response(
         return ScriptResponse(304, b"", headers)
     body = load_body()
     if len(body) >= SHELL_GZIP_MIN_BYTES and "gzip" in accept_encoding.lower():
-        body = _cached_gzip(source, revision, body)
+        body = compressor(source, revision, body)
         headers["Content-Encoding"] = "gzip"
     headers["Content-Type"] = "application/javascript"
     headers["Content-Length"] = str(len(body))

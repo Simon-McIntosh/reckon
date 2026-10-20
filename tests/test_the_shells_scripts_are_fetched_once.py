@@ -97,7 +97,7 @@ def test_shell_assets_are_revisioned_and_revalidated(tmp_path: Path, monkeypatch
         assert gzip.decompress(encoded) == serve.compile_jsx(
             source.read_text(), filename=source.name
         )
-        cached_gzip = list((tmp_path / "config" / "cache" / "gzip-shell").glob("*.gz"))
+        cached_gzip = list((tmp_path / "config" / "cache" / "gzip").glob("*.gz"))
         assert len(cached_gzip) == 1
         cached_time = cached_gzip[0].stat().st_mtime_ns
         assert _get(port, compiled_url, {"Accept-Encoding": "gzip"})[2] == encoded
@@ -157,3 +157,42 @@ def test_authored_shell_links_resolve_to_revisioned_assets():
     assert parse_qs(urlsplit(shell_script).query)["rev"] == [
         file_revision((root / "docs" / "ui" / "shell.jsx").stat())
     ]
+
+
+def test_missing_link_keeps_its_bare_url_and_the_shell_answers(
+    tmp_path: Path, monkeypatch
+):
+    shared = tmp_path / "_shared"
+    ui = tmp_path / "ui"
+    shared.mkdir()
+    ui.mkdir()
+    (shared / "present.css").write_text("body { color: navy; }\n")
+    (ui / "present.js").write_text("window.ready = true;\n")
+    index = tmp_path / "index.html"
+    index.write_text(
+        '<html><head><meta name="docs-project" content="old">'
+        '<link rel="stylesheet" href="/_shared/missing.css">'
+        '<link rel="stylesheet" href="/_shared/present.css">'
+        '</head><body><script src="/_ui/missing.js"></script>'
+        '<script src="/_ui/present.js"></script>'
+        '<script src="/_runtime/react.js"></script></body></html>'
+    )
+    monkeypatch.setattr(serve, "_spa_index_path", lambda: index)
+    monkeypatch.setattr(serve, "_ui_root", lambda: ui)
+    monkeypatch.setattr(serve, "_SHARED_ROOT", shared)
+    monkeypatch.setattr(serve, "load_mounts", lambda: {"sample": tmp_path})
+
+    with _server() as port:
+        status, _, body = _get(port, "/sample/")
+        assert status == 200
+        scripts, styles = _links(body.decode())
+        assert len(scripts) == 3 and len(styles) == 2
+        assert "/_shared/missing.css" in styles
+        assert "/_ui/missing.js" in scripts
+        assert all(
+            parse_qs(urlsplit(url).query).get("rev")
+            for url in scripts + styles
+            if "missing" not in url
+        )
+        assert _get(port, "/_shared/missing.css")[0] == 404
+        assert _get(port, "/_ui/missing.js")[0] == 404

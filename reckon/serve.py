@@ -2414,6 +2414,7 @@ class Handler(BaseHTTPRequestHandler):
             self.headers.get("If-None-Match", ""),
             self.headers.get("Accept-Encoding", ""),
             load_body,
+            _cached_gzip_text,
         )
         self.send_response(response.status)
         for name, value in response.headers.items():
