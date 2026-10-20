@@ -16,7 +16,7 @@ from reckon.crew.reports import (
     manifest_status_is_template,
     parse_manifest,
 )
-from reckon.crew.repair import round_node_source
+from reckon.crew.repair import round_node_head_suffix, round_node_source
 from reckon.crew.routing import _signal_process_group
 from reckon.crew.runs import (
     _mutate_pointer,
@@ -251,10 +251,51 @@ def _resolved_reviewed_run_id(
         if str((pointer.get("node") or {}).get("id") or "") == source
     ]
     if not matches:
-        return source
+        return _durable_reviewed_run_id(node_id, source, project)
     if refuse_ambiguous and len(matches) > 1:
         return source
     return matches[0]
+
+
+def _durable_reviewed_run_id(node_id: str, source: str, project: str) -> str:
+    """The one durable run a review node id names, or its bare source.
+
+    A review composed against a run the fleet has already let go has no live
+    pointer to match against, so the node id is resolved over the durable rows
+    carrying its source node id instead. The head suffix the node id mints
+    chooses among them: a row matches when the head a review of that run reads
+    begins with the suffix, and a node id carrying no suffix matches every row
+    with the source, which is the single-row spelling written before rounds
+    were head-keyed.
+
+    Exactly one match resolves. No match and more than one both return the bare
+    source, which names no run directory, so a grant refuses rather than
+    pointing at a run the id does not identify — the same answer the ambiguous
+    live case gives. ``project`` scopes the rows whenever the caller has one,
+    and for the dispatch grant, which holds none, the selection spans projects.
+
+    A durable read that raises is answered with the bare source and never
+    propagates: a store this cannot read leaves the resolution exactly as it
+    stood before the fallback existed, rather than turning a missing pointer
+    into a dispatch failure.
+    """
+    from reckon import run_store
+    from reckon.crew.recovery_review_dispatch import _run_head_for_review
+
+    try:
+        records = run_store.runs_for_node(source, project=project or None)
+    except Exception:  # noqa: BLE001 — an unreadable store is not a resolution
+        return source
+    suffix = round_node_head_suffix(node_id, REVIEW_NODE_PREFIX)
+    named = {
+        str(record.get("run_id") or "")
+        for record in records
+        if not suffix or _run_head_for_review(record).lower().startswith(suffix.lower())
+    }
+    named.discard("")
+    if len(named) != 1:
+        return source
+    return named.pop()
 
 
 def _complete_manifest_write_time(path: Path) -> float | None:

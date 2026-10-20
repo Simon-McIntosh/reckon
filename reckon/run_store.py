@@ -584,6 +584,47 @@ def append(project: str, record: Mapping[str, Any]) -> None:
         store.append(project, record)
 
 
+def runs_for_node(node: str, *, project: str | None = None) -> list[dict[str, Any]]:
+    """Durable run records whose indexed node column is ``node``.
+
+    A run's node id is durable on its row whether or not the run still has a
+    live pointer, so this is the reader that answers for a run the fleet has
+    already let go. ``project`` scopes the answer to one project whenever it is
+    given, and the selection widens across projects only for a caller that
+    names none, so a reader held to one project never reaches another's run.
+
+    The connection is read-only and a missing store answers with no rows, so a
+    read creates, migrates and rebuilds nothing: a caller resolving an identity
+    must not change the store it resolves against. A store that cannot be read
+    raises to the caller, which decides what an unreadable answer means for the
+    question it asked.
+    """
+    path = store_path()
+    if not path.exists():
+        return []
+    connection = sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)
+    try:
+        if project is None:
+            rows = connection.execute(
+                'SELECT "payload" FROM "runs" WHERE "node" = ?', (str(node),)
+            ).fetchall()
+        else:
+            rows = connection.execute(
+                'SELECT "payload" FROM "runs" WHERE "node" = ? AND "project" = ?',
+                (str(node), str(project)),
+            ).fetchall()
+    finally:
+        connection.close()
+    records: list[dict[str, Any]] = []
+    for (payload,) in rows:
+        if payload is None:
+            continue
+        record = json.loads(payload)
+        if isinstance(record, dict):
+            records.append(record)
+    return records
+
+
 def indexed_run_ids(project: str) -> set[str] | None:
     """Read current index membership without creating, migrating or rebuilding it.
 
