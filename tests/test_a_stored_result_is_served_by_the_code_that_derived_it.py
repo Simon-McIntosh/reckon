@@ -69,8 +69,9 @@ def test_refresh_child_stores_its_parents_revision(served, monkeypatch):
             return 0
 
     def run_child(argv):
-        with monkeypatch.context() as env:
-            env.setenv("RECKON_MOUNTS_PATH", "")
+        with monkeypatch.context() as child:
+            child.setattr(serve, "_SOURCE_SNAPSHOT", None)
+            child.setenv("RECKON_MOUNTS_PATH", "")
             assert route_results._refresh_main(argv[argv.index("--key") :]) == 0
         return FinishedChild()
 
