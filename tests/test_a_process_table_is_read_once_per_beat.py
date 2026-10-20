@@ -303,8 +303,8 @@ def test_a_process_that_reexecs_the_same_binary_is_read_afresh(
     *same interpreter path* with the run mark in its environment. The pid, the
     start tick and the executable path are all unchanged, so a key holding the
     path alone answers from the pre-exec reading and never sees the mark. The
-    address of the program's text is relocated by the kernel on every exec, and
-    it is what moves here: the case asserts the start tick and the path are
+    base of the process's stack is placed afresh by the kernel on every exec,
+    and it is what moves here: the case asserts the start tick and the path are
     unchanged and that the two identities still differ.
     """
     home = tmp_path / "home"

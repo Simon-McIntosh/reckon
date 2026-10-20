@@ -163,9 +163,10 @@ def _start_tick(pid: Any) -> int | None:
 # The executable identity is the program's path AND the base of its stack. The
 # path alone is unchanged when a process re-execs the same binary with a new
 # environment, which the in-place re-execs in this repository do (a service
-# re-execs its own interpreter to pick up the code on disk); the kernel
-# establishes the stack base afresh on every exec, so such a re-exec is read
-# afresh rather than answered from its pre-exec reading.
+# re-execs its own interpreter to pick up the code on disk); the kernel places
+# the stack base afresh on every exec, so such a re-exec is read afresh rather
+# than answered from its pre-exec reading. That last part holds only while
+# address randomisation is in force — see ``_process_identity``.
 _ENVIRON_INDEX: dict[
     int, tuple[tuple[str | None, str | None, str | None], dict[str, str] | None]
 ] = {}
@@ -186,11 +187,20 @@ def _process_identity(pid: int) -> tuple[str | None, str | None, str | None]:
     for any reason but recycling the pid or replacing the image. The start tick
     (stat field 22, index 19 after the parenthesised command) moves when the
     kernel recycles a pid. The executable path moves when the process execs a
-    different program. The stack base (field 28, index 25) is established by the
+    different program. The stack base (field 28, index 25) is placed by the
     kernel at exec and left alone for the process's life, so it moves on every
     exec — including a re-exec of the same binary with the same arguments, which
     a path alone cannot see. A kernel that does not report it leaves it None,
     and the two fields before it still detect every other change.
+
+    That last field rests on address randomisation being in force, which it is
+    on this fleet (``kernel.randomize_va_space`` is 2): it is randomisation that
+    gives the stack a new base. Under ``setarch -R``, or with an
+    ``ADDR_NO_RANDOMIZE`` personality, every exec places the stack at the same
+    address, so a same-binary re-exec keeps this field and is answered from its
+    pre-exec reading — the one case the third field cannot see, and not a case
+    the in-place re-execs here present, since none of them disables
+    randomisation.
     """
     fields = _process_stat_fields(pid)
     start = fields[19] if len(fields) > 19 else None
@@ -212,10 +222,10 @@ def _indexed_environment(pid: int) -> dict[str, str] | None:
     The owner of the ``/proc`` entry is read first: another user's process — or
     a root process — cannot be read at all, so it is skipped without opening an
     environment, which is where most of a full scan's opens used to go. A
-    reading already taken is returned while the pid still names a process with
-    the same start tick and executable; a pid the kernel recycled, or a process
-    that execd, is read afresh and re-indexed. None is "could not read", never
-    "carries no mark".
+    reading already taken is returned while the index's whole key still
+    describes the process: the same start tick, the same executable path and the
+    same stack base; a pid the kernel recycled, or a process that execd, is read
+    afresh and re-indexed. None is "could not read", never "carries no mark".
     """
     if _process_owner(pid) != os.geteuid():
         _ENVIRON_INDEX.pop(pid, None)
