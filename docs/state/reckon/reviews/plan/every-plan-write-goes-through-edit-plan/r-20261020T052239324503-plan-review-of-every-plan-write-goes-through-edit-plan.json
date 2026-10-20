@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T05:33:20.137Z",
+  "dispatched_at": "2026-10-20T05:25:03Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-plan-write-goes-through-edit-plan.html:327",
+      "id": "done_when-1",
+      "reason": "\u00a713 must add `tests/test_mcp_server_serves_current_code.py` to its write paths and state that its signature fixture becomes a removal or a new required parameter, or the node cannot satisfy its own \"adds no failure\" clause and stops blocked on a file it may not edit.",
+      "text": "\u00a713 states `tests/test_mcp_server_serves_current_code.py` \"adds no failure\", but that file's `_SIGNATURE` fixture (tests/test_mcp_server_serves_current_code.py:96-101) changes the tool by `async def _edit_plan_tool(*args, added_parameter=None, **kwargs)` \u2014 an added optional parameter, which is exactly the change \u00a713 makes compatible and serves with a `schema_note`. `test_a_changed_tool_signature_returns_the_reconnect_refusal` (:374) asserts `second.get(\"error\") == \"stale_server_code\"` and would therefore fail, and the file is absent from \u00a713's write paths, so the node meets a red test it is fenced out of and must stop blocked. The plan already knows this pattern: \u00a713 handles the identical fixture in `tests/test_a_slow_child_never_forces_a_reconnect.py` (\"whose changed-signature case becomes a removal\", :327; its case 6 reports `added_parameter` at that file's :435)",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-plan-write-goes-through-edit-plan.html:311",
+      "id": "reasoning-1",
+      "reason": "a node implementing the rule literally ships a compatibility rule that admits a requiredness tightening and silently breaks client calls, so the clause and a probe payload of registered requiredness must be added, plus a fourth signature case.",
+      "text": "the deliverable's rule reads \"A change is compatible when every registered parameter is still accepted and no new parameter is required\", which passes a change that makes an existing registered optional parameter required: it is still accepted, and it is not new. Such a change invalidates a call the client can currently make (one that omits the parameter), so it breaks the principle the section argues from \u2014 \"An added optional parameter leaves every call the client can make valid on the new code\" (:305) \u2014 and the done-when's three signature cases (`:317-319`, added-optional / removed / new-required) contain no case for it. The probe already carries the data: \"reports each tool's parameters with whether each one is required\" (`:309`), so the parent could send its registered requiredness and the child could catch the transition",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "aee549cd1ee2c296bb1a230040c4152f0d91fc0936dddcc2e880a673ed4be374",
+  "plan_slug": "every-plan-write-goes-through-edit-plan",
+  "plan_version": 56,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T052239324503-plan-review-of-every-plan-write-goes-through-edit-plan",
+  "reviewed_blob_sha": "ef0bcdf678ab013e3d8c18797fbf47f5b3ac579a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_probe_signature_changed` resolves at `reckon/mcp.py:305`, the three cited test files (`test_a_slow_child_never_forces_a_reconnect.py`, `test_mcp_server_serves_current_code.py`, `test_every_module_fits_a_worker_window.py`) all exist, \u00a77's added `request_id` is in \u00a77's deliverable, and `the-crew-surface-is-one-tool-and-a-few-verbs#s5` resolves in the served plan.",
+    "done_when": "a finding \u2014 \u00a713's done-when asserts `tests/test_mcp_server_serves_current_code.py` \"adds no failure\", but that file's signature fixture adds an optional parameter, which is the change \u00a713 makes compatible, so its reconnect-refusal case turns red.",
+    "evidence_paths": "pass \u2014 \u00a713 names no scratch path; its gate log and the two control logs land on the run's own record as the section's other evidence does, and the test files it names are repository paths.",
+    "naming": "pass \u2014 `schema_note` and `_probe_signature_changed` name the mechanism they carry; \u00a713 introduces no plan label, ticket number or version tag into code or comment.",
+    "reasoning": "a finding \u2014 \u00a713's compatibility rule (\"every registered parameter is still accepted and no new parameter is required\") does not cover a registered optional parameter that becomes required, although the probe already reports requiredness, so the rule admits a change that invalidates calls the client can currently make.",
+    "single_goal": "pass \u2014 \u00a713 carries one deliverable (the compatibility decision moves to the current code so an added parameter needs no reconnect), and both negative controls bear on that one deliverable, not on a second.",
+    "wiring": "pass \u2014 \u00a713's `plan-section-depends-on` ([s12, the-crew-surface-is-one-tool-and-a-few-verbs#s5], plan line 24) matches \u00a713's write-path overlap with \u00a712 on `reckon/served_code.py`, and the far end of the cross-plan edge declares the reverse relationship (`the-crew-surface-\u2026html` line 24 lists `every-plan-write-goes-through-edit-plan#s11` under its s5), so the chain \u00a711 \u2192 crew-surface \u00a75 \u2192 \u00a713 is ordered and acyclic."
+  },
+  "section_digests": {
+    "_document": "16c697b0bb91ca4f3726ea521580f529f248561c3e34b2ee07b4e68a52a3e6cf",
+    "s1": "7f96df198aae5b46c87f2d18f8eff17398ead36155ee67ba73607e91aa1d2fe3",
+    "s10": "fd786ebf0d880e15085a2e0ca5423504f73ce4c013e483f5e3cae145e3ad4079",
+    "s11": "19cc30d79534a21675c806c6d7006ea1e8e052fdccf4583b30258f699ee38e45",
+    "s12": "a518fb035478c3d0ebd8f3e07d9c13babbda5a8ab8f5353e60e41564c96ed1b6",
+    "s13": "fde03d7e52bde06da53a6590b51231558091f1e5dbe14d80baf060e8bac39fcd",
+    "s2": "737250903251177035b357be3d656b549480337bc454f97615634dada495e251",
+    "s3": "4150e9281b9c0fe1173e9c23f5582efb0662d22f1d36944861d3033f988d479c",
+    "s4": "e0390ff35ac5e425fa3060cede9882af598c54dc89e0a6069101b3971f8e8367",
+    "s5": "699b049fe374b1219d8b917168575594a5bcb9255bbe13efdbf1d0c928562a86",
+    "s6": "27f4d6436a652181a180df37fa1a640ebff9cb62418e856c86bc907ecda9778f",
+    "s7": "80062db679255aff5087534386e7372545e1cd3414916db8329aec79a1a8388d",
+    "s8": "f9dd6299834b4d039fd1f45b37141d5e265075b4cfd7f341357bea21196f5b35",
+    "s9": "bd2c3090ecc9a89ad8c0b2f7312aae077382dd2709954d9e27f449e984d622a8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T05:44:32.572240+00:00"
+}
