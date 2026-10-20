@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:1195 (crew_widen, the only runtime path that reaches _widen_eligibility and _widen_folded_disposition)",
+    "reckon/cli.py:530 (crew_widen re-exported onto the CLI surface as `reckon crew widen`)"
+  ],
+  "completed_at": "2026-10-20T02:19:25Z",
+  "dispatched_at": "2026-10-20T00:23:27Z",
+  "findings": [
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": 1167,
+      "severity": "follow-on",
+      "text": "The fold's node-match guard (`if str(entry.get(\"node\") or \"\").strip() != node_id: continue`, reckon/crew_run_commands.py:1167) implements the goal's \"folded into the run's own node\" half, but no test drives a fold naming a different node: deleting the guard leaves all five cases in tests/test_a_folded_finding_widens_its_repair.py green (the folded case still admittable, the exempted and live-worker siblings still refused), so the behaviour the goal states is unprotected against regression."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_folded_finding_widens_its_repair.py reddens under the declared mutation (negative_control.log: `3 failed, 2 passed` EXIT=1), but the node-match guard at reckon/crew_run_commands.py:1167 has no failing case, as the FINDING states.",
+    "evidence": "The done-when's gate ran and its result is recorded: head_gate.log ends `1 failed, 308 passed` EXIT=1 against base_gate.log `4 failed, 305 passed` EXIT=1, so added_failure_count is 0.",
+    "fit": "The new symbols and docstrings follow the surrounding idiom at reckon/crew_run_commands.py:1112 and the fragment matches its siblings under docs/evidence/fragments/a-review-is-sized-to-its-risk/, with no plan, ticket or version label.",
+    "goal_fidelity": "reckon/crew_run_commands.py:1214 admits a `complete` manifest only when _widen_folded_disposition returns a fold, and stored_record_for_disposition with no head returns the newest record, so the goal's \"newest review record\" holds.",
+    "reuse": "_widen_folded_disposition extends the owners it imports (reckon/crew/review_dispositions.py:321 and reckon/crew/review.py:3966) and no existing reader returns a folded dimension disposition, though it re-derives the kind check owned by reckon/crew/review_dispositions.py:91.",
+    "scope_discipline": "Every path in the diff (reckon/crew_run_commands.py, tests/test_a_folded_finding_widens_its_repair.py, the landing fragment) is inside the declared write paths listed in the manifest, and no figure was written."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to let crew widen accept a stopped, complete run whose newest review record folds a dimension into the run's own node and to record the grant against that disposition; reckon/crew_run_commands.py:1214 admits exactly that case and reckon/crew_run_commands.py:1387 carries it in the reply as folded_disposition.\nVERDICT done_when: the done-when names tests/test_a_folded_finding_widens_its_repair.py in a temporary crew home with a -n 8 no-added-failure gate, a base arm, ruff and a declared negative control; the manifest records each of those results and every log is on disk.\nVERDICT write_paths: declared write paths are reckon/crew_run_commands.py, tests/test_a_folded_finding_widens_its_repair.py and the landing fragment; the diff touches exactly those and leaves the granted figures directory unwritten.\nVERDICT manifest: read; it records status complete, commit f88058dca, head 1 failed/308 passed against base 4 failed/305 passed, the negative-control log, measurement_module and measurement_cwd, and the one shared failure under follow_ons.\nVERDICT diff: read commit by commit against base 4869397e; the single commit f88058dca adds WIDEN_FOLDED_MANIFEST_STATUS (crew_run_commands.py:1075), _widen_folded_disposition (crew_run_commands.py:1120), the folded_authorises gate (crew_run_commands.py:1214) and the reply field (crew_run_commands.py:1387), plus the new test module and the landing fragment.\nCALL_SITES: reckon/crew_run_commands.py:1195 (crew_widen), reckon/cli.py:530 (crew_widen on the CLI surface)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:1214 admits a complete manifest only when _widen_folded_disposition returns a fold, and stored_record_for_disposition with no head returns the newest record, so the goal's newest-review-record clause holds.\nSCORE evidence: 18\nJUSTIFICATION evidence: head_gate.log ends 1 failed, 308 passed EXIT=1 against base_gate.log 4 failed, 305 passed EXIT=1, so added_failure_count is 0 and the result is recorded rather than claimed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths listed in the manifest, and the granted figures directory is untouched.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_folded_finding_widens_its_repair.py reddens under the declared mutation (negative_control.log: 3 failed, 2 passed EXIT=1), but the node-match guard at reckon/crew_run_commands.py:1167 has no failing case.\nSCORE fit: 18\nJUSTIFICATION fit: the new symbols and docstrings follow the idiom at reckon/crew_run_commands.py:1112 and the fragment matches its siblings under docs/evidence/fragments/a-review-is-sized-to-its-risk/.\nSCORE reuse: 19\nJUSTIFICATION reuse: _widen_folded_disposition extends reckon/crew/review_dispositions.py:321 and reckon/crew/review.py:3966 and no existing reader returns a folded dimension disposition.\nFINDING reckon/crew_run_commands.py:1167 follow-on: the fold's node-match guard implements the goal's folded-into-the-run's-own-node half but no test drives a fold naming another node, so deleting the guard leaves all five cases in tests/test_a_folded_finding_widens_its_repair.py green.",
+  "review_run_id": "r-20261020T002240979468-review-of-a-folded-finding-widens-its-repair-f88058dca832",
+  "reviewed_base_sha": "4869397eaa9894acdfe106867b79dc37040f77c4",
+  "reviewed_commit": "f88058dca8324ac30ec8838981d2006311b11d57",
+  "reviewed_commits": [
+    "f88058dca8324ac30ec8838981d2006311b11d57"
+  ],
+  "reviewed_head_sha": "f88058dca8324ac30ec8838981d2006311b11d57",
+  "reviewed_run_id": "r-20261019T235023398874-a-folded-finding-widens-its-repair",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T00:23:23+00:00",
+  "total": 109,
+  "verdicts": {
+    "diff": "Read commit by commit against base 4869397eaa9894acdfe106867b79dc37040f77c4; the single commit f88058dca adds WIDEN_FOLDED_MANIFEST_STATUS (reckon/crew_run_commands.py:1075), _widen_folded_disposition (reckon/crew_run_commands.py:1120), the folded_authorises gate (reckon/crew_run_commands.py:1214) and the reply field (reckon/crew_run_commands.py:1387), plus the new test module and the landing fragment.",
+    "done_when": "The done-when names tests/test_a_folded_finding_widens_its_repair.py in a temporary crew home with a -n 8 no-added-failure gate, a base arm, ruff, and a declared negative control; the manifest records each of those results and every log is on disk.",
+    "goal": "The node's goal is to let crew widen accept a stopped, `complete` run whose newest review record folds a dimension into the run's own node and to record the grant against that disposition; reckon/crew_run_commands.py:1214 admits exactly that case and reckon/crew_run_commands.py:1387 carries it in the reply as `folded_disposition`.",
+    "manifest": "Read; it records status complete, commit f88058dca, head 1 failed/308 passed against base 4 failed/305 passed, the negative-control log path, measurement_module and measurement_cwd, and the one shared failure under follow_ons.",
+    "write_paths": "Declared write paths are reckon/crew_run_commands.py, tests/test_a_folded_finding_widens_its_repair.py, docs/evidence/fragments/a-review-is-sized-to-its-risk/a-folded-finding-widens-its-repair.html and the figures directory; the diff touches the first three and leaves the figures directory untouched."
+  }
+}
