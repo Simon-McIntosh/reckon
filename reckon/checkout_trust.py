@@ -41,8 +41,8 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-from reckon import git_dates
 from reckon.crew.obligation_snapshot import FOLLOWER_RELOAD_PROBE_TIMEOUT_SECONDS
+from reckon.git_head import _head_identity
 
 # The one proof that a checkout's current code loads is defined in
 # ``reckon.crew_follow_commands`` as ``_FOLLOWER_RELOAD_PROBE``: the follower
@@ -99,7 +99,7 @@ IDENTITY_UNKNOWN = "unknown"
 # rewriting its mtime, so every reader on every node rewrites one shared inode
 # every second with no code having moved. The identity is a function of what
 # ``HEAD`` names, so the reading of this process's own checkout is held here
-# against ``git_dates._head_identity``, which reads ``HEAD`` and the ref it names
+# against ``reckon.git_head``'s reading of ``HEAD`` and the ref it names
 # as files without spawning git, and the git reads run only when that reading
 # moves.
 _identity_hold: dict[str, tuple[tuple, str]] = {}
@@ -452,7 +452,7 @@ def source_code_identity(package_dir: Path, *, source_root: Path | None = None) 
     unknown; it is a checkout outside Git, which the computation answers for
     with None and which is identified by its package content stamp.
 
-    A reading is held against ``git_dates._head_identity``, the same
+    A reading is held against :func:`reckon.git_head._head_identity`, the same
     spawn-free reading of ``HEAD`` and the ref it names that
     :mod:`reckon.change_streams` already holds its stream against, so the git
     reads run only when the commit ``HEAD`` resolves to can have moved. A new
@@ -472,7 +472,7 @@ def source_code_identity(package_dir: Path, *, source_root: Path | None = None) 
         source_root = Path(
             os.environ.get("RECKON_FOLLOWER_SOURCE_ROOT", str(package_dir.parent))
         )
-    stamp = git_dates._head_identity(source_root) if own_root else None
+    stamp = _head_identity(source_root) if own_root else None
     if stamp is not None:
         held = _identity_hold.get(str(source_root))
         if held is not None and held[0] == stamp:

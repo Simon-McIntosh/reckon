@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-identity-hold-keeps-the-prompt-path-light">
+  <meta name="plan-title" content="The identity hold keeps the prompt path light">
+  <meta name="plan-summary" content="the spawn-free HEAD readers move to stdlib-only reckon.git_head, so the identity read no longer loads reckon._plan_html; the prompt-path gate passes at the change, fails at the base, and fails again under the negative control">
+  <meta name="plan-evidence-for" content="reckon:the-fleet-node-stays-in-service">
+  <meta name="plan-verifies" content="reckon:the-fleet-node-stays-in-service#s10">
+  <meta name="plan-recorded-at" content="2026-10-20">
+  <meta name="plan-verdict" content="passed">
+  <title>The identity hold keeps the prompt path light — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<section id="the-identity-hold-keeps-the-prompt-path-light">
+  <h2>The identity hold keeps the prompt path light</h2>
+  <p><strong>Result.</strong> The four spawn-free HEAD readers &mdash;
+  <code>_git_directory</code>, <code>_file_identity</code>,
+  <code>_common_git_directory</code> and <code>_head_identity</code> &mdash; moved
+  from <code>reckon/git_dates.py</code> into a new
+  <code>reckon/git_head.py</code> that imports only the standard library.
+  <code>git_dates</code> imports the four names back from it, so
+  <code>change_streams.py</code> and <code>serve.py</code> keep their existing
+  import surface; <code>_GIT_HEAD_MEMO</code> stays in <code>git_dates</code>
+  with the date cache it belongs to. <code>checkout_trust</code> now imports
+  <code>_head_identity</code> from <code>reckon.git_head</code> at module level,
+  so the identity read reaches no derivation module.</p>
+
+  <h3 id="the-identity-hold-gate-arms">Gate and arms</h3>
+  <table>
+    <thead><tr><th>Arm</th><th>Command</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Base revision</td><td><code>pytest -q tests/test_obligations_hook_reads_the_snapshot.py::test_the_prompt_path_loads_no_derivation_module</code></td><td>1 failed, <code>reckon._plan_html</code> loaded &mdash; <code>EXIT=1</code></td></tr>
+      <tr><td>This change</td><td>same</td><td>1 passed in 6.97 s &mdash; <code>EXIT=0</code></td></tr>
+      <tr><td>Negative control: <code>checkout_trust</code> imports <code>reckon.git_dates</code> at module level again</td><td>same</td><td>1 failed again &mdash; <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+  <p>The chain that the base arm entered is
+  <code>checkout_trust</code> &rarr; <code>git_dates</code> &rarr;
+  <code>metadata_index</code> &rarr; <code>reckon._plan_html</code>, reached
+  because the coordinator prompt hook calls the identity on every turn
+  (<code>coordinator_obligations._prompt</code> &rarr;
+  <code>obligation_snapshot.freshness_reading</code> &rarr;
+  <code>source_code_stamp</code> &rarr;
+  <code>checkout_trust.source_code_identity</code>). Moving the import inside
+  the function was not enough: the call still imported <code>git_dates</code>.
+  With the readers in a stdlib-only module, neither the import nor the call
+  reaches <code>metadata_index</code>.</p>
+
+  <h3 id="the-identity-hold-keeps-the-prompt-path-light-regressions">Regression arms</h3>
+  <p>Ten files &mdash; every test importing <code>reckon.change_streams</code> or
+  <code>reckon.git_dates</code>, plus the identity-hold and importable-checkout
+  suites &mdash; ran on both arms:</p>
+  <table>
+    <thead><tr><th>Arm</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Base revision</td><td>91 passed in 82.46 s &mdash; <code>EXIT=0</code></td></tr>
+      <tr><td>This change</td><td>91 passed in 89.18 s &mdash; <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+  <p>No added failures: the same count and no failing ids on either arm.
+  <code>ruff check</code> reports no finding on the base files and none on the
+  three changed paths.</p>
+</section>
+</body>
+</html>
