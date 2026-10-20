@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/checkout_trust.py:source_code_identity",
+    "reckon/crew/obligation_snapshot.py:428",
+    "reckon/crew/follower_registration.py:34",
+    "reckon/served_code.py:733",
+    "reckon/change_streams.py:230",
+    "reckon/git_dates.py:242"
+  ],
+  "completed_at": "2026-10-20T13:09:08.514Z",
+  "dispatched_at": "2026-10-20T12:59:47Z",
+  "findings": [
+    {
+      "file": "head-gate.log",
+      "line": 1,
+      "severity": "follow-on",
+      "text": "the gate log's first line names rev 4b14dc941757c4752c560652a2b4b0d2eacdb4173, but the tree it tested carried the uncommitted change that became the delivered head bc028cb45; 4b14dc941's own content does not contain reckon/git_head.py and would fail this test, so a later reader who re-runs at the revision the log names gets a different result. The same mis-naming is in base-gate.log, head-suite.log, base-suite.log and negative-control.log in the same run directory."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified production call sites that reach the change",
+    "diff": "read both commits against base 934cacaaf0c1a325beeb1ff242a852b82b68ddb8: 4b14dc941 moved the import inside the function and did not fix the load, and bc028cb45 moved the four HEAD readers to reckon/git_head.py, re-exported them from git_dates.py, and repointed checkout_trust, plus the evidence fragment.",
+    "done_when": "the done_when names tests/test_obligations_hook_reads_the_snapshot.py::test_the_prompt_path_loads_no_derivation_module passing at the change and failing at the base with paired logs; the source manifest records both arms plus a negative control, and the gate asserts exactly that measure.",
+    "goal": "the goal is to stop importing checkout_trust from loading a derivation module on the coordinator prompt hook's path; reckon/checkout_trust.py:45 imports _head_identity from the new stdlib-only reckon/git_head.py, and the original move-the-import-into-the-function mechanism was superseded by the coordinator's resume advice because a function-level import still imports git_dates and still reaches reckon._plan_html.",
+    "manifest": "read the source manifest; status complete, commits bc028cb45, and it records head-gate EXIT=0, base-gate EXIT=1, negative-control EXIT=1, and suites of 91 passed on both arms.",
+    "write_paths": "the source node's declared paths were reckon/checkout_trust.py and the docs evidence fragment; the manifest and the diff also touch reckon/git_dates.py and a new reckon/git_head.py, both of which the coordinator granted in resume-1-advice.txt, so no write falls outside the granted scope."
+  },
+  "justifications": {
+    "durability": "tests/test_obligations_hook_reads_the_snapshot.py:296 asserts the loaded-module set contains no derivation module and reddens at the base and again under the negative control that restores the git_dates import.",
+    "evidence": "the gate arms are recorded in the source run's logs (head-gate.log EXIT=0, base-gate.log EXIT=1, negative-control.log EXIT=1) but their header line names rev 4b14dc941 rather than the delivered head bc028cb45.",
+    "fit": "reckon/git_head.py:1 documents the capability rather than any plan item and introduces no plan or ticket label; git_dates.py:12 re-exports with a noqa explaining the preserved import surface.",
+    "goal_fidelity": "reckon/checkout_trust.py:45 now imports _head_identity from the stdlib-only reckon/git_head.py, so importing checkout_trust loads no derivation module, which is the goal's stated outcome.",
+    "reuse": "the four definitions are moved out of their existing owner reckon/git_dates.py into a lighter module, not re-implemented; git_dates.py:12 re-exports them, but the parallel spawn-free reader in reckon/crew/recovery_memo.py:210 is a pre-existing duplicate this diff neither adds nor touches.",
+    "scope_discipline": "every changed path (reckon/checkout_trust.py, reckon/git_dates.py, new reckon/git_head.py, the evidence fragment) is inside the scope granted by the coordinator's resume advice in resume-1-advice.txt plus the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to stop importing checkout_trust from loading a derivation module on the coordinator prompt hook's path; reckon/checkout_trust.py:45 imports _head_identity from the new stdlib-only reckon/git_head.py, and the original move-the-import-into-the-function mechanism was superseded by the coordinator's resume advice because a function-level import still imports git_dates and still reaches reckon._plan_html.\nVERDICT done_when: the done_when names tests/test_obligations_hook_reads_the_snapshot.py::test_the_prompt_path_loads_no_derivation_module passing at the change and failing at the base with paired logs; the source manifest records both arms plus a negative control, and the gate asserts exactly that measure.\nVERDICT write_paths: the source node's declared paths were reckon/checkout_trust.py and the docs evidence fragment; the manifest and the diff also touch reckon/git_dates.py and a new reckon/git_head.py, both of which the coordinator granted in resume-1-advice.txt, so no write falls outside the granted scope.\nVERDICT manifest: read the source manifest; status complete, commits bc028cb45, and it records head-gate EXIT=0, base-gate EXIT=1, negative-control EXIT=1, and suites of 91 passed on both arms.\nVERDICT diff: read both commits against base 934cacaaf0c1a325beeb1ff242a852b82b68ddb8: 4b14dc941 moved the import inside the function and did not fix the load, and bc028cb45 moved the four HEAD readers to reckon/git_head.py, re-exported them from git_dates.py, and repointed checkout_trust, plus the evidence fragment.\nCALL_SITES: reckon/checkout_trust.py:source_code_identity, reckon/crew/obligation_snapshot.py:428, reckon/crew/follower_registration.py:34, reckon/served_code.py:733, reckon/change_streams.py:230, reckon/git_dates.py:242\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/checkout_trust.py:45 now imports _head_identity from the stdlib-only reckon/git_head.py, so importing checkout_trust loads no derivation module, which is the goal's stated outcome.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate arms are recorded in the source run's logs (head-gate.log EXIT=0, base-gate.log EXIT=1, negative-control.log EXIT=1) but their header line names rev 4b14dc941 rather than the delivered head bc028cb45.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed path (reckon/checkout_trust.py, reckon/git_dates.py, new reckon/git_head.py, the evidence fragment) is inside the scope granted by the coordinator's resume advice in resume-1-advice.txt plus the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_obligations_hook_reads_the_snapshot.py:296 asserts the loaded-module set contains no derivation module and reddens at the base and again under the negative control that restores the git_dates import.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/git_head.py:1 documents the capability rather than any plan item and introduces no plan or ticket label; git_dates.py:12 re-exports with a noqa explaining the preserved import surface.\nSCORE reuse: 18\nJUSTIFICATION reuse: the four definitions are moved out of their existing owner reckon/git_dates.py into a lighter module, not re-implemented; git_dates.py:12 re-exports them, but the parallel spawn-free reader in reckon/crew/recovery_memo.py:210 is a pre-existing duplicate this diff neither adds nor touches.\nFINDING head-gate.log:1 follow-on: the gate log's first line names rev 4b14dc941, not the delivered head bc028cb45, so a reader re-running at the named revision gets a different result; the same mis-naming is in base-gate.log, head-suite.log, base-suite.log and negative-control.log.\n",
+  "review_run_id": "r-20261020T125848651785-review-of-the-identity-hold-keeps-the-prompt-path-light-bc028cb45ad5",
+  "reviewed_base_sha": "934cacaaf0c1a325beeb1ff242a852b82b68ddb8",
+  "reviewed_head_sha": "bc028cb45ad5cd4ffc13cae20f851e7d5c3c2e61",
+  "reviewed_run_id": "r-20261020T121652960809-the-identity-hold-keeps-the-prompt-path-light",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T13:09:10.429367+00:00",
+  "total": 106
+}
