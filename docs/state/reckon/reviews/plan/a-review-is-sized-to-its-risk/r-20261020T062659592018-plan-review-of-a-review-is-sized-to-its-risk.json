@@ -1,0 +1,100 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T06:41:39.472Z",
+  "dispatched_at": "2026-10-20T06:27:42Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-is-sized-to-its-risk.html#s2",
+      "id": "anchors_resolve-1",
+      "reason": "the mechanism is real and in the cited module, so a node importing that parse is unaffected; only the pointer needs correcting.",
+      "text": "cites `reckon/_plan_html.py:164` as where plan capability risk is parsed, but line 164 is an unrelated dataclass field (`heading: _PlanHeadingRecord | None = None`) and the capability-risk field is read at `reckon/_plan_html.py:626`",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-review-is-sized-to-its-risk.html#s4",
+      "id": "anchors_resolve-2",
+      "reason": "a dangling evidence pointer changes nothing a node builds, but it is a pointer to nothing where the rubric requires one that resolves.",
+      "text": "the \u00a74 and \u00a75 landed summaries each link \"full record\" to `s4-a-clean-review-promotes-a-merged-run` and `s5-the-reflex-reviews-a-settled-head`, and neither resolves once `.html` is appended, since docs/plans/ carries no such file",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-review-is-sized-to-its-risk.html#s9",
+      "id": "anchors_resolve-3",
+      "reason": "\u00a79 is landed and both named functions exist with the behaviour \u00a79 describes; the line numbers are stale, not wrong about the mechanism.",
+      "text": "\u00a79's \"today\" paragraph cites `recovery_review_subject.py:503` for `_review_dispatch_fields` and \"lines 597 to 601\" for `_review_dispatch_tokens`; those functions are now at lines 522 and 815, and the cited ranges hold an unrelated docstring and a plan-brief composer",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-review-is-sized-to-its-risk.html#s3",
+      "id": "done_when-1",
+      "reason": "without a control the node cannot show its guard fires, and a measure it cannot run leaves the node unclosable on its own verdict.",
+      "text": "\u00a73's done-when names no negative control and its second half (\"over a week of ledger rows every finding-bearing review has exactly one repair round\") is a week-long fleet census that a single node can neither produce nor falsify",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-is-sized-to-its-risk.html#s7",
+      "id": "done_when-2",
+      "reason": "the ordering claim now contradicts the plan's own section state and would send a coordinator to re-run landed sections or leave \u00a77 permanently open.",
+      "text": "\u00a77 is still `implementable` and its done-when requires \"\u00a73\u2013\u00a75 follow in order\", but \u00a74 and \u00a75 already landed while \u00a73 has not, so the declared order cannot be satisfied as written",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-is-sized-to-its-risk.html#s6",
+      "id": "single_goal-1",
+      "reason": "a node carrying a reckon code change, a cross-repository configuration edit, and two operational wave closes cannot be reviewed or closed on one verdict, and its gate proves none of the three.",
+      "text": "\u00a76 bundles three deliverables in one node: project configuration declaring its suite command and budget in reckon and nova, a hold on tier-none and tier-light promotions while the last suite run failed to collect, and one real wave close recorded in each of the two projects",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-is-sized-to-its-risk.html#s14",
+      "id": "reasoning-1",
+      "reason": "a node implementing the reason in \u00a713's form reproduces the exact misstatement \u00a713 was written to remove, so the plan needs a sentence fixing the text and naming the branch.",
+      "text": "\u00a714 requires the disposed round's decline-only reason to \"name each disposed finding by its index, in the form \u00a713 gives a decline-only reason\", but \u00a713's reason text opens \"no blocking finding cites a repairable path\" (`reckon/crew/recovery_repair_dispatch.py:328`), which is false for a round whose blocking findings did cite repairable paths and were disposed; \u00a714 also does not say which of the two decline-only branches carries the disposed indexes \u2014 the empty-blocking branch at `recovery_repair_dispatch.py:765`, whose current reason reads \"the review round carried no blocking finding\", or the unrepairable-scope branch at `recovery_repair_dispatch.py:807`",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b7665770441cc460dbfd2b8e98feef7d267fec3ebc0da387d5a14317462cbff3",
+  "plan_slug": "a-review-is-sized-to-its-risk",
+  "plan_version": 185,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T062659592018-plan-review-of-a-review-is-sized-to-its-risk",
+  "reviewed_blob_sha": "e29a4c7e3a0bfd870a1a729a24f3c3568aebc36e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 three citations do not resolve: `reckon/_plan_html.py:164`, the \u00a74/\u00a75 \"full record\" links, and \u00a79's line ranges.",
+    "done_when": "a finding \u2014 \u00a73 and \u00a77 assert done-whens that name no declared negative control, and \u00a77's ordered completion can no longer be satisfied.",
+    "evidence_paths": "pass \u2014 gate arms land in the crew run directory and plan evidence under docs/evidence/, both durable paths a later reader can open.",
+    "naming": "pass \u2014 the new test and module symbols and filenames name what they do, and no plan label, ticket number or version tag reaches code.",
+    "reasoning": "a finding \u2014 \u00a714 routes the disposed round's decline-only reason through \u00a713's reason form, whose text asserts a decision the disposed round did not take, and does not say which of the two decline-only branches carries it.",
+    "single_goal": "a finding \u2014 \u00a76 carries three deliverables, one of them cross-repository and operational, in one node.",
+    "wiring": "pass \u2014 plan-section-depends-on resolves s14\u2192s13 and the block target docs/plans/a-small-change-is-a-small-node.html exists; every declared relationship names a node that exists."
+  },
+  "section_digests": {
+    "_document": "608ebca3acc9631af825886c397a17445078bdda5b09f7384da8d502634b94a4",
+    "s1": "1bca4570a6dc141df8190260147c4603fdbd4e237bbd0fa1f635f166cdf5637b",
+    "s10": "a07df53b22b91585addeb98d5e88c71b2cd22d03d1da30561685f96e03a0aa2e",
+    "s11": "6bbc86e3fa4868ea28a6bedc4cfe44870bae0e69abb21473626929baf05d9b00",
+    "s12": "1931543f8774db891c6e51b885d5953ddc9f2d3b93d870f9c4f9d4a2156593c4",
+    "s13": "654b501c481eae64e085c1884ebb02603fb65497f5c801e8332e7dee8814e93e",
+    "s14": "92af7072890d5e12a6b45a1439b7b87fbaf706bae203d7b4d01265eff0d93092",
+    "s2": "d87e94711b1191be6062f6581f0bf3c2f7793876a327c35be59e3dd37bbe72c8",
+    "s3": "865c2c7d189405d6ba0566cebd8df5e459211cc93a64a9332de51cff756b47ac",
+    "s4": "834dc20a74581e06fc6c6b99a07ea7b628c9c36d7c390cee1b4e599eeec7b070",
+    "s5": "dd9455e66ea742a997a12400b194e02c6557b19217a06db0a58f82d7d82b8fde",
+    "s6": "cb4e838e28a346993a653862da66ac934c2c1b8e7e1aa1d7cb23c7082672067d",
+    "s7": "044f93aa0d0fd0aed5a7b5b535f5b7a2efacfc541ef12f41a04af14289440d7c",
+    "s8": "a12e7aff5d1cfd541706cc743c3d78ed9c0a96dba6af2c4f8b6dbb2309ea9582",
+    "s9": "3cc2a52825983e24d6bcb3f342f8f21cbd91f2144772c41418b9a0362bf5da37"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T06:44:21.917033+00:00"
+}
