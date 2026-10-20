@@ -1,0 +1,53 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "test_an_unsplittable_command_has_no_action_form (tests/test_an_unsplittable_command_has_no_action_form.py:130-136) asserts pytest.raises(ValueError, match='No closing quotation') on the stdlib split and then action_form(command) is None. Reinstating the unguarded shlex.split (the regression) makes action_form raise the ValueError out of the test, so the assertion reddens; the negative-control.log records exactly this case failing.",
+      "lines": "tests/test_an_unsplittable_command_has_no_action_form.py:130-136"
+    },
+    {
+      "failure_condition": "test_the_obligations_read_completes_over_the_stored_command (:150-166) drives the production composer through obligations() over a fixture review and asserts the row survives with next_command and no next_action_form. With the guard removed, obligations() raises ValueError before returning, so the test errors; negative-control.log records it failing. The expected text comes from a test-side re-derivation (_stored_command) of the composer's own f-string, but it is not a value fed into the code under test \u2014 the composer derives its text from the fixture review \u2014 so the assertion is independent of the value it checks.",
+      "lines": "tests/test_an_unsplittable_command_has_no_action_form.py:150-166"
+    },
+    {
+      "failure_condition": "test_a_splittable_command_still_has_an_action_form (:139-144) is a positive control asserting action_form('reckon crew complete --run r-x --gate pass') equals the literal 'crew(action=\"complete\", run_id=\"r-x\", gate=\"pass\")'; it would redden if the guard overreached and also suppressed well-formed commands.",
+      "lines": "tests/test_an_unsplittable_command_has_no_action_form.py:139-144"
+    }
+  ],
+  "call_sites": [
+    "reckon/mcp_views.py:3824 (tracked_views obligations branch calls obligations_module.obligations)",
+    "reckon/crew/obligations.py:269 (_with_action_form calls action_form)",
+    "reckon/crew/obligations.py:1278 (_with_action_form applied to items) and :1279 (acknowledged)",
+    "reckon/hooks/coordinator_obligations.py:188 (hook imports and reads the obligations module)",
+    "reckon/crew/obligation_snapshot.py:874 (snapshot reads the obligations payload)",
+    "reckon/crew_run_commands.py:631 (CLI path imports the obligations module)"
+  ],
+  "completed_at": "2026-10-20T15:52:04.975Z",
+  "dispatched_at": "2026-10-20T15:45:27Z",
+  "findings": [],
+  "item_verdicts": {
+    "diff": "Read commit 359bcf8d against base 8d6af7e9: obligations.py gains a try/except around shlex.split plus a docstring sentence (12 lines changed), the new test file (171 lines, 3 cases), and the evidence fragment (9 lines); three files, all inside the declared scope.",
+    "done_when": "The source brief.md:28-48 names the new test plus four pre-existing files run at base and head; the manifest records the five-file head arm at 76 passed EXIT=0 (head-gate.log) and the four-file base arm at 15 failed 58 passed EXIT=1 (base-gate.log), and the negative control at 17 failed 59 passed EXIT=1 (negative-control.log), matching the brief's measure that the 15 base failures are gone at head and none are added.",
+    "goal": "The source brief.md:1-13 asks that action_form return no form for a command shlex cannot split, so the obligations read completes and the row keeps its printed command; the landed guard at reckon/crew/obligations.py:208-215 wraps shlex.split in try/except ValueError and returns None, which is exactly that deliverable.",
+    "manifest": "Read; it reports status complete, one commit 359bcf8d, the five-file gate at 76 passed, and names the composer follow-on at obligations.py:1174, which the review confirms against the landed source.",
+    "write_paths": "The source prompt.txt:119-123 fences four paths; git diff --stat 8d6af7e9..359bcf8d names exactly three of them (reckon/crew/obligations.py, tests/test_an_unsplittable_command_has_no_action_form.py, docs/evidence/fragments/the-crew-surface-is-one-tool-and-a-few-verbs/cso-action-form-survives-an-unsplittable-command.html) and nothing outside."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261020T154443457568-review-of-cso-action-form-survives-an-unsplittable-command-359bcf8de782",
+  "reviewed_base_sha": "8d6af7e96400e3eb388eae1877a56f8cefd1792f",
+  "reviewed_head_sha": "359bcf8de7825c60c6bd30e6c6f7de53e1bb30c5",
+  "reviewed_run_id": "r-20261020T152857439333-cso-action-form-survives-an-unsplittable-command",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T15:52:08.349780+00:00",
+  "total": 119
+}

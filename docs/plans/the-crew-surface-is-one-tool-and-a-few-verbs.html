@@ -26,7 +26,7 @@
   <title>The Crew Surface Is One Tool And A Few Verbs | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="78">
+<meta name="plan-version" content="79">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -532,6 +532,9 @@
 <div class="r-comment" data-section="s5" data-id="c-run-cso-action-form-survives-an-unsplittable-command" data-who="reckon-build" data-when="2026-10-20T16:12:00Z">
     <div class="r-comment-body"><p>Repair landed at merge <code>162b0ceb6</code>, run <code>r-20261020T152857439333-cso-action-form-survives-an-unsplittable-command</code>. <code>action_form</code> now returns no form for a stored command that <code>shlex</code> cannot split, so the obligations read completes instead of raising <code>No closing quotation</code>.</p><p>That clears 15 tests that were red on main, in <code>test_sub_floor_disposition_has_a_writer.py</code> and <code>test_one_review_head_resolver.py</code>. The gate goes from 76 passed at head to 15 failed at base. Restoring the unguarded split brings all 15 back. Reviewed 119/120.</p><p>The command that could not be split comes from the sub-floor duty composer in <code>reckon/crew/obligations.py</code>. It stores prose in <code>next_command</code>. A follow-on node makes that field a runnable <code>crew dispose</code> command.</p></div>
 </div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261020T154443457568-review-of-cso-action-form-survives-an-unsplittable-command-359bcf8de782" data-who="reckon-build" data-when="2026-10-20T15:52:04.975Z">
+    <div class="r-comment-body"><p>independent review of run r-20261020T152857439333-cso-action-form-survives-an-unsplittable-command at head 359bcf8d (base 8d6af7e9); all six dimensions scored, no findings; record parsed and validated by crew check --review</p></div>
+</div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261020T133428134004-cso-run-verbs-share-one-identity-grammar" data-who="reckon-build" data-when="2026-10-20T15:41:27Z">
     <div class="r-comment-body"><p>Every single-run crew verb now takes one identity grammar - all 18 accept --project beside --run and refuse a --project that disagrees naming both, dispose no longer requires --project, crew review answers with one run id to complete and names the reviewed run as reviewed_run_id, and crew review --answer refuses a finding two covering reviews carry unless --review-run names one; tests/test_run_verbs_share_one_identity_grammar.py 22 passed, head gate 16 failed, 207 passed in 249.63s (0:04:09) with zero failures added against the base arm's same ids. The sweep's matching arm now asserts each verb's own exit code and, where the fixture run holds only a live pointer, its own refusal; its selection arm asserts the named review carries the answer and the other carries none.</p></div>
 </div>
@@ -542,7 +545,7 @@
     <div class="r-comment-body"><p>Reviewed run r-20261020T133428134004-cso-run-verbs-share-one-identity-grammar at head 014ef124158b8274454ded9613bb69d53bc3a318 (base fc7f48ca75f0f41d9d2ce5a08cdb3e66ff1f929b): goal_fidelity 19, evidence 16, scope_discipline 19, durability 15, fit 18, reuse 17; added_failure_count 0 derived from the base and head gate logs; two follow-on findings on the sweep test's weak matching-project arm and on the selection test's non-selective assertion; no blocking finding.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261020T154338935312-review-of-cso-run-verbs-share-one-identity-grammar-7d8f722712f2" data-who="reckon-build" data-when="2026-10-20T15:51:03.294Z">
-    <div class="r-comment-body"><p>Independent review of r-20261020T133428134004-cso-run-verbs-share-one-identity-grammar covering only the increment 014ef1241..7d8f72271: goal_fidelity 19, evidence 16, scope_discipline 20, durability 19, fit 18, reuse 20, added_failure_count 0. Both arms the prior review flagged as asserting less than they claimed are now genuine guards, each with a recorded negative control (control-selection.log, control-matching.log); one follow-on finding records that the ACCEPTED table couples the identity-grammar sweep to twelve verbs&#x27; unrelated refusal wording.</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261020T133428134004-cso-run-verbs-share-one-identity-grammar covering only the increment 014ef1241..7d8f72271: goal_fidelity 19, evidence 16, scope_discipline 20, durability 19, fit 18, reuse 20, added_failure_count 0. Both arms the prior review flagged as asserting less than they claimed are now genuine guards, each with a recorded negative control (control-selection.log, control-matching.log); one follow-on finding records that the ACCEPTED table couples the identity-grammar sweep to twelve verbs' unrelated refusal wording.</p></div>
 </div>
 </section>
 </main>
