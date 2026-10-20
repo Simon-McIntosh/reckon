@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-informs" content="consumers-read-reckon-through-verbs">
-  <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s3&quot;],&quot;s5&quot;:[&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s4&quot;,&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s6&quot;,&quot;every-plan-write-goes-through-edit-plan#s3&quot;,&quot;every-plan-write-goes-through-edit-plan#s11&quot;],&quot;s6&quot;:[&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s2&quot;,&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s4&quot;],&quot;s7&quot;:[&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s6&quot;],&quot;s8&quot;:[&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s7&quot;],&quot;s9&quot;:[&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s7&quot;,&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s8&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s3&quot;],&quot;s5&quot;:[&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s4&quot;,&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s6&quot;,&quot;every-plan-write-goes-through-edit-plan#s3&quot;,&quot;every-plan-write-goes-through-edit-plan#s11&quot;],&quot;s6&quot;:[&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s2&quot;,&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s4&quot;],&quot;s7&quot;:[&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s6&quot;],&quot;s8&quot;:[&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s7&quot;],&quot;s9&quot;:[&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s7&quot;,&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s8&quot;],&quot;s10&quot;:[&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s3&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
   <title>The Crew Surface Is One Tool And A Few Verbs | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="33">
+<meta name="plan-version" content="34">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -337,6 +337,20 @@
       <li>No string literal under <code>reckon/</code> names any of the three as a <code>reckon crew</code> command.</li>
     </ul>
     <p>Each node's gate passes <code>tests/test_cited_commands_exist.py</code>, <code>tests/test_skill_contracts.py</code> and <code>tests/test_crew_help_names_its_state.py</code>, which loses one row per tombstoned verb, and adds no failure to <code>tests/test_every_module_fits_a_worker_window.py</code>. The filter node's negative control drops <code>--mine</code> from the <code>live</code> view, and its fixture case then fails. A second control drops one option from <code>crew view</code>'s CLI plumbing, and the output parity case then fails naming it. Each retiring node's control points one tombstone at the wrong view, and the successor case then fails.</p>
+
+    <h2 id="s10">§10 — A review run&#x27;s refusal names the delivery condition that failed</h2>
+<section data-reckon="section" data-id="s10" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> On 2026-10-19 power_convertor's coordinator found two review runs (<code>r-20261019T214105811291</code> and <code>r-20261019T230558980003</code>) whose <code>crew complete --gate not-run</code> was refused with "a review run whose stored review cannot be read". Both records parsed, and their finding text was readable. The refusal comes from <code>_resolve_promotion_outcome</code> in <code>reckon/crew/promotion_checks.py</code> whenever <code>_delivered_review_record</code> in <code>reckon/crew/recovery_review_delivery.py</code> returns <code>None</code>. That function returns <code>None</code> for any of five reasons:</p>
+    <ul>
+      <li>the run declares no head-keyed record path;</li>
+      <li>the record there is not a complete review;</li>
+      <li>the head it describes is not the head its path names;</li>
+      <li>it names a different review run;</li>
+      <li>it was written before this run was dispatched.</li>
+    </ul>
+    <p>The decision is right; the message is wrong. A coordinator reading "cannot be read" looks for a corrupt file and finds a good one, as happened here.</p>
+    <p><strong>Deliverable.</strong> The delivery decision reports which of its conditions failed, and the promotion refusal names it with the path and the remedy that condition calls for. A record whose score is incomplete says the dimensions are missing and that <code>--outcome</code> must carry the verdict. A record for another head names both heads. A record older than the dispatch names both instants. The four conditions themselves are unchanged, and <code>_delivered_review_record</code> stays the one place that decides delivery.</p>
+    <p><strong>Done when</strong> <code>tests/test_a_review_refusal_names_its_failed_condition.py</code> builds one review run per failing condition on a temporary project. For each, <code>crew complete --gate not-run</code> without <code>--outcome</code> is refused, the refusal names that condition, and its text never says "cannot be read" for a record that parses. A delivered record still promotes with its outcome taken from the stored review. The negative control collapses every reason back into one generic message, and the per-condition cases then fail. Write paths: <code>reckon/crew/recovery_review_delivery.py</code>, <code>reckon/crew/promotion_checks.py</code>, <code>tests/test_a_review_refusal_names_its_failed_condition.py</code>.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
