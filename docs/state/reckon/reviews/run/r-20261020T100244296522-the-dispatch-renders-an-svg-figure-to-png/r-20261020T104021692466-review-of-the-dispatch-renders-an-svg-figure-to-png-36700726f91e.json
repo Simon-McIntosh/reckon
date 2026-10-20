@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "derived from the run's gate logs: manifest after_suite (repair-head.log) records 0 failures at 36700726; the coordinator population logs record 3 pre-existing failures at base f72ffac6 and 2 change-induced failures at ee236bbf, both of which repair-head.log shows passing at 36700726, so nothing the change added survives to the reviewed head.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:2067",
+    "reckon/serve.py:2017",
+    "reckon/serve.py:2037"
+  ],
+  "completed_at": "2026-10-20T10:56:02.217Z",
+  "dispatched_at": "2026-10-20T10:41:27Z",
+  "findings": [
+    {
+      "file": "tests/test_dispatch_attaches_the_figures.py",
+      "line": "262",
+      "severity": "follow-on",
+      "text": "this file is modified outside the declared write paths, which name only tests/test_dispatch_renders_svg_figures.py, so the node widened its own fence without a scope extension even though the fixture change is a legitimate consequence of the argv change"
+    },
+    {
+      "file": "tests/test_dispatch_renders_svg_figures.py",
+      "line": "115",
+      "severity": "follow-on",
+      "text": "the resume assertion compares the argv against the value the test itself wrote into the pointer at line 112, so it guards that resume forwards node.images but not that the recorded PNG is the one dispatch produced"
+    },
+    {
+      "file": "docs/evidence/fragments/a-review-can-see-the-figure/the-dispatch-renders-an-svg-figure-to-png.html",
+      "line": "4",
+      "severity": "follow-on",
+      "text": "the fragment states the base population is measured at merge because the node's own base arm was blocked, leaving the done-when's 'no added failure against base' unverified in this run"
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit from f72ffac6 to 36700726; four commits touch six files and all the production changes are in reckon/figures.py, reckon/serve.py and reckon/crew/dispatch.py.",
+    "done_when": "the done_when names tests/test_dispatch_renders_svg_figures.py, a 1400 px PNG under the run directory, the codex argv, resume, unchanged PNGs, an unchanged repository tree and an invalid-SVG refusal; the 16-test gate covers the first five and the refusal, but not the base-arm comparison it also names.",
+    "goal": "the goal is to make crew dispatch attach a run-local PNG in place of each SVG image; reckon/crew/dispatch.py:2067 does exactly that before worktree creation.",
+    "manifest": "read; it records four commits, repair-head.log at 16 passed, negative-control.log at EXIT=1, and an empty baseline_suite with the base arm delegated to the coordinator.",
+    "write_paths": "read the dispatch FENCE-SCOPE list and the plan's \u00a710 list; five of the six changed paths are inside them and tests/test_dispatch_attaches_the_figures.py is not."
+  },
+  "justifications": {
+    "durability": "removing the rasterising call reddens tests/test_dispatch_renders_svg_figures.py:99 on the argv, as negative-control.log shows, and the expectations there are derived from crew.run_dir rather than from the code's own value.",
+    "evidence": "repair-head.log records EXIT=0 with 16 passed at 36700726 and negative-control.log records EXIT=1 with the argv assertion red, but the done-when's base arm never ran (base-arm-blocked.log EXIT=128) and the manifest's baseline_suite is empty, so 'no added failure against base' has no base measurement at the reviewed head.",
+    "fit": "reckon/figures.py:26 keeps the module's existing private _svg_dims helper and states the dpi rationale, matching the surrounding idiom.",
+    "goal_fidelity": "reckon/crew/dispatch.py:2067 renders each SVG image to a run-local 1400 px PNG and reckon/crew/dispatch.py:2073 assigns it to node.images, so the launch argv and the run record carry the PNG.",
+    "reuse": "reckon/serve.py:2017 now calls the single Renderer in reckon/figures.py:26 instead of carrying its own, so the shared rasteriser is extended rather than forked.",
+    "scope_discipline": "tests/test_dispatch_attaches_the_figures.py:262 is modified but appears in neither the dispatch FENCE-SCOPE list nor the plan's \u00a710 write paths, which name only tests/test_dispatch_renders_svg_figures.py."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make crew dispatch attach a run-local PNG in place of each SVG image; reckon/crew/dispatch.py:2067 does exactly that before worktree creation.\nVERDICT done_when: the done_when names tests/test_dispatch_renders_svg_figures.py, a 1400 px PNG under the run directory, the codex argv, resume, unchanged PNGs, an unchanged repository tree and an invalid-SVG refusal; the 16-test gate covers the first five and the refusal, but not the base-arm comparison it also names.\nVERDICT write_paths: read the dispatch FENCE-SCOPE list and the plan's \u00a710 list; five of the six changed paths are inside them and tests/test_dispatch_attaches_the_figures.py is not.\nVERDICT manifest: read; it records four commits, repair-head.log at 16 passed, negative-control.log at EXIT=1, and an empty baseline_suite with the base arm delegated to the coordinator.\nVERDICT diff: read commit by commit from f72ffac6 to 36700726; four commits touch six files and all the production changes are in reckon/figures.py, reckon/serve.py and reckon/crew/dispatch.py.\nCALL_SITES: reckon/crew/dispatch.py:2067, reckon/serve.py:2017, reckon/serve.py:2037\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:2067 renders each SVG image to a run-local 1400 px PNG and reckon/crew/dispatch.py:2073 assigns it to node.images, so the launch argv and the run record carry the PNG.\nSCORE evidence: 13\nJUSTIFICATION evidence: repair-head.log records EXIT=0 with 16 passed at 36700726 and negative-control.log records EXIT=1 with the argv assertion red, but the done-when's base arm never ran (base-arm-blocked.log EXIT=128) and the manifest's baseline_suite is empty, so 'no added failure against base' has no base measurement at the reviewed head.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: tests/test_dispatch_attaches_the_figures.py:262 is modified but appears in neither the dispatch FENCE-SCOPE list nor the plan's \u00a710 write paths, which name only tests/test_dispatch_renders_svg_figures.py.\nSCORE durability: 17\nJUSTIFICATION durability: removing the rasterising call reddens tests/test_dispatch_renders_svg_figures.py:99 on the argv, as negative-control.log shows, and the expectations there are derived from crew.run_dir rather than from the code's own value.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/figures.py:26 keeps the module's existing private _svg_dims helper and states the dpi rationale, matching the surrounding idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/serve.py:2017 now calls the single renderer in reckon/figures.py:26 instead of carrying its own, so the shared rasteriser is extended rather than forked.\nFINDING tests/test_dispatch_attaches_the_figures.py:262 follow-on: this file is modified outside the declared write paths, which name only tests/test_dispatch_renders_svg_figures.py, so the node widened its own fence without a scope extension even though the fixture change is a legitimate consequence of the argv change\nFINDING tests/test_dispatch_renders_svg_figures.py:115 follow-on: the resume assertion compares the argv against the value the test itself wrote into the pointer at line 112, so it guards that resume forwards node.images but not that the recorded PNG is the one dispatch produced\nFINDING docs/evidence/fragments/a-review-can-see-the-figure/the-dispatch-renders-an-svg-figure-to-png.html:4 follow-on: the fragment states the base population is measured at merge because the node's own base arm was blocked, leaving the done-when's 'no added failure against base' unverified in this run\n",
+  "review_run_id": "r-20261020T104021692466-review-of-the-dispatch-renders-an-svg-figure-to-png-36700726f91e",
+  "reviewed_base_sha": "f72ffac6ede379ce31d014f6dd9d085ca3bb8d09",
+  "reviewed_head_sha": "36700726f91e9843d7005d5ba3f9813dac6c5745",
+  "reviewed_node": "the-dispatch-renders-an-svg-figure-to-png",
+  "reviewed_run_id": "r-20261020T100244296522-the-dispatch-renders-an-svg-figure-to-png",
+  "rubric": "landed-node",
+  "scores": {
+    "durability": 17,
+    "evidence": 13,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T10:59:12.605241+00:00",
+  "total": 99
+}
