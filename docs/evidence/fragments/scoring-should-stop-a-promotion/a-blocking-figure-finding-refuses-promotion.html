@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="A blocking figure finding refuses promotion">
+  <meta name="plan-summary" content="Promotion keyed a stored review's status and reviewed head, so a figure review carrying a blocking finding satisfied every guard and the defect it named landed unrepaired. The landing path now also reads the run's newest figure review through the figure rubric and refuses while it carries an open blocking finding, naming the figure path and the finding's claim. The severity is read through repair.blocking_findings, so an answered finding no longer refuses. The node gate passes 4 tests, EXIT=0; the declared mutation leaves the figure review out of the promotion read and reddens the refusal case (2 failed, EXIT=1).">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-10-20">
+  <meta name="plan-verdict" content="passed">
+  <title>A blocking figure finding refuses promotion | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A blocking figure finding refuses promotion</h1>
+
+    <section id="a-blocking-figure-finding-refuses-promotion-defect">
+      <h2>The defect</h2>
+      <p>The review guards in <code>reckon/crew/promotion_checks.py</code> key on a stored
+        record's status and the revision it read (<code>_require_review_waiver</code>). No
+        promotion check read a finding's severity, so a figure review carrying a blocking
+        finding satisfied every guard: the review was stored, its head matched, and the run
+        promoted with the figure defect it named unrepaired. The text-review reader cannot
+        stand in, because it excludes figure records by rubric — the two subjects coexist at
+        one head and only the text one was read.</p>
+    </section>
+
+    <section id="a-blocking-figure-finding-refuses-promotion-change">
+      <h2>The change</h2>
+      <p><code>_require_no_undisposed_blocking_figure_finding</code> reads the run's newest
+        figure review through <code>review.read_review(..., rubric=FIGURE_REVIEW_RUBRIC)</code>
+        — the store's own rubric-keyed selection, so it is the same record every other
+        figure-review reader sees. Its blocking findings arrive from
+        <code>repair.blocking_findings</code>, the single owner that classifies a finding's
+        severity and filters out the ones a disposition has answered. An open blocking
+        finding refuses the promotion with the figure path, its line and the finding's own
+        claim, so the drawing to open is named rather than left to a search of the record.</p>
+      <p>The guard is called from <code>_landing_preconditions</code>, the ordered sweep the
+        landing path already runs, so it is reported beside every other precondition failure
+        in one refusal. A run that carries no figure review is untouched, and a run whose
+        text review alone carries a blocking finding promotes exactly as before — this guard
+        reads the figure rubric alone.</p>
+      <p>Commit: <code>02a433003</code>.</p>
+    </section>
+
+    <section id="a-blocking-figure-finding-refuses-promotion-gate">
+      <h2>The gate</h2>
+      <p>Every record in the new file is built through the store's own writer
+        (<code>reckon.crew.review.store_review</code>), so the rubric field the store writes
+        and the field this reader selects on cannot drift. The stores and the crew
+        configuration home live under the test's temporary tree, and the records name no path
+        outside it. The gate ran in the assigned worktree, with <code>PYTHONPATH</code>
+        pointing at the tree named in the log header:</p>
+      <table>
+        <thead>
+          <tr><th>arm</th><th>revision</th><th>scope</th><th>result</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>node gate</td>
+            <td><code>02a433003</code></td>
+            <td><code>tests/test_a_blocking_figure_finding_refuses_promotion.py</code></td>
+            <td><code>4 passed</code> in 3.16s, EXIT=0</td>
+          </tr>
+          <tr>
+            <td>neighbour smoke</td>
+            <td><code>02a433003</code></td>
+            <td>the promotion-tree, claims-review, figure-text and dispose-finding files</td>
+            <td><code>27 passed</code> in 23.18s, EXIT=0</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The four cases: a text review with no blocking finding and a figure review with one
+        undisposed blocking finding is refused with a reason naming the figure and the
+        finding; the same run with that finding answered no longer refuses; a text review's
+        blocking finding with no figure review is left alone; and
+        <code>_landing_preconditions</code> carries the refusal, so the path
+        <code>crew complete</code> runs reaches it.</p>
+      <p>Logs: <code>gate-head.log</code> and <code>neighbours.log</code> under the node's
+        run directory, each opening with its revision and the literal command and closing
+        with a bare <code>EXIT=</code> line. <code>ruff check</code> over the changed Python
+        paths reports only the two <code>UP017</code> findings <code>promotion_checks.py</code>
+        already carried at the base revision, and <code>ruff format --diff</code> leaves
+        every added line untouched; the new test file is clean on both.</p>
+    </section>
+
+    <section id="a-blocking-figure-finding-refuses-promotion-negative-control">
+      <h2>The negative control</h2>
+      <p>The declared mutation leaves the figure review out of the promotion read: the guard
+        is declared to find no figure review, so the first case must then be promoted and the
+        test must fail. Run against the mutation on top of the change, with the mutation
+        reverted afterwards:</p>
+      <table>
+        <thead>
+          <tr><th>case</th><th>outcome</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>test_an_undisposed_blocking_figure_finding_refuses_the_promotion</code></td>
+            <td>FAILED — DID NOT RAISE CrewError</td>
+          </tr>
+          <tr>
+            <td><code>test_the_landing_preconditions_carry_the_figure_refusal</code></td>
+            <td>FAILED — DID NOT RAISE CrewError</td>
+          </tr>
+        </tbody>
+      </table>
+      <p><code>2 failed, 2 passed</code>, EXIT=1. The two that pass are the disposed case and
+        the no-figure-review case, which the mutation cannot reach because both expect the
+        guard to return without refusing. Log: <code>negative-control.log</code>.</p>
+    </section>
+
+    <section id="a-blocking-figure-finding-refuses-promotion-limits">
+      <h2>What this node does not do</h2>
+      <p>No base arm was run: this gate measures only this node's own change, and the
+        coordinator runs the importer population of <code>reckon/crew/promotion_checks.py</code>
+        at merge. Verifying the merged result belongs to a separately dispatched test node.</p>
+      <p>One gap is recorded rather than closed, because its repair is outside this node's
+        write scope. <code>crew dispose</code> cannot reach a figure finding: the record it
+        selects (<code>recovery.select_review_for_head</code> through
+        <code>obligations.stored_review_for_run</code>) excludes figure records by rubric, so
+        a disposition naming a figure finding's index is refused with “carries 0 findings”
+        against the text record. The test therefore records the disposition through the same
+        store writer and key (<code>FINDING_DISPOSITIONS_KEY</code>, built by
+        <code>review_dispositions._build_disposition_entry</code>) that the dispose path
+        writes, which is the record state the guard reads; giving <code>crew dispose</code> a
+        figure-review selection is named in this node's follow-ons.</p>
+    </section>
+  </main>
+</body>
+</html>
