@@ -23,10 +23,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5,6dcb6cc1d,31e84061f">
 <meta name="plan-impl" content="0.99">
-<meta name="plan-version" content="207">
+<meta name="plan-version" content="208">
 <meta name="plan-modified" content="2026-10-20">
 <meta name="plan-section-depends-on" content="{&quot;s17&quot;: [&quot;a-worker-cannot-write-your-home#s15&quot;], &quot;s16&quot;: [&quot;a-worker-cannot-write-your-home#s15&quot;]}">
 </head>
@@ -1560,6 +1560,30 @@
 <section data-reckon="section" data-id="s17" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> The review of §15 at <code>b8c27abd3</code> (run <code>r-20261018T175234018263</code>, 88/120) raised two follow-ons that bear on how long the seal stays right. First, <code>create_node_tmp_runtime_paths</code> in <code>reckon/_worker_fence.py</code> re-implements the module's own <code>create_write_roots</code>: the same resolved-destination existence check, <code>mkdir(parents=True, exist_ok=True)</code> and <code>BackendError</code> loop for each directory a fence is about to bind writable. So the rule now has two copies that can drift. Second, the assertion in <code>tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py</code> that no probe file exists in the node-tmp root guards nothing. The stub writes its probes only into its own scratch and the runtime paths, never into the node-tmp root, so the assertion holds whatever the fence does.</p><p><strong>Deliverable.</strong> <code>create_node_tmp_runtime_paths</code> creates its directories through <code>create_write_roots</code>, keeping only what is specific to the runtime paths, and the fence's binds do not change. A new test function in the §15 test file has its stub write a probe directly into the node-tmp root, outside its own scratch and the runtime paths, and asserts that the write is refused and that no probe lands there. It is a test of its own, so no earlier assertion stands between the seal and the probe check.</p><p><strong>Done when</strong> <code>tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py</code> passes, including the new direct-probe test with the probe refused. The negative control removes the node-tmp seal from <code>fence_argv</code>, and the direct-probe test then fails at its probe assertion, as the failing line in the logged output shows. The control is run at the delivered head and logged under the run directory. A test intercepts <code>create_write_roots</code> and asserts that creating the runtime paths goes through it, with every runtime path among the roots it receives. A second negative control restores the separate creation loop, and that test then fails. A test also finds that the composed fence argv for a fixed set of roots equals the literal argv that fixture determines. The test files naming <code>_worker_fence</code> or <code>fence_argv</code> show no added failure against base, run on node-local <code>/tmp</code> under <code>sbatch --partition=all_debug --exclusive</code>, and every log ends in EXIT=. <code>ruff check</code> and <code>ruff format --check</code> add no findings on the changed Python files. Build it after §15 merges, and not while §16 is in flight, because all three write <code>reckon/_worker_fence.py</code>. Write paths: <code>reckon/_worker_fence.py</code> and <code>tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py</code>.</p>
 
+    <h2 id="s18">§18 — A read-only codex worker runs its commands inside the fence</h2>
+<section data-reckon="section" data-id="s18" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> On 2026-10-20 at about 21:50Z, the codex review run <code>r-20261020T214933409647-review-of-filter-reassessment-3dede5393850</code> failed every command it ran. The run was power_convertor's, review role, sandbox <code>read-only</code>, on clu-2068. Each command failed with <code>bwrap: Can't mkdir /tmp/.git: Read-only file system</code>, and the run then could not write its manifest under its own run directory. Power-convertor-02 reported it and moved the review to clive. Codex implementation runs on the same node worked that night: <code>filter-reassessment</code> and <code>disruption-induced-voltages</code> committed. They run at the <code>worktree-full</code> tier, which does not start codex's own sandbox. The read-only tier runs codex's internal bubblewrap sandbox inside the reckon fence, and that sandbox creates <code>/tmp/.git</code> on a <code>/tmp</code> the fence seals read-only. Codex reviews ran earlier that day. Two fence changes landed that evening, and either may have changed what the inner sandbox finds:</p>
+<ul>
+<li><code>d5c886763</code> (21:18 local), each worker in its own pid namespace with a fresh <code>--proc</code> after the root bind;</li>
+<li><code>06b1d3358</code> (21:20 local), node-local bind sources created by the step wrapper.</li>
+</ul>
+<p>The fleet's move to clu-2068 is a third.</p>
+<p><strong>Deliverable.</strong> A codex worker at the read-only tier runs its shell commands inside the fence.</p>
+<ul>
+<li>First reproduce the fault with a fenced codex review-role launch that runs <code>pwd</code>. Then find which change introduced it, by reverting each candidate in turn in a scratch tree, never by bisecting the shared checkout.</li>
+<li>Fix the fence's handling, either by giving codex's inner sandbox the writable path it creates or by passing it a configuration that creates nothing on <code>/tmp</code>. Keep §15's seal on the node's own temporary files and §16's rule that a review is told only the roots the fence leaves writable.</li>
+<li>If the cause lies in the codex CLI's own sandbox, stop blocked and name it.</li>
+</ul>
+<p><strong>Write paths:</strong> <code>reckon/_worker_fence.py</code>, <code>reckon/_backends.py</code> only for the codex dialect's sandbox arguments, the new <code>tests/test_a_read_only_codex_worker_runs_inside_the_fence.py</code>, and the node's evidence fragment.</p>
+<p><strong>Done when</strong> all of these hold:</p>
+<ul>
+<li>A log in the run directory shows the fault reproduced at the dispatched base and gone at head, for a fenced codex review-role launch running <code>pwd</code> and writing a file under its own run directory. The run happens on the fleet node, in the foreground.</li>
+<li>The new test asserts that the composed fence for a read-only codex launch leaves the path codex's inner sandbox creates writable, or that the codex argv carries the configuration that needs none. With the fix reverted, the test fails.</li>
+<li>Run pytest in the foreground with <code>-rA</code> over the new file and the test files covering the fence, including §15's and §16's and the pid-namespace test d5c886763 added, plus <code>tests/test_every_module_fits_a_worker_window.py</code>. It adds no failure against a base arm run at the dispatched base from a clean extraction. Both arms' logs go in the run directory.</li>
+<li><code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths, judged against the base blobs, with the log in the run directory.</li>
+</ul>
+<p><strong>Negative control.</strong> Revert the fix, and both the reproduction and the new test must fail. Run it under pytest with the default short summary.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-awcwyh-001" data-status="resolved" data-written-by="reckon-ship" data-written-at="2026-09-23" data-recommends-skill="/reckon-build a-worker-cannot-write-your-home" data-resolved-at="2026-09-24T12:55:40+00:00" data-resolved-by="reckon-e5">
@@ -1741,6 +1765,11 @@
     <div class="r-fu-body"><p>The follow-ons from §15's review. Not while §16 is in flight, since both write <code>reckon/_worker_fence.py</code>.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-worker-cannot-write-your-home §17</pre>
     <p class="r-fu-outcome">§17 landed as merge 84b176ef1.</p>
+    </article>
+<article class="r-fu" data-id="f-awcwyh-019" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="reckon-build" data-written-at="2026-10-20" data-recommends-skill="/reckon-build a-worker-cannot-write-your-home §18" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Let a read-only codex worker run inside the fence</h4>
+    <div class="r-fu-body"><p>Reported by power-convertor-02 on 2026-10-20: every codex review fails at its first command with <code>bwrap: Can't mkdir /tmp/.git: Read-only file system</code>, while codex implementation runs still work. Candidates are d5c886763, 06b1d3358 and the move to clu-2068.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-worker-cannot-write-your-home §18</pre>
     </article>
 </section>
 
