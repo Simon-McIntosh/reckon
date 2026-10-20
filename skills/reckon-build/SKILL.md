@@ -201,7 +201,7 @@ reckon crew attach --run <id> --task <task-id>
 reckon crew budget --lift --group <group> (--multiple <m> | --drain-by <time> | --uncapped) [--global | --session <id>] [--from <time>] [--until reset|<iso>|<duration>] [--clock seven_day|five_hour] --reason <why> [--pretty]
 reckon crew budget --lift --clear --group <group> [--session <id>] [--id <lift>]
 reckon crew budget --list [--group <group>] [--pretty]
-reckon crew check-manifest --run <id>
+reckon crew check --manifest --run <id>    reckon crew check --review (--run <id> | --record <path>)
 reckon crew complete --run <id> --gate <verdict> --commit <sha> --outcome <text> --tests-added <n> --scope-changed
 reckon crew directory --project <project> --run <id> --node <node>
 reckon crew dispatch --project <project> --plan <slug> --section <section> --role <role> --node <node> --goal <goal> --done-when <measure> --write-path <path> --peer <other-node>=<their-paths> --time-budget <duration> --session <session> --set <override> --dry-run --member <member> --manifest <path> --allow-unreconciled-runs --no-watch
@@ -213,7 +213,8 @@ reckon crew observe --run <id>    reckon crew budget --check --project <project>
 reckon crew pick --project <project> --role <role> --spec-level <level> --goal <goal> --done-when <measure> --replay <n> --outcomes --since <ISO> --all-projects --checkout-path <path>    # reads routing state or outcome history, dispatches nothing
 reckon crew placement --ensure --session <session> --project <project>
 reckon crew recover    reckon crew redispatch --run <id> --backend <backend> --reason <text>
-reckon crew repair-status --run <id> --status <verdict> --reason <text>    # replaces a manifest's status word, keeping the file as delivered
+reckon crew repair --run <id> --status <verdict> --reason <text>    # replaces a manifest's status word, keeping the file as delivered
+reckon crew repair --review --run <id> --record <path> --set <field=value> --reason <text>
 reckon crew resume --run <id> --advice <text>    reckon crew resume-ready --project <project>
 reckon crew review --project <project> --plan <slug> --rubric <rubric> --session <session> --local --answer <finding> --acted --declined <reason>
 reckon crew shadow    reckon crew stop    reckon crew watch --stop --project <project>

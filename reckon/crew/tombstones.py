@@ -139,6 +139,33 @@ TOMBSTONES: tuple[Tombstone, ...] = (
         flags=("--stop",),
         detail="a registered project watcher is stopped by `crew watch --stop`",
     ),
+    Tombstone(
+        retired="repair-status",
+        successor="crew repair --status",
+        argv=("crew", "repair"),
+        detail="a manifest status is replaced by `crew repair --status`",
+    ),
+    Tombstone(
+        retired="repair-review",
+        successor="crew repair --review",
+        argv=("crew", "repair"),
+        flags=("--review",),
+        detail="a review record is repaired by `crew repair --review`",
+    ),
+    Tombstone(
+        retired="check-manifest",
+        successor="crew check --manifest",
+        argv=("crew", "check"),
+        flags=("--manifest",),
+        detail="a delivered manifest is checked by `crew check --manifest`",
+    ),
+    Tombstone(
+        retired="check-review",
+        successor="crew check --review",
+        argv=("crew", "check"),
+        flags=("--review",),
+        detail="a delivered review is checked by `crew check --review`",
+    ),
 )
 
 #: Lookup by the retired name a caller types.

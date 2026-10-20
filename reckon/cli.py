@@ -443,6 +443,9 @@ from reckon.crew_run_commands import (
     crew_budget as crew_budget,
 )
 from reckon.crew_run_commands import (
+    crew_check as crew_check,
+)
+from reckon.crew_run_commands import (
     crew_check_manifest as crew_check_manifest,
 )
 from reckon.crew_run_commands import (
@@ -489,6 +492,9 @@ from reckon.crew_run_commands import (
 )
 from reckon.crew_run_commands import (
     crew_redispatch as crew_redispatch,
+)
+from reckon.crew_run_commands import (
+    crew_repair as crew_repair,
 )
 from reckon.crew_run_commands import (
     crew_repair_completion as crew_repair_completion,

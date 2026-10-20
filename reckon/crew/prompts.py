@@ -640,9 +640,9 @@ RUNTIME FILESYSTEM
     # runnable instruction rather than a command that silently checks nothing.
     manifest_check_contract = MANIFEST_CHECK_CONTRACT.format(
         command=(
-            f"reckon crew check-manifest --run {run_id}"
+            f"reckon crew check --manifest --run {run_id}"
             if run_id
-            else "reckon crew check-manifest --run <this run's id>"
+            else "reckon crew check --manifest --run <this run's id>"
         )
     )
     negative_control_declaration = _negative_control_declaration(node)

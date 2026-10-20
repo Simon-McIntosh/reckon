@@ -157,7 +157,9 @@ def _review_run(repository: Path, tmp_path: Path) -> dict[str, Path]:
 
 
 def _check_manifest() -> tuple[int, list[str]]:
-    result = CliRunner().invoke(cli_main, ["crew", "check-manifest", "--run", RUN_ID])
+    result = CliRunner().invoke(
+        cli_main, ["crew", "check", "--manifest", "--run", RUN_ID]
+    )
     return result.exit_code, json.loads(result.output)["findings"]
 
 

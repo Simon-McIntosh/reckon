@@ -63,7 +63,9 @@ def _manifest_body(paths: list[str]) -> str:
 
 
 def _check(run_id: str = RUN_ID):
-    return CliRunner().invoke(cli_main, ["crew", "check-manifest", "--run", run_id])
+    return CliRunner().invoke(
+        cli_main, ["crew", "check", "--manifest", "--run", run_id]
+    )
 
 
 def _read(manifest: Path, body: str, run_id: str = RUN_ID) -> tuple[int, list[str]]:

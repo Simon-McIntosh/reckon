@@ -782,9 +782,6 @@ def crew_dispose(
     )
 
 
-@crew.command(name="check-manifest")
-@click.option("--run", "run_id", required=True, help="Run id whose manifest to check.")
-@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_check_manifest(run_id, pretty):
     """Judge a delivered manifest against its own node while its writer can fix it.
 
@@ -843,9 +840,6 @@ def crew_check_manifest(run_id, pretty):
         raise click.exceptions.Exit(1)
 
 
-@crew.command(name="check-review")
-@click.option("--record", "record_path", required=True, type=click.Path(path_type=Path))
-@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_check_review(record_path, pretty):
     """Check whether a delivered run review can be filed, without writing it."""
     import json
@@ -869,12 +863,6 @@ def crew_check_review(record_path, pretty):
         raise click.exceptions.Exit(1)
 
 
-@crew.command(name="repair-review")
-@click.option("--run", "reviewed_run_id", required=True)
-@click.option("--record", "record_path", required=True, type=click.Path(path_type=Path))
-@click.option("--set", "change", required=True)
-@click.option("--reason", required=True)
-@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_repair_review(reviewed_run_id, record_path, change, reason, pretty):
     """Repair only a review's status or missing subject identity, preserving it."""
     from reckon.crew import review as review_module
@@ -887,6 +875,88 @@ def crew_repair_review(reviewed_run_id, record_path, change, reason, pretty):
     except (OSError, ValueError, TypeError, CrewError) as exc:
         raise click.ClickException(str(exc)) from exc
     _emit_crew_result(result, pretty)
+
+
+@crew.command(name="check")
+@click.option(
+    "--manifest", "manifest", is_flag=True, help="Check a run's delivered manifest."
+)
+@click.option(
+    "--review", "review", is_flag=True, help="Check a delivered or stored run review."
+)
+@click.option("--run", "run_id", help="Run whose manifest or stored review to check.")
+@click.option(
+    "--record",
+    "record_path",
+    type=click.Path(path_type=Path),
+    help="Delivered review record to check.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_check(manifest, review, run_id, record_path, pretty):
+    """Judge a delivered manifest or run review against its filing contract."""
+    if manifest == review:
+        raise click.UsageError("choose exactly one of --manifest or --review")
+    if manifest:
+        if not run_id or record_path:
+            raise click.UsageError(
+                "--manifest needs --run and does not accept --record"
+            )
+        return crew_check_manifest(run_id, pretty)
+    if bool(run_id) == bool(record_path):
+        raise click.UsageError("--review needs exactly one of --run or --record")
+    if run_id:
+        from reckon.crew import review as review_module
+        from reckon.crew import runs as runs_module
+        from reckon.crew.node import CrewError
+
+        try:
+            pointer = runs_module.read_pointer(run_id)
+            project = str(pointer["project"])
+        except (KeyError, OSError, ValueError, CrewError) as exc:
+            raise click.ClickException(
+                f"run {run_id} could not be resolved: {exc}"
+            ) from exc
+        record_path, _ = review_module.stored_record(project, run_id)
+        if record_path is None:
+            raise click.ClickException(f"run {run_id} has no stored review")
+    return crew_check_review(record_path, pretty)
+
+
+@crew.command(name="repair")
+@click.option(
+    "--status",
+    type=click.Choice(["complete", "blocked", "failed"]),
+    help="Replace the run's manifest status word.",
+)
+@click.option(
+    "--review",
+    "repair_review",
+    is_flag=True,
+    help="Repair a review's status or missing subject.",
+)
+@click.option(
+    "--run", "run_id", required=True, help="Run whose manifest or review is repaired."
+)
+@click.option(
+    "--record",
+    "record_path",
+    type=click.Path(path_type=Path),
+    help="Delivered review record to repair.",
+)
+@click.option("--set", "change", help="Review field and value to repair.")
+@click.option("--reason", required=True, help="Why the recorded repair is justified.")
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_repair(status, repair_review, run_id, record_path, change, reason, pretty):
+    """Repair a manifest's status word or a review's status or subject identity."""
+    if bool(status) == repair_review:
+        raise click.UsageError("choose exactly one of --status or --review")
+    if status:
+        if record_path or change:
+            raise click.UsageError("--status does not accept --record or --set")
+        return crew_repair_status(run_id, status, reason, pretty)
+    if not record_path or not change:
+        raise click.UsageError("--review needs --record and --set")
+    return crew_repair_review(run_id, record_path, change, reason, pretty)
 
 
 @crew.command(name="supersede-review")
@@ -1937,29 +2007,6 @@ def crew_discard(run_id, pretty):
     _emit_crew_result(result, pretty)
 
 
-@crew.command(name="repair-status")
-@click.option(
-    "--run",
-    "run_id",
-    required=True,
-    help="Run whose manifest status word the coordinator is replacing.",
-)
-@click.option(
-    "--status",
-    type=click.Choice(["complete", "blocked", "failed"]),
-    required=True,
-    help=(
-        "The verdict the run actually reached: the terminal words, restated "
-        "here because importing the crew vocabulary would drag the whole "
-        "facade onto every reckon --help."
-    ),
-)
-@click.option(
-    "--reason",
-    required=True,
-    help="Why this is the verdict; recorded in the run directory.",
-)
-@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_repair_status(run_id, status, reason, pretty):
     """Replace a manifest's status word, keeping the file as delivered."""
     crew_module, _ = _crew_modules()

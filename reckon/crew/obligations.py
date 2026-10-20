@@ -391,7 +391,7 @@ def _refused_delivered_review(pointer: Mapping[str, Any]) -> dict[str, str] | No
                 else "status=parsed"
             )
             command = (
-                f"reckon crew repair-review --run {shlex.quote(reviewed_run_id)} "
+                f"reckon crew repair --review --run {shlex.quote(reviewed_run_id)} "
                 f"--record {shlex.quote(str(path))} --set {change} "
                 "--reason '<why this repair is correct>'"
             )

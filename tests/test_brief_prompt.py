@@ -338,7 +338,7 @@ CONTRACT — CHECK YOUR OWN RECORD BEFORE YOU CLOSE IT
   Before you set status to a terminal value, run this and repair what it
   reports — the write-time audit of your manifest against your own node
   and worktree:
-  `reckon crew check-manifest --run <this run's id>`
+  `reckon crew check --manifest --run <this run's id>`
   The same refusal at promotion reaches a coordinator hours later, after
   you have ended, and a record repaired then is indistinguishable from a
   fabricated one.

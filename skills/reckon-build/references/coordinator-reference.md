@@ -597,8 +597,8 @@ The compact CLI inventory is the action surface, not a polling substitute:
 
 ```text
 reckon crew attach --run <id> --task <task-id>
-reckon crew check-manifest --run <id>
-reckon crew check-review --record <path>    # validates a delivered record without writing
+reckon crew check --manifest --run <id>
+reckon crew check --review (--run <id> | --record <path>)    # validates a stored or delivered record without writing
 reckon crew complete --run <id> --gate <verdict> --commit <sha> --outcome <text> --tests-added <n> --scope-changed
 reckon crew directory --project <project> --run <id> --node <node>
 reckon crew dispatch --project <project> --plan <slug> --section <section> --role <role> --node <node> --goal <goal> --done-when <measure> --write-path <path> --peer <other-node>=<their-paths> --time-budget <duration> --session <session> --set <override> --dry-run --member <member> --manifest <path> --allow-unreconciled-runs --no-watch
@@ -609,8 +609,8 @@ reckon crew observe --run <id>    reckon crew budget --check --project <project>
 reckon crew pick --project <project> --role <role> --spec-level <level> --goal <goal> --done-when <measure> --replay <n> --outcomes --since <ISO> --all-projects --checkout-path <path>    # reads routing state or outcome history, dispatches nothing
 reckon crew placement --ensure --session <session> --project <project>
 reckon crew recover    reckon crew redispatch --run <id> --backend <backend> --reason <text>
-reckon crew repair-status --run <id> --status <verdict> --reason <text>    # replaces a manifest's status word, keeping the file as delivered
-reckon crew repair-review --run <reviewed-run> --record <path> --set status=parsed|subject --reason <why>
+reckon crew repair --run <id> --status <verdict> --reason <text>    # replaces a manifest's status word, keeping the file as delivered
+reckon crew repair --review --run <reviewed-run> --record <path> --set status=parsed|subject --reason <why>
 reckon crew resume --run <id> --advice <text>    reckon crew resume-ready --project <project>
 reckon crew shadow    reckon crew stop    reckon crew watch --stop --project <project>
 reckon crew verify-gate --project <project> --run <id> --checkout-path <path>
@@ -620,8 +620,8 @@ reckon flight --project <project>    reckon audit-doc
 ```
 
 A `review-missing` or `review-refused` duty after its review run completed first
-calls for `check-review` on the delivered record. Repair a supported refusal
-with `repair-review` and read its filing receipt before redispatching.
+calls for `check --review` on the delivered record. Repair a supported refusal
+with `repair --review` and read its filing receipt before redispatching.
 
 For view-by-view semantics, cross-repository contact, recovery commands, and integrated-gate receipts, read [conditional guidance: Dispatch lifecycle, read views, and integrated gates](references/conditional-guidance.md#dispatch-lifecycle-read-views-and-integrated-gates) only after the core action identifies the needed view.
 

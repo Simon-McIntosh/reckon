@@ -5,7 +5,7 @@ so two fragments that reuse an element id leave every later anchor unreachable
 for a reader following a link. The finding existed but nothing on the crew path
 ran it, and the worker brief said nothing about ids, so a collision surfaced
 only at closure — after the sessions that could have renamed the fragment had
-ended. Each case here drives ``check-manifest`` because the wiring under test is
+ended. Each case here drives ``check --manifest`` because the wiring under test is
 the audit's first fragment-writing caller.
 
 Only a collision the run itself takes part in is reported against it. Two
@@ -143,7 +143,7 @@ blockers: none
 
 
 class RunFixture:
-    """The temporary repository a case drives check-manifest against."""
+    """The temporary repository a case drives check --manifest against."""
 
     def __init__(self, repo: Path, manifest: Path, head: str) -> None:
         self.repo = repo
@@ -259,7 +259,9 @@ def run(tmp_path: Path) -> RunFixture:
 
 
 def _check():
-    return CliRunner().invoke(cli_main, ["crew", "check-manifest", "--run", RUN_ID])
+    return CliRunner().invoke(
+        cli_main, ["crew", "check", "--manifest", "--run", RUN_ID]
+    )
 
 
 def test_a_new_fragment_repeating_a_committed_id_is_refused_by_name(

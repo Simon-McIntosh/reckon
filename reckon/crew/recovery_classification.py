@@ -700,7 +700,7 @@ def classify_pointer(
             "says so"
         )
         action = (
-            f"reckon crew repair-status --run {run_id} --status complete "
+            f"reckon crew repair --run {run_id} --status complete "
             "--reason <the verdict the worker reached>"
         )
     elif manifest_unwritten:
