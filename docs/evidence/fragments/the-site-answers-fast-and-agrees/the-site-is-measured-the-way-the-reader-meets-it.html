@@ -1,0 +1,62 @@
+<section id="the-site-is-measured-the-way-the-reader-meets-it-s11-head">
+    <h2>§11 — The site is measured the way the reader meets it</h2>
+    <p>A headless Chromium probe loads the served site through an SSH tunnel to
+      <code>98dci4-srv-1006:8765</code>, as the WSL client reaches it, cold and again warm, and records the
+      time until each surface is populated, the bytes the browser transfers and every console error. The probe
+      ran on the fleet allocation, node <code>98dci4-clu-2002</code>, job <code>1281970</code>; the served host's
+      load average was 4.8 and the probe host's was 34.8 during the head pass. Window:
+      <code>2026-10-20T05:46Z</code> to <code>2026-10-20T05:52Z</code> (head) and <code>05:53Z</code> to
+      <code>05:57Z</code> (negative control). Probe script and logs sit under the run directory
+      <code>r-20261020T053852305957-the-site-is-measured-the-way-the-reader-meets-it</code> as <code>probe.py</code>,
+      <code>probe-head.json</code>, <code>probe-base.json</code> and <code>logs/probe-head.log</code>,
+      <code>logs/probe-base.log</code>.</p>
+
+    <table>
+      <thead><tr><th>Gate</th><th>Head (served)</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>Progress bars within 2 s warm</td>
+          <td>nova 27 ms, reckon 47 ms, imas-ambix 13 ms</td><td>pass</td></tr>
+        <tr><td>Every view populated within 3 s warm and 10 s cold</td>
+          <td>warm worst 39 ms (reckon crew); cold worst 560 ms (nova graph)</td><td>pass</td></tr>
+        <tr><td>No console error</td><td>0 errors across all nine loads, both arms</td><td>pass</td></tr>
+        <tr><td>Home view transfers under 500 KB</td>
+          <td>cold 1,167,379 B; warm 895,709 B</td><td><strong>miss</strong></td></tr>
+        <tr><td>nova and power_convertor figure first screens under 2 MB, every thumbnail within 2 s warm</td>
+          <td>nova 42 KB cold / 16 KB warm in 4 ms; power_convertor 162 KB cold / 0 B warm in 2 ms</td><td>pass</td></tr>
+          <tr><td>All thirty sampled plans agree on every surface</td>
+          <td>7 of 30 verified, all seven agreeing; 23 could not be read</td><td><strong>unmet</strong></td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>The miss the home view owns is §6's.</strong> The fleet summary the home view renders transfers
+      1.17 MB cold and 897 KB warm, against the 500 KB the gate allows; the plan list, graph, velocity and
+      crew surfaces are all far inside their budgets, so this is the one surface out of budget and it is the
+      home view's load, which §6 delivered.</p>
+
+    <p><strong>The plan-agreement check could not be completed with the instrument this node had.</strong>
+      Ten plans are drawn at random per project from the rows the plan list actually renders, each plan's served
+      HTML is parsed by the site's own reader and its figure is compared with the bar the row shows. Twenty-three
+      of the thirty reads came back <code>409 Conflict</code> from the server while the browser held a page open,
+      across eight spaced retries each, so only imas-ambix's ten and a handful of others were read; every one of
+      the seven that was read agreed exactly (35, 40, 0, 17, 50, 17, 96 against the same figures the row shows).
+      The same URLs answer <code>200</code> from a shell when the browser is idle, so this is a defect in the
+      probe's fetch path under load rather than a disagreement in the site. The criterion is reported unmet, not
+      failed: it is unverified, and a later pass with a quieter fetch path can settle it.</p>
+
+    <p><strong>The negative control fails the gate, so the probe tells a fast site from a slow or empty one.</strong>
+      The same probe ran against a temporary <code>reckon serve</code> on port <code>18766</code>, started from the
+      plan's base revision <code>b98f7a160</code> (the commit before the plan's first section merged as
+      <code>46e5138f2</code>), extracted from the object store into the run's scratch directory. There the plan
+      list never shows a non-zero bar at all (<code>None</code> for nova and reckon), the graph does not populate
+      within 30 s for those two, the home view's warm load is 850 KB, and power_convertor's figure first screen
+      transfers 2.66 MB warm with a 6.1 s cold draw — four of the six gate lines fail.</p>
+
+    <p><strong>What the probe measured, surface by surface.</strong> The figure under
+      <code>/reckon/figures/the-site-answers-fast-and-agrees/the-site-is-measured/reader-side-load-times.svg</code>
+      draws the warm and cold times against the two gates and the transferred bytes against the two budgets, head
+      beside base.</p>
+
+    <p><strong>What this node did not do.</strong> It measured the live served process only; verifying the merged
+      result belongs to a separately dispatched test node. It changed no product source and added no test, so its
+      only artifacts are this record and the figure.</p>
+  </section>
