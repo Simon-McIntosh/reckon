@@ -1417,6 +1417,9 @@ def isolated_reckon_home(request, tmp_path_factory, monkeypatch):
     home = tmp_path_factory.mktemp("reckon-home")
     monkeypatch.setenv("RECKON_HOME", str(home))
     monkeypatch.setenv("XDG_CONFIG_HOME", str(home / "xdg"))
+    # A fleet supervisor started by a test keeps its session temp in the test's
+    # home rather than the node's real /dev/shm.
+    monkeypatch.setenv("FLEET_SESSION_TMP_ROOT", str(home / "shm"))
     monkeypatch.setenv(
         WATCH_ARMING_ENV,
         "on" if request.node.get_closest_marker(ARMING_MARKER) else "off",

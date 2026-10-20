@@ -199,9 +199,12 @@ def _refuse_over_reservation_roster(
 
     if flight.placement_for(backend) is None:
         return
-    if not placement_module.read_reservation(project):
+    reservation = placement_module.read_reservation(project)
+    if not reservation:
         return
-    occupants = placement_module.roster_occupants(occupying)
+    occupants = placement_module.roster_occupants(
+        placement_module.placed_in_reservation(occupying, reservation)
+    )
     refusal = placement_module.reservation_roster_refusal(len(occupants))
     if refusal is None:
         return
@@ -256,7 +259,10 @@ def _refuse_over_concurrency_ceiling(
     if flight.placement_for(backend) is not None:
         from reckon.crew import placement as placement_module
 
-        roster_pointers = _live_runs_across_backends(exclude_run_ids=exclude_run_ids)
+        roster_pointers = placement_module.placed_in_reservation(
+            _live_runs_across_backends(exclude_run_ids=exclude_run_ids),
+            placement_module.read_reservation(project),
+        )
         reservation_occupancy = len(placement_module.roster_occupants(roster_pointers))
     bounds = summary.concurrency_bounds(
         backend,

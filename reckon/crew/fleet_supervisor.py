@@ -86,6 +86,24 @@ STATE_DIR_ENV = "FLEET_STATE_DIR"
 DEFAULT_RUNTIME_SUFFIX = "-fleet"
 DEFAULT_STATE_PARTS = (".local", "state", "fleet")
 
+# A fleet is one whole-node allocation with its own supervisor, sessions,
+# services and worker reservation. Projects with a fleet of their own are
+# isolated from one another on separate nodes; every other project lives on
+# the catch-all fleet, whose state sits at the state root so a reader that
+# names no fleet finds it where the single fleet always was.
+FLEET_NAME_ENV = "FLEET_NAME"
+CATCH_ALL_FLEET = "fleet"
+FLEETS_DIRECTORY_NAME = "fleets"
+FLEETS_FILE_NAME = "fleets.json"
+
+# The sessions' temporary files live in the node's RAM-backed /dev/shm rather
+# than on the shared filesystem, in one directory per allocation so a later
+# fleet on the same node can tell its own from a dead one's. Worker scratch is
+# not here: it can run to gigabytes and stays on the node's /tmp disk.
+SESSION_TMP_ROOT = Path("/dev/shm")  # noqa: S108 - node-local, never shared
+SESSION_TMP_ROOT_ENV = "FLEET_SESSION_TMP_ROOT"
+SESSION_TMP_INFIX = "-fleet-"
+
 REQUEST_FIFO_NAME = "requests"
 RECORD_NAME = "record.json"
 SPAWNED_RECORD_NAME = "spawned.json"
@@ -283,13 +301,165 @@ def runtime_directory(environ: Mapping[str, str] | None = None) -> Path:
     return Path("/tmp") / f"{os.getuid()}{DEFAULT_RUNTIME_SUFFIX}"  # noqa: S108 - node-local
 
 
+def fleet_name(environ: Mapping[str, str] | None = None) -> str:
+    """The fleet this process belongs to: the named one, else the catch-all."""
+    environ = os.environ if environ is None else environ
+    return (environ.get(FLEET_NAME_ENV) or "").strip() or CATCH_ALL_FLEET
+
+
+def fleet_state_directory(name: str | None) -> Path:
+    """Where the named fleet publishes its record; the root for the catch-all.
+
+    A fleet name reaches a path, so it is restricted to a plain name.
+    """
+    root = Path.home().joinpath(*DEFAULT_STATE_PARTS)
+    if not name or name == CATCH_ALL_FLEET:
+        return root
+    if not SAFE_NAME.fullmatch(name):
+        raise ValueError(f"unsafe fleet name: {name!r}")
+    return root / FLEETS_DIRECTORY_NAME / name
+
+
 def state_directory(environ: Mapping[str, str] | None = None) -> Path:
-    """Where the fleet publishes the record naming where it lives."""
+    """Where the fleet publishes the record naming where it lives.
+
+    An explicit state directory wins; otherwise the fleet's name chooses it, so
+    every process a named fleet starts reads and writes that fleet's own state.
+    """
     environ = os.environ if environ is None else environ
     override = environ.get(STATE_DIR_ENV)
     if override:
         return Path(override)
-    return Path.home().joinpath(*DEFAULT_STATE_PARTS)
+    return fleet_state_directory(environ.get(FLEET_NAME_ENV))
+
+
+def fleets_config_path(environ: Mapping[str, str] | None = None) -> Path:
+    """The file naming each fleet with a node of its own and the projects on it."""
+    return config_directory(environ) / FLEETS_FILE_NAME
+
+
+def declared_fleets(environ: Mapping[str, str] | None = None) -> dict[str, list[str]]:
+    """Each named fleet and the projects whose sessions and workers it hosts.
+
+    The file maps a fleet name to a list of project names. A project named by
+    no fleet belongs to the catch-all. An absent or unreadable file declares no
+    named fleet, and an entry that is not a safe name with a list of project
+    names is refused on its own.
+    """
+    path = fleets_config_path(environ)
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return {}
+    except (OSError, ValueError) as exc:
+        log(f"fleets config {path} unreadable: {type(exc).__name__}: {exc}")
+        return {}
+    if not isinstance(raw, Mapping):
+        log(f"fleets config {path} is {type(raw).__name__}, not a mapping")
+        return {}
+    fleets: dict[str, list[str]] = {}
+    for name, projects in raw.items():
+        if (
+            not isinstance(name, str)
+            or not SAFE_NAME.fullmatch(name)
+            or name == CATCH_ALL_FLEET
+            or not isinstance(projects, list)
+            or not all(isinstance(project, str) and project for project in projects)
+        ):
+            log(f"refused fleet {name!r}: expected a plain name and a project list")
+            continue
+        fleets[name] = list(projects)
+    return fleets
+
+
+def fleet_for_project(project: str, environ: Mapping[str, str] | None = None) -> str:
+    """The fleet whose node hosts a project's workers."""
+    for name, projects in declared_fleets(environ).items():
+        if project in projects:
+            return name
+    return CATCH_ALL_FLEET
+
+
+def session_tmp_root(environ: Mapping[str, str] | None = None) -> Path:
+    """The node-local root holding each allocation's session temp directory."""
+    environ = os.environ if environ is None else environ
+    return Path(environ.get(SESSION_TMP_ROOT_ENV) or SESSION_TMP_ROOT)
+
+
+def session_tmp_directory(environ: Mapping[str, str] | None = None) -> Path:
+    """The allocation's own directory for session temporary files on /dev/shm."""
+    environ = os.environ if environ is None else environ
+    job = (environ.get("SLURM_JOB_ID") or "").strip() or "nojob"
+    return session_tmp_root(environ) / f"{os.getuid()}{SESSION_TMP_INFIX}{job}"
+
+
+def prepare_session_tmp(environ: Mapping[str, str] | None = None) -> Path:
+    """Create the session temp directory, or fall back to the node's /tmp.
+
+    Both are node-local. /dev/shm is preferred because it keeps the sessions'
+    small, frequent temporary writes off every disk; a node without a writable
+    /dev/shm uses /tmp instead rather than failing the fleet.
+    """
+    directory = session_tmp_directory(environ)
+    try:
+        directory.mkdir(parents=True, exist_ok=True)
+        os.chmod(directory, 0o700)
+    except OSError as exc:
+        log(f"session temp {directory} unavailable ({exc}); using /tmp")
+        return Path("/tmp")  # noqa: S108 - the node's own tmp, never shared
+    return directory
+
+
+def remove_stale_session_tmp(environ: Mapping[str, str] | None = None) -> list[Path]:
+    """Remove session temp directories other allocations left on this node.
+
+    The fleet holds its node exclusively, so a directory of this user's naming
+    another job belongs to a fleet that has ended. Each removal is logged.
+    """
+    own = session_tmp_directory(environ)
+    removed: list[Path] = []
+    prefix = f"{os.getuid()}{SESSION_TMP_INFIX}"
+    try:
+        candidates = list(session_tmp_root(environ).iterdir())
+    except OSError:
+        return removed
+    for candidate in candidates:
+        if candidate == own or not candidate.name.startswith(prefix):
+            continue
+        with suppress(OSError):
+            if candidate.is_dir() and candidate.stat().st_uid == os.getuid():
+                shutil.rmtree(candidate)
+                removed.append(candidate)
+                log(f"removed stale session temp {candidate}")
+    return removed
+
+
+def reserve_fleet_projects(environ: Mapping[str, str] | None = None) -> list[str]:
+    """Point each project of this named fleet at this allocation for its workers.
+
+    A named fleet hosts its projects' workers on its own node, so on start it
+    publishes a reservation keyed by each of its projects naming its job. The
+    catch-all publishes nothing here: its reservation is the shared one, held
+    and moved by the reservation commands as before. A failure is logged and
+    the fleet carries on, since its sessions do not depend on it.
+    """
+    environ = os.environ if environ is None else environ
+    name = fleet_name(environ)
+    job = (environ.get("SLURM_JOB_ID") or "").strip()
+    if name == CATCH_ALL_FLEET or not job:
+        return []
+    from reckon.crew import placement
+
+    reserved: list[str] = []
+    for project in declared_fleets(environ).get(name, []):
+        try:
+            placement.replace_reservation(job_id=job, project=project, keyed=True)
+        except Exception as exc:  # noqa: BLE001 - logged; the fleet carries on
+            log(f"could not reserve job {job} for {project}: {exc}")
+            continue
+        reserved.append(project)
+        log(f"reserved job {job} for {project}'s workers")
+    return reserved
 
 
 def prepare_runtime(environ: MutableMapping[str, str] | None = None) -> Path:
@@ -310,8 +480,9 @@ def prepare_runtime(environ: MutableMapping[str, str] | None = None) -> Path:
     environ["ZELLIJ_SOCKET_DIR"] = str(socket_dir)
     # Node-local scratch is pinned rather than taken from TMPDIR: the allocator
     # may point TMPDIR at shared storage, and the fleet's runtime sockets must
-    # live on the node that holds them.
-    environ["TMPDIR"] = "/tmp"  # noqa: S108 - the node's own tmp, never shared
+    # live on the node that holds them. The sessions inherit it, so their
+    # temporary files stay on the node, in /dev/shm where it is writable.
+    environ["TMPDIR"] = str(prepare_session_tmp(environ))
     environ["FLEET_JOB_ID"] = environ.get("SLURM_JOB_ID", "")
     return runtime
 
@@ -499,16 +670,27 @@ def declared_services(
         log(f"services config {path} is {type(raw).__name__}, not a mapping")
         return None
     services: dict[str, list[str]] = {}
-    for name, argv in raw.items():
+    own_fleet = fleet_name(environ)
+    for name, entry in raw.items():
         if not isinstance(name, str) or not SAFE_NAME.fullmatch(name):
             log(f"refused service name: {name!r}")
             continue
+        # An entry is its argv, run by the catch-all fleet, or a mapping naming
+        # the argv and the fleet whose node runs it.
+        argv = entry.get("argv") if isinstance(entry, Mapping) else entry
+        owner = (
+            str(entry.get("fleet") or CATCH_ALL_FLEET)
+            if isinstance(entry, Mapping)
+            else CATCH_ALL_FLEET
+        )
         if (
             not isinstance(argv, list)
             or not argv
             or not all(isinstance(argument, str) for argument in argv)
         ):
             log(f"refused service {name}: argv is not a non-empty string list")
+            continue
+        if owner != own_fleet:
             continue
         services[name] = list(argv)
     return services
@@ -1744,10 +1926,12 @@ def serve(
     strip_inherited_variables(environ)
     apply_task_ceiling(environ)
     runtime = prepare_runtime(environ)
+    remove_stale_session_tmp(environ)
     state_directory(environ).mkdir(parents=True, exist_ok=True)
     announce_requeue(environ)
     if not standby:
         publish_record(runtime, environ)
+        reserve_fleet_projects(environ)
     fifo = runtime / REQUEST_FIFO_NAME
     with suppress(FileNotFoundError):
         fifo.unlink()
@@ -1769,6 +1953,7 @@ def serve(
         if not is_standby:
             return
         publish_record(runtime, environ)
+        reserve_fleet_projects(environ)
         is_standby = False
         services.reload()
         log("fleet supervisor promoted")
