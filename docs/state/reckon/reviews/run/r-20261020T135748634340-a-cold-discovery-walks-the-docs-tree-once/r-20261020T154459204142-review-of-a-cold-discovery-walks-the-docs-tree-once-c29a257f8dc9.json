@@ -1,0 +1,50 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/file_memo.py:273",
+    "reckon/metadata_index.py:161",
+    "reckon/metadata_index.py:967",
+    "reckon/metadata_index.py:493",
+    "reckon/compliance.py:88",
+    "reckon/served_code.py:116"
+  ],
+  "completed_at": "2026-10-20T15:52:08.205Z",
+  "dispatched_at": "2026-10-20T15:45:55Z",
+  "findings": [
+    {
+      "file": "reckon/file_memo.py",
+      "line": "276",
+      "severity": "follow-on",
+      "text": "follow-on: commit 1be8728 writes reckon/file_memo.py:276 although the file is absent from the node's declared write paths in both the original dispatch and the resumed one, so the exclusive-scope guarantee the fence enforces is not visible in the record; the coordinator's advice named file_memo.signature_from_stat and no concurrent node held this path, so nothing was collided with, but the write is outside the granted scope."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T135748634340-a-cold-discovery-walks-the-docs-tree-once/figures-revert.log",
+      "line": "3",
+      "severity": "follow-on",
+      "text": "follow-on: figures-revert.log:3 and guard-head.log:4 annotate their head as c59e2c69, but the refusal they demonstrate exists only from 1be8728 (the failure lands at tests/test_a_cold_discovery_walks_the_tree_once.py:133, which c59e2c69 does not contain), so the revision the guard was demonstrated at is misstated and a reader checking the annotation finds no guard there."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is to make one discovery derivation stat each covered docs file at most once; the repair commits keep the derivation's single observation per covered file intact and add the figure-walk guard the prior review found missing, with reckon/metadata_index.py:161 now taking the persisted identity from file_memo.signature_from_stat.\nVERDICT done_when: The done_when requires a >=2,000-covered-file tree at <=1.5 stat/lstat/scandir calls per file, a negative control that reddens the ceiling, and a figure walk that fails on revert; tests/test_a_cold_discovery_walks_the_tree_once.py:173 asserts the ceiling and its manifest logs record head-count.log 2,192 calls (1.096 per covered file) at EXIT=0, negative-control.log 4,192 at EXIT=1 and figures-revert.log EXIT=1 with the guard's AssertionError.\nVERDICT write_paths: The source prompt grants six exclusive paths and the resumed prompt repeats them; the two new commits stay inside three of them (reckon/metadata_index.py, tests/test_a_cold_discovery_walks_the_tree_once.py, docs/evidence/fragments/the-site-answers-fast-and-agrees/a-cold-discovery-walks-the-docs-tree-once.html) but commit 1be8728 also writes reckon/file_memo.py, which is not among them.\nVERDICT manifest: Read; it records commits 1be8728 and c29a257, the 2,192 and 4,192 counts, both repair actions, the 93-test importer gate green at the new head, and it discloses the reckon/file_memo.py write as outside the declared scope, though its baseline_suite and after_suite fields are empty.\nVERDICT diff: Read commits 1be8728 and c29a257 against c59e2c69 commit by commit: four files, +55/-9, moving the stat identity's field order into reckon/file_memo.py:276, delegating reckon/metadata_index.py:161 to it, and adding the figures/-walk refusal at tests/test_a_cold_discovery_walks_the_tree_once.py:130.\nCALL_SITES: reckon/file_memo.py:273, reckon/metadata_index.py:161, reckon/metadata_index.py:967, reckon/metadata_index.py:493, reckon/compliance.py:88, reckon/served_code.py:116\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/metadata_index.py:161 derives the persisted identity from file_memo.signature_from_stat so one derivation still observes each covered file once, unchanged at 2,192 calls in head-count.log.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_cold_discovery_walks_the_tree_once.py:173 asserts the done_when's per-file ceiling and :133 raises on the reverted walk, and each result is recorded (head-count.log EXIT=0, negative-control.log EXIT=1, figures-revert.log EXIT=1).\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: reckon/file_memo.py:276 is written by commit 1be8728 although the file is absent from the declared write paths in both the original and the resumed dispatch.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_cold_discovery_walks_the_tree_once.py:133 raises whenever figure_rows walks figures/, and figures-revert.log shows the reinstated walk reddening the test at EXIT=1, so the assertion fails on the regression it was added to catch.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/file_memo.py:276 follows the module's own docstring idiom at reckon/file_memo.py:270 and neither commit message nor symbol carries a plan or ticket identifier.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/file_memo.py:276 is now the single owner of the stat identity and both reckon/file_memo.py:273 and reckon/metadata_index.py:161 extend it; the search over reckon for the same capability found only the untouched pre-existing mirrors at reckon/ledger.py:1035 and reckon/serve.py:723.\nFINDING reckon/file_memo.py:276 follow-on: commit 1be8728 writes a file outside the node's declared write paths, so the exclusive-scope guarantee the fence enforces is not visible in the record even though the coordinator's advice named file_memo.signature_from_stat and no concurrent node held this path.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T135748634340-a-cold-discovery-walks-the-docs-tree-once/figures-revert.log:3 follow-on: the guard logs annotate their head as c59e2c69, but the refusal they demonstrate exists only from 1be8728, so the revision the figure-revert was shown at is misstated.\n",
+  "review_run_id": "r-20261020T154459204142-review-of-a-cold-discovery-walks-the-docs-tree-once-c29a257f8dc9",
+  "reviewed_base_sha": "c59e2c69eb25dbfd4aca8083e2847144e55fab7d",
+  "reviewed_commits": [
+    "1be872811bd84b23c739307917ed783e6fa18897",
+    "c29a257f8dc9d0c1c032c5255b0b024c84fce9f1"
+  ],
+  "reviewed_head_sha": "c29a257f8dc9d0c1c032c5255b0b024c84fce9f1",
+  "reviewed_run_id": "r-20261020T135748634340-a-cold-discovery-walks-the-docs-tree-once",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T15:53:35.185590+00:00",
+  "total": 104
+}
