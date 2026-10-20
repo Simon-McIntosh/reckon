@@ -1,0 +1,76 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T07:32:32.849Z",
+  "dispatched_at": "2026-10-20T07:19:22Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-is-sized-to-its-risk.html:139",
+      "id": "reasoning-1",
+      "reason": "the node would write a test and a behaviour for a widened dispatch scope that the resume path never produces, and its own done-when assertion (\"a write scope that is the union of the paths they cite\", for a finding outside the fence) would fail against the landed reflex, sending the node to re-open the resume-vs-dispatch decision \u00a712 already settled.",
+      "text": "\u00a73's deliverable says the reflex composes one repair node \"whose write scope is the union of the paths the findings name \u2014 declared at dispatch, so a finding outside the reviewed run's fence is granted rather than refused\", and its done-when at :146 requires observing \"one repair dispatch naming all three, with a write scope that is the union of the paths they cite\"; but `dispatch_repair_for_run` never dispatches \u2014 every return carries `dispatched: False` (`reckon/crew/recovery_repair_dispatch.py:1034`, :1071) and an unpromoted reviewed run whose worker has exited is repaired by resuming the run itself with the findings as advice, while a promoted run is refused rather than dispatched. A resumed worker runs inside the reviewed run's existing fence, which is exactly why \u00a712 exists to widen that fence for a folded finding and why its Why records the grant being refused there. The scope `repair_write_scope` computes (`reckon/crew/repair.py:392`) is laid into the composed advice, not into a dispatched node's grant, so the out-of-fence grant \u00a73 relies on cannot occur on the only path the reflex takes.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-is-sized-to-its-risk.html:170",
+      "id": "done_when-1",
+      "reason": "without a stated negative control the node cannot show the guard discriminates, and a hold that never releases passes the measure as written.",
+      "text": "\u00a76's done-when names no negative control. Every other open section states one explicitly (s3 at :146, s8\u2013s14 each carry \"The negative control is executed and logged\" or \"Negative control.\"), and \u00a76's only guard case \u2014 \"a synthetic project whose suite fails at collection holds a tier-none promotion in a test\" \u2014 demonstrates the hold firing but nothing shows the hold releases when it should not fire (`hold_reason` returns `None` for a passing latest run or a waiver, `reckon/crew/standing_suite.py:515`). A node can satisfy this done-when with a hold that fires on every tier-none promotion.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-is-sized-to-its-risk.html:170",
+      "id": "single_goal-1",
+      "reason": "the section runs in this wave (status `implementable`) and a node carrying three deliverables cannot be reviewed or closed on one verdict; splitting the declaration, the recording and the hold, and dropping the nova clause, changes what the node is.",
+      "text": "\u00a76 bundles three separable deliverables in one node and one done-when: project configuration declaring its `review.suite` command and budget; the coordinator's wave close running that command once and recording collected/passed/failed/errored counts; and the promotion hold on tiers `none` and `light` while the last run failed to collect or overran its budget. The done-when spans all three (\"reckon and nova each declare \u2026; a synthetic project \u2026 holds a tier-none promotion in a test; and reckon records at least one standing-suite run \u2026\"), so no single verdict closes the node and its gate proves none of the three independently. The rewrite also leaves the nova half of the declaration inside a reckon node's done-when while the closing sentence assigns nova's part to nova's coordinator, so the measure still names a change in another repository as the node's own.",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-is-sized-to-its-risk.html:174",
+      "id": "wiring-1",
+      "reason": "an unmet dependency the plan needs (s7 \u2192 s3, s6) is undeclared, so the build order the section states in prose is not enforced anywhere the scheduler reads.",
+      "text": "\u00a77's done-when reads \"\u00a73 closes. \u00a72, \u00a74 and \u00a75 have landed and \u00a76 is met\", but the plan declares no `depends-on` for \u00a77: `plan-section-depends-on` carries only `{\"s14\": [\"a-review-is-sized-to-its-risk#s13\"]}`, and \u00a77's own `<section data-reckon=\"section\" data-id=\"s7\" \u2026 data-links=\"\">` is empty. \u00a77 is status `implementable`, so it is dispatchable as a node, yet nothing in the wiring holds it until \u00a73 has closed and \u00a76 is met \u2014 the two open sections it now closes on. The roadmap can schedule the rollup ahead of the sections that define its completion, and a node dispatched to \u00a77 has no deliverable of its own beyond that closure.",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "012245c36bafb2f6841eb70db2ae11089c8ed75c5d631e3d86cb252af0eca7d3",
+  "plan_slug": "a-review-is-sized-to-its-risk",
+  "plan_version": 189,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T071807404574-plan-review-of-a-review-is-sized-to-its-risk",
+  "reviewed_blob_sha": "006cf37a972ceb098207ad609c077126476c9fff",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a77's cited revision `1135b00d9` resolves; `review.suite` resolves (`reckon/schema/flight.yaml:999`), \u00a73's cited module `reckon/crew/recovery_repair_dispatch.py` and its decline-only branch at line 765 resolve, and \u00a76's `suite-runs` directory resolves.",
+    "done_when": "a finding \u2014 \u00a76's done-when declares no negative control, so its synthetic-project case shows the hold fires but never shows it releases.",
+    "evidence_paths": "pass \u2014 \u00a76's counts land under the project's `suite-runs` directory (`reckon/crew/standing_suite.py:63`, committed as `docs/state/reckon/suite-runs/`), \u00a73's base and head logs go in the run directory; neither is a node-local temporary path.",
+    "naming": "pass \u2014 the changed text names mechanisms (`review.suite`, `suite-runs`, `blocking_findings`) and carries no plan label, ticket number or version tag into a symbol or comment.",
+    "reasoning": "a finding \u2014 \u00a73's deliverable promises the reflex dispatches one repair node whose write scope grants a finding outside the reviewed run's fence, but the reflex never dispatches and only resumes that run inside its existing fence.",
+    "single_goal": "a finding \u2014 \u00a76's single node carries three separable deliverables in one done-when: the `review.suite` declaration, the wave-close run-and-record, and the none/light promotion hold.",
+    "wiring": "a finding \u2014 \u00a77's done-when requires \u00a77 to close only once \u00a73 has closed and \u00a76 is met, but the plan declares no dependency for it (`plan-section-depends-on` carries only `s14 \u2192 a-review-is-sized-to-its-risk#s13`)."
+  },
+  "section_digests": {
+    "_document": "608ebca3acc9631af825886c397a17445078bdda5b09f7384da8d502634b94a4",
+    "s1": "1bca4570a6dc141df8190260147c4603fdbd4e237bbd0fa1f635f166cdf5637b",
+    "s10": "a07df53b22b91585addeb98d5e88c71b2cd22d03d1da30561685f96e03a0aa2e",
+    "s11": "6bbc86e3fa4868ea28a6bedc4cfe44870bae0e69abb21473626929baf05d9b00",
+    "s12": "1931543f8774db891c6e51b885d5953ddc9f2d3b93d870f9c4f9d4a2156593c4",
+    "s13": "654b501c481eae64e085c1884ebb02603fb65497f5c801e8332e7dee8814e93e",
+    "s14": "b93a34f77c5761b652f5edda5ed95e6fd385eb6671a15404ad6d1c73e28fcd17",
+    "s2": "d87e94711b1191be6062f6581f0bf3c2f7793876a327c35be59e3dd37bbe72c8",
+    "s3": "01f0bb03e5e2d90bb59c75a02a299533b89d6658277a02365b051a9611acd1bc",
+    "s4": "834dc20a74581e06fc6c6b99a07ea7b628c9c36d7c390cee1b4e599eeec7b070",
+    "s5": "dd9455e66ea742a997a12400b194e02c6557b19217a06db0a58f82d7d82b8fde",
+    "s6": "0dac86ab204f96e2a86c1114dcc9827fd4555d53a122e9c151789965b25f9a18",
+    "s7": "143784c1871fb72acb67e0ca8d619cb3760d180a84ec84614a147a9cfb515315",
+    "s8": "a12e7aff5d1cfd541706cc743c3d78ed9c0a96dba6af2c4f8b6dbb2309ea9582",
+    "s9": "3cc2a52825983e24d6bcb3f342f8f21cbd91f2144772c41418b9a0362bf5da37"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T07:35:48.175768+00:00"
+}
