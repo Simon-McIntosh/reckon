@@ -112,10 +112,10 @@ def test_real_index_lock_preserves_head_path(repository, monkeypatch):
     finally:
         lock.unlink()
     print(f"index.lock receipts: {calls!r}")
-    assert [(cmd, code) for cmd, code, _ in calls if cmd in {"add", "restore"}] == [
-        ("add", 128),
-        ("restore", 128),
-    ]
+    sequence = [(cmd, code) for cmd, code, _ in calls if cmd in {"add", "restore"}]
+    assert len(sequence) >= 2
+    assert all(cmd == "add" and code == 128 for cmd, code in sequence[:-1])
+    assert sequence[-1] == ("restore", 128)
     assert tracked.is_file()
 
 

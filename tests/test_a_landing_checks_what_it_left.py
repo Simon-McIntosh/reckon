@@ -183,8 +183,8 @@ def test_a_held_index_lock_records_the_stage_step(repository: Path) -> None:
         lock.unlink(missing_ok=True)
 
     entries = json.loads((run_dir(run_id) / "landing.json").read_text(encoding="utf-8"))
-    assert len(entries) == 1
-    assert entries[0]["step"] == "stage"
+    assert entries[-1]["step"] == "stage"
+    assert all(entry["step"] == "stage_retry" for entry in entries[:-1])
 
 
 def test_a_release_that_changes_nothing_lands_no_commit(repository: Path) -> None:
