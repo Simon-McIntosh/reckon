@@ -156,9 +156,7 @@ def _args(repo: Path) -> list[str]:
     ]
 
 
-def _dispatch(
-    repo: Path, extra: list[str]
-) -> tuple[int, dict, list[dict]]:
+def _dispatch(repo: Path, extra: list[str]) -> tuple[int, dict, list[dict]]:
     """Dispatch through the CLI, capturing the settings the plan resolved.
 
     ``plan.backend_settings`` is the launched settings the dispatch path
@@ -180,9 +178,7 @@ def _dispatch(
     return result.exit_code, run, planned
 
 
-@pytest.mark.parametrize(
-    ("lane", "key", "model", "effort", "budget"), DECLARED_MODELS
-)
+@pytest.mark.parametrize(("lane", "key", "model", "effort", "budget"), DECLARED_MODELS)
 def test_lane_model_launches_at_its_declared_settings(
     declared_repo: Path, lane: str, key: str, model: str, effort: str, budget: str
 ) -> None:
@@ -253,6 +249,12 @@ def test_explicit_effort_wins_on_a_lane_model(declared_repo: Path) -> None:
 def test_candidate_rows_show_what_the_dispatch_launches(
     declared_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Every offered row resolves what a dispatch of that row would plan.
+
+    The expectation is the settings the dispatch path plans for the backend and
+    model key the row itself names, so a candidate builder that resolves any
+    differently from a dispatch fails here.
+    """
     config = flight.resolve("sample", checkout_path=declared_repo).config
     request = PickRequest(
         "sample",
@@ -267,7 +269,7 @@ def test_candidate_rows_show_what_the_dispatch_launches(
         capability={},
         estimated_context=100,
     )
-    rows: dict[str, dict] = {}
+    rows: dict[object, dict] = {}
 
     def lane_gate(settings):
         rows[settings.get("model")] = dict(settings)
@@ -296,20 +298,19 @@ def test_candidate_rows_show_what_the_dispatch_launches(
     assert offered
     for row in offered:
         assert row.model in rows, row.model
-        assert row.effort == rows[row.model].get("effort")
-    for lane, key, model, effort, budget in DECLARED_MODELS:
-        code, _run, planned = _dispatch(
-            declared_repo,
-            ["--route", "deterministic", "--backend", lane, "--model", key],
-        )
+        row_settings = rows[row.model]
+        model_key = row_settings.get("model_key")
+        # The expectation comes from the dispatch path, asked for the backend
+        # and model key this row names, so a candidate builder that resolves
+        # any differently from a dispatch is caught here.
+        extra = ["--route", "deterministic", "--backend", row.backend]
+        if model_key:
+            extra += ["--model", str(model_key)]
+        code, _run, planned = _dispatch(declared_repo, extra)
         assert code == 0
-        resolved = planned[0]
-        assert rows[model].get("model_key") == resolved.get("model_key")
-        assert (
-            rows[model]["effort"],
-            rows[model]["time_budget"],
-        ) == (
-            resolved["effort"],
-            resolved["time_budget"],
-        )
-        assert (rows[model]["effort"], rows[model]["time_budget"]) == (effort, budget)
+        assert len(planned) == 1
+        launched = planned[0]
+        assert row.effort == launched["effort"]
+        assert row_settings["time_budget"] == launched["time_budget"]
+        assert model_key == launched.get("model_key")
+        assert row.model == launched.get("model")
