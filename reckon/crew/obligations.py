@@ -417,34 +417,6 @@ def _review_tier_for_duty(row: Mapping[str, Any], pointer: Mapping[str, Any]) ->
         return review_tiers.FULL
 
 
-def _promotion_command(row: Mapping[str, Any]) -> str:
-    """The promotion a run owed no review is ready for.
-
-    A completed run's own action is composed for the reader who will clear the
-    review duty, so for a scoring run it names the review dispatch. A run the
-    tier rule exempts has no such review coming: leaving that action on the
-    duty would print a command nothing will ever run beside a kind that says
-    the run is ready to promote. The duty therefore names the completion
-    instead, over the citations the manifest carries, and the no-commit form
-    when it cites none — the same shape the classifier prints for a completed
-    run whose review is in hand.
-    """
-    run_id = str(row.get("run_id") or "")
-    citations = [
-        str(commit) for commit in (row.get("manifest_commits") or []) if commit
-    ]
-    if not citations:
-        return (
-            f"reckon crew complete --run {run_id} --gate not-run "
-            "--no-commit '<why the run produced no commit>' "
-            "--outcome '<what the run produced>'"
-        )
-    action = f"reckon crew complete --run {run_id} --gate <verdict>"
-    for commit in citations:
-        action += f" --commit {commit}"
-    return action
-
-
 def _review_duty_item(
     project: str,
     row: Mapping[str, Any],
