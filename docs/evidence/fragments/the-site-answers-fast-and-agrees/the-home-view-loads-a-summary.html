@@ -92,4 +92,31 @@
     The fleet-summary producer still needs to emit those typed rows for real
     projects; this browser fixture proves the consumer contract only.
   </p>
+  <p>
+    That producer dependency is now closed. Each project row captures the
+    local clock while the background rollup is computed, selects evidence
+    and plans with effective status done or shipped whose edited stamp falls
+    within the preceding 72 hours, and emits the seven newest as compact
+    <code>recent_landed</code> rows. Each row carries its type (defaulting to
+    plan), slug, navigation key, title, edited stamp and project. The home
+    merges visible projects' rows and displays the seven newest across the
+    fleet. The stored rollup's later HTTP read does not restart that window.
+  </p>
+  <p>
+    The served-summary case first failed because <code>recent_landed</code>
+    was absent (<strong>1 failed, EXIT=1</strong> in
+    <code>landed-server-reproduction.log</code>). At
+    <code>5d403138bee0a5dab2e1936874533d6d2a91ccdc</code>, the case
+    proves a done plan, evidence documents, an excluded older plan, the type
+    and navigation fields, and the seven-row project bound. Its expected
+    stamps come from its fixture dates. Removing the emitted type makes that
+    same case fail (<strong>1 failed, EXIT=1</strong> in
+    <code>landed-negative-type.log</code>). Five focused server and browser
+    checks passed in <code>landed-focused-retry.log</code>. The requested
+    14-file SPA and server gate reports <strong>83 passed, 4 failed,
+    EXIT=1</strong> in <code>landed-combined-gate-retry.log</code>; those
+    four failure IDs are the inherited project-visibility cases. An earlier
+    attempt had one additional test-server readiness timeout before browser
+    navigation; that case passed alone and in the repeated gate.
+  </p>
 </section>
