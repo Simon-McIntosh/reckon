@@ -758,6 +758,14 @@ def _review_changed_scope(
     review rather than the lighter one. A record that names no readable tree
     measures no commit either: the diff belongs to the run's own tree, and the
     directory the promotion happens to run in cannot supply it.
+
+    The cumulative diff carries the same distinction. When the cited commits'
+    diff cannot be read — a first commit has no parent to diff against, and a
+    missing object or a transient git error reads the same way — it reports an
+    empty path list marked unavailable, and that empty list is not a measured
+    run that changed nothing. Reading it as measured would hand the tier
+    resolver no paths and record a runtime-source run as owing no review, so
+    the unavailable mark is carried out as unmeasured instead.
     """
     tree = _record_tree(record)
     if commit_list:
@@ -771,7 +779,7 @@ def _review_changed_scope(
             if lines.get("available", True)
             else None
         )
-        return cumulative.paths, changed_lines, True
+        return cumulative.paths, changed_lines, bool(lines.get("available", True))
     declared = _fresh_manifest(record)
     declares_paths = bool(
         declared
