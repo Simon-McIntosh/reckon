@@ -1440,25 +1440,45 @@ for line in sys.stdin:
 """
 
 
+#: The file a served child's stderr is kept in, named beside the code it serves
+#: so a reader can find a death's cause without being told a path.
+CHILD_STDERR_NAME = ".reckon-served-child.stderr.log"
+
+
+def child_stderr_path(root: Path) -> Path:
+    """Where a served child's stderr is kept for a reader after it dies.
+
+    One file per served tree, rewritten on every spawn, so it holds the most
+    recent child's stderr rather than the accumulation of every death. A child
+    that floods it still bounds the file to one child's output.
+    """
+    return Path(root) / CHILD_STDERR_NAME
+
+
 def spawn_served_child(root: Path) -> subprocess.Popen:
     """Launch one persistent child holding the tree's current code.
 
     The child inherits this process's environment so its interpreter and site
     packages resolve the same way, and reads requests from a pipe the caller
-    writes and closes.
+    writes and closes. Its stderr goes to :func:`child_stderr_path`, truncated
+    here, so a child that dies before answering leaves its cause on disk.
     """
 
     environment = dict(os.environ)
     environment.setdefault("PYTHONUNBUFFERED", "1")
-    return subprocess.Popen(
-        [sys.executable, "-c", SERVED_CHILD_PROGRAM, str(root)],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        text=True,
-        bufsize=1,
-        env=environment,
-    )
+    stderr = open(child_stderr_path(root), "wb")  # noqa: SIM115 - closed below
+    try:
+        return subprocess.Popen(
+            [sys.executable, "-c", SERVED_CHILD_PROGRAM, str(root)],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=stderr,
+            text=True,
+            bufsize=1,
+            env=environment,
+        )
+    finally:
+        stderr.close()
 
 
 def parse_child_reply(line: str) -> dict | None:
@@ -1597,6 +1617,12 @@ class CurrentCodeServer:
     one import per commit rather than one per call. Warming is by the readiness
     probe: until the probe has answered the child is cold and no call is routed
     to it, which is what keeps a cold child from making a caller wait.
+
+    A child that dies is replaced, but only up to ``death_bound`` consecutive
+    deaths within one stamp: past that the server stops respawning and lets the
+    running image answer every call until the stamp moves, so a child that dies
+    right after every spawn costs a bounded number of imports rather than one
+    per call.
     """
 
     def __init__(
@@ -1605,30 +1631,46 @@ class CurrentCodeServer:
         *,
         spawn: Callable[[Path], subprocess.Popen] | None = None,
         timeout_s: float = 120.0,
+        death_bound: int = 3,
     ) -> None:
         self._root = Path(root)
         self._spawn = spawn or spawn_served_child
         self._timeout_s = timeout_s
+        self._death_bound = max(1, int(death_bound))
+        self._deaths = 0
+        self._backed_off = False
         self._stamp: str | None = None
         self._child: ServedChild | None = None
         self._spawns = 0
         self._lock = threading.Lock()
 
     def _child_for(self, stamp: str) -> ServedChild | None:
-        """The live child for ``stamp``, starting exactly one when there is none.
+        """The live child for ``stamp``, starting one while within the bound.
 
         A child that has died is not the child for this stamp however well its
         stamp matches: reusing it makes every routed call take the may-have-
         landed timeout until the stamp happens to move again. A dead child is
-        dropped and one replacement is started, which is cold until its own
-        probe answers, so calls are served on the running image meanwhile.
+        dropped and counted; one replacement is started while the consecutive
+        deaths are under the bound, and past it the server backs off and starts
+        none until the stamp moves. A replacement is cold until its own probe
+        answers, so calls are served on the running image meanwhile.
         """
         with self._lock:
-            if self._child is not None and (
-                self._stamp != stamp or not self._child.alive
-            ):
+            if self._stamp is not None and self._stamp != stamp:
+                if self._child is not None:
+                    self._child.stop()
+                    self._child = None
+                self._deaths = 0
+                self._backed_off = False
+            if self._child is not None and not self._child.alive:
                 self._child.stop()
                 self._child = None
+                self._deaths += 1
+                if self._deaths >= self._death_bound:
+                    self._backed_off = True
+            if self._backed_off:
+                self._stamp = stamp
+                return None
             if self._child is not None:
                 return self._child
             self._stamp = stamp
@@ -1645,6 +1687,16 @@ class CurrentCodeServer:
             child.probe()
             self._child = child
             return child
+
+    @property
+    def death_bound(self) -> int:
+        """The most consecutive child deaths one stamp may spawn replacements for."""
+        return self._death_bound
+
+    @property
+    def backed_off(self) -> bool:
+        """Whether the server has stopped respawning until the stamp moves."""
+        return self._backed_off
 
     def current_stamp(self) -> str | None:
         """The stamp the live child was started for, or None when there is none."""

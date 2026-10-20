@@ -1,0 +1,58 @@
+<!-- Evidence anchor: epw-a-dying-child-is-backed-off -->
+
+<section id="epw-a-dying-child-is-backed-off-evidence">
+  <h2>A current-code child that keeps dying is backed off within one code stamp</h2>
+
+  <p id="epw-a-dying-child-is-backed-off-mechanism">
+    The MCP server serves the checkout's current code from one persistent child behind the stdio
+    front, started when the guard first sees the stamp move and replaced when it dies. A child that
+    died right after every spawn was therefore replaced on every guarded call, so the session paid
+    one interpreter import per call, and silently, because the spawn sent the child's stderr to
+    <code>DEVNULL</code>. <code>spawn_served_child</code> was changed to write the child's stderr to
+    a bounded file named beside the served tree, <code>child_stderr_path(root)</code> =
+    <code>&lt;root&gt;/.reckon-served-child.stderr.log</code>. The file is rewritten on every spawn,
+    so it holds the most recent child's output rather than the accumulation of every death, and the
+    last death's cause stays readable after the child is gone.
+  </p>
+
+  <p id="epw-a-dying-child-is-backed-off-bound">
+    <code>CurrentCodeServer</code> now counts consecutive child deaths within one code stamp
+    (<code>death_bound</code>, default 3). A child found dead is dropped and counted; a replacement
+    is started while the count is under the bound, and at the bound the server backs off and starts
+    none until the stamp moves. While backed off, <code>_child_for</code> returns <code>None</code>,
+    so <code>warm</code> and <code>run</code> answer nothing and the running image serves every call
+    — the same path §11 uses for a cold child, and no answer the caller sees changes. A stamp move
+    clears the count and the next call starts exactly one fresh child.
+  </p>
+
+  <p id="epw-a-dying-child-is-backed-off-cases">
+    <code>tests/test_a_dying_child_is_backed_off.py</code> drives the guard over a temporary tree
+    with a child that prints a marker to stderr and exits right after every spawn, launched through
+    the server's own <code>spawn_served_child</code> so the file under test is the one the product
+    writes. Three cases: a run of twenty calls starts no more children than the bound, every call is
+    answered by the running image, and the server is backed off; the last death's stderr is readable
+    at the named path and holds that death's output alone; a moved stamp clears the backoff and
+    starts one fresh child.
+  </p>
+
+  <p id="epw-a-dying-child-is-backed-off-gate">
+    The gate ran <code>tests/test_a_dying_child_is_backed_off.py</code>,
+    <code>tests/test_a_slow_child_never_forces_a_reconnect.py</code> and
+    <code>tests/test_every_module_fits_a_worker_window.py</code> at the node head (revision
+    <code>3b69586db</code>): <strong>14 passed, 1 failed</strong>, against the base arm's (revision
+    <code>2b5c5ce2e</code>) <em>11 passed, 1 failed</em> — zero added failures, three added cases.
+    The carried failure is <code>test_every_module_fits_a_worker_window</code> and is pre-existing at
+    the base: <code>reckon/crew/review.py</code> (52,048 estimated tokens) and
+    <code>reckon/ledger.py</code> (51,666) exceed the 50,000 bound, both outside this node's write
+    scope. <code>ruff format --check</code> and <code>ruff check</code> are clean on both changed
+    paths, no more than at the base.
+  </p>
+
+  <p id="epw-a-dying-child-is-backed-off-control">
+    The declared negative control removes the bound on consecutive child deaths, restoring the
+    per-call respawn: the spawn-count case then fails, its log kept at
+    <code>negative-control.log</code> under the run directory, exiting <code>EXIT=1</code> with
+    <code>FAILED tests/test_a_dying_child_is_backed_off.py::test_twenty_calls_start_no_more_children_than_the_bound</code>
+    — an id the head arm does not fail.
+  </p>
+</section>
