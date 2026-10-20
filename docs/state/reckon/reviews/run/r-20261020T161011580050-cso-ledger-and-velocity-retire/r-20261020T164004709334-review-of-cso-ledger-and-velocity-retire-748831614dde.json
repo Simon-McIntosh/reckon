@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-20T16:51:40.883Z",
+  "dispatched_at": "2026-10-20T16:41:02Z",
+  "findings": [
+    {
+      "file": "tests/test_derived_figures_reach_a_reader.py",
+      "line": "119",
+      "severity": "blocking",
+      "text": "the file drives `crew ledger --view records` at its CLI case and the retired verb now exits 10, so the case fails at this head; logs/out-of-scope-callers-base.log is 46 passed EXIT=0 against logs/out-of-scope-callers-head.log 6 failed, 40 passed EXIT=1, so landing this head alone leaves the repository suite red until the repoint lands."
+    },
+    {
+      "file": "tests/test_read_verbs_retire_behind_crew_view.py",
+      "line": "58",
+      "severity": "follow-on",
+      "text": "the SHARED_FIELDS comment names the plan node id `cso-ledger-and-velocity-retire`, a plan label in a source comment that the repository naming rule forbids; rename it to the mechanism (the base revision the callers moved at)."
+    },
+    {
+      "file": "reckon/crew/tombstones.py",
+      "line": "256",
+      "severity": "follow-on",
+      "text": "successor_invocation carries the caller's arguments through unfiltered, so `crew ledger --view records` emits `reckon crew view ledger --project x --view records`, which exits 2 with `No such option '--view'`; the detail field carries the correct mapping but the invocation a caller copies does not resolve."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to move every reckon caller and citation of crew ledger and crew velocity to crew view and tombstone both verbs; reckon/crew_run_commands.py:2719-2722 binds crew_ledger and crew_velocity to tombstone_command and the D20 remedy at reckon/crew/refusals.py:78 now reads `reckon crew view records`, so the production caller and every citation under reckon/ and skills/ moved and both names exit 10.\nVERDICT done_when: the done-when names a nine-file gate that adds zero failures against the base arm; logs/gate-head.log ends `1 failed, 122 passed` EXIT=1 and logs/gate-base.log ends `1 failed, 115 passed` EXIT=1, both failing only test_every_module_fits_a_worker_window, an id the manifest attributes to three untouched modules.\nVERDICT write_paths: the source dispatch fences sixteen paths; git diff 33bb7770..748831614 changes fourteen files and every one is inside that fence, with the declared reckon/cli.py and the figure directory left unwritten.\nVERDICT manifest: the manifest records the gate command, both arm logs with revision headers and EXIT= footers, a red negative control, and the two out-of-scope test callers as follow_ons; the head log's first line and after_suite.revision both name the base plus a short head rather than the head sha alone.\nVERDICT diff: one commit, 748831614, read against base 33bb7770: it removes the two command definitions, adds the ledger and velocity tombstone rows with a new positional field, moves the callers and skill citations, and adds tests/test_read_verbs_retire_behind_crew_view.py.\nCALL_SITES: reckon/crew_dispatch_commands.py:30 _CrewGroup.get_command resolves a retired name through tombstone_command, reckon/crew/tombstones.py:296 tombstone_payload calls successor_invocation, reckon/crew_run_commands.py:2719 crew_ledger binding, reckon/crew_run_commands.py:2722 crew_velocity binding, reckon/crew/refusals.py:101 DISPATCH_REFUSAL_REMEDIES lookup serving the D20 remedy\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:2719-2722 tombstones both verbs and the moved remedy at reckon/crew/refusals.py:78 reaches crew view records, but two test callers of the retired verb are left in place by the declared scope.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/gate-head.log and logs/gate-base.log record both arms with revision headers and EXIT= footers, but the head log's first line reads `33bb77708 + node change 748831614` rather than the head sha alone, so after_suite.revision cannot be matched to a commit.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in git diff 33bb7770..748831614 is inside the fence at prompt.txt, and the change leaves six failing ids in two out-of-scope test files it necessarily cannot reach.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_read_verbs_retire_behind_crew_view.py:246 asserts each tombstone's successor against the literal in SUCCESSORS and the recorded negative control reddens it, while the ledger comparison at :57-62 shares only the three ledger-identity fields.\nSCORE fit: 13\nJUSTIFICATION fit: tests/test_read_verbs_retire_behind_crew_view.py:58 names the plan node id `cso-ledger-and-velocity-retire` in a source comment, which the repository naming rule forbids in comments.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/tombstones.py:256 extends successor_invocation with a positional field rather than forking a successor mechanism, and a search of reckon for a positional-successor mechanism found none.\nFINDING tests/test_derived_figures_reach_a_reader.py:119 blocking: the file drives `crew ledger --view records` at its CLI case and the retired verb now exits 10, so the case fails at this head; logs/out-of-scope-callers-base.log is 46 passed EXIT=0 against logs/out-of-scope-callers-head.log 6 failed, 40 passed EXIT=1, so landing this head alone leaves the repository suite red until the repoint lands.\nFINDING tests/test_read_verbs_retire_behind_crew_view.py:58 follow-on: the SHARED_FIELDS comment names the plan node id `cso-ledger-and-velocity-retire`, a plan label in a source comment that the repository naming rule forbids; rename it to the mechanism (the base revision the callers moved at).\nFINDING reckon/crew/tombstones.py:256 follow-on: successor_invocation carries the caller's arguments through unfiltered, so `crew ledger --view records` emits `reckon crew view ledger --project x --view records`, which exits 2 with `No such option '--view'`; the detail field carries the correct mapping but the invocation a caller copies does not resolve.\n",
+  "review_run_id": "r-20261020T164004709334-review-of-cso-ledger-and-velocity-retire-748831614dde",
+  "reviewed_base_sha": "33bb77708db6069b7ce6fc018e2cc47c146fffd2",
+  "reviewed_head_sha": "748831614dde572026fad63d5cf95de2bb72a25a",
+  "reviewed_run_id": "r-20261020T161011580050-cso-ledger-and-velocity-retire",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 13,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T16:49:27.050338+00:00",
+  "total": 100
+}

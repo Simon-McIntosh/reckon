@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-10-20T17:30:33Z",
+  "findings": [
+    {
+      "file": "tests/test_ledger.py",
+      "line": "2426",
+      "severity": "follow-on",
+      "text": "the records assertion compares two calls to the code under test \u2014 the CLI read `_cli_view(\"records\")` at :2418 and `mcp._crew(PROJECT, view=\"records\", ...)` \u2014 and both resolve the same `serve_crew_view` owner, so a regression that empties or corrupts the records document leaves both sides equal and the assertion true; it guards CLI/MCP surface divergence only, not the document's content, so it cannot redden on the change it appears to cover."
+    },
+    {
+      "file": "tests/test_ledger.py",
+      "line": "2430",
+      "severity": "follow-on",
+      "text": "`committed[\"holds\"][0][\"hold_id\"]` and `held_cli[\"holds\"][0][\"hold_id\"]` are the MCP and CLI reads of one document from one store, so the equality holds whatever the hold record contains and would not redden if hold_id derivation regressed; the block's independent guard is the duration literal at :2429, not this line."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T161011580050-cso-ledger-and-velocity-retire/manifest.md",
+      "line": "17",
+      "severity": "follow-on",
+      "text": "baseline_suite.command carries the angle-bracket placeholder `<base tree copies of the eleven files the base revision carries>` in place of the file list, so the recorded command is not re-runnable as written; the literal list is recoverable from logs/gate-base.log line 2, but the field as stored does not name what ran."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source goal is to move every reckon caller and citation of `crew ledger` and `crew velocity` to `crew view` and tombstone both; the increment completes the caller half \u2014 tests/test_derived_figures_reach_a_reader.py:119, tests/test_old_names_resolve.py:152 and tests/test_ledger.py:2418 now drive `crew view records`, and no `crew ledger` CLI invocation remains in reckon/ or tests/.\nVERDICT done_when: the source done-when names a nine-file gate adding zero failures against a base arm; the manifest's after_suite records the extended twelve-file gate at a50b336e9 as 2 failed / 264 passed and baseline_suite the base arm at 33bb77708 as 2 failed / 257 passed, logs/gate-head.log and logs/gate-base.log each opening with their revision and closing `EXIT=1` and both failing the same two ids.\nVERDICT write_paths: the source prompt fences twenty paths; `git diff --stat 748831614 f38a69738` changes four files and every one \u2014 docs/evidence/fragments/the-crew-surface-is-one-tool-and-a-few-verbs/cso-ledger-and-velocity-retire.html, tests/test_derived_figures_reach_a_reader.py, tests/test_ledger.py, tests/test_old_names_resolve.py \u2014 is inside that fence.\nVERDICT manifest: read; it records both arm JSON blocks, the gate command, six log paths and a red negative control, and the two `EXIT=` footers match the logs I opened, but baseline_suite.command substitutes a placeholder for the base file list.\nVERDICT diff: two commits read against base 748831614 \u2014 a50b336e9 repoints the three CLI callers and rewrites the hold-history case around `crew view ledger`, f38a69738 rewrites the fragment's gate and follow-on prose to the repointed head; no production file changed.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_ledger.py:2418, tests/test_derived_figures_reach_a_reader.py:119 and tests/test_old_names_resolve.py:152 all reach `crew view records`, completing the caller migration the node goal states.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/gate-head.log ends `2 failed, 264 passed in 253.13s` EXIT=1 at a50b336e9 and logs/gate-base.log `2 failed, 257 passed` EXIT=1 at 33bb77708 with the same two ids, but baseline_suite.command on manifest.md:17 stores a placeholder rather than the file list that ran.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: all four changed paths in `git diff 748831614 f38a69738` sit inside the source fence's extended write list, and the diff adds no artifact the goal does not imply.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_ledger.py:2412 and tests/test_derived_figures_reach_a_reader.py:126 assert `result.exit_code == 0`, so reverting the repoint to the retired verb (exit 10) reddens them, while the parity assertion at :2426 compares the code under test against itself and cannot fail on that regression.\nSCORE fit: 16\nJUSTIFICATION fit: tests/test_ledger.py:2399 introduces `_cli_view` in the surrounding CliRunner idiom and the added comment states the document split in mechanism terms, introducing no forbidden plan label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the increment repoints to the existing `crew view records` and `crew view ledger` owner (reckon/mcp_views.py:3598 CREW_VIEWS, :3736 the views branch) rather than forking a read mechanism, and the hold-history read moves to `crew view ledger`, which already carries it.\nFINDING tests/test_ledger.py:2426 follow-on: the records assertion compares two calls to the code under test (CLI at :2418 and MCP at :2427), both resolving the same `serve_crew_view` owner, so a regression that empties the records document leaves both sides equal and the assertion true.\nFINDING tests/test_ledger.py:2430 follow-on: the hold_id equality is the MCP and CLI reads of one document from one store, so it holds whatever the record contains and does not guard hold_id derivation.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T161011580050-cso-ledger-and-velocity-retire/manifest.md:17 follow-on: baseline_suite.command carries the placeholder `<base tree copies of the eleven files the base revision carries>` in place of the file list, so the stored command is not re-runnable as written.\n",
+  "review_run_id": "r-20261020T172945596426-review-of-cso-ledger-and-velocity-retire-f38a69738ec0",
+  "reviewed_base_sha": "748831614dde572026fad63d5cf95de2bb72a25a",
+  "reviewed_head_sha": "f38a69738ec07e7ddd36cd91ec9358ed072a3f0c",
+  "reviewed_run_id": "r-20261020T161011580050-cso-ledger-and-velocity-retire",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T18:02:00+00:00",
+  "total": 105
+}
