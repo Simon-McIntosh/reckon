@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T13:50:31.134Z",
+  "dispatched_at": "2026-10-20T13:41:05Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-site-answers-fast-and-agrees.html:354",
+      "id": "reasoning-1",
+      "reason": "the share stays \"about half\" either way and the expected post-fix read (about 6 s against \u00a711's 10 s budget) does not move a section, a node or a gate, so only the paragraph's arithmetic needs correcting, and it would not send a node down a different path.",
+      "text": "\"three walks take 12.0 s of that run's 22.2 s profiled, about 54 %, or roughly 6.8 s of the 12.7 s unprofiled\" adds three cumulative profile times that nest, so it double-counts 1.468 s and the true union is about 10.5 s of 22.2 s profiled (about 47 %, about 6.0 s of the 12.7 s), which would make the post-fix expectation about 6.7 s rather than \"roughly 6 s\"; the reproduction is `run2-warm.prof`, where `_covered_files_for_project`'s callers are `_walk_discovery_signature` (cum 1.468, 3 calls) and `_scan_resources` (cum 3.186, 2 calls) against `_walk_discovery_signature` cum 3.821",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "40d3955a81a2774d057cb62ea176b5a249194565173ae1e043cb9afcfbaf36b2",
+  "plan_slug": "the-site-answers-fast-and-agrees",
+  "plan_version": 120,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T134016811966-plan-review-of-the-site-answers-fast-and-agrees",
+  "reviewed_blob_sha": "2de6ab3ff4a182bb5d580c5767fde588e4e0fe5a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 each cited file, symbol and node resolves: `reckon/metadata_index.py`, `reckon/serve.py`, `reckon/figures.py`, the three functions above, investigation `r-20261020T123510716749` (run directory and review records both on disk), and \"\u00a711's 10 s cold budget\" (line 229, \"every view is populated within 3 s on a warm load and 10 s cold\"); `figure_rows`' PNG/SVG/GIF set matches `_covered_files`' `_FIGURE_SUFFIXES = (\".png\", \".svg\", \".gif\")`, so \"figure_rows takes its figure paths from the covered set\" cannot silently drop a row kind.",
+    "done_when": "pass \u2014 the revised control can now fail: the metric divides by covered files and the control adds exactly one `stat` per covered file, so it crosses the 1.5 bound whenever the healthy arm is above 0.5, which the deliverable's \"stats each covered file at most once\" secures; the earlier control (restoring `figure_rows`' `rglob` calls) added directory scans rather than per-file calls and could stay under the bound, and that defect is repaired.",
+    "evidence_paths": "pass \u2014 \"every log sits under the run directory and ends in EXIT=\" puts gate logs on the crew run's durable directory, not a node-local temporary path.",
+    "naming": "pass \u2014 \u00a723 introduces no symbol carrying a stage label, ticket number or version tag; the only identifiers are the run id of the investigation it cites and the plan's own section anchors.",
+    "reasoning": "a finding \u2014 the 12.0 s that \u00a723 sums from the three walks is not their union: `_walk_discovery_signature` (3.821 s) calls `_covered_files_for_project` (4.654 s/5 calls, 1.468 s of it from inside the signature walk), so the three cumulative times overlap and their sum overstates the walks' share; the plan's remaining claims (the root cause, the mechanism, the caller path) hold.",
+    "single_goal": "pass \u2014 the section carries one deliverable, \"one discovery derivation stats each covered file at most once\", of which the change-signature reuse, the covered-set reuse and `figure_rows`' paths are three facets.",
+    "wiring": "pass \u2014 \u00a723's `plan-section-depends-on` entry is `[\"the-site-answers-fast-and-agrees#s22\"]`, which resolves, and it matches the section's own \"Build it after \u00a722, which writes `reckon/serve.py`\"; both write `serve.py`, so the declared order is the one that matters, and no other section's dependencies or narrative name s23."
+  },
+  "section_digests": {
+    "_document": "f1d6b6cd66378ab2baae84f40fa3245e3baa8e258725aef635fc8cafe414694c",
+    "s1": "119fda14843398660e67ce4dbc6d52b2466804be618c0bc58fe57d48c4364db4",
+    "s10": "aedffe9563719b3b93e2b36282e17d4d2aeabecf2938ffcbf516cfacc5887281",
+    "s11": "b9aa035553d395057dad26d5353e7b79c6bdec033a1ab82eb1042718d03592cd",
+    "s12": "3086e0ba68e51ca085e7178c914c92d64248be41088440dfa18abf077d5819ee",
+    "s13": "fa208e7c5f148ec329458a9824c867762bc66c986ccb7bc85745b08640484173",
+    "s14": "7f21ec58ce9adf4ba663f205fe60555a585a263354e7954c7dd99543a0d56139",
+    "s15": "884c8ab0e973894007385f537b51e29ef55bf2de18ef2cf6a25966e656f62bf2",
+    "s16": "68b4e68d648fe76ecff74c05d2cdfb995f2e13890befafc25046869d469abcac",
+    "s17": "ac2da828cc6e329bb2d7e56d6983c2cb58531dd49711fa439cc540251e215680",
+    "s18": "24d67d89b37511179c52ceeab7171c15ecf50ae262fe437e8b1c7e85b39f013a",
+    "s19": "148ad5763a772b476be3d3476ef6369a24fae8df34da8415bcbfb333c5b505e9",
+    "s2": "f4d544c85c1a75bc7938448339d0239290de9ffaef0434766aa4baa2571d7436",
+    "s20": "d5e6bc8b957a0aeb45664f4545b683e775e752e5ff3775707ac74b8637d7a39c",
+    "s21": "4725f8eefd9bf3062ff168272099f7a5efaf7e853b36c73f9d2124800c732c94",
+    "s22": "6cc294e4991b5ff22f99c962c3b563f8c825d102848621f9d94bcffdf006a5de",
+    "s23": "24c3bf5fc25ac079c1a58a29bcc5dcacb94ffe1d6547f939c33aa3102c508538",
+    "s3": "50f2ca1f3b1277d5f4b2d70a240688387a89a3136ad2d6aee26f0b3f324b1afc",
+    "s4": "a1ad15bdafaed28134c2565ad8374bc91928064852c10da6661f2499ca286149",
+    "s5": "ccf5b231d2e5d7e02747b8419b3e95dae4622acb080e6eb52c536f2ea9539903",
+    "s6": "fdb08d5e7b8272372c8ced83ee14c031730239025c2a13ccb211329d7951673e",
+    "s7": "90073ced7051cfae8f66fd6b78f99e6ace90b008ffc6c9e5559d87a2e5c31704",
+    "s8": "46535efa968faf1a9d457821c0b182e1f73fbc67570e478aa63cc7eb29d08e37",
+    "s9": "3df747cffcffa70e17ef701d032c7d4a87e78cd03759393f0efa74f96e5fde92"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T13:55:11.405025+00:00"
+}
