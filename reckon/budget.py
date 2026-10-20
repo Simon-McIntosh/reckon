@@ -142,10 +142,25 @@ class BudgetState:
     availability: str | None = None
     availability_observed_at: str | None = None
     availability_cached: bool = False
+    credit_balance: float | None = None
+    credits_available: bool | None = None
 
     def as_dict(self) -> dict[str, Any]:
-        """Return the state as sorted JSON-ready data."""
-        return {
+        """Return the state as sorted JSON-ready data.
+
+        The credit fields appear only when the account reported credits, so a
+        backend with no credit surface reads exactly as it did before credits
+        were measured.
+        """
+        credits = (
+            {
+                "credit_balance": self.credit_balance,
+                "credits_available": self.credits_available,
+            }
+            if self.credit_balance is not None
+            else {}
+        )
+        return credits | {
             "backend": self.backend,
             "burn_multiple": self.burn_multiple,
             "availability": self.availability,
@@ -202,6 +217,9 @@ def policy(config: Mapping[str, Any] | None) -> dict[str, Any]:
     resolved["availability_probe_cache_seconds"] = availability_probe_cache_seconds(
         resolved
     )
+    credit_lift = block.get("credit_lift")
+    if isinstance(credit_lift, Mapping):
+        resolved["credit_lift"] = dict(credit_lift)
     return resolved
 
 
@@ -1026,7 +1044,19 @@ def _from_block(
     )
     period = block.get("rate_limit_period_minutes")
     numeric_period = float(period) if period is not None else None
+    credits = block.get("credits")
+    credit_balance: float | None = None
+    credits_available: bool | None = None
+    if isinstance(credits, Mapping) and isinstance(
+        credits.get("balance"), (int, float)
+    ):
+        credit_balance = float(credits["balance"])
+        credits_available = bool(credits.get("unlimited")) or (
+            bool(credits.get("has_credits")) and credit_balance > 0
+        )
     state = BudgetState(
+        credit_balance=credit_balance,
+        credits_available=credits_available,
         backend=backend_name,
         headroom=headroom,
         utilisation_pct=numeric_utilisation,
@@ -1233,6 +1263,59 @@ def _evidence_note(state: BudgetState) -> str:
 # ── The decision ────────────────────────────────────────────────────────────
 
 
+DEFAULT_CREDIT_RESERVE_FRACTION = 0.1
+
+
+def _credit_lift_verdict(
+    state: BudgetState, lift: Mapping[str, Any], purpose: str
+) -> tuple[bool, str] | None:
+    """Judge a spent window against a credit lift: ``(held, reason)``.
+
+    The provider keeps serving past an exhausted window while the account holds
+    credits, so a credit lift admits work until the credits spent since the
+    grant reach its cap. Spend is the balance at grant less the balance now, so
+    it counts every draw on the account, not only this host's runs. A fresh
+    dispatch stops short of the cap by the lift's reserve, because a hold stops
+    only new work and every worker already running keeps drawing; a resume may
+    spend the reserve, which is what it was withheld for.
+
+    Returns ``None`` when the reading carries no balance, so the window ceiling
+    decides: a lift must never admit spend it cannot measure.
+    """
+    if state.credit_balance is None:
+        return None
+    try:
+        cap = float(lift.get("cap"))
+        at_grant = float(lift.get("balance_at_grant"))
+    except (TypeError, ValueError):
+        return None
+    reserve = lift.get("reserve_fraction")
+    fraction = (
+        float(reserve)
+        if isinstance(reserve, (int, float)) and not isinstance(reserve, bool)
+        else DEFAULT_CREDIT_RESERVE_FRACTION
+    )
+    stop = cap if purpose == "resume" else cap * (1.0 - fraction)
+    spent = max(0.0, at_grant - state.credit_balance)
+    position = (
+        f"credit lift {lift.get('id')!r} has spent {spent:,.0f} of its "
+        f"{cap:,.0f}-credit cap (a {purpose} stops at {stop:,.0f}); "
+        f"balance {state.credit_balance:,.2f}"
+    )
+    if not state.credits_available:
+        return True, f"the account reports no usable credits; {position}"
+    if spent >= stop:
+        return True, f"{position}, so the lift is spent"
+    utilisation = (
+        f"{state.utilisation_pct:g}%" if state.utilisation_pct is not None else "spent"
+    )
+    return (
+        False,
+        f"the {state.backend!r} window is {utilisation}, and the provider serves "
+        f"past it on credits; {position}",
+    )
+
+
 def _lapsed_minutes(
     state: BudgetState, policy_block: Mapping[str, Any], now: datetime
 ) -> tuple[int, float] | None:
@@ -1343,6 +1426,22 @@ def decide(
         return verdict
 
     exhausted = [str(status) for status in policy_block.get("exhausted_statuses") or ()]
+    window_spent = (
+        state.threshold_status is not None and str(state.threshold_status) in exhausted
+    ) or (state.utilisation_pct is not None and state.utilisation_pct >= limit)
+    if window_spent and isinstance(policy_block.get("credit_lift"), Mapping):
+        credit = _credit_lift_verdict(state, policy_block["credit_lift"], purpose)
+        if credit is not None:
+            held, reason = credit
+            verdict["held"] = held
+            verdict["reason"] = (
+                format_refusal("D02", f"{reason}{_evidence_note(state)}")
+                if held
+                else reason
+            )
+            verdict["credit_lift"] = dict(policy_block["credit_lift"])
+            return verdict
+
     if state.threshold_status is not None and str(state.threshold_status) in exhausted:
         verdict["held"] = True
         verdict["reason"] = format_refusal(
@@ -3181,7 +3280,7 @@ def pace_hold(entry: Mapping[str, Any], role: str | None) -> dict[str, Any]:
         if isinstance(raw_line, (int, float)) and not isinstance(raw_line, bool)
         else None
     )
-    if not bookend and lift_kind == budget_lift.UNCAPPED:
+    if not bookend and lift_kind in (budget_lift.UNCAPPED, budget_lift.CREDITS):
         held = False
     elif not bookend and lift_kind == budget_lift.DRAIN_BY:
         held = drain_line is not None and float(utilisation) > drain_line
@@ -3207,6 +3306,12 @@ def pace_hold(entry: Mapping[str, Any], role: str | None) -> dict[str, Any]:
             f"the {entry.get('group')!r} group is under an uncapped lift "
             f"{_lift_label(allowance)}, so no pace hold applies and a {role} "
             "dispatch is admitted at any reported burn"
+        )
+    elif lift_kind == budget_lift.CREDITS:
+        reason = (
+            f"the {entry.get('group')!r} group is under a credit lift "
+            f"{_lift_label(allowance)}, so no pace hold applies; its cap is "
+            "judged against the account's credit balance at the window ceiling"
         )
     elif lift_kind == budget_lift.DRAIN_BY:
         if held:

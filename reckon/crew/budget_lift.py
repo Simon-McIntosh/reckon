@@ -92,7 +92,8 @@ CLOCK_HOURS = {SEVEN_DAY: 168.0, FIVE_HOUR: 5.0}
 MULTIPLE = "multiple"
 DRAIN_BY = "drain_by"
 UNCAPPED = "uncapped"
-FORMS = (MULTIPLE, DRAIN_BY, UNCAPPED)
+CREDITS = "credits"
+FORMS = (MULTIPLE, DRAIN_BY, UNCAPPED, CREDITS)
 
 GLOBAL = "global"
 SESSION_PREFIX = "session:"
@@ -107,6 +108,9 @@ END_RESET = "reset"
 
 DEFAULT_MAX_MULTIPLE = 3.0
 DEFAULT_MAX_HOURS = 168.0
+# The share of a credit cap a fresh dispatch leaves unspent for the workers
+# already drawing on it when the lift fills.
+DEFAULT_CREDIT_RESERVE_FRACTION = 0.1
 
 RUN_ID_ENV = "RECKON_RUN_ID"
 
@@ -126,6 +130,7 @@ __all__ = [
     "MULTIPLE",
     "SEVEN_DAY",
     "UNCAPPED",
+    "CREDITS",
     "LiftRefusedError",
     "ceilings",
     "clear",
@@ -283,6 +288,9 @@ def grant(
     now: datetime | None = None,
     environ: Mapping[str, str] | None = None,
     path: str | Path | None = None,
+    credits: float | None = None,
+    balance_at_grant: float | None = None,
+    reserve_fraction: float | None = None,
 ) -> dict[str, Any]:
     environment = environ if environ is not None else os.environ
     moment = _aware(now) if now is not None else datetime.now(UTC)
@@ -332,6 +340,28 @@ def grant(
                 "a lift multiple may not exceed budget.lift.max_multiple "
                 f"{bound.max_multiple:g}; {resolved_multiple:g} does"
             )
+    elif str(form) == CREDITS:
+        if credits is None or float(credits) <= 0:
+            raise LiftRefusedError("the credits form names a positive --credits cap")
+        if balance_at_grant is None:
+            raise LiftRefusedError(
+                "a credit lift is measured from the balance at grant, and no "
+                "credit balance could be read from the account surface"
+            )
+        fraction = (
+            DEFAULT_CREDIT_RESERVE_FRACTION
+            if reserve_fraction is None
+            else float(reserve_fraction)
+        )
+        if not 0.0 <= fraction < 1.0:
+            raise LiftRefusedError(
+                f"the credit reserve fraction must lie in [0, 1); {fraction:g} does not"
+            )
+        drain_fields = {
+            "credit_cap": float(credits),
+            "credit_balance_at_grant": float(balance_at_grant),
+            "credit_reserve_fraction": fraction,
+        }
     elif str(form) == DRAIN_BY:
         if target is None:
             raise LiftRefusedError("the drain-by form names --drain-by")
@@ -598,6 +628,13 @@ def effective_budget(
     )
     released["lift"] = _lift_summary(lift, readings=readings, now=moment)
     released["pace_hold"] = _hold_marker(lift, readings=readings, now=moment)
+    if lift.get("form") == CREDITS:
+        released["credit_lift"] = {
+            "id": lift["id"],
+            "cap": lift.get("credit_cap"),
+            "balance_at_grant": lift.get("credit_balance_at_grant"),
+            "reserve_fraction": lift.get("credit_reserve_fraction"),
+        }
     return released
 
 
@@ -842,6 +879,10 @@ def _hold_marker(
     form = str(lift.get("form"))
     if form == UNCAPPED:
         return {"kind": UNCAPPED, "held": False}
+    if form == CREDITS:
+        # The credit cap is enforced where the window ceiling is judged, against
+        # the account's live balance; the pace has nothing left to meter.
+        return {"kind": CREDITS, "held": False}
     if form == DRAIN_BY:
         newest = _newest_reading(readings)
         utilisation = _clock_utilisation(newest, _lift_clock(lift))
