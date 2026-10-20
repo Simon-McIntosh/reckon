@@ -123,6 +123,26 @@ def _capability_overlay(
     return selected if isinstance(selected, Mapping) else {}
 
 
+def _lane_model_settings(
+    config: Mapping[str, Any], backend: Mapping[str, Any]
+) -> Mapping[str, Any]:
+    """The keys the selected lane model declares, for re-application.
+
+    A backend that is not a lane model carries no ``lane`` or ``model_key``, so
+    nothing is re-applied and the role overlay stands.
+    """
+    lane_name = backend.get("lane")
+    model_key = backend.get("model_key")
+    if not lane_name or not model_key:
+        return {}
+    lane = (config.get("lanes") or {}).get(str(lane_name)) or {}
+    models = lane.get("models") or {}
+    if not isinstance(models, Mapping):
+        return {}
+    model = models.get(str(model_key))
+    return model if isinstance(model, Mapping) else {}
+
+
 def _effective_backend(
     config: Mapping[str, Any],
     backend_name: str,
@@ -130,7 +150,12 @@ def _effective_backend(
     level_overlay: Mapping[str, Any],
     class_overlay: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Merge a role's overlay onto one named backend's own settings."""
+    """Merge a role's overlay onto one named backend's own settings.
+
+    A selected lane model's own declared keys are re-applied last, so the effort
+    and time budget a model declares outrank the role, spec-level and class
+    overlays. A backend that is not a lane model keeps the overlay's value.
+    """
     backends = config.get("backends") or {}
     backend = backends.get(backend_name)
     if not isinstance(backend, Mapping):
@@ -151,6 +176,11 @@ def _effective_backend(
         if key == "backend":
             continue
         effective[key] = value
+    declared = _lane_model_settings(config, backend)
+    for key in flight.LANE_MODEL_KEYS:
+        value = declared.get(key)
+        if value is not None:
+            effective[key] = value
     return effective
 
 
