@@ -1,0 +1,25 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-20T23:08:33.740Z",
+  "dispatched_at": "2026-10-20T22:59:09Z",
+  "findings": [],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that tests/test_scoring_dispatches_its_review.py::test_an_unattached_session_refuses_the_automatic_dispatch_too passes at head for the reason it names; the commits gained since the prior review (eec91fe30..81c7d1bf9) are docs-only and the test file is byte-identical since eec91fe30, where the test passes 5 of 5 alone at head (compute-solo-1..5.log) and 5 of 5 on the fleet node (fleet-solo-1..5.log), so the goal holds at the reviewed head.\nVERDICT done_when: the done_when asks the target test to pass 5 of 5 alone in an exclusive all_debug job and on the fleet node with a red negative control, the rest of the file unchanged, and clean ruff; the run's logs assert compute-solo-1..5.log 5x `1 passed` EXIT=0 (job 1291652), fleet-solo-1..5.log 5x `1 passed` EXIT=0, compute-file.log `4 passed` EXIT=0 at rev 62a89ee7, compute-negative-control.log `1 failed` EXIT=1, and ruff-check.log `All checks passed!` EXIT=0; the delta adds no new gate, and I opened each cited receipt and found the result and header the table claims.\nVERDICT write_paths: the source node's FENCE SCOPE declares tests/test_scoring_dispatches_its_review.py, docs/evidence/fragments/the-suite-is-green-at-head/the-unattached-session-dispatch-test-passes.html and docs/figures/the-suite-is-green-at-head/the-unattached-session-dispatch-test-passes; the delta diff touches only the evidence html, inside them.\nVERDICT manifest: read; it records status complete, the target test 5/5 at head and 5/5 on the fleet node, a red negative control (compute-negative-control.log, 1 failed EXIT=1) and the sibling reroute's negative control not reproducing (5x 2 passed), and names its logs under the run's logs/ directory.\nVERDICT diff: read commit by commit from eec91fe30 to 81c7d1bf9; three docs-only commits in one file (e462503b6, 7dbdb41c0, 81c7d1bf9), 4 insertions and 3 deletions, each repairing a citation or a tag the prior review at eec91fe30 flagged as blocking, plus one further host citation the worker's own checker found.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_scoring_dispatches_its_review.py:181 carries the settled-seat release and is unchanged since eec91fe30, so the delta adds only evidence repairs and the goal stands at the reviewed head.\nSCORE evidence: 19\nJUSTIFICATION evidence: the repaired citations at docs/evidence/fragments/the-suite-is-green-at-head/the-unattached-session-dispatch-test-passes.html:80 and :42 match their receipts (compute-negative-control.log header job=1291652; sacct NodeList 98dci4-clu-3142 for job 1291645), and the table's tags balance 10 open against 10 close.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat eec91fe30..81c7d1bf9 touches only docs/evidence/fragments/the-suite-is-green-at-head/the-unattached-session-dispatch-test-passes.html, inside the declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: the delta adds no assertion, so the guard rests on the unchanged test at tests/test_scoring_dispatches_its_review.py:196, whose restored cause is shown red by compute-negative-control.log (EXIT=1) while the sibling reroute stays unguarded (compute-negative-control-two-1..5.log, 5x 2 passed with the cause restored).\nSCORE fit: 16\nJUSTIFICATION fit: the edits use the surrounding table's own `<tr>/<td>` and paragraph markup at docs/evidence/fragments/the-suite-is-green-at-head/the-unattached-session-dispatch-test-passes.html:90, with no plan label or ticket id in the message or the file.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no definition to fork a capability, and the one mechanism it describes already lives in reckon/crew/recovery_watch.py:396 rather than being reimplemented here.",
+  "review_run_id": "r-20261020T225813250980-review-of-the-unattached-session-dispatch-test-passes-81c7d1bf9e3c",
+  "reviewed_base_sha": "eec91fe30ed20db383837bf6766d70628a18f496",
+  "reviewed_head_sha": "81c7d1bf9e3c4df32776c8580ecb2cb542f67c73",
+  "reviewed_run_id": "r-20261020T203929222890-the-unattached-session-dispatch-test-passes",
+  "scores": {
+    "durability": 15,
+    "evidence": 19,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T23:32:26.017507+00:00",
+  "total": 108
+}
