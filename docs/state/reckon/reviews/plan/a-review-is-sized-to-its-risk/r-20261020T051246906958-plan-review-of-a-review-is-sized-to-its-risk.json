@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T05:26:52.843Z",
+  "dispatched_at": "2026-10-20T05:14:20Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-review-is-sized-to-its-risk/r-20261020T051246906958-plan-review-of-a-review-is-sized-to-its-risk/plan.html:206",
+      "id": "reasoning-1",
+      "reason": "if the disposition is dropped before the reflex reads it, \u00a714 alone does not prevent the resume it was written from, and the plan must either preserve `FINDING_DISPOSITIONS_KEY` across the re-store or read the disposition on a copy that still holds it, which is a different seam than the section currently names.",
+      "text": "s14's Why asserts the coordinator \"exempted both with `crew dispose --kind exempted` and promoted the review\" and blames the reflex for not reading a disposition, but the stored record carries no disposition on either copy: the crew-home record `~/.config/reckon/crew/reviews/reckon/r-20261020T035609523314-cso-watch-family-folds.at-6c1f03f8a6053b22078783af4a4fbc6dab8e3a5a.json` (mtime 2026-10-20T05:03:07Z, 54 s before the 05:04:01Z `repair_dispatch.status=resumed`) and the committed copy `docs/state/reckon/reviews/run/r-20261020T035609523314-cso-watch-family-folds/r-20261020T044113923490-review-of-cso-watch-family-folds-6c1f03f8a605.json` both read `finding_dispositions: null`, because the record's answer-merge on re-store carries only `DIMENSION_DISPOSITIONS_KEY` and `responses` (`_merge_record_answers`, `reckon/crew/review.py:3039`) and never `FINDING_DISPOSITIONS_KEY`, so a re-stored body loses the map \u2014 so \u00a714's mechanism, which reads a disposition off the record the reflex reads, would find nothing to leave out and the reflex would resume exactly as it did",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "9d1719d3c17e66a15e6d1cae768a3a0454d862045830e83498317f095b00be87",
+  "plan_slug": "a-review-is-sized-to-its-risk",
+  "plan_version": 179,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T051246906958-plan-review-of-a-review-is-sized-to-its-risk",
+  "reviewed_blob_sha": "33e641fee276312734a01afd1e5ca0c5a2fd135e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `blocking_findings` is at `reckon/crew/repair.py:224`, `declared_severity` at `reckon/crew/review.py:128`, `FINDING_DISPOSITIONS_KEY` at `reckon/crew/review.py:3983`, `finding_disposition` at `reckon/crew/findings.py:206`, all as cited; commit `6c1f03f8a` resolves; the reflex calls at `recovery_repair_dispatch.py:690` and `:720` are as described; `resume-2-advice.txt` reads \"2 blocking finding(s)\"; the eight pre-existing test files named all exist (only \u00a713's own test is absent, which \u00a713 is to create before s14 is dispatched).",
+    "done_when": "pass \u2014 s14's done-when gives four resident cases (two exempted, one folded/one open, neither disposed, one blocking-exempted), a delta against a base arm, and a declared negative control (\"Stop the reflex reading dispositions, and the first case must fail on a resumed round\").",
+    "evidence_paths": "pass \u2014 both arms' logs are named to the run directory and the section's evidence goes to the node's evidence fragment, neither a scratchpad nor a node-local temp path.",
+    "naming": "pass \u2014 the Why and deliverable name mechanisms (`blocking_findings`, `declared_severity`, `finding_disposition`, `FINDING_DISPOSITIONS_KEY`); \u00a713/\u00a714 are prose section references, not symbols, and no ticket or version tag reaches a name.",
+    "reasoning": "a finding \u2014 the named root cause is real in the reflex but is not sufficient to produce the cited incident, because the record the reflex reads has had `finding_dispositions` dropped by the review record's own re-store.",
+    "single_goal": "pass \u2014 s14 carries one deliverable: the repair reflex leaves out of its round every finding that carries a disposition.",
+    "wiring": "pass \u2014 s14's `depends-on` names `a-review-is-sized-to-its-risk#s13` (meta `plan-section-depends-on`), which resolves to the \u00a713 section, and the ordering is correct because both sections write `reckon/crew/recovery_repair_dispatch.py`."
+  },
+  "section_digests": {
+    "_document": "608ebca3acc9631af825886c397a17445078bdda5b09f7384da8d502634b94a4",
+    "s1": "1bca4570a6dc141df8190260147c4603fdbd4e237bbd0fa1f635f166cdf5637b",
+    "s10": "a07df53b22b91585addeb98d5e88c71b2cd22d03d1da30561685f96e03a0aa2e",
+    "s11": "6bbc86e3fa4868ea28a6bedc4cfe44870bae0e69abb21473626929baf05d9b00",
+    "s12": "1931543f8774db891c6e51b885d5953ddc9f2d3b93d870f9c4f9d4a2156593c4",
+    "s13": "654b501c481eae64e085c1884ebb02603fb65497f5c801e8332e7dee8814e93e",
+    "s14": "c2b0c7c653f997ecf47d804c88252cfca6f43e854d10767eaf84161d03ef55bf",
+    "s2": "d87e94711b1191be6062f6581f0bf3c2f7793876a327c35be59e3dd37bbe72c8",
+    "s3": "865c2c7d189405d6ba0566cebd8df5e459211cc93a64a9332de51cff756b47ac",
+    "s4": "834dc20a74581e06fc6c6b99a07ea7b628c9c36d7c390cee1b4e599eeec7b070",
+    "s5": "dd9455e66ea742a997a12400b194e02c6557b19217a06db0a58f82d7d82b8fde",
+    "s6": "cb4e838e28a346993a653862da66ac934c2c1b8e7e1aa1d7cb23c7082672067d",
+    "s7": "044f93aa0d0fd0aed5a7b5b535f5b7a2efacfc541ef12f41a04af14289440d7c",
+    "s8": "a12e7aff5d1cfd541706cc743c3d78ed9c0a96dba6af2c4f8b6dbb2309ea9582",
+    "s9": "3cc2a52825983e24d6bcb3f342f8f21cbd91f2144772c41418b9a0362bf5da37"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T05:34:48.010203+00:00"
+}
