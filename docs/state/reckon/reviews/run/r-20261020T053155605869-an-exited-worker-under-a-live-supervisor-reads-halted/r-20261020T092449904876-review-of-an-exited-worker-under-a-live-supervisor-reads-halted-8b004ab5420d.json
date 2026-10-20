@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 9,
+  "added_failure_ids": [
+    "tests/test_a_crashed_producer_is_restarted.py::test_a_steady_run_resets_the_delay_and_crash_count",
+    "tests/test_a_crashed_producer_is_restarted.py::test_crashed_producer_reoccupies_the_seat[crash]",
+    "tests/test_a_crashed_producer_is_restarted.py::test_crashed_producer_reoccupies_the_seat[kill]",
+    "tests/test_a_crashed_producer_is_restarted.py::test_deliberate_stop_is_not_restarted[lease]",
+    "tests/test_a_crashed_producer_is_restarted.py::test_deliberate_stop_is_not_restarted[producer-term]",
+    "tests/test_a_crashed_producer_is_restarted.py::test_deliberate_stop_is_not_restarted[supervisor-term]",
+    "tests/test_a_crashed_producer_is_restarted.py::test_repeated_crashes_reach_a_reported_limit",
+    "tests/test_closure_fence_agreement.py::test_dispatch_accepts_a_handed_off_pointer",
+    "tests/test_crew_dispatch_arming.py::test_dispatch_refuses_a_session_whose_runs_would_finish_unheard"
+  ],
+  "after_suite_error_ids": [
+    "tests/test_mcp_crew_obligations.py"
+  ],
+  "after_suite_error_rows": 12,
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T053155605869-an-exited-worker-under-a-live-supervisor-reads-halted/logs/population_head.log",
+  "base_log_revision": "2998d0bd5968b57d4a28510e9f67fe815777ff4e",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T063445008608-population-mon69/base.log",
+  "completed_at": "2026-10-20T09:40:28.889Z",
+  "dispatched_at": "2026-10-20T09:25:46Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/an-exited-worker-under-a-live-supervisor-reads-halted.html",
+      "line": "16",
+      "severity": "follow-on",
+      "text": "the fragment states 'One of five cases fails at base and all five pass at head', but the node's own negative-control log (the exit-record check removed, which is exactly the module's base state, since the whole base-to-head delta of reckon/crew/recovery_liveness.py is that one hunk) reads '2 failed, 3 passed' with both test_a_worker_that_exited_under_a_live_supervisor_reads_halted and the new fifth case red, so the landing record understates the base arm by one case; the repair is the word 'Two'."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T053155605869-an-exited-worker-under-a-live-supervisor-reads-halted/manifest.md",
+      "line": "19",
+      "severity": "follow-on",
+      "text": "after_suite.failure_ids carries the 16 FAILED ids but not the 12 ERROR rows logs/population_head.log reports against tests/test_mcp_crew_obligations.py, which the base arm (0 ERROR rows) does not carry, so the added-failure set derived from the two receipts understates the head arm by one errored file; the delta-suite arm ran at 77ef0c13 on a shared login node while the node owning that file was in flight, so it is recorded rather than attributed."
+    }
+  ],
+  "gate_logs_read": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T053155605869-an-exited-worker-under-a-live-supervisor-reads-halted/logs/head_full_test.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T053155605869-an-exited-worker-under-a-live-supervisor-reads-halted/logs/mutant_reads_the_worker_record.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T053155605869-an-exited-worker-under-a-live-supervisor-reads-halted/logs/negative_control_head.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T053155605869-an-exited-worker-under-a-live-supervisor-reads-halted/logs/ruff.log"
+  ],
+  "head_log_revision": "77ef0c137390e84306ccdd17ae06dd0a1933e763",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to reproduce a run whose worker exited with an in-progress manifest and an exit record while the pointer's recorded supervisor pid stays alive, and to make it read exited-unfinished; the gained commits pin that reading's discrimination and record it, at tests/test_an_exited_worker_under_a_live_supervisor_reads_halted.py:252-277 and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/an-exited-worker-under-a-live-supervisor-reads-halted.html:16.\nVERDICT done_when: the done_when requires the node's own test file to find the run exited-unfinished with its obligation present, failing at base and passing at head, a negative control, and no added failure against base over the liveness importers; the manifest records logs/head_full_test.log (5 passed at 62e8ab6d), logs/mutant_reads_the_worker_record.log (EXIT=1, the added case red and the other four green), logs/negative_control_head.log (EXIT=1, unpiped, revision and literal command on its header lines) and the two population arms, but its cited base arm runs 2998d0bd59 in another run's scratch tree rather than the node's own base 0a5766aa.\nVERDICT write_paths: the declared grant is reckon/crew/recovery_liveness.py, tests/test_an_exited_worker_under_a_live_supervisor_reads_halted.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/an-exited-worker-under-a-live-supervisor-reads-halted.html and a figures path; git diff 77ef0c137390e84306ccdd17ae06dd0a1933e763 8b004ab5420deeb42350582e1548e16f5c85c8e5 changes exactly the second and third of those (29 insertions, 1 deletion).\nVERDICT manifest: read; it names commits 77ef0c13, 62e8ab6d and 8b004ab5, the three changed paths, readable baseline_suite and after_suite receipts at 2998d0bd59 and 77ef0c13, the mutant and negative-control logs, and its artifacts line now states 9 added ids against 2 fixed, which the two receipts bear out (16 failed at head against 9 at base, 7 common).\nVERDICT diff: read commit by commit against 77ef0c137390e84306ccdd17ae06dd0a1933e763; two commits touch two files and no production file: 62e8ab6d adds the fifth case at tests/test_an_exited_worker_under_a_live_supervisor_reads_halted.py:252-277, and 8b004ab5 rewrites one paragraph of the evidence fragment to describe it.\nCALL_SITES: reckon/crew/recovery_classification.py:266, reckon/crew/recovery_watch.py:1061, reckon/crew/resumption.py:1012, reckon/sprint_liveness.py:147, reckon/crew/runs.py:1624\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: tests/test_an_exited_worker_under_a_live_supervisor_reads_halted.py:252-277 supplies the exit record's worker pid and the worker record's pid as different processes, which is the distinction reckon/crew/recovery_liveness.py:1021-1024 reads, so the added case pins the goal's reading rather than restating it.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/head_full_test.log attests 5 passed at 62e8ab6d and logs/mutant_reads_the_worker_record.log attests the added case red at EXIT=1, but the record's derived added set omits the head arm's 12 ERROR rows for tests/test_mcp_crew_obligations.py in logs/population_head.log and the fragment misstates the base arm at an-exited-worker-under-a-live-supervisor-reads-halted.html:16.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 77ef0c137390e84306ccdd17ae06dd0a1933e763 8b004ab5420deeb42350582e1548e16f5c85c8e5 touches only tests/test_an_exited_worker_under_a_live_supervisor_reads_halted.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/an-exited-worker-under-a-live-supervisor-reads-halted.html, both inside the four granted write paths, and carries nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_an_exited_worker_under_a_live_supervisor_reads_halted.py:274-277 reddens when reckon/crew/recovery_liveness.py:1021 is made to read the worker record's pid in place of the exit record's own worker_pid, which is the regression logs/mutant_reads_the_worker_record.log records failing exactly that case at EXIT=1 while the other four pass.\nSCORE fit: 19\nJUSTIFICATION fit: the added case follows the sentence-as-name and mechanism-docstring idiom of its neighbours at tests/test_an_exited_worker_under_a_live_supervisor_reads_halted.py:223 and :280, and neither the commit messages nor the fragment carries a plan, sprint or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained commits add no definition at all; the case drives the shared classifier recovery.classify_pointer and the file's existing _run, _exit_record and _reaped_pid helpers rather than a second liveness implementation.\nFINDING docs/evidence/fragments/the-monitor-shows-the-work-it-watches/an-exited-worker-under-a-live-supervisor-reads-halted.html:16 follow-on: the fragment states 'One of five cases fails at base and all five pass at head', but the node's own negative-control log, taken with the exit-record check removed (exactly the module's base state, since the entire base-to-head delta of reckon/crew/recovery_liveness.py is that one hunk), reads '2 failed, 3 passed' with both test_a_worker_that_exited_under_a_live_supervisor_reads_halted and the new fifth case red, so the landing record understates the base arm by one case; the repair is the word 'Two'.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T053155605869-an-exited-worker-under-a-live-supervisor-reads-halted/manifest.md:19 follow-on: after_suite.failure_ids carries the 16 FAILED ids but not the 12 ERROR rows logs/population_head.log reports against tests/test_mcp_crew_obligations.py, which the base arm (0 ERROR rows) does not carry, so the added-failure set derived from these two receipts understates the head arm by one errored file.\n",
+  "review_run_id": "r-20261020T092449904876-review-of-an-exited-worker-under-a-live-supervisor-reads-halted-8b004ab5420d",
+  "reviewed_base_sha": "77ef0c137390e84306ccdd17ae06dd0a1933e763",
+  "reviewed_commits": [
+    "62e8ab6d2bb3447a70c7561c071989e256bcb560",
+    "8b004ab5420deeb42350582e1548e16f5c85c8e5"
+  ],
+  "reviewed_head_sha": "8b004ab5420deeb42350582e1548e16f5c85c8e5",
+  "reviewed_run_id": "r-20261020T053155605869-an-exited-worker-under-a-live-supervisor-reads-halted",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T09:41:23.669141+00:00",
+  "total": 110
+}
