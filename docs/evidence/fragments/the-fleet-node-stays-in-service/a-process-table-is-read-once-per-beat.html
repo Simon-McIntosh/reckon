@@ -6,10 +6,9 @@
     <code>/proc/&lt;pid&gt;/environ</code> for every process on the node, and it
     runs once per beat for every run whose recorded pid has gone, so the same
     environments were re-read several times a second. A process's environment
-    changes only when it execs, and an exec keeps the pid and the kernel start
-    tick while replacing the program. So a reading is now kept in one index
-    keyed by the pid, its start tick and its executable identity, and a walk
-    reuses it until one of those three changes.
+    changes only when it execs, so a reading is now kept in one index keyed by
+    the pid, its start tick and its executable identity, and a walk reuses it
+    until one of those three changes.
   </p>
   <p>
     Two things follow. Every run answered in a beat reads each process's
@@ -21,6 +20,20 @@
     <code>/proc</code> entry is read before the environment, so another user's
     process — unreadable in any case, and 58% of the opens the capture saw —
     is skipped without an open at all.
+  </p>
+  <p>
+    The identity is the program's path together with the base of the process's
+    stack, because the path alone is not enough to see an exec. A process that
+    re-execs <em>the same binary</em> keeps its pid, its start tick and its
+    <code>/proc/&lt;pid&gt;/exe</code> target, and the in-place re-execs in this
+    repository do exactly that, replacing their own image to pick up the code on
+    disk. Keyed on the path, such a process would be answered from the
+    environment it held before the exec, and a run mark written by the re-exec
+    would go unseen. The kernel establishes the stack base afresh on every exec —
+    including a same-binary one — and it comes from the same stat record the
+    start tick already reads, so detecting it costs no extra syscall and no
+    environment open. (The start of the text segment is not usable for this: on
+    a non-PIE interpreter it is the same address after every exec.)
   </p>
   <p>
     The stop path's signal-time checks are unchanged. A candidate is still
@@ -46,28 +59,35 @@
     <tbody>
       <tr><td>base <code>fe1cca8a4</code></td><td>61</td><td>183</td><td>146,969</td><td>1,383</td><td>803</td></tr>
       <tr><td>change <code>aa0f71322</code></td><td>30</td><td>90</td><td>598</td><td>597</td><td>6</td></tr>
+      <tr><td>change <code>588f9a18a</code></td><td>36</td><td>108</td><td>383</td><td>383</td><td>4</td></tr>
     </tbody>
   </table>
   <p>
     At the base, each scan opens one environment per process in the table
-    (803 per scan, with three runs per beat); the change drops that to six per
-    scan, and its 598 opens fall across 597 distinct pids — one open per process
-    the window ever showed, not one per scan. The harness names each run's live
-    child before the window opens, so the near-absence of opens is the index at
-    work rather than a walk that has gone blind.
+    (803 per scan, with three runs per beat). The change drops that to a
+    handful: the first capture's 598 opens fall across 597 distinct pids, and
+    the capture re-taken at the repaired head opens 383 times over 383 distinct
+    pids — exactly one open per process the window ever showed, none of them
+    repeated. The repaired head is the third row because the identity reads one
+    further field from a stat record the walk already reads; no additional open
+    is made, which is what this count is measuring. The harness names each run's
+    live child before the window opens, so the near-absence of opens is the index
+    at work rather than a walk that has gone blind.
   </p>
 
   <h4>Paired suite, and the control the index rests on</h4>
   <p>
     Sixteen existing test files covering <code>process_signal.py</code> and
     <code>recovery_liveness.py</code> ran at the base and again at the head that
-    lands: 155 passed and 1 skipped at the base, 163 passed and 1 skipped at the
-    head, the eight-test difference being the new file and no test added to the
-    failing set. The new file holds eight cases: a second beat opens no
+    lands: 155 passed and 1 skipped at the base, 164 passed and 1 skipped at the
+    head, the nine-test difference being the new file and no test added to the
+    failing set. The new file holds nine cases: a second beat opens no
     environment for a process that has not execd; several runs in one beat open
     one environment per process; a pid the kernel recycles is read afresh;
-    another user's process is skipped without an open; a reparented worker is
-    found by the liveness read and by the stop path.
+    another user's process is skipped without an open; a process read before its
+    exec is read afresh after it execs; a process that re-execs the same binary
+    is read afresh; a reparented worker is found by the liveness read and by the
+    stop path.
   </p>
   <p>
     The declared negative control removes the executable identity from the
@@ -75,7 +95,9 @@
     exec is answered from that pre-exec reading after it execs carrying the run
     mark. The case that asserts such a process is found on the next beat fails
     against that mutation (<code>EXIT=1</code>), which is the coverage the
-    identity key buys.
+    identity key buys. A second control reverts the identity to the pid, start
+    tick and path alone: the same-binary re-exec case then fails
+    (<code>EXIT=1</code>), which is what the per-exec field adds.
   </p>
   <p>The work is committed locally and left unpromoted for the coordinator.</p>
 </article>
