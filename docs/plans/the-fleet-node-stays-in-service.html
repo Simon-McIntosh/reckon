@@ -19,11 +19,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-fleet-moves-to-a-new-node">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="49">
+<meta name="plan-version" content="50">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -581,6 +581,51 @@
       it opens no more than one per process started during the window.
     </p>
 
+    <h2 id="s13">&sect;13 &mdash; One walk of the process table answers every run in a beat</h2>
+    <section data-reckon="section" data-id="s13" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      §12 removed the environment reads but not the walk. At 04:20 on 20 October the
+      imas-codex producer was running the merged code. In 5 s it opened 9 environments,
+      against 14,568 before. But it still listed <code>/proc</code> 17 times and read
+      <code>/proc/&lt;pid&gt;/stat</code> 4,515 times, because
+      <code>_processes_owning_run</code> still walks the whole table once per run that
+      needs the scan. It reads each process's start tick and stack base to check the
+      index, then answers from the index. The producer stayed at about 94% of a CPU
+      (72% user, 30% system). A 20 s <code>py-spy</code> profile put 25% of its samples
+      in <code>_env_scan_run_pid</code> and 19% in <code>_processes_owning_run</code>.
+      §12's prose said that one index per beat answers every run. The landed code
+      builds the index but walks once per run.
+    </p>
+    <p>
+      The liveness read takes one walk of the process table per beat. The walk maps
+      each run mark it sees to its pids, and every run asked in that beat is answered
+      from the map. A run asked in a later beat triggers a fresh walk, so a worker that
+      started mid-beat is found on the next beat. The stop path does not use the
+      per-beat map: it walks afresh at signal time, and keeps its start-tick floor and
+      crew-home checks, because a map up to one beat old must never select a process
+      to signal.
+    </p>
+    <p>
+      Done when the following tests pass:
+    </p>
+    <ul>
+      <li>Several runs asked within one beat cause one listing of
+      <code>/proc</code>.</li>
+      <li>The next beat walks again.</li>
+      <li>A process started after a beat's walk is found on the following beat.</li>
+      <li>The stop path walks afresh even when a beat's map is current.</li>
+      <li>The existing tests for the two modules have no added failures against the
+      base, with paired logs.</li>
+    </ul>
+    <p>
+      The negative control is a stop issued for a run whose worker started after the
+      beat's walk. It must find and signal that worker, which a stop path reading the
+      per-beat map would miss. The measurement runs on the fleet allocation: a 5 s
+      strace of a producer harness in which several runs need the scan. At the base
+      revision, the positive control, <code>/proc</code> is listed once per such run
+      per beat. At the change, it is listed once per beat.
+    </p>
+
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
 <div class="r-gate" data-id="g-tfnsis-stop-path" data-section="s2" data-gated-sections="s3" data-status="closed" data-verdict="passed">
@@ -619,7 +664,7 @@
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-tfnsis-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-18" data-recommends-skill="/reckon-build the-fleet-node-stays-in-service" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Investigate the stop path and producer cost, fix the migrate command, then gate the move</h4>
-    <div class="r-fu-body"><p>§2, §4 and §7 ran as the first wave. §3 waited on the §2 gate, and §9 follows §7's measurement; §3 and §9 have disjoint write scopes and run together. §6 shares <code>fleet_node.py</code> with §4 and runs after it lands. §5 is deferred until the lead chooses its route: run from an ssh shell on the fleet node, or after a reckon change that grants a node the fleet state paths. A dispatched node cannot write them (see c-s5-authority). §8 is deferred: it runs only if SDCC asks for the node back, and then waits on the move-ready gate. §10 and §11 came from a load reading on 19 October. Both write <code>checkout_trust.py</code>, so §10, the steady per-second cost, runs first and §11 follows it. §12 came from a CPU reading at 02:07 on 20 October, after both had landed. It writes <code>process_signal.py</code> and <code>recovery_liveness.py</code>, which no other open section touches, so it runs now.</p></div>
+    <div class="r-fu-body"><p>§2, §4 and §7 ran as the first wave. §3 waited on the §2 gate, and §9 follows §7's measurement; §3 and §9 have disjoint write scopes and run together. §6 shares <code>fleet_node.py</code> with §4 and runs after it lands. §5 is deferred until the lead chooses its route: run from an ssh shell on the fleet node, or after a reckon change that grants a node the fleet state paths. A dispatched node cannot write them (see c-s5-authority). §8 is deferred: it runs only if SDCC asks for the node back, and then waits on the move-ready gate. §10 and §11 came from a load reading on 19 October. Both write <code>checkout_trust.py</code>, so §10, the steady per-second cost, runs first and §11 follows it. §12 came from a CPU reading at 02:07 on 20 October, after both had landed. It writes <code>process_signal.py</code> and <code>recovery_liveness.py</code>, which no other open section touches, so it runs now. §13 closes the gap §12's merge left: one walk of the process table per beat, not one per run. It writes the same two files, so it runs after §12, which has landed.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-fleet-node-stays-in-service</pre>
     </article>
 </section>
@@ -761,6 +806,9 @@
 </div>
 <div class="r-comment" data-section="s12" data-id="c-close-s12" data-who="reckon-build" data-when="2026-10-20T02:25:00Z">
     <div class="r-comment-body"><p>§12 landed in merge <code>ebd179bfe</code> (head <code>f34c4cfb7</code>). The liveness read now answers every run from one per-beat index of process environments, keyed by pid, start tick, executable path and stack base. In a three-run harness on the fleet allocation, environment opens fell from 803 per scan to 6. Nine tests were added, and the paired suite shows no added failure. The final review gave 113/120. Two follow-ons are recorded, not scheduled. The producer still runs about one <code>git rev-parse --verify</code> a second, rechecking commits that cannot stop existing. And a freshly materialised reload image's first import proof compiles cold and can exceed the 30 s bound; at 03:29 the first probe timed out and the next passed in 14 s. <a href="/reckon/evidence/archive/the-fleet-node-stays-in-service-landed.html#s12">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-s13-origin" data-who="reckon-build" data-when="2026-10-20T02:35:00Z">
+    <div class="r-comment-body"><p>This section was added after §12 landed. A strace and a <code>py-spy</code> profile of the imas-codex producer, running the merged code, showed environment reads gone but the per-run walk of <code>/proc</code> still in place. The same profile found a larger cost that this plan does not schedule: the obligation sweep thread, which took 54% of samples. Of that, 35% was <code>_resolved_reviewed_run_id</code> (<code>recovery_review_delivery.py</code>) re-resolving review records on every sweep, and 17% was <code>_held_worktree_records</code> (<code>obligations.py</code>). That code is reckon's obligations machinery, which other reckon sessions work on, so it is offered to the lead rather than dispatched from here. The section prose is a hand edit, because no op replaces section prose.</p></div>
 </div>
 </section>
 </main>
