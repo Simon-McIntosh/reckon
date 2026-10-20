@@ -527,6 +527,11 @@ base revision rather than against the head with the change reverted.</p>
     <p>Built by power-convertor-02 and recorded here at its request. Commit <code>6ebe65ba4</code> (<em>admit a spent window on purchased credits up to a capped lift</em>), merged at <code>3dcfc77c0</code>, with <code>tests/test_a_credit_lift_spends_past_a_spent_window.py</code>: ten tests, four of which fail without the credit branch, and 24 failures at both base and head across the 84 importing test files, none added. Lift <code>codex-sub-1792529492-26f087</code> was granted at 20:51Z for 10,000 credits from a balance of 60,559.94.</p>
   </section>
 
+  <section id="s47">
+    <h2>§47 — a credit-lifted lane is open but scarce</h2>
+    <p>The picker's budget gate in <code>reckon/crew/picker/snapshot.py</code> reads the verdict of <code>budget.decide</code> through the group's lift-aware effective block, the path a dispatch takes, and quotes its reason; where no credits lift rides it also applies <code>budget.effective_ceiling</code>. <code>_reserved_lane_exclusion</code> judges a reserved lane under a credits lift by its credit pool, keeping the tier and attempts terms. <code>tests/test_a_credit_lifted_lane_is_open_but_scarce.py</code> asserts the five cases: a funded credits lift offers codex to a deep, strict, elevated-risk node and withholds it from an ordinary one; 9,000 of 10,000 drawn withholds it from every node; a spent window with no lift withholds it; an unreserved lane with reserves 5 and 3 is withheld at 93% and offered at 91%; a reserved lane with no lift at 70% is withheld by its window term. <code>tests/test_picker_pressure.py</code>'s reserve-hold test now asserts the new rule. Gate at <code>c89c8561d</code>: 1 failed, 55 passed, the module-window bound failing on both arms; base 4 failed, 33 passed. Both negative controls fail as declared. Review 105 with two follow-ons, disposed: the effective-ceiling check is reachable on a served availability reading, and sharing <code>routing._budget_verdict</code> is left to the next code review. Merged at <code>b71c30bba</code>.</p>
+  </section>
+
 </main>
 </body>
 </html>
