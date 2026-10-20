@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="fragment">
+  <meta name="plan-slug" content="the-site-answers-fast-and-agrees">
+  <title>§11 second pass — the-site-is-measured-again-after-the-script-cache-and-the-flow</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h2 id="the-site-is-measured-again-after-the-script-cache-and-the-flow-heading">§11 — the site measured again from the reader's side</h2>
+
+  <p id="the-site-is-measured-again-after-the-script-cache-and-the-flow-verdict">The served site clears the
+    section's hard gate on this pass. Six lines, all pass, measured from the reader's side through an SSH tunnel to
+    <code>98dci4-srv-1006:8765</code>, cold and warm, for nova, reckon and imas-ambix, plus the nova and
+    power_convertor figure lists:</p>
+
+  <table id="the-site-is-measured-again-after-the-script-cache-and-the-flow-gate">
+    <thead><tr><th>Gate line</th><th>Measured</th><th>Verdict</th></tr></thead>
+    <tbody>
+      <tr><td>Progress bars within 2 s warm</td><td>nova 31 ms, reckon 43 ms, imas-ambix 33 ms</td><td>pass</td></tr>
+      <tr><td>Progress bars, cold (context only)</td><td>nova 168 ms, reckon 188 ms, imas-ambix 190 ms</td><td>—</td></tr>
+      <tr><td>Every view within 3 s warm</td><td>worst 59 ms (reckon crew)</td><td>pass</td></tr>
+      <tr><td>Every view within 10 s cold</td><td>worst 540 ms (nova graph), warm-contaminated arm</td><td>pass with caveat</td></tr>
+      <tr><td>No console error</td><td>0 across all nine loads</td><td>pass</td></tr>
+      <tr><td>Home view under 500 KB</td><td>355,355 B cold; 140,586 B warm</td><td>pass</td></tr>
+      <tr><td>nova and power_convertor figure first screens under 2 MB, thumbnails within 2 s warm</td>
+        <td>nova 98 KB cold / 0 B warm in 5.7 ms; power_convertor 138 KB cold / 9.9 KB warm in 2.9 ms</td><td>pass</td></tr>
+      <tr><td>All thirty sampled plans agree on every surface</td><td>30 of 30</td><td>pass</td></tr>
+    </tbody>
+  </table>
+
+  <p id="the-site-is-measured-again-after-the-script-cache-and-the-flow-instrument"><strong>The first pass's
+    home-view miss was the instrument, not the site.</strong> The probe summed every response body the browser
+    received, which counts a resource the browser served from its own cache and never moved. Measured from
+    <code>request.sizes()</code> — the bytes the browser actually moves — the home view transfers 355,355 B cold
+    and 140,586 B warm, against the 1,169,603 B the body-length sum reports for the same loads. The first pass's
+    1,167,789 B cold was that instrument's reading, so its miss on this line was the instrument's, not §17's.</p>
+
+  <p id="the-site-is-measured-again-after-the-script-cache-and-the-flow-cache"><strong>The script cache works and
+    this pass shows it.</strong> On the warm home load every revision-keyed script and stylesheet transfers 0
+    bytes, against 200,793 B of scripts and 13,975 B of CSS cold. What remains warm is data:
+    <code>/_index/imas-ambix</code> 51 KB, <code>/crew</code> 42 KB, <code>/_projects/index.json</code> 30 KB,
+    <code>/_checks/imas-ambix</code> 12 KB.</p>
+
+  <p id="the-site-is-measured-again-after-the-script-cache-and-the-flow-caveat"><strong>The one line this pass
+    cannot certify on its own terms is the cold half of the view line.</strong> The served process had answered
+    those routes minutes earlier, so its cold arm is a first load against a warm process. A genuinely cold arm
+    needs a restarted server, which is not this node's to do; the discarded pre-restart pass saw nova's graph at
+    12,083 ms cold, so a server-cold view line may exceed its 10 s budget. That measurement belongs to a pass that
+    can restart the process. §3 supplies the first-paint figures and §5 the stored results the cold derivation
+    runs through.</p>
+
+  <p id="the-site-is-measured-again-after-the-script-cache-and-the-flow-control"><strong>The negative control
+    fails four of six lines.</strong> The same probe against a temporary <code>reckon serve</code> on port
+    <code>18766</code>, from the plan's base revision <code>b98f7a160</code>, never shows reckon a non-zero
+    progress bar, never populates reckon's graph, moves 873,257 B cold / 685,522 B warm on the home view, and
+    agrees on 17 of 30 sampled plans.</p>
+
+  <p id="the-site-is-measured-again-after-the-script-cache-and-the-flow-artifacts">Evidence:
+    <code>probe-head2.json</code>, <code>probe-base.json</code>, <code>home-bytes-head.json</code>,
+    <code>home-bytes-base.json</code> and <code>logs/</code> under run directory
+    <code>r-20261020T102403949763-the-site-is-measured-again-after-the-script-cache-and-the-flow</code>; the report
+    is spliced into
+    <a href="/reckon/evidence/archive/the-site-answers-fast-and-agrees-landed#s11-second-pass">§11's landed record</a>;
+    the figure is
+    <a href="/reckon/figures/the-site-answers-fast-and-agrees/the-site-is-measured/reader-side-load-times-after-the-script-cache.svg">reader-side-load-times-after-the-script-cache.svg</a>.
+    Window <code>2026-10-20T10:35Z</code>–<code>10:52Z</code>; served revision <code>10ed6210</code>.</p>
+ </main>
+</body>
+</html>

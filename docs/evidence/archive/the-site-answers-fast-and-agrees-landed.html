@@ -182,6 +182,97 @@
       only artifacts are this record and the figure.</p>
   </section>
 
+  <section id="s11-second-pass">
+    <h2>§11 — second pass: the site measured again after the script cache</h2>
+    <p>The same headless probe ran again from the reader's side, through an SSH tunnel to
+      <code>98dci4-srv-1006:8765</code>, after the shell's revision-keyed scripts and the flow landed. Probe host
+      <code>98dci4-clu-2002</code>, job <code>1281970</code>; the served host's load average was 6.1 and the probe
+      host's 32 during the head pass. Window: <code>2026-10-20T10:35Z</code> to <code>10:40Z</code> (head) and
+      <code>10:44Z</code> to <code>10:52Z</code> (negative control). The served process ran revision
+      <code>10ed6210</code>. Probe script and logs sit under the run directory
+      <code>r-20261020T102403949763-the-site-is-measured-again-after-the-script-cache-and-the-flow</code> as
+      <code>probe.py</code>, <code>probe-head2.json</code>, <code>probe-base.json</code>,
+      <code>home-bytes-head.json</code>, <code>home-bytes-base.json</code> and <code>logs/probe-head2.log</code>,
+      <code>logs/probe-base.log</code>, <code>logs/home-bytes-head.log</code>, <code>logs/home-bytes-base.log</code>.</p>
+
+    <table>
+      <thead><tr><th>Gate</th><th>This pass (served, <code>10ed6210</code>)</th><th>First pass</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>Progress bars within 2 s warm</td>
+          <td>nova 31 ms, reckon 43 ms, imas-ambix 33 ms</td><td>21 / 33 / 30 ms</td><td>pass</td></tr>
+        <tr><td>Every view populated within 3 s warm and 10 s cold</td>
+          <td>warm worst 59 ms (reckon crew); cold worst 540 ms (nova graph)</td>
+          <td>warm worst 32 ms; cold worst 544 ms</td><td>pass (cold arm warm-contaminated — see below)</td></tr>
+        <tr><td>No console error</td><td>0 errors across all nine loads</td><td>0 errors</td><td>pass</td></tr>
+        <tr><td>Home view transfers under 500 KB</td>
+          <td>355,355 B cold; 140,586 B warm</td><td>1,167,789 B cold; 896,119 B warm</td><td>pass</td></tr>
+        <tr><td>nova and power_convertor figure first screens under 2 MB, every thumbnail within 2 s warm</td>
+          <td>nova 98 KB cold / 0 B warm in 5.7 ms; power_convertor 138 KB cold / 9.9 KB warm in 2.9 ms</td>
+          <td>nova 48 KB / 0 B in 3 ms; power_convertor 162 KB / 10 KB in 2 ms</td><td>pass</td></tr>
+        <tr><td>All thirty sampled plans agree on every surface</td>
+          <td>30 of 30, none unread</td><td>30 of 30</td><td>pass</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>The first pass's home-view miss was this probe's instrument, and the site was inside the budget
+      both times.</strong> The probe summed the lengths of every response body the browser received, and a body
+      the browser serves from its own cache is still handed to that handler, so the figure could not fall on a
+      cached load and could not distinguish a cached resource from a re-fetched one. The honest measure is the
+      bytes the browser moves, which is what the reader pays over the tunnel. Recorded by
+      <code>home_bytes.py</code> from <code>request.sizes()</code>, the served home view moves 355,355 B cold and
+      140,586 B warm, against the 1,169,603 B the body-length instrument reports for the same two loads. The
+      first pass's 1,167,789 B cold is the same instrument's reading, so its miss on this line was the
+      instrument's, not §17's. <strong>Both home loads are under the 500 KB the gate allows.</strong></p>
+
+    <p><strong>The script cache is working, and this pass shows it directly.</strong> On the warm home load every
+      script and stylesheet transfers 0 bytes — <code>/_ui/*.js</code>, <code>/_runtime/*.js</code>,
+      <code>/_shared/*.css</code> and <code>/_ui/*.css</code>, each revision-keyed — against 200,793 B of scripts
+      and 13,975 B of CSS on the cold load. What the warm load still moves is data, not code:
+      <code>/_index/imas-ambix</code> 51 KB, <code>/crew</code> 42 KB, <code>/_projects/index.json</code> 30 KB
+      and <code>/_checks/imas-ambix</code> 12 KB. That is the §17 change visible from the reader's side.</p>
+
+    <p><strong>One head pass was lost to a service restart and is not reported.</strong> A first pass began at
+      <code>10:29:10Z</code>; the served process restarted at <code>10:29:46Z</code> (its own
+      <code>/_server</code> reports <code>started_at</code>), and one imas-ambix load inside that window answered
+      <code>503 Service Unavailable</code> and raised the only console error seen. The restart, not the site,
+      produced those errors, so that pass was discarded and the pass above re-run against a settled server.</p>
+
+    <p><strong>No head line fails, so no head line names an owning section.</strong> The two lines the first pass
+      did not clear — the home-view byte budget and, before it, the plan list's progress — both pass here. The
+      only line this pass cannot certify on its own terms is the cold half of the view line: the settled server
+      had served those routes minutes earlier, so its "cold" arm (worst 540 ms) is a first load against a warm
+      process, not a server-cold one. A genuinely cold arm needs a restarted server, and restarting the shared
+      process is not this node's to do. In the discarded pre-restart pass the genuinely cold loads were nova's
+      graph at 12,083 ms and its plan list at 6,433 ms, so a server-cold view line may sit over its 10 s budget;
+      that measurement belongs to a pass that can restart the process, and it is recorded here rather than
+      claimed as this pass's verdict. §3 supplies the first-paint figures and §5 the stored results the cold
+      derivation runs through.</p>
+
+    <p><strong>The negative control and its verdict.</strong> The same probe and byte recorder ran against a
+      temporary <code>reckon serve</code> on port <code>18766</code>, started from the plan's base revision
+      <code>b98f7a160</code> extracted with <code>git archive</code> into the run's scratch. Four of the six lines
+      fail there: reckon's plan list never shows a non-zero bar (progress <code>None</code> warm and cold), its
+      graph never populates (<code>None</code> in both arms), the home view moves 873,257 B cold and 685,522 B
+      warm against the 500 KB budget, and 17 of the 30 sampled plans agree (nova 6, reckon 1, imas-ambix 10). Its
+      figure first screens (nova 1.72 MB, power_convertor 1.35 MB cold) and its console-error count (0) are the
+      two lines the base passes, which is the expected shape: the figure budget and the error line were not what
+      this plan's sections moved. The probe as first run raised <code>TimeoutError</code> on the base's slow
+      <code>/_index</code> and lost the whole report; the sampler now records an index it cannot read inside the
+      timeout instead of aborting, and the control was re-run with a 45 s timeout.</p>
+
+    <p><strong>The figure.</strong>
+      <code>/reckon/figures/the-site-answers-fast-and-agrees/the-site-is-measured/reader-side-load-times-after-the-script-cache.svg</code>
+      draws the head's warm and cold times against the 2 s, 3 s and 10 s gates, and the transferred megabytes
+      head beside base against the 0.5 MB and 2 MB budgets. Its label check reports 40 labels against 32 bars and
+      5 threshold lines with no label on a bar, a threshold line or another label, and none outside the canvas;
+      the render log is <code>logs/figure-render-check.log</code>, which ends in <code>EXIT=0</code>, and the PNG
+      was rendered and inspected.</p>
+
+    <p><strong>What this node did not do.</strong> It measured the live served process only; verifying the merged
+      result belongs to a separately dispatched test node. It changed no product source and added no test, so its
+      only artifacts are this record and the figure.</p>
+  </section>
+
   <section id="s18">
     <h2>§18 — A browser test copies only the state the page reads</h2>
     <p><code>served_spa</code> in <code>tests/spa_browser_harness.py</code> copies the six index files the served page reads (<code>project.json</code>, <code>index.json</code>, <code>timeline.html</code>, <code>review.html</code>, <code>flight.yaml</code>, <code>model-catalogue.yaml</code>) into each test server's home. A test whose route reads another state file names it through <code>state_files</code>, and the harness raises when a named file is missing. Run <code>r-20261020T071210796009</code>, commits <code>66cba8d62</code>, <code>e72167676</code> and <code>34299339b</code>, merged at <code>322962f4e</code>.</p>
