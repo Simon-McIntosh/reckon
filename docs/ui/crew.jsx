@@ -4,23 +4,6 @@ const CREW_POLL_INTERVAL_MS = 3000;
 
 const CREW_CARD_STYLES = String.raw`.r-crew-contract{-webkit-line-clamp:1}`;
 
-const RECORDED_FLOW_STATUSES = new Set(["shipped", "done", "superseded", "historical"]);
-const ACTIVE_FLOW_STATUSES = new Set(["active", "in-progress"]);
-
-function flowPackLanes(items) {
-  const lanes = [];
-  (items || []).forEach(item => {
-    const free = lanes
-      .filter(candidate => candidate.lastEnd <= item.start + 0.01)
-      .sort((left, right) => right.lastEnd - left.lastEnd)[0];
-    const target = free || { lastEnd: Number.NEGATIVE_INFINITY, items: [] };
-    if (!free) lanes.push(target);
-    target.items.push(item);
-    target.lastEnd = item.end;
-  });
-  return lanes;
-}
-
 function flowTicks(low, high) {
   const step = high - low > 96 ? 24 : 12;
   const ticks = [];
@@ -34,23 +17,43 @@ function flowPercent(hour, schedule) {
   return ((hour - schedule.low) / (schedule.high - schedule.low || 1)) * 100;
 }
 
-function flowPlanLiveRun(plan, runs, project) {
-  return (runs || []).find(run =>
-    run.plan === plan.slug && (!project || !run.project || run.project === project)
-  );
+// The server packs the lanes and stamps each bar with its lane index; the
+// surface only groups the served bars by that index. It never re-packs, so a
+// bar's row is whatever the server put it in.
+function flowLanes(items) {
+  const lanes = [];
+  (items || []).forEach(item => {
+    const index = Number.isInteger(item.lane) ? item.lane : lanes.length;
+    while (lanes.length <= index) lanes.push({ items: [] });
+    lanes[index].items.push(item);
+  });
+  return lanes;
 }
 
-function DerivedFlow({ runs, project }) {
+// The share of a bar that is already done, as a percentage of its span: the
+// served split point divides the done share behind it from the remaining share
+// ahead of it, so a half-done plan shades half its length.
+function flowDonePercent(item) {
+  const span = item.end - item.start;
+  if (!(span > 0)) return 100;
+  return ((item.split - item.start) / span) * 100;
+}
+
+function DerivedFlow() {
   const [selectedSprint, setSelectedSprint] = useState(null);
   const payload = window.STATE?.schedule || null;
-  const inventory = new Map((window.STATE?.inventory || []).map(plan => [plan.slug, plan]));
+  // A bar names its plan by typed key, so the inventory is keyed by the same
+  // key: a plan and a research document sharing a slug stay distinct rows.
+  const inventory = new Map(
+    (window.STATE?.inventory || []).map(row => [row.nav_key || row.slug, row])
+  );
   const items = (Array.isArray(payload?.bars) ? payload.bars : [])
-    .map(item => ({ ...item, plan: inventory.get(item.plan) }))
+    .map(item => ({ ...item, plan: inventory.get(item.nav_key) }))
     .filter(item => item.plan);
   const low = Number.isFinite(Number(payload?.low)) ? Number(payload.low) : -24;
   const high = Number.isFinite(Number(payload?.high)) ? Number(payload.high) : 24;
   const schedule = payload
-    ? { items, lanes: flowPackLanes(items), low, high, ticks: flowTicks(low, high) }
+    ? { items, lanes: flowLanes(items), low, high, ticks: flowTicks(low, high) }
     : null;
 
   if (!schedule) {
@@ -66,16 +69,13 @@ function DerivedFlow({ runs, project }) {
 
   const sprints = [...new Set(schedule.items.map(item => item.plan.sprint).filter(Boolean))].sort();
   const sprintChips = [{ id: null, label: "All" }, ...sprints.map(id => ({ id, label: id }))];
-  const liveByPlan = new Map(
-    schedule.items.map(item => [item.plan.slug, flowPlanLiveRun(item.plan, runs, project)])
-  );
   const nowLeft = `${flowPercent(0, schedule)}%`;
 
   return (
     <section className="r-derived-flow" aria-label="Dependency-derived crew flow">
       <header className="r-derived-flow-head">
         <span className="r-crew-label">Derived flow</span>
-        <strong>{schedule.items.length} items · {schedule.lanes.length} concurrent session{schedule.lanes.length === 1 ? "" : "s"}</strong>
+        <strong>{schedule.items.length} items · {schedule.lanes.length} concurrent lane{schedule.lanes.length === 1 ? "" : "s"}</strong>
         <div className="r-derived-flow-key" aria-label="Flow state key">
           <span className="recorded"><i></i>recorded</span>
           <span className="in-flight"><i></i>in flight</span>
@@ -105,19 +105,20 @@ function DerivedFlow({ runs, project }) {
             <i className="r-derived-flow-now" style={{ left: nowLeft }}></i>
           </div>
           {schedule.lanes.map((lane, index) => {
-            const live = lane.items.map(item => liveByPlan.get(item.plan.slug)).find(Boolean);
+            // A lane is live only while a served bar in it is in flight; the
+            // state is the server's, so no run lookup decides it here.
+            const live = lane.items.some(item => item.state === "in-flight");
             const wallHours = lane.items.reduce((total, item) => total + item.wall_hours, 0);
             return (
               <div className="r-derived-flow-lane" key={index}>
                 <div className="r-derived-flow-lane-label">
-                  <strong>session {index + 1}</strong>
-                  <span>{live ? `live · ${live.role || "worker"}` : `${lane.items.length} item${lane.items.length === 1 ? "" : "s"} · ${wallHours}h`}</span>
+                  <strong>lane {index + 1}</strong>
+                  <span>{live ? "live" : `${lane.items.length} item${lane.items.length === 1 ? "" : "s"} · ${wallHours}h`}</span>
                 </div>
                 <div className="r-derived-flow-track">
                   <i className="r-derived-flow-now" style={{ left: nowLeft }}></i>
                   {lane.items.map(item => {
                     const plan = item.plan;
-                    const status = String(plan.status || "pending").toLowerCase();
                     const dimmed = Boolean(selectedSprint && plan.sprint !== selectedSprint);
                     // The plan's progress figure, as served on the inventory
                     // row the bar resolved against: the surface states it, it
@@ -125,16 +126,17 @@ function DerivedFlow({ runs, project }) {
                     const progressPct = Math.round(Number(plan.impl || 0) * 100);
                     return (
                       <a
-                        href={`#plan/${plan.slug}`}
-                        key={plan.slug}
-                        className={`r-derived-flow-bar ${RECORDED_FLOW_STATUSES.has(status) ? "recorded" : ACTIVE_FLOW_STATUSES.has(status) ? "in-flight" : status === "blocked" ? "held" : "predicted"}`}
+                        href={`#plan/${plan.nav_key || plan.slug}`}
+                        key={item.nav_key}
+                        className={`r-derived-flow-bar ${item.state}`}
                         style={{
                           left: `${flowPercent(item.start, schedule)}%`,
                           width: `${Math.max(0, flowPercent(item.end, schedule) - flowPercent(item.start, schedule))}%`,
                           opacity: dimmed ? 0.28 : 1,
                         }}
-                        title={`${plan.title || plan.slug} · ${plan.sprint || "unscheduled"} · ${status} · ${item.wall_hours}h wall-clock · ${progressPct}%`}
+                        title={`${plan.title || plan.slug} · ${plan.sprint || "unscheduled"} · ${item.state} · ${item.wall_hours}h wall-clock · ${progressPct}%`}
                       >
+                        <i className="r-derived-flow-bar-done" style={{ width: `${flowDonePercent(item)}%` }}></i>
                         <span className="r-derived-flow-sprint-chip">{plan.sprint || "—"}</span>
                         <strong>{plan.title || plan.slug}</strong>
                         <span className="r-derived-flow-progress">{progressPct}%</span>
@@ -357,7 +359,7 @@ function CrewView({ visibleProjects, mountedProjectCount, selectedProject, quota
           All visible
         </button>
         <span>
-          {flowPreview?.lane_count ?? "—"} sessions · polling every {CREW_POLL_INTERVAL_MS / 1000}s
+          {flowPreview?.lane_count ?? "—"} lanes · polling every {CREW_POLL_INTERVAL_MS / 1000}s
           {` · ${Array.isArray(visibleProjects) ? visibleProjects.length : 0} `}shown / {mountedProjectCount || 0} mounted
           {refreshedAt ? ` · refreshed ${refreshedAt.toLocaleTimeString()}` : ""}
         </span>

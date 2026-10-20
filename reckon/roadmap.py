@@ -1861,21 +1861,27 @@ def _schedule_horizon(project_manifest: dict[str, Any] | None) -> int | None:
 
 
 def _schedule_bars(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """The bar list, each bar naming its plan by slug rather than carrying it.
+    """The bar list, each bar naming its plan by typed key rather than by row.
 
     The schedule travels inside every discovery payload and every fleet read,
     so an embedded plan row — sections, decisions, follow-ups and gates — is
     downloaded again for each bar that references it. The reader already holds
-    the inventory the slug resolves against, so a reference is what the bar
-    owes it; embedding the row multiplies the payload by the row's size.
+    the inventory the key resolves against, so a reference is what the bar
+    owes it; embedding the row multiplies the payload by the row's size. The
+    key is the plan's ``nav_key``, so a plan and another kind of document
+    sharing a slug cannot resolve to one another's row.
     """
 
     return [
         {
             "plan": item["slug"],
+            "nav_key": item["nav_key"],
+            "state": item["state"],
             "start": item["start"],
+            "split": item["split"],
             "end": item["end"],
             "wall_hours": item["wall_hours"],
+            "lane": item["lane"],
         }
         for item in items
     ]

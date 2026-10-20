@@ -236,19 +236,30 @@ def test_attach_schedule_uses_the_live_runs_and_the_given_reference(
                 "type": "plan",
                 "status": "active",
                 "wall_clock_hours": 8,
+                "impl": 0.5,
                 "sprint": "beta",
-            }
+            },
+            {
+                "slug": "landed",
+                "title": "Landed",
+                "type": "plan",
+                "status": "shipped",
+                "wall_clock_hours": 4,
+                "edited": "2026-09-04T00:00:00Z",
+                "sprint": "beta",
+            },
         ],
         "sprints": [],
         "milestones": [],
     }
 
-    def _one_run_row(_mounts, _project):
+    def _one_run_row(_mounts, _crew_project):
         return [
             {
                 "run_id": "run-live",
                 "project": "sample",
                 "plan": "active-work",
+                "phase": "working",
                 "dispatched_at": "2026-09-04T00:00:00Z",
             }
         ]
@@ -261,27 +272,33 @@ def test_attach_schedule_uses_the_live_runs_and_the_given_reference(
     )
     assert payload["schedule"]["reference"] == "2026-09-04T04:00:00+00:00"
 
-    # The live run's dispatch reaches the derivation: the active bar starts at
-    # the dispatch, 4 hours before the reference, rather than at the reference.
+    # The live run reaches the derivation as the bar's state, and the plan's
+    # own half-done progress places it: the done share sits 4 hours behind the
+    # anchor and the remaining share 4 hours ahead.
     active = next(
         bar for bar in payload["schedule"]["bars"] if bar["plan"] == "active-work"
     )
+    assert active["state"] == "in-flight"
     assert active["start"] == -4
     assert active["end"] == 4
+    assert active["split"] == 0
 
-    # A different explicit reference re-anchors the bar; the schedule is a
-    # function of the supplied instant, never of whatever the clock reads.
+    # A recorded bar is stamped against the supplied instant: moved 6 hours
+    # later, its landing reads 6 hours further back. The schedule is a function
+    # of that instant, never of whatever the clock reads.
+    landed = next(bar for bar in payload["schedule"]["bars"] if bar["plan"] == "landed")
+    assert landed["state"] == "recorded"
+    assert landed["end"] == -4
     raised = serve._attach_schedule(
         result,
         "sample",
         {"sample": unused_mount},
         reference=REFERENCE + timedelta(hours=6),
     )
-    moved = next(
-        bar for bar in raised["schedule"]["bars"] if bar["plan"] == "active-work"
-    )
-    assert moved["start"] == -10
-    assert moved["end"] == -2
+    assert raised["schedule"]["reference"] == "2026-09-04T10:00:00+00:00"
+    moved = next(bar for bar in raised["schedule"]["bars"] if bar["plan"] == "landed")
+    assert moved["end"] == -10
+    assert moved["start"] == -14
 
 
 def _load_discovery_state(payload: dict) -> dict:
