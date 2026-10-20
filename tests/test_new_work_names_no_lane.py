@@ -59,7 +59,7 @@ def test_a_missing_review_names_no_lane_while_a_continuation_keeps_its_own(
     assert "--local" not in routed
     assert routed.startswith("reckon crew dispatch --project P --plan L")
 
-    resume = f"reckon crew redispatch --run r1 --backend {FOREIGN_BACKEND} --reason x"
+    resume = f"reckon crew resume --run r1 --backend {FOREIGN_BACKEND} --reason x"
     assert coordinator_obligations.follow_local_lane(resume, project="P") == resume
 
 

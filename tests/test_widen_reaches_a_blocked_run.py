@@ -1,35 +1,9 @@
-"""crew widen reaches a run whose manifest reports blocked.
+"""A stopped worker permits widening regardless of phase or manifest status.
 
-A worker that hits its fence writes ``status: blocked``, names the path it could
-not write, and ends its turn. For a run launched through a backend the pointer's
-phase is folded from the stream's terminal event, so a turn that ends normally
-folds the phase to ``complete`` -- and ``crew widen``, deciding from that phase
-alone, refused the run that was waiting for exactly this command. The only
-remaining discharge was discard and redispatch, which throws away the session
-that had diagnosed the change.
-
-These cases drive the CLI runner against a synthesised run directory holding the
-post-observe state: a pointer whose folded phase reads ``complete`` beside a
-delivered manifest whose status reads ``blocked``. What is under test is the
-command surface a coordinator reaches for, and the field it writes is the one
-the promotion validator reads, so the assertions are made on the pointer bytes
-on disk rather than on the reply alone.
-
-The block is only half the rule the command states. The other half is that the
-worker process has stopped, read from the process the pointer records rather than
-from the phase: a run reporting a block while its worker still runs is a worker
-writing against the boundary a widening would move, and the phase and the
-manifest can both say blocked while it does. Every case here therefore asserts
-the liveness read its fixture was built to produce before the command is
-invoked, because a case whose pid read answered otherwise would pass or fail on
-the wrong fact.
-
-The state a case writes is isolated the way the sibling fence-widening cases
-isolate theirs: ``RECKON_HOME`` points at a temporary home so a case's pointer
-write stays inside the case, and the crew home the process resolved *before*
-that substitution is watched byte for byte. The production pointer directory
-cannot serve as that witness -- a live fleet rewrites it continuously, so a
-difference there would say the machine is busy rather than that a case escaped.
+Each CLI case records a synthetic pointer under an isolated crew home. The
+positive cases inspect the pointer bytes; live-worker cases assert refusal and
+unchanged bytes. A separate witness checks that the test never writes to the
+pre-existing crew home.
 """
 
 from __future__ import annotations
@@ -286,12 +260,7 @@ def complete_manifest_run(
 def complete_manifest_behind_a_blocked_phase(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, crew_home_watch: CrewHomeWatch
 ):
-    """A blocked phase whose manifest reports the work finished.
-
-    The manifest is the run's own account of its state, so a terminal status
-    there refuses on its own: there is no scope decision outstanding to widen
-    for, whichever phase the mirror last folded.
-    """
+    """A blocked phase whose completed manifest is descriptive, not a refusal."""
     monkeypatch.setenv("RECKON_HOME", str(_case_home(tmp_path)))
     (tmp_path / "repo").mkdir()
     return _run_pointer(
@@ -410,14 +379,7 @@ def _read(run_id: str) -> dict:
 def test_a_blocked_manifest_widens_a_run_whose_phase_folded_complete(
     blocked_manifest_run: dict, crew_home_watch: CrewHomeWatch
 ) -> None:
-    """The falsifier for the phase-only check: this run is wideniable.
-
-    Every half is asserted: the command accepts the run, the missing path lands
-    in the fence the promotion validator reads, and the reply names the manifest
-    status that authorised the write -- because the phase in that same reply
-    still reads complete, which without the manifest status would look like a
-    widening of a finished run.
-    """
+    """A stopped worker can widen even when its phase and manifest disagree."""
     before = _read(BLOCKED_RUN_ID)
 
     result = _widen(BLOCKED_RUN_ID, MISSING)
@@ -458,60 +420,34 @@ def test_the_widened_run_keeps_its_session_and_every_other_recorded_field(
     crew_home_watch.assert_untouched()
 
 
-def test_a_complete_manifest_is_refused(
+def test_a_complete_manifest_widens_after_its_worker_exits(
     complete_manifest_run: dict, crew_home_watch: CrewHomeWatch
 ) -> None:
-    """The sibling case: a finished run is refused and its pointer is left alone.
-
-    The refusal is asserted on both halves -- a non-zero exit and a pointer
-    directory whose bytes are what they were -- because a command that refuses
-    in name while still rewriting the record would leave a coordinator believing
-    the fence had not moved.
-    """
-    before = _tree_bytes(pointer_path(COMPLETE_RUN_ID).parent)
-
+    assert record_process_alive(_read(COMPLETE_RUN_ID)) is not True
     result = _widen(COMPLETE_RUN_ID, MISSING)
-
-    assert result.exit_code != 0, result.output
-    assert MISSING not in result.output
-    assert _read(COMPLETE_RUN_ID)["node"]["write_paths"] == [DECLARED]
-    assert _tree_bytes(pointer_path(COMPLETE_RUN_ID).parent) == before
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output)["added"] == [MISSING]
+    assert _read(COMPLETE_RUN_ID)["node"]["write_paths"] == [DECLARED, MISSING]
     crew_home_watch.assert_untouched()
 
 
-def test_a_complete_manifest_is_refused_over_a_blocked_phase(
+def test_a_complete_manifest_widens_over_a_blocked_phase(
     complete_manifest_behind_a_blocked_phase: dict, crew_home_watch: CrewHomeWatch
 ) -> None:
-    """The manifest is decisive when it reports the work ended.
-
-    Reading the manifest alongside the phase must not become a way into runs
-    that are not waiting on a scope decision at all: a run whose own account
-    says complete or failed has nothing to widen for, even when something else
-    last folded its phase to blocked. The refusal names the manifest rather than
-    the phase, so a coordinator can see which account decided it.
-    """
+    assert record_process_alive(_read(BLOCKED_PHASE_RUN_ID)) is not True
     result = _widen(BLOCKED_PHASE_RUN_ID, MISSING)
-
-    assert result.exit_code != 0, result.output
-    assert "in its own manifest" in result.output
-    assert _read(BLOCKED_PHASE_RUN_ID)["node"]["write_paths"] == [DECLARED]
+    assert result.exit_code == 0, result.output
+    assert _read(BLOCKED_PHASE_RUN_ID)["node"]["write_paths"] == [DECLARED, MISSING]
     crew_home_watch.assert_untouched()
 
 
-def test_a_manifest_from_an_earlier_attempt_does_not_widen_the_run(
+def test_an_earlier_manifest_does_not_override_worker_liveness(
     stale_manifest_run: dict, crew_home_watch: CrewHomeWatch
 ) -> None:
-    """A delivery left at the path by the anchor attempt is not this run's.
-
-    A resumed attempt is dispatched at the same manifest path, so the previous
-    attempt's terminal verdict is sitting exactly where the new one will land.
-    Believing it would widen a live run against a block that has already been
-    answered, so only a manifest written after the attempt's baseline counts.
-    """
+    assert record_process_alive(_read(STALE_RUN_ID)) is not True
     result = _widen(STALE_RUN_ID, MISSING)
-
-    assert result.exit_code != 0, result.output
-    assert _read(STALE_RUN_ID)["node"]["write_paths"] == [DECLARED]
+    assert result.exit_code == 0, result.output
+    assert _read(STALE_RUN_ID)["node"]["write_paths"] == [DECLARED, MISSING]
     crew_home_watch.assert_untouched()
 
 
@@ -586,9 +522,8 @@ def test_a_run_whose_worker_has_exited_still_widens_exactly_as_before(
     """The stopped twin, unchanged: the admission is for this run, not against it.
 
     Every assertion of the case the manifest read was added for is repeated here
-    against a pointer that records a worker the process table has released, so
-    the stop half admits what the block half admits and refuses only the run
-    whose worker can still write.
+    against a pointer that records a worker the process table has released,
+    so the worker's liveness is the fact that admits the path.
     """
     _assert_liveness(STOPPED_RUN_ID, False)
 

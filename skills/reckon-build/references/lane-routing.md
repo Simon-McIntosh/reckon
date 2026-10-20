@@ -94,7 +94,7 @@ evidence are readable and the lane passes its dispatch gates.</li>
 the existing worktree and run identity:
 
 ```text
-reckon crew redispatch --run <run-id> --backend <stronger-lane> --reason "<why>" --advice "<checkpoint instruction>"
+reckon crew resume --run <run-id> --backend <stronger-lane> --reason "<why>" --advice "<checkpoint instruction>"
 ```
 </li>
 <li>Tell the successor to commit the inherited diff as a checkpoint before

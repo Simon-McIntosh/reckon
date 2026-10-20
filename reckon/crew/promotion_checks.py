@@ -1835,9 +1835,21 @@ def _landing_scope_products(
                 "writes only its manifest, report, and logs outside the "
                 "repository; dispatch an implement node for source edits"
             )
+        declared = node.get("write_paths") or ()
+        before_acceptance = record.get("accepted_scope_before_widening")
+        if before_acceptance is not None:
+            # The claim has already moved, but the reason must answer for the
+            # path that was outside the scope when the coordinator accepted it.
+            if not isinstance(before_acceptance, list) or not set(
+                before_acceptance
+            ).issubset(set(declared)):
+                raise CrewError(
+                    f"run {run_id!r} records an invalid claim before accepted paths"
+                )
+            declared = before_acceptance
         outside = _outside_declared_scope(
             cumulative.paths,
-            node.get("write_paths") or (),
+            declared,
             record=record,
             tree=tree,
         )

@@ -1,37 +1,10 @@
-"""Narrow or release one run's write claim without hand-editing its pointer.
+"""Amend one run's declared write claim through its live pointer.
 
-A write claim is created at dispatch and, until this module, could only be
-destroyed at promotion. ``--write-path`` exists on ``crew dispatch`` alone:
-``crew resume`` takes run, advice, backend and reason, and no command amends a
-live pointer's ``write_paths``. A coordinator whose worker blocked at its fence
-therefore had two moves, both wrong — hand-edit the live pointer under the crew
-config home, or redispatch and discard the worker's session with every turn of
-context it holds. The consequence was measurable: a run terminal since
-2026-09-15 held a claim on a source file that refused an unrelated promotion two
-days later in a third session.
-
-The mechanics are a rewrite of the pointer's ``node.write_paths``, so what this
-module adds is the refusal that makes the rewrite safe rather than clever. A
-claim is released only when the worker holding it can be *shown* to have
-stopped, and "shown" is deliberately narrow here:
-
-* a worker the process table still answers true for refuses — releasing a live
-  worker's claim is how two workers end up writing one file;
-* a pointer whose launching host is not this host refuses, because a pid is
-  meaningful only on the machine that issued it and the crew config home is
-  shared across login nodes, so a foreign answer would be fabricated;
-* a pointer that records no process yet refuses, because the pointer is written
-  before the worker is spawned and that window is exactly the gap a second
-  misplaced writer is looking for.
-
-Only a proven-local, proven-dead worker is amendable. That is the conservative
-direction on purpose: refusing costs a wait, while admitting costs someone's
-worker.
-
-Nothing here is wired to a command. The caller owns the surface; the intended
-entry point is a ``crew`` subcommand taking a run id plus an optional
-``--keep``/``--drop`` path, delegating to :func:`narrow_claim` and
-:func:`release_claim` and rendering :meth:`ClaimAmendment.as_dict`.
+A claim names the paths a worker may write. Widening adds paths only when the
+recorded worker is not running, and checks peer claims before the pointer write.
+Narrowing and release require a proven-local, proven-dead worker because they
+remove protection from paths another worker may soon claim. Each operation
+preserves the pointer's other fields and reports the paths it changed.
 """
 
 from __future__ import annotations
@@ -85,6 +58,52 @@ class ClaimAmendment:
 def declared_claim_paths(run_id: str) -> tuple[str, ...]:
     """Return the paths a run currently declares, in declaration order."""
     return tuple(_declared_paths(read_pointer(run_id)))
+
+
+def widen_claim(
+    run_id: str, paths: Iterable[str], *, acceptance: bool = False
+) -> tuple[dict[str, Any], list[str]]:
+    """Add paths to a stopped run, checking peer claims under the pointer lock.
+
+    A promotion acceptance keeps the scope from before its grant. Promotion
+    validates the stated reason against that scope while the widened claim
+    remains on the pointer and in the committed run record.
+    """
+    from reckon.crew.dispatch import refuse_widen_scope_conflicts
+    from reckon.crew.runs import _mutate_pointer
+
+    requested = _distinct(path.strip() for path in paths if path.strip())
+    if not requested:
+        raise CrewError("widen_claim needs at least one path")
+    added: list[str] = []
+
+    def amend(pointer: dict[str, Any]) -> dict[str, Any]:
+        if record_process_alive(pointer) is True:
+            raise ClaimAmendmentRefusedError(
+                run_id, "its worker is still running; wait for that process to exit"
+            )
+        node = _node(pointer)
+        if not node:
+            raise CrewError(
+                f"live pointer for {run_id!r} records no node holding a write scope"
+            )
+        declared = _declared_paths(pointer)
+        original = pointer.get("accepted_scope_before_widening")
+        if acceptance and original is None:
+            pointer["accepted_scope_before_widening"] = list(declared)
+        for path in requested:
+            if path not in declared:
+                added.append(path)
+                declared.append(path)
+        if added:
+            refuse_widen_scope_conflicts(pointer, added)
+        if not acceptance and isinstance(original, list):
+            original.extend(path for path in added if path not in original)
+        node["write_paths"] = declared
+        pointer["node"] = node
+        return pointer
+
+    return _mutate_pointer(run_id, amend), added
 
 
 def narrow_claim(
@@ -218,6 +237,11 @@ def _amend(pointer: Mapping[str, Any], paths: Sequence[str]) -> None:
         raise CrewError("live pointer carries no node mapping to amend")
     node["write_paths"] = list(paths)
     payload["node"] = node
+    original = payload.get("accepted_scope_before_widening")
+    if isinstance(original, list):
+        payload["accepted_scope_before_widening"] = [
+            path for path in original if path in paths
+        ]
     _write_json(pointer_path(str(pointer.get("run_id") or "")), payload)
 
 

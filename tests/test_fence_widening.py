@@ -1,20 +1,8 @@
-"""A blocked run's fence is widened through the pointer it will be judged by.
+"""A stopped run's fence is widened through the pointer promotion reads.
 
-The fence starts with the paths declared at dispatch. A blocked run can add a
-path through the command surface, which must apply dispatch's peer-claim rule and
-carry an accepted path into the committed record. These cases drive the CLI
-runner rather than the pointer helper because they exercise the coordinator's
-verb and the field promotion reads.
-
-Running the command is also held to the repository rule that a write-shaped test
-accounts for the state it did not isolate. A case points RECKON_HOME at a
-temporary home so its own pointer write stays inside the case, and the crew home
-the process resolved *before* that substitution is watched byte for byte: if
-home resolution ever stopped honouring the substitution, this fixture's pointer
-would land in that other directory, and the witness is what names the escape
-rather than leaving it to be discovered later. The production crew home is not
-the directory under watch and cannot be, and the last case makes that assertion
-fire on a substitute root so the witness is shown to speak.
+The command checks peer claims before adding a path. These cases drive the CLI
+against isolated live pointers and assert both the reply and durable pointer
+state, including a working-phase run whose worker is no longer running.
 """
 
 from __future__ import annotations
@@ -371,65 +359,30 @@ def test_a_path_already_declared_is_not_declared_twice(
     crew_home_watch.assert_untouched()
 
 
-def test_widening_a_working_run_is_refused_and_writes_nothing(
+def test_widening_a_working_phase_with_no_live_worker_succeeds(
     working_run: dict, crew_home_watch: CrewHomeWatch
 ) -> None:
-    """A working run's fence is the boundary it is already writing against.
-
-    The refusal is asserted on both halves: a non-zero exit and a pointer whose
-    bytes are what they were, because a command that refuses in name while
-    still rewriting the file would leave the boundary moved and the operator
-    believing it had not.
-    """
-    before = _tree_bytes(pointer_path(WORKING_RUN_ID).parent)
-
     result = _widen(WORKING_RUN_ID, GRANTED)
-
-    assert result.exit_code != 0, result.output
-    assert GRANTED not in result.output
-    assert _read(WORKING_RUN_ID)["node"]["write_paths"] == [DECLARED]
-    assert _tree_bytes(pointer_path(WORKING_RUN_ID).parent) == before
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output)["added"] == [GRANTED]
+    assert _read(WORKING_RUN_ID)["node"]["write_paths"] == [DECLARED, GRANTED]
     crew_home_watch.assert_untouched()
 
 
-def test_a_run_that_leaves_blocked_before_the_pointer_write_is_refused(
+def test_phase_changes_do_not_refuse_a_stopped_worker(
     blocked_run: dict, crew_home_watch: CrewHomeWatch, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The phase is re-read on the record the pointer mutation itself read.
-
-    The command reads the pointer once to decide, then the pointer mutation
-    reads it again under the per-run lock. A run that leaves the blocked phase
-    in that window has started writing against its boundary, so a widening that
-    trusts the first read moves that boundary under a live process -- the exact
-    case the guard exists to refuse. The flip is injected between the two reads
-    by making the pointer read answer `blocked` once and `working` afterwards,
-    which is the shape of the race, and the case fails unless the under-lock
-    read is re-checked rather than assumed.
-    """
     from reckon.crew import runs as runs_module
 
     read_through = runs_module.read_pointer
-    reads = {"count": 0}
 
-    def leaving_blocked(run_id: str) -> dict:
-        pointer = read_through(run_id)
-        reads["count"] += 1
-        if reads["count"] == 1:
-            return pointer
-        return {**pointer, "phase": "working"}
+    def working_phase(run_id: str) -> dict:
+        return {**read_through(run_id), "phase": "working"}
 
-    monkeypatch.setattr(runs_module, "read_pointer", leaving_blocked)
-    monkeypatch.setattr("reckon.crew.read_pointer", leaving_blocked)
-
-    before = _tree_bytes(pointer_path(BLOCKED_RUN_ID).parent)
-
+    monkeypatch.setattr(runs_module, "read_pointer", working_phase)
     result = _widen(BLOCKED_RUN_ID, GRANTED)
-
-    assert result.exit_code != 0, result.output
-    on_disk = _read(BLOCKED_RUN_ID)
-    assert on_disk["phase"] == "blocked"
-    assert on_disk["node"]["write_paths"] == [DECLARED]
-    assert _tree_bytes(pointer_path(BLOCKED_RUN_ID).parent) == before
+    assert result.exit_code == 0, result.output
+    assert _read(BLOCKED_RUN_ID)["node"]["write_paths"] == [DECLARED, GRANTED]
     crew_home_watch.assert_untouched()
 
 

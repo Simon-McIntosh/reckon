@@ -166,6 +166,19 @@ TOMBSTONES: tuple[Tombstone, ...] = (
         flags=("--review",),
         detail="a delivered review is checked by `crew check --review`",
     ),
+    Tombstone(
+        retired="resume-ready",
+        successor="crew resume --ready",
+        argv=("crew", "resume"),
+        flags=("--ready",),
+        detail="ready runs are swept by `crew resume --ready`",
+    ),
+    Tombstone(
+        retired="redispatch",
+        successor="crew resume --backend",
+        argv=("crew", "resume"),
+        detail="a run moves backend through `crew resume --backend`",
+    ),
 )
 
 #: Lookup by the retired name a caller types.

@@ -19,7 +19,7 @@ DISPATCH_REFUSAL_REMEDIES: Mapping[str, str | None] = {
     "D01": "`reckon crew budget --check` after correcting the cited configuration or ledger condition",
     "D02": (
         "`reckon crew budget --check`, then `reckon crew dispatch`; for an existing "
-        "blocked run, use `reckon crew resume-ready`"
+        "blocked run, use `reckon crew resume --ready`"
     ),
     "D03": (
         "`reckon crew dispatch --local` after configuring the local backend, "
@@ -42,7 +42,7 @@ DISPATCH_REFUSAL_REMEDIES: Mapping[str, str | None] = {
     ),
     "D10": (
         "`reckon crew budget --check`, then `reckon crew dispatch --backend "
-        "<clear-backend>` or `reckon crew resume-ready`"
+        "<clear-backend>` or `reckon crew resume --ready`"
     ),
     "D11": (
         "each run's reported `reckon crew` next action, or `reckon crew dispatch "

@@ -41,11 +41,9 @@ STATE_PHRASES: dict[CommandPath, str] = {
     ("pick",): "live routing state",
     ("placement",): "one reservation a project places its workers into",
     ("recover",): "live pointers",
-    ("redispatch",): "working run",
     ("repair-completion",): "historical completion measurements missing",
     ("repair",): "a manifest's status word or a review's status",
-    ("resume",): "one blocked run with advice",
-    ("resume-ready",): "provider hold or declared external wait has ended",
+    ("resume",): "one stopped run, every ready run",
     ("review",): "one plan's content, a code neighbourhood or a portfolio",
     ("shadow",): "committed run",
     # `split-runs` is a registered leaf of `crew`, so the census of reachable
@@ -60,14 +58,12 @@ STATE_PHRASES: dict[CommandPath, str] = {
     ("velocity",): "what the fleet delivered",
     ("view",): "one crew read view",
     ("watch",): "project-wide live runs",
-    ("widen",): "blocked run's own fence",
+    ("widen",): "run whose worker process has stopped",
 }
 
 NEAR_NAMESAKE_DISTINCTIONS: dict[CommandPath, str] = {
     ("list",): "not roster members",
     ("member", "list"): "not live run pointers",
-    ("resume",): "do not sweep all newly ready runs",
-    ("resume-ready",): "answer none with advice",
 }
 
 POINTER_STATE_READS: dict[CommandPath, str] = {
@@ -149,10 +145,10 @@ def test_the_retired_review_plan_alias_is_not_reachable() -> None:
     assert result.exit_code != 0, result.output
 
 
-def test_the_four_one_word_near_namesakes_state_their_distinction() -> None:
+def test_the_two_one_word_near_namesakes_state_their_distinction() -> None:
     leaves = _leaf_commands(cli_module.crew)
 
-    assert len(NEAR_NAMESAKE_DISTINCTIONS) == 4
+    assert len(NEAR_NAMESAKE_DISTINCTIONS) == 2
     for path, distinction in NEAR_NAMESAKE_DISTINCTIONS.items():
         assert distinction in _first_help_line(leaves[path])
 

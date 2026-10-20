@@ -2299,7 +2299,7 @@ def _crew_recover(
     :func:`reckon.crew.resumption.resolve_session` the CLI calls, so the two
     surfaces cannot disagree about one run.
 
-    ``resume-ready`` is the same action as ``crew resume-ready``: it resumes
+    ``resume-ready`` is the same action as ``crew resume --ready``: it resumes
     every run whose provider hold or declared external wait has ended, one
     resume per run, and ``dry_run`` reports what would be resumed without
     resuming anything.

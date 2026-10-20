@@ -3,7 +3,7 @@
 `would_resume` is a claim about the launcher's decision. A dry run that returns
 before the launcher is ever consulted reports a weaker claim under a stronger
 name, and it errs in the one direction that causes harm: a hand
-`crew resume-ready --dry-run` reported four runs to resume four actively-working
+`crew resume --ready --dry-run` reported four runs to resume four actively-working
 sessions.
 
 So the dry run consults the launcher's own guards. These tests hold it to the

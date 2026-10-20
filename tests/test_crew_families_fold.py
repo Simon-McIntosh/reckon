@@ -512,6 +512,255 @@ def test_unwatch_tombstone_names_watch_stop() -> None:
     assert "unwatch" not in crew.commands
 
 
+def test_resume_family_tombstones_and_live_migrations() -> None:
+    runner = CliRunner()
+    cases = {
+        "resume-ready": (
+            ["--project", "reckon", "--dry-run"],
+            "reckon crew resume --ready --project reckon --dry-run",
+        ),
+        "redispatch": (
+            ["--run", "r-absent", "--backend", "codex", "--reason", "fixture"],
+            "reckon crew resume --run r-absent --backend codex --reason fixture",
+        ),
+    }
+    for retired, (args, invocation) in cases.items():
+        result = runner.invoke(main, ["crew", retired, *args])
+        assert result.exit_code == TOMBSTONE_EXIT_CODE, result.output
+        assert json.loads(result.output)["invocation"] == invocation
+        assert retired not in crew.commands
+    for retained in ("repair-completion", "split-runs"):
+        assert retained in crew.commands
+        assert retained not in TOMBSTONE_BY_NAME
+        result = runner.invoke(main, ["crew", retained, "--help"])
+        assert result.exit_code == 0, result.output
+
+
+def test_resume_successors_preserve_base_answers(isolated_reckon_home: Path) -> None:
+    runner = CliRunner()
+    ready = runner.invoke(
+        main, ["crew", "resume", "--ready", "--project", "reckon", "--dry-run"]
+    )
+    assert ready.exit_code == 0, ready.output
+    answer = _normalise(json.loads(ready.output))
+    assert answer == {
+        "checked": 0,
+        "dry_run": True,
+        "ok": True,
+        "project": "reckon",
+        "resumed": [],
+        "reviews": {},
+        "skipped": [],
+        "swept_at": "<when>Z",
+    }
+    moved = runner.invoke(
+        main,
+        [
+            "crew",
+            "resume",
+            "--run",
+            "r-absent",
+            "--backend",
+            "codex",
+            "--reason",
+            "fixture",
+            "--print-only",
+        ],
+    )
+    assert moved.exit_code == 1
+    assert moved.output.startswith("Error: no live run 'r-absent'")
+
+
+def test_resume_family_reduces_the_visible_leaf_count() -> None:
+    leaves = _leaf_commands(crew)
+    assert len(leaves) <= 42 - 2
+    assert ("resume",) in leaves
+    assert not {("resume-ready",), ("redispatch",)} & leaves.keys()
+    assert {("repair-completion",), ("split-runs",)} <= leaves.keys()
+    options = {
+        option for parameter in leaves[("resume",)].params for option in parameter.opts
+    }
+    assert {"--ready", "--backend", "--model", "--reopen", "--write-path"} <= options
+
+
+def test_resume_reopens_a_complete_run_and_grants_its_path(
+    tmp_path: Path, isolated_reckon_home: Path, monkeypatch
+) -> None:
+    from reckon.crew import runs as runs_module
+
+    run_id = "r-20261020T000000000000-reopen-fixture"
+    manifest = tmp_path / "manifest.md"
+    manifest.write_text("node: reopen-fixture\nstatus: complete\n")
+    pointer = {
+        "run_id": run_id,
+        "project": "fixture",
+        "repo": str(tmp_path),
+        "worktree": str(tmp_path),
+        "phase": "complete",
+        "launch": "cli",
+        "session_id": "fixture-session",
+        "manifest_path": str(manifest),
+        "node": {"id": "reopen-fixture", "write_paths": ["reckon/crew/runs.py"]},
+    }
+    runs_module._write_json(runs_module.pointer_path(run_id), pointer)
+    monkeypatch.setattr("reckon.crew_run_commands._resolved_flight", lambda *args: {})
+    calls = []
+
+    def launch(*args, **kwargs):
+        calls.append((args, kwargs))
+        plan = type("Plan", (), {"as_dict": lambda self: {}})()
+        return {"plan": plan, "pid": 123, "log_path": "fixture.log", "turn": 1}
+
+    monkeypatch.setattr("reckon.crew.resumption._resume", launch)
+    result = CliRunner().invoke(
+        main,
+        [
+            "crew",
+            "resume",
+            "--run",
+            run_id,
+            "--reopen",
+            "--write-path",
+            "reckon/crew/claims.py",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert calls and calls[0][1]["advice"] == "continue"
+    assert runs_module.read_pointer(run_id)["node"]["write_paths"] == [
+        "reckon/crew/runs.py",
+        "reckon/crew/claims.py",
+    ]
+    assert "status: blocked" in manifest.read_text()
+    assert (
+        manifest.with_name("manifest.md.asdelivered")
+        .read_text()
+        .endswith("status: complete\n")
+    )
+
+
+def test_resume_backend_carries_the_selected_model(
+    tmp_path: Path, isolated_reckon_home: Path, monkeypatch
+) -> None:
+    import importlib
+
+    from reckon import flight, ledger
+    from reckon.crew import runs as runs_module
+
+    dispatch = importlib.import_module("reckon.crew.dispatch")
+
+    run_id = "r-20261020T000000000000-model-fixture"
+    runs_module._write_json(
+        runs_module.pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": "fixture",
+            "repo": str(tmp_path),
+            "phase": "blocked",
+            "backend": "source",
+            "node": {"id": "model-fixture", "write_paths": []},
+        },
+    )
+    config = {"backends": {"destination": {"lane": "destination"}}}
+    monkeypatch.setattr(
+        "reckon.crew_run_commands._resolved_flight", lambda *args: config
+    )
+    monkeypatch.setattr(
+        ledger,
+        "backend_serving_model",
+        lambda *args, **kwargs: ("destination", "destination", "chosen"),
+    )
+    monkeypatch.setattr(
+        flight,
+        "select_lane_model",
+        lambda config, backend, lane, key: {
+            "backends": {backend: {"lane": lane, "model_key": key}}
+        },
+    )
+    moved = []
+
+    def change_lane(*args, **kwargs):
+        moved.append((args, kwargs))
+        return {"ok": True}
+
+    monkeypatch.setattr(dispatch, "change_lane", change_lane)
+    result = CliRunner().invoke(
+        main,
+        [
+            "crew",
+            "resume",
+            "--run",
+            run_id,
+            "--backend",
+            "destination",
+            "--model",
+            "chosen",
+            "--reason",
+            "switch model",
+            "--print-only",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert moved[0][0][:2] == (run_id, "destination")
+    assert moved[0][1]["config"]["backends"]["destination"]["model_key"] == "chosen"
+    assert moved[0][1]["launch"] is False
+
+
+def test_complete_accept_path_updates_the_run_claim(
+    tmp_path: Path, isolated_reckon_home: Path, monkeypatch
+) -> None:
+    from reckon import crew as crew_module
+    from reckon.crew import runs as runs_module
+
+    run_id = "r-20261020T000000000000-accept-fixture"
+    runs_module._write_json(
+        runs_module.pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": "fixture",
+            "repo": str(tmp_path),
+            "worktree": str(tmp_path),
+            "phase": "complete",
+            "node": {"id": "accept-fixture", "write_paths": ["reckon/crew/runs.py"]},
+        },
+    )
+    observed = []
+
+    def complete(*args, **kwargs):
+        pointer = runs_module.read_pointer(run_id)
+        observed.append(
+            (
+                pointer["node"]["write_paths"],
+                pointer["accepted_scope_before_widening"],
+                kwargs["accepted_paths"],
+            )
+        )
+        return {"ok": True}
+
+    monkeypatch.setattr(crew_module, "complete", complete)
+    result = CliRunner().invoke(
+        main,
+        [
+            "crew",
+            "complete",
+            "--run",
+            run_id,
+            "--gate",
+            "not-run",
+            "--accept-path",
+            "reckon/crew/claims.py",
+            "companion change",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert observed == [
+        (
+            ["reckon/crew/runs.py", "reckon/crew/claims.py"],
+            ["reckon/crew/runs.py"],
+            {"reckon/crew/claims.py": "companion change"},
+        )
+    ]
+
+
 REPAIR_AND_CHECK_NAMES = {
     "repair-status": "crew repair --status",
     "repair-review": "crew repair --review",
