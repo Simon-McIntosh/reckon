@@ -19,11 +19,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-fleet-moves-to-a-new-node">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;}">
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="54">
+<meta name="plan-version" content="55">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -582,7 +582,7 @@
     </p>
 
     <h2 id="s13">&sect;13 &mdash; One walk of the process table answers every run in a beat</h2>
-    <section data-reckon="section" data-id="s13" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s13" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="done" data-links=""></section>
     <p>
       §12 removed the environment reads but not the walk. At 04:20 on 20 October the
       imas-codex producer was running the merged code. In 5 s it opened 9 environments,
@@ -821,7 +821,10 @@
     <div class="r-comment-body"><p>review of r-20261020T024209119155-one-walk-of-the-process-table-per-beat at head ac8da7b3f, read against base 2b2afcaa3 — the gained commit is a test-only repair that pins the production liveness read to the beat's walk, so the prior blocking finding (recovery_liveness.py:1120 untested) is answered; scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 18, reuse 18, one follow-on finding on the manifest's placeholder baseline_suite command.</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261020T024209119155-one-walk-of-the-process-table-per-beat" data-who="reckon-build" data-when="2026-10-20T04:17:39Z">
-    <div class="r-comment-body"><p>one walk of the process table per beat answers every run&#x27;s environment mark: _walk_marked_processes files each marked process under (run mark, crew home), the liveness read (_env_scan_run_pid) answers from this beat&#x27;s walk via from_beat_map=True, and the stop path keeps a fresh walk with its start-tick floor and crew-home checks. Repair round: the new case test_two_runs_scanned_in_one_beat_list_proc_once_through_the_liveness_read drives the production path (local_liveness, two runs whose recorded pids have gone so the environment mark is the last reach) and asserts both found live with one listing of /proc for the beat; removing from_beat_map=True from recovery_liveness.py leaves the other seven cases green and fails only this one at `assert 2 == 1` listings. Measure: 5 s strace of a producer harness over 5 beats with the scan needed for 8 runs lists /proc 40 times at the base and 5 times at the change (all 40 scans still answered their worker); new test file 8 passed, paired suite over the 34 existing files importing the two modules base 2 failed/557 passed vs change 1 failed/558 passed (no added failures), declared stop-path negative control EXIT=1.</p></div>
+    <div class="r-comment-body"><p>one walk of the process table per beat answers every run's environment mark: _walk_marked_processes files each marked process under (run mark, crew home), the liveness read (_env_scan_run_pid) answers from this beat's walk via from_beat_map=True, and the stop path keeps a fresh walk with its start-tick floor and crew-home checks. Repair round: the new case test_two_runs_scanned_in_one_beat_list_proc_once_through_the_liveness_read drives the production path (local_liveness, two runs whose recorded pids have gone so the environment mark is the last reach) and asserts both found live with one listing of /proc for the beat; removing from_beat_map=True from recovery_liveness.py leaves the other seven cases green and fails only this one at `assert 2 == 1` listings. Measure: 5 s strace of a producer harness over 5 beats with the scan needed for 8 runs lists /proc 40 times at the base and 5 times at the change (all 40 scans still answered their worker); new test file 8 passed, paired suite over the 34 existing files importing the two modules base 2 failed/557 passed vs change 1 failed/558 passed (no added failures), declared stop-path negative control EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-close-s13" data-who="reckon-build" data-when="2026-10-20T04:55:00Z">
+    <div class="r-comment-body"><p>§13 landed in merge <code>27336bad9</code> (head <code>ac8da7b3f</code>). The liveness read now takes one walk of the process table per beat, keyed by run mark and crew home: in a producer harness, <code>/proc</code> listings fell from 40 to 5 over 5 beats with 8 runs. The stop path still walks afresh. Eight tests were added, one of them through <code>_env_scan_run_pid</code>; the 34-file suite shows no added failure. The final review gave 112/120. <a href="/reckon/evidence/archive/the-fleet-node-stays-in-service-landed.html#s13">evidence</a></p></div>
 </div>
 </section>
 </main>
