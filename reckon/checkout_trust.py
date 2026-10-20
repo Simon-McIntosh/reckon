@@ -41,7 +41,6 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-from reckon import git_dates
 from reckon.crew.obligation_snapshot import FOLLOWER_RELOAD_PROBE_TIMEOUT_SECONDS
 
 # The one proof that a checkout's current code loads is defined in
@@ -467,6 +466,8 @@ def source_code_identity(package_dir: Path, *, source_root: Path | None = None) 
     into a hold. A checkout outside Git has no such file to watch and keeps its
     content-stamp behaviour on every read.
     """
+    from reckon import git_dates
+
     own_root = source_root is None
     if source_root is None:
         source_root = Path(

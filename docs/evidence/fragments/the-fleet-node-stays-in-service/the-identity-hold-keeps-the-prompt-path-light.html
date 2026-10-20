@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-identity-hold-keeps-the-prompt-path-light">
+  <meta name="plan-title" content="The identity hold keeps the prompt path light">
+  <meta name="plan-summary" content="checkout_trust imports git_dates inside source_code_identity; the prompt-path gate still fails because git_dates imports metadata_index at module level, which imports reckon._plan_html -- the repair belongs in git_dates.py, outside this node's write scope">
+  <meta name="plan-evidence-for" content="reckon:the-fleet-node-stays-in-service">
+  <meta name="plan-verifies" content="reckon:the-fleet-node-stays-in-service#s10">
+  <meta name="plan-recorded-at" content="2026-10-20">
+  <meta name="plan-verdict" content="blocked">
+  <title>The identity hold keeps the prompt path light — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<section id="the-identity-hold-keeps-the-prompt-path-light">
+  <h2>The identity hold keeps the prompt path light</h2>
+  <p><strong>Result: the change was made as specified, and the named gate still
+  fails.</strong> <code>checkout_trust</code> no longer imports
+  <code>reckon.git_dates</code> at module level; the import now sits inside
+  <code>source_code_identity</code>, its only user. The property the goal names
+  is therefore literally true &mdash; <code>import reckon.checkout_trust</code>
+  alone no longer loads <code>reckon._plan_html</code>. It is not sufficient for
+  the measure, because the prompt hook does not merely import
+  <code>checkout_trust</code>: it calls the identity, and that call imports
+  <code>git_dates</code>, whose own module body imports
+  <code>reckon.metadata_index</code>, which imports <code>reckon._plan_html</code>
+  at module level.</p>
+
+  <h3 id="the-identity-hold-keeps-the-prompt-path-light-import-chain">The import chain, measured</h3>
+  <p>A <code>sys.meta_path</code> finder that prints the stack on the first
+  import of <code>reckon._plan_html</code> was run against the hook drive the
+  gate uses (<code>main(["--hook","prompt"])</code>). Both arms load it, at
+  different frames, through the same chain:</p>
+  <table>
+    <thead><tr><th>Arm</th><th>Frame that triggers the load</th><th>Chain</th></tr></thead>
+    <tbody>
+      <tr><td>Base revision</td><td><code>reckon/checkout_trust.py:44 in &lt;module&gt;</code></td><td>checkout_trust &rarr; git_dates:10 &rarr; metadata_index:41 &rarr; _plan_html</td></tr>
+      <tr><td>This change</td><td><code>reckon/checkout_trust.py:469 in source_code_identity</code></td><td>checkout_trust &rarr; git_dates:10 &rarr; metadata_index:41 &rarr; _plan_html</td></tr>
+    </tbody>
+  </table>
+  <p>The upper frames of the change arm name the call, not an import:
+  <code>coordinator_obligations._prompt</code> &rarr;
+  <code>obligation_snapshot.freshness_reading</code> (line 470,
+  <code>stamp = source_code_stamp()</code>) &rarr;
+  <code>obligation_snapshot.source_code_stamp</code> &rarr;
+  <code>checkout_trust.source_code_identity</code>. The hook asks for the current
+  source identity on every turn to classify the snapshot's freshness, so the
+  identity function is on the prompt path whatever file imports
+  <code>git_dates</code>.</p>
+
+  <h3 id="the-identity-hold-keeps-the-prompt-path-light-locus">Where the repair belongs</h3>
+  <p><code>git_dates</code> uses <code>metadata_index</code> only for
+  <code>metadata_index._persisted_cache_path</code>, in
+  <code>_git_creation_cache_path</code>. Making that one import lazy, with the
+  module-level import of <code>git_dates</code> left where it was, was probed on
+  an unclaimed path (temporarily edited, then restored byte-identically from
+  <code>HEAD</code>) and the gate passed:</p>
+  <table>
+    <thead><tr><th>Arm</th><th>Gate result</th></tr></thead>
+    <tbody>
+      <tr><td>Base revision</td><td>1 failed (<code>reckon._plan_html</code> loaded)</td></tr>
+      <tr><td>Specified change, checkout_trust only</td><td>1 failed (<code>reckon._plan_html</code> loaded)</td></tr>
+      <tr><td><code>git_dates</code> <code>metadata_index</code> import made lazy</td><td>1 passed in 8.32 s</td></tr>
+    </tbody>
+  </table>
+  <p>The repair therefore needs a write path outside this node's grant
+  (<code>reckon/git_dates.py</code>, or <code>reckon/metadata_index.py</code>
+  where <code>_plan_html</code> is imported at line 41). Both are unclaimed by
+  any sibling node. This node did not take it.</p>
+
+  <h3 id="the-identity-hold-keeps-the-prompt-path-light-checks">Checks run</h3>
+  <ul>
+    <li><code>test_the_prompt_path_loads_no_derivation_module</code>: fails at the
+    base revision and fails identically at this change, both naming
+    <code>reckon._plan_html</code>.</li>
+    <li><code>tests/test_the_code_identity_is_read_only_when_head_moves.py</code>
+    and <code>tests/test_a_moved_checkout_is_proved_importable_once.py</code>:
+    20 passed in 47.67 s at this change.</li>
+    <li><code>ruff check</code> on <code>reckon/checkout_trust.py</code>: 1 finding
+    at the base revision and 1 at this change &mdash; no finding added.</li>
+  </ul>
+</section>
+</body>
+</html>
