@@ -76,6 +76,7 @@ from reckon import (
     metadata_index,
     route_results,
     served_code,
+    shell_assets,
 )
 from reckon._store import (
     _config_home,
@@ -2330,7 +2331,12 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _send_file(
-        self, target: Path, ctype: str, requested_revision: str | None = None
+        self,
+        target: Path,
+        ctype: str,
+        requested_revision: str | None = None,
+        *,
+        gzip_min_bytes: int = _GZIP_MIN_BYTES,
     ) -> None:
         """Serve a file the browser may keep, revalidated by its stat identity.
 
@@ -2373,7 +2379,7 @@ class Handler(BaseHTTPRequestHandler):
         accepts = self.headers.get("Accept-Encoding", "") if self.headers else ""
         compressed = None
         if (
-            len(body) >= _GZIP_MIN_BYTES
+            len(body) >= gzip_min_bytes
             and "gzip" in accepts
             and _is_compressible_text(ctype)
         ):
@@ -2390,6 +2396,28 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("ETag", etag)
         self.end_headers()
         self.wfile.write(compressed if compressed is not None else body)
+
+    def _send_shell_script(
+        self,
+        source: Path,
+        revision: str,
+        requested_revision: str | None,
+        load_body,
+    ) -> None:
+        response = shell_assets.script_response(
+            source,
+            revision,
+            requested_revision,
+            self.headers.get("If-None-Match", ""),
+            self.headers.get("Accept-Encoding", ""),
+            load_body,
+        )
+        self.send_response(response.status)
+        for name, value in response.headers.items():
+            self.send_header(name, value)
+        self.end_headers()
+        if response.body:
+            self.wfile.write(response.body)
 
     def _serve_thumbnail(
         self, path: str, requested_revision: str | None = None
@@ -2842,7 +2870,12 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(HTTPStatus.NOT_FOUND, b"shared asset not found")
                 return
             ctype, _ = mimetypes.guess_type(str(target))
-            self._send_file(target, ctype or "application/octet-stream")
+            self._send_file(
+                target,
+                ctype or "application/octet-stream",
+                requested_revision,
+                gzip_min_bytes=shell_assets.SHELL_GZIP_MIN_BYTES,
+            )
             return
 
         if path.startswith("/_runtime/"):
@@ -2851,10 +2884,11 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(HTTPStatus.NOT_FOUND, b"runtime asset not found")
                 return
             try:
-                self._send(
-                    HTTPStatus.OK,
-                    _client_asset(fname).read_bytes(),
-                    "application/javascript",
+                self._send_shell_script(
+                    _client_asset(fname),
+                    CLIENT_ASSETS[fname][1],
+                    requested_revision,
+                    lambda: _client_asset(fname).read_bytes(),
                 )
             except (OSError, ClientAssetError) as exc:
                 self._send(HTTPStatus.INTERNAL_SERVER_ERROR, str(exc).encode())
@@ -2870,13 +2904,14 @@ class Handler(BaseHTTPRequestHandler):
             jsx_source = target.with_suffix(".jsx") if target.suffix == ".js" else None
             if not target.is_file() and jsx_source and jsx_source.is_file():
                 try:
-                    self._send(
-                        HTTPStatus.OK,
-                        compile_jsx(
+                    self._send_shell_script(
+                        jsx_source,
+                        file_revision(jsx_source.stat()),
+                        requested_revision,
+                        lambda: compile_jsx(
                             jsx_source.read_text(encoding="utf-8"),
                             filename=jsx_source.name,
                         ),
-                        "application/javascript",
                     )
                 except (OSError, ClientAssetError) as exc:
                     self._send(HTTPStatus.INTERNAL_SERVER_ERROR, str(exc).encode())
@@ -2892,7 +2927,12 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 ctype, _ = mimetypes.guess_type(str(target))
                 ctype = ctype or "application/octet-stream"
-            self._send_file(target, ctype)
+            self._send_file(
+                target,
+                ctype,
+                requested_revision,
+                gzip_min_bytes=shell_assets.SHELL_GZIP_MIN_BYTES,
+            )
             return
 
         if path == "/_server":
@@ -3317,16 +3357,18 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         root = mounts[project]
-        if rel in ("", "/"):
+        if rel in ("", "/", "index.html"):
             # Serve the dynamically generated SPA shell for both /<project> and
             # /<project>/. No redirect: the shell links assets via absolute
             # /_shared and /_ui routes, so it does not depend on a trailing
             # slash for relative resolution.
-            self._send(HTTPStatus.OK, _render_spa_html(project).encode(), "text/html")
-            return
-        if rel == "index.html":
-            # Also intercept direct requests to /<project>/index.html.
-            self._send(HTTPStatus.OK, _render_spa_html(project).encode(), "text/html")
+            shell = shell_assets.revisioned_html(
+                _render_spa_html(project),
+                _SHARED_ROOT or Path("/dev/null"),
+                _ui_root(),
+                {name: CLIENT_ASSETS[name][1] for name in ("react.js", "react-dom.js")},
+            )
+            self._send(HTTPStatus.OK, shell.encode(), "text/html")
             return
 
         # Intercept /<project>/state/<subproject>/index.json — state-loader.js
