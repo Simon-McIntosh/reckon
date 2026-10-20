@@ -21,7 +21,7 @@
   <title>Scoring Should Stop A Promotion | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="250">
+<meta name="plan-version" content="252">
 <meta name="plan-modified" content="2026-10-20">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;done&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;deferred&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
@@ -2549,8 +2549,8 @@
     also gets a figure review; a run that changes no figure gets none, so the cost falls only
     where a figure exists. The figure review carries each changed figure as an attached image
     (<code>TaskNode.images</code>), so an SVG reaches the reviewer as the PNG that
-    <code>a-review-can-see-the-figure</code> §10 renders on the dispatch. §18 makes promotion
-    read its verdict.</p>
+    <code>a-review-can-see-the-figure</code> §10 renders on the dispatch. §18 keeps it from superseding the text review, and §19 makes
+    promotion read its verdict.</p>
 
     <p><strong>Write paths:</strong> <code>reckon/crew/figure_review.py</code> (new),
     <code>reckon/crew/prompts/figure-review.md</code> (new),
@@ -3014,6 +3014,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-s6-routes-through-the-review-lane" data-who="reckon-build" data-when="2026-10-20T10:05:00Z">
     <div class="r-comment-body"><p>The evidence gate on §6 records that §6 "must route through <code>select_profile_backend</code>". That instruction is superseded: <code>a-review-can-see-the-figure</code> §12 (<code>b5c3c6fd7</code>) retired the function and moved its refusal into review lane selection, so §6 routes through <code>_review_lane_candidates(config, profile="figure")</code>. The gate's evidence stays as written because it records what §1 delivered at the time. §6 now targets <code>recovery_review_dispatch.py</code>, which owns the review reflex; <code>recovery.py</code> is a re-export layer. The reviewer is read-only for now, and §18 makes promotion read its verdict.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-s6-promotion-read-is-s19" data-who="reckon-build" data-when="2026-10-20T11:35:00Z">
+    <div class="r-comment-body"><p>Correction to <code>c-s6-routes-through-the-review-lane</code>: after the split, §18 keeps a figure review from superseding the run's text review, §19 makes promotion refuse an undisposed blocking figure finding, and §20 makes the repair reflex resume on one. The earlier comment's "§18 makes promotion read its verdict" now means §19.</p></div>
 </div>
 <div class="r-comment" data-section="§2j" data-id="c-run-r-20260921T134620249573-a-paraphrased-control-has-a-recorded-route" data-who="reckon-ship" data-when="2026-09-21T14:03:04Z">
     <div class="r-comment-body"><p>a reasoned negative-control waiver is recorded on the promotion rather than accepted silently; gate re-run at the merged head after the absent-ledger regression was repaired reports 17 passed, matching the manifest</p></div>
