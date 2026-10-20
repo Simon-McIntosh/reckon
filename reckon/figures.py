@@ -23,6 +23,25 @@ _SVG_WIDTH_RE = re.compile(r'\bwidth\s*=\s*"([0-9.]+)[a-zA-Z%]*"')
 _SVG_HEIGHT_RE = re.compile(r'\bheight\s*=\s*"([0-9.]+)[a-zA-Z%]*"')
 
 
+def rasterise_svg(source: Path, width: int) -> bytes:
+    """Draw an SVG as a PNG at the requested width, preserving its aspect ratio."""
+
+    import resvg_py
+
+    size = _svg_dims(source)
+    height = (
+        max(1, round(width * size[1] / size[0])) if size and min(size) > 0 else width
+    )
+    # Matplotlib writes canvas dimensions in points. resvg needs a DPI to
+    # resolve those units; 96 is the CSS reference resolution.
+    return resvg_py.svg_to_bytes(
+        svg_string=source.read_text(encoding="utf-8", errors="replace"),
+        width=width,
+        height=height,
+        dpi=96,
+    )
+
+
 def _titleize(name: str) -> str:
     words = _SEPARATORS.sub(" ", name).split()
     return " ".join(words)

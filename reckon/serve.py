@@ -78,6 +78,7 @@ from reckon import (
     served_code,
     shell_assets,
 )
+from reckon import figures as figure_module
 from reckon._store import (
     _config_home,
     _mounts_path,
@@ -111,7 +112,7 @@ from reckon.evidence import (
     compose_landed_record,
     evidence_record_plan,
 )
-from reckon.figures import figure_rows
+from reckon.figures import figure_rows, rasterise_svg
 from reckon.file_memo import file_revision, memoized
 from reckon.git_dates import (  # noqa: F401 — the import surface of this module
     _GIT_CREATION_CACHE,
@@ -2007,33 +2008,13 @@ def _thumbnail_cache_path(source: Path, identity: str) -> Path:
 
 
 def _rasterise_svg(source: Path) -> bytes:
-    """Rasterise an SVG to a PNG bounded by THUMB_MAX_EDGE on its long edge.
-
-    The vector is drawn straight to the thumbnail's pixel size rather than at
-    its authored size and then downscaled, so a figure with thousands of paths
-    costs the icon it is drawn as rather than the whole drawing. The authored
-    size comes from the figure inventory's own reader, so the size a row is
-    listed at and the size its icon is drawn at cannot disagree.
-    """
-
-    import resvg_py
-
-    from reckon.figures import _svg_dims
-
-    size = _svg_dims(source)
+    """Render an SVG at its thumbnail width using the shared rasteriser."""
+    size = figure_module._svg_dims(source)
     if size and min(size) > 0:
         width = max(1, round(size[0] / max(size) * THUMB_MAX_EDGE))
-        height = max(1, round(size[1] / max(size) * THUMB_MAX_EDGE))
     else:
-        width = height = THUMB_MAX_EDGE
-    svg_text = source.read_text(encoding="utf-8", errors="replace")
-    # resvg rejects an SVG whose width/height carry a unit it cannot resolve
-    # without a dpi, and matplotlib writes its canvas in points, so without one
-    # the parse fails and the route falls back to serving the whole vector. 96
-    # is the CSS reference resolution, the same one the pt size assumes.
-    drawn = resvg_py.svg_to_bytes(
-        svg_string=svg_text, width=width, height=height, dpi=96
-    )
+        width = THUMB_MAX_EDGE
+    drawn = rasterise_svg(source, width)
 
     from PIL import Image
 

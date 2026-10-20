@@ -1,11 +1,10 @@
 """A node's figures ride every launch path, or the launch refuses.
 
-``launch_plan`` emits one ``-i <path>`` per figure, but nothing handed it a
-node's figures: a ``TaskNode`` carries an ``images`` list, the fresh dispatch
-passes it, and a run's record keeps it so a resume or a lane change does not
-drop the figure a review was dispatched to look at.
+``TaskNode.images`` supplies figures to dispatch. SVG inputs are recorded as
+run-local PNGs; each launch receives one ``-i <path>`` per recorded image. A
+resume or lane change reads those paths from the run record.
 
-Four properties, each asserted on the argv the launcher would run -- the
+Five properties, each asserted on the argv the launcher would run -- the
 composed plan, never a helper returned by one:
 
 * a node dispatched with two figures emits one ``-i`` per file on a codex lane;
@@ -260,6 +259,17 @@ def _image_pairs(argv: list[str]) -> list[tuple[str, str]]:
     ]
 
 
+def _write_figure_sources(repo: Path) -> None:
+    for name in (FIRST, SECOND):
+        source = repo / name
+        source.parent.mkdir(parents=True, exist_ok=True)
+        source.write_text(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 35">'
+            '<rect width="70" height="35"/></svg>',
+            encoding="utf-8",
+        )
+
+
 def _stopped_pointer(tmp_path: Path, repo: Path, run_id: str, *, backend: str) -> dict:
     """A cli run as a resume or a lane change finds it: gone, on this host."""
     directory = crew.run_dir(run_id)
@@ -308,6 +318,7 @@ def _stopped_pointer(tmp_path: Path, repo: Path, run_id: str, *, backend: str) -
 def test_a_dispatch_of_two_figures_emits_two_flags(
     config: dict, repo: Path, tmp_path: Path
 ) -> None:
+    _write_figure_sources(repo)
     recorder = _Recorder()
     record = dispatch_module.dispatch(
         node=_node(tmp_path, [FIRST, SECOND]),
@@ -321,8 +332,11 @@ def test_a_dispatch_of_two_figures_emits_two_flags(
 
     argv = [str(token) for token in record["argv"]]
     _CREATED_RUN_IDS.add(str(record["run_id"]))
-    assert _image_pairs(argv) == [("-i", FIRST), ("-i", SECOND)], argv
-    assert _image_pairs(recorder.argv[0]) == [("-i", FIRST), ("-i", SECOND)]
+    directory = crew.run_dir(record["run_id"])
+    expected = [("-i", str(directory / f"image-{index}.png")) for index in range(2)]
+    assert _image_pairs(argv) == expected, argv
+    assert _image_pairs(recorder.argv[0]) == expected
+    assert record["node"]["images"] == [path for _, path in expected]
 
 
 def test_a_clive_lane_refuses_the_figures_and_names_the_lane(
@@ -349,6 +363,7 @@ def test_crew_dispatch_image_reaches_the_argv(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    _write_figure_sources(repo)
     monkeypatch.setattr(
         crew_dispatch_commands, "_resolved_flight", lambda *args, **kwargs: config
     )
@@ -400,7 +415,10 @@ def test_crew_dispatch_image_reaches_the_argv(
     payload = json.loads(result.output)
     _CREATED_RUN_IDS.add(str(payload["run_id"]))
     argv = [str(token) for token in payload["argv"]]
-    assert _image_pairs(argv) == [("-i", FIRST), ("-i", SECOND)], argv
+    directory = crew.run_dir(payload["run_id"])
+    expected = [("-i", str(directory / f"image-{index}.png")) for index in range(2)]
+    assert _image_pairs(argv) == expected, argv
+    assert payload["node"]["images"] == [path for _, path in expected]
 
 
 def test_a_resumed_run_keeps_both_flags(
