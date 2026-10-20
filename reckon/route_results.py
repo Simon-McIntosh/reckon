@@ -96,6 +96,12 @@ def _refresh_store_path(key: tuple[str, ...]) -> Path:
     )
 
 
+def _source_revision() -> str | None:
+    from reckon.serve import _SOURCE_SNAPSHOT
+
+    return _SOURCE_SNAPSHOT.revision if _SOURCE_SNAPSHOT is not None else None
+
+
 def _refresh_result(key: tuple[str, ...]) -> tuple[object, float, str] | None:
     """Return ``(result, age_seconds, version)`` for a key, or None.
 
@@ -113,13 +119,16 @@ def _refresh_result(key: tuple[str, ...]) -> tuple[object, float, str] | None:
         not isinstance(raw, dict)
         or raw.get("schema") != _REFRESH_SCHEMA
         or raw.get("key") != list(key)
+        or raw.get("source_revision") != _source_revision()
     ):
         return None
     age = max(0.0, time.time() - stat.st_mtime)
     return raw.get("result"), age, str(raw.get("version", ""))
 
 
-def _store_refresh_result(key: tuple[str, ...], result: object) -> str:
+def _store_refresh_result(
+    key: tuple[str, ...], result: object, *, source_revision: str | None = None
+) -> str:
     """Write one key's stored result; return the version it was written under."""
 
     version = str(time.time_ns())
@@ -127,6 +136,9 @@ def _store_refresh_result(key: tuple[str, ...], result: object) -> str:
         "schema": _REFRESH_SCHEMA,
         "key": list(key),
         "version": version,
+        "source_revision": source_revision
+        if source_revision is not None
+        else _source_revision(),
         "result": result,
     }
     try:
@@ -381,6 +393,7 @@ def _start_refresh(key: tuple[str, ...]) -> bool:
         )
         if _MOUNTS_FILE is not None:
             argv += ["--mounts", str(_MOUNTS_FILE)]
+        argv += ["--source-revision", _source_revision() or ""]
         nice = shutil.which("nice")
         if nice:
             argv = [nice, "-n", "10", *argv]
@@ -480,6 +493,7 @@ def _refresh_main(argv: list[str]) -> int:
     key_args.add_argument("--key")
     key_args.add_argument("--key-json")
     parser.add_argument("--mounts", default=None)
+    parser.add_argument("--source-revision", default="")
     args = parser.parse_args(argv)
     key = (
         tuple(json.loads(args.key_json))
@@ -490,7 +504,7 @@ def _refresh_main(argv: list[str]) -> int:
         os.environ["RECKON_MOUNTS_PATH"] = args.mounts
     _resolve_paths(Path(args.mounts) if args.mounts else None)
     result = _compute_refresh(key)
-    _store_refresh_result(key, result)
+    _store_refresh_result(key, result, source_revision=args.source_revision or None)
     return 0
 
 
