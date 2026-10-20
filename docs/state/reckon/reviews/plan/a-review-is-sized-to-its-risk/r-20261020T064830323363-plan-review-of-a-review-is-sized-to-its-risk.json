@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T07:04:26.989Z",
+  "dispatched_at": "2026-10-20T06:49:15Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-is-sized-to-its-risk.html:207",
+      "id": "anchors_resolve-1",
+      "reason": "the same section pins the operative branch exactly at `recovery_repair_dispatch.py:765` and names `compose_repair_node`, so a builder is not sent at the wrong mechanism; the stale range only mislabels background prose.",
+      "text": "\u00a714's Why says \"The reflex in `reckon/crew/recovery_repair_dispatch.py` builds its round from that list, around lines 690 and 720\", but lines 690\u2013692 hold the already-opened-round comment and `opened_rounds = _opened_repair_rounds(record)`, and lines 718\u2013722 hold the no-repository refusal; the round is composed at line 736 (`compose_repair_for_run`) and the disposed-round branch is at line 765, both ~45 lines below what the anchor points at (the gap `s13`'s landing opened)",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "74c057094eef6bb4926c6745632c8b3e43a61c17684d8b854d7d77cc4a0d1c8e",
+  "plan_slug": "a-review-is-sized-to-its-risk",
+  "plan_version": 186,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T064830323363-plan-review-of-a-review-is-sized-to-its-risk",
+  "reviewed_blob_sha": "fa3814c83d58d62e9e04a865fffb82996f5cfcbc",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the Why's \"around lines 690 and 720\" does not resolve to the round-building code it names.",
+    "done_when": "pass \u2014 \u00a714's done-when names two declared negative controls (\"Stop `blocking_findings` reading dispositions\" and \"leave `FINDING_DISPOSITIONS_KEY` out of `_merge_record_answers`\"), each falsifiable, with five stated cases and a base-arm delta.",
+    "evidence_paths": "pass \u2014 \u00a714 sends both pytest arms' logs and the ruff log to the durable run directory and the manifest's `baseline_suite`, not to a session scratchpad.",
+    "naming": "pass \u2014 \u00a714's symbols and test/fragment names (`blocking_findings`, `FINDING_DISPOSITIONS_KEY`, `test_a_disposed_finding_ends_its_repair_round.py`) carry no plan, stage or ticket label.",
+    "reasoning": "pass \u2014 \u00a714's stated causes match its cited code (`_merge_record_answers` at `reckon/crew/review.py:3039` merges only `DIMENSION_DISPOSITIONS_KEY` and `responses`), its mechanism produces its done-when (filter -> empty `blocking_findings` -> `compose_repair_node` returns None at `repair.py:510-512` -> decline-only branch at `recovery_repair_dispatch.py:765`), and the caller is named (`compose_repair_node`, `recovery_repair_dispatch.py`).",
+    "single_goal": "pass \u2014 \u00a714 carries one deliverable, \"a disposed finding ends its repair round\", whose four bullets (filter, reason, merge survival, unchanged behaviour) are facets of that one outcome.",
+    "wiring": "pass \u2014 s14 declares its dependency on s13 (`plan-section-depends-on` -> `a-review-is-sized-to-its-risk#s13`), matching its own \"\u00a713 writes `reckon/crew/recovery_repair_dispatch.py`, so \u00a714 is dispatched only after \u00a713 is merged\", and s13's `tests/test_a_decline_only_round_names_what_it_declined.py` is present in the tree."
+  },
+  "section_digests": {
+    "_document": "608ebca3acc9631af825886c397a17445078bdda5b09f7384da8d502634b94a4",
+    "s1": "1bca4570a6dc141df8190260147c4603fdbd4e237bbd0fa1f635f166cdf5637b",
+    "s10": "a07df53b22b91585addeb98d5e88c71b2cd22d03d1da30561685f96e03a0aa2e",
+    "s11": "6bbc86e3fa4868ea28a6bedc4cfe44870bae0e69abb21473626929baf05d9b00",
+    "s12": "1931543f8774db891c6e51b885d5953ddc9f2d3b93d870f9c4f9d4a2156593c4",
+    "s13": "654b501c481eae64e085c1884ebb02603fb65497f5c801e8332e7dee8814e93e",
+    "s14": "b93a34f77c5761b652f5edda5ed95e6fd385eb6671a15404ad6d1c73e28fcd17",
+    "s2": "d87e94711b1191be6062f6581f0bf3c2f7793876a327c35be59e3dd37bbe72c8",
+    "s3": "865c2c7d189405d6ba0566cebd8df5e459211cc93a64a9332de51cff756b47ac",
+    "s4": "834dc20a74581e06fc6c6b99a07ea7b628c9c36d7c390cee1b4e599eeec7b070",
+    "s5": "dd9455e66ea742a997a12400b194e02c6557b19217a06db0a58f82d7d82b8fde",
+    "s6": "cb4e838e28a346993a653862da66ac934c2c1b8e7e1aa1d7cb23c7082672067d",
+    "s7": "044f93aa0d0fd0aed5a7b5b535f5b7a2efacfc541ef12f41a04af14289440d7c",
+    "s8": "a12e7aff5d1cfd541706cc743c3d78ed9c0a96dba6af2c4f8b6dbb2309ea9582",
+    "s9": "3cc2a52825983e24d6bcb3f342f8f21cbd91f2144772c41418b9a0362bf5da37"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T07:06:52.509270+00:00"
+}
