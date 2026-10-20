@@ -26,7 +26,7 @@
   <title>The Crew Surface Is One Tool And A Few Verbs | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="37">
+<meta name="plan-version" content="38">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -380,7 +380,7 @@
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-cso-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-10-19" data-recommends-skill="/reckon-build the-crew-surface-is-one-tool-and-a-few-verbs" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Land the tombstones and the manifest-reading complete first; §2 and §3 run in parallel</h4>
-    <div class="r-fu-body"><p>§2 and §3 share no write path. §4, §6, §7's four nodes, §8 and §9's four nodes then run in order, because each writes <code>reckon/crew_run_commands.py</code> or a test file the next one also writes. §5 waits on §4, §6 and <a href="/reckon/every-plan-write-goes-through-edit-plan#s11">every-plan-write-goes-through-edit-plan §11</a>, which also writes <code>reckon/mcp.py</code>. §10 shares no write path with any of them and runs whenever a slot is free.</p></div>
+    <div class="r-fu-body"><p>§2 and §3 share no write path. §4, §6, §7's four nodes, §8 and §9's four nodes then run in order, because each writes <code>reckon/crew_run_commands.py</code> or a test file the next one also writes. §5 waits on §4, §6 and <a href="/reckon/every-plan-write-goes-through-edit-plan#s11">every-plan-write-goes-through-edit-plan §11</a>, which also writes <code>reckon/mcp.py</code>. §10 shares one file with §7's repair-and-check node, <code>reckon/crew/recovery_review_subject.py</code>. That node waits on §5, so §10 runs first, and the repair-and-check node bases on §10's landing.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-crew-surface-is-one-tool-and-a-few-verbs</pre>
     </article>
 </section>
