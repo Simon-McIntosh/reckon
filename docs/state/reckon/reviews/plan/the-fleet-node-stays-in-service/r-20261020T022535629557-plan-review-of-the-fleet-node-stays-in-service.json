@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T02:34:47.540Z",
+  "dispatched_at": "2026-10-20T02:26:55Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-fleet-node-stays-in-service.html:601",
+      "id": "reasoning-1",
+      "reason": "the section is the semantic authority for the node, and a node implementing the stated key would reintroduce the cross-crew-home misattribution the reader's docstring warns against; stating the key as the run mark AND the crew home costs one clause.",
+      "text": "\u00a713 says the walk \"maps each run mark it sees to its pids\" and answers every run from that map, but `_processes_owning_run` (reckon/crew/process_signal.py:266) qualifies a process on the environment naming the run id AND placing it in the caller's crew home, and `_env_scan_run_pid` (reckon/crew/recovery_liveness.py:1091) passes `runs.crew_home()` for exactly that reason (\"a process carrying another crew home's run id is not named as this run's worker\") \u2014 a map keyed on the run mark alone drops that narrowing and lets one crew home's worker",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-fleet-node-stays-in-service.html:13",
+      "id": "reasoning-2",
+      "reason": "the plan reports its own size five worker-hours below what its content declares (a sibling plan, the-fleet-supervisor-runs-declared-services, holds meta 2.0 = sum 2.0), so the author corrects one meta field to 14.0.",
+      "text": "`plan-effort-hours` is `9.0`, but the section records it declares (s2\u2013s13, `data-effort-hours`) sum to 14.0: the meta has not moved since commit 53c8ca868, when \u00a72\u2013\u00a79 summed to exactly 9.0, and \u00a710 (1.0), \u00a711 (1.5), \u00a712 (1.5) and \u00a713 (1.0) were added after it",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "3e7ff2dd980ba8a9d1ff27b45979588757c46f993b5ec825b166e87b3d43ae26",
+  "plan_slug": "the-fleet-node-stays-in-service",
+  "plan_version": 50,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T022535629557-plan-review-of-the-fleet-node-stays-in-service",
+  "reviewed_blob_sha": "90720ab71900898422cf5b27ff0a482e9e6563e1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the modules \u00a713 cites (`reckon/crew/process_signal.py` holding `_processes_owning_run`, `reckon/crew/recovery_liveness.py` holding `_env_scan_run_pid`) exist and hold those symbols; the gate evidence fragment `name-how-a-stopped-worker-step-ends.html`, the landed archive, the figures directory and `plan-after` (`the-fleet-moves-to-a-new-node.html`) all resolve.",
+    "done_when": "pass \u2014 \u00a713 declares five tests plus a base-revision positive control (`/proc` listed once per run per beat at base) and an explicit negative control (a stop for a run whose worker started after the beat's walk must still find and signal that worker).",
+    "evidence_paths": "pass \u2014 \u00a713's measurement runs on the fleet allocation and its evidence follows the plan's durable convention (`docs/evidence/archive/the-fleet-node-stays-in-service-landed.html`, as `c-close-s12` did), not a session scratchpad or node-local path.",
+    "naming": "pass \u2014 \u00a713 introduces no plan labels, stage names, ticket numbers or version tags, and the symbols it names are pre-existing code identifiers.",
+    "reasoning": "two findings \u2014 \u00a713's per-beat map is keyed on the run mark alone, dropping the crew-home narrowing the reader's own docstring makes load-bearing; and the document's `plan-effort-hours` no longer matches the sections it declares.",
+    "single_goal": "pass \u2014 \u00a713 carries one deliverable, one walk of the process table per beat, and its done-when attests that one change.",
+    "wiring": "pass \u2014 \u00a713 is scheduled by the driving followup `f-tfnsis-001` (\"\u00a713 closes the gap \u00a712's merge left \u2026 It writes the same two files, so it runs after \u00a712, which has landed\"), the same treatment the earlier review required for \u00a712; `plan-section-declarations` now carries `s13:implementable` matching the section's own `data-status`, and \u00a713 gates nothing so it needs no gate entry."
+  },
+  "section_digests": {
+    "_document": "6a00fe6eab6167cadf60091f560b2ab184bb98c99324fab6d22a82ccc6fc779b",
+    "s1": "6e04065e334dfddf94228e26ccc5040265b76da7397e5f58cf73c7d37f623504",
+    "s10": "c539e5905cb53e6787632e997cf365eaac45733be5302985d423b16c58f35bba",
+    "s11": "638a64a25b64782ac7af0182a52c621989264701d48b1d52161f418851e3c441",
+    "s12": "62ac6218d6325204fd28836b6cb491028f78242a89500a97ccfd4e3a19975ef3",
+    "s13": "b1c0865898757aaa7fe05118995110a621305f54fab26a3b0d828d3e036ebcf4",
+    "s2": "6155f820ac9515ec6066931aa10a1e66fdcff1b4184ba4014c19c572b1e6dfe6",
+    "s3": "5d0267647607a9ea2291a47d2f1faa4d8070d76e274abc94d1d1487ab7d3f1ea",
+    "s4": "9bf0fe68b8db66abd6daa8fdd98af93ada5d71be048a240fee7b2d68906b8b32",
+    "s5": "75dc509fc1a18ffdfecbd3511d159b7ce939377b3c956d53204972e722a91b5e",
+    "s6": "6869c09a477eaafc5a4780340f667b673175561e4bca9b0640c8af759c878f77",
+    "s7": "3a45b0d0d40cbd44ec6f8209f8a125004c44cc3cdccfb33e97882ef8331f7d70",
+    "s8": "e112e1202f352739982d9a42da2469ddd34f8ab2e4c217d172c90ed776b7a354",
+    "s9": "1ce7342558f8dc5f1587a8a947ef2a1b639355d9f39e517ee72d8e930177a2ba"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T02:38:29.495340+00:00"
+}
