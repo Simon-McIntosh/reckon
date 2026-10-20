@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T08:09:32.510Z",
+  "dispatched_at": "2026-10-20T07:57:37Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:232",
+      "id": "reasoning-1",
+      "reason": "the cost the lead weighed and the mechanism the node implements disagree, so a reader provisioning nodes from the decision installs external renderers the chosen approach then says it does not need.",
+      "text": "\u00a710's Reuse paragraph states `resvg_py` is a declared dependency so \"the render needs no external tool on a login or compute node\", while the `svg-figure-delivery` decision it is built from (line 458) records the accepted cost as \"a renderer wherever dispatch runs (rsvg-convert on login nodes, the convert fallback on compute nodes)\"",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:247",
+      "id": "reasoning-2",
+      "reason": "a node implementing the exemption where \u00a712 names it cannot make the exclusion not apply, so the plan must name `_ordered_review_lanes` (or `_review_lane_plan`) as the change site.",
+      "text": "\u00a712 says \"the change is in review lane selection \u2026 `_review_lane_candidates` and `_no_lane_reason`\" and that \"a lane that declares the modality is not removed by `review_excluded_backends`\", but `_review_lane_candidates` only adds a lane's own reading; the exclusion is applied in `_ordered_review_lanes` (reckon/crew/recovery_review_dispatch.py:1259), which drops every name in `excluded` before `_review_lane_candidates` sees a candidate",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:238",
+      "id": "reasoning-3",
+      "reason": "a node regenerating those pairs, which \u00a78's own `draw_pairs.py` reproduces, would be refused at promotion by \u00a711's check, so the pairs directory needs a stated carve-out.",
+      "text": "\u00a711 states the figure rule \"keeps one SVG per figure and bans a PNG copy beside it\" and refuses a run that commits `a.png` beside a committed `a.svg` under a figures directory, but \u00a78's deliverable (line 223) keeps each pair \"as the SVG it was drawn in and as a PNG rendered from it, under `docs/figures/figure-review-pairs/`\", and the repository holds ten such SVG/PNG twins there; \u00a711 names no exception",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "9ce83e2a01ce1a30b8d974e3f7b6ba1f0df56e5d2e4b0bc0d1f5087c96b1ddd3",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 62,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T075621761102-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "d7b3d02ed682d65d8d8b21e6e798fce25eba4b66",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 each cited symbol resolves: `_rasterise_svg` (reckon/serve.py:2019, with `resvg-py`/`pillow` declared in pyproject.toml), `audit_manifest` (reckon/crew/reports.py:2330) plus `crew check-manifest` and `crew complete`, `_review_lane_candidates` (:1375) and `_no_lane_reason` (:1396) in reckon/crew/recovery_review_dispatch.py, `missing_input_modalities` (reckon/flight.py:1968) and `select_profile_backend` (reckon/flight.py:1980, called only from tests/test_flight.py), and docs/plans/scoring-should-stop-a-promotion.html \u00a76.",
+    "done_when": "pass \u2014 \u00a710 (rasterising call removed from the dispatch), \u00a711 (twin check removed) and \u00a712 (exemption removed) each declare a negative control that reddens the stated assertion, so each gate can show its guard fires.",
+    "evidence_paths": "pass \u2014 \u00a710 writes its PNG and gate log under the run directory, \u00a711's test builds its own repository in a temporary directory, and \u00a712 runs in place on the fleet allocation; nothing lands in a scratchpad or a node-local path.",
+    "naming": "pass \u2014 the new test files (`test_dispatch_renders_svg_figures.py`, `test_a_png_twin_of_an_svg_is_refused.py`, `test_a_figure_review_takes_an_image_lane.py`) and symbols carry no plan label, stage name, ticket number or changelog prose.",
+    "reasoning": "findings \u2014 \u00a710's reuse contradicts the decision it is built from on the renderer dependency, \u00a712 names a change site that cannot carry the exclusion it describes, and \u00a711's twin rule would refuse the artifact shape this plan's own \u00a78 delivers.",
+    "single_goal": "pass \u2014 \u00a710 renders an SVG to PNG on the dispatch, \u00a711 refuses a PNG twin at promotion, \u00a712 lets a figure review take an image lane; \u00a712's retirement of `select_profile_backend` is the same selection-path change rather than a second deliverable.",
+    "wiring": "pass \u2014 the plan declares `plan-informs` `scoring-should-stop-a-promotion` (whose \u00a76 is the figure-review role \u00a712 hands off to), and no `depends-on` is claimed or needed; the two locked decisions scope `data-sections` to \u00a74 (deferred) and \u00a78, which correctly leaves \u00a710\u2013\u00a712 dispatchable."
+  },
+  "section_digests": {
+    "_document": "e592c63ff41bf13f22de51e6ad10d137c29af617ce292c04de91cbfb13c8517b",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s10": "507925591964ee4e5c701ea3a826473d2ec9fdf9d7ad7e13e042288a7ee382c8",
+    "s11": "d807739c5700d622a6257dd85597fe44b2a581c4e603741beca276891542fd9e",
+    "s12": "08ef2385c054ed43d3f6c0f1c3bc73f0624f211ed7791d08598016640e4e1831",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "ce9705dbaad70ab2b3a9425eead9900cc284deb7f1d5ecacb553d3745679b3d7",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a",
+    "s8": "2c200fdd964f328342811e9362e4cd14da60f3c8352368899ccf87797d9e7f5b",
+    "s9": "b62ffeb55dd71d5f62b49f372e069f227a57c7caec9c6c3b45f81a945d284e11"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T08:11:55.213091+00:00"
+}
