@@ -33,10 +33,11 @@ import logging
 import os
 import threading
 from collections.abc import Callable, Mapping
+from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from datetime import datetime
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from reckon import _plan_html, figures, resources
 from reckon._store import _config_home, write_json_atomically
@@ -78,6 +79,82 @@ _FIGURE_SUFFIXES = (".png", ".svg", ".gif")
 _COVERED_PROJECT: ContextVar[tuple[str, str] | None] = ContextVar(
     "reckon_covered_project", default=None
 )
+_DISCOVERY_FILES: ContextVar[
+    dict[
+        tuple[str, str], tuple[list[tuple[str, Path]], dict[str, os.stat_result | None]]
+    ]
+    | None
+] = ContextVar("reckon_discovery_files", default=None)
+_RESOURCE_CANDIDATES: ContextVar[bool] = ContextVar(
+    "reckon_resource_candidates", default=False
+)
+
+
+@contextmanager
+def discovery_file_scope():
+    """Share one covered-file listing and its stats within a discovery pass."""
+
+    token = _DISCOVERY_FILES.set({})
+    try:
+        yield
+    finally:
+        _DISCOVERY_FILES.reset(token)
+
+
+@contextmanager
+def resource_candidate_scope():
+    """Feed a resource scan only covered HTML paths it can classify."""
+
+    token = _RESOURCE_CANDIDATES.set(True)
+    try:
+        yield
+    finally:
+        _RESOURCE_CANDIDATES.reset(token)
+
+
+def _resource_candidates(files: list[tuple[str, Path]]) -> list[tuple[str, Path]]:
+    return [
+        (relative, path)
+        for relative, path in files
+        if relative.endswith(".html")
+        and path.name not in resources.NON_RESOURCE_FILES
+        and not any(
+            part in resources.INFRA_DIRS for part in PurePosixPath(relative).parts[:-1]
+        )
+        and not resources._is_evidence_fragment(PurePosixPath(relative))
+    ]
+
+
+def covered_stat(
+    docs_dir: Path, project: str, relative: str, path: Path
+) -> os.stat_result | None:
+    """Return a covered file's stat, reusing this pass's first observation."""
+
+    scoped = _DISCOVERY_FILES.get()
+    key = (os.fspath(docs_dir), project)
+    observations = scoped[key][1] if scoped is not None and key in scoped else None
+    if observations is not None and relative in observations:
+        return observations[relative]
+    try:
+        observed = path.stat()
+    except OSError:
+        observed = None
+    if observations is not None:
+        observations[relative] = observed
+    return observed
+
+
+def _stat_signature(observed: os.stat_result) -> list[int]:
+    """Persist a content identity stable across hosts with differing device ids."""
+
+    return [
+        observed.st_ino,
+        observed.st_size,
+        observed.st_mtime_ns,
+        observed.st_ctime_ns,
+    ]
+
+
 #: The types discovery keeps in an inventory, so the index answers with the
 #: same row set the derived payload is merged into.
 _INDEX_TYPES = frozenset({"plan", "research", "evidence"})
@@ -419,7 +496,7 @@ def build_index(
         fields, plan, discovery = _row_for(
             path, relative, docs_dir, project, signature, stamp
         )
-        entry = {"path": relative, "digest": digest}
+        entry = {"path": relative, "digest": digest, "signature": signature[1:]}
         if fields is None:
             entry["skip"] = True
         else:
@@ -597,11 +674,19 @@ def _covered_files(docs_dir: Path) -> list[tuple[str, Path]]:
 def _covered_files_for_project(docs_dir: Path, project: str) -> list[tuple[str, Path]]:
     """Use a known project while keeping the tree walk's one-argument entry."""
 
+    scoped = _DISCOVERY_FILES.get()
+    key = (os.fspath(docs_dir), project)
+    if scoped is not None and key in scoped:
+        files = scoped[key][0]
+        return _resource_candidates(files) if _RESOURCE_CANDIDATES.get() else files
     token = _COVERED_PROJECT.set((os.fspath(docs_dir), project))
     try:
-        return _covered_files(docs_dir)
+        files = _covered_files(docs_dir)
     finally:
         _COVERED_PROJECT.reset(token)
+    if scoped is not None:
+        scoped[key] = (files, {})
+    return files
 
 
 def _docs_dir_project(docs_dir: Path) -> str | None:
@@ -864,16 +949,31 @@ def discovery_state(docs_dir: Path, project: str) -> dict[str, dict]:
         built = _build_and_cache(key, docs_dir, project, repo_dir=None)
         return {relative: dict(entry) for relative, entry in built.discovery.items()}
     fresh: dict[str, dict] = {}
+    changed_signatures = False
     for relative, entry in known.items():
         discovery = entry.get("discovery")
         if not isinstance(discovery, Mapping):
             continue
+        path = docs_dir / relative
+        observed = covered_stat(docs_dir, project, relative, path)
+        if observed is None:
+            continue
+        signature = _stat_signature(observed)
+        if entry.get("signature") == signature:
+            fresh[relative] = dict(discovery)
+            continue
         try:
-            digest = _content_digest(docs_dir / relative)
+            digest = _content_digest(path)
         except OSError:
             continue
         if entry.get("digest") == digest:
             fresh[relative] = dict(discovery)
+            entry["signature"] = signature
+            changed_signatures = True
+    if changed_signatures:
+        _store_persisted(
+            docs_dir, project, list(known.values()), _load_dir_stamps(docs_dir, project)
+        )
     return fresh
 
 
@@ -953,7 +1053,7 @@ def record_discovery(docs_dir: Path, project: str, relative: str) -> None:
         signature,
         _make_stamp(None, None, None),
     )
-    entry: dict = {"path": relative, "digest": digest}
+    entry: dict = {"path": relative, "digest": digest, "signature": signature[1:]}
     if fields is None:
         entry["skip"] = True
     else:

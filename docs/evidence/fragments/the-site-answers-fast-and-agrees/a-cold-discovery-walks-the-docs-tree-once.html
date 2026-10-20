@@ -1,0 +1,14 @@
+<section id="a-cold-discovery-walks-the-docs-tree-once" class="r-evidence">
+  <h3 id="a-cold-discovery-walks-the-docs-tree-once-title">Discovery shares its covered-file observation</h3>
+  <p>The discovery pass now carries one covered-file listing and its observed file stats through its change signature, resource inventory and figure rows. The metadata index stores a host-stable file identity beside each parsed discovery entry, so an unchanged entry uses the stat already observed by the signature walk. Figure paths come from the covered set. Resource scanning skips covered paths its classifier would discard before reading them.</p>
+  <table id="a-cold-discovery-walks-the-docs-tree-once-measure">
+    <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Temporary tree: 2,000 covered files, with three plans and three figures; fixed inventory slugs, figure associations and dimensions, file count, and a touched-file signature change</td><td>Base: 6,234 stat, lstat and scandir calls. Changed: 2,192 calls, 1.096 per covered file, below the 1.5 limit.</td></tr>
+      <tr><td>Negative control: restore the signature walk's own stat of every covered file</td><td>4,192 calls, exactly 2,000 above the changed arm; the count assertion fails, EXIT=1.</td></tr>
+      <tr><td>Nova, unprofiled discovery with an isolated warm metadata index and an empty discovery cache</td><td>Base: 86.631 s. Changed: 57.787 s. Both inventories contained 1,676 rows.</td></tr>
+      <tr><td>Source checks</td><td>Ruff: 17 findings at base and 17 after; all changed Python files pass format check. The serving module is 45,716 estimated tokens, below 50,000.</td></tr>
+    </tbody>
+  </table>
+  <p id="a-cold-discovery-walks-the-docs-tree-once-timing">Both Nova timing arms logged two git history lookups timing out after 10 seconds. The measured wall times include that delay and shared filesystem load; the file-call regression test isolates the walk reduction.</p>
+</section>
