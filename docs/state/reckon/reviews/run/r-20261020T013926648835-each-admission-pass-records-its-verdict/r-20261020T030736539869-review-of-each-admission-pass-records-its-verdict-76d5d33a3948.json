@@ -1,0 +1,40 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-20T03:19:51.590Z",
+  "dispatched_at": "2026-10-20T03:10:02Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/each-admission-pass-records-its-verdict.html",
+      "line": 4,
+      "severity": "follow-on",
+      "severity_note": "repair by naming 76d5d33a3 for the focused gate and the head arm in both paragraphs, leaving 3b7793ab3 only for the base arm.",
+      "text": "the measure paragraph and the population paragraph at line 8 both name head 46b9411e9 for the focused gate and the head importer arm, but the logs they cite say otherwise: logs/focused-head.log line 1 reads '# rev 76d5d33a39489afda0efcc53e6ea09a277ce6c3d' and logs/importer-head.log line 1 reads the same, with the summary lines '4 passed in 29.23s' and '1 failed, 76 passed in 234.94s' and a bare EXIT= line each. The head-arm measures were re-run at 76d5d33a3 after the second commit and the fragment was not moved with them, so a reader comparing the fragment against its own evidence is told a revision the artefacts contradict. The evidence itself is complete and correct; only the prose citation is stale."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": 965,
+      "severity": "follow-on",
+      "severity_note": "recorded so the section's next pass can decide whether a gated pass with a queued pointer earns a line.",
+      "text": "a pass whose fleet gate is waiting returns at 'result[\"action\"] = \"gated\"' before the queued pointers are read, so it appends no verdict row and writes no line even when its lane does have a queued pointer. The plan's Deliverable says the line is appended 'for every pass whose lane has a queued pointer', and the landed behaviour leaves the gate-waiting pass as the one case where a lane with a waiting request records nothing -- the same silent hold the section exists to remove, for the gate's own hold. The Done-when does not name this case, the worker records it in manifest follow_ons, and the plan's own review comment c-s30-never-considered asks for it, so this is a scope question for the section rather than a defect in the landed code."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is one JSON line per admission pass whose lane has a queued pointer, carrying each queued pointer's allowance read with its source and its verdict; reckon/crew/queue_admission.py:909 _record_pass_verdicts writes it and reckon/crew/queue_admission.py:55 ADMISSION_VERDICT_LOG lands it at <crew home>/admission-verdicts.jsonl beside pick-timings.jsonl.\nVERDICT done_when: every clause of the plan's \u00a730 Done-when is asserted by tests/test_each_admission_pass_records_its_verdict.py -- held-then-launched across two passes through a stub launch (line 247), a refused launch then the next pass's held-on-retry-backoff with the pointer's own retry_at (line 291), a pass with no queued pointer writing no line (line 318), and the size-bound trim (line 335); logs/focused-head.log records 4 passed, EXIT=0 at 76d5d33a3.\nVERDICT write_paths: the manifest declares reckon/crew/queue_admission.py, tests/test_each_admission_pass_records_its_verdict.py, the evidence fragment and a figures directory; git diff --stat 3b7793ab3..76d5d33a3 changes exactly the first three and nothing else, all inside that fence.\nVERDICT manifest: read; status complete, and its focused gate, negative control (3 failed, 1 passed, EXIT=1), both population arms, ruff and the head arm's measurement_module/measurement_cwd reconcile with the logs it names; its after_suite and baseline_suite each carry completed:true, a readable summary line and a bare EXIT= line, and both name the same single failure id.\nVERDICT diff: read commit by commit against base 3b7793ab3; 46b9411e9 lands the record (queue_admission.py +206) and 76d5d33a3 reworks it to call the shared log writer and to make the launched-allowance case discriminate, leaving no dangling reference to the removed _append_bounded_log_line or to the old _session_allowance name.\nCALL_SITES: reckon/crew_run_commands.py:3383 (queue_admission.admit_until_stopped, the 'reckon crew admit' service verb)\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:998-1160 emits one row per examined pointer with every verdict the Deliverable names, but the Deliverable's 'every pass whose lane has a queued pointer' still leaves no line from a gate-waiting pass (reckon/crew/queue_admission.py:965) and the manifest concedes the same class in follow_ons.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/focused-head.log records 4 passed at 76d5d33a3 with a red control in logs/negative-control.log (3 failed, 1 passed, EXIT=1) and both population arms now carry a summary line and a bare EXIT= line, which the truncated head arm of the previous revision did not.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 3b7793ab3..76d5d33a3 touches only reckon/crew/queue_admission.py, tests/test_each_admission_pass_records_its_verdict.py and the evidence fragment, all inside the declared fence, and the _session_allowance -> _session_allowance_read rename carries only the source label the record needs.\nSCORE durability: 17\nJUSTIFICATION durability: logs/negative-control.log shows the declared mutation (removing the per-pass append) reddens tests/test_each_admission_pass_records_its_verdict.py::test_a_held_then_launched_pass_writes_one_line_each plus two more, and the launched case at tests/test_each_admission_pass_records_its_verdict.py:281 now asserts the source label 'the new-session worker slots' that production code (reckon/crew/dispatch_plan.py:1215) produces from a different field than the first pass used.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/queue_admission.py:922 imports the shared writer lazily inside the function as reckon/crew/queue_admission.py:1198 already does for the review surface, the helpers follow the module's private-helper and docstring idiom, and no name or comment carries a plan, stage or ticket identifier.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/queue_admission.py:924 now calls the owner reckon/crew/picker/__init__.py:76 _append_crew_log_line for the append instead of re-implementing it, and the only addition kept (the trim at reckon/crew/queue_admission.py:881) is a keep-newest-bytes trim that no other owner provides -- the search over reckon/ found only reckon/crew/watch_unit.py:744's rotate-to-.1 WATCH_LOG_MAX_BYTES, which keeps a whole prior file rather than truncating to the bound the Done-when asserts.\nFINDING docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/each-admission-pass-records-its-verdict.html:4 follow-on: the measure and population paragraphs cite head 46b9411e9 for the focused gate and the head importer arm, while logs/focused-head.log and logs/importer-head.log both record rev 76d5d33a3, so the fragment contradicts the evidence it cites.\nFINDING reckon/crew/queue_admission.py:965 follow-on: a gate-waiting pass returns before reading the queue and writes no line even when its lane has a queued pointer, which is the one case the Deliverable's 'every pass' still leaves unrecorded.\n",
+  "review_run_id": "r-20261020T030736539869-review-of-each-admission-pass-records-its-verdict-76d5d33a3948",
+  "reviewed_base_sha": "3b7793ab3e873e3ab2e7c2a69ec064a1d8945d42",
+  "reviewed_head_sha": "76d5d33a39489afda0efcc53e6ea09a277ce6c3d",
+  "reviewed_run_id": "r-20261020T013926648835-each-admission-pass-records-its-verdict",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T03:21:04.665007+00:00",
+  "total": 106
+}
