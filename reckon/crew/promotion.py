@@ -508,6 +508,7 @@ def complete(
             _standing_suite,
             resume_waived,
             landing,
+            _png_twin_absent,
         ) = _require_independently(
             [
                 _repository_root,
@@ -576,6 +577,13 @@ def complete(
                 ),
                 _resume_gate,
                 _landing_gate,
+                # A figure rule that needs no eyes is checked by the tool, so a
+                # coordinator never enforces it by hand. The one such rule a
+                # run's commits can break is the PNG twin: a worker that
+                # rasterises its SVG to look at it leaves the copy in the tree,
+                # and the page renders the SVG while the copy drifts. The same
+                # finding reaches the worker through `crew check --manifest`.
+                lambda: _require_no_png_twin_of_an_svg(run_id, record),
             ]
         )
         suite_delta = _evaluate_suite_delta(
@@ -2150,6 +2158,7 @@ from reckon.crew.promotion_checks import (
     _require_gate_check_precondition,
     _require_impl_moved,
     _require_independently,
+    _require_no_png_twin_of_an_svg,
     _require_partner_terminal_before_promotion,
     _require_plan_review_delivered_in_its_directory,
     _require_recognised_manifest_status,

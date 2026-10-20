@@ -1525,6 +1525,109 @@ def _added_lines_since(store: Path, base: str) -> dict[str, dict[int, str]]:
     return added
 
 
+def _committed_paths_added_since(store: Path, base: str) -> set[str]:
+    """The paths ``store``'s committed head adds since ``base``.
+
+    The run's own commits are what a twin is judged on, so the diff is taken
+    against the committed head rather than the working tree: a PNG a worker
+    rendered to look at but never staged is not a finding, because it reaches
+    no commit. A diff a store cannot produce leaves the set empty rather than
+    an error, since an unanswerable store measures the absence of a store.
+    """
+    probe = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(store),
+            "diff",
+            "--name-only",
+            "--no-renames",
+            "--diff-filter=A",
+            "--no-color",
+            base,
+            "HEAD",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if probe.returncode != 0:
+        return set()
+    return {line.strip() for line in probe.stdout.splitlines() if line.strip()}
+
+
+def _committed_head_paths(store: Path) -> set[str]:
+    probe = subprocess.run(
+        ["git", "-C", str(store), "ls-tree", "-r", "--name-only", "HEAD"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if probe.returncode != 0:
+        return set()
+    return {line.strip() for line in probe.stdout.splitlines() if line.strip()}
+
+
+def _png_twin_findings_for_base(
+    base: str,
+    *,
+    worktree: Path | None = None,
+    repository: Path | None = None,
+) -> list[str]:
+    """Report each PNG the run's commits add beside an SVG of the same stem.
+
+    The figure rule keeps one SVG per figure and bans a PNG copy beside it: the
+    reckon page renders the SVG and a second copy drifts out of step with it,
+    and a worker that rasterises its SVG to look at it leaves exactly that copy
+    behind. A PNG already present at base is not a finding, so a run that
+    regenerates an SVG/PNG pair kept in both formats on purpose is not refused;
+    a PNG with no SVG beside it is accepted, since the rule allows PNG for
+    raster content.
+    """
+    if not base or base.lower() in _NONE_VALUES or "<" in base or "|" in base:
+        return []
+    stores = _citation_stores(worktree=worktree, repository=repository)
+    if not stores:
+        return []
+    store = _run_diff_store(stores, worktree=worktree, repository=repository)
+    added = _committed_paths_added_since(store, base)
+    if not added:
+        return []
+    if not any(path.endswith(".png") for path in added):
+        return []
+    head = _committed_head_paths(store)
+    findings: list[str] = []
+    for png in sorted(path for path in added if path.endswith(".png")):
+        svg = png[:-4] + ".svg"
+        if svg not in head:
+            continue
+        findings.append(
+            f"{png} adds a PNG twin of the SVG figure {svg} in the same "
+            "directory; the figure rule keeps one SVG per figure and bans a "
+            "PNG copy beside it, because the page renders the SVG and the copy "
+            f"drifts out of step, so remove {png}"
+        )
+    return findings
+
+
+def _png_twin_findings(
+    manifest: dict[str, Any],
+    *,
+    worktree: Path | None = None,
+    repository: Path | None = None,
+) -> list[str]:
+    """Report PNG twins among the commits a manifest's run made since its base.
+
+    The base is the revision the manifest records at orientation, so the diff
+    judges the change this run made rather than every PNG the repository
+    already carries. A manifest that records no resolvable base, or a tree that
+    is not a repository, leaves the check unarmed rather than refusing on work
+    no one can inspect.
+    """
+    base = str(manifest.get("orientation_base_sha") or "").strip()
+    return _png_twin_findings_for_base(base, worktree=worktree, repository=repository)
+
+
 def _read_source_or_none(path: Path) -> str | None:
     """Read a source file, returning ``None`` when it cannot be read."""
     try:
@@ -2472,6 +2575,9 @@ def audit_manifest(
     findings.extend(_test_log_findings(manifest, manifest_path=resolved_manifest_path))
     findings.extend(
         _plan_label_findings(manifest, worktree=worktree, repository=repository)
+    )
+    findings.extend(
+        _png_twin_findings(manifest, worktree=worktree, repository=repository)
     )
     findings.extend(
         _commit_citation_findings(manifest, worktree=worktree, repository=repository)

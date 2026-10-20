@@ -39,6 +39,7 @@ from reckon.crew.plan_review import _is_run_comment
 from reckon.crew.reports import (
     TERMINAL_MANIFEST_STATUSES,
     ManifestParseError,
+    _png_twin_findings_for_base,
     parse_manifest,
 )
 from reckon.crew.routing import (
@@ -515,6 +516,37 @@ def _require_recognised_manifest_status(run_id: str, record: Mapping[str, Any]) 
         raise ManifestParseError(
             f"run {run_id!r} cannot be promoted: {refusal}"
         ) from refusal
+
+
+def _require_no_png_twin_of_an_svg(run_id: str, record: Mapping[str, Any]) -> None:
+    """Refuse a promotion whose commits add a PNG twin of an SVG figure.
+
+    The figure rule keeps one SVG per figure and bans a PNG copy beside it,
+    because the reckon page renders the SVG and the copy drifts out of step. A
+    worker that rasterises its SVG to look at it leaves exactly that copy in the
+    tree, and the same finding reaches the worker through ``crew check
+    --manifest`` while it can still remove it. The check reads the run's commits
+    from its base to its head rather than the working tree, so a PNG the run
+    rendered and never committed is not a finding; a PNG already present at base
+    is not one either.
+
+    The base is the revision the run was dispatched from, which is the same
+    revision the manifest records at orientation, so the check and the audit
+    judge one diff.
+    """
+    base = str(record.get("base_sha") or "").strip()
+    if not base:
+        manifest = _fresh_manifest(record)
+        if manifest is None:
+            return
+        base = str(manifest.get("orientation_base_sha") or "").strip()
+    worktree = Path(str(record["worktree"])) if record.get("worktree") else None
+    repository = Path(str(record["repo"])) if record.get("repo") else worktree
+    findings = _png_twin_findings_for_base(
+        base, worktree=worktree, repository=repository
+    )
+    if findings:
+        raise CrewError(f"run {run_id!r} cannot be promoted: " + "; ".join(findings))
 
 
 def _require_worker_stopped_before_promotion(

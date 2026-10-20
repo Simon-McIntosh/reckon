@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+<head>
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="doc">
+</head>
+<body>
+<section id="promotion-refuses-a-png-twin-of-an-svg">
+<h2 id="promotion-refuses-a-png-twin-of-an-svg-landed">Promotion refuses a PNG twin of an SVG</h2>
+<p id="promotion-refuses-a-png-twin-of-an-svg-landing">
+A run that commits a PNG beside an SVG of the same stem in the same directory is
+now a finding of the shared manifest audit: <code>crew check --manifest</code>
+reports it to the worker while it can still remove the file, and
+<code>crew complete</code> refuses the promotion with the same text, naming both
+paths. The two surfaces share one predicate,
+<code>_png_twin_findings_for_base</code> in <code>reckon/crew/reports.py</code>,
+so the worker-facing message and the refusal cannot drift apart.
+</p>
+<p id="promotion-refuses-a-png-twin-of-an-svg-scope">
+The check reads the run's commits from its base to its head
+(<code>git diff --diff-filter=A</code> against <code>git ls-tree</code> at
+HEAD), never the working tree, so a PNG rendered to look at the figure and never
+staged is not a finding. A PNG already present at the base is not the run's
+twin either, which is what keeps a regenerated pair held in both formats on
+purpose acceptable; a PNG with no SVG beside it passes, since the rule allows
+PNG for raster content.
+</p>
+<p id="promotion-refuses-a-png-twin-of-an-svg-measure">
+Measure: <code>tests/test_a_png_twin_of_an_svg_is_refused.py</code> — five cases,
+each building its own repository under a temporary directory and reading nothing
+outside it. The twin case asserts the check exits non-zero naming both paths and
+that <code>crew.complete</code> raises the refusal naming both; the other four
+assert both commands pass. The negative control removed the twin check from
+<code>audit_manifest</code> and from the promotion check list: the twin case
+then passed both commands and the test failed, and the four other cases still
+passed. The reports-surface suite — the 29 test files importing
+<code>reckon.crew.reports</code> — shows no added failure against the base
+revision, and ruff check and ruff format add no finding on the changed files.
+</p>
+</section>
+</body>
+</html>
