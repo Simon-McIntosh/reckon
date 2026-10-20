@@ -211,6 +211,22 @@
 <p>The first review found that the child-identity test ran the child in-process with the parent's snapshot still set. Deleting the argument plumbing therefore left the test green, while a real child process would have stored no revision, and every read would then miss for good. The repair runs the child with the snapshot absent, as production does, and adds the second negative control above. The remaining follow-on, that a sentinel annotation reads as <code>object</code>, was exempted.</p>
   </section>
 
+  <section id="s17">
+    <h2>§17 — The shell&#x27;s scripts are fetched once per revision</h2>
+    <p>The shell the server answers for a project names each of its 34 linked scripts and stylesheets under <code>/_shared/</code>, <code>/_ui/</code> and <code>/_runtime/</code> by a URL carrying its revision. A URL naming the current revision answers <code>Cache-Control: max-age=31536000, immutable</code>; any other answers <code>no-cache</code> with an ETag, and 304 to a match. Scripts and stylesheets on those routes are gzipped above 1 KiB through the existing per-revision compression cache. A linked asset whose revision cannot be read keeps an unrevisioned URL rather than failing the shell. <code>_render_spa_html</code>, whose output <code>reckon sync</code> writes to disk, is unchanged. <code>reckon/shell_assets.py</code> owns the revision rule, the immutable header and the match check, and <code>reckon/serve.py</code> grew by 310 estimated tokens. Run <code>r-20261020T071004462594</code>, eight commits ending at <code>3addd882f</code>, merged at <code>f72ffac6e</code>.</p>
+<table>
+<thead><tr><th>Check</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>Population, 160 files importing <code>serve</code> or <code>shell_assets</code>, the SPA tests and <code>tests/test_build.py</code></td><td>22 failed at base <code>d3f81b306</code>, 21 at the merge candidate; none added</td></tr>
+<tr><td>Route gate</td><td>17 passed</td></tr>
+<tr><td>Negative controls</td><td>dropping the revision from the shell, and a renderer that adds tokens itself, each fail their assertion</td></tr>
+<tr><td>Live, srv-1006 after reload at 10:04 UTC</td><td><code>/_ui/plan.js?rev=…</code> answers immutable and gzipped, 17,305 B instead of 63,662 B</td></tr>
+<tr><td>Independent review</td><td>12 to 19 on the first head; 17 to 20 with no findings after the repair</td></tr>
+</tbody>
+</table>
+<p>Two repair rounds. The coordinator's first population found one added failure: the shell stat'ed every linked file, so one missing asset made the whole shell request die without a response. The worker now keeps such a URL unrevisioned. The same round removed a second copy of the compression cache. The review's follow-ons then made the renderer test able to fail, and moved the immutable header and the match check into the leaf module, which <code>serve</code> now imports. The four <code>tests/test_build.py</code> browser failures the worker first reported also fail at base, so they predate this change.</p>
+  </section>
+
 </main>
 </body>
 </html>
