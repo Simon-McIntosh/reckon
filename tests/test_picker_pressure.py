@@ -160,9 +160,16 @@ def test_review_node_is_never_offered_a_review_excluded_backend(
     }
 
 
-def test_reserve_hold_below_hard_ceiling_remains_offered(
+def test_a_reserve_hold_below_the_hard_ceiling_withholds_the_lane(
     live_facts, monkeypatch, request_node, config, tmp_path
 ):
+    """A reserve hold below the ceiling withholds the lane, as it does a dispatch.
+
+    The window reads 80% against a 90% ceiling -- below the ceiling, above the
+    70% a dispatch may use once the 20% resume reserve is withheld -- so the pick
+    refuses the lane a dispatch would refuse, and the reason it carries is the
+    verdict's own, naming the effective ceiling and the withheld reserve.
+    """
     config["budget"].update(utilisation_ceiling_pct=90, resume_reserve_pct=20)
     monkeypatch.setattr(
         snapshot.budget,
@@ -172,7 +179,11 @@ def test_reserve_hold_below_hard_ceiling_remains_offered(
         ),
     )
     options = snapshot.candidates(request_node, config, tmp_path, records=[])
-    assert next(c for c in options if c.backend == "remote").reasons == []
+    reasons = next(c for c in options if c.backend == "remote").reasons
+    limit = budget.effective_ceiling(budget.policy(config), "dispatch")
+    assert len(reasons) and all(r.startswith("budget-ceiling:") for r in reasons)
+    assert any(f"{limit}% ceiling for a dispatch" in r for r in reasons)
+    assert any("resume reserve" in r for r in reasons)
 
 
 @pytest.mark.parametrize("utilisation", [90, 100])
