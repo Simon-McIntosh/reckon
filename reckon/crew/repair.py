@@ -584,6 +584,89 @@ def compose_repair_node(
     }
 
 
+def _figure_review_of(
+    review: Mapping[str, Any], *, base_dir: str | None = None
+) -> Mapping[str, Any] | None:
+    """The figure review stored for the same run and head as ``review``, if any.
+
+    A run that drew a figure carries a second review at the same head, filed
+    under the figure rubric rather than the review's own default rubric. It is
+    read by the record's own project, reviewed run and carried head, so the two
+    records this node pairs are the two a single review round stands for. A
+    record that is itself a figure review names no companion, and one that names
+    no project or reviewed run has nothing to key the read on, so both yield
+    ``None``.
+    """
+    if (
+        str(review.get("rubric") or "").strip().lower()
+        == review_module.FIGURE_REVIEW_RUBRIC
+    ):
+        return None
+    project = str(review.get("project") or "").strip()
+    run_id = str(review.get("reviewed_run_id") or "").strip()
+    if not project or not run_id:
+        return None
+    _, _, _, head = review_module.carried_revision_pair(review)
+    try:
+        return review_module.read_review(
+            project,
+            run_id,
+            base_dir=base_dir,
+            reviewed_head_sha=str(head or "").strip() or None,
+            rubric=review_module.FIGURE_REVIEW_RUBRIC,
+        )
+    except (OSError, ValueError):
+        return None
+
+
+def review_with_figure(
+    review: Mapping[str, Any], *, base_dir: str | None = None
+) -> dict[str, Any]:
+    """Return ``review`` with its run's figure review findings appended.
+
+    The findings a repair answers are the run review's and the figure review's
+    together: a run whose figure review raises a blocking finding goes back to
+    the node that drew it, so the round the composer opens names the figure as
+    well as the finding. The figure record is read for the run and head the text
+    record names and its findings are appended after the text record's, in the
+    record's order. The figure record's own per-finding dispositions are re-keyed
+    to the appended positions, so a figure finding already disposed on its own
+    record reads as disposed here too rather than being repaired a second time.
+
+    The text record's identity fields are kept, because the round a repair
+    belongs to is the run and head the *review* stands for. A review with no
+    figure record, a figure record carrying no finding, or a record that is
+    itself the figure review is returned unchanged, so a run that drew no figure
+    composes exactly as it did before.
+    """
+    figure = _figure_review_of(review, base_dir=base_dir)
+    if figure is None:
+        return dict(review)
+    figure_raw = figure.get("findings")
+    if not isinstance(figure_raw, list) or not figure_raw:
+        return dict(review)
+    text_raw = review.get("findings")
+    text_raw = list(text_raw) if isinstance(text_raw, list) else []
+    merged = dict(review)
+    merged["findings"] = [*text_raw, *figure_raw]
+    offset = len(review_findings(review))
+    dispositions: dict[str, Any] = {}
+    existing = review.get(review_module.FINDING_DISPOSITIONS_KEY)
+    if isinstance(existing, Mapping):
+        dispositions.update({str(key): value for key, value in existing.items()})
+    figure_dispositions = figure.get(review_module.FINDING_DISPOSITIONS_KEY)
+    if isinstance(figure_dispositions, Mapping):
+        for key, value in figure_dispositions.items():
+            try:
+                index = int(str(key))
+            except (TypeError, ValueError):
+                continue
+            dispositions[str(index + offset)] = value
+    if dispositions:
+        merged[review_module.FINDING_DISPOSITIONS_KEY] = dispositions
+    return merged
+
+
 def compose_repair_for_run(
     project: str,
     reviewed_run_id: str,
@@ -597,8 +680,11 @@ def compose_repair_for_run(
 
     The record is read through the shared review store, so the finding set this
     composes from is the one another reader selects for the same run and head.
-    A run with no stored review, or one whose review carries no blocking
-    finding, composes nothing.
+    The run's figure review at that head is folded in through
+    :func:`review_with_figure`, so a blocking finding it raises opens the same
+    round the text review would — a figure defect goes back to the node that
+    drew it rather than waiting for a coordinator. A run with no stored review,
+    or one whose reviews together carry no blocking finding, composes nothing.
     """
     review = review_module.read_review(
         project,
@@ -608,6 +694,7 @@ def compose_repair_for_run(
     )
     if review is None:
         return None
+    review = review_with_figure(review, base_dir=base_dir)
     return compose_repair_node(
         review,
         run_record=run_record,

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="The repair reflex reads the figure review">
+  <meta name="plan-summary" content="The repair composer read only a run's text review, so a blocking finding the separate figure review raised opened no round and waited for a coordinator. compose_repair_for_run now folds the figure review stored at the same run and head into the record it composes from, re-keying the figure record's dispositions onto the appended findings, so a figure defect composes the same round a text defect does and the round's advice names the figure and the finding.">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-10-20">
+  <meta name="plan-verdict" content="passed">
+  <title>The repair reflex reads the figure review | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The repair reflex reads the figure review</h1>
+
+    <section id="the-repair-reflex-resumes-on-a-figure-finding-defect">
+      <h2>The defect</h2>
+      <p>A run that drew a figure carries two stored reviews at one head: its
+        text review and its figure review, filed under the figure rubric at its
+        own path. <code>compose_repair_for_run</code> read only the text review,
+        so a blocking finding the figure reviewer raised opened no round at all —
+        the run composed <code>None</code> and the figure defect waited for a
+        coordinator while a text defect went straight back to the node that drew
+        it.</p>
+    </section>
+
+    <section id="the-repair-reflex-resumes-on-a-figure-finding-change">
+      <h2>The change</h2>
+      <p><code>reckon/crew/repair.py</code> gains
+        <code>review_with_figure</code>, which reads the figure review for the
+        run and head the text record names and appends its findings after the
+        text record's, re-keying the figure record's own
+        <code>finding_dispositions</code> onto the appended positions so a figure
+        finding already disposed reads as disposed rather than being repaired
+        again. <code>compose_repair_for_run</code> composes from that merged
+        record, so the round's brief and the resume advice the reflex builds from
+        it name the figure and the finding. The reader stays pure: the union is
+        made once at composition, not inside <code>review_findings</code>, which
+        the findings surface walks per stored record and would double-count if it
+        read the companion itself.</p>
+    </section>
+
+    <section id="the-repair-reflex-resumes-on-a-figure-finding-evidence">
+      <h2>Evidence</h2>
+      <p>Gate: <code>tests/test_a_blocking_figure_finding_resumes_the_worker.py</code>
+        passes at base <code>084c4de3b</code> — 4 passed, <code>EXIT=0</code>
+        (<code>logs/gate-measure.log</code>). The first case reads the figure
+        review through <code>read_review</code> with the figure rubric, checks its
+        severity through <code>blocking_findings</code>, and asserts the compose
+        round and its resume advice name <code>docs/figures/sample/plot.svg</code>
+        and the finding's text. A follow-on-only figure review composes
+        <code>None</code>; a text blocking finding composes the round it composed
+        before.</p>
+      <p>Negative control — leaving the figure review out of the reflex's read:
+        the first case gets no round. The log
+        <code>logs/negative-control.log</code> records <code>EXIT=1</code> with
+        <code>test_a_blocking_figure_finding_opens_the_round_and_names_the_figure</code>
+        failing on <code>assert None is not None</code>, and the paired case
+        failing on <code>1 == 2</code> composed findings.</p>
+      <p>Importer population (12 repair/findings/disposition test modules,
+        <code>logs/gate-head.log</code>): 87 passed, 2 failed. Both failures are
+        in <code>tests/test_a_folded_finding_widens_its_repair.py</code> and
+        reproduce at the base revision with this node's change reverted, so they
+        are pre-existing and outside this node's scope.</p>
+    </section>
+  </main>
+</body>
+</html>
