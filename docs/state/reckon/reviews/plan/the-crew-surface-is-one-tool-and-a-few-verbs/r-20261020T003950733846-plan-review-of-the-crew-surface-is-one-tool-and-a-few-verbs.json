@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T00:45:32.404Z",
+  "dispatched_at": "2026-10-20T00:41:01Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:383",
+      "id": "wiring-1",
+      "reason": "the followup is the dispatch authority, and its false \"no shared write path\" claim would have \u00a710 dispatched concurrently with the \u00a77 node that shares its file rather than sequenced after it.",
+      "text": "the driving followup claims \"\u00a710 shares no write path with any of them and runs whenever a slot is free\", but \u00a710:353 itself names that \u00a77's repair-and-check node also writes `reckon/crew/recovery_review_subject.py` (\u00a77's write-path list at plan:247 confirms it), so the followup's ordering authority is wrong for the one node \u00a710 actually collides with; a coordinator following it dispatches \u00a710 to run unsequenced against that node and meets the dispatch scope-conflict refusal instead of the intended order",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "a7ded996de7404c3d65f674daf89742bb39759261e73c79399ed521980467084",
+  "plan_slug": "the-crew-surface-is-one-tool-and-a-few-verbs",
+  "plan_version": 37,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T003950733846-plan-review-of-the-crew-surface-is-one-tool-and-a-few-verbs",
+  "reviewed_blob_sha": "1a6b429560af0aa1cf98bbb5a8cf424e3cf2a735",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_resolve_promotion_outcome` (reckon/crew/promotion_checks.py:1132), `_delivered_review_record` (reckon/crew/recovery_review_delivery.py:302) and `_review_is_complete` (reckon/crew/recovery_review_subject.py:1021) all resolve; both cited runs (`r-20261019T214105811291-review-of-fdu-commutation-circuit-ac68169f62e3`, `r-20261019T230558980003-\u2026`) exist, and the extensionless hrefs resolve once `.html` is appended (e.g. `what-coordinators-report-about-the-reckon-surface` \u2192 docs/research/\u2026html).",
+    "done_when": "pass \u2014 \u00a710's done-when builds one review run per condition it names (five, matching the five `None` returns of `_delivered_review_record`), names a negative control that collapses the reasons and makes the per-condition cases fail, and states the incomplete-review fixture in the cited runs' own shape (six scored dimensions, no `total`).",
+    "evidence_paths": "pass \u2014 \u00a710 cites durable artifact paths (`reckon/crew/*.py`, a test under `tests/`, and two run ids that resolve under the crew runs directory); no session scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 \u00a710 introduces no plan labels, stage names, ticket numbers or version tags into code or comments.",
+    "reasoning": "pass \u2014 \u00a710's stated root cause matches its evidence, its mechanism produces its done-when, and the mechanism runs on a production caller.",
+    "single_goal": "pass \u2014 \u00a710 carries one deliverable: name the failing delivery condition in the review-run promotion refusal.",
+    "wiring": "a finding \u2014 \u00a710:353 acknowledges that \u00a77's repair-and-check node also writes `reckon/crew/recovery_review_subject.py` and relies on the dispatch scope check, but the driving followup at plan:383 asserts \"\u00a710 shares no write path with any of them and runs whenever a slot is free\", which contradicts it."
+  },
+  "section_digests": {
+    "_document": "4d4b24f4aec9178fd9d24a7442e96788d260da61249c8afd730e02ffe7cc56f6",
+    "s1": "7964ee282f4a5255288aa84785a54dbc6a5fec9660f4cee9f9c892a0807894ee",
+    "s10": "033277f14414ff9bc6f07d5fabef9354ec643b0bcb31a42018a8bb7153544427",
+    "s2": "be69292dc4744e91b19438c3129be40ac6c6138f02cd12656616dd3906a1d313",
+    "s3": "bfc4b93502cb69a2a5878f9c282da2cbab878f4f49482f263fdfc074dfce4ba8",
+    "s4": "2feb22a10d53f02161e33412c6f491a2718ee9b88ffede06e39b7fc15799f5d1",
+    "s5": "4a0b632aaec0c9b2538edeab874ccd9fd39723e2eef864da9ae65a3f72b6695c",
+    "s6": "e037f188e4e0784a7a39a208f621ec226cacdda5308e5f226d6ba3e104345522",
+    "s7": "7a66876ae7177f3cc833a9fc9c2885beceef03cf567843584a885f144155809b",
+    "s8": "beb6c1568fe326e8af87c393c93ac9e71dec60ad9a9247b47ffbec9d08fc76a6",
+    "s9": "7035e56c9914aad3c602d84869935ce1d75b2eba9a855d32377d43998ebac231"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T00:47:24.058178+00:00"
+}
