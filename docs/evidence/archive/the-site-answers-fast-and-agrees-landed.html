@@ -205,7 +205,7 @@
           <td>warm worst 32 ms; cold worst 544 ms</td><td>pass (cold arm warm-contaminated — see below)</td></tr>
         <tr><td>No console error</td><td>0 errors across all nine loads</td><td>0 errors</td><td>pass</td></tr>
         <tr><td>Home view transfers under 500 KB</td>
-          <td>355,355 B cold; 140,586 B warm</td><td>1,167,789 B cold; 896,119 B warm</td><td>pass</td></tr>
+          <td>355,355 B cold; 140,586 B warm</td><td>1,167,789 B cold; 896,119 B warm (upper bounds — body-length instrument)</td><td>pass</td></tr>
         <tr><td>nova and power_convertor figure first screens under 2 MB, every thumbnail within 2 s warm</td>
           <td>nova 98 KB cold / 0 B warm in 5.7 ms; power_convertor 138 KB cold / 9.9 KB warm in 2.9 ms</td>
           <td>nova 48 KB / 0 B in 3 ms; power_convertor 162 KB / 10 KB in 2 ms</td><td>pass</td></tr>
@@ -214,22 +214,32 @@
       </tbody>
     </table>
 
-    <p><strong>The first pass's home-view miss was this probe's instrument, and the site was inside the budget
-      both times.</strong> The probe summed the lengths of every response body the browser received, and a body
-      the browser serves from its own cache is still handed to that handler, so the figure could not fall on a
-      cached load and could not distinguish a cached resource from a re-fetched one. The honest measure is the
-      bytes the browser moves, which is what the reader pays over the tunnel. Recorded by
-      <code>home_bytes.py</code> from <code>request.sizes()</code>, the served home view moves 355,355 B cold and
-      140,586 B warm, against the 1,169,603 B the body-length instrument reports for the same two loads. The
-      first pass's 1,167,789 B cold is the same instrument's reading, so its miss on this line was the
-      instrument's, not §17's. <strong>Both home loads are under the 500 KB the gate allows.</strong></p>
+    <p><strong>The first pass's miss on the home line stands; §17 owned it, and §17 is what closed it.</strong>
+      Before §17 merged, <code>/_ui/*.js</code> and <code>/_runtime/*.js</code> answered through <code>_send</code>
+      with <code>Cache-Control: no-store</code>, no ETag and no gzip, so a browser re-downloaded every script in
+      full on every load, warm included. The home view therefore missed the 500 KB budget then, and its owner was
+      §17. The revision-keyed, gzipped scripts §17 landed are what bring the warm home view to 140,586 B now.</p>
+
+    <p><strong>Separately, the probe's body-length instrument overstates transfer, so the first pass's byte
+      figures are upper bounds rather than the bytes moved.</strong> It summed the lengths of every response body
+      the browser received, and a body the browser serves from its own cache, or receives compressed, is still
+      counted at its decoded length. This pass measures the bytes the browser actually moves, recorded by
+      <code>home_bytes.py</code> from <code>request.sizes()</code>: the served home view moves 355,355 B cold and
+      140,586 B warm, against the 1,169,603 B the body-length sum reports for the same two loads. The first pass's
+      1,167,789 B cold and 896,119 B warm are that instrument's readings and are read here as upper bounds;
+      <strong>the correction changes the size of the figure, not the first pass's verdict</strong>, which the
+      coordinator's own measurement of 719,562 B of shell scripts and stylesheets at the time confirms. Both home
+      loads this pass are under the 500 KB the gate allows.</p>
 
     <p><strong>The script cache is working, and this pass shows it directly.</strong> On the warm home load every
       script and stylesheet transfers 0 bytes — <code>/_ui/*.js</code>, <code>/_runtime/*.js</code>,
       <code>/_shared/*.css</code> and <code>/_ui/*.css</code>, each revision-keyed — against 200,793 B of scripts
       and 13,975 B of CSS on the cold load. What the warm load still moves is data, not code:
       <code>/_index/imas-ambix</code> 51 KB, <code>/crew</code> 42 KB, <code>/_projects/index.json</code> 30 KB
-      and <code>/_checks/imas-ambix</code> 12 KB. That is the §17 change visible from the reader's side.</p>
+      and <code>/_checks/imas-ambix</code> 12 KB. That is the §17 change visible from the reader's side, and it
+      is what the negative control's absence of it looks like from the other direction: at base
+      <code>b98f7a160</code>, where the scripts were served the same <code>no-store</code> way, the corrected
+      instrument still shows the warm home view transferring 685,522 B, over the budget.</p>
 
     <p><strong>One head pass was lost to a service restart and is not reported.</strong> A first pass began at
       <code>10:29:10Z</code>; the served process restarted at <code>10:29:46Z</code> (its own

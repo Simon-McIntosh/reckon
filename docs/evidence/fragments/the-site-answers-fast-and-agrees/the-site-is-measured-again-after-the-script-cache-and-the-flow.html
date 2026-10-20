@@ -35,15 +35,22 @@
   </table>
 
   <p id="the-site-is-measured-again-after-the-script-cache-and-the-flow-instrument"><strong>The first pass's
-    home-view miss was the instrument, not the site.</strong> The probe summed every response body the browser
-    received, which counts a resource the browser served from its own cache and never moved. Measured from
-    <code>request.sizes()</code> — the bytes the browser actually moves — the home view transfers 355,355 B cold
-    and 140,586 B warm, against the 1,169,603 B the body-length sum reports for the same loads. The first pass's
-    1,167,789 B cold was that instrument's reading, so its miss on this line was the instrument's, not §17's.</p>
+    miss on the home line stands; §17 owned it, and §17 is what closed it.</strong> Before §17 merged,
+    <code>/_ui/*.js</code> and <code>/_runtime/*.js</code> answered through <code>_send</code> with
+    <code>Cache-Control: no-store</code>, no ETag and no gzip, so a browser re-downloaded every script in full on
+    every load, warm included, and the home view missed the 500 KB budget. Separately, the probe's body-length
+    instrument overstates transfer whenever bodies come from cache or arrive compressed, so the first pass's byte
+    figures are upper bounds rather than the bytes moved. This pass measures the bytes the browser actually moves
+    (<code>request.sizes()</code>): 355,355 B cold and 140,586 B warm, against the 1,169,603 B the body-length sum
+    reports for the same loads. The correction changes the size of the figure, not the first pass's verdict —
+    the coordinator measured 719,562 B of shell scripts and stylesheets at the time, and this pass's own negative
+    control agrees: at base <code>b98f7a160</code> the corrected instrument still shows the warm home view
+    transferring 685,522 B.</p>
 
   <p id="the-site-is-measured-again-after-the-script-cache-and-the-flow-cache"><strong>The script cache works and
-    this pass shows it.</strong> On the warm home load every revision-keyed script and stylesheet transfers 0
-    bytes, against 200,793 B of scripts and 13,975 B of CSS cold. What remains warm is data:
+    this pass shows it.</strong> §17's revision-keyed, gzipped scripts are what bring the warm home view to
+    140,586 B: on the warm load every revision-keyed script and stylesheet transfers 0 bytes, against 200,793 B of
+    scripts and 13,975 B of CSS cold. What remains warm is data:
     <code>/_index/imas-ambix</code> 51 KB, <code>/crew</code> 42 KB, <code>/_projects/index.json</code> 30 KB,
     <code>/_checks/imas-ambix</code> 12 KB.</p>
 
