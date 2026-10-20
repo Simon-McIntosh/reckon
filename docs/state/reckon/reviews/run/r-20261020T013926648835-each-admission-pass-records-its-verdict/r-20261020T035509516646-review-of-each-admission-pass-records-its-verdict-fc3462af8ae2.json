@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-20T04:15:35.811Z",
+  "dispatched_at": "2026-10-20T03:56:14Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": 913,
+      "severity": "follow-on",
+      "severity_note": "the reuse dimension is scored 5 on this; consolidating onto the existing helper (lazily imported, as the file already lazily imports reckon/crew/picker) is cleanup, not a correctness repair, so it does not hold the node.",
+      "text": "_trim_log_to_bound duplicates reckon/crew/fleet_supervisor.py:566 trim_file_ends / :610 trim_service_log, which already keep a file's newest whole lines under a byte limit; the addition neither extends nor wraps that owner, so one capability now has two implementations free to drift."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": 935,
+      "severity": "follow-on",
+      "severity_note": "narrow: it needs two lanes' services appending to the shared log inside the read-to-replace window; the loss is one verdict line, never an admission decision.",
+      "text": "the trim reads the tail and then replaces the file with os.replace while running outside _admit_lock, so a verdict line appended by a concurrent admission service between the read and the replace is silently discarded, and two concurrent trims share the fixed .tmp name."
+    },
+    {
+      "file": "docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/each-admission-pass-records-its-verdict.html",
+      "line": 4,
+      "severity": "follow-on",
+      "severity_note": "the same revision is named in the manifest's artifacts and test_logs lines; repair by naming fc3462af8 for the focused gate, leaving 388b92530 for the importer head arm and the negative control, which their logs do name.",
+      "text": "the measure paragraph names 388b92530 for the focused gate, but the paragraph's own opening sentence says each revision is the one named on its own log's first line and logs/focused-head.log line 1 names fc3462af8ae20865c955317ee18b198b34d6037e; the code is identical between those two revisions so the evidence stands, but the citation is contradicted by the artefact it cites."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is one bounded JSON line per admission pass whose lane has a queued pointer, carrying each queued pointer's allowance read with its published source and the pass's verdict; reckon/crew/queue_admission.py:941 _record_pass_verdicts writes it and reckon/crew/queue_admission.py:55 ADMISSION_VERDICT_LOG bounds it, which is what the goal names.\nVERDICT done_when: the plan's section-30 Done-when clauses are asserted by tests/test_each_admission_pass_records_its_verdict.py -- held-then-launched across two passes through a stub launch (line 247), a refused launch then the next pass's held-on-retry-backoff carrying the pointer's own retry_at (line 291), a pass with no queued pointer writing no line (line 318), and the size-bound trim (line 374) -- plus the gated pass added in this revision (line 335); logs/focused-head.log records 5 passed, EXIT=0.\nVERDICT write_paths: the manifest declares reckon/crew/queue_admission.py, tests/test_each_admission_pass_records_its_verdict.py and the evidence fragment; git diff --stat 3b7793ab3..fc3462af8 changes exactly those three files and nothing else, all inside the fence.\nVERDICT manifest: read; status complete, and it records the base and head importer arms (72 passed / 1 failed at 3b7793ab3 vs 77 passed / the same 1 failed at 388b92530), the negative control, and ruff check_exit=0 / fmt_exit=0.\nVERDICT diff: read commit by commit against 3b7793ab3; four commits land the verdict log, route it through the shared crew-home log writer, record the requests a waiting fleet gate held, and correct the evidence fragment's revision citations.\nCALL_SITES: reckon/crew_run_commands.py:3383 (the crew admit command calls queue_admission.admit_until_stopped), reckon/crew/queue_admission.py:1268 (admit_until_stopped once path), reckon/crew/queue_admission.py:1276 (admit_until_stopped loop path)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:941 _record_pass_verdicts appends one line per pass whose lane had a queued pointer and returns without writing when the pass examined none, exactly as the goal states.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/focused-head.log (5 passed, EXIT=0) and logs/importer-head.log (77 passed, 1 failed against the base arm's 72 passed and the same single id) record the measures the Done-when names, though the evidence fragment at line 4 names a revision its own cited log contradicts.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 3b7793ab3..fc3462af8 touches only reckon/crew/queue_admission.py, tests/test_each_admission_pass_records_its_verdict.py and the always-permitted landing fragment.\nSCORE durability: 18\nJUSTIFICATION durability: logs/negative-control.log removes the per-pass append and 4 of the 5 cases in tests/test_each_admission_pass_records_its_verdict.py fail (EXIT=1), every failing id one the head arm passes, so the assertions fail on the regression they guard.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/queue_admission.py:941 follows the module's idiom, lazily importing the shared writer as reckon/crew/dispatch_picker.py:717 does, and no name in the diff carries a plan or ticket label.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/queue_admission.py:913 _trim_log_to_bound re-implements the log-bounding capability already owned by reckon/crew/fleet_supervisor.py:610 trim_service_log without extending or wrapping it.\nFINDING reckon/crew/queue_admission.py:913 follow-on: _trim_log_to_bound duplicates reckon/crew/fleet_supervisor.py:566 trim_file_ends / :610 trim_service_log, which already keep a file's newest whole lines under a byte limit; the addition neither extends nor wraps that owner, so one capability now has two implementations free to drift.\nFINDING reckon/crew/queue_admission.py:935 follow-on: the trim reads the tail and then replaces the file with os.replace while running outside _admit_lock, so a verdict line appended by a concurrent admission service between the read and the replace is silently discarded, and two concurrent trims share the fixed .tmp name.\nFINDING docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/each-admission-pass-records-its-verdict.html:4 follow-on: the measure paragraph names 388b92530 for the focused gate, but the paragraph's own opening sentence says each revision is the one named on its own log's first line and logs/focused-head.log line 1 names fc3462af8ae20865c955317ee18b198b34d6037e; the code is identical between those two revisions so the evidence stands, but the citation is contradicted by the artefact it cites.\n",
+  "review_run_id": "r-20261020T035509516646-review-of-each-admission-pass-records-its-verdict-fc3462af8ae2",
+  "reviewed_base_sha": "3b7793ab3e873e3ab2e7c2a69ec064a1d8945d42",
+  "reviewed_head_sha": "fc3462af8ae20865c955317ee18b198b34d6037e",
+  "reviewed_run_id": "r-20261020T013926648835-each-admission-pass-records-its-verdict",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T04:16:46.014327+00:00",
+  "total": 95
+}
