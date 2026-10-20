@@ -31,11 +31,11 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
-from reckon import compliance, metadata_index
+from reckon import compliance, metadata_index, served_code
 from reckon._store import write_json_atomically
 
 _REFRESH_SCHEMA = "reckon-route-result"
-_REFRESH_STORE_VERSION = 1
+_REFRESH_STORE_VERSION = 2
 _SOURCE_REVISION_UNSET = object()
 
 #: Whether handlers answer from the store at all. Only the served process sets
@@ -120,8 +120,15 @@ def _refresh_result(key: tuple[str, ...]) -> tuple[object, float, str] | None:
         not isinstance(raw, dict)
         or raw.get("schema") != _REFRESH_SCHEMA
         or raw.get("key") != list(key)
-        or raw.get("source_revision") != _source_revision()
     ):
+        return None
+    fingerprints = raw.get("source_fingerprints")
+    if fingerprints is not None:
+        if not isinstance(fingerprints, dict) or not served_code.definitions_unchanged(
+            served_code.package_root(), fingerprints
+        ):
+            return None
+    elif raw.get("source_revision") != _source_revision():
         return None
     age = max(0.0, time.time() - stat.st_mtime)
     return raw.get("result"), age, str(raw.get("version", ""))
@@ -132,6 +139,7 @@ def _store_refresh_result(
     result: object,
     *,
     source_revision: str | object | None = _SOURCE_REVISION_UNSET,
+    source_fingerprints: dict[str, dict[str, object]] | None = None,
 ) -> str:
     """Write one key's stored result; return the version it was written under."""
 
@@ -145,6 +153,8 @@ def _store_refresh_result(
         "source_revision": source_revision,
         "result": result,
     }
+    if source_fingerprints is not None:
+        payload["source_fingerprints"] = source_fingerprints
     try:
         write_json_atomically(
             _refresh_store_path(key),
@@ -509,8 +519,21 @@ def _refresh_main(argv: list[str]) -> int:
     if args.mounts:
         os.environ["RECKON_MOUNTS_PATH"] = args.mounts
     _resolve_paths(Path(args.mounts) if args.mounts else None)
-    result = _compute_refresh(key)
-    _store_refresh_result(key, result, source_revision=args.source_revision)
+    snapshot = served_code.take_snapshot()
+    executed = served_code.ExecutedSource(snapshot.root)
+    if not executed.start():
+        raise RuntimeError("cannot track refresh definitions")
+    try:
+        result = _compute_refresh(key)
+    finally:
+        executed.stop()
+    fingerprints = served_code.definition_fingerprints(snapshot, executed.definitions())
+    _store_refresh_result(
+        key,
+        result,
+        source_revision=args.source_revision,
+        source_fingerprints=fingerprints,
+    )
     return 0
 
 
