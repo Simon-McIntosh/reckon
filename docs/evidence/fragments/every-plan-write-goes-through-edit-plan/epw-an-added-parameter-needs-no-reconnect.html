@@ -1,0 +1,104 @@
+<!-- Evidence anchor: epw-an-added-parameter-needs-no-reconnect -->
+
+<section data-reckon="evidence" id="epw-an-added-parameter-needs-no-reconnect-evidence">
+  <h3>§13 — An added parameter needs no reconnect</h3>
+
+  <p id="epw-an-added-parameter-needs-no-reconnect-mechanism">
+    After §11 the only reconnect the guard still asked for was a changed tool
+    signature, and it asked for <em>any</em> difference in the parameter list,
+    additions included. So every landing that added a parameter made every
+    session reconnect: §7's added <code>request_id</code> alone drove the
+    2026-10-19 and 2026-10-20 reconnects seen by imas-codex and reckon sessions.
+    An added optional parameter leaves every call the client can make valid on
+    the new code — a reconnect only buys the client the new parameter — so the
+    refusal was owed for a much narrower change than it was asked for.
+  </p>
+
+  <p id="epw-an-added-parameter-needs-no-reconnect-rule">
+    <strong>The rule, held by the current code.</strong> A change is compatible
+    when every registered parameter is still accepted, no registered optional
+    parameter has become required, and no parameter the client does not hold is
+    required. <code>signature_compatible</code> in
+    <code>reckon/served_code.py</code> states that rule once; the readiness probe
+    reports each tool's parameter names beside <code>required</code>, the subset
+    carrying no default. The parent sends its own registered parameters, each
+    with whether it was required, with the probe, and the child answers
+    <code>compatible</code> per tool. The child holds the rule, not the parent,
+    so a later change to it reaches every running server without a reconnect —
+    the probe is the one channel that crosses the image boundary.
+  </p>
+
+  <p id="epw-an-added-parameter-needs-no-reconnect-routing">
+    <strong>The routing stays §11's.</strong> A call the image answers
+    successfully is returned untouched. A call that reaches the current code — a
+    failed call re-run there, or a call of a tool already routed there — is
+    served when the verdict is compatible, and its answer carries a
+    <code>schema_note</code> naming the parameters the client cannot send until
+    it reconnects. A change the client's calls cannot survive — a registered
+    parameter removed or renamed, a registered optional made required, or a new
+    required parameter — still returns <code>stale_server_code</code> with its
+    <code>reconnect</code> remedy, because there a reconnect is the real fix.
+  </p>
+
+  <p id="epw-an-added-parameter-needs-no-reconnect-old-parent">
+    <strong>A parent that predates the verdict still reads the probe.</strong>
+    A server started before this lands is the parent the new child answers. The
+    probe keeps <code>params</code> as each tool's list of parameter names,
+    exactly as before; requiredness and the verdict sit under new sibling keys,
+    and the verdict is given only when the request carried registered
+    parameters. A probe carrying none — what a pre-§13 parent sends — gets the
+    answer it already understands, and that parent keeps comparing parameter
+    names itself, refusing any difference. So a server started before this lands
+    asks for one reconnect, and the reconnect picks this up; after that an added
+    optional parameter needs none.
+  </p>
+
+  <p id="epw-an-added-parameter-needs-no-reconnect-cases">
+    <strong>The six cases</strong> in
+    <code>tests/test_an_added_parameter_needs_no_reconnect.py</code> drive the
+    guard against a temporary tree whose fake child's probed signature and
+    verdict the test controls: an added optional parameter on a failed call
+    re-run on the current code is served there with a <code>schema_note</code>
+    naming it and no reconnect field; a removed parameter, a new required
+    parameter, and a registered optional made required each return
+    <code>stale_server_code</code>; a probe with no registered parameters gets
+    the parameter names and no verdict, and the pre-verdict comparison still
+    reports an added parameter as changed; and a child whose rule answers
+    compatible makes the parent serve even when the parent's own parameter names
+    differ.
+  </p>
+
+  <p id="epw-an-added-parameter-needs-no-reconnect-existing">
+    <strong>The two existing changed-signature cases become removals.</strong>
+    <code>tests/test_a_slow_child_never_forces_a_reconnect.py</code> case 6 and
+    <code>tests/test_mcp_server_serves_current_code.py</code>'s signature case
+    now drop a parameter the client registered rather than adding an optional
+    one, so each still asks for the refusal §13 keeps. The server test's
+    <code>_SIGNATURE</code> move redefines the edit_plan tool without
+    <code>request_id</code>, which the parent registered and the child no longer
+    accepts.
+  </p>
+
+  <p id="epw-an-added-parameter-needs-no-reconnect-controls">
+    <strong>Each declared mutation is kept, one log per control:
+    </strong>restoring the equality comparison (the parent ignoring the verdict)
+    fails the added-optional case; deciding in the parent — computing
+    compatibility from the probe's parameters instead of reading the child's
+    verdict — fails the child's-verdict case; and nesting requiredness inside
+    <code>params</code> instead of a sibling key fails the old-parent case,
+    because a parent comparing parameter names then reads a mapping and sees no
+    change. Every control's log ends in a non-zero <code>EXIT=</code> line.
+  </p>
+
+  <p id="epw-an-added-parameter-needs-no-reconnect-gate">
+    <strong>The gate.</strong> At the node head the four targets run
+    <strong>1 failed, 23 passed</strong> and at the base revision the three that
+    exist there run <strong>1 failed, 17 passed</strong>, both exiting 1. The
+    one failure is the same test in both arms,
+    <code>test_every_module_fits_a_worker_window</code>, naming
+    <code>reckon/crew/review.py</code> and <code>reckon/ledger.py</code> — two
+    modules this node neither touches nor changes. It is present at the base
+    revision before any of this work, so the node's own delta is zero added
+    failures.
+  </p>
+</section>
