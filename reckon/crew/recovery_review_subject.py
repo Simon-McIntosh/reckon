@@ -1021,50 +1021,74 @@ def _stored_review(record: Mapping[str, Any]) -> tuple[dict[str, Any] | None, st
 def _review_is_complete(review: Mapping[str, Any] | None) -> bool:
     """Whether a stored review holds every measurement its rubric demands.
 
+    The completeness rule has one owner, :func:`_review_missing_measures`, and
+    this is its negation, so a reader that asks only whether a record is
+    complete and a reader that asks which measure it lacks read the same list.
+    """
+    return not _review_missing_measures(review)
+
+
+def _review_missing_measures(
+    review: Mapping[str, Any] | None,
+) -> list[str]:
+    """The measures a stored review lacks, in the order a reader checks them.
+
     A landed-node record is complete when it scores all six dimensions with
-    none absent, so a reader hits the same arithmetic a reviewer read. A claims
-    record is complete on its own terms: it carries the verdicts for the
-    findings the review re-ran and the summary check, and is not measured
-    against the six dimensions a read-only run never scored. The rubric key
-    chooses the measure, so neither record is read as absent of the other's.
+    none absent and carries the total they sum to, so a reader hits the same
+    arithmetic a reviewer read. A claims record is complete on its own terms:
+    it carries the verdicts for the findings the review re-ran and the summary
+    check, and is not measured against the six dimensions a read-only run never
+    scored. The rubric key chooses the measure, so neither record is read as
+    absent of the other's. An empty list is a complete record; the names are
+    what a refusal reports, so a review the fleet cannot promote says which
+    measure it is missing rather than that it cannot be read.
     """
     if not review or review.get("status") != "parsed":
-        return False
+        return ["status"]
     if review.get("rubric") == review_module.CLAIMS_RUBRIC:
-        return _claims_review_is_complete(review)
+        return _claims_missing_measures(review)
+    return _landed_missing_measures(review)
+
+
+def _landed_missing_measures(review: Mapping[str, Any]) -> list[str]:
+    """The dimensions and total a landed record does not carry."""
+    missing: list[str] = []
     scores = review.get("scores")
-    return (
-        isinstance(scores, Mapping)
-        and set(review_module.REVIEW_DIMENSIONS).issubset(scores)
-        and not review.get("absent")
-        and isinstance(review.get("total"), int)
-        and not isinstance(review.get("total"), bool)
-    )
+    if not isinstance(scores, Mapping):
+        missing.extend(review_module.REVIEW_DIMENSIONS)
+    else:
+        missing.extend(
+            dimension
+            for dimension in review_module.REVIEW_DIMENSIONS
+            if dimension not in scores
+        )
+    absent = review.get("absent")
+    if absent:
+        missing.extend(str(dimension) for dimension in absent)
+    total = review.get("total")
+    if not isinstance(total, int) or isinstance(total, bool):
+        missing.append("total")
+    return missing
 
 
-def _claims_review_is_complete(review: Mapping[str, Any]) -> bool:
-    """Whether a claims record carries every verdict the rubric asks for.
-
-    The rubric asks for the three highest-ranked findings re-run and the
-    report's own summary line checked, so the record must carry at least that
-    many claims, each with a declared verdict, and a summary verdict. A claims
-    record below that count names a review that re-ran too little to stand in
-    for the report it reviews.
-    """
+def _claims_missing_measures(review: Mapping[str, Any]) -> list[str]:
+    """The claim verdicts a claims record does not carry."""
     claims = review.get("claims")
     if not isinstance(claims, list) or len(claims) < review_module.CLAIMS_REQUIRED:
-        return False
+        return ["claims"]
     if not all(
         isinstance(claim, Mapping)
         and str(claim.get("verdict") or "") in review_module.CLAIM_VERDICTS
         for claim in claims
     ):
-        return False
+        return ["claim verdicts"]
     summary = review.get("claim_summary")
-    return (
+    if not (
         isinstance(summary, Mapping)
         and str(summary.get("verdict") or "") in review_module.CLAIM_SUMMARY_VERDICTS
-    )
+    ):
+        return ["claim_summary"]
+    return []
 
 
 from .recovery_review_dispatch import (  # noqa: E402
