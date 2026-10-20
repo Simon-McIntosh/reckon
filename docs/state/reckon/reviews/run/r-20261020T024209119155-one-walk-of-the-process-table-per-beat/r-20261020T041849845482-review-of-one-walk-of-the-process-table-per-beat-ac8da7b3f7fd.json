@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own paired gate logs: logs/baseline_signal_tests.log (2 failed / 557 passed, FAILED ids tests/test_promotion_releases_its_worktree.py::test_promotion_releases_only_the_integrated_clean_case and tests/test_ledger.py::test_every_read_view_returns_and_large_defaults_are_compact) against logs/after_signal_tests.log (1 failed / 558 passed, FAILED id tests/test_promotion_releases_its_worktree.py::test_promotion_releases_only_the_integrated_clean_case); the after set is a subset of the baseline set, so the added-failure count is 0 and no id is added.",
+  "call_sites": [
+    "reckon/crew/recovery_liveness.py:1119",
+    "reckon/crew/process_signal.py:352"
+  ],
+  "completed_at": "2026-10-20T04:36:45.878Z",
+  "dispatched_at": "2026-10-20T04:20:35Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T024209119155-one-walk-of-the-process-table-per-beat/manifest.md",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "baseline_suite.command carries the angle-bracket placeholder \"<34 files importing process_signal or recovery_liveness>\" where a literal command belongs, so the field names nothing promotion can re-run; the runnable form sits at logs/baseline_signal_tests.log:3. This persists from the prior review and does not hold this node."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/recovery_liveness.py:1119 (local_liveness at :1001 reaching _env_scan_run_pid at :1091, the production read the new case drives) and reckon/crew/process_signal.py:352 (_processes_owning_run, reached through the reckon/crew/routing.py:3737 re-export at its from_beat_map branch :389).",
+    "diff": "read commit ac8da7b3f against 2b2afcaa3 \u2014 one commit, two files, +84/-1: the new case test_two_runs_scanned_in_one_beat_list_proc_once_through_the_liveness_read plus helpers _absent_pid and _record_with_gone_worker, and a rewritten measure paragraph in the evidence fragment; no production module changed.",
+    "done_when": "\u00a713's test bullets (docs/plans/the-fleet-node-stays-in-service.html:616-622) and its 5 s strace measure; this review's gained commit adds exactly the production-path case the prior blocking finding named, and the manifest records its run (logs/repair_new_case_tests.log, 8 passed, EXIT=0).",
+    "goal": "\u00a713 of the plan (docs/plans/the-fleet-node-stays-in-service.html:584-631) is the source node's goal \u2014 one walk of the process table per beat answering every run's environment mark, the stop path walking afresh; the gained commit ac8da7b3f does not restate that production change (which landed at 2b2afcaa3) but supplies the production-path guard the prior review found absent.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T024209119155-one-walk-of-the-process-table-per-beat/manifest.md; status complete, commits 2b2afcaa3 ac8da7b3f, repair_new_case_tests.log 8 passed EXIT=0, recovery_liveness_negative_control.log EXIT=1, paired-suite delta 0 added failures \u2014 but baseline_suite.command still carries an angle-bracket placeholder at manifest.md:21.",
+    "write_paths": "the source node's declared paths are reckon/crew/process_signal.py, reckon/crew/recovery_liveness.py, tests/test_one_walk_of_the_process_table_per_beat.py and the evidence fragment; the gained diff touches only the test file and docs/evidence/fragments/the-fleet-node-stays-in-service/one-walk-of-the-process-table-per-beat.html, both inside them."
+  },
+  "justifications": {
+    "durability": "reinstating the regression (removing from_beat_map=True at reckon/crew/recovery_liveness.py:1120) reddens only the new case at tests/test_one_walk_of_the_process_table_per_beat.py:391 (assert 2 == 1) while the other seven pass, which is exactly what logs/recovery_liveness_negative_control.log shows.",
+    "evidence": "logs/repair_new_case_tests.log records 8 passed with a bare EXIT=0 line and logs/recovery_liveness_negative_control.log records the red arm EXIT=1, though baseline_suite.command at manifest.md:21 still carries the angle-bracket placeholder the prior review flagged.",
+    "fit": "the new case and its helpers at tests/test_one_walk_of_the_process_table_per_beat.py:118-151 follow the file's own idiom, and no added name carries a plan, sprint, version or ticket label.",
+    "goal_fidelity": "the new case at tests/test_one_walk_of_the_process_table_per_beat.py:353 drives recovery_liveness.local_liveness for two runs in one beat, the production-path guard \u00a713 (docs/plans/the-fleet-node-stays-in-service.html:584-631) requires and the prior review found missing.",
+    "reuse": "a search over reckon/crew and tests/conftest.py found no owner for a \"pid no process holds\" helper, and the added _absent_pid at tests/test_one_walk_of_the_process_table_per_beat.py:118 copies the sibling form at tests/test_a_process_table_is_read_once_per_beat.py:433 rather than forking a production capability.",
+    "scope_discipline": "git diff 2b2afcaa3 ac8da7b3f --stat lists only tests/test_one_walk_of_the_process_table_per_beat.py and the evidence fragment, both inside the manifest's declared write paths."
+  },
+  "node": "review-of-one-walk-of-the-process-table-per-beat-ac8da7b3f7fd",
+  "node:reviewed": "one-walk-of-the-process-table-per-beat",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a713 of the plan (docs/plans/the-fleet-node-stays-in-service.html:584-631) is the source node's goal \u2014 one walk of the process table per beat answering every run's environment mark, the stop path walking afresh; the gained commit ac8da7b3f does not restate that production change (which landed at 2b2afcaa3) but supplies the production-path guard the prior review found absent.\nVERDICT done_when: \u00a713's test bullets (docs/plans/the-fleet-node-stays-in-service.html:616-622) and its 5 s strace measure; this review's gained commit adds exactly the production-path case the prior blocking finding named, and the manifest records its run (logs/repair_new_case_tests.log, 8 passed, EXIT=0).\nVERDICT write_paths: the source node's declared paths are reckon/crew/process_signal.py, reckon/crew/recovery_liveness.py, tests/test_one_walk_of_the_process_table_per_beat.py and the evidence fragment; the gained diff touches only the test file and docs/evidence/fragments/the-fleet-node-stays-in-service/one-walk-of-the-process-table-per-beat.html, both inside them.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T024209119155-one-walk-of-the-process-table-per-beat/manifest.md; status complete, commits 2b2afcaa3 ac8da7b3f, repair_new_case_tests.log 8 passed EXIT=0, recovery_liveness_negative_control.log EXIT=1, paired-suite delta 0 added failures \u2014 but baseline_suite.command still carries an angle-bracket placeholder at manifest.md:21.\nVERDICT diff: read commit ac8da7b3f against 2b2afcaa3 \u2014 one commit, two files, +84/-1: the new case test_two_runs_scanned_in_one_beat_list_proc_once_through_the_liveness_read plus helpers _absent_pid and _record_with_gone_worker, and a rewritten measure paragraph in the evidence fragment; no production module changed.\nCALL_SITES: reckon/crew/recovery_liveness.py:1119 (local_liveness:1001 -> _env_scan_run_pid:1091, the production read the new case drives), reckon/crew/process_signal.py:352 (_processes_owning_run, reached through the reckon/crew/routing.py:3737 re-export at its from_beat_map branch :389)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the new case at tests/test_one_walk_of_the_process_table_per_beat.py:353 drives recovery_liveness.local_liveness for two runs in one beat, the production-path guard \u00a713 (docs/plans/the-fleet-node-stays-in-service.html:584-631) requires and the prior review found missing.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/repair_new_case_tests.log records 8 passed with a bare EXIT=0 line and logs/recovery_liveness_negative_control.log records the red arm EXIT=1, though baseline_suite.command at manifest.md:21 still carries the angle-bracket placeholder the prior review flagged.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 2b2afcaa3 ac8da7b3f --stat lists only tests/test_one_walk_of_the_process_table_per_beat.py and the evidence fragment, both inside the manifest's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the regression (removing from_beat_map=True at reckon/crew/recovery_liveness.py:1120) reddens only the new case at tests/test_one_walk_of_the_process_table_per_beat.py:391 (assert 2 == 1) while the other seven pass, exactly what logs/recovery_liveness_negative_control.log shows.\nSCORE fit: 18\nJUSTIFICATION fit: the new case and its helpers at tests/test_one_walk_of_the_process_table_per_beat.py:118-151 follow the file's own idiom, and no added name carries a plan, sprint, version or ticket label.\nSCORE reuse: 18\nJUSTIFICATION reuse: a search over reckon/crew and tests/conftest.py found no owner for a \"pid no process holds\" helper, and the added _absent_pid at tests/test_one_walk_of_the_process_table_per_beat.py:118 copies the sibling form at tests/test_a_process_table_is_read_once_per_beat.py:433 rather than forking a production capability.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T024209119155-one-walk-of-the-process-table-per-beat/manifest.md:21 follow-on: baseline_suite.command carries the angle-bracket placeholder \"<34 files importing process_signal or recovery_liveness>\" where a literal command belongs, so the field names nothing promotion can re-run (the runnable form is at logs/baseline_signal_tests.log:3); it persists from the prior review and does not hold this node.",
+  "review_run_id": "r-20261020T041849845482-review-of-one-walk-of-the-process-table-per-beat-ac8da7b3f7fd",
+  "reviewed_base_sha": "2b2afcaa3e554dff3e7eef32d7d51aa694be3a1b",
+  "reviewed_head_sha": "ac8da7b3f7fdd190a5ff4f6d19e99301a1b2d334",
+  "reviewed_run_id": "r-20261020T024209119155-one-walk-of-the-process-table-per-beat",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T04:39:15.225659+00:00",
+  "total": 112
+}
