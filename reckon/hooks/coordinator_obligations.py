@@ -607,25 +607,13 @@ def pending_model_notices() -> int:
     """How many model notices await acknowledgement, from the snapshot alone.
 
     The hook reads the catalogue's published snapshot and never fetches: it
-    counts the notices the producer already recorded and left unacknowledged.
-    An absent or unreadable snapshot counts nothing.
+    counts the notices the producer already recorded and left unacknowledged,
+    through the snapshot reader's single definition of "unacknowledged". An
+    absent or unreadable snapshot counts nothing.
     """
-    try:
-        path = (
-            snapshot_module().crew_home().joinpath("model-catalogue", "snapshot.json")
-        )
-        document = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return 0
-    if not isinstance(document, Mapping):
-        return 0
-    notices = document.get("notices")
-    if not isinstance(notices, list):
-        return 0
-    return sum(
-        1
-        for item in notices
-        if isinstance(item, Mapping) and not item.get("acknowledgement")
+    module = snapshot_module()
+    return len(
+        module.unacknowledged_model_notices(module.read_model_catalogue_snapshot())
     )
 
 

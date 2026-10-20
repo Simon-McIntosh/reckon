@@ -15,6 +15,7 @@ from urllib.request import urlopen
 
 from reckon import flight
 from reckon._store import write_json_atomically
+from reckon.crew import obligation_snapshot
 from reckon.crew.runs import crew_home
 
 # The probe is one headless request through the lane's own command. Its prompt
@@ -372,11 +373,9 @@ def model_notices(
     snapshot = (
         check_model_catalogue(project, checkout_path=checkout_path, force=True)
         if refresh
-        else _read_snapshot()
+        else obligation_snapshot.read_model_catalogue_snapshot()
     )
-    notices = [
-        item for item in snapshot.get("notices", []) if not item.get("acknowledgement")
-    ]
+    notices = obligation_snapshot.unacknowledged_model_notices(snapshot)
     error_path = _root() / "error.json"
     error = json.loads(error_path.read_text()) if error_path.exists() else None
     if error and not error.get("error"):
