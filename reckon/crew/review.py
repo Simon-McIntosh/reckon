@@ -541,9 +541,6 @@ _CLAIM_RE = re.compile(
 _CLAIM_SUMMARY_RE = re.compile(
     r"^CLAIM_SUMMARY\s*:\s*([A-Za-z][A-Za-z-]*)\s*:\s*(.+)$", re.IGNORECASE
 )
-_FIGURE_RUBRIC_LINE_RE = re.compile(
-    r"^RUBRIC\s+([A-Za-z][A-Za-z_-]*)\s*:\s*(.+)$", re.IGNORECASE
-)
 _FIND_RE = re.compile(r"^FINDING\s+(\S+)\s*(.*)$", re.IGNORECASE)
 _REVISION_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$")
 
@@ -939,46 +936,6 @@ def parse_review(
     if source_record is not None and (not base_sha or not head_sha):
         record["status"] = "incomplete"
     return record
-
-
-def parse_figure_review(text: str) -> dict[str, Any]:
-    """Parse the figure rubric's visual verdicts and anchored findings."""
-    rubric_items: dict[str, str] = {}
-    findings: list[dict[str, str]] = []
-    for line in _review_text_lines(text):
-        match = _FIGURE_RUBRIC_LINE_RE.match(line)
-        if match:
-            item, verdict = match.group(1).lower(), match.group(2).strip()
-            if item in FIGURE_REVIEW_ITEMS and verdict:
-                rubric_items[item] = verdict
-            continue
-        match = _FIND_RE.match(line)
-        if match:
-            reference, detail = match.group(1), match.group(2).strip()
-            if ":" not in reference:
-                continue
-            file_path, _, line_number = reference.rpartition(":")
-            finding = {
-                "file": file_path,
-                "line": line_number,
-                "text": detail,
-            }
-            severity = _stated_severity(detail)
-            if severity is not None:
-                finding["severity"] = severity
-            findings.append(finding)
-    absent = [item for item in FIGURE_REVIEW_ITEMS if item not in rubric_items]
-    status = (
-        "unparsed" if not rubric_items else "parsed" if not absent else "incomplete"
-    )
-    return {
-        "rubric": FIGURE_REVIEW_RUBRIC,
-        "status": status,
-        "rubric_items": rubric_items,
-        "absent_items": absent,
-        "findings": findings,
-        "raw_text": text,
-    }
 
 
 # ── The plan-report grammar ─────────────────────────────────────────────────

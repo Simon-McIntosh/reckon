@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="The figure rubric's unreached parser is removed">
+  <meta name="plan-summary" content="parse_figure_review and its private _FIGURE_RUBRIC_LINE_RE were a second copy of the RUBRIC verdict grammar that _PLAN_RUBRIC_LINE_RE already owns, with no production caller. Both are deleted, the figure prompt and dispatch brief keep their checks, and a figure review's record keeps being stored and read back through store_review and read_review under the figure rubric.">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-10-20">
+  <meta name="plan-verdict" content="passed">
+  <title>The figure rubric's unreached parser is removed | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The figure rubric's unreached parser is removed</h1>
+
+    <section id="the-figure-rubrics-unreached-parser-is-removed-defect">
+      <h2>The defect</h2>
+      <p><code>reckon/crew/review.py</code> carried a second pattern for the
+        <code>RUBRIC</code> verdict line, <code>_FIGURE_RUBRIC_LINE_RE</code>,
+        beside the shared <code>_PLAN_RUBRIC_LINE_RE</code> the plan-review,
+        health and delivered-report readers already use. Its only reader was
+        <code>parse_figure_review</code>, which had no production caller: a
+        figure review is filed as a structured record through
+        <code>store_review</code>, the same store a text review uses. The parser
+        was dead code that would have to be kept in step with the grammar the
+        module already owns.</p>
+    </section>
+
+    <section id="the-figure-rubrics-unreached-parser-is-removed-change">
+      <h2>What changed</h2>
+      <p>Both <code>parse_figure_review</code> and <code>_FIGURE_RUBRIC_LINE_RE</code>
+        are deleted from <code>reckon/crew/review.py</code>. <code>FIGURE_REVIEW_ITEMS</code>
+        stays: the dispatch composes the figure review's done-when from it in
+        <code>reckon/crew/recovery_review_subject.py</code>, and the prompt test
+        checks the prompt against it. The shared <code>_FIND_RE</code> stays for
+        the claims reader that still uses it.</p>
+      <p>In <code>tests/test_figure_review.py</code> the prompt test is renamed
+        <code>test_figure_prompt_and_parser_cover_every_visual_rule</code> &rarr;
+        <code>test_figure_prompt_and_brief_cover_every_visual_rule</code>, for
+        what it still covers, and its three parser assertions are dropped. It
+        still asserts the prompt names every <code>FIGURE_REVIEW_ITEMS</code>
+        entry and its read-only rules and that the composed brief carries its
+        phrases. Every other test in the file is untouched.</p>
+    </section>
+
+    <section id="the-figure-rubrics-unreached-parser-is-removed-measure">
+      <h2>Measure</h2>
+      <p><code>tests/test_figure_review.py</code>: <strong>7 passed, 0 failed</strong>
+        (<code>EXIT=0</code>). The renamed prompt-and-brief test still checks
+        every visual rule against the prompt and the brief; the record tests
+        still store and read a figure review through <code>store_review</code>
+        and <code>read_review</code> under <code>rubric: "figure"</code> and keep
+        text and figure records on separate paths.</p>
+      <p><strong>Negative control.</strong> Removing one <code>FIGURE_REVIEW_ITEMS</code>
+        entry (<code>data_ink</code>) from <code>reckon/crew/prompts/figure_review.md</code>
+        made the renamed test fail on <code>assert item in prompt</code>:
+        <strong>1 failed</strong>, <code>EXIT=1</code>, test id
+        <code>tests/test_figure_review.py::test_figure_prompt_and_brief_cover_every_visual_rule</code>
+        — so dropping the parser assertions has not removed the prompt's guard.
+        The prompt was restored before the commit.</p>
+      <p><code>ruff check</code> reported all checks passed and
+        <code>ruff format --check</code> reported both changed Python files
+        formatted (<code>EXIT=0</code> for both).</p>
+    </section>
+  </main>
+</body>
+</html>

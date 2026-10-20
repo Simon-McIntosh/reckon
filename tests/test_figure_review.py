@@ -282,7 +282,7 @@ def test_figure_review_waits_when_no_lane_declares_image_input(
     assert "image" in stored["reason"].lower()
 
 
-def test_figure_prompt_and_parser_cover_every_visual_rule(project: dict) -> None:
+def test_figure_prompt_and_brief_cover_every_visual_rule(project: dict) -> None:
     prompt = review_module.load_figure_review_prompt().lower()
     for item in review_module.FIGURE_REVIEW_ITEMS:
         assert item in prompt
@@ -304,14 +304,6 @@ def test_figure_prompt_and_parser_cover_every_visual_rule(project: dict) -> None
         "do not edit",
     ):
         assert phrase in brief
-    text = "\n".join(
-        f"RUBRIC {item}: pass after visual inspection"
-        for item in review_module.FIGURE_REVIEW_ITEMS
-    )
-    parsed = review_module.parse_figure_review(text)
-    assert parsed["rubric"] == review_module.FIGURE_REVIEW_RUBRIC
-    assert parsed["status"] == "parsed"
-    assert not parsed["absent_items"]
 
 
 def test_rubric_paths_keep_text_and_figure_records_separate(project: dict) -> None:
