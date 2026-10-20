@@ -1260,21 +1260,24 @@ def candidates(
         else:
             variants.append((name, None, None))
     result = []
-    for name, _model_key, model_settings in variants:
+    for name, model_key, _model_settings in variants:
         local = name == config.get("local_backend")
+        # A lane model's row is built through the same two steps dispatch takes:
+        # the model's own lane entry is selected, then the role overlay resolves
+        # against it. Building it any other way would show Jev settings the pick
+        # does not launch with.
+        candidate_config = (
+            flight.select_lane_model(config, name, name, model_key)
+            if model_key is not None
+            else config
+        )
         _, backend = routing.resolve_role_override(
-            config,
+            candidate_config,
             request.node.role,
             request.node.spec_level,
             name,
             capability_class=str(request.capability.get("class") or ""),
         )
-        if isinstance(model_settings, Mapping):
-            backend.update(
-                (key, value)
-                for key, value in model_settings.items()
-                if key != "name" and value is not None
-            )
         model = backend.get("model")
         reasons = []
         if name in review_excluded:

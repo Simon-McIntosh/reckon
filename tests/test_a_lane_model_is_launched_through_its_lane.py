@@ -299,11 +299,7 @@ def test_dispatch_and_candidates_agree_for_each_model(
         assert code == 0, run
         settings = candidate_settings[model]
         assert len(planned_settings) == 1
-        assert {
-            key: value
-            for key, value in planned_settings[0].items()
-            if key != "model_key"
-        } == {key: value for key, value in settings.items() if key != "model_key"}
+        assert planned_settings[0] == settings
         assert (
             run["agent"]["model"],
             run["agent"]["effort"],
