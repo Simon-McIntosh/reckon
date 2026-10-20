@@ -510,6 +510,19 @@ def test_unwatch_tombstone_names_watch_stop() -> None:
     assert "unwatch" not in crew.commands
 
 
+def test_watch_stop_replaces_one_visible_leaf() -> None:
+    """One live watch leaf carries both following and stopping."""
+    leaves = _leaf_commands(crew)
+    family = {("watch",), ("unwatch",)}
+    visible_family = family & leaves.keys()
+    assert visible_family == {("watch",)}
+    assert len(visible_family) == len(family) - 1
+    options = {
+        option for parameter in leaves[("watch",)].params for option in parameter.opts
+    }
+    assert "--stop" in options
+
+
 def test_watch_stop_matches_recorded_answer(isolated_reckon_home: Path) -> None:
     result = CliRunner().invoke(
         main, ["crew", "watch", "--stop", "--project", "fixture-project"]
