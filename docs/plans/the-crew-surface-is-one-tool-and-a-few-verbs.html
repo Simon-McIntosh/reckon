@@ -26,7 +26,7 @@
   <title>The Crew Surface Is One Tool And A Few Verbs | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="62">
+<meta name="plan-version" content="63">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -332,7 +332,7 @@
     </table>
     <p><strong>Done when</strong> <code>tests/test_read_verbs_retire_behind_crew_view.py</code> holds, at the last node's head:</p>
     <ul>
-      <li>Each retired verb's answers are captured as fixtures at the base of the node that moves its callers. That covers <code>crew list</code> with <code>--project</code>, <code>--phase</code>, <code>--mine</code> and <code>--session</code>, <code>crew ledger</code> with each <code>--view</code>, and <code>crew velocity</code>. At the head, <code>crew view</code> gives each fixture's answer.</li>
+      <li>Each retired verb's answers are captured as fixtures at the base of the node that moves its callers. That covers <code>crew list</code> with <code>--project</code>, <code>--phase</code>, <code>--mine</code> and <code>--session</code>, <code>crew ledger</code> with each <code>--view</code>, and <code>crew velocity</code>. At the head, <code>crew view</code> gives each fixture's answer, compared over the fields that the retired verb's document and its successor's document share at base. A different builder composes each side, so the two documents are never compared whole. For <code>crew list</code>, the comparison is row by row per run id, over the set <code>CLASSIFICATION_FIELDS</code> in <code>tests/test_crew_surface_parity.py</code>. For each <code>ledger</code> view and for <code>velocity</code>, the test writes down the shared field set it compares, so a successor that later drops one of those fields fails it.</li>
       <li><code>list</code>, <code>ledger</code> and <code>velocity</code> exit with §2's tombstone code, naming their successors.</li>
       <li>No string literal under <code>reckon/</code> names any of the three as a <code>reckon crew</code> command.</li>
     </ul>
