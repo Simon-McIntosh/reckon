@@ -73,4 +73,23 @@
     trigger still fails both request-order cases (<strong>2 failed,
     EXIT=1</strong> in <code>review-negative-discovery.log</code>).
   </p>
+  <p>
+    A stacked provenance check then found that the project-activity replacement
+    had removed the type badge for landed artifacts. The home now reads
+    <code>recent_landed</code> rows from each fleet-summary project, restoring
+    the <em>Just landed</em> panel with each artifact's type and a plan default.
+    A browser case renders evidence and an untyped plan from a summary response
+    without making a discovery request. The provenance source check and focused
+    browser population report <strong>9 passed, EXIT=0</strong> in
+    <code>provenance-focused.log</code>. Forcing every badge to plan fails the
+    evidence case (<strong>1 failed, EXIT=1</strong> in
+    <code>provenance-negative-type.log</code>), after which the committed type
+    expression was restored. The ten-file SPA and provenance gate at
+    <code>23bb30845916b583da564dcb0d1c9cad2ca87ed8</code> reports
+    <strong>61 passed, 4 failed, EXIT=1</strong> in
+    <code>provenance-spa-gate.log</code>; the four failures are the same
+    project-visibility cases present in the prior gate.
+    The fleet-summary producer still needs to emit those typed rows for real
+    projects; this browser fixture proves the consumer contract only.
+  </p>
 </section>
