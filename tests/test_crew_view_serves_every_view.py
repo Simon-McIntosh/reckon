@@ -23,12 +23,15 @@ import datetime as dt
 import json
 import os
 import subprocess
+import sys
 from pathlib import Path
+from typing import get_args
 
 import pytest
 from click.testing import CliRunner
 
 from reckon import mcp, mcp_views, velocity
+from reckon._mcp_tools import CrewArgs
 from reckon.cli import main
 
 PROJECT = "alpha"
@@ -38,13 +41,27 @@ BASE = int(dt.datetime(2026, 9, 1, tzinfo=dt.UTC).timestamp())
 WINDOW_START = velocity.iso(BASE + 1 * DAY)
 WINDOW_END = velocity.iso(BASE + 20 * DAY)
 
-#: The arguments both surfaces are driven with. Every view accepts them, so the
-#: comparison is the same call on both sides rather than a per-view special case.
-_READ_ARGUMENTS = {
+#: The session the live fixture's pointers are dispatched by. It is what
+#: ``--mine`` compares against, so it must match a pointer's own.
+LIVE_SESSION = "coordinator-session"
+
+#: The argument vectors both surfaces are driven with, each compared view by
+#: view. One vector would let an option added to `crew view` and not to the
+#: tool — or the reverse — pass unnoticed, because the views that read it would
+#: be compared on a call that never carried it. A vector whose option only one
+#: surface understands then disagrees on the view that reads it, and the failure
+#: names both the view and the vector.
+_BASE_ARGUMENTS = {
     "project": PROJECT,
     "since": WINDOW_START,
     "until": WINDOW_END,
 }
+_ARGUMENT_VECTORS = (
+    ("read", dict(_BASE_ARGUMENTS)),
+    ("session", {**_BASE_ARGUMENTS, "session": LIVE_SESSION}),
+    ("phase", {**_BASE_ARGUMENTS, "phase": "working"}),
+    ("mine", {**_BASE_ARGUMENTS, "session": LIVE_SESSION, "mine": True}),
+)
 
 _DISPATCH_IDENTITY = ("RECKON_RUN_ID", "RECKON_MANIFEST", "RECKON_ATTEMPT_STARTED_AT")
 
@@ -136,36 +153,151 @@ def fleet(tmp_path: Path, isolated_reckon_home: Path) -> Path:
     return repo
 
 
-def _served_by_the_tool(name: str) -> dict:
-    return mcp._crew(view=name, **_READ_ARGUMENTS)
+def _live_pointer(run_id: str, *, session: str, phase: str) -> dict:
+    """One live pointer in the fields both `crew list` and `live` read."""
+    return {
+        "run_id": run_id,
+        "project": PROJECT,
+        "session": session,
+        "phase": phase,
+        "node": {"id": run_id, "plan": "delivery"},
+    }
 
 
-def _served_by_the_cli(name: str) -> dict:
-    arguments = ["crew", "view", name]
-    for key, value in _READ_ARGUMENTS.items():
-        arguments += [f"--{key}", value]
-    result = CliRunner().invoke(main, arguments)
+@pytest.fixture()
+def live_fleet(fleet: Path, monkeypatch) -> Path:
+    """The mounted fleet plus live pointers spanning two phases and two sessions.
+
+    Both filters need more than one value to be visible: ``--phase`` needs two
+    phases and ``--mine`` two sessions, or a dropped filter would answer the
+    same rows as a working one and every comparison built on it would pass
+    anyway.
+    """
+    from reckon import crew
+    from reckon.crew import runs as runs_module
+
+    pointers = [
+        _live_pointer("run-mine-working", session=LIVE_SESSION, phase="working"),
+        _live_pointer("run-peer-working", session="a-peer-session", phase="working"),
+        _live_pointer("run-mine-dispatch", session=LIVE_SESSION, phase="dispatch"),
+    ]
+    # list_live publishes a watch stream when a project is named; stub it so the
+    # fixture reads its own pointers and touches nothing on disk.
+    monkeypatch.setattr(crew, "list_live", lambda project=None: pointers)
+    monkeypatch.setattr(
+        runs_module,
+        "project_watch_visibility",
+        lambda project, session=None: {"project": project, "session": session},
+    )
+    return fleet
+
+
+def test_the_live_view_answers_the_list_filters(live_fleet: Path) -> None:
+    """The live view keeps, for `--phase` and `--mine`, the rows `crew list` keeps.
+
+    The two surfaces answer the flags identically, and both keep the rows the
+    pointers' own phase and session select — so a caller moving off the retired
+    verb keeps the rows it kept before, and a filter dropped from either surface
+    answers a different set rather than the same one.
+    """
+    listed_phase = CliRunner().invoke(
+        main, ["crew", "list", "--project", PROJECT, "--phase", "working"]
+    )
+    assert listed_phase.exit_code == 0, listed_phase.output
+    expected_phase = [row["run_id"] for row in json.loads(listed_phase.output)["runs"]]
+    phase_arguments = {**_BASE_ARGUMENTS, "phase": "working"}
+    for label, served in (
+        ("command line", _served_by_the_cli),
+        ("crew tool", _served_by_the_tool),
+    ):
+        rows = served("live", phase_arguments)["runs"]
+        assert [row["run_id"] for row in rows] == expected_phase, f"phase on {label}"
+
+    listed_mine = CliRunner().invoke(
+        main,
+        ["crew", "list", "--project", PROJECT, "--session", LIVE_SESSION, "--mine"],
+    )
+    assert listed_mine.exit_code == 0, listed_mine.output
+    expected_mine = [row["run_id"] for row in json.loads(listed_mine.output)["runs"]]
+    mine_arguments = {**_BASE_ARGUMENTS, "session": LIVE_SESSION, "mine": True}
+    for label, served in (
+        ("command line", _served_by_the_cli),
+        ("crew tool", _served_by_the_tool),
+    ):
+        rows = served("live", mine_arguments)["runs"]
+        assert [row["run_id"] for row in rows] == expected_mine, f"mine on {label}"
+
+    # The filters must actually narrow: an unfiltered read is wider, so a filter
+    # dropped from the view would answer more rows and the cases above would
+    # not both hold, or the filters would be indistinguishable from the base
+    # read. Two phases and two sessions are seeded for exactly this.
+    unfiltered = _served_by_the_tool("live", _BASE_ARGUMENTS)["runs"]
+    assert len(unfiltered) > len(expected_mine)
+
+    # `--mine` without a session compares against nobody, so both surfaces refuse
+    # rather than silently answering the whole project.
+    for label, served in (
+        ("command line", _served_by_the_cli),
+        ("crew tool", _served_by_the_tool),
+    ):
+        refusal = served("live", {**_BASE_ARGUMENTS, "mine": True})
+        assert refusal["ok"] is False, label
+        assert refusal["error"] == "missing_session", label
+
+
+def _served_by_the_tool(name: str, arguments: dict) -> dict:
+    return mcp._crew(view=name, **arguments)
+
+
+def _cli_arguments(name: str, arguments: dict) -> list[str]:
+    """Render one argument vector as `crew view` argv."""
+    rendered = ["crew", "view", name]
+    for key, value in arguments.items():
+        if key == "mine":
+            # A flag, so its presence is the value and there is nothing to pass.
+            if value:
+                rendered.append("--mine")
+            continue
+        rendered += [f"--{key}", str(value)]
+    return rendered
+
+
+def _served_by_the_cli(name: str, arguments: dict) -> dict:
+    result = CliRunner().invoke(main, _cli_arguments(name, arguments))
     # A view that refuses prints its refusal document and exits non-zero; the
     # document is still the whole of stdout, so parity is compared on the
     # payload rather than on the exit code.
     return json.loads(result.stdout)
 
 
+def _views_the_schema_declares() -> tuple[str, ...]:
+    """The views the crew tool's argument model advertises.
+
+    Read from the model's own ``view`` annotation rather than from
+    :data:`reckon.mcp.CREW_TOOL_VIEWS`, which the dispatcher supplies: comparing
+    the tool's surface against the dispatcher through that shared constant
+    compares the dispatcher with itself, so a view the schema fails to advertise
+    is invisible. A control replaces this reader to stand in for editing the
+    Literal, which a test cannot do to committed source.
+    """
+    return get_args(CrewArgs.model_fields["view"].annotation)
+
+
 def test_the_tool_and_the_dispatcher_declare_the_same_views() -> None:
     """Neither surface may grow a view the other does not serve."""
-    tool_views = set(mcp.CREW_TOOL_VIEWS)
+    tool_views = set(_views_the_schema_declares())
     dispatcher_views = set(mcp_views.crew_view_names())
 
     only_on_the_tool = sorted(tool_views - dispatcher_views)
     only_on_the_dispatcher = sorted(dispatcher_views - tool_views)
 
     assert not only_on_the_tool, (
-        "the crew tool serves these views and the crew view dispatcher does "
+        "the crew tool advertises these views and the crew view dispatcher does "
         f"not: {only_on_the_tool}"
     )
     assert not only_on_the_dispatcher, (
         "the crew view dispatcher serves these views and the crew tool does "
-        f"not: {only_on_the_dispatcher}"
+        f"not advertise: {only_on_the_dispatcher}"
     )
 
 
@@ -177,7 +309,7 @@ def _view_names() -> list[str]:
     compared, so the failure names it instead of the comparison silently
     skipping it.
     """
-    return sorted(set(mcp.CREW_TOOL_VIEWS) | set(mcp_views.crew_view_names()))
+    return sorted(set(_views_the_schema_declares()) | set(mcp_views.crew_view_names()))
 
 
 #: Everything a composition derives from the instant it ran. The lanes view
@@ -211,32 +343,56 @@ def _without_the_composition_instant(value):
 
 
 def test_every_declared_view_answers_the_same_document_on_both_surfaces(
-    fleet: Path,
+    live_fleet: Path,
 ) -> None:
     disagreements = []
     for name in _view_names():
-        served = _without_the_composition_instant(_served_by_the_tool(name))
-        emitted = _without_the_composition_instant(_served_by_the_cli(name))
-        if emitted != served:
-            disagreements.append(name)
+        for label, arguments in _ARGUMENT_VECTORS:
+            served = _without_the_composition_instant(
+                _served_by_the_tool(name, arguments)
+            )
+            emitted = _without_the_composition_instant(
+                _served_by_the_cli(name, arguments)
+            )
+            if emitted != served:
+                disagreements.append(f"{name} with {label}")
 
     assert not disagreements, (
-        "these views answer differently on the command line and on the crew "
-        f"tool: {sorted(disagreements)}"
+        "these view/argument pairs answer differently on the command line and "
+        f"on the crew tool: {sorted(disagreements)}"
     )
 
 
-def test_a_view_the_tool_serves_alone_is_named(fleet: Path) -> None:
-    """The declared negative control, as an executable assertion.
+def test_a_view_the_dispatcher_serves_alone_is_named() -> None:
+    """One registry control: a view the dispatcher adds and the tool does not.
 
-    Registers a view on the MCP crew tool only. The parity case must then fail
-    and name it, which is what makes the parity case worth having: without the
-    declaration check, a tool-only view is invisible until a caller meets it.
+    Registers a view on the dispatcher's own list. The registry case must then
+    fail and name it, which is what makes the case worth having: without it, a
+    view reachable from `crew view` and absent from the tool's schema is
+    invisible until a caller meets it.
     """
-    original = mcp.CREW_TOOL_VIEWS
-    mcp.CREW_TOOL_VIEWS = (*original, "tool-only-view")
+    original = mcp_views.CREW_VIEWS
+    mcp_views.CREW_VIEWS = (*original, "dispatcher-only-view")
     try:
-        with pytest.raises(AssertionError, match="tool-only-view"):
+        with pytest.raises(AssertionError, match="dispatcher-only-view"):
             test_the_tool_and_the_dispatcher_declare_the_same_views()
     finally:
-        mcp.CREW_TOOL_VIEWS = original
+        mcp_views.CREW_VIEWS = original
+
+
+def test_a_view_the_schema_declares_alone_is_named(monkeypatch) -> None:
+    """The other registry control: a view the tool advertises and no one serves.
+
+    The schema Literal is written by hand, so a view added there and never
+    registered on the dispatcher — or a typo in one of its names — is the
+    likelier error, and only a tool-side control catches it. Editing the Literal
+    is impossible from a test, so this replaces the reader that names it, which
+    is the same value the case's own comparison would see were the Literal
+    carrying the extra name.
+    """
+    extended = (*_views_the_schema_declares(), "schema-only-view")
+    monkeypatch.setattr(
+        sys.modules[__name__], "_views_the_schema_declares", lambda: extended
+    )
+    with pytest.raises(AssertionError, match="schema-only-view"):
+        test_the_tool_and_the_dispatcher_declare_the_same_views()
