@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/repair.py:compose_repair_node",
+    "reckon/crew/repair.py:repair_write_scope",
+    "reckon/crew/recovery_repair_dispatch.py:dispatch_repair_for_run",
+    "reckon/crew/review.py:_merge_record_answers"
+  ],
+  "completed_at": "2026-10-20T07:55:24.570Z",
+  "dispatched_at": "2026-10-20T07:44:43Z",
+  "findings": [
+    {
+      "file": "tests/test_a_disposed_finding_ends_its_repair_round.py",
+      "line": 222,
+      "severity": "follow-on",
+      "text": "assert record[\"findings\"] == FINDINGS compares a value the test itself stored (record[\"findings\"] is FINDINGS, assigned in _store) against FINDINGS, so both sides are the same object and the assertion is true whatever the code does."
+    },
+    {
+      "file": "reckon/crew/recovery_repair_dispatch.py",
+      "line": 770,
+      "severity": "follow-on",
+      "text": "the reflex imports the module-private repair_module._blocking_finding_dispositions, coupling two modules through an undeclared interface that a rename or shape change would break silently."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 6e98d51c; three commits touch only repair.py, recovery_repair_dispatch.py, review.py, the new test file and the fragment.",
+    "done_when": "the done_when asserts five cases in tests/test_a_disposed_finding_ends_its_repair_round.py, and the manifest records that run (after-suite-final.log) with 75 passed and 1 failed.",
+    "goal": "the node goal is to leave every disposed finding out of a repair round; reckon/crew/repair.py:224 now returns only findings whose disposition reads open, from the one list the brief and scope are built from.",
+    "manifest": "read; it states the six new cases pass at head 5e054a617 and names baseline-suite.log and after-suite-final.log with their failure ids.",
+    "write_paths": "the declared paths are repair.py, recovery_repair_dispatch.py, review.py, the new test file and the node fragment; every path in the diff is inside them."
+  },
+  "justifications": {
+    "durability": "the two declared mutations each redden their target test (negative-blocking-filter.log, negative-record-merge.log, both EXIT=1), so the new test fails if the filter or the merge regresses.",
+    "evidence": "both arms are logged with failure ids in the manifest (baseline-suite.log 5 failed, after-suite-final.log 1 failed), giving added_failure_count 0, though the base log's header revision names the source revision while the run collected the head's new test file.",
+    "fit": "reckon/crew/recovery_repair_dispatch.py:770 calls the module-private repair_module._blocking_finding_dispositions across a module boundary, which is not the idiom of a public accessor.",
+    "goal_fidelity": "reckon/crew/repair.py:238 filters blocking_findings to open dispositions and reckon/crew/review.py:3081 carries FINDING_DISPOSITIONS_KEY through _merge_record_answers, which is exactly the goal.",
+    "reuse": "reckon/crew/repair.py:238 reuses findings.py:finding_disposition and parse_finding_disposition, the owner of disposition reading, and no prior owner lists blocking findings with their answers.",
+    "scope_discipline": "git show --stat over the three commits lists only repair.py, recovery_repair_dispatch.py, review.py, tests/test_a_disposed_finding_ends_its_repair_round.py and the fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to leave every disposed finding out of a repair round; reckon/crew/repair.py:224 now returns only findings whose disposition reads open, from the one list the brief and scope are built from.\nVERDICT done_when: the done_when asserts five cases in tests/test_a_disposed_finding_ends_its_repair_round.py, and the manifest records that run (after-suite-final.log) with 75 passed and 1 failed.\nVERDICT write_paths: the declared paths are repair.py, recovery_repair_dispatch.py, review.py, the new test file and the node fragment; every path in the diff is inside them.\nVERDICT manifest: read; it states the six new cases pass at head 5e054a617 and names baseline-suite.log and after-suite-final.log with their failure ids.\nVERDICT diff: read commit by commit against 6e98d51c; three commits touch only repair.py, recovery_repair_dispatch.py, review.py, the new test file and the fragment.\nCALL_SITES: reckon/crew/repair.py:compose_repair_node, reckon/crew/repair.py:repair_write_scope, reckon/crew/recovery_repair_dispatch.py:dispatch_repair_for_run, reckon/crew/review.py:_merge_record_answers\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/repair.py:238 filters blocking_findings to open dispositions and reckon/crew/review.py:3081 carries FINDING_DISPOSITIONS_KEY through _merge_record_answers, which is exactly the goal.\nSCORE evidence: 18\nJUSTIFICATION evidence: both arms are logged with failure ids in the manifest (baseline-suite.log 5 failed, after-suite-final.log 1 failed), giving added_failure_count 0, though the base log's header revision names the source revision while the run collected the head's new test file.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat over the three commits lists only repair.py, recovery_repair_dispatch.py, review.py, tests/test_a_disposed_finding_ends_its_repair_round.py and the fragment, all inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: the two declared mutations each redden their target test (negative-blocking-filter.log, negative-record-merge.log, both EXIT=1), so the new test fails if the filter or the merge regresses.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/recovery_repair_dispatch.py:770 calls the module-private repair_module._blocking_finding_dispositions across a module boundary, which is not the idiom of a public accessor.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/repair.py:238 reuses findings.py:finding_disposition and parse_finding_disposition, the owner of disposition reading, and no prior owner lists blocking findings with their answers.\nFINDING tests/test_a_disposed_finding_ends_its_repair_round.py:222 follow-on: assert record[\"findings\"] == FINDINGS compares a value the test itself stored (record[\"findings\"] is FINDINGS, assigned in _store) against FINDINGS, so both sides are the same object and the assertion is true whatever the code does.\nFINDING reckon/crew/recovery_repair_dispatch.py:770 follow-on: the reflex imports the module-private repair_module._blocking_finding_dispositions, coupling two modules through an undeclared interface that a rename or shape change would break silently.\n",
+  "review_run_id": "r-20261020T074330947671-review-of-a-disposed-finding-ends-its-repair-round-5e054a617a4c",
+  "reviewed_base_sha": "6e98d51c14282ce98bbce8f9fc70ae01b98ce01b",
+  "reviewed_head_sha": "5e054a617a4c53be964bf09a092db61abe5d6a7c",
+  "reviewed_run_id": "r-20261020T070948843165-a-disposed-finding-ends-its-repair-round",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T07:57:23.464658+00:00",
+  "total": 113
+}
