@@ -74,7 +74,7 @@ def _manifest_cites_a_commit(
 
     This is the one reader of the question: the write-time audit and the guard
     both ask it here, so the field cannot answer "cites" at the gate and "does
-    not" at check-manifest. An entry of nothing but zeros is the count of
+    not" at crew check --manifest. An entry of nothing but zeros is the count of
     commits written into a citation field, and the null object id it spells
     resolves to no commit in any store, so it cites nothing wherever this is
     asked. A value that reaches this reader structured rather than as a list

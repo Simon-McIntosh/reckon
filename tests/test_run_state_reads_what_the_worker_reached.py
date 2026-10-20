@@ -167,7 +167,8 @@ def test_an_exited_worker_with_committed_work_and_an_open_status_reads_its_own_s
     assert row["classification"] == "exited-unfinished", row["detail"]
     assert row["classification"] not in {"blocked", "unreadable"}
     assert row["recovery"] == recovery.RECOVERY_VERBS["exited-unfinished"]
-    assert "repair-status" in row["next_action"]
+    assert "reckon crew repair --run" in row["next_action"]
+    assert "--status complete" in row["next_action"]
 
     snapshot = recovery._watch_snapshot(
         pointer, moment=1_800_000_000.0, stall_seconds=900
@@ -194,7 +195,7 @@ def test_repair_status_replaces_the_word_and_keeps_the_delivered_manifest(
         cli_module.main,
         [
             "crew",
-            "repair-status",
+            "repair",
             "--run",
             run_id,
             "--status",

@@ -30,7 +30,8 @@ import re
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from click import Group
+import pytest
+from click import Command, Group
 from click.testing import CliRunner
 
 from reckon.cli import crew, main
@@ -519,6 +520,59 @@ REPAIR_AND_CHECK_NAMES = {
     "check-review": "crew check --review",
 }
 
+# The visible command paths at the fold's base, captured before the names were
+# retired. A path census fixes the reference surface without baking in a total:
+# an unrelated new leaf increases the live tree but not this base.
+_BASE_REPAIR_CHECK_LEAVES = {
+    tuple(path.split("/"))
+    for path in (
+        "ack",
+        "admit",
+        "attach",
+        "budget",
+        "check-manifest",
+        "check-review",
+        "complete",
+        "directory",
+        "discard",
+        "dispatch",
+        "dispose",
+        "drain",
+        "follow",
+        "gate",
+        "gc",
+        "host",
+        "ledger",
+        "list",
+        "member/add",
+        "member/list",
+        "merge",
+        "observe",
+        "path",
+        "pick",
+        "placement",
+        "recover",
+        "redispatch",
+        "repair-completion",
+        "repair-review",
+        "repair-status",
+        "resume",
+        "resume-ready",
+        "review",
+        "shadow",
+        "split-runs",
+        "stop",
+        "suite/run",
+        "suite/waive",
+        "supersede-review",
+        "velocity",
+        "verify-gate",
+        "view",
+        "watch",
+        "widen",
+    )
+}
+
 
 def test_repair_and_check_tombstones_name_their_successors() -> None:
     runner = CliRunner()
@@ -674,12 +728,26 @@ def test_check_review_resolves_a_run_record(isolated_reckon_home: Path) -> None:
     }
 
 
-def test_repair_and_check_replace_four_visible_leaves_with_two() -> None:
+def _assert_repair_and_check_leaf_bound() -> None:
     leaves = _leaf_commands(crew)
     family = {("repair",), ("check",)} | {(name,) for name in REPAIR_AND_CHECK_NAMES}
     visible_family = family & leaves.keys()
     assert visible_family == {("repair",), ("check",)}
-    assert len(visible_family) == len(REPAIR_AND_CHECK_NAMES) - 2
+    retired = {(name,) for name in REPAIR_AND_CHECK_NAMES}
+    assert retired <= _BASE_REPAIR_CHECK_LEAVES
+    assert {("repair",), ("check",)}.isdisjoint(_BASE_REPAIR_CHECK_LEAVES)
+    bound = len(_BASE_REPAIR_CHECK_LEAVES) - len(retired) + 2
+    assert len(leaves) <= bound, f"visible crew leaves {len(leaves)} exceed {bound}"
+
+
+def test_repair_and_check_replace_four_visible_leaves_with_two() -> None:
+    _assert_repair_and_check_leaf_bound()
+
+
+def test_repair_and_check_leaf_bound_refuses_an_extra_command(monkeypatch) -> None:
+    monkeypatch.setitem(crew.commands, "extra-fixture", Command("extra-fixture"))
+    with pytest.raises(AssertionError, match="visible crew leaves"):
+        _assert_repair_and_check_leaf_bound()
 
 
 def test_watch_stop_replaces_one_visible_leaf() -> None:
