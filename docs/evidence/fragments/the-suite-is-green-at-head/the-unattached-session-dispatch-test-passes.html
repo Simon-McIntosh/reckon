@@ -39,7 +39,8 @@
   step; on a plain compute node a supervisor is spawned first (<code>subprocess.Popen</code>)
   and writes the producer's seat later, widening the window the teardown read into. Measured:
   with the cause present the test fails 5 of 5 alone in an exclusive <code>all_debug</code>
-  job (job <code>1291645</code>, host <code>98dci4-clu-3141</code>), and passes 5 of 5 alone
+  job (job <code>1291645</code>, host <code>98dci4-clu-3142</code>, receipt
+  <code>solo5-1291645.out</code>), and passes 5 of 5 alone
   on the fleet node.</p>
 
   <p id="the-unattached-session-dispatch-test-passes-shape"><strong>The same teardown, three
@@ -76,7 +77,7 @@
       <tr><td>whole file</td><td>exclusive <code>all_debug</code>, rev <code>62a89ee7</code></td>
           <td><code>compute-file.log</code></td><td><code>4 passed</code>, EXIT=0</td></tr>
       <tr><td>negative control: target test, cause restored</td>
-          <td>exclusive <code>all_debug</code> job <code>1291645</code></td>
+          <td>exclusive <code>all_debug</code> job <code>1291652</code></td>
           <td><code>compute-negative-control.log</code></td>
           <td><code>1 failed</code>, EXIT=1</td></tr>
       <tr><td>negative control: two dispatch tests, cause restored &times;5</td>
@@ -86,7 +87,7 @@
       <tr><td>exposure probe: two dispatch tests, cause restored</td><td>fleet node</td>
           <td><code>fleet-negprobe.log</code></td>
           <td>2 markers: live seat at teardown for both</td></tr>
-      <tr><tr><td><code>ruff check</code></td><td>worktree</td>
+      <tr><td><code>ruff check</code></td><td>worktree</td>
           <td><code>ruff-check.log</code></td><td><code>All checks passed!</code>, EXIT=0</td></tr>
       <tr><td><code>ruff format --check</code></td><td>worktree</td>
           <td><code>ruff-fmt.log</code> vs <code>ruff-fmt-base.log</code></td>
