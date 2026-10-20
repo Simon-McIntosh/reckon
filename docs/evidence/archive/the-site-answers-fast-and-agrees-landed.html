@@ -368,6 +368,22 @@
 <p>The first discovery read for nova after the reload, with the new store version empty, took 13.6 s to derive. That is the server-cold reading §11 recorded beside its gate. §21 makes such a miss rare, since a reload that changes no derivation now keeps every result, but each merged change to a derivation still makes its first reader wait for a cold derivation.</p>
   </section>
 
+  <section id="s22">
+    <h2>§22 — The schedule is attached when it is read</h2>
+    <p>The discovery result the refresh child stores carries no schedule. The discovery handler in <code>reckon/serve.py</code> attaches it on each read through <code>_attach_schedule</code>, from the stored inventory and the live crew rows, at the read's own instant. The inline cold-miss path does the same. Run <code>r-20261020T122855187753</code>, commits <code>dedcde927</code>, <code>0bda5480d</code> and <code>914c90dca</code>, merged at <code>232b07717</code>.</p>
+<table>
+<thead><tr><th>Check</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>Population, 163 files importing <code>serve</code> or <code>route_results</code>, and the SPA tests</td><td>21 failed at base <code>4306a8a08</code>, the same 21 at the merge candidate; none added</td></tr>
+<tr><td>Negative control</td><td>attaching at store time again leaves a run that went live after the store drawn predicted, and the test fails</td></tr>
+<tr><td>Attach cost per read, fleet node, median of five</td><td>nova 42.7 ms, reckon 26.5 ms, power_convertor 201.5 ms</td></tr>
+<tr><td>Live, srv-1006</td><td>after the merge the served process reloaded itself at 13:48:25 UTC and re-derived discovery on the new code, with no restart; two reads of power_convertor 20 s apart carried schedule references of 13:50:27 and 13:50:47 over a stored inventory aged 115 s and 135 s; each read took 206 to 229 ms</td></tr>
+<tr><td>Independent review</td><td>17 to 20; its two added browser ids pass in isolation and in the coordinator's population</td></tr>
+</tbody>
+</table>
+<p>One review follow-on is carried by §24. The schedule is now derived inside the discovery handler's error path, so a failure listing the crew rows would fail the whole discovery read rather than only its schedule. The other follow-on, a redundant first-read assertion, was exempted. Attaching on each read costs about 200 ms for power_convertor, the project with the most live runs.</p>
+  </section>
+
 </main>
 </body>
 </html>
