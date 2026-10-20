@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T00:16:46.623Z",
+  "dispatched_at": "2026-10-20T00:05:34Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:352",
+      "id": "reasoning-1",
+      "reason": "the node would ship a second misleading message in place of the one it was sent to replace; the text must name the missing `total` (or whichever measure of `_review_is_complete` failed) rather than missing dimensions.",
+      "text": "\u00a710 says \"A record whose score is incomplete says the dimensions are missing\", but both cited runs' records carry all six dimensions and fail only on an absent integer `total`, so the message it prescribes would be false for exactly the two runs that motivated the section",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:353",
+      "id": "done_when-1",
+      "reason": "a fixture that drops a dimension passes while the total-absent record its own evidence cites still produces the wrong refusal.",
+      "text": "the done-when builds \"one review run per failing condition\" but the section lists five reasons at plan:343-350 and the Deliverable names four at plan:352, so the node cannot tell how many cases to build and the fixture it omits is the incomplete-review case, which is the one the evidence actually exhibits",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:383",
+      "id": "wiring-1",
+      "reason": "a coordinator dispatching from the followup's order never reaches \u00a710, and a section that is never dispatched is work that is never done.",
+      "text": "the driving followup orders \"\u00a72 and \u00a73 ... \u00a74, \u00a76, \u00a77's four nodes, \u00a78 and \u00a79's four nodes\", and names \u00a75's wait, but never places \u00a710, whose section declares only `depends-on` s3 and shares no write path with any of them",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "2a0ee1db805f8246a4d94e3cd6605a87608c8dc376a4a496703b5f03c6c4c4d0",
+  "plan_slug": "the-crew-surface-is-one-tool-and-a-few-verbs",
+  "plan_version": 34,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T000419382736-plan-review-of-the-crew-surface-is-one-tool-and-a-few-verbs",
+  "reviewed_blob_sha": "e02d26a6091a75e1b18109411efe072db336c3e7",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_resolve_promotion_outcome` resolves at `reckon/crew/promotion_checks.py:1124` and calls `_delivered_review_record` at :1152; `_delivered_review_record` resolves at `reckon/crew/recovery_review_delivery.py:302`; the quoted refusal text is verbatim at `promotion_checks.py:1155`; both cited run ids exist under `~/.config/reckon/crew/runs/`; and `every-plan-write-goes-through-edit-plan#s11` exists (that plan carries s1-s12).",
+    "done_when": "a finding \u2014 \u00a710 enumerates five failing reasons (plan:343-350) and its done-when builds \"one review run per failing condition\" (plan:353), while its Deliverable says \"The four conditions themselves are unchanged\" (plan:352), so the fixture set is ambiguous and the one likely dropped is the condition its own evidence exhibits.",
+    "evidence_paths": "pass \u2014 \u00a710 writes only tracked source and test paths (`reckon/crew/recovery_review_delivery.py`, `reckon/crew/promotion_checks.py`, `tests/test_a_review_refusal_names_its_failed_condition.py`) and sends no evidence to a scratchpad or node-local path.",
+    "naming": "pass \u2014 \u00a710 and the document head carry no plan labels, stage names, ticket numbers or changelog prose; the cited run ids and `cso-*` node names are dispatch data, not code symbols.",
+    "reasoning": "a finding \u2014 the remedy \u00a710 prescribes for the completeness condition does not describe the failure its own two cited runs exhibit.",
+    "single_goal": "pass \u2014 \u00a710 carries one deliverable, that a review run's refusal name the delivery condition that failed.",
+    "wiring": "a finding \u2014 \u00a710 is a live section (`implementable`, plan:342) with its own `depends-on`, but the driving followup's ordering sentence (plan:383) places every section except \u00a710."
+  },
+  "section_digests": {
+    "_document": "4d4b24f4aec9178fd9d24a7442e96788d260da61249c8afd730e02ffe7cc56f6",
+    "s1": "7964ee282f4a5255288aa84785a54dbc6a5fec9660f4cee9f9c892a0807894ee",
+    "s10": "c0cea1f61266203328f90ea0789e47c1058e629993794d752df84a418b8a20c2",
+    "s2": "be69292dc4744e91b19438c3129be40ac6c6138f02cd12656616dd3906a1d313",
+    "s3": "bfc4b93502cb69a2a5878f9c282da2cbab878f4f49482f263fdfc074dfce4ba8",
+    "s4": "2feb22a10d53f02161e33412c6f491a2718ee9b88ffede06e39b7fc15799f5d1",
+    "s5": "4a0b632aaec0c9b2538edeab874ccd9fd39723e2eef864da9ae65a3f72b6695c",
+    "s6": "e037f188e4e0784a7a39a208f621ec226cacdda5308e5f226d6ba3e104345522",
+    "s7": "7a66876ae7177f3cc833a9fc9c2885beceef03cf567843584a885f144155809b",
+    "s8": "beb6c1568fe326e8af87c393c93ac9e71dec60ad9a9247b47ffbec9d08fc76a6",
+    "s9": "7035e56c9914aad3c602d84869935ce1d75b2eba9a855d32377d43998ebac231"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T00:19:35.073134+00:00"
+}
