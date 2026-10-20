@@ -1,0 +1,93 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T222625755321-cso-crew-view-filters-live-runs/logs/gate-head.log",
+  "assertion_analysis": [
+    {
+      "failure_condition": "The live view must return the same run_ids as `crew list --phase working` and `crew list --session S --mine`; dropping the `phase` or the `mine` predicate from reckon/mcp_views.py:3982-3990 makes the live rows differ from the listing's and reddens this case, as the negative control confirms.",
+      "lines": "tests/test_crew_view_serves_every_view.py:196-217"
+    },
+    {
+      "failure_condition": "`len(unfiltered) > len(expected_mine)` fails if either filter stops narrowing, because an unfiltered live read then returns the same count as the filtered one.",
+      "lines": "tests/test_crew_view_serves_every_view.py:234"
+    },
+    {
+      "failure_condition": "Removing the `missing_session` refusal in reckon/mcp_views.py:3967 so `mine` without a session answers the whole project fails `refusal[\"error\"] == \"missing_session\"` on both surfaces.",
+      "lines": "tests/test_crew_view_serves_every_view.py:220-229"
+    },
+    {
+      "failure_condition": "Removing `phase=phase`/`mine=mine` from reckon/crew_run_commands.py:423 or reckon/mcp.py:2198 makes the two surfaces answer differently on the `phase`/`mine` vectors and reddens the parity case, as the negative control confirms.",
+      "lines": "tests/test_crew_view_serves_every_view.py:353-368"
+    },
+    {
+      "failure_condition": "Adding a view to `reckon.mcp_views.CREW_VIEWS` alone, or to the schema `view` Literal alone, makes test_the_tool_and_the_dispatcher_declare_the_same_views fail and name it; the two controls stand in for each edit a test cannot make to committed source.",
+      "lines": "tests/test_crew_view_serves_every_view.py:313-327 and 330-353"
+    }
+  ],
+  "base_log_revision": "2e421b15f20ed96ff5c6ed80264010174f39cbf3",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T222625755321-cso-crew-view-filters-live-runs/logs/gate-base.log",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:390",
+    "reckon/mcp.py:2169"
+  ],
+  "commits_read": [
+    "e52f3f01c907ad8fd9afdb5c4466018e2038957a",
+    "484045e1d4bbc795f6135023e3213649ea1258dc"
+  ],
+  "completed_at": "2026-10-20T23:21:17.647Z",
+  "dispatched_at": "2026-10-20T23:09:46Z",
+  "evidence_inputs": [
+    "Base arm re-run by the reviewer at 2e421b15f gives 1 failed / 133 passed (the same id as the head arm): /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T230812471741-review-of-cso-crew-view-filters-live-runs-484045e1d4bb/base-verify.log",
+    "Head arm at e52f3f01c: 1 failed / 135 passed; the single red id (test_every_module_fits_a_worker_window, over reckon/budget.py, reckon/crew/review.py, reckon/ledger.py) is outside the node's changed paths and pre-existing in both arms."
+  ],
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T222625755321-cso-crew-view-filters-live-runs/logs/gate-base.log",
+      "line": "6",
+      "severity": "follow-on",
+      "text": "follow-on: the base arm's gate log carries only its header lines \u2014 no pytest summary and no closing `EXIT=` line \u2014 so the base result the source manifest's `baseline_suite` records as `completed: true`, `exit_status: 1` cannot be read from the log it cites; the source done_when requires each log to close with `EXIT=`. The base result is reproducible (re-run at 2e421b15f gives 1 failed / 133 passed, the same single id as the head arm), so the node's zero-added-failures conclusion still stands."
+    }
+  ],
+  "head_log_revision": "e52f3f01c907ad8fd9a5f3f01c907ad8fd9afdb5c",
+  "item_verdicts": {
+    "diff": "Read commit by commit against base 2e421b15f: e52f3f01c carries the code and tests (mcp_views.py, _mcp_tools.py, mcp.py, crew_run_commands.py, SKILL.md, two test files) and 484045e1d adds only the evidence fragment at docs/evidence/fragments/the-crew-surface-is-one-tool-and-a-few-verbs/cso-crew-view-filters-live-runs.html.",
+    "done_when": "The source done_when names the eight-file gate adding zero failures at head against a base arm with each log opening with its revision and closing with `EXIT=`; gate-head.log satisfies it (1 failed, 135 passed, EXIT=1 at e52f3f01c), but gate-base.log opens with its revision and carries no summary or `EXIT=` line, and the base result is confirmed only by re-running the arm.",
+    "goal": "The source goal is to give `crew view live` and the MCP `live` view `--phase` and `--mine` and reconcile the tool schema's view list with the dispatcher's, per plan section 9; reckon/mcp_views.py:3965-3990 applies both filters and refuses `mine` without `session`, reckon/_mcp_tools.py:86-106 widens the `view` Literal to nineteen names, and skills/reckon-build/SKILL.md documents all nineteen.",
+    "manifest": "Read the source manifest.md: it names commits e52f3f01c and 484045e1d, the head and base arms, the three applied mutations, the single pre-existing failing id, and the ruff deltas, all consistent with the artefacts on disk except the unreadable base log it cites.",
+    "write_paths": "The source manifest declares nine write paths (four reckon modules, two test files, the skill, the evidence fragment and a figures directory); the 2e421b15f..484045e1d diff changes eight files, every one of them inside that set."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_view_serves_every_view.py:196-229 fails if the `phase` or `mine` predicate (reckon/mcp_views.py:3982-3990) is dropped or the `missing_session` refusal removed, and lines 353-368 fail if `phase`/`mine` stop crossing the CLI-tool boundary \u2014 each confirmed red by the source negative control.",
+    "evidence": "gate-head.log records 1 failed / 135 passed with EXIT=1 at e52f3f01c, but gate-base.log (the log the manifest's baseline_suite cites for `completed: true`) carries no summary and no `EXIT=` line, so the base arm had to be re-run to confirm 1 failed / 133 passed at 2e421b15f.",
+    "fit": "reckon/crew_run_commands.py:302-311 declares the two options in the surrounding `crew view` idiom and reckon/mcp_views.py:3968-3990 follows the existing early-refusal shape at line 3721, with mechanism comments and no forbidden name.",
+    "goal_fidelity": "reckon/mcp_views.py:3982-3990 carries `phase` and `mine` onto the live rows and lines 3967-3976 refuse `mine` without a session, and reckon/_mcp_tools.py:87-106 widens the `view` Literal to the dispatcher's nineteen names.",
+    "reuse": "The `phase`/`mine` predicate added at reckon/mcp_views.py:3982-3990 is inline in the existing serve_crew_view and duplicates the same filter in reckon/crew_run_commands.py:195-200 rather than extracting a shared helper, but it is not a re-implemented mechanism and the two produce different row documents, so no definition forks an owned capability.",
+    "scope_discipline": "Every path in the 2e421b15f..484045e1d diff \u2014 the four reckon modules, the two test files, skills/reckon-build/SKILL.md and the evidence fragment \u2014 is inside the source manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source goal is to give `crew view live` and the MCP `live` view `--phase` and `--mine` and reconcile the tool schema's view list with the dispatcher's, per plan section 9; reckon/mcp_views.py:3965-3990 applies both filters and refuses `mine` without `session`, reckon/_mcp_tools.py:86-106 widens the `view` Literal to nineteen names, and skills/reckon-build/SKILL.md documents all nineteen.\nVERDICT done_when: The source done_when names the eight-file gate adding zero failures at head against a base arm with each log opening with its revision and closing with `EXIT=`; gate-head.log satisfies it (1 failed, 135 passed, EXIT=1 at e52f3f01c), but gate-base.log opens with its revision and carries no summary or `EXIT=` line, and the base result is confirmed only by re-running the arm.\nVERDICT write_paths: The source manifest declares nine write paths (four reckon modules, two test files, the skill, the evidence fragment and a figures directory); the 2e421b15f..484045e1d diff changes eight files, every one of them inside that set.\nVERDICT manifest: Read the source manifest.md: it names commits e52f3f01c and 484045e1d, the head and base arms, the three applied mutations, the single pre-existing failing id, and the ruff deltas, all consistent with the artefacts on disk except the unreadable base log it cites.\nVERDICT diff: Read commit by commit against base 2e421b15f: e52f3f01c carries the code and tests (mcp_views.py, _mcp_tools.py, mcp.py, crew_run_commands.py, SKILL.md, two test files) and 484045e1d adds only the evidence fragment at docs/evidence/fragments/the-crew-surface-is-one-tool-and-a-few-verbs/cso-crew-view-filters-live-runs.html.\nCALL_SITES: reckon/crew_run_commands.py:390, reckon/mcp.py:2169\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp_views.py:3982-3990 carries `phase` and `mine` onto the live rows and lines 3967-3976 refuse `mine` without a session, and reckon/_mcp_tools.py:87-106 widens the `view` Literal to the dispatcher's nineteen names.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate-head.log records 1 failed / 135 passed with EXIT=1 at e52f3f01c, but gate-base.log (the log the manifest's baseline_suite cites for `completed: true`) carries no summary and no `EXIT=` line, so the base arm had to be re-run to confirm 1 failed / 133 passed at 2e421b15f.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Every path in the 2e421b15f..484045e1d diff \u2014 the four reckon modules, the two test files, skills/reckon-build/SKILL.md and the evidence fragment \u2014 is inside the source manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_crew_view_serves_every_view.py:196-229 fails if the `phase` or `mine` predicate (reckon/mcp_views.py:3982-3990) is dropped or the `missing_session` refusal removed, and lines 353-368 fail if `phase`/`mine` stop crossing the CLI-tool boundary \u2014 each confirmed red by the source negative control.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew_run_commands.py:302-311 declares the two options in the surrounding `crew view` idiom and reckon/mcp_views.py:3968-3990 follows the existing early-refusal shape at line 3721, with mechanism comments and no forbidden name.\nSCORE reuse: 16\nJUSTIFICATION reuse: The `phase`/`mine` predicate added at reckon/mcp_views.py:3982-3990 is inline in the existing serve_crew_view and duplicates the same filter in reckon/crew_run_commands.py:195-200 rather than extracting a shared helper, but it is not a re-implemented mechanism and the two produce different row documents, so no definition forks an owned capability.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T222625755321-cso-crew-view-filters-live-runs/logs/gate-base.log:6 follow-on: the base arm's gate log carries only its header lines \u2014 no pytest summary and no closing `EXIT=` line \u2014 so the base result the source manifest's `baseline_suite` records as `completed: true`, `exit_status: 1` cannot be read from the log it cites; the source done_when requires each log to close with `EXIT=`. The base result is reproducible (re-run at 2e421b15f gives 1 failed / 133 passed, the same single id as the head arm), so the node's zero-added-failures conclusion still stands.\n",
+  "review_run_id": "r-20261020T230812471741-review-of-cso-crew-view-filters-live-runs-484045e1d4bb",
+  "reviewed_base": "2e421b15f20ed96ff5c6ed80264010174f39cbf3",
+  "reviewed_base_sha": "2e421b15f20ed96ff5c6ed80264010174f39cbf3",
+  "reviewed_commits": [
+    "e52f3f01c907ad8fd9afdb5c4466018e2038957a",
+    "484045e1d4bbc795f6135023e3213649ea1258dc"
+  ],
+  "reviewed_head": "484045e1d4bbc795f6135023e3213649ea1258dc",
+  "reviewed_head_sha": "484045e1d4bbc795f6135023e3213649ea1258dc",
+  "reviewed_run_id": "r-20261020T222625755321-cso-crew-view-filters-live-runs",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T23:24:45.661896+00:00",
+  "total": 106
+}
