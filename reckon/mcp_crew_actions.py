@@ -109,6 +109,7 @@ _PARAM_MAP: dict[str, dict[str, str]] = {
     },
     "ack": {
         "run_id": "run_id",
+        "notice_id": "notice_id",
         "reason": "reason",
         "until": "until",
     },
@@ -169,7 +170,7 @@ _PARAM_DEFAULTS: dict[str, dict[str, Any]] = {
         "node": "",
         "reason": "",
     },
-    "ack": {"reason": "", "until": ""},
+    "ack": {"run_id": None, "notice_id": None, "reason": "", "until": None},
     "answer": {
         "plan": "",
         "finding": "",

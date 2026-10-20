@@ -1038,6 +1038,17 @@
                         "null"
                     ]
                 },
+                "model_catalogue": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/ModelCatalogueConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "Public model list and watched id prefixes for model notices."
+                },
                 "protected_paths": {
                     "description": "Extra filesystem paths a host or project layer adds to the set a worker's fence seals read-only. The key is additive: the fence's shipped default set is today's built-in list \u2014 operator state, credentials, shared records and every main checkout, the worktree pool included \u2014 and a layer can add to it but never replace it, so a layer that omits a default here leaves that default protected rather than silently dropping it. Entries are home-relative or absolute and are resolved against the operator's home the same way the defaults are. The only way to remove a default is to name it under `unprotected_paths`.",
                     "items": {
@@ -1485,6 +1496,13 @@
                     "$ref": "#/$defs/SandboxMode",
                     "description": "Filesystem blast radius granted to workers of this backend."
                 },
+                "served_models": {
+                    "description": "Path to this lane's CLI-published served-model JSON file.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
                 "serves_orchestrators": {
                     "description": "Whether this backend's lane carries this deployment's orchestrators. Declared, never inferred from the backend's name: the orchestrator role is a property of the deployment, so an alias or a backend that renames must both reach a fence that reads this key, and a rule matching on a name breaks the moment an orchestrator runs somewhere else. Absent means the lane declares nothing and is dispatchable as before. A lane declaring true is one whose capacity background work spends against the sessions that dispatch, merge, promote and record, so a lane saturated there stops every session rather than one node.",
                     "type": [
@@ -1778,6 +1796,13 @@
                     "$ref": "#/$defs/SandboxMode",
                     "description": "Filesystem blast radius granted to workers of this backend."
                 },
+                "served_models": {
+                    "description": "Path to this lane's CLI-published served-model JSON file.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
                 "serves_orchestrators": {
                     "description": "Whether this backend's lane carries this deployment's orchestrators. Declared, never inferred from the backend's name: the orchestrator role is a property of the deployment, so an alias or a backend that renames must both reach a fence that reads this key, and a rule matching on a name breaks the moment an orchestrator runs somewhere else. Absent means the lane declares nothing and is dispatchable as before. A lane declaring true is one whose capacity background work spends against the sessions that dispatch, merge, promote and record, so a lane saturated there stops every session rather than one node.",
                     "type": [
@@ -1849,6 +1874,13 @@
                 },
                 "budget_group": {
                     "description": "Name shared by backends that draw on the same account quota. A pool is declared, never inferred: identical probe readings or reset times are evidence only that two backends were observed the same way, never that they share a budget, so a backend with no declared group stays ungrouped however alike its siblings read. Optional operator data naming the owner's own pool; the schema supplies none.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "catalog_id": {
+                    "description": "Public catalogue id for this lane model. Optional operator data.",
                     "type": [
                         "string",
                         "null"
@@ -1931,6 +1963,13 @@
                 },
                 "budget_group": {
                     "description": "Name shared by backends that draw on the same account quota. A pool is declared, never inferred: identical probe readings or reset times are evidence only that two backends were observed the same way, never that they share a budget, so a backend with no declared group stays ungrouped however alike its siblings read. Optional operator data naming the owner's own pool; the schema supplies none.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "catalog_id": {
+                    "description": "Public catalogue id for this lane model. Optional operator data.",
                     "type": [
                         "string",
                         "null"
@@ -2077,6 +2116,92 @@
             },
             "required": [],
             "title": "ModelAlias",
+            "type": "object"
+        },
+        "ModelCatalogueConfig": {
+            "additionalProperties": false,
+            "description": "Public source and watch rules for model notices.",
+            "properties": {
+                "list_url": {
+                    "description": "URL of the public JSON model list.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "refresh_age": {
+                    "description": "Minimum age before the public list is fetched again, in seconds.",
+                    "minimum": 0,
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "watch": {
+                    "additionalProperties": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/$defs/ModelWatchConfig__identifier_optional"
+                            },
+                            {
+                                "description": "Lane an old backend name resolves to. Must name a key of `lanes` once every layer has been merged.",
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "description": "Map of public id prefixes to the lane that would serve them.",
+                    "type": [
+                        "object",
+                        "null"
+                    ]
+                }
+            },
+            "title": "ModelCatalogueConfig",
+            "type": "object"
+        },
+        "ModelWatchConfig": {
+            "additionalProperties": false,
+            "description": "One watched public id prefix and the lane it belongs to.",
+            "properties": {
+                "lane": {
+                    "description": "Lane an old backend name resolves to. Must name a key of `lanes` once every layer has been merged.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "name": {
+                    "description": "Map key for an inlined entry.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "title": "ModelWatchConfig",
+            "type": "object"
+        },
+        "ModelWatchConfig__identifier_optional": {
+            "additionalProperties": false,
+            "description": "One watched public id prefix and the lane it belongs to.",
+            "properties": {
+                "lane": {
+                    "description": "Lane an old backend name resolves to. Must name a key of `lanes` once every layer has been merged.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "name": {
+                    "description": "Map key for an inlined entry.",
+                    "type": "string"
+                }
+            },
+            "required": [],
+            "title": "ModelWatchConfig",
             "type": "object"
         },
         "PickerMode": {
@@ -2830,6 +2955,17 @@
                 "string",
                 "null"
             ]
+        },
+        "model_catalogue": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/ModelCatalogueConfig"
+                },
+                {
+                    "type": "null"
+                }
+            ],
+            "description": "Public model list and watched id prefixes for model notices."
         },
         "protected_paths": {
             "description": "Extra filesystem paths a host or project layer adds to the set a worker's fence seals read-only. The key is additive: the fence's shipped default set is today's built-in list \u2014 operator state, credentials, shared records and every main checkout, the worktree pool included \u2014 and a layer can add to it but never replace it, so a layer that omits a default here leaves that default protected rather than silently dropping it. Entries are home-relative or absolute and are resolved against the operator's home the same way the defaults are. The only way to remove a default is to name it under `unprotected_paths`.",

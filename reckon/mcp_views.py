@@ -3610,6 +3610,7 @@ CREW_VIEWS: tuple[str, ...] = (
     "fleet",
     "runs",
     "obligations",
+    "models",
     "velocity",
     "scores",
     "plan-review",
@@ -3646,6 +3647,7 @@ def serve_crew_view(
     source: str = "all",
     scope: str = "project",
     fields: list[str] | None = None,
+    refresh: bool = False,
 ) -> dict[str, Any]:
     """Serve one crew read view for a project, a checkout or the workstation's fleet.
 
@@ -3722,7 +3724,7 @@ def serve_crew_view(
             "error": "invalid_view",
             "detail": (
                 "view must be directory, drain, scopes, summary, flight, live, "
-                "records, ledger, budget or obligations; lanes is the endpoint "
+                "records, ledger, budget, models or obligations; lanes is the endpoint "
                 "quota view, routing is the cross-ledger cost view, runs is the "
                 "compact joined view, scores is the per-dimension review view, "
                 "velocity is the delivery-rate view, and fleet is the "
@@ -3731,6 +3733,10 @@ def serve_crew_view(
                 "path they name"
             ),
         }
+    if view == "models":
+        from reckon.crew.model_catalogue import model_notices
+
+        return model_notices(project, refresh=refresh, checkout_path=checkout_path)
     if view == "findings":
         from reckon.crew import findings as findings_module
 

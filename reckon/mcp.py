@@ -1936,6 +1936,7 @@ def _roadmap_tool(
 def _crew(
     project: str | None = None,
     view: str = "summary",
+    refresh: bool = False,
     checkout_path: str | None = None,
     plan: str | None = None,
     path: str | None = None,
@@ -1961,6 +1962,7 @@ def _crew(
     ]
     | None = None,
     run_id: str | None = None,
+    notice_id: str | None = None,
     advice: str | None = None,
     dry_run: bool = False,
     node: str | None = None,
@@ -2103,6 +2105,7 @@ def _crew(
             action,
             project=project,
             run_id=run_id,
+            notice_id=notice_id,
             gate=gate,
             failure_classification=failure_classification,
             commits=commits,
@@ -2154,7 +2157,7 @@ def _crew(
             "error": "invalid_view",
             "detail": (
                 "view must be directory, drain, scopes, summary, flight, live, "
-                "records, ledger, budget or obligations; lanes is the endpoint "
+                "records, ledger, budget, models or obligations; lanes is the endpoint "
                 "quota view, routing is the cross-ledger cost view, runs is the "
                 "compact joined view, scores is the per-dimension review view, "
                 "velocity is the delivery-rate view, and fleet is the "
@@ -2165,6 +2168,7 @@ def _crew(
         }
     return serve_crew_view(
         view,
+        refresh=refresh,
         project=project,
         checkout_path=checkout_path,
         plan=plan,

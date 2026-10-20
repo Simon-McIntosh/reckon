@@ -1,0 +1,38 @@
+<article class="landed-report" data-run-id="r-20261020T090324650169-a-new-model-is-noticed" data-node="a-new-model-is-noticed">
+  <h3 id="a-new-model-is-noticed-summary">Model catalogue notices</h3>
+  <p id="a-new-model-is-noticed-change">
+    <strong>Change.</strong> Commit <code>7b4f6c828</code> adds a dated catalogue
+    snapshot under the crew home; <code>14e05d9bc</code> regenerates the editor
+    JSON schema from the LinkML source. The check compares watched public ids with declared
+    lane models and the lane's CLI served-model file. Released,
+    subscription-serves, declared-unserved and expiring notices persist until
+    acknowledged. A failed fetch records its error separately and preserves the
+    prior snapshot. The <code>models</code> crew view, refresh parameter and
+    existing ack action expose the result through CLI and MCP.
+  </p>
+  <p id="a-new-model-is-noticed-measure">
+    <strong>Measure.</strong> The clean base arm at
+    <code>2ba55855e4594f38eaff9ffd452c8f2f837a2a74</code> returned
+    <code>invalid_view</code> for <code>models</code>; its selected suite had
+    168 passes and one pre-existing module window failure. The final head arm had
+    176 passes and only that same failure. The schema-parity test passed, including
+    its explicit repeat in the gate. The new fixture file passed all eight tests, the existing ack and
+    view regression files passed 11 tests, and Ruff added no lint or format
+    finding on the staged Python paths under the repository's generated-file
+    exclusion. Both negative-control mutations each failed their named new test.
+  </p>
+  <p id="a-new-model-is-noticed-open">
+    <strong>Next.</strong> The coordinator applies the operator's list URL,
+    watched prefixes, catalog ids and served-model path in the host flight after
+    landing. The node's fixture check and view do not depend on that host edit.
+  </p>
+  <p id="a-new-model-is-noticed-review-followons">
+    <strong>Review follow-ons.</strong> Snapshot and error records now use the
+    repository's shared atomic JSON writer. The fixture resolves the real crew
+    home through <code>real_store_home()</code>, then records its snapshot's
+    existence and mtime before redirecting to a temporary home,
+    then confirms both are unchanged. The follow-on gate had 176 passes and only
+    the base arm's window-guard failure; both mutation controls still failed
+    their intended assertions, and Ruff added no findings on the edited files.
+  </p>
+</article>
