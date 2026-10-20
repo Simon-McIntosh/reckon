@@ -3039,7 +3039,7 @@ def _committed_record_at(path: str | Path) -> Mapping[str, Any] | None:
 def _merge_record_answers(sources: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
     """Union the answer fields of several copies of one review record.
 
-    The two mappings merge by key with the latest entry winning, ordered by the
+    The answer mappings merge by key with the latest entry winning, ordered by the
     stamp each entry records — ``recorded_at`` on a disposition, ``when`` on a
     response — so a re-answer of one finding supersedes the copy an earlier
     write left. The event list is the union of every copy's events in time
@@ -3049,12 +3049,14 @@ def _merge_record_answers(sources: Iterable[Mapping[str, Any]]) -> dict[str, Any
     an empty one.
     """
     dispositions: dict[str, Any] = {}
+    finding_dispositions: dict[str, Any] = {}
     responses: dict[str, Any] = {}
     events: list[Any] = []
     seen_events: set[str] = set()
     for source in sources:
         for key, target in (
             (DIMENSION_DISPOSITIONS_KEY, dispositions),
+            (FINDING_DISPOSITIONS_KEY, finding_dispositions),
             ("responses", responses),
         ):
             mapping = source.get(key)
@@ -3076,6 +3078,8 @@ def _merge_record_answers(sources: Iterable[Mapping[str, Any]]) -> dict[str, Any
     merged: dict[str, Any] = {}
     if dispositions:
         merged[DIMENSION_DISPOSITIONS_KEY] = dispositions
+    if finding_dispositions:
+        merged[FINDING_DISPOSITIONS_KEY] = finding_dispositions
     if responses:
         merged["responses"] = responses
     if events:

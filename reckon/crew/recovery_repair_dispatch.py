@@ -765,10 +765,21 @@ def dispatch_repair_for_run(
         if not repair_module.blocking_findings(review):
             follow_ons = repair_module.follow_on_findings(review)
             unmarked = repair_module.unmarked_findings(review)
-            reason = (
-                "the review round carried no blocking finding "
-                f"({len(follow_ons)} follow-on finding(s))"
-            )
+            disposed = [
+                (index, kind)
+                for index, _, kind in repair_module.blocking_finding_dispositions(
+                    review
+                )
+                if kind != "open"
+            ]
+            if disposed:
+                names = ", ".join(f"index {index} ({kind})" for index, kind in disposed)
+                reason = f"every blocking finding was disposed: {names}"
+            else:
+                reason = (
+                    "the review round carried no blocking finding "
+                    f"({len(follow_ons)} follow-on finding(s))"
+                )
             _record_repair_dispatch(
                 run_id,
                 status="decline-only",
