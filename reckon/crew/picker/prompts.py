@@ -172,6 +172,18 @@ _GLOSSARY: dict[str, str] = {
         "is greater than zero; an absent key means no coordinator moved this "
         "candidate's pick away in the window."
     ),
+    "prior_outcomes": (
+        "A candidate's lane model key's earlier generations, rendered only for a "
+        "candidate whose own model id carries too few outcomes to weigh on their "
+        "own. It uses the same passed, failed, not-run and unknown counts as "
+        "outcomes, but over only the runs recorded under this candidate's lane "
+        "and model key with a different model id, so a key re-pointed to a new "
+        "generation shows the record its predecessor built. model_ids names each "
+        "of those earlier ids. Read it as a prior: it is the key's own history "
+        "weighed below the candidate's own outcomes, never in place of them, and "
+        "it is absent once the candidate's own outcomes are enough to weigh on "
+        "their own."
+    ),
     "context": (
         "A candidate's context block. window_tokens is the input window that "
         "gates the lane; estimated_tokens is this node's deterministic input "
@@ -300,6 +312,17 @@ def _candidate_state(candidate: Any) -> dict[str, Any]:
         # before this fact existed and the prompt keeps within its size budget.
         # An absent key means neither the model nor its lane declares one.
         **({"suits": candidate.suits} if getattr(candidate, "suits", None) else {}),
+        # The prior block is rendered only for a candidate whose own model id
+        # carries too few outcomes to weigh on their own, the way moved_in is.
+        # A candidate standing on its own record carries no key, so a state
+        # whose every candidate already has history is exactly as large as it
+        # was before prior blocks existed and the prompt keeps within its size
+        # budget. An absent key means the candidate carries no prior block.
+        **(
+            {"prior_outcomes": candidate.prior_outcomes}
+            if getattr(candidate, "prior_outcomes", None)
+            else {}
+        ),
         "context": getattr(candidate, "context", None),
         "budget_source": getattr(candidate, "budget_source", None),
         "budget_age_s": getattr(candidate, "budget_age_s", None),

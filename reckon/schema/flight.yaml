@@ -331,6 +331,18 @@ slots:
       A per-dispatch route override takes precedence over this layered value.
     range: PickerMode
 
+  prior_outcome_threshold:
+    description: >-
+      How many of a lane model candidate's own recorded outcomes it must carry
+      before it stands on them alone. Below this figure the candidate also
+      carries a prior block: the tallies of runs recorded under the same lane
+      and model key with an earlier model id, so a key re-pointed to a new
+      generation starts from its key's record rather than from nothing. At or
+      above it the candidate carries no prior block, so a candidate with enough
+      history of its own renders exactly as it did before prior blocks existed.
+    range: integer
+    minimum_value: 1
+
   gates:
     range: GateConfig
 
@@ -1096,6 +1108,7 @@ classes:
     description: Dispatch routing policy, overridable per dispatch.
     slots:
       - picker
+      - prior_outcome_threshold
 
   ReviewConfig:
     description: >-
