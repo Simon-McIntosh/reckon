@@ -1,0 +1,46 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_crew_launch_failure.py::test_a_launch_that_wrote_a_turn_is_not_a_launch_failure"
+  ],
+  "completed_at": "2026-10-20T22:03:28.594Z",
+  "dispatched_at": "2026-10-20T21:48:02Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_checks.py",
+      "line": "611",
+      "severity": "follow-on",
+      "text": "follow-on: _names_a_figure_record re-derives the review store's rubric-in-filename convention (f\"{FIGURE_REVIEW_RUBRIC}.\" in path.name) that review.review_path (reckon/crew/review.py:2098) is the sole owner of, and _figure_review_files (promotion_checks.py:578) re-derives the candidate-path enumeration (staging glob plus committed run directory) that review.stored_record (reckon/crew/review.py:3566-3588) owns. Neither extends its owner: a change to the store's figure-file naming or layout would silently stop this guard recognising its own subject and it would fail open in exactly the class it was added to close. The read half does reuse the owner (stored_record skips unreadable files into the caller's skipped list), so this is a partial duplication rather than a from-scratch reimplementation."
+    },
+    {
+      "file": "reckon/crew/promotion_checks.py",
+      "line": "587",
+      "severity": "follow-on",
+      "text": "follow-on: the head-arm gate log the manifest names for this delta's code (logs/gate-unreadable-figure.log) records \"# revision: b91979eb6\" over an uncommitted working tree, not the committed revisions febf84aed or bafe7eb91, so a reader resolving the manifest's gate to the recorded head sha finds no log naming it. I re-ran the process's own suite in the run's worktree at bafe7eb91 and confirmed 6 passed, so the code is sound; the gap is in the recorded provenance of the head arm, not in the behaviour."
+    },
+    {
+      "file": "tests/test_crew_launch_failure.py",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the coordinator's population head arm (coordinator-population-head.log, 7 failed / 844 passed at b91979eb6) adds test_a_launch_that_wrote_a_turn_is_not_a_launch_failure against the base arm (coordinator-population-base.log, 6 failed / 841 passed at d839407e). The file is not touched by this node and the failure is unrelated to the figure guard, so it reads as flaky or environmental, but it is the one added failure id the two arms report and is recorded so a reader can attribute or retire it."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make crew complete refuse a run whose newest figure review carries a blocking finding with no disposition, naming the figure and the finding; the delta read here adds the companion refusal for a figure review that cannot be read (reckon/crew/promotion_checks.py:695-704), while the blocking-finding refusal at :709-719 names the figure path, its line and the finding's claim.\nVERDICT done_when: the done-when names tests/test_a_blocking_figure_finding_refuses_promotion.py; the manifest records the run (6 passed, EXIT=0 in logs/gate-unreadable-figure.log, re-confirmed by me at bafe7eb91) and the two declared mutations with their red logs.\nVERDICT write_paths: read the manifest's declared paths (reckon/crew/promotion_checks.py, tests/test_a_blocking_figure_finding_refuses_promotion.py, docs/evidence/fragments/scoring-should-stop-a-promotion/a-blocking-figure-finding-refuses-promotion.html, docs/figures/scoring-should-stop-a-promotion/a-blocking-figure-finding-refuses-promotion); every path in the diff b91979eb6..bafe7eb91 is inside them and no other path is touched.\nVERDICT manifest: read; it states status complete, commits 02a433003 b91979eb6 febf84aed bafe7eb91, the gate as 6 passed EXIT=0 at logs/gate-unreadable-figure.log, the declared negative control at logs/negative-control.log (2 failed EXIT=1) and a second control at logs/unreadable-record-control.log (1 failed EXIT=1).\nVERDICT diff: read commit by commit against the base b91979eb6; febf84aed adds _figure_review_files, _names_a_figure_record, _unreadable_figure_review_records, _describe_read_failures and the unreadable refusal branch in promotion_checks.py plus the two new test cases, and bafe7eb91 updates the landing fragment; 215 insertions across the three declared files and no production call-site signature changes.\nCALL_SITES: reckon/crew/promotion.py:475 (promotion complete path calls _landing_preconditions), reckon/crew/promotion.py:1151 (the landing path calls _landing_preconditions), reckon/crew/promotion_checks.py:2168 (the guard invoked from _landing_preconditions inside its attempt wrapper, whose collected refusals are raised together)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_checks.py:695-704 refuses when _unreadable_figure_review_records names a figure file for the run, and :709-719 refuses with the figure path, its line and the finding's claim; the delta's refusal is adjacent to the stated goal rather than the goal itself.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/gate-unreadable-figure.log records 6 passed EXIT=0 for the named test, but its header names revision b91979eb6 rather than the committed head bafe7eb91, so the head arm's recorded revision is not the revision it measured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff b91979eb6..bafe7eb91 touches only reckon/crew/promotion_checks.py, tests/test_a_blocking_figure_finding_refuses_promotion.py and the declared landing fragment.\nSCORE durability: 19\nJUSTIFICATION durability: logs/unreadable-record-control.log shows the existence question forced empty (unreadable = []) reddens tests/test_a_blocking_figure_finding_refuses_promotion.py::test_a_figure_review_that_cannot_be_read_refuses_the_promotion alone (1 failed, 5 passed, EXIT=1), and the no-refuse case for an unreadable text record pins the figure-name filter.\nSCORE fit: 16\nJUSTIFICATION fit: the new helpers follow the module's mechanism-named docstring style and its module-level review_module import (reckon/crew/promotion_checks.py:24), but the enumeration in _figure_review_files:578 restates store layout the module elsewhere treats as the store's own.\nSCORE reuse: 12\nJUSTIFICATION reuse: the read extends review.stored_record's skipped contract, but _names_a_figure_record:611 and _figure_review_files:578 re-derive the naming and layout that reckon/crew/review.py:2098 review_path and :3501 stored_record own without calling them.\nFINDING reckon/crew/promotion_checks.py:611 follow-on: _names_a_figure_record re-derives review.review_path's figure-filename convention and _figure_review_files re-derives the store's candidate enumeration; a store naming change would silently stop the guard recognising its subject and it would fail open.\nFINDING reckon/crew/promotion_checks.py:587 follow-on: the head-arm gate log names revision b91979eb6 over an uncommitted tree, not the committed head bafe7eb91, so the recorded evidence does not name the revision it measured.\nFINDING tests/test_crew_launch_failure.py:1 follow-on: the population arms report one added failure id against the node's head, in a file the node does not touch; recorded for attribution.\n",
+  "review_run_id": "r-20261020T214715225417-review-of-a-blocking-figure-finding-refuses-promotion-bafe7eb91061",
+  "reviewed_base_sha": "b91979eb60d26d58254edb164a94778ec5fc3ee2",
+  "reviewed_head_sha": "bafe7eb91061614e4f6447b6053172630f541c32",
+  "reviewed_run_id": "r-20261020T165831599907-a-blocking-figure-finding-refuses-promotion",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 12,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T22:09:24.697489+00:00",
+  "total": 100
+}
