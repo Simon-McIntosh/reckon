@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:26-30 CrewGroup.get_command resolving a retired name through tombstone_command",
+    "reckon/crew/prompts.py:641-645 emitting `crew check --manifest --run` into every worker brief",
+    "reckon/crew/obligations.py:394 emitting `crew repair --review`",
+    "reckon/crew/recovery_classification.py:703 emitting `crew repair --run ... --status`",
+    "reckon/crew/recovery_review_subject.py:416 emitting `crew check --review --record`"
+  ],
+  "completed_at": "2026-10-20T06:48:51.811Z",
+  "dispatched_at": "2026-10-20T06:29:47Z",
+  "findings": [
+    {
+      "file": "tests/test_run_state_reads_what_the_worker_reached.py",
+      "line": "197",
+      "severity": "blocking",
+      "text": "blocking: two cases (`:170`, `:206`) still invoke the retired `repair-status` and fail at head (out-of-scope-caller.log records both red under the tombstone), so the goal's \"moving every caller to the new form\" is unmet and the tree is red at the reviewed head; the repair belongs to a new scoped node, not to this one."
+    },
+    {
+      "file": "tests/test_crew_families_fold.py",
+      "line": "682",
+      "severity": "follow-on",
+      "text": "follow-on: `assert len(visible_family) == len(REPAIR_AND_CHECK_NAMES) - 2` is true of every possible census \u2014 the line above fixes visible_family at a two-element set and `REPAIR_AND_CHECK_NAMES` is the test's own four-entry dict \u2014 so it can never fail and the count in the enclosing test's name is not checked anywhere."
+    },
+    {
+      "file": "tests/test_crew_families_fold.py",
+      "line": "677",
+      "severity": "follow-on",
+      "text": "follow-on: the head commit replaced the only assertion holding the done_when's leaf bound (`assert len(leaves) <= 42`) with a membership claim, so nothing now reddens if an unrelated change inflates the visible census."
+    },
+    {
+      "file": "reckon/crew/reports.py",
+      "line": "1760",
+      "severity": "follow-on",
+      "text": "the prose still names the retired `check-manifest` as the surface a reviewer runs (also reckon/crew/reports.py:2390 and reckon/crew/promotion_scope.py:77); those files are outside this node's grant, so the stale text needs a separate cleanup."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit from e65cc2eab; 4ca60680e folds the four verbs, adds the tombstone rows, migrates the emitted command strings in obligations.py, prompts.py, recovery_classification.py and recovery_review_subject.py and 15 test callers, and 1e46d492d adds the landing fragment and relaxes the leaf guard in tests/test_crew_families_fold.py.",
+    "done_when": "the fence's gate names a 21-file pytest command and zero added failures against the base arm; base-gate.log (header revision e65cc2eab, `1 failed, 251 passed`, EXIT=1) and final-gate.log (header revision 1e46d492d, `1 failed, 255 passed`, EXIT=1) carry the same single failure id tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window, so the added count is zero; the leaf clause holds at 42 as I read from the tree at head, but the head commit removed the assertion that held it (tests/test_crew_families_fold.py:677-682).",
+    "goal": "the goal is to fold repair-status/repair-review into `crew repair --status|--review` and check-manifest/check-review into `crew check --manifest|--review`, tombstoning the four names and moving every caller; reckon/crew_run_commands.py:895 crew_check and reckon/crew_run_commands.py:949 crew_repair implement the parents, reckon/crew/tombstones.py:142-165 registers the rows, and I reproduced all four retired names at head: each exits 10 naming `crew repair --status`, `crew repair --review`, `crew check --manifest`, `crew check --review` with the caller's arguments carried; one caller is unmoved and its cases fail (tests/test_run_state_reads_what_the_worker_reached.py:197).",
+    "manifest": "read; it reads status complete, names base-gate.log, head-gate.log and final-gate.log, records the negative control, and puts the out-of-grant failing caller under follow_ons rather than claiming it green.",
+    "write_paths": "read the 28 declared paths in the manifest against `git diff --name-only at head`; 27 paths changed and none falls outside the grant."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_families_fold.py:557-574 reddens if a tombstone row is dropped or its flag changes, but :682 compares the census against the test's own REPAIR_AND_CHECK_NAMES and the removed `len(leaves) <= 42` leaves the done_when's count clause unguarded.",
+    "evidence": "the gate logs the manifest names carry revision headers and EXIT= tails. The done_when's leaf clause is measured by nothing after tests/test_crew_families_fold.py:677-682, so a relaxation there would go unreported by the gate even though I read 42 leaves at head.",
+    "fit": "tests/test_crew_families_fold.py:677 follows the file's existing name each retired verb's own name and flags carry into the parent, matching the budget family, but its name claims a four-into-two count that :682 does not check.",
+    "goal_fidelity": "reckon/crew_run_commands.py:895 and :949 fold the four verbs behind the two parents and reckon/crew/tombstones.py:142-165 answers each retired name, but the goal's \"moving every caller\" is unmet at tests/test_run_state_reads_what_the_worker_reached.py:197, whose invocation still reaches the tombstone.",
+    "reuse": "reckon/crew_run_commands.py:904 delegates to the existing crew_check_manifest and :958/:961 to the existing crew_repair_status and crew_repair_review owners, and reckon/crew/tombstones.py extends the existing TOMBSTONES registry rather than adding a second retirement mechanism; a search over reckon/crew for another verb-folding owner found only that registry.",
+    "scope_discipline": "`git diff --name-only e65cc2eab 1e46d492d` returns 27 paths against the manifest's 28 declared write paths and none falls outside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to fold repair-status/repair-review into `crew repair --status|--review` and check-manifest/check-review into `crew check --manifest|--review`, tombstoning the four names and moving every caller; reckon/crew_run_commands.py:895 crew_check and reckon/crew_run_commands.py:949 crew_repair implement the parents, reckon/crew/tombstones.py:142-165 registers the rows, and I reproduced all four retired names at head: each exits 10 naming `crew repair --status`, `crew repair --review`, `crew check --manifest`, `crew check --review` with the caller's arguments carried; one caller is unmoved and its cases fail (tests/test_run_state_reads_what_the_worker_reached.py:197).\nVERDICT done_when: the fence's gate names a 21-file pytest command and zero added failures against the base arm; base-gate.log (header revision e65cc2eab, `1 failed, 251 passed`, EXIT=1) and final-gate.log (header revision 1e46d492d, `1 failed, 255 passed`, EXIT=1) carry the same single failure id tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window, so the added count is zero; the leaf clause holds at 42 as I read from the tree at head, but the head commit removed the assertion that held it (tests/test_crew_families_fold.py:677-682).\nVERDICT write_paths: read the 28 declared paths in the manifest against `git diff --name-only at head`; 27 paths changed and none falls outside the grant.\nVERDICT manifest: read; it reads status complete, names base-gate.log, head-gate.log and final-gate.log, records the negative control, and puts the out-of-grant failing caller under follow_ons rather than claiming it green.\nVERDICT diff: read commit by commit from e65cc2eab; 4ca60680e folds the four verbs, adds the tombstone rows, migrates the emitted command strings in obligations.py, prompts.py, recovery_classification.py and recovery_review_subject.py and 15 test callers, and 1e46d492d adds the landing fragment and relaxes the leaf guard in tests/test_crew_families_fold.py.\nCALL_SITES: reckon/crew_dispatch_commands.py:26-30 CrewGroup.get_command resolving a retired name through tombstone_command, reckon/crew/prompts.py:641-645 emitting `crew check --manifest --run`, reckon/crew/obligations.py:394 emitting `crew repair --review`, reckon/crew/recovery_classification.py:703 emitting `crew repair --run ... --status`, reckon/crew/recovery_review_subject.py:416 emitting `crew check --review --record`\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:895 and :949 fold the four verbs behind the two parents and reckon/crew/tombstones.py:142-165 answers each retired name, but the goal's \"moving every caller\" is unmet at tests/test_run_state_reads_what_the_worker_reached.py:197, whose invocation still reaches the tombstone.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate logs the manifest names carry revision headers and EXIT= tails. The done_when's leaf clause is measured by nothing after tests/test_crew_families_fold.py:677-682, so a relaxation there would go unreported by the gate even though I read 42 leaves at head.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: `git diff --name-only e65cc2eab 1e46d492d` returns 27 paths against the manifest's 28 declared write paths and none falls outside them.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_crew_families_fold.py:557-574 reddens if a tombstone row is dropped or its flag changes, but :682 compares the census against the test's own REPAIR_AND_CHECK_NAMES and the removed `len(leaves) <= 42` leaves the done_when's count clause unguarded.\nSCORE fit: 17\nJUSTIFICATION fit: tests/test_crew_families_fold.py:677 follows the file's existing name each retired verb's own name and flags carry into the parent, matching the budget family, but its name claims a four-into-two count that :682 does not check.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew_run_commands.py:904 delegates to the existing crew_check_manifest and :958/:961 to the existing crew_repair_status and crew_repair_review owners, and reckon/crew/tombstones.py extends the existing TOMBSTONES registry rather than adding a second retirement mechanism; a search over reckon/crew for another verb-folding owner found only that registry.\nFINDING tests/test_run_state_reads_what_the_worker_reached.py:197 blocking: two cases (`:170`, `:206`) still invoke the retired `repair-status` and fail at head (out-of-scope-caller.log records both red under the tombstone), so the goal's \"moving every caller to the new form\" is unmet and the tree is red at the reviewed head; the repair belongs to a new scoped node, not to this one.\nFINDING tests/test_crew_families_fold.py:682 follow-on: `assert len(visible_family) == len(REPAIR_AND_CHECK_NAMES) - 2` is true of every possible census \u2014 the line above fixes visible_family at a two-element set and `REPAIR_AND_CHECK_NAMES` is the test's own four-entry dict \u2014 so it can never fail and the count in the enclosing test's name is not checked anywhere.\nFINDING tests/test_crew_families_fold.py:677 follow-on: the head commit replaced the only assertion holding the done_when's leaf bound (`assert len(leaves) <= 42`) with a membership claim, so nothing now reddens if an unrelated change inflates the visible census.\nFINDING reckon/crew/reports.py:1760 follow-on: the prose still names the retired `check-manifest` as the surface a reviewer runs (also reckon/crew/reports.py:2390 and reckon/crew/promotion_scope.py:77); those files are outside this node's grant, so the stale text needs a separate cleanup.\n",
+  "review_run_id": "r-20261020T062904944848-review-of-cso-repair-and-check-families-fold-1e46d492d277",
+  "reviewed_base_sha": "e65cc2eab155ddbbb8997240200137eb1884417e",
+  "reviewed_head_sha": "1e46d492d27785d6dc881024e07851f32ddb564d",
+  "reviewed_run_id": "r-20261020T055723778677-cso-repair-and-check-families-fold",
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T06:43:18.157772+00:00",
+  "total": 99
+}
