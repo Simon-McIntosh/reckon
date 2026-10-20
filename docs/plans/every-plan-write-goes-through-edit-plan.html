@@ -26,7 +26,7 @@
   <title>Every Plan Write Goes Through edit_plan | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="62">
+<meta name="plan-version" content="63">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -481,6 +481,9 @@
 </div>
 <div class="r-comment" data-section="s13" data-id="c-close-s13" data-who="reckon-build" data-when="2026-10-20T07:40:00Z">
     <div class="r-comment-body"><p>§13 landed: a tool that gains an optional parameter is served with a <code>schema_note</code> instead of a reconnect, and the compatibility rule runs from the checkout, so future rule changes reach running servers (head <code>8a0feee7f</code>). Zero failures added; reviewed 112/120. Each session needs one more reconnect to pick it up. <a href="/reckon/evidence/archive/every-plan-write-goes-through-edit-plan-landed.html#s13">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261020T062136186026-epw-an-added-parameter-needs-no-reconnect" data-who="reckon-build" data-when="2026-10-20T07:29:18Z">
+    <div class="r-comment-body"><p>§13 landed: the readiness probe reports each tool&#x27;s parameter names beside a new required subset on a sibling key and the parent sends its registered parameters with the probe, so the child holds the rule (signature_compatible in reckon/served_code.py) and answers compatible per tool — a compatible added optional parameter is served on the current code with a schema_note naming the parameters the client cannot send until it reconnects, while a registered parameter removed or made required, or a new required one, still returns stale_server_code. A case now spawns the shipped child against a copy of the package whose rule judges a dropped parameter compatible, and the parent serves that call from the child while the image&#x27;s own rule judges the same change a refusal, so the verdict is shown to be the tree&#x27;s. The probe keeps params as the unchanged name list so a pre-verdict parent compares names as before. Gate 1 failed / 24 passed at head 81383b26 against 1 failed / 17 passed at base, zero added failures (see failure_attribution).</p></div>
 </div>
 </section>
 </main>
