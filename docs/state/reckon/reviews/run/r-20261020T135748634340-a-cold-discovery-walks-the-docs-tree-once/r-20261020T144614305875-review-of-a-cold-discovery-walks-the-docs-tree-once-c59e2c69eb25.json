@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T135748634340-a-cold-discovery-walks-the-docs-tree-once/head-count.log",
+  "base_log_revision": "4c7a6f0bfe157c3da8da5db235ca908c93650c5d",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T135748634340-a-cold-discovery-walks-the-docs-tree-once/base-count.log",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/serve.py:1249",
+    "reckon/serve.py:1418",
+    "reckon/serve.py:1578",
+    "reckon/serve.py:1589",
+    "reckon/metadata_index.py:958",
+    "reckon/resources.py:596"
+  ],
+  "completed_at": "2026-10-20T15:07:52.577Z",
+  "dispatched_at": "2026-10-20T14:47:39Z",
+  "findings": [
+    {
+      "file": "reckon/metadata_index.py",
+      "line": "147",
+      "severity": "follow-on",
+      "text": "follow-on: _stat_signature re-derives the four-field stat identity the repository already owns in file_memo.file_signature (reckon/file_memo.py:271, imported at reckon/metadata_index.py:44) and mirrors at reckon/ledger.py:1035 and reckon/serve.py:723, so the field ordering now lives in four places and can drift."
+    },
+    {
+      "file": "tests/test_a_cold_discovery_walks_the_tree_once.py",
+      "line": "107",
+      "severity": "follow-on",
+      "text": "follow-on: the at-most-1.5-calls-per-file ceiling guards the change-signature stat reuse and the narrowed resource scan but not the figures.py change, because reverting reckon/figures.py:153 to its own three rglob walks adds only a few calls in the three-figure fixture and still satisfies the ceiling."
+    }
+  ],
+  "head_log_revision": "c59e2c69eb25dbfd4aca8083e2847144e55fab7d",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Read the single commit c59e2c69eb25 against 4c7a6f0bf: five files, +316/-37, adding a shared covered-file scope, a persisted host-stable stat signature, the candidate-scoped resource scan and the count test.",
+    "done_when": "The done_when requires a temporary tree of at least 2,000 covered files with a stat/lstat/scandir count at or below 1.5 per covered file plus a negative control; tests/test_a_cold_discovery_walks_the_tree_once.py:107 asserts that ceiling and the manifest's head-count.log records 2,192 calls at EXIT=0 against a base arm of 6,234.",
+    "goal": "The source node's goal is to make one discovery derivation stat each covered docs file at most once; the landed diff routes the change-signature walk, the resource scan and the figure rows through a shared covered-file observation in reckon/metadata_index.py:94-140 and reckon/serve.py:1418-1422.",
+    "manifest": "Read; it records commit c59e2c69eb25, the 2,192/6,234/4,192 call counts, the Nova 86.631 s to 57.787 s pair and the negative-control log path, though its baseline_suite and after_suite fields are empty.",
+    "write_paths": "The source prompt grants six exclusive paths; the diff changes exactly five of them \u2014 reckon/metadata_index.py, reckon/serve.py, reckon/figures.py, tests/test_a_cold_discovery_walks_the_tree_once.py and docs/evidence/fragments/the-site-answers-fast-and-agrees/a-cold-discovery-walks-the-docs-tree-once.html \u2014 with the declared docs/figures directory left unused."
+  },
+  "justifications": {
+    "durability": "tests/test_a_cold_discovery_walks_the_tree_once.py:107 fails if the change-signature walk stops reusing covered_stat, which the negative-control.log shows reddens it at 4,192, but the same ceiling does not catch a regression confined to reckon/figures.py:153.",
+    "evidence": "tests/test_a_cold_discovery_walks_the_tree_once.py:107 asserts the done_when's 1.5-per-file ceiling and the manifest's head-count.log records 2,192 calls at EXIT=0, the base arm 6,234 at EXIT=1 and the negative control 4,192 at EXIT=1.",
+    "fit": "reckon/metadata_index.py:94 follows the module's existing ContextVar idiom of reckon/metadata_index.py:79 and introduces no name a naming rule forbids.",
+    "goal_fidelity": "reckon/serve.py:1249 and reckon/serve.py:1589 take their file stat from metadata_index.covered_stat instead of path.stat(), so the signature walk and the figure revision share one observation per covered file.",
+    "reuse": "reckon/metadata_index.py:147 adds a fourth ordered stat-identity helper beside the owner file_memo.file_signature at reckon/file_memo.py:271 and its mirrors at reckon/ledger.py:1035 and reckon/serve.py:723 instead of extending that owner.",
+    "scope_discipline": "every path in the 4c7a6f0bf..c59e2c69 diff lies inside the source prompt's declared write paths, and no declared path is written outside the goal."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node's goal is to make one discovery derivation stat each covered docs file at most once; the landed diff routes the change-signature walk, the resource scan and the figure rows through a shared covered-file observation in reckon/metadata_index.py:94-140 and reckon/serve.py:1418-1422.\nVERDICT done_when: The done_when requires a temporary tree of at least 2,000 covered files with a stat/lstat/scandir count at or below 1.5 per covered file plus a negative control; tests/test_a_cold_discovery_walks_the_tree_once.py:107 asserts that ceiling and the manifest's head-count.log records 2,192 calls at EXIT=0 against a base arm of 6,234.\nVERDICT write_paths: The source prompt grants six exclusive paths; the diff changes exactly five of them \u2014 reckon/metadata_index.py, reckon/serve.py, reckon/figures.py, tests/test_a_cold_discovery_walks_the_tree_once.py and docs/evidence/fragments/the-site-answers-fast-and-agrees/a-cold-discovery-walks-the-docs-tree-once.html \u2014 with the declared docs/figures directory left unused.\nVERDICT manifest: Read; it records commit c59e2c69eb25, the 2,192/6,234/4,192 call counts, the Nova 86.631 s to 57.787 s pair and the negative-control log path, though its baseline_suite and after_suite fields are empty.\nVERDICT diff: Read the single commit c59e2c69eb25 against 4c7a6f0bf: five files, +316/-37, adding a shared covered-file scope, a persisted host-stable stat signature, the candidate-scoped resource scan and the count test.\nCALL_SITES: reckon/serve.py:1249, reckon/serve.py:1418, reckon/serve.py:1578, reckon/serve.py:1589, reckon/metadata_index.py:958, reckon/resources.py:596\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/serve.py:1249 and reckon/serve.py:1589 take their file stat from metadata_index.covered_stat instead of path.stat(), so the signature walk and the figure revision share one observation per covered file.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_cold_discovery_walks_the_tree_once.py:107 asserts the done_when's 1.5-per-file ceiling and the manifest's head-count.log records 2,192 calls at EXIT=0, the base arm 6,234 at EXIT=1 and the negative control 4,192 at EXIT=1.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the 4c7a6f0bf..c59e2c69 diff lies inside the source prompt's declared write paths, and no declared path is written outside the goal.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_cold_discovery_walks_the_tree_once.py:107 fails if the change-signature walk stops reusing covered_stat, which the negative-control.log shows reddens it at 4,192, but the same ceiling does not catch a regression confined to reckon/figures.py:153.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/metadata_index.py:94 follows the module's existing ContextVar idiom of reckon/metadata_index.py:79 and introduces no name a naming rule forbids.\nSCORE reuse: 13\nJUSTIFICATION reuse: reckon/metadata_index.py:147 adds a fourth ordered stat-identity helper beside the owner file_memo.file_signature at reckon/file_memo.py:271 and its mirrors at reckon/ledger.py:1035 and reckon/serve.py:723 instead of extending that owner.\nFINDING reckon/metadata_index.py:147 follow-on: _stat_signature re-derives the four-field stat identity the repository already owns in file_memo.file_signature (reckon/file_memo.py:271, imported at reckon/metadata_index.py:44) and mirrors at reckon/ledger.py:1035 and reckon/serve.py:723, so the field ordering now lives in four places and can drift.\nFINDING tests/test_a_cold_discovery_walks_the_tree_once.py:107 follow-on: the at-most-1.5-calls-per-file ceiling guards the change-signature stat reuse and the narrowed resource scan but not the figures.py change, because reverting reckon/figures.py:153 to its own three rglob walks adds only a few calls in the three-figure fixture and still satisfies the ceiling.\n",
+  "review_run_id": "r-20261020T144614305875-review-of-a-cold-discovery-walks-the-docs-tree-once-c59e2c69eb25",
+  "reviewed_base_sha": "4c7a6f0bfe157c3da8da5db235ca908c93650c5d",
+  "reviewed_commits": [
+    "c59e2c69eb25dbfd4aca8083e2847144e55fab7d"
+  ],
+  "reviewed_head_sha": "c59e2c69eb25dbfd4aca8083e2847144e55fab7d",
+  "reviewed_run_id": "r-20261020T135748634340-a-cold-discovery-walks-the-docs-tree-once",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 13,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T15:15:48.860526+00:00",
+  "total": 98
+}
