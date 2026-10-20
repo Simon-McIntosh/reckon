@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T00:36:11.487Z",
+  "dispatched_at": "2026-10-20T00:23:28Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:352",
+      "id": "reasoning-1",
+      "reason": "`_review_is_complete` (reckon/crew/recovery_review_subject.py:1021) has signature `-> bool` and returns no measure, so naming the missing measure requires either editing that file \u2014 which is not in \u00a710's write paths and is written by \u00a77's `cso-repair-and-check-families-fold` (plan:247) \u2014 or duplicating its completeness rule inside `reckon/crew/recovery_review_delivery.py`, which the Deliverable forbids in the same breath (\"`_delivered_review_record` stays the one place that decides delivery\"); the plan must either add the file to \u00a710's write paths with the ordering edge that implies, or state that the missing measure is computed in the delivery module.",
+      "text": "the Deliverable says the refusal \"names the measure `_review_is_complete` in `reckon/crew/recovery_review_subject.py` found missing",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "8642b48f104eb73c06a95922119f587a551fb4ab1e439f1fbe19f1d826e00f3f",
+  "plan_slug": "the-crew-surface-is-one-tool-and-a-few-verbs",
+  "plan_version": 36,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T002243979707-plan-review-of-the-crew-surface-is-one-tool-and-a-few-verbs",
+  "reviewed_blob_sha": "d2c34f8cbfedc2a992033296fb984a11de74479e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/promotion_checks.py`, `reckon/crew/recovery_review_delivery.py`, `reckon/crew/recovery_review_subject.py` and every named symbol (`_resolve_promotion_outcome`, `_delivered_review_record`, `_review_is_complete`) resolve, and both cited run ids resolve to run directories.",
+    "done_when": "pass \u2014 the done-when is measurable and names a negative control (a delivered record still promotes; collapsing the five reasons into one generic message must make the per-condition cases fail).",
+    "evidence_paths": "pass \u2014 the deliverable is a repo module pair plus `tests/test_a_review_refusal_names_its_failed_condition.py`; no gate log or artifact is routed to a scratch or node-local path.",
+    "naming": "pass \u2014 \u00a710 introduces no plan label, stage name, ticket number or version tag, and the new test file is named by the mechanism it checks.",
+    "reasoning": "a finding \u2014 \u00a710's deliverable names a measure reported by `_review_is_complete`, a function outside \u00a710's write paths that returns only a boolean.",
+    "single_goal": "pass \u2014 \u00a710 carries one deliverable: the refusal names the failed delivery condition.",
+    "wiring": "pass \u2014 \u00a710's `depends-on` s3 is done, and its declared write paths (`reckon/crew/recovery_review_delivery.py`, `reckon/crew/promotion_checks.py`, the new test) are written by no other section, so the driving followup's \"\u00a710 shares no write path with any of them\" holds as declared."
+  },
+  "section_digests": {
+    "_document": "4d4b24f4aec9178fd9d24a7442e96788d260da61249c8afd730e02ffe7cc56f6",
+    "s1": "7964ee282f4a5255288aa84785a54dbc6a5fec9660f4cee9f9c892a0807894ee",
+    "s10": "07d214990a5d86bfb1d60883277f493b5fb31ca4207a65d017d6fab2405ee19c",
+    "s2": "be69292dc4744e91b19438c3129be40ac6c6138f02cd12656616dd3906a1d313",
+    "s3": "bfc4b93502cb69a2a5878f9c282da2cbab878f4f49482f263fdfc074dfce4ba8",
+    "s4": "2feb22a10d53f02161e33412c6f491a2718ee9b88ffede06e39b7fc15799f5d1",
+    "s5": "4a0b632aaec0c9b2538edeab874ccd9fd39723e2eef864da9ae65a3f72b6695c",
+    "s6": "e037f188e4e0784a7a39a208f621ec226cacdda5308e5f226d6ba3e104345522",
+    "s7": "7a66876ae7177f3cc833a9fc9c2885beceef03cf567843584a885f144155809b",
+    "s8": "beb6c1568fe326e8af87c393c93ac9e71dec60ad9a9247b47ffbec9d08fc76a6",
+    "s9": "7035e56c9914aad3c602d84869935ce1d75b2eba9a855d32377d43998ebac231"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T00:38:12.445996+00:00"
+}
