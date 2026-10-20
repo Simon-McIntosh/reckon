@@ -1,0 +1,14 @@
+<section id="a-schedule-failure-leaves-discovery-served" class="r-evidence">
+  <h3 id="a-schedule-failure-leaves-discovery-served-title">A schedule failure leaves discovery served</h3>
+  <p>The discovery handler attaches the schedule per read from the live crew rows. That derivation can fail while the stored inventory is already in hand, so a failure attaching it no longer fails the read: the payload carries the inventory with <code>schedule</code> null and the failure named in <code>schedule_error</code>, and the read logs the failure once. A failure reading the stored result itself is unchanged and still answers 500 with <code>distributed_project_state_invalid</code>. The degradation sits in one helper, <code>_attach_schedule_for_read</code>, which owns the try around <code>_attach_schedule</code>; the handler keeps the stored-result read and the attach in one error path so the mutation below restores the old behaviour by swapping the helper for the raw attach.</p>
+  <table id="a-schedule-failure-leaves-discovery-served-measure">
+    <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Before the fix: a temporary project whose live crew-row listing raises</td><td>The discovery read answers 500 with <code>distributed_project_state_invalid</code>; the first case fails at its 200 assertion, EXIT=1.</td></tr>
+      <tr><td>After the fix: same read</td><td>Answers 200 with its inventory, <code>schedule</code> null and <code>schedule_error</code> naming the crew-row failure; the serve logger carries exactly one line naming it. A later read with the listing restored carries the schedule again.</td></tr>
+      <tr><td>The stored-result read itself raises</td><td>Still answers 500 with <code>distributed_project_state_invalid</code>, so a catch that swallows the stored-result failure fails the case.</td></tr>
+      <tr><td>Negative control: put the attach back inside the handler's error path</td><td>Non-zero exit, two failing ids the head arm does not fail.</td></tr>
+      <tr><td>Source checks</td><td>Ruff: 19 findings on <code>reckon/serve.py</code> at base and 19 after; the new test file is clean and formatted. <code>reckon/serve.py</code> is within the 50,000 estimated-token bound.</td></tr>
+    </tbody>
+  </table>
+</section>

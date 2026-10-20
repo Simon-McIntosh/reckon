@@ -1774,6 +1774,35 @@ def _attach_schedule(
     return payload
 
 
+def _attach_schedule_for_read(
+    result: dict, project: str, mounts: dict[str, Path], reference: datetime
+) -> dict:
+    """Attach the schedule for one read, serving the inventory when it fails.
+
+    The schedule derives from the live crew rows, which can fail to list while
+    the stored inventory is already in hand. A failure attaching it must not
+    fail the read: the payload keeps its inventory with ``schedule`` null, so a
+    reader renders what was served, and the failure is named in
+    ``schedule_error`` and logged once for the read. It is safe to swallow
+    because the stored inventory and the schedule come from different reads,
+    and only the schedule is lost.
+    """
+
+    try:
+        return _attach_schedule(result, project, mounts, reference=reference)
+    except Exception as exc:  # noqa: BLE001
+        LOGGER.warning(
+            "Discovery for %s served without its schedule: %s: %s",
+            project,
+            type(exc).__name__,
+            exc,
+        )
+        payload = dict(result)
+        payload["schedule"] = None
+        payload["schedule_error"] = f"{type(exc).__name__}: {exc}"
+        return payload
+
+
 def _docs_relative(path: Path, docs_dir: Path) -> str | None:
     """Return a file's docs-relative posix path, or none when it sits outside.
 
@@ -3300,7 +3329,7 @@ class Handler(BaseHTTPRequestHandler):
             _note_tree_read(disc_mounts[project])
             try:
                 result, age = route_results._served_result(("discover", project))
-                result = _attach_schedule(
+                result = _attach_schedule_for_read(
                     result, project, disc_mounts, reference=datetime.now(UTC)
                 )
             except Exception as exc:  # noqa: BLE001
