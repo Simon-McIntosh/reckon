@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_a_producer_sweeps_only_on_change.py::test_quiet_cycles_list_nothing_and_spawn_no_git"
+  ],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:2698 watch_ticker calls check_model_catalogue",
+    "reckon/crew/model_catalogue.py:373 model_notices calls it with force=True",
+    "reckon/hooks/coordinator_obligations.py:705 format_checklist calls pending_model_notices",
+    "reckon/hooks/coordinator_obligations.py:967 _inject_list calls pending_model_notices",
+    "reckon/_flight_schema.py:401 binds probe_new_models from the resolved flight config"
+  ],
+  "completed_at": "2026-10-20T11:42:46.646Z",
+  "dispatched_at": "2026-10-20T11:33:37Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T104551937288-a-model-notice-reaches-the-session/manifest.md",
+      "line": "16",
+      "severity": "blocking",
+      "text": "blocking: after_suite.command is the placeholder string \"<the ten gate files listed in test_logs>\" rather than the literal command that ran, which the record contract forbids and promotion refuses; the head log's own '# command:' header at logs/head-arm-rerun.log:3 carries the real argv, so the field is repairable from it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T104551937288-a-model-notice-reaches-the-session/manifest.md",
+      "line": "8",
+      "severity": "follow-on",
+      "text": "follow-on: changed_paths lists eight paths and omits docs/evidence/fragments/lane-and-model-routing/a-model-notice-reaches-the-session.html, which commit afcfb8ee adds and the declared write paths include, so the node's own record of its footprint is incomplete."
+    },
+    {
+      "file": "reckon/hooks/coordinator_obligations.py",
+      "line": "606",
+      "severity": "follow-on",
+      "text": "follow-on: pending_model_notices re-implements the unacknowledged-notice read owned by reckon/crew/model_catalogue.py:369 model_notices (same snapshot path, same acknowledgement filter) without extending it, so the two definitions of \"unacknowledged\" can drift silently; the duplication is forced by the prompt-path rule that the hook must not import reckon.crew, so the remedy is to move the reader into the stdlib-only reckon/crew/obligation_snapshot.py that both sides already reach."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T104551937288-a-model-notice-reaches-the-session/logs/head-arm-rerun.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T104551937288-a-model-notice-reaches-the-session/logs/base-arm.log"
+  },
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "Read both commits against base 81afebde: 072895ccd changes the producer, the catalogue module, the hook and the flight schema across eight files, and afcfb8ee adds the evidence fragment, with nothing outside the declared scope.",
+    "done_when": "The measure names five cases in tests/test_a_model_notice_reaches_the_session.py, a base/head arm delta, both negative controls and ruff; the manifest records 2 failed/227 passed at 81afebde and 3 failed/231 passed at 072895ccd with logs/base-arm.log and logs/head-arm-rerun.log ending EXIT=1.",
+    "goal": "The goal is a producer refresh, one hook line and a single opt-in probe; reckon/crew/recovery_watch.py:2690-2700 runs the refresh inside the cadence gate, reckon/hooks/coordinator_obligations.py:705-707 appends the one line, and reckon/crew/model_catalogue.py:320-361 probes an opted-in lane once.",
+    "manifest": "Read; it names commits 072895ccd3f730cae8df8ff2900cea91508dbf41 and afcfb8ee2856f933f73506cc4c5b5291649e3d57 and both arms, but its after_suite.command at manifest.md:16 is the placeholder \"<the ten gate files listed in test_logs>\" rather than the command that ran.",
+    "write_paths": "The brief grants ten paths and git diff 81afebdeac78306914fd32f62850493b26bb9dc0..afcfb8ee2856f933f73506cc4c5b5291649e3d57 changes nine files, every one inside that grant."
+  },
+  "justifications": {
+    "durability": "tests/test_a_model_notice_reaches_the_session.py:175 and :253 fail when the age gate is dropped and when every refresh probes, as logs/negative-control-age-gate.log and logs/negative-control-probe-every-refresh.log show, and the same file's :187 lock case and :293 raise case redden on their own regressions.",
+    "evidence": "logs/base-arm.log ends 2 failed, 227 passed and logs/head-arm-rerun.log ends 3 failed, 231 passed, both EXIT=1, and both negative-control logs end one failed EXIT=1 on their named case, though after_suite.command at manifest.md:16 is a placeholder rather than the argv that ran.",
+    "fit": "reckon/crew/model_catalogue.py:272 and :297 follow the module's existing private-helper idiom and the lazy import at reckon/crew/recovery_watch.py:2694 matches the 'from reckon import _backends' import two blocks above it.",
+    "goal_fidelity": "reckon/crew/recovery_watch.py:2690-2700 refreshes inside the WATCHER_SWEEP_INTERVAL_SECONDS gate, reckon/hooks/coordinator_obligations.py:705-707 adds one line, and reckon/crew/model_catalogue.py:320-361 probes an opted-in lane once, which is the goal's three parts.",
+    "reuse": "the capability search over reckon/ found no owner for the catalog-id-to-model-name mapping at model_catalogue.py:297, but found reckon/crew/model_catalogue.py:369 model_notices already owning the unacknowledged-notice read that coordinator_obligations.py:606 duplicates.",
+    "scope_discipline": "git diff 81afebdeac78306914fd32f62850493b26bb9dc0..afcfb8ee2856f933f73506cc4c5b5291649e3d57 changes nine files and every one is inside the ten write paths the brief declares."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is a producer refresh, one hook line and a single opt-in probe; reckon/crew/recovery_watch.py:2690-2700 runs the refresh inside the cadence gate, reckon/hooks/coordinator_obligations.py:705-707 appends the one line, and reckon/crew/model_catalogue.py:320-361 probes an opted-in lane once.\nVERDICT done_when: The measure names five cases in tests/test_a_model_notice_reaches_the_session.py, a base/head arm delta, both negative controls and ruff; the manifest records 2 failed/227 passed at 81afebde and 3 failed/231 passed at 072895ccd with logs/base-arm.log and logs/head-arm-rerun.log ending EXIT=1.\nVERDICT write_paths: The brief grants ten paths and git diff 81afebdeac78306914fd32f62850493b26bb9dc0..afcfb8ee2856f933f73506cc4c5b5291649e3d57 changes nine files, every one inside that grant.\nVERDICT manifest: Read; it names commits 072895ccd3f730cae8df8ff2900cea91508dbf41 and afcfb8ee2856f933f73506cc4c5b5291649e3d57 and both arms, but its after_suite.command at manifest.md:16 is the placeholder \"<the ten gate files listed in test_logs>\" rather than the command that ran.\nVERDICT diff: Read both commits against base 81afebde: 072895ccd changes the producer, the catalogue module, the hook and the flight schema across eight files, and afcfb8ee adds the evidence fragment, with nothing outside the declared scope.\nCALL_SITES: reckon/crew/recovery_watch.py:2698 watch_ticker calls check_model_catalogue, reckon/crew/model_catalogue.py:373 model_notices calls it with force=True, reckon/hooks/coordinator_obligations.py:705 format_checklist calls pending_model_notices, reckon/hooks/coordinator_obligations.py:967 _inject_list calls pending_model_notices, reckon/_flight_schema.py:401 binds probe_new_models from the resolved flight config\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_watch.py:2690-2700 refreshes inside the WATCHER_SWEEP_INTERVAL_SECONDS gate, reckon/hooks/coordinator_obligations.py:705-707 adds one line, and reckon/crew/model_catalogue.py:320-361 probes an opted-in lane once, which is the goal's three parts.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/base-arm.log ends 2 failed, 227 passed and logs/head-arm-rerun.log ends 3 failed, 231 passed, both EXIT=1, and both negative-control logs end one failed EXIT=1 on their named case, though after_suite.command at manifest.md:16 is a placeholder rather than the argv that ran.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 81afebdeac78306914fd32f62850493b26bb9dc0..afcfb8ee2856f933f73506cc4c5b5291649e3d57 changes nine files and every one is inside the ten write paths the brief declares.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_model_notice_reaches_the_session.py:175 and :253 fail when the age gate is dropped and when every refresh probes, as logs/negative-control-age-gate.log and logs/negative-control-probe-every-refresh.log show, and the same file's :187 lock case and :293 raise case redden on their own regressions.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/model_catalogue.py:272 and :297 follow the module's existing private-helper idiom and the lazy import at reckon/crew/recovery_watch.py:2694 matches the 'from reckon import _backends' import two blocks above it.\nSCORE reuse: 5\nJUSTIFICATION reuse: the capability search over reckon/ found no owner for the catalog-id-to-model-name mapping at model_catalogue.py:297, but found reckon/crew/model_catalogue.py:369 model_notices already owning the unacknowledged-notice read that coordinator_obligations.py:606 duplicates.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T104551937288-a-model-notice-reaches-the-session/manifest.md:16 blocking: after_suite.command is the placeholder string \"<the ten gate files listed in test_logs>\" rather than the literal command that ran, which the record contract forbids and promotion refuses; the head log's own '# command:' header at logs/head-arm-rerun.log:3 carries the real argv, so the field is repairable from it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T104551937288-a-model-notice-reaches-the-session/manifest.md:8 follow-on: changed_paths lists eight paths and omits docs/evidence/fragments/lane-and-model-routing/a-model-notice-reaches-the-session.html, which commit afcfb8ee adds and the declared write paths include, so the node's own record of its footprint is incomplete.\nFINDING reckon/hooks/coordinator_obligations.py:606 follow-on: pending_model_notices re-implements the unacknowledged-notice read owned by reckon/crew/model_catalogue.py:369 model_notices (same snapshot path, same acknowledgement filter) without extending it, so the two definitions of \"unacknowledged\" can drift silently; the duplication is forced by the prompt-path rule that the hook must not import reckon.crew, so the remedy is to move the reader into the stdlib-only reckon/crew/obligation_snapshot.py that both sides already reach.\n",
+  "review_run_id": "r-20261020T113237805974-review-of-a-model-notice-reaches-the-session-afcfb8ee2856",
+  "reviewed_base_sha": "81afebdeac78306914fd32f62850493b26bb9dc0",
+  "reviewed_head_sha": "afcfb8ee2856f933f73506cc4c5b5291649e3d57",
+  "reviewed_run_id": "r-20261020T104551937288-a-model-notice-reaches-the-session",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T13:50:00+00:00",
+  "total": 97
+}
