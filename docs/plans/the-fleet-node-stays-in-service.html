@@ -19,11 +19,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-fleet-moves-to-a-new-node">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;}">
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="59">
+<meta name="plan-version" content="60">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -367,7 +367,7 @@
     </p>
 
     <h2 id="s8">&sect;8 &mdash; Move the fleet off the drained node</h2>
-    <section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="deferred" data-links=""></section>
+    <section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="done" data-links=""></section>
     <p>
       Deferred under the locked decision <code>move-timing</code>: the fleet does not
       move unless SDCC asks for clu-2002 back instead of resuming it in place. If it
@@ -837,6 +837,9 @@
 </div>
 <div class="r-comment" data-section="s13" data-id="c-close-s13" data-who="reckon-build" data-when="2026-10-20T04:55:00Z">
     <div class="r-comment-body"><p>§13 landed in merge <code>27336bad9</code> (head <code>ac8da7b3f</code>). The liveness read now takes one walk of the process table per beat, keyed by run mark and crew home: in a producer harness, <code>/proc</code> listings fell from 40 to 5 over 5 beats with 8 runs. The stop path still walks afresh. Eight tests were added, one of them through <code>_env_scan_run_pid</code>; the 34-file suite shows no added failure. The final review gave 112/120. <a href="/reckon/evidence/archive/the-fleet-node-stays-in-service-landed.html#s13">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-10-20T20:10:00Z">
+    <div class="r-comment-body"><p>The fleet left clu-2002 on 20 October. This plan's §8 node did not do it: the move was made outside this plan, and not through the move-ready gate <code>g-tfnsis-move-ready</code>. The trigger came at 17:27:55 CEST. A local-lane imas-codex worker cleaned up with <code>kill -TERM $(ps -eo pid= --ppid N)</code>. <code>ps</code> takes the union of <code>-e</code> and <code>--ppid</code>, so that command sent SIGTERM to every process on the node. Workers now run in a pid namespace of their own, so a worker cannot signal anything outside its own tree.</p><p>The fleet now runs as one allocation per project group: <code>1291586</code> on clu-2068 for the catch-all, <code>1291598</code> on clu-2069 for reckon, <code>1291599</code> on clu-2070 for nova and imas-efit, and <code>1291600</code> on clu-2071 for imas-codex and imas-ambix. At 22:06 CEST, sacct and scontrol read as follows. The old job <code>1281970</code> was still listed on clu-2002, and the node read <code>IDLE+COMPLETING+DRAIN</code>, still under the drain of 8 October (<code>Kill task failed [root@2026-10-08T08:11:39]</code>), not a new one. gpu-0003 read <code>MIXED+REBOOT_REQUESTED</code> with <code>NextState=RESUME</code>. The SDCC ticket draft is rewritten to match, at <code>~/.cache/reckon-fleet-drain/sdcc-ticket-draft.txt</code>. §5, the migrate rehearsal, stays deferred: the move did not use it, and the write-authority gap it records is still open.</p></div>
 </div>
 </section>
 </main>
