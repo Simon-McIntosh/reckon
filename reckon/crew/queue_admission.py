@@ -616,10 +616,16 @@ def _report_queued_failure(pointer: Mapping[str, Any]) -> None:
     ``failure_reported_at`` on the first stamp, and every later pass sees it and
     reports nothing. A stream that cannot be written is not fatal: the record on
     the pointer is the fact, and a session attaching later still reads it there.
+
+    A request the operator discarded during the pass is not reported at all. The
+    discard removes the pointer and records the departure, so the row would name
+    a run the fleet no longer holds and report a failure nobody is waiting on.
     """
     project = str(pointer.get("project") or "")
     run_id = str(pointer.get("run_id") or "")
     if not project or not run_id:
+        return
+    if _discarded_since(pointer):
         return
     try:
         from reckon.crew.recovery import _fleet_counts

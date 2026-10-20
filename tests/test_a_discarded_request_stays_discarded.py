@@ -18,11 +18,24 @@ from pathlib import Path
 
 from reckon.crew import promotion, queue_admission, runs
 from tests.test_a_queued_run_is_admitted import (  # noqa: F401 - fixture
+    PROJECT,
     _config_for,
     _failing_launcher,
     _queue,
     admit_repo,
 )
+
+
+def _stream_rows(run_id: str) -> list:
+    """The rows the project's watch stream carries naming one run."""
+    path = runs.watch_stream_path(PROJECT)
+    if not path.is_file():
+        return []
+    return [
+        event
+        for event in runs.read_stream_events(path)
+        if str(event.get("run_id") or "") == run_id
+    ]
 
 
 def _attempted_request(repository: Path, run_id: str) -> None:
@@ -113,4 +126,47 @@ def test_a_request_nobody_discarded_is_still_restored(admit_repo: Path) -> None:
     assert not promotion.discard_recorded(run_id)
     pointer = runs.read_pointer(run_id)
     assert pointer["phase"] == "queued"
+    assert run_id in result["failed"]
+
+
+def test_a_discarded_request_is_reported_nowhere(admit_repo: Path, monkeypatch) -> None:
+    """The first-failure report is silent for a request the operator discarded.
+
+    The report appends one row naming the failed run so a watching session sees
+    it. A request discarded during the pass has left the fleet, so a row for it
+    names a run nobody holds and reports a failure nobody is waiting on.
+    """
+    _, resolve = _config_for()
+    run_id = "r-discarded-silent"
+    _attempted_request(admit_repo, run_id)
+
+    _discard_mid_pass(monkeypatch)
+
+    result = queue_admission.admit_once(config_for=resolve, launcher=_failing_launcher)
+
+    assert promotion.discard_recorded(run_id), "the discard left a record"
+    assert _stream_rows(run_id) == [], "a discarded request is reported nowhere"
+    assert not runs.pointer_path(run_id).exists(), (
+        "a discarded request must not be written back by the pass"
+    )
+    assert run_id in result["failed"]
+
+
+def test_a_kept_request_is_reported_once_as_queued(admit_repo: Path) -> None:
+    """A failed launch nobody discarded appends exactly one queued row.
+
+    The row is the session's first sight of the failure, and the pointer's
+    ``failure_reported_at`` is what stops the next pass appending a second.
+    """
+    _, resolve = _config_for()
+    run_id = "r-kept-reported"
+    _attempted_request(admit_repo, run_id)
+
+    result = queue_admission.admit_once(config_for=resolve, launcher=_failing_launcher)
+
+    rows = _stream_rows(run_id)
+    assert len(rows) == 1, f"expected one row naming the run, got {rows}"
+    assert rows[0]["to_state"] == "queued"
+    pointer = runs.read_pointer(run_id)
+    assert pointer.get("failure_reported_at"), "the report marker is on the pointer"
     assert run_id in result["failed"]
