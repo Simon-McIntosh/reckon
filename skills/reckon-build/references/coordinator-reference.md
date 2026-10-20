@@ -612,7 +612,7 @@ reckon crew recover    reckon crew redispatch --run <id> --backend <backend> --r
 reckon crew repair-status --run <id> --status <verdict> --reason <text>    # replaces a manifest's status word, keeping the file as delivered
 reckon crew repair-review --run <reviewed-run> --record <path> --set status=parsed|subject --reason <why>
 reckon crew resume --run <id> --advice <text>    reckon crew resume-ready --project <project>
-reckon crew shadow    reckon crew stop    reckon crew unwatch --project <project>
+reckon crew shadow    reckon crew stop    reckon crew watch --stop --project <project>
 reckon crew verify-gate --project <project> --run <id> --checkout-path <path>
 reckon crew watch --project <project> --stall-window <duration>
 reckon crew widen --run <id> --write-path <path>

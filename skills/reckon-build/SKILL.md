@@ -216,7 +216,7 @@ reckon crew recover    reckon crew redispatch --run <id> --backend <backend> --r
 reckon crew repair-status --run <id> --status <verdict> --reason <text>    # replaces a manifest's status word, keeping the file as delivered
 reckon crew resume --run <id> --advice <text>    reckon crew resume-ready --project <project>
 reckon crew review --project <project> --plan <slug> --rubric <rubric> --session <session> --local --answer <finding> --acted --declined <reason>
-reckon crew shadow    reckon crew stop    reckon crew unwatch --project <project>
+reckon crew shadow    reckon crew stop    reckon crew watch --stop --project <project>
 reckon crew supersede-review --project <project> --run <id> --reason <text>    # call it when a promoted row's review block names another round: it appends a correction the readers honour and leaves the recorded fields in place
 reckon crew verify-gate --project <project> --run <id> --checkout-path <path>
 reckon crew watch --project <project> --stall-window <duration>

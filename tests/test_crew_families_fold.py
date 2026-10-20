@@ -396,6 +396,16 @@ _FIXTURE_JSON = r"""
 """
 FIXTURE: dict = json.loads(_FIXTURE_JSON)
 
+WATCH_STOP_FIXTURE = {
+    "detail": "project 'fixture-project' has no registered watcher to stop",
+    "ok": True,
+    "project": "fixture-project",
+    "reason": "nothing-to-stop",
+    "registration_released": True,
+    "stopped": False,
+    "watcher": {},
+}
+
 
 def _normalise(value):
     """Every value a caller reads, with the clock, identifiers and paths masked."""
@@ -485,6 +495,27 @@ def test_each_retired_budget_name_prints_its_successor() -> None:
         assert row.successor == f"crew budget {flag}", row
         assert row.argv == ("crew", BUDGET_PARENT), row
         assert row.flags == (flag,), row
+
+
+def test_unwatch_tombstone_names_watch_stop() -> None:
+    result = CliRunner().invoke(
+        main, ["crew", "unwatch", "--project", "fixture-project"]
+    )
+    assert result.exit_code == TOMBSTONE_EXIT_CODE, result.output
+    payload = json.loads(result.output)
+    assert payload["successor"] == "crew watch --stop"
+    assert payload["invocation"] == (
+        "reckon crew watch --stop --project fixture-project"
+    )
+    assert "unwatch" not in crew.commands
+
+
+def test_watch_stop_matches_recorded_answer(isolated_reckon_home: Path) -> None:
+    result = CliRunner().invoke(
+        main, ["crew", "watch", "--stop", "--project", "fixture-project"]
+    )
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output) == WATCH_STOP_FIXTURE
 
 
 def test_each_budget_flag_gives_the_answer_the_old_verb_gave(

@@ -625,7 +625,7 @@ def test_the_follower_names_a_producer_running_older_code(
     # The remedy is a release and an arming, in that order, and both parse.
     remedy_parts = [part.strip() for part in event["remedy"].split("&&")]
     assert len(remedy_parts) == 2, event["remedy"]
-    assert remedy_parts[0].startswith("reckon crew unwatch")
+    assert remedy_parts[0].startswith("reckon crew watch --stop")
     assert remedy_parts[1].startswith("reckon crew watch --ensure")
     for part in remedy_parts:
         assert _command_parses(part), f"the remedy does not parse: {part!r}"

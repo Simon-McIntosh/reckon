@@ -132,6 +132,13 @@ TOMBSTONES: tuple[Tombstone, ...] = (
         flags=("--check",),
         detail="backend budget state is checked by `crew budget --check`",
     ),
+    Tombstone(
+        retired="unwatch",
+        successor="crew watch --stop",
+        argv=("crew", "watch"),
+        flags=("--stop",),
+        detail="a registered project watcher is stopped by `crew watch --stop`",
+    ),
 )
 
 #: Lookup by the retired name a caller types.

@@ -155,7 +155,7 @@ variants remain in `sprint-orchestration.md` §15.
 
 One arming lasts for the session, not only one wave. A second producer exits as
 already live; `--once` releases a seat and therefore needs a later re-arm.
-Use `reckon crew unwatch --project <project>` only to replace a producer, never
+Use `reckon crew watch --stop --project <project>` only to replace a producer, never
 to quiet active work. The live classifier turns a complete manifest into
 `completed_unpromoted`, keeps `blocked` and `failed`, and calls a missing
 terminal manifest `abandoned`; none of those classifications proves its gate.

@@ -2,7 +2,7 @@
 
 A follower reads a project's seat from the shared home every node mounts, so it
 routinely reads a seat armed on another node. The notice used to carry the cycle
-pair -- ``reckon crew unwatch`` then ``watch --ensure`` -- for every seat alike.
+pair -- ``reckon crew watch --stop`` then ``watch --ensure`` -- for every seat alike.
 ``unwatch`` refuses a seat whose record names a foreign host, so a reader on
 ``98dci4-srv-1006`` following the advice for a seat on ``98dci4-clu-2002`` hit a
 refusal and had no way to act on the line at all.
@@ -164,7 +164,7 @@ def test_a_foreign_seat_names_the_host_and_the_producers_self_reload(
     assert OTHER_HOST in event["line"], event["line"]
     assert "reloads itself" in event["line"], event["line"]
     assert "cycle it with" not in event["line"], event["line"]
-    assert "reckon crew unwatch" not in event["line"], event["line"]
+    assert "reckon crew watch --stop" not in event["line"], event["line"]
     assert "remedy" not in event, "a foreign seat offers no command to act on"
     assert event["host"] == OTHER_HOST
     assert event["code_stamp"] == STALE_STAMP
@@ -195,7 +195,7 @@ def test_the_omitted_command_is_the_one_unwatch_refuses(
 def test_a_seat_on_the_readers_own_host_keeps_the_cycle_pair(
     isolated_home, monkeypatch
 ) -> None:
-    """A local seat is cycled in place exactly as before the fix.
+    """A local seat keeps a cycle pair this host can execute.
 
     The remedy for a seat this host issued is unchanged: the pair of commands
     ``watch_cycle_line`` composes, carried on the entity and in the line.

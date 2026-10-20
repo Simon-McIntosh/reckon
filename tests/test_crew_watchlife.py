@@ -66,20 +66,20 @@ with _project_watch_claim({project!r}, '1h') as (acquired, _record):
     return process
 
 
-def _invoke_unwatch(project: str):
+def _invoke_watch_stop(project: str):
     return CliRunner().invoke(
         cli_module.main,
-        ["crew", "unwatch", "--project", project],
+        ["crew", "watch", "--stop", "--project", project],
     )
 
 
-def test_unwatch_stops_clears_and_allows_rearming(home, watcher_processes) -> None:
+def test_watch_stop_clears_and_allows_rearming(home, watcher_processes) -> None:
     first = _arm_watcher("proj", watcher_processes)
     registered = crew.watch_state("proj")
     assert registered["watcher_live"] is True
     assert registered["watcher"]["pid"] == first.pid
 
-    stopped = _invoke_unwatch("proj")
+    stopped = _invoke_watch_stop("proj")
 
     assert stopped.exit_code == 0, stopped.output
     payload = json.loads(stopped.output)
@@ -91,19 +91,19 @@ def test_unwatch_stops_clears_and_allows_rearming(home, watcher_processes) -> No
     assert crew.watch_state("proj")["watcher_live"] is False
     assert json.loads(crew.watch_lock_path("proj").read_text()) == {}
 
-    again = _invoke_unwatch("proj")
+    again = _invoke_watch_stop("proj")
     assert again.exit_code == 0, again.output
     assert json.loads(again.output)["reason"] == "nothing-to-stop"
 
     second = _arm_watcher("proj", watcher_processes)
     assert crew.watch_state("proj")["watcher"]["pid"] == second.pid
-    rearmed_stop = _invoke_unwatch("proj")
+    rearmed_stop = _invoke_watch_stop("proj")
     assert rearmed_stop.exit_code == 0, rearmed_stop.output
     assert json.loads(rearmed_stop.output)["stopped"] is True
     second.wait(timeout=5)
 
 
-def test_unwatch_refuses_a_changed_process_identity(home, watcher_processes) -> None:
+def test_watch_stop_refuses_a_changed_process_identity(home, watcher_processes) -> None:
     watcher = _arm_watcher("proj", watcher_processes)
     path = crew.watch_lock_path("proj")
     with path.open("r+b") as handle:
@@ -111,7 +111,7 @@ def test_unwatch_refuses_a_changed_process_identity(home, watcher_processes) -> 
         record["pid_start_time"] = "not-the-running-process"
         crew._write_watch_record(handle, record)
 
-    result = _invoke_unwatch("proj")
+    result = _invoke_watch_stop("proj")
 
     assert result.exit_code == 1
     assert "process identity changed" in result.output
@@ -120,10 +120,10 @@ def test_unwatch_refuses_a_changed_process_identity(home, watcher_processes) -> 
     assert json.loads(path.read_text())["pid_start_time"] == "not-the-running-process"
 
 
-def test_unwatch_never_reaches_another_project(home, watcher_processes) -> None:
+def test_watch_stop_never_reaches_another_project(home, watcher_processes) -> None:
     other = _arm_watcher("other-project", watcher_processes)
 
-    result = _invoke_unwatch("named-project")
+    result = _invoke_watch_stop("named-project")
 
     assert result.exit_code == 0, result.output
     payload = json.loads(result.output)
@@ -132,6 +132,6 @@ def test_unwatch_never_reaches_another_project(home, watcher_processes) -> None:
     assert other.poll() is None
     assert crew.watch_state("other-project")["watcher"]["pid"] == other.pid
 
-    cleanup = _invoke_unwatch("other-project")
+    cleanup = _invoke_watch_stop("other-project")
     assert cleanup.exit_code == 0, cleanup.output
     other.wait(timeout=5)
