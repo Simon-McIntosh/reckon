@@ -1160,7 +1160,10 @@ def _command_at(path: tuple[str, ...]):
 
 def test_ship_crew_views_match_the_typed_mcp_surface() -> None:
     ship = (ROOT / "skills" / "reckon-build" / "SKILL.md").read_text()
-    documented = set(re.findall(r'crew\(project, view="([a-z]+)"\)', ship))
+    # Anchored on `crew(` so it cannot match the skill's `roadmap(..., view=...)`
+    # calls, and allowing a hyphen and further arguments so `plan-review` and
+    # `crew(view="obligations", session=...)` are seen rather than skipped.
+    documented = set(re.findall(r'\bcrew\((?:project, )?view="([a-z-]+)"', ship))
     annotation = CrewArgs.model_fields["view"].annotation
     assert documented == set(get_args(annotation))
 

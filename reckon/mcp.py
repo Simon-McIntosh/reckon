@@ -1974,6 +1974,8 @@ def _crew(
     source: str = "all",
     scope: str = "project",
     fields: list[str] | None = None,
+    phase: str | None = None,
+    mine: bool = False,
     gate: str | None = None,
     failure_classification: str | None = None,
     commits: list[str] | None = None,
@@ -2089,6 +2091,10 @@ def _crew(
     ``runs``, ``session`` filters the worker session identity carried by each
     compact row.
 
+    Pass ``phase`` and ``mine`` on ``live`` to narrow it as ``crew list`` does:
+    ``phase`` keeps pointers in one phase, and ``mine`` keeps only the rows the
+    ``session`` owns, so it needs ``session`` and is refused without one.
+
     Pass ``fields`` to read only what you asked for: a ``live`` row is narrowed
     to the requested fields plus ``run_id``, and ``runs`` accepts the three
     fields a coordinator checks first — ``log_age_seconds``,
@@ -2189,6 +2195,8 @@ def _crew(
         source=source,
         scope=scope,
         fields=fields,
+        phase=phase,
+        mine=mine,
     )
 
 

@@ -299,6 +299,14 @@ def crew_directory(project, run_id, node_id, pretty):
 @click.option(
     "--session", default=None, help="Coordinator session the view is read for."
 )
+@click.option(
+    "--phase", default=None, help="Live view: keep only pointers in this phase."
+)
+@click.option(
+    "--mine",
+    is_flag=True,
+    help="Live view: keep only the rows --session owns.",
+)
 @click.option("--run", "run_id", default=None, help="One run the view selects.")
 @click.option("--node", default=None, help="One node the view selects.")
 @click.option("--section", default=None, help="One section the view selects.")
@@ -345,6 +353,8 @@ def crew_view(
     limit,
     cursor,
     session,
+    phase,
+    mine,
     run_id,
     node,
     section,
@@ -410,6 +420,8 @@ def crew_view(
         source=source,
         scope=scope,
         fields=requested or None,
+        phase=phase,
+        mine=mine,
     )
     _emit(payload, pretty)
     if payload.get("ok") is False:

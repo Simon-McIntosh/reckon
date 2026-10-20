@@ -92,13 +92,30 @@ class CrewArgs(BaseModel):
         "ledger",
         "budget",
         "lanes",
+        "routing",
+        "directory",
+        "fleet",
+        "runs",
+        "obligations",
         "models",
+        "velocity",
+        "scores",
+        "plan-review",
+        "findings",
     ] = "summary"
     refresh: bool | None = None
     checkout_path: str | None = None
     plan: str | None = None
     since: str | None = None
     limit: int | None = Field(None, ge=1)
+    phase: str | None = Field(
+        None,
+        description="Keep only live pointers in this phase, as crew list does",
+    )
+    mine: bool | None = Field(
+        None,
+        description="Keep only live pointers this session owns; needs session",
+    )
     candidates: list[dict[str, Any]] | None = Field(
         None,
         description="Ordered node manifests with id and write_paths for scopes planning",

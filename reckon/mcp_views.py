@@ -3647,6 +3647,8 @@ def serve_crew_view(
     source: str = "all",
     scope: str = "project",
     fields: list[str] | None = None,
+    phase: str | None = None,
+    mine: bool = False,
     refresh: bool = False,
 ) -> dict[str, Any]:
     """Serve one crew read view for a project, a checkout or the workstation's fleet.
@@ -3661,6 +3663,9 @@ def serve_crew_view(
     mounted checkout's compact rollup, the second every live coordinator
     ownership across the workstation. Every other view needs a project, and an
     unrecognised name is refused with the accepted set named.
+
+    ``phase`` and ``mine`` narrow the ``live`` view the way ``crew list`` does;
+    ``mine`` needs ``session``, because ownership is a comparison.
     """
 
     from reckon import budget as budget_module
@@ -3960,11 +3965,39 @@ def serve_crew_view(
                 **flight_module.flight_report(project, checkout_path=checkout_path),
             }
         if view == "live":
+            if mine and session is None:
+                return {
+                    "ok": False,
+                    "error": "missing_session",
+                    "project": project,
+                    "detail": (
+                        "mine keeps only the rows a session owns, so it needs "
+                        "the session id given to crew dispatch; without one "
+                        "there is nobody to compare against"
+                    ),
+                }
             live_records = [
                 record
                 for record in crew_module.list_live()
                 if str(record.get("project") or "") == project
             ]
+            # `phase` and `mine` carry `crew list`'s two filters to this view:
+            # both narrow the pointers themselves, before classification, so
+            # the rows are the same rows `crew list` would keep. `mine` compares
+            # the pointer's own session, the same fact the listing reads, so a
+            # row is the caller's own for the same reason on both surfaces.
+            if phase is not None:
+                live_records = [
+                    record
+                    for record in live_records
+                    if str(record.get("phase") or "") == phase
+                ]
+            if mine:
+                live_records = [
+                    record
+                    for record in live_records
+                    if str(record.get("session") or "") == session
+                ]
             # `session` is what turns a project-wide read into this session's
             # read: it marks which rows are the caller's own where several
             # coordinators share a project, and it is the only way the watcher
