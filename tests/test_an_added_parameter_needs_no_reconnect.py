@@ -393,6 +393,7 @@ def test_the_probe_without_registered_parameters_keeps_its_old_answer(
     tmp_path, monkeypatch, control
 ):
     """A probe carrying no registered parameters gets names, no verdict."""
+    _apply_control(monkeypatch, control)
     monkeypatch.setattr(
         mcp_module,
         "_REGISTERED_TOOL_PARAMS",
