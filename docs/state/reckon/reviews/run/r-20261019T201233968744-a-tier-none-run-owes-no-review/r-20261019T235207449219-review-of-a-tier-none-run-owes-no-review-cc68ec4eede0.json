@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run's baseline_suite records failure_count 0 and failure_ids [] (logs/base-reuse-round.log, EXIT=0) and its after_suite records failure_count 0 and failure_ids [] (logs/after-reuse-round.log) over the same 90-file population, so the delta is 0 added failures.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:766",
+    "reckon/crew/obligations.py:510"
+  ],
+  "completed_at": "2026-10-20T00:05:38.362Z",
+  "dispatched_at": "2026-10-19T23:52:55Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "420",
+      "text": "blocking: the duty's duplicate _promotion_command was to be deleted \u2014 resume-4-advice.txt line 3 says 'delete _promotion_command' and the manifest's checkpoint and reuse_round both assert 'the duty's copy is deleted' \u2014 but commit d365c2619 only repointed the call at line 510 and left the function defined and now unreachable. A stale second copy of the completion-command composition (it omits the canonicalisation and the base-citation case the round documents as the drift) survives in a module the round touched, so the landing record asserts a removal the diff does not contain and a future caller silently restores the exact divergence the round existed to remove."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T201233968744-a-tier-none-run-owes-no-review/manifest.md",
+      "line": "9",
+      "text": "follow-on: changed_paths omits reckon/crew/recovery_classification.py, the one runtime module the reuse round created the helper in and edited, so the node's own list of what it changed is incomplete against the diff 8669dc872..cc68ec4ee."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_tier_none_run_owes_no_review.py:227 asserts next_command.startswith('reckon crew complete --run r-base-only --gate not-run --no-commit') against a literal, so reverting reckon/crew/obligations.py:510 to the local copy (which returns the '--gate <verdict> --commit <base>' form) reddens it; the assertion does not read back the value it fed in.",
+    "evidence": "the gate is recorded, not claimed: logs/gate-reuse-round.log reads '11 passed' at cc68ec4ee EXIT=0 and the manifest's after_suite records the 90-file arm at after-reuse-round.log EXIT=0 against its base arm at base-reuse-round.log EXIT=0, so the base and head arms are one population.",
+    "fit": "reckon/crew/recovery_classification.py:1631 follows the module's private-helper idiom, its docstring states the mechanism rather than a ticket, and neither the helper name nor the diff's comments carry a plan, phase or version label.",
+    "goal_fidelity": "reckon/crew/obligations.py:510 now calls recovery_classification._promotion_command and the classifier's promotable branch does too at reckon/crew/recovery_classification.py:766, so the round's one-composition goal is met functionally, but the duty's old copy the round was told to delete survives at reckon/crew/obligations.py:420 and the goal is only partially realised.",
+    "reuse": "the round consolidated to the owner recovery_classification._promotion_command, but the duplicate the round existed to remove still sits at reckon/crew/obligations.py:420, dead and stale (it drops the canonicalisation and the base-citation case), so the repository still carries two definitions of one capability.",
+    "scope_discipline": "the diff 8669dc872..cc68ec4ee touches only reckon/crew/obligations.py, reckon/crew/recovery_classification.py (granted in resume-4-advice.txt line 3), tests/test_a_tier_none_run_owes_no_review.py and the landing fragment, all inside a grant, but the manifest's changed_paths line omits recovery_classification.py even though the round changed it."
+  },
+  "node": "review-of-a-tier-none-run-owes-no-review-cc68ec4eede0",
+  "node:reviewed": "a-tier-none-run-owes-no-review",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed range is the reuse round 8669dc872..cc68ec4ee, whose goal is one composition both surfaces call; reckon/crew/obligations.py:510 calls recovery_classification._promotion_command and the classifier's promotable branch calls it at reckon/crew/recovery_classification.py:766.\nVERDICT done_when: the round's measure is the gate tests/test_a_tier_none_run_owes_no_review.py plus tests/test_crew_obligations.py at EXIT=0 with a base-citation case; logs/gate-reuse-round.log records '11 passed' EXIT=0 and the manifest's after_suite records the 90-file arm EXIT=0.\nVERDICT write_paths: the node's orientation_write_paths named four paths plus a granted extension for reckon/crew/recovery_classification.py (resume-4-advice.txt line 3); every path in the diff 8669dc872..cc68ec4ee is inside a grant, though the manifest's changed_paths omits recovery_classification.py.\nVERDICT manifest: read; it records the reuse round's checkpoint and landing, the gate at EXIT=0, base and head arms at EXIT=0, and asserts the duty's copy is deleted.\nVERDICT diff: read commit by commit against the base; two commits (d365c2619 refactor, cc68ec4ee docs) touching four files, all inside the granted scope.\nCALL_SITES: reckon/crew/recovery_classification.py:766, reckon/crew/obligations.py:510\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:510 calls the shared composition the classifier uses at reckon/crew/recovery_classification.py:766, but the duty's old copy survives at reckon/crew/obligations.py:420.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-reuse-round.log records '11 passed' EXIT=0 at cc68ec4ee and after-reuse-round.log records the 90-file arm EXIT=0 against base-reuse-round.log EXIT=0.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in the diff is inside a grant (recovery_classification.py via resume-4-advice.txt line 3), but the manifest's changed_paths omits recovery_classification.py.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_tier_none_run_owes_no_review.py:235 asserts the base-citation case against a literal, so reverting reckon/crew/obligations.py:510 to the local copy reddens it.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/recovery_classification.py:1631 follows the module's private-helper idiom and carries no plan or version label.\nSCORE reuse: 10\nJUSTIFICATION reuse: the round consolidated to recovery_classification._promotion_command but left the duplicate definition at reckon/crew/obligations.py:420, so two definitions of one capability remain.\nFINDING reckon/crew/obligations.py:420 blocking: the duty's duplicate _promotion_command was to be deleted but was only repointed, leaving a stale second composition in a module the round touched while the landing record asserts its deletion.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T201233968744-a-tier-none-run-owes-no-review/manifest.md:9 follow-on: changed_paths omits reckon/crew/recovery_classification.py, the module the reuse round created the helper in.\n",
+  "review_run_id": "r-20261019T235207449219-review-of-a-tier-none-run-owes-no-review-cc68ec4eede0",
+  "reviewed_base_sha": "8669dc872cd3c22686b9c46190a5a3473ca0c24a",
+  "reviewed_head_sha": "cc68ec4eede02f02cc89d6ac069c158406f7cc74",
+  "reviewed_run_id": "r-20261019T201233968744-a-tier-none-run-owes-no-review",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "reuse": 10,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T00:20:00+00:00",
+  "total": 96
+}
