@@ -610,7 +610,7 @@ def crew_dispose(
 
     A finding is a sub-floor review dimension, or an entry in the run's newest
     review record: a dimension below the floor flight configuration declares for
-    it, or a finding §3's rows print by index. Whichever the caller names is an
+    it, or a finding the review rows print by index. Whichever the caller names is an
     obligation row until an entry in the closed set answers it: a fold naming
     the dispatched node the finding went into, or an exemption naming why it is
     not being acted on. This is that entry's writer, so a coordinator retires
@@ -1102,12 +1102,6 @@ def supersede_run_review(project: str, run_id: str, reason: str) -> dict[str, An
     }
 
 
-WIDENABLE_PHASE = "blocked"
-
-
-WIDEN_REFUSING_MANIFEST_STATUSES = frozenset({"complete", "failed"})
-
-
 # The one refusing status a review's own fold answers. A run that ended
 # normally left scope work outstanding for the review that read it, so a review
 # that folded a finding back into that same node is a scope decision the
@@ -1215,51 +1209,6 @@ def _widen_folded_disposition(record: Mapping[str, Any]) -> dict[str, Any] | Non
     return None
 
 
-def _widen_eligibility(record: Mapping[str, Any]) -> tuple[str, str, str]:
-    """Refuse a live worker; phase and manifest status are descriptive only."""
-    reported = _manifest_reported_status(record)
-    running = _widen_running_worker(record)
-    if running:
-        return (
-            f"it records a worker still running as pid {running}",
-            reported,
-            (
-                "Wait for that process to exit and widen again, or resume the "
-                "run with `crew resume` once its turn has ended"
-            ),
-        )
-    return "", reported, ""
-
-
-def _widen_running_worker(record: Mapping[str, Any]) -> str:
-    """The pid of this run's worker while it is still running, or ``""`` once gone.
-
-    The fence a widening moves is the boundary the run's worker writes against,
-    so the process that must no longer exist is the one the record names, and the
-    read goes through the single helper every liveness decision about a run
-    takes: a pid the kernel has since handed to a different process does not
-    answer for the worker this record means.
-
-    A record that names no process is admitted rather than refused. ``None`` is
-    not a running worker, the pointer is written before its worker is spawned,
-    and a widening already requires a block stated in a manifest the run itself
-    delivered -- which no unspawned worker can have written.
-    """
-    from reckon.crew.runs import record_process_alive
-
-    if record_process_alive(record) is not True:
-        return ""
-    return str(record.get("pid") or "")
-
-
-def _widen_refusal(run_id: str, state: str, remedy: str, *, where: str) -> str:
-    """Compose the refusal naming the state, where it was read, and the next move."""
-    message = (
-        f"run {run_id!r} cannot have its fence widened{where}: {state}; {WIDEN_RULE}"
-    )
-    return f"{message}. {remedy}" if remedy else message
-
-
 @crew.command(name="widen")
 @click.option("--run", "run_id", required=True, help="Run whose fence to widen.")
 @click.option(
@@ -1278,10 +1227,14 @@ def crew_widen(run_id, write_paths, pretty):
     process can still write against the boundary being moved.
     """
     crew_module, _ = _crew_modules()
-    from reckon.crew.claims import widen_claim
+    from reckon.crew.claims import ClaimAmendmentRefusedError, widen_claim
 
     try:
         updated, added = widen_claim(run_id, write_paths)
+    except ClaimAmendmentRefusedError as exc:
+        raise click.ClickException(
+            f"{exc}; use `crew resume` once its turn has ended"
+        ) from exc
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit_crew_result(

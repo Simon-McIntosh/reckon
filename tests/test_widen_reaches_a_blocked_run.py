@@ -485,7 +485,7 @@ def test_a_blocked_manifest_does_not_widen_a_run_whose_worker_still_runs(
 
     assert result.exit_code != 0, result.output
     assert "still running" in result.output
-    assert "crew resume" in result.output or "exit" in result.output
+    assert "crew resume" in result.output, result.output
     assert MISSING not in result.output
     assert _read(RUNNING_RUN_ID)["node"]["write_paths"] == [DECLARED]
     assert _tree_bytes(pointer_path(RUNNING_RUN_ID).parent) == before
