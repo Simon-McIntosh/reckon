@@ -1,0 +1,32 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T00:39:39.941Z",
+  "dispatched_at": "2026-10-20T00:24:25Z",
+  "findings": [],
+  "plan_fingerprint": "99501c5f9553dd26ebd91c1a21eb603203021fd98a491efd311e3f49387e845c",
+  "plan_slug": "a-paired-arm-is-reviewed-as-itself",
+  "plan_version": 20,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T002325617279-plan-review-of-a-paired-arm-is-reviewed-as-itself",
+  "reviewed_blob_sha": "a84f1c6251efb324dfe9b9b9a82674c62cd92a8a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_resolved_reviewed_run_id` at `reckon/crew/recovery_review_delivery.py:220` (with its live-pointer match at lines 248-254), `round_node_head_suffix` at `reckon/crew/repair.py:331`, `_run_head_for_review` at `reckon/crew/recovery_review_dispatch.py:577`, `_reviewed_run_id_for_node` at `reckon/crew/dispatch_admission.py:1866` and `RunStore` in `reckon/run_store.py` all resolve as cited; the two extensionless `/reckon/evidence/archive/...` links carry `.html` and the target file exists.",
+    "done_when": "pass \u2014 \u00a73's done-when names six test cases, a foreground pytest gate over nine existing test files plus the new one (every named path resolves in the tree, the new one being \u00a73's own deliverable), and a ruff delta; it declares three mutations, each applied alone and each aimed at a named case, and the first can fail (removing the durable fallback fails case 1).",
+    "evidence_paths": "pass \u2014 both gate arms' logs are written to the run directory and named by the manifest's `baseline_suite`, which are durable crew-home paths rather than a scratchpad or node-local temporary directory.",
+    "naming": "pass \u2014 \u00a73 introduces no plan label, ticket number or version tag; its new symbols and the new test file are named for what they do, and the plan's `\u00a71` references inside its own prose are the plan's own cross-references rather than source-level labels.",
+    "reasoning": "pass \u2014 all three checks hold. (1) Root cause matches the evidence: the refusal the section quotes, `reviews run <id> and may write only that run's record directory`, is the `\"property\": \"scoped\"` refusal emitted at `reckon/crew/dispatch_admission.py:1849-1862`, and the chain it blames is in the tree \u2014 `_reviewed_run_id_for_node` (1866-1888) calls `_resolved_reviewed_run_id(..., None, refuse_ambiguous=True)` (1886), whose live-pointer match returns the bare source when the fleet holds no pointer (248-254), which makes `_review_record_directory_grant` (1891-1913) return None and leave `record_directories` empty at its only call site (1825-1831). (2) Mechanism produces the done-when: the durable reader selects the `node` column, which the store carries and populates (15,606 of 15,609 rows in the live `run_store.db` hold a node id, e.g. `hpdw-the-store-exists-beside-the-file`), and the head suffix the node id encodes is the same value `_run_head_for_review` yields, because `round_node_id(REVIEW_NODE_PREFIX, review_node_source, head)` at `reckon/crew/recovery_review_subject.py:738` mints it from `head = _run_head_for_review(record)` at line 681. (3) The plan's own scoping claim is exactly true: of the resolver's four ordinary callers \u2014 `recovery_review_delivery.py:182`, `recovery_review_dispatch.py:180` and `promotion_checks.py:2351` \u2014 each passes a project, and only `dispatch_admission.py:1886`, the dispatch grant, passes None, so the across-project selection \u00a73 permits reaches no project-scoped caller.",
+    "single_goal": "pass \u2014 \u00a73 carries one deliverable, \"a promoted run's review resolves its run\", realised across two modules plus its test; the run_store reader exists only to serve that resolution.",
+    "wiring": "pass \u2014 \u00a73 declares no section edge and needs none: the only module it shares, `reckon/crew/recovery_review_delivery.py`, is written by \u00a71, whose `plan-section-declarations` reads `done` and whose `refuse_ambiguous` flag is present in the tree at b64424800, so no relationship points at an open node and no dispatch can collide; `reckon/run_store.py` is unchanged since 2026-09-28, so no peer section holds it."
+  },
+  "section_digests": {
+    "_document": "354b7deed8d7c63b85d193c8ea830fcb93c3ca174e9b6ecdeaf4683302a8c5e4",
+    "s1": "ec5878e59aedf58377564b41c63c798db6e9b8c5c55e13b86b4059f73e20af5f",
+    "s2": "b7025dcf34f30cb0e8238ea008bddc91a71d73968ce771de908ab95b3040767a",
+    "s3": "bb411099158be8eb70a6845aa17b49c4d9901f3a20da1b0bcd72e03af467bd6d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T00:41:45.413105+00:00"
+}
