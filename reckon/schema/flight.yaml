@@ -463,6 +463,30 @@ slots:
       Model identifier passed to this backend. User data; free text so that no
       provider vocabulary is encoded here.
 
+  catalog_id:
+    description: Public catalogue id for this lane model. Optional operator data.
+
+  model_catalogue:
+    description: Public model list and watched id prefixes for model notices.
+    range: ModelCatalogueConfig
+
+  list_url:
+    description: URL of the public JSON model list.
+
+  refresh_age:
+    description: Minimum age before the public list is fetched again, in seconds.
+    range: integer
+    minimum_value: 0
+
+  watch:
+    description: Map of public id prefixes to the lane that would serve them.
+    range: ModelWatchConfig
+    multivalued: true
+    inlined: true
+
+  served_models:
+    description: Path to this lane's CLI-published served-model JSON file.
+
   input_modalities:
     description: >-
       Input modalities this backend's model actually receives. Absent means
@@ -1047,6 +1071,7 @@ classes:
       - unprotected_paths
       - backends
       - lanes
+      - model_catalogue
       - aliases
       - roles
       - routing
@@ -1188,6 +1213,7 @@ classes:
     slots:
       - name
       - model
+      - catalog_id
       - effort
       - alias
       - suits
@@ -1208,6 +1234,20 @@ classes:
     slots:
       - default_model
       - models
+      - served_models
+
+  ModelCatalogueConfig:
+    description: Public source and watch rules for model notices.
+    slots:
+      - list_url
+      - refresh_age
+      - watch
+
+  ModelWatchConfig:
+    description: One watched public id prefix and the lane it belongs to.
+    slots:
+      - name
+      - lane
 
   ModelAlias:
     description: >-

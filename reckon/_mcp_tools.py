@@ -92,7 +92,9 @@ class CrewArgs(BaseModel):
         "ledger",
         "budget",
         "lanes",
+        "models",
     ] = "summary"
+    refresh: bool = False
     checkout_path: str | None = None
     plan: str | None = None
     since: str | None = None

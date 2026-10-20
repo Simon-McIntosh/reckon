@@ -1176,7 +1176,7 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
     assert "Peer scopes come from live pointers" in ship
     assert "`--peer <other-node>=<their-paths>` is optional" in ship
     expected = {
-        ("crew", "ack"): {"--run", "--reason", "--until"},
+        ("crew", "ack"): {"--run", "--notice", "--reason", "--until"},
         ("crew", "attach"): {"--run", "--task"},
         ("crew", "budget"): {
             "--lift",

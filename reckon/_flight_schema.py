@@ -209,6 +209,7 @@ class FlightConfig(ConfiguredBaseModel):
     unprotected_paths: list[str] | None = Field(default=None, description="""Defaults the fence's protected set carries that a host or project layer leaves writable. A layer removes a default only by naming it here, so a reduction of the protected set is a deliberate, named act rather than a side effect of editing `protected_paths`. Each entry names a default as the fence would resolve it — home-relative or absolute — and an entry that names no default is ignored. Every run whose fence leaves out a named default carries the list on its run record.""")
     backends: dict[str, BackendConfig] | None = Field(default=None, description="""Available worker backends, keyed by a name chosen by whoever writes the configuration. The schema fixes no backend names.""")
     lanes: dict[str, LaneConfig] | None = Field(default=None, description="""A lane is a subscription or host, and the models chosen inside it. Declaring a lane is an alternative to writing one backend block per model: resolution expands each lane back into the backend entries today's callers read, so a lane that declares its models and an equivalent set of backend blocks resolve to the same config. Absent means no lane is declared and resolution is unchanged.""")
+    model_catalogue: ModelCatalogueConfig | None = Field(default=None, description="""Public model list and watched id prefixes for model notices.""")
     aliases: dict[str, ModelAlias] | None = Field(default=None, description="""Old backend names, mapped to the lane and model key they name. A stored ledger row, run record, review or `review_excluded_backends` entry is never rewritten, so a name whose backend block has retired still has to resolve to a pair; this table is what a reader resolves it through. Declared for history rather than routing: nothing here creates a backend or changes a resolved value.""")
     roles: dict[str, RoleConfig] | None = Field(default=None, description="""Per-role routing overlays, keyed by role name. A role overrides only the keys it names; everything else falls through to its backend.""")
     routing: RoutingConfig | None = Field(default=None, description="""How dispatch selects its worker backend.""")
@@ -366,6 +367,7 @@ class LaneModelConfig(ConfiguredBaseModel):
     """
     name: str = Field(default=..., description="""Map key for an inlined entry.""")
     model: str | None = Field(default=None, description="""Model identifier passed to this backend. User data; free text so that no provider vocabulary is encoded here.""")
+    catalog_id: str | None = Field(default=None, description="""Public catalogue id for this lane model. Optional operator data.""")
     effort: str | None = Field(default=None, description="""Reasoning-effort level passed to this backend. Free text because each backend defines its own vocabulary, and because an effort ladder must not be fixed by reckon.""")
     alias: str | None = Field(default=None, description="""Display label rendered in the fleet pane in place of this backend's model identifier. The spelling belongs beside the model it shortens and is decided by whoever writes the configuration; the schema supplies none.""")
     suits: str | None = Field(default=None, description="""The work this backend's model suits, in the operator's words, such as the difficulty or roles it is meant for or its relative cost on a shared window. It is declared, never measured: the operator's prior, weighed beside the outcomes that are measured. The schema names no model and ranks none.""")
@@ -395,6 +397,7 @@ class LaneConfig(BackendConfig):
     """
     default_model: str | None = Field(default=None, description="""Model key a dispatch on this lane resolves to when it names no model. A lane declaring none has no default, and only its derived model entries are reachable by name.""")
     models: dict[str, LaneModelConfig] | None = Field(default=None, description="""The models this lane offers, keyed by the short name a caller types. A lane with no models expands to its own named entry alone.""")
+    served_models: str | None = Field(default=None, description="""Path to this lane's CLI-published served-model JSON file.""")
     name: str = Field(default=..., description="""Map key for an inlined entry.""")
     launch: LaunchMode | None = Field(default=None, description="""How this backend's workers are started.""")
     command: str | None = Field(default=None, description="""Executable name or path looked up on PATH for a `cli` backend. User data; the schema never supplies one.""")
@@ -439,6 +442,23 @@ class LaneConfig(BackendConfig):
             err_msg = f"Invalid time_budget format: {v}"
             raise ValueError(err_msg)
         return v
+
+
+class ModelCatalogueConfig(ConfiguredBaseModel):
+    """
+    Public source and watch rules for model notices.
+    """
+    list_url: str | None = Field(default=None, description="""URL of the public JSON model list.""")
+    refresh_age: int | None = Field(default=None, description="""Minimum age before the public list is fetched again, in seconds.""", ge=0)
+    watch: dict[str, Union[str, ModelWatchConfig]] | None = Field(default=None, description="""Map of public id prefixes to the lane that would serve them.""")
+
+
+class ModelWatchConfig(ConfiguredBaseModel):
+    """
+    One watched public id prefix and the lane it belongs to.
+    """
+    name: str = Field(default=..., description="""Map key for an inlined entry.""")
+    lane: str | None = Field(default=None, description="""Lane an old backend name resolves to. Must name a key of `lanes` once every layer has been merged.""")
 
 
 class ModelAlias(ConfiguredBaseModel):
@@ -709,6 +729,8 @@ ReviewTiers.model_rebuild()
 BackendConfig.model_rebuild()
 LaneModelConfig.model_rebuild()
 LaneConfig.model_rebuild()
+ModelCatalogueConfig.model_rebuild()
+ModelWatchConfig.model_rebuild()
 ModelAlias.model_rebuild()
 PlacementConfig.model_rebuild()
 PlacementRequirement.model_rebuild()

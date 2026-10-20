@@ -352,6 +352,9 @@ def crew_directory(project, run_id, node_id, pretty):
     default=None,
     help="A JSON array of candidate nodes for the scopes view.",
 )
+@click.option(
+    "--refresh", is_flag=True, help="Recheck the public model list for the models view."
+)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_view(
     name,
@@ -375,6 +378,7 @@ def crew_view(
     scope,
     fields,
     candidates,
+    refresh,
     pretty,
 ):
     """Serve one crew read view, the same document the crew MCP tool returns.
@@ -406,6 +410,7 @@ def crew_view(
             raise click.ClickException("--candidates must be a JSON array")
     payload = serve_crew_view(
         name,
+        refresh=refresh,
         project=project,
         checkout_path=str(checkout_path) if checkout_path is not None else None,
         plan=plan,
@@ -1523,8 +1528,11 @@ def crew_drain(project, session, leaves, pretty):
 @click.option(
     "--run",
     "run_id",
-    required=True,
+    default=None,
     help="Run whose obligations are deliberately deferred; live or promoted.",
+)
+@click.option(
+    "--notice", "notice_id", default=None, help="Model notice to acknowledge."
 )
 @click.option(
     "--reason",
@@ -1533,16 +1541,34 @@ def crew_drain(project, session, leaves, pretty):
 )
 @click.option(
     "--until",
-    required=True,
+    default=None,
     help="ISO-8601 instant the deferral expires; the obligation returns after it.",
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_ack(run_id, reason, until, pretty):
+def crew_ack(run_id, notice_id, reason, until, pretty):
     """Defer one run's obligations until an instant, recording why.
 
     A live run's deferral is written beside its pointer; one for a run already
     promoted is written under the crew home and swept once its instant passes.
     """
+    if bool(run_id) == bool(notice_id):
+        raise click.ClickException("exactly one of --run and --notice is required")
+    if notice_id:
+        if until:
+            raise click.ClickException("--notice takes no --until")
+        from reckon.crew.model_catalogue import acknowledge_notice
+
+        try:
+            updated = acknowledge_notice(notice_id, reason)
+        except ValueError as exc:
+            raise click.ClickException(str(exc)) from exc
+        _emit_crew_result(
+            {"notice_id": notice_id, "acknowledgement": updated["acknowledgement"]},
+            pretty,
+        )
+        return
+    if not until:
+        raise click.ClickException("--run requires --until")
     crew_module, _ = _crew_modules()
     from reckon.crew import runs as runs_module
 

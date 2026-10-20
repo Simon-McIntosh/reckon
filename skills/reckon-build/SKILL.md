@@ -61,7 +61,7 @@ Detail: `crew(project, view="live")`, `crew(project, view="scopes")`,
 `crew(project, view="drain")`, `crew(project, view="ledger")`,
 `crew(project, view="summary")`, `crew(project, view="flight")`,
 `crew(project, view="records")`, `crew(project, view="budget")`,
-`crew(project, view="lanes")`; also `crew(view="directory")` and
+`crew(project, view="lanes")`, `crew(project, view="models")`; also `crew(view="directory")` and
 `crew(view="obligations", session=<session>)`.
 
 The loop has six steps, in order.
@@ -549,7 +549,11 @@ Authored here and nowhere else. The obligations view is the inbox:
 `crew(view="obligations", session=<session>)` lists every duty this session still
 owes; work it to empty, or acknowledge each item with `reckon crew ack --run
 <run-id> --reason "<why>" --until <iso-time>`, before the turn ends. The
-installed hook refuses a Stop while an item is unacknowledged. Before the closing
+installed hook refuses a Stop while an item is unacknowledged. The models view
+accepts `refresh=True`; acknowledge one model notice with
+`reckon crew ack --notice <notice-id> --reason "<why>"` or
+`crew(action="ack", notice_id=<notice-id>, reason="<why>")`, without `--until`.
+Before the closing
 summary, run the followup drain, call `crew(project, view="drain")`, write all
 three figures into the ledger, and read them back:
 
