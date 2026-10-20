@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured from the reviewed run's own gate logs: base.log and head.log each report 14 failed with identical failure id sets, so 0 added",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:_dispatch_composed_review",
+    "reckon/crew/recovery_review_dispatch.py:_reroute_held_review",
+    "reckon/crew/recovery_repair_dispatch.py:dispatch_repair_for_run",
+    "reckon/crew/recovery_review_subject.py:_composed_review_lane"
+  ],
+  "completed_at": "2026-10-20T09:18:57.951Z",
+  "dispatched_at": "2026-10-20T09:08:28Z",
+  "findings": [
+    "FINDING reckon/crew/recovery_review_dispatch.py:2083 follow-on: `_dispatch_composed_review` calls `_review_lane_candidates` without a profile (as do `_reroute_held_review` at line 1620, `dispatch_repair_for_run` at reckon/crew/recovery_repair_dispatch.py:895 and `_composed_review_lane` at reckon/crew/recovery_review_subject.py:899), so no production path can require a modality and the landed exemption stays inert until the figure-review trigger supplies a profile.",
+    "FINDING docs/plans/scoring-should-stop-a-promotion.html:3318 follow-on: that plan's \u00a76 evidence anchor still says \u00a76 \"is its first dispatch caller and must route through select_profile_backend\", a symbol this change deletes, so a reader routing \u00a76 from that anchor is sent to a name that no longer resolves in reckon/.",
+    "FINDING tests/test_a_figure_review_takes_an_image_lane.py:28 follow-on: the new file imports `reckon.crew.recovery` rather than reckon/crew/recovery_review_dispatch.py or reckon/flight.py, so the importers.txt population the two suite arms ran excludes it and only the separately produced coordinator gate ever executed the change's own test file."
+  ],
+  "item_verdicts": {
+    "diff": "read e4618e5d3 and 75787a85c against 84e5b24e5; the change threads a profile through four selection functions in reckon/crew/recovery_review_dispatch.py, retires reckon/flight.py:select_profile_backend with its tests in tests/test_flight.py, and adds tests/test_a_figure_review_takes_an_image_lane.py.",
+    "done_when": "the done-when names tests/test_a_figure_review_takes_an_image_lane.py; coordinator-gate-head.log (revision 75787a85c, EXIT=0) runs that file with tests/test_flight.py and records 89 passed, and negative_control.log (EXIT=1) reddens both image tests that the head arm does not fail.",
+    "goal": "the node goal is to make review lane selection admit a lane declaring image input for a review that requires it despite `review_excluded_backends` \u2014 reckon/crew/recovery_review_dispatch.py:1262 `_ordered_review_lanes` now filters candidates by `_serves_profile` and exempts a serving lane from the review exclusion, threading a `profile` through `_review_lane_plan`, `_review_lane_candidates` and `_no_lane_reason`.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T083754911927-a-figure-review-takes-an-image-lane/manifest.md; status complete, commits e4618e5d3 and 75787a85c, baseline_suite and after_suite both recorded with 14 failures and identical failure ids.",
+    "write_paths": "the manifest declares six paths; `git diff --stat 84e5b24e5 75787a85c` touches exactly reckon/crew/recovery_review_dispatch.py, reckon/flight.py, tests/test_flight.py, tests/test_a_figure_review_takes_an_image_lane.py and the evidence fragment, every one inside those paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_figure_review_takes_an_image_lane.py:66 fails with `assert [] == ['codex-luna', 'codex-sol']` exactly when the exemption is removed from `_ordered_review_lanes`, as negative_control.log records.",
+    "evidence": "coordinator-gate-head.log at revision 75787a85c records 89 passed EXIT=0 including the new test file, and base.log/head.log carry identical failure id sets (14 each, 0 added), though the importers.txt suite population omits the new file.",
+    "fit": "the new helpers at reckon/crew/recovery_review_dispatch.py:1231 follow the module's lazy-import and docstring idiom, and ruff check and ruff format --check report no findings on the four changed Python files at 75787a85c.",
+    "goal_fidelity": "reckon/crew/recovery_review_dispatch.py:1262 admits an image-declaring lane for a profile-bearing review, but no production call site in the file passes a profile, so the exemption the goal describes is unreachable until the figure-review trigger supplies one.",
+    "reuse": "`_serves_profile` at reckon/crew/recovery_review_dispatch.py:1246 wraps reckon/flight.py:1968 `missing_input_modalities`, the owner of that capability, and the change retires the parallel selector `select_profile_backend` instead of adding a second one.",
+    "scope_discipline": "`git diff --stat 84e5b24e5 75787a85c` touches five files and every one is inside the manifest's declared write paths, with no concurrent node's path touched."
+  },
+  "node": "review-of-a-figure-review-takes-an-image-lane-75787a85c00a",
+  "node:reviewed": "a-figure-review-takes-an-image-lane",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make review lane selection admit a lane declaring image input for a review that requires it despite `review_excluded_backends` \u2014 reckon/crew/recovery_review_dispatch.py:1262 `_ordered_review_lanes` now filters candidates by `_serves_profile` and exempts a serving lane from the review exclusion, threading a `profile` through `_review_lane_plan`, `_review_lane_candidates` and `_no_lane_reason`.\nVERDICT done_when: the done-when names tests/test_a_figure_review_takes_an_image_lane.py; coordinator-gate-head.log (revision 75787a85c, EXIT=0) runs that file with tests/test_flight.py and records 89 passed, and negative_control.log (EXIT=1) reddens both image tests that the head arm does not fail.\nVERDICT write_paths: the manifest declares six paths; `git diff --stat 84e5b24e5 75787a85c` touches exactly reckon/crew/recovery_review_dispatch.py, reckon/flight.py, tests/test_flight.py, tests/test_a_figure_review_takes_an_image_lane.py and the evidence fragment, every one inside those paths.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T083754911927-a-figure-review-takes-an-image-lane/manifest.md; status complete, commits e4618e5d3 and 75787a85c, baseline_suite and after_suite both recorded with 14 failures and identical failure ids.\nVERDICT diff: read e4618e5d3 and 75787a85c against 84e5b24e5; the change threads a profile through four selection functions in reckon/crew/recovery_review_dispatch.py, retires reckon/flight.py:select_profile_backend with its tests in tests/test_flight.py, and adds tests/test_a_figure_review_takes_an_image_lane.py.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:_dispatch_composed_review, reckon/crew/recovery_review_dispatch.py:_reroute_held_review, reckon/crew/recovery_repair_dispatch.py:dispatch_repair_for_run, reckon/crew/recovery_review_subject.py:_composed_review_lane\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_dispatch.py:1262 admits an image-declaring lane for a profile-bearing review, but no production call site in the file passes a profile, so the exemption the goal describes is unreachable until the figure-review trigger supplies one.\nSCORE evidence: 17\nJUSTIFICATION evidence: coordinator-gate-head.log at revision 75787a85c records 89 passed EXIT=0 including the new test file, and base.log/head.log carry identical failure id sets (14 each, 0 added), though the importers.txt suite population omits the new file.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat 84e5b24e5 75787a85c` touches five files and every one is inside the manifest's declared write paths, with no concurrent node's path touched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_figure_review_takes_an_image_lane.py:66 fails with `assert [] == ['codex-luna', 'codex-sol']` exactly when the exemption is removed from `_ordered_review_lanes`, as negative_control.log records.\nSCORE fit: 19\nJUSTIFICATION fit: the new helpers at reckon/crew/recovery_review_dispatch.py:1231 follow the module's lazy-import and docstring idiom, and ruff check and ruff format --check report no findings on the four changed Python files at 75787a85c.\nSCORE reuse: 20\nJUSTIFICATION reuse: `_serves_profile` at reckon/crew/recovery_review_dispatch.py:1246 wraps reckon/flight.py:1968 `missing_input_modalities`, the owner of that capability, and the change retires the parallel selector `select_profile_backend` instead of adding a second one.\nFINDING reckon/crew/recovery_review_dispatch.py:2083 follow-on: `_dispatch_composed_review` calls `_review_lane_candidates` without a profile (as do `_reroute_held_review` at line 1620, `dispatch_repair_for_run` at reckon/crew/recovery_repair_dispatch.py:895 and `_composed_review_lane` at reckon/crew/recovery_review_subject.py:899), so no production path can require a modality and the landed exemption stays inert until the figure-review trigger supplies a profile.\nFINDING docs/plans/scoring-should-stop-a-promotion.html:3318 follow-on: that plan's \u00a76 evidence anchor still says \u00a76 \"is its first dispatch caller and must route through select_profile_backend\", a symbol this change deletes, so a reader routing \u00a76 from that anchor is sent to a name that no longer resolves in reckon/.\nFINDING tests/test_a_figure_review_takes_an_image_lane.py:28 follow-on: the new file imports `reckon.crew.recovery` rather than reckon/crew/recovery_review_dispatch.py or reckon/flight.py, so the importers.txt population the two suite arms ran excludes it and only the separately produced coordinator gate ever executed the change's own test file.",
+  "review_run_id": "r-20261020T090737711539-review-of-a-figure-review-takes-an-image-lane-75787a85c00a",
+  "reviewed_base_sha": "84e5b24e5fa5e361556dc69664ce0872a5b9d69b",
+  "reviewed_head_sha": "75787a85c00a69fd6d60be48fb995b91af3d3827",
+  "reviewed_run_id": "r-20261020T083754911927-a-figure-review-takes-an-image-lane",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T09:40:00+00:00",
+  "total": 110
+}
