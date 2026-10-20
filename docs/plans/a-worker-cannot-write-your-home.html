@@ -26,9 +26,9 @@
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5,6dcb6cc1d,31e84061f">
 <meta name="plan-impl" content="0.99">
-<meta name="plan-version" content="208">
-<meta name="plan-modified" content="2026-10-20">
-<meta name="plan-section-depends-on" content="{&quot;s17&quot;: [&quot;a-worker-cannot-write-your-home#s15&quot;], &quot;s16&quot;: [&quot;a-worker-cannot-write-your-home#s15&quot;]}">
+<meta name="plan-version" content="210">
+<meta name="plan-modified" content="2026-10-21">
+<meta name="plan-section-depends-on" content="{&quot;s17&quot;:[&quot;a-worker-cannot-write-your-home#s15&quot;],&quot;s16&quot;:[&quot;a-worker-cannot-write-your-home#s15&quot;],&quot;s18&quot;:[&quot;a-worker-cannot-write-your-home#s15&quot;,&quot;a-worker-cannot-write-your-home#s16&quot;]}">
 </head>
 <body>
   <main class="plan-doc">
@@ -1571,7 +1571,8 @@
 <p><strong>Deliverable.</strong> A codex worker at the read-only tier runs its shell commands inside the fence.</p>
 <ul>
 <li>First reproduce the fault with a fenced codex review-role launch that runs <code>pwd</code>. Then find which change introduced it, by reverting each candidate in turn in a scratch tree, never by bisecting the shared checkout.</li>
-<li>Fix the fence's handling, either by giving codex's inner sandbox the writable path it creates or by passing it a configuration that creates nothing on <code>/tmp</code>. Keep §15's seal on the node's own temporary files and §16's rule that a review is told only the roots the fence leaves writable.</li>
+<li>The fence's carve-out beneath the sealed node <code>/tmp</code> is one enumerated set, <code>node_tmp_runtime_paths()</code> (<code>reckon/_worker_fence.py:1168</code>), created before the argv by <code>create_node_tmp_runtime_paths()</code>. Its only codex entry is <code>NODE_TMP_ROOT / CODEX_SANDBOX_MARKER_DIRNAME</code>, the <code>.codex</code> marker directory (<code>:1165</code>, <code>:1203</code>), which §15 and §17 recorded as the path codex's sandbox creates. The failure names <code>/tmp/.git</code>, which that set does not hold. Establish which path codex's inner sandbox now creates and why: a second marker beside <code>.codex</code>, or a mount target for a repository root it resolves beneath <code>/tmp</code>.</li>
+<li>Fix it in that set or in the codex dialect's sandbox arguments, never in a new rule beside them: either add the path the inner sandbox creates to <code>node_tmp_runtime_paths()</code>, or pass codex a configuration that creates nothing beneath <code>/tmp</code>. Keep §15's seal on the node's own temporary files and §16's rule that a review is told only the roots the fence leaves writable.</li>
 <li>If the cause lies in the codex CLI's own sandbox, stop blocked and name it.</li>
 </ul>
 <p><strong>Write paths:</strong> <code>reckon/_worker_fence.py</code>, <code>reckon/_backends.py</code> only for the codex dialect's sandbox arguments, the new <code>tests/test_a_read_only_codex_worker_runs_inside_the_fence.py</code>, and the node's evidence fragment.</p>
