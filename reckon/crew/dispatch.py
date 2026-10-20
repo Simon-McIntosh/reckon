@@ -50,6 +50,7 @@ from reckon import (
     flight as flight,
     ledger as ledger,
 )
+from reckon.figures import rasterise_svg
 from reckon._plan_html import (
     _strip_tags as _strip_tags,
     plan_headings as plan_headings,
@@ -2055,6 +2056,22 @@ def dispatch(
         )
         worktree = _create_worktree(repo_root, worktree_identity, node.id, base)
         directory.mkdir(parents=True, exist_ok=True)
+        rendered_images = []
+        for index, image in enumerate(node.images):
+            source = Path(image)
+            if source.suffix.lower() != ".svg":
+                rendered_images.append(image)
+                continue
+            if not source.is_absolute():
+                source = repo_root / source
+            try:
+                png = rasterise_svg(source, 1400)
+            except Exception as exc:
+                raise CrewError(f"cannot render SVG image {source}: {exc}") from exc
+            output = directory / f"image-{index}.png"
+            output.write_bytes(png)
+            rendered_images.append(str(output))
+        node.images = rendered_images
         working_directory = worktree["path"]
         if launch_kind == "cli":
             try:
