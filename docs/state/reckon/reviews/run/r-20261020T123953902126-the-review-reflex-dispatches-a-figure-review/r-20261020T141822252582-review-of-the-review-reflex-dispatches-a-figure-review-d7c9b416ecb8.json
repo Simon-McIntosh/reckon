@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:2976",
+    "reckon/crew/recovery_review_acceptance.py:498",
+    "reckon/crew_dispatch_commands.py:2485",
+    "reckon/crew/promotion_release.py:944",
+    "reckon/crew/obligations.py:673",
+    "reckon/crew/obligations.py:1073",
+    "reckon/crew/crew_run_commands.py:685",
+    "reckon/crew/dispatch.py:2062"
+  ],
+  "completed_at": "2026-10-20T14:49:15.257Z",
+  "dispatched_at": "2026-10-20T14:22:23Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "695",
+      "severity": "blocking",
+      "text": "blocking: _changed_figure_paths returns paths relative to the reviewed run's own tree (_review_tree, which prefers record['worktree'] at reckon/crew/recovery_review_subject.py:39, and validates each path with (tree / path).is_file()), and those relative paths are the images handed to the dispatch at recovery_review_dispatch.py:2232. The dispatch resolves a relative image against the project repository root, not that tree: reckon/crew/dispatch.py:2062 does source = repo_root / source with repo_root = resolve_project_repository(project, repo) (reckon/crew/dispatch.py:1204), which returns the project's mount (reckon/crew/dispatch_sections.py:134). A run's commits are unmerged at review time and its worktree is a separate path from the mount, so the figure file is absent where dispatch looks; rasterise_svg then raises, the launch refuses, and the figure review is recorded refused instead of dispatched for exactly the run it exists to serve. Evidence: reviewed run manifest declares the goal as dispatch for 'a run whose commits add or change an image under a figures directory'; every live pointer carries repo=/home/ITER/mcintos/Code/reckon with worktree=<...>/.reckon-worktrees/<hash>/<session>/<node>. Handing dispatch str(tree / path) instead of the worktree-relative path repairs it; the gate cannot see this because the fixture sets record['repo'] and record['worktree'] to the same directory (tests/test_figure_review.py:113)."
+    },
+    {
+      "file": "tests/test_recover_launches_only_what_it_is_asked.py",
+      "line": "146",
+      "severity": "blocking",
+      "text": "blocking: this file is outside the node's declared write paths and its last commit rewrote 247 lines of it, of which only the two stub signatures that had to follow the new keyword arguments (lambda _: ... -> lambda _record, **_kwargs: at :146 and :149, matching recovery_review_dispatch.py:324 and :1153) carry the node's change; the remaining ~200 lines are a ruff format reflow of pre-existing parenthesised monkeypatch.setattr groups folded into the fix commit d7c9b416. Repo rule: a fixer run is scoped to the paths the commit stages, a broad relint is its own commit, and an unreviewable reformat inside a fix hides what the fix did. The two signature edits belong in the fence (a fenced signature change breaks a peer test); the sweep does not, and reverting it alone leaves the file in the shape it had before the node existed."
+    },
+    {
+      "file": "reckon/crew/recovery_review_subject.py",
+      "line": "142",
+      "severity": "follow-on",
+      "text": "follow-on: the two figure-rubric skip branches added at :142 and :150 are unreachable in production, because the read_review call on the line above already excludes figure records (review_module.read_review with rubric=None runs _review_rubric_matches at reckon/crew/review.py:2198, which keeps figure records out of text selection). The guard that actually makes the done_when clause true therefore lives in reckon/crew/review.py, not in select_review_for_head, and the declared negative control for it reddens only through the monkeypatched read_review at tests/test_figure_review.py:350 rather than through the store. Keeping the branch is harmless defence; recording it as the selector's own guard overstates what the selector does."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T123953902126-the-review-reflex-dispatches-a-figure-review/repair-round3-single.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the gate logs the manifest records as its own name a revision whose tree did not contain the code that ran. repair-round3-single.log and repair-round3-targeted.log both carry '# revision: ab87a9ccc...' yet report test_in_flight_review_reads_rubric_from_its_record_path and the adapted stubs of tests/test_recover_launches_only_what_it_is_asked.py passing, and none of those exists at ab87a9ccc (git show ab87a9ccc:tests/test_figure_review.py has no such test; that commit's recovery_review_dispatch.py has no _review_pointer_rubric). The runs were made against the working tree that became d7c9b416, so the header names the commit rather than the tree. The head is covered for the whole-suite question by the coordinator's own coordinator-population-head-repaired.log, which does name d7c9b416, but the node's own receipt cannot be reconciled with its commit."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against a5b7f07: b11687d2c adds the prompt, rubric, parser, trigger, storage and selection with the new test file; ab87a9ccc adds the evidence fragment; d7c9b416 adds _review_pointer_rubric and the rubric-keyed in-flight lookup, and folds an unrelated ~200-line reformat of tests/test_recover_launches_only_what_it_is_asked.py into the same commit.",
+    "done_when": "The done_when's clauses each have an assertion in tests/test_figure_review.py: a changed docs/figures/p/a.svg dispatches a figure review with a PNG attachment and the image-lane backend (:179), a source-only change keeps the text review (:206), no image lane holds it with an image-modality reason (:218), the composed brief carries the section's visual rules (:238), text and figure records store at separate rubric-keyed paths (:270), and text selection skips a figure-only record (:316). The gate the worker ran covers the named file and its result is recorded, but the fixture sets record['worktree'] and record['repo'] to the same directory (tests/test_figure_review.py:113), which is the one condition under which the image-path defect cannot show.",
+    "goal": "The node goal is a read-only figure review dispatched as a rubric of the run-review machinery on a lane declaring image input; reckon/crew/recovery_review_dispatch.py:1970 _dispatch_figure_review_for_run composes it with profile='figure' and reckon/crew/review.py:276 gives it its own rubric constant, prompt and parser, but the image it hands the lane is resolved in the wrong tree (FINDING at recovery_review_dispatch.py:695), so the deliverable does not reach the reviewer on the path a real scored run takes.",
+    "manifest": "Read; status: complete, commits b11687d2c/ab87a9ccc/d7c9b416, 9-test gate recorded, ruff check and format clean, two negative controls recorded as red. The manifest does not read as no work, but the tests/test_logs it names (repair-round3-targeted.log, repair-round3-single.log) carry a revision header of ab87a9ccc while the tree they ran on held the last commit's content.",
+    "write_paths": "The manifest declares seven paths; the diff touches six of them (reckon/crew/review.py, reckon/crew/prompts/figure_review.md, reckon/crew/recovery_review_dispatch.py, reckon/crew/recovery_review_subject.py, tests/test_figure_review.py, docs/evidence/fragments/scoring-should-stop-a-promotion/the-review-reflex-dispatches-a-figure-review.html) and one it was not fenced to write, tests/test_recover_launches_only_what_it_is_asked.py (FINDING below)."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261020T141822252582-review-of-the-review-reflex-dispatches-a-figure-review-d7c9b416ecb8",
+  "reviewed_base_sha": "a5b7f077711de024ecdc7416318ab8f57c30fdb6",
+  "reviewed_head_sha": "d7c9b416ecb8fef11f002d8efbefdaf908353324",
+  "reviewed_run_id": "r-20261020T123953902126-the-review-reflex-dispatches-a-figure-review",
+  "rubric": "code",
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 14,
+    "reuse": 19,
+    "scope_discipline": 9
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T15:01:34.036844+00:00",
+  "total": 89
+}
