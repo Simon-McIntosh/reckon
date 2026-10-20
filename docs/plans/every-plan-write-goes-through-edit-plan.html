@@ -26,7 +26,7 @@
   <title>Every Plan Write Goes Through edit_plan | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="59">
+<meta name="plan-version" content="60">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -308,24 +308,24 @@
     <ul>
       <li>The readiness probe reports each tool's parameters with whether each one is required.</li>
       <li>The current code makes the compatibility decision. The parent sends its registered parameters, each with whether it was required, along with the probe. The child answers compatible or not, so a later change to the rule reaches running servers without a reconnect.</li>
-      <li>A change is compatible when every registered parameter is still accepted, no registered optional parameter has become required, and no new parameter is required. A compatible change is served on current code with no refusal, and its answer carries a <code>schema_note</code> naming the parameters the client cannot send until it reconnects.</li>
+      <li>A change is compatible when every registered parameter is still accepted, no registered optional parameter has become required, and no new parameter is required. The routing stays §11's. A call the image answers successfully is returned untouched, and needs nothing. A call that reaches the current code — a failed call re-run there, or a call of a tool already routed there — is served when the verdict is compatible, with no refusal, and its answer carries a <code>schema_note</code> naming the parameters the client cannot send until it reconnects.</li>
       <li><code>stale_server_code</code> remains for an incompatible change: a registered parameter removed or renamed, a registered optional parameter made required, or a new required one.</li>
     </ul>
     <p>The probe stays readable by a server started before this lands, because that server is the parent the new child answers. The probe answer keeps <code>params</code> as each tool's list of parameter names, exactly as now. Requiredness goes under a new key beside it, and the child's verdict goes under another, given only when the request carried registered parameters. A probe request carrying no registered parameters, which is what a pre-§13 parent sends, gets that unchanged answer. Its parent then compares as it does today and still refuses any changed signature. So a server started before this lands asks for one reconnect, and the reconnect picks this up. After that, an added optional parameter and any later change to the rule need none.</p>
     <p><strong>Done when</strong> <code>tests/test_an_added_parameter_needs_no_reconnect.py</code> drives the guard with a child whose tool signature it controls:</p>
     <ul>
-      <li>An added optional parameter is served on current code with a <code>schema_note</code> naming it, and with no <code>reconnect</code> field.</li>
-      <li>A removed parameter returns <code>stale_server_code</code>.</li>
-      <li>A new required parameter returns <code>stale_server_code</code>.</li>
-      <li>A registered optional parameter that becomes required returns <code>stale_server_code</code>.</li>
-      <li>A probe request with no registered parameters gets <code>params</code> as each tool's list of names, with no verdict. The pre-§13 comparison, run on that answer for a tool with an added parameter, still reports the signature changed.</li>
-      <li>The verdict is the child's. A child whose rule answers compatible makes the parent serve, even when the parent's own lists differ.</li>
+      <li>Added optional: a failed call of a tool with an added optional parameter, re-run on the current code, is served there with a <code>schema_note</code> naming the parameter and no <code>reconnect</code> field.</li>
+      <li>Removed: a removed parameter returns <code>stale_server_code</code>.</li>
+      <li>New required: a new required parameter returns <code>stale_server_code</code>.</li>
+      <li>Made required: a registered optional parameter that becomes required returns <code>stale_server_code</code>.</li>
+      <li>Old parent: a probe request with no registered parameters gets <code>params</code> as each tool's list of names, with no verdict. The pre-§13 comparison, run on that answer for a tool with an added parameter, still reports the signature changed.</li>
+      <li>Child's verdict: a child whose rule answers compatible makes the parent serve, even when the parent's own lists differ.</li>
     </ul>
     <p>Three negative controls, each logged:</p>
     <ul>
-      <li>Restoring the equality comparison fails the first case.</li>
-      <li>Deciding in the parent fails the fourth.</li>
-      <li>Nesting requiredness inside <code>params</code> fails the last case.</li>
+      <li>Restoring the equality comparison fails the added-optional case.</li>
+      <li>Deciding in the parent fails the child's-verdict case.</li>
+      <li>Nesting requiredness inside <code>params</code> fails the old-parent case.</li>
     </ul>
     <p><code>tests/test_a_slow_child_never_forces_a_reconnect.py</code> and <code>tests/test_mcp_server_serves_current_code.py</code> each have a changed-signature case built on an added optional parameter. In both, that case becomes a removal, so it still asks for the refusal §13 keeps. Both files, and <code>tests/test_every_module_fits_a_worker_window.py</code>, add no failure. Write paths: <code>reckon/mcp.py</code>, <code>reckon/served_code.py</code>, <code>tests/test_an_added_parameter_needs_no_reconnect.py</code>, <code>tests/test_a_slow_child_never_forces_a_reconnect.py</code>, <code>tests/test_mcp_server_serves_current_code.py</code>. crew-surface §5 holds <code>reckon/mcp.py</code> until it lands, so this section dispatches after it.</p>
 
