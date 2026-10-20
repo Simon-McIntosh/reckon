@@ -1077,6 +1077,99 @@ def _reserved_lane_floor_met(
     return True
 
 
+def _effective_budget_block(
+    config: Mapping[str, Any],
+    group: str | None,
+    *,
+    now: datetime,
+    session: str | None,
+) -> Mapping[str, Any]:
+    """The budget block in force for a declared group, or the config's own.
+
+    A lift in force on the group raises its pace multiple and releases all three
+    reserves, and a credits lift rides on the same block as ``credit_lift``.
+    Resolving it here, through the resolver a dispatch reads, is what lets the
+    picker judge a lane on the same block a dispatch would: a group no lift
+    covers is handed back its configured block unchanged, so the picker's
+    judgement does not move where no lift is in force.
+    """
+    from reckon.crew import budget_group as budget_group_module
+
+    if not group:
+        return config.get("budget") or {}
+    return budget_group_module.effective_block(
+        config, str(group), readings=None, now=now, session=session or None
+    )
+
+
+def _budget_state_from_facts(name: str, state: Mapping[str, Any]) -> budget.BudgetState:
+    """Rehydrate a candidate's own state mapping into a ``BudgetState``.
+
+    The picker's view carries each backend's state as a plain mapping, which may
+    omit fields a view never measured -- a hand-assembled snapshot states only
+    what it reads. Rebuilding the dataclass from the known fields lets the same
+    judgement a dispatch runs be applied here without the view having to carry a
+    dataclass or every default.
+    """
+    fields = set(budget.BudgetState.__dataclass_fields__)
+    known = {key: value for key, value in state.items() if key in fields}
+    known["backend"] = name
+    return budget.BudgetState(**known)
+
+
+def _budget_exclusion_reasons(
+    name: str,
+    config: Mapping[str, Any],
+    group: str | None,
+    state: Mapping[str, Any],
+    *,
+    fresh: bool,
+    utilisation: float | None,
+    now: datetime,
+    session: str | None,
+) -> tuple[list[str], bool]:
+    """The reasons a lane's budget withholds it, and whether a credits lift rides.
+
+    The budget gate reads the verdict of :func:`reckon.budget.decide` through
+    the group's effective block -- the same verdict and the same block a
+    dispatch of this purpose takes -- rather than comparing the window against a
+    ceiling of its own, so a lane a credits lift opens past a spent window is
+    offered here exactly as dispatch admits a dispatch on it. The verdict's own
+    reason is quoted, so a reader sees the figure and the branch that withheld
+    the candidate.
+
+    A reading past its shelf life is offered for Jev to weigh, never turned into
+    a hard refusal, so the gate runs on a fresh reading alone. Where a credits
+    lift rides, its pool governs and the window ceiling no longer does: the
+    verdict admits or withholds on the credits drawn, and the second reason
+    below is skipped for it. Elsewhere the effective ceiling -- the configured
+    ceiling less the reserves dispatch withholds -- is applied even where the
+    verdict reads the lane open on an availability observation, so the picker
+    refuses a lane a dispatch would refuse.
+    """
+    if not fresh:
+        return [], False
+    block = _effective_budget_block(config, group, now=now, session=session)
+    judged = budget.policy({**config, "budget": block})
+    credit_lift = "credit_lift" in judged
+    verdict = budget.decide(
+        _budget_state_from_facts(name, state), judged, purpose="dispatch", now=now
+    )
+    if verdict.get("held"):
+        reason = str(verdict.get("reason") or "the lane's budget withholds it")
+        return [f"budget-ceiling: {reason}"], credit_lift
+    if not credit_lift and utilisation is not None:
+        limit = budget.effective_ceiling(judged, "dispatch")
+        if utilisation >= limit:
+            return [
+                (
+                    f"budget-ceiling: {utilisation:g}% is at or above the "
+                    f"{limit:g}% ceiling for a dispatch"
+                )
+            ], credit_lift
+    return [], credit_lift
+
+
 def _reserved_lane_exclusion(
     lane: str,
     policy: Mapping[str, Any],
@@ -1084,6 +1177,7 @@ def _reserved_lane_exclusion(
     declared: Mapping[str, Any],
     attempts: int,
     utilisation: float | None,
+    credit_lift: bool = False,
 ) -> str | None:
     """The reason a lane's policy withholds it from this node, or None.
 
@@ -1096,6 +1190,16 @@ def _reserved_lane_exclusion(
     orchestrators' capacity is never spent on a guess. The reason names the lane,
     which term withheld it and the figures it was judged on, so a reader sees
     the policy that removed the candidate rather than a bare absence.
+
+    A credits lift changes what the window term asks. The provider keeps serving
+    past a spent window while the account holds credits, so under one the lane
+    is judged by its credit pool rather than by the window: the window term asks
+    only whether credits remain under the lift's dispatch stop, which the
+    budget verdict already answers. A lane whose credits are spent is withheld by
+    the budget verdict's own reason, and one whose credits remain is offered on
+    its tier alone -- the presence of the lift is the open-but-scarce signal,
+    and the tier term is what keeps an ordinary node local. The tier and
+    attempts terms are unchanged.
     """
     floor = policy.get(flight.PICKER_RESERVED_LANE_FLOOR_KEY) or {}
     threshold = policy.get(flight.PICKER_RESERVED_LANE_ATTEMPTS_KEY)
@@ -1107,10 +1211,14 @@ def _reserved_lane_exclusion(
             f"{sorted(floor)} or after {threshold} attempts; this node declares "
             f"neither (attempts {attempts})"
         )
+    if credit_lift:
+        # The credit pool governs: a spent pool is already withheld by the
+        # budget verdict, so the window term lets the tier term alone decide.
+        return None
     if utilisation is None:
         return (
             f"reserved-lane: {lane} is reserved while the orchestrators it "
-            f"shares with it need it; its window reading is unknown or stale"
+            f"shares with it needs it; its window reading is unknown or stale"
         )
     if utilisation >= ceiling * 100:
         return (
@@ -1377,9 +1485,24 @@ def candidates(
         # offered for Jev to weigh, never turned into a hard refusal.
         fresh = reading_known and not state.get("expired")
         utilisation = state.get("utilisation_pct") if fresh else None
-        ceiling = budget.policy(config)["utilisation_ceiling_pct"]
-        if utilisation is not None and utilisation >= ceiling:
-            reasons.append(f"budget-ceiling: {utilisation:g}% at or above {ceiling:g}%")
+        # The budget gate reads the verdict a dispatch would take, through the
+        # group's lift-aware block, rather than a ceiling of its own: a lane a
+        # credits lift opens past a spent window is offered here exactly as
+        # dispatch admits a dispatch on it, and one the lift's credits have
+        # spent is withheld with the credit-cap reason the verdict names. The
+        # same reading tells the reserved-lane term below whether a credits lift
+        # rides, which decides what the reserved window term asks.
+        budget_reasons, credit_lift = _budget_exclusion_reasons(
+            name,
+            config,
+            group.get("group") if isinstance(group, Mapping) else None,
+            state,
+            fresh=fresh,
+            utilisation=utilisation,
+            now=now,
+            session=request.session,
+        )
+        reasons.extend(budget_reasons)
         gate = _dispatch_lane_gate(backend)
         if gate["state"] in {"paused", "unreadable"}:
             reasons.append("lane-gate: " + gate["state"])
@@ -1425,6 +1548,7 @@ def candidates(
                     if not live_snapshot
                     else _reserved_five_hour_utilisation(group, view, config, now=now)
                 ),
+                credit_lift=credit_lift,
             )
             if withheld:
                 reasons.append(withheld)
