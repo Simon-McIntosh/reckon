@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1104 supersede_run_review calls _commit_landing_writes",
+    "reckon/crew/promotion.py:1063 _complete_locked calls _commit_landing_writes",
+    "reckon/crew/promotion.py:1672 _complete_locked calls _commit_landing_writes",
+    "reckon/crew/promotion_gate.py:960 record_gate_rerun_at_integrated_revision calls _commit_landing_writes",
+    "reckon/crew/promotion_release.py:636 _record_release_on_ledger calls _commit_landing_writes"
+  ],
+  "completed_at": "2026-10-20T10:17:06.960Z",
+  "dispatched_at": "2026-10-20T10:10:23Z",
+  "findings": [
+    {
+      "file": "tests/test_a_landing_checks_what_it_left.py",
+      "line": "186",
+      "severity": "follow-on",
+      "text": "tests/test_a_landing_checks_what_it_left.py:186 and tests/test_rollback_asks_head.py:115 are edited although neither lies in the four paths the dispatch fenced, so the diff writes files the node had no grant for; the fragment asserts 'the scope was extended' but no grant is recorded anywhere the coordinator can check, and the worker contract requires a scope change to be requested rather than taken, so the coordinator should confirm an extension was actually granted before promotion."
+    },
+    {
+      "file": "reckon/crew/promotion_scope.py",
+      "line": "1217",
+      "severity": "follow-on",
+      "text": "commit afb0bd244 also reformats five pre-existing unformatted constructs at lines 1217, 1259, 1268, 1679, 2342 and 2363 so that ruff format --check reports the whole file clean, folding an unrelated formatting sweep into a fix commit; repo AGENTS.md requires a broad relint to land as its own style(lint) commit so a reviewer can see what the commit did."
+    },
+    {
+      "file": "reckon/crew/promotion_scope.py",
+      "line": "2210",
+      "severity": "follow-on",
+      "text": "_staging_names_a_held_index_lock re-implements the bounded 'wait out a held .git/index.lock' capability that reckon/crew/merge.py already owns at _index_lock_held:349 with its retry loop at merge.py:505-518, detecting the same condition by a message substring rather than the lock file's existence; no shared owner was extended, so the two bound-in-time waiters can drift apart."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read all six commits from 2ff02228 to 83274eee8; afb0bd244 adds the retry to promotion_scope.py, 5fe9c6549/fa191da41 update the two importing tests, and bf599536e/92f53cde1/83274eee8 are the fragment commits.",
+    "done_when": "the done_when names tests/test_a_landing_write_waits_out_a_held_index_lock.py with a brief-hold commit, a past-window refusal naming the lock, a no-lock first-attempt refusal, and a negative control; head-gate.log and negative-control.log record each of those outcomes.",
+    "goal": "the node's goal is to make the landing staging retry a staging failure naming a held index.lock, recording each retry on the run's landing record; reckon/crew/promotion_scope.py:2214 _stage_landing_writes does exactly that.",
+    "manifest": "read; it records status complete, commits afb0bd244..83274eee8, the focused gate 3/3 over three runs EXIT=0, the red negative control EXIT=1, and the base/head importing set with one environmental failure in both arms.",
+    "write_paths": "the dispatch declared four paths; the diff changes those four and additionally edits tests/test_a_landing_checks_what_it_left.py and tests/test_rollback_asks_head.py, which are not among them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_landing_write_waits_out_a_held_index_lock.py:143 asserts result['committed'] is True against the code's own return, which the negative control shows reddens when the retry at promotion_scope.py:2224 is removed, so the assertion is independent of any value the test handed in.",
+    "evidence": "the done_when names tests/test_a_landing_write_waits_out_a_held_index_lock.py; head-gate.log records 3 passed EXIT=0, negative-control.log records 2 failed/1 passed EXIT=1, and baseline-suite.log/after-suite.log record the importing set at 1 failed/167 passed and 1 failed/170 passed.",
+    "fit": "reckon/crew/promotion_scope.py:2226 uses the module's existing _git and _append_landing_record helpers, and no added name carries a plan label, but commit afb0bd244 also reformats pre-existing unformatted lines at 1217-2363.",
+    "goal_fidelity": "reckon/crew/promotion_scope.py:2214 _stage_landing_writes retries the staging git add on a failure whose message names index.lock for a bounded window and appends a stage_retry entry to the run's landing.json, which is what the goal asks for.",
+    "reuse": "reckon/crew/promotion_scope.py:2210 _staging_names_a_held_index_lock re-implements the bounded wait-out-a-held-index.lock capability that reckon/crew/merge.py:349 _index_lock_held and its retry loop at merge.py:511 already own, without extending it.",
+    "scope_discipline": "the diff touches six files while the dispatch fenced four; tests/test_a_landing_checks_what_it_left.py and tests/test_rollback_asks_head.py are edited outside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the landing staging retry a staging failure naming a held index.lock, recording each retry on the run's landing record; reckon/crew/promotion_scope.py:2214 _stage_landing_writes does exactly that.\nVERDICT done_when: the done_when names tests/test_a_landing_write_waits_out_a_held_index_lock.py with a brief-hold commit, a past-window refusal naming the lock, a no-lock first-attempt refusal, and a negative control; head-gate.log and negative-control.log record each of those outcomes.\nVERDICT write_paths: the dispatch declared four paths; the diff changes those four and additionally edits tests/test_a_landing_checks_what_it_left.py and tests/test_rollback_asks_head.py, which are not among them.\nVERDICT manifest: read; it records status complete, commits afb0bd244..83274eee8, the focused gate 3/3 over three runs EXIT=0, the red negative control EXIT=1, and the base/head importing set with one environmental failure in both arms.\nVERDICT diff: read all six commits from 2ff02228 to 83274eee8; afb0bd244 adds the retry to promotion_scope.py, 5fe9c6549/fa191da41 update the two importing tests, and bf599536e/92f53cde1/83274eee8 are the fragment commits.\nCALL_SITES: reckon/crew_run_commands.py:1104 supersede_run_review calls _commit_landing_writes, reckon/crew/promotion.py:1063 _complete_locked calls _commit_landing_writes, reckon/crew/promotion.py:1672 _complete_locked calls _commit_landing_writes, reckon/crew/promotion_gate.py:960 record_gate_rerun_at_integrated_revision calls _commit_landing_writes, reckon/crew/promotion_release.py:636 _record_release_on_ledger calls _commit_landing_writes\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_scope.py:2214 _stage_landing_writes retries the staging git add on a failure whose message names index.lock for a bounded window and appends a stage_retry entry to the run's landing.json, which is what the goal asks for.\nSCORE evidence: 17\nJUSTIFICATION evidence: the done_when names tests/test_a_landing_write_waits_out_a_held_index_lock.py; head-gate.log records 3 passed EXIT=0, negative-control.log records 2 failed/1 passed EXIT=1, and baseline-suite.log/after-suite.log record the importing set at 1 failed/167 passed and 1 failed/170 passed.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: the diff touches six files while the dispatch fenced four; tests/test_a_landing_checks_what_it_left.py and tests/test_rollback_asks_head.py are edited outside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_landing_write_waits_out_a_held_index_lock.py:143 asserts result['committed'] is True against the code's own return, which the negative control shows reddens when the retry at promotion_scope.py:2224 is removed, so the assertion is independent of any value the test handed in.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/promotion_scope.py:2226 uses the module's existing _git and _append_landing_record helpers, and no added name carries a plan label, but commit afb0bd244 also reformats pre-existing unformatted lines at 1217-2363.\nSCORE reuse: 8\nJUSTIFICATION reuse: reckon/crew/promotion_scope.py:2210 _staging_names_a_held_index_lock re-implements the bounded wait-out-a-held-index.lock capability that reckon/crew/merge.py:349 _index_lock_held and its retry loop at merge.py:511 already own, without extending it.\nFINDING tests/test_a_landing_checks_what_it_left.py:186 follow-on: tests/test_a_landing_checks_what_it_left.py:186 and tests/test_rollback_asks_head.py:115 are edited although neither lies in the four paths the dispatch fenced, so the diff writes files the node had no grant for; the fragment asserts 'the scope was extended' but no grant is recorded anywhere the coordinator can check, and the worker contract requires a scope change to be requested rather than taken, so the coordinator should confirm an extension was actually granted before promotion.\nFINDING reckon/crew/promotion_scope.py:1217 follow-on: commit afb0bd244 also reformats five pre-existing unformatted constructs at lines 1217, 1259, 1268, 1679, 2342 and 2363 so that ruff format --check reports the whole file clean, folding an unrelated formatting sweep into a fix commit; repo AGENTS.md requires a broad relint to land as its own style(lint) commit so a reviewer can see what the commit did.\nFINDING reckon/crew/promotion_scope.py:2210 follow-on: _staging_names_a_held_index_lock re-implements the bounded 'wait out a held .git/index.lock' capability that reckon/crew/merge.py already owns at _index_lock_held:349 with its retry loop at merge.py:505-518, detecting the same condition by a message substring rather than the lock file's existence; no shared owner was extended, so the two bound-in-time waiters can drift apart.\n",
+  "review_run_id": "r-20261020T100925571801-review-of-a-landing-write-waits-out-a-held-index-lock-83274eee8458",
+  "reviewed_base_sha": "2ff022282071aeb0e0500e12597ffe7ea2009237",
+  "reviewed_head_sha": "83274eee84580e33d23b3df97b96f00c1024ceb2",
+  "reviewed_run_id": "r-20261020T091743111139-a-landing-write-waits-out-a-held-index-lock",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 15,
+    "goal_fidelity": 19,
+    "reuse": 8,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T10:18:06.670917+00:00",
+  "total": 89
+}
