@@ -1,0 +1,482 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 230144,
+    "effort": "high",
+    "launch": "cli",
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 230144
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "c83074a2ccce406b09bf429e3157e4e574727912",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 11659348,
+      "input_tokens_cumulative": 11659348,
+      "output_tokens": 57239,
+      "output_tokens_cumulative": 57239,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 492,
+    "files": 4,
+    "removed": 2
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 320,
+        "name": "_apply_budget_watchdog",
+        "path": "reckon/crew/recovery_stream.py"
+      },
+      "run_function": {
+        "line": 420,
+        "name": "_stop_delivered_reviews",
+        "path": "reckon/crew/recovery_review_delivery.py"
+      },
+      "window_line": 460
+    },
+    {
+      "existing_function": {
+        "line": 693,
+        "name": "compare",
+        "path": "reckon/run_store.py"
+      },
+      "run_function": {
+        "line": 650,
+        "name": "import_ledger",
+        "path": "reckon/run_store.py"
+      },
+      "window_line": 651
+    },
+    {
+      "existing_function": {
+        "line": 650,
+        "name": "import_ledger",
+        "path": "reckon/run_store.py"
+      },
+      "run_function": {
+        "line": 693,
+        "name": "compare",
+        "path": "reckon/run_store.py"
+      },
+      "window_line": 694
+    },
+    {
+      "existing_function": {
+        "line": 248,
+        "name": "test_a_run_in_another_project_is_reached_only_without_a_project",
+        "path": "tests/test_a_promoted_runs_review_resolves_its_run.py"
+      },
+      "run_function": {
+        "line": 157,
+        "name": "test_two_runs_sharing_a_node_resolve_by_their_own_suffixes",
+        "path": "tests/test_a_promoted_runs_review_resolves_its_run.py"
+      },
+      "window_line": 158
+    },
+    {
+      "existing_function": {
+        "line": 157,
+        "name": "test_two_runs_sharing_a_node_resolve_by_their_own_suffixes",
+        "path": "tests/test_a_promoted_runs_review_resolves_its_run.py"
+      },
+      "run_function": {
+        "line": 248,
+        "name": "test_a_run_in_another_project_is_reached_only_without_a_project",
+        "path": "tests/test_a_promoted_runs_review_resolves_its_run.py"
+      },
+      "window_line": 249
+    }
+  ],
+  "commit_resolution": null,
+  "commits": [
+    "d35bae1fc068fb4d762c1cac76d7977c4cf8b293",
+    "ad8fe0511ce99bf0232ee850ec9200845878393f"
+  ],
+  "completed_at": "2026-10-20T01:13:45.987Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-20T00:44:25Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest -rA",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "tests/test_every_module_fits_a_worker_window.py",
+    "reckon/crew/review.py",
+    "reckon/ledger.py"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -rA -q tests/test_a_promoted_runs_review_resolves_its_run.py tests/test_a_paired_arm_is_reviewed_as_itself.py tests/test_a_resumed_head_is_reviewed.py tests/test_a_run_review_with_run_directory_records_dispatches.py tests/test_a_review_is_not_refused_for_its_run.py tests/test_review_reflex_sweep.py tests/test_run_store.py tests/test_run_store_backend_query.py tests/test_every_module_fits_a_worker_window.py",
+    "exit_status": 1,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T004245239090-a-promoted-runs-review-resolves-its-run/head-arm.log"
+  },
+  "impl_move": {
+    "at_complete": 0.6666666666666666,
+    "at_dispatch": 0.6666666666666666,
+    "plan": "a-paired-arm-is-reviewed-as-itself",
+    "reason": "the section is ticked done in the landing beat after the reviewed head merges, which moves impl",
+    "verdict": "waived"
+  },
+  "lane": "clive",
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-20T01:23:10.766410+00:00",
+    "horizon_seconds": 2400,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": "clive",
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-20T00:43:10Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 2,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 6,
+    "headroom": 6,
+    "mean_context": 120000,
+    "observed_at": "2026-10-20T00:43:20Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": 2,
+      "aggregate_tokens_per_second": 192.124,
+      "detail": "",
+      "mean_tokens_per_second": 73.894,
+      "observed_at": "2026-10-20T00:43:20Z",
+      "runs": 2.6,
+      "state": "measured"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-20T01:13:45.987Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": false,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T004245239090-a-promoted-runs-review-resolves-its-run/manifest.md",
+  "member": "disposable-r-20261020T004245239090-a-promoted-runs-review-resolves-its-run",
+  "model_key": "flash",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_a_promoted_runs_review_resolves_its_run.py::test_a_run_in_another_project_is_reached_only_without_a_project",
+      "tests/test_a_promoted_runs_review_resolves_its_run.py::test_one_promoted_run_resolves_by_its_head_suffix",
+      "tests/test_a_promoted_runs_review_resolves_its_run.py::test_the_real_crew_home_and_store_carry_nothing_this_test_minted",
+      "tests/test_a_promoted_runs_review_resolves_its_run.py::test_two_runs_sharing_a_node_resolve_by_their_own_suffixes"
+    ],
+    "baseline_failure_ids": [
+      "tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window"
+    ],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_a_promoted_runs_review_resolves_its_run.py::test_a_run_in_another_project_is_reached_only_without_a_project",
+      "tests/test_a_promoted_runs_review_resolves_its_run.py::test_one_promoted_run_resolves_by_its_head_suffix",
+      "tests/test_a_promoted_runs_review_resolves_its_run.py::test_the_real_crew_home_and_store_carry_nothing_this_test_minted",
+      "tests/test_a_promoted_runs_review_resolves_its_run.py::test_two_runs_sharing_a_node_resolve_by_their_own_suffixes"
+    ],
+    "declaration": "remove the durable fallback and the first case must fail; separately return the newest durable match instead of matching the head suffix and the second case must fail on the older run; separately read across projects even when a project is given and the sixth case must fail; each mutation applied alone, run under pytest with the default short summary",
+    "head_failure_ids": [
+      "tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window"
+    ],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T004245239090-a-promoted-runs-review-resolves-its-run/negative-control-no-durable-fallback.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T004245239090-a-promoted-runs-review-resolves-its-run/negative-control-no-durable-fallback.log",
+    "test_paths": [
+      "tests/test_a_promoted_runs_review_resolves_its_run.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "a-promoted-runs-review-resolves-its-run",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "capability": {
+      "class": "general",
+      "requirements": {
+        "reasoning": "standard",
+        "risk": "moderate",
+        "verification": "strict"
+      },
+      "version": "1.0"
+    },
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 423,
+          "cached_input_tokens": 302244,
+          "input_tokens": 302669,
+          "output_tokens": 335,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 303004,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "7a8f07c4-b7ec-4dfb-915a-43bd156b0477",
+      "session_id": "7a8f07c4-b7ec-4dfb-915a-43bd156b0477"
+    },
+    "done_when": "tests/test_a_promoted_runs_review_resolves_its_run.py, under a temporary crew home and run store, asserts the six cases §3 names: a single promoted solo-node run resolves by its head suffix and its review-records directory is granted; two twice-node runs each resolve by their own head suffix and a suffix matching neither returns the bare source; two same-head runs return the bare source and the grant refuses; a live pointer still wins; a raising run-store reader returns the bare source; a far-node run in project other returns the bare source for project here and its run id for project None; and the real crew home and run store are untouched; pytest -rA in the foreground over the new file, tests/test_a_paired_arm_is_reviewed_as_itself.py, tests/test_a_resumed_head_is_reviewed.py, tests/test_a_run_review_with_run_directory_records_dispatches.py, tests/test_a_review_is_not_refused_for_its_run.py, tests/test_review_reflex_sweep.py, tests/test_run_store.py, tests/test_run_store_backend_query.py and tests/test_every_module_fits_a_worker_window.py adds no failure against a base arm run at the dispatched base, both arms logged in the run directory with baseline_suite naming the base log and its failure ids as pytest prints them; all three negative-control mutations fail as declared; ruff check and ruff format --check add no finding on the staged paths",
+    "estimated_hours": null,
+    "goal": "resolve a review node id whose run has no live pointer over the durable run records, chosen by the review's head suffix and scoped to the caller's project",
+    "id": "a-promoted-runs-review-resolves-its-run",
+    "images": [],
+    "lane_declaration": {
+      "backend": "clive",
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-20T00:43:10Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 2,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 6,
+      "headroom": 6,
+      "mean_context": 120000,
+      "observed_at": "2026-10-20T00:43:20Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": 2,
+        "aggregate_tokens_per_second": 192.124,
+        "detail": "",
+        "mean_tokens_per_second": 73.894,
+        "observed_at": "2026-10-20T00:43:20Z",
+        "runs": 2.6,
+        "state": "measured"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T004245239090-a-promoted-runs-review-resolves-its-run/manifest.md",
+    "negative_control": "remove the durable fallback and the first case must fail; separately return the newest durable match instead of matching the head suffix and the second case must fail on the older run; separately read across projects even when a project is given and the sixth case must fail; each mutation applied alone, run under pytest with the default short summary",
+    "plan": "a-paired-arm-is-reviewed-as-itself",
+    "requested_backend": "clive",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§3",
+    "spec_level": "guided",
+    "time_budget": "40m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/recovery_review_delivery.py",
+      "reckon/run_store.py",
+      "tests/test_a_promoted_runs_review_resolves_its_run.py",
+      "docs/evidence/fragments/a-paired-arm-is-reviewed-as-itself/a-promoted-runs-review-resolves-its-run.html",
+      "docs/figures/a-paired-arm-is-reviewed-as-itself/a-promoted-runs-review-resolves-its-run"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": 2171715.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "lift_id": null,
+    "member": null,
+    "node": "a-promoted-runs-review-resolves-its-run",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-20T00:43:40.134119+00:00",
+    "score": 0.7375,
+    "session": null,
+    "source": null,
+    "state": "unknown"
+  },
+  "picker_selection": {
+    "action": "fallback",
+    "backend": null,
+    "comment": "power_convertor's obligation command for a review after a waived promotion was refused as unscoped",
+    "confidence": null,
+    "effort": null,
+    "excluded": [],
+    "fallback_reason": "timeout in pick:capability",
+    "family": null,
+    "jev_model": "typesafe/jev-1.13",
+    "latency_ms": 5103.155,
+    "model": null,
+    "offered": [],
+    "probabilities": {},
+    "stage_ms": {
+      "budget-snapshot": 828.147,
+      "context-estimate": 7.432,
+      "records": 1129.922,
+      "verdict-inputs": 1092.185
+    }
+  },
+  "plan": "a-paired-arm-is-reviewed-as-itself",
+  "plan_impl_at_dispatch": 0.6666666666666666,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "ad8fe0511ce99bf0232ee850ec9200845878393f",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "c83074a2ccce406b09bf429e3157e4e574727912",
+    "reviewed_head_sha": "ad8fe0511ce99bf0232ee850ec9200845878393f",
+    "scores": {
+      "durability": 18,
+      "evidence": 17,
+      "fit": 18,
+      "goal_fidelity": 19,
+      "reuse": 18,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 110
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "route_mode": "shadow",
+  "run_id": "r-20261020T004245239090-a-promoted-runs-review-resolves-its-run",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§3",
+  "session": "7a8f07c4-b7ec-4dfb-915a-43bd156b0477",
+  "session_harness": "claude",
+  "session_id": "2c8bb526-2114-4b53-8426-82dc300cce76",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 11659348,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 230144",
+    "elapsed_seconds": 1739.002,
+    "generated_tokens": 57239,
+    "generation_seconds": 811.03,
+    "input_budget_tokens": 230144,
+    "input_utilisation_pct": 74.5,
+    "machine_seconds": 927.972,
+    "peak_input_tokens": 171535,
+    "tokens_per_second": 70.58,
+    "wall_tokens_per_second": 32.91
+  },
+  "time_budget": "40m",
+  "tool_steps": 107.0,
+  "unplanned_reason": null,
+  "unreconciled_override": null,
+  "wall_seconds": 1760,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "ended_pids": [],
+    "exit_code": 0,
+    "exited_at": "2026-10-20T01:13:53Z",
+    "last_record_type": "result",
+    "launched_at": "2026-10-20T00:44:41Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261020T004245239090-a-promoted-runs-review-resolves-its-run",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 11312,
+    "worker_pid": 894400
+  },
+  "worker_seconds": 1709,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
