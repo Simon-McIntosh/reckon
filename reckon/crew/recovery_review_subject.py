@@ -137,9 +137,21 @@ def select_review_for_head(
     if not head:
         return None, ""
     stored = review_module.read_review(project, run_id, reviewed_head_sha=head)
+    if (
+        stored is not None
+        and stored.get("rubric") == review_module.FIGURE_REVIEW_RUBRIC
+    ):
+        stored = None
+
     if stored is not None:
         return ledger.normalize_identity(stored), ""
     newest = review_module.read_review(project, run_id)
+    if (
+        newest is not None
+        and newest.get("rubric") == review_module.FIGURE_REVIEW_RUBRIC
+    ):
+        newest = None
+
     if newest is None:
         return None, ""
     described = review_described_head(newest, tree=tree)
@@ -382,7 +394,9 @@ _RUN_REVIEW_BRIEF_NAME = "review-brief.md"
 _DELTA_UNSET: Any = object()
 
 
-def _review_brief_text(record: Mapping[str, Any], head: str) -> str:
+def _review_brief_text(
+    record: Mapping[str, Any], head: str, *, rubric: str | None = None
+) -> str:
     """The rubric text and run identity a run review's brief carries.
 
     A run review's worker reads the prompt it is handed and nothing else: the
@@ -396,11 +410,13 @@ def _review_brief_text(record: Mapping[str, Any], head: str) -> str:
     run was dispatched with a stored brief, that brief's path, which is the
     authority its own worker read.
     """
-    rubric = (
-        review_module.load_claims_review_prompt()
-        if _review_reads_a_report(record)
-        else review_module.load_review_prompt()
-    )
+    rubric_name = str(rubric or "").strip().lower()
+    if rubric_name == review_module.FIGURE_REVIEW_RUBRIC:
+        rubric_text = review_module.load_figure_review_prompt()
+    elif _review_reads_a_report(record):
+        rubric_text = review_module.load_claims_review_prompt()
+    else:
+        rubric_text = review_module.load_review_prompt()
     run_id = str(record.get("run_id") or "")
     node = record.get("node") or {}
     brief_path = str(node.get("brief_path") or node.get("brief") or "").strip()
@@ -424,7 +440,9 @@ def _review_brief_text(record: Mapping[str, Any], head: str) -> str:
             "incomplete when the review has not finished and no verdict can be acted on.",
         ]
     )
-    text = rubric.rstrip("\n") + "\n\n" + "\n".join(lines) + "\n"
+    if rubric_name:
+        lines.insert(0, f"Review rubric: {rubric_name}")
+    text = rubric_text.rstrip("\n") + "\n\n" + "\n".join(lines) + "\n"
     from reckon.crew.promotion_scope import _is_shadow
 
     if _is_shadow(record):
@@ -460,7 +478,7 @@ def _shadow_review_block(record: Mapping[str, Any]) -> str:
     )
 
 
-def _review_brief_path(record: Mapping[str, Any]) -> Path:
+def _review_brief_path(record: Mapping[str, Any], *, rubric: str | None = None) -> Path:
     """Where a run review's composed brief is written.
 
     Durable rather than a scratch copy so the two places a review is composed
@@ -470,7 +488,12 @@ def _review_brief_path(record: Mapping[str, Any]) -> Path:
     keyed on the reviewed run, so the two consumers of one run's review agree
     without sharing a value between them.
     """
-    return runs.run_dir(str(record.get("run_id") or "")) / _RUN_REVIEW_BRIEF_NAME
+    name = (
+        "figure-review-brief.md"
+        if rubric == review_module.FIGURE_REVIEW_RUBRIC
+        else _RUN_REVIEW_BRIEF_NAME
+    )
+    return runs.run_dir(str(record.get("run_id") or "")) / name
 
 
 def materialize_run_review_brief(source: str | Path) -> bool:
@@ -499,7 +522,7 @@ def materialize_run_review_brief(source: str | Path) -> bool:
     speaks.
     """
     path = Path(source).expanduser()
-    if path.name != _RUN_REVIEW_BRIEF_NAME:
+    if path.name not in {_RUN_REVIEW_BRIEF_NAME, "figure-review-brief.md"}:
         return False
     run_id = path.parent.name
     if not run_id:
@@ -515,7 +538,12 @@ def materialize_run_review_brief(source: str | Path) -> bool:
         return False
     if not str(record.get("run_id") or ""):
         return False
-    _review_dispatch_fields(record, delta=None)
+    rubric = (
+        review_module.FIGURE_REVIEW_RUBRIC
+        if path.name == "figure-review-brief.md"
+        else None
+    )
+    _review_dispatch_fields(record, delta=None, rubric=rubric)
     return True
 
 
@@ -524,6 +552,8 @@ def _review_dispatch_fields(
     *,
     delta: Any = _DELTA_UNSET,
     write: bool = True,
+    rubric: str | None = None,
+    images: Sequence[str] = (),
 ) -> dict[str, Any]:
     """The facts a scoring run's review dispatch is built from.
 
@@ -558,7 +588,7 @@ def _review_dispatch_fields(
     ``write`` is False for a preview. A plan review's report directory, brief,
     plan snapshot and sidecar are then returned as the paths and text they
     would be written with — ``brief_text`` carries the composed brief — and
-    nothing is created: a preview leaves the plan's report root unchanged and
+    nothing is created: a preview leaves the plan report root unchanged and
     repeated previews mint no run directory for the delivered-review store to
     find. The paths returned are the same ones a real dispatch writes, so the
     preview still names the command and the scope that dispatch would use.
@@ -566,6 +596,7 @@ def _review_dispatch_fields(
     composing_for_dispatch = delta is not _DELTA_UNSET
     if not composing_for_dispatch:
         delta = None
+    rubric_name = str(rubric or "").strip().lower()
     if record.get("subject") == "plan":
         from reckon import _plan_html
 
@@ -695,7 +726,10 @@ def _review_dispatch_fields(
     if write and composing_for_dispatch:
         record_directory.mkdir(parents=True, exist_ok=True)
     write_paths = review_module.run_review_record_paths(
-        runs.run_dir(run_id), run_id, reviewed_head_sha=head
+        runs.run_dir(run_id),
+        run_id,
+        reviewed_head_sha=head,
+        rubric=rubric_name,
     )
     plan = str(node.get("plan") or "")
     section = str(node.get("section") or "")
@@ -716,8 +750,8 @@ def _review_dispatch_fields(
     # as coordinator instructions, so every plan gate still runs. Writing the
     # brief here, before the lane decides, is what lets the printed
     # ``review-missing`` command and the executed dispatch name one path.
-    brief_text = _review_brief_text(record, head)
-    brief_file = _review_brief_path(record)
+    brief_text = _review_brief_text(record, head, rubric=rubric_name)
+    brief_file = _review_brief_path(record, rubric=rubric_name)
     # The brief is materialized only for the dispatch, never on a read: a read
     # that composed it wrote review-brief.md into the reviewed run's directory,
     # creating a directory behind a pointer that never had one and drawing the
@@ -726,20 +760,28 @@ def _review_dispatch_fields(
     if write and composing_for_dispatch:
         brief_file.parent.mkdir(parents=True, exist_ok=True)
         brief_file.write_text(brief_text, encoding="utf-8")
+    base_node_id = round_node_id(REVIEW_NODE_PREFIX, review_node_source, head)
+    if rubric_name == review_module.FIGURE_REVIEW_RUBRIC:
+        base_node_id += "-figure"
+    figure_review = rubric_name == review_module.FIGURE_REVIEW_RUBRIC
     return {
         "run_id": run_id,
         "project": project,
         "head": head,
+        "rubric": rubric_name,
+        "images": list(images) if figure_review else [],
         "plan": plan,
         "section": section,
         "brief": str(brief_file),
         "brief_text": brief_text,
         "source_node": source_node,
-        "node_id": round_node_id(REVIEW_NODE_PREFIX, review_node_source, head),
+        "node_id": base_node_id,
         "session": str(record.get("session") or "<session>"),
         "time_budget": str(node.get("time_budget") or "20m"),
         "goal": (
-            f"attach an independent review to run {run_id}"
+            f"attach an independent figure review to run {run_id}"
+            if figure_review
+            else f"attach an independent review to run {run_id}"
             + (
                 " covering only the commits it gained since it was reviewed: "
                 + ", ".join(str(path) for path in delta.get("paths") or ())
@@ -762,7 +804,11 @@ def _review_dispatch_fields(
         # because a record that omits it cannot be told apart from one about
         # other code, and the ledger row records the pair a review stands for.
         "done_when": (
-            _claims_review_done_when(run_id)
+            f"the figure review for {run_id} stores a parsed read-only rubric "
+            f"record with all {len(review_module.FIGURE_REVIEW_ITEMS)} rubric "
+            "items at a declared write path, anchored to the reviewed base and head"
+            if figure_review
+            else _claims_review_done_when(run_id)
             if _review_reads_a_report(record)
             else (
                 f"the review for {run_id} stores a parsed record scoring all "

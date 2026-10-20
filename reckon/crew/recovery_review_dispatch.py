@@ -52,6 +52,17 @@ from reckon.crew.runs import (
 # it already launched from one it has not, and so a reader can see why a run is
 # still in scoring rather than guessing.
 REVIEW_DISPATCH_FIELD = "review_dispatch"
+FIGURE_REVIEW_DISPATCH_FIELD = "figure_review_dispatch"
+
+
+def _review_dispatch_field(rubric: str | None = None) -> str:
+    """The pointer field that records one review rubric's dispatches."""
+    return (
+        FIGURE_REVIEW_DISPATCH_FIELD
+        if rubric == review_module.FIGURE_REVIEW_RUBRIC
+        else REVIEW_DISPATCH_FIELD
+    )
+
 
 # The pointer field recording the one repair a finding-bearing review round
 # dispatched. A round is the pair a review stands for — the run it reviewed and
@@ -273,7 +284,7 @@ def _discard_stranded_review(review_run_id: str, *, reason: str) -> str:
     return "its pointer was discarded with the reason recorded"
 
 
-def _review_in_flight(record: Mapping[str, Any]) -> str:
+def _review_in_flight(record: Mapping[str, Any], *, rubric: str | None = None) -> str:
     """The review run already standing for this run at this head, or empty.
 
     Recognition keys on the pair a review stands for — the run it reviews and
@@ -292,9 +303,10 @@ def _review_in_flight(record: Mapping[str, Any]) -> str:
     rather than recomposing, failing on exactly the case it was written to
     route.
     """
-    fields = _review_dispatch_fields(record)
+    fields = _review_dispatch_fields(record, rubric=rubric)
     head = str(fields.get("head") or "")
-    recorded = record.get(REVIEW_DISPATCH_FIELD)
+    dispatch_field = _review_dispatch_field(rubric)
+    recorded = record.get(dispatch_field)
     if isinstance(recorded, Mapping) and str(recorded.get("status") or "") == (
         "withdrawn"
     ):
@@ -316,6 +328,15 @@ def _review_in_flight(record: Mapping[str, Any]) -> str:
     for pointer in list_live(project=project):
         if not _is_review_run(pointer):
             continue
+        pointer_node = pointer.get("node") or {}
+        pointer_node_id = (
+            pointer_node.get("id")
+            if isinstance(pointer_node, Mapping)
+            else pointer_node
+        )
+        pointer_is_figure = str(pointer_node_id or "").endswith("-figure")
+        if pointer_is_figure != (rubric == review_module.FIGURE_REVIEW_RUBRIC):
+            continue
         reviewed, reviewed_head = _review_subject(pointer, project)
         if reviewed and reviewed == run_id and _review_head_covers(reviewed_head, head):
             return str(pointer.get("run_id") or "")
@@ -331,6 +352,7 @@ def _record_review_dispatch(
     backend: str = "",
     reviewed_head: str = "",
     asks: Sequence[Mapping[str, Any]] | None = None,
+    rubric: str | None = None,
 ) -> None:
     """Write the reflex's outcome onto the run it acted for.
 
@@ -350,6 +372,7 @@ def _record_review_dispatch(
     """
     if not run_id:
         return
+    dispatch_field = _review_dispatch_field(rubric)
 
     def record(pointer: dict[str, Any]) -> dict[str, Any]:
         entry: dict[str, Any] = {
@@ -359,17 +382,14 @@ def _record_review_dispatch(
             "backend": backend or None,
             "head": reviewed_head or None,
             "at": _utc_now(),
-            "attempt": int(
-                (pointer.get(REVIEW_DISPATCH_FIELD) or {}).get("attempt") or 0
-            )
-            + 1,
+            "attempt": int((pointer.get(dispatch_field) or {}).get("attempt") or 0) + 1,
         }
         if asks:
             # A retry that re-asked the route question records both asks, so a
             # reader sees the lane that refused the review and the lane the
             # second answer named rather than only the outcome it produced.
             entry["asks"] = [dict(ask) for ask in asks]
-        pointer[REVIEW_DISPATCH_FIELD] = entry
+        pointer[dispatch_field] = entry
         return pointer
 
     if isinstance(run_id, Mapping):
@@ -380,7 +400,7 @@ def _record_review_dispatch(
         )
         write_json_atomically(
             directory / "dispatch.json",
-            record({})[REVIEW_DISPATCH_FIELD],
+            record({})[dispatch_field],
             indent=2,
             sort_keys=True,
             mode=None,
@@ -632,6 +652,30 @@ def _changed_paths_between(
     if completed.returncode:
         return None
     return [line.strip() for line in completed.stdout.splitlines() if line.strip()]
+
+
+_FIGURE_IMAGE_SUFFIXES = frozenset({".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp"})
+
+
+def _changed_figure_paths(record: Mapping[str, Any]) -> list[str]:
+    """Images below a figures directory that this run added or changed."""
+    tree = _review_tree(record)
+    base = str(record.get("base_sha") or record.get("base") or "").strip()
+    head = _reviewed_run_head(record)
+    changed = _changed_paths_between(tree, base, head)
+    if tree is None or changed is None:
+        return []
+    images: list[str] = []
+    for raw_path in changed:
+        path = Path(raw_path)
+        if (
+            "figures" not in path.parts
+            or path.suffix.lower() not in _FIGURE_IMAGE_SUFFIXES
+            or not (tree / path).is_file()
+        ):
+            continue
+        images.append(path.as_posix())
+    return images
 
 
 def _repo_relative_cited_path(value: str, roots: Sequence[Path | None]) -> str:
@@ -1066,7 +1110,9 @@ def _review_attempt_withdrawn_before_launch(run_id: str) -> bool:
     return exit_record is not None and _exit_record_is_launch_failure(exit_record)
 
 
-def _failed_review_backend(record: Mapping[str, Any]) -> str:
+def _failed_review_backend(
+    record: Mapping[str, Any], *, rubric: str | None = None
+) -> str:
     """The lane the run's most recent recorded attempt used for its current head.
 
     A recorded attempt that produced neither a stored nor an in-flight review
@@ -1094,7 +1140,7 @@ def _failed_review_backend(record: Mapping[str, Any]) -> str:
     review run's own exit record; the caller has already established that no
     review stands for the head.
     """
-    recorded = record.get(REVIEW_DISPATCH_FIELD)
+    recorded = record.get(_review_dispatch_field(rubric))
     if not isinstance(recorded, Mapping):
         return ""
     if str(recorded.get("status") or "").strip() != "dispatched":
@@ -1546,7 +1592,11 @@ HELD_REVIEW_DISPATCH_STATUSES = frozenset({"lane-paused", "awaiting-lane"})
 
 
 def _zero_slot_held_lane(
-    record: Mapping[str, Any], *, config: Mapping[str, Any], session: str
+    record: Mapping[str, Any],
+    *,
+    config: Mapping[str, Any],
+    session: str,
+    rubric: str | None = None,
 ) -> str:
     """The lane a recorded hold names whose router grants this session nothing.
 
@@ -1558,7 +1608,7 @@ def _zero_slot_held_lane(
     is not exhaustion. A paused gate records the same status without a zero
     allowance, so the allowance check is what tells the two apart.
     """
-    recorded = record.get(REVIEW_DISPATCH_FIELD)
+    recorded = record.get(_review_dispatch_field(rubric))
     if not isinstance(recorded, Mapping):
         return ""
     if str(recorded.get("status") or "").strip() not in HELD_REVIEW_DISPATCH_STATUSES:
@@ -1586,6 +1636,8 @@ def _reroute_held_review(
     project: str,
     repo: str,
     owning_backend: str = "",
+    profile: str | None = None,
+    rubric: str | None = None,
 ) -> dict[str, Any] | None:
     """Ask the route question for a review the local lane held, once, with it out.
 
@@ -1612,13 +1664,18 @@ def _reroute_held_review(
     that refused the review beside the answer the second ask produced.
     """
     session = str(fields.get("session") or "")
-    refusing = _zero_slot_held_lane(record, config=config, session=session)
+    refusing = _zero_slot_held_lane(
+        record, config=config, session=session, rubric=rubric
+    )
     if not refusing:
         return None
     eligible = [
         name
         for name in _review_lane_candidates(
-            config, owning_backend=owning_backend or refusing, session=session
+            config,
+            owning_backend=owning_backend or refusing,
+            session=session,
+            profile=profile,
         )
         if name != refusing
     ]
@@ -1681,7 +1738,7 @@ def _standing_plan_review(project: str, plan_slug: str) -> str:
     return ""
 
 
-def dispatch_review_for_run(
+def _dispatch_text_review_for_run(
     record: Mapping[str, Any],
     *,
     config: Mapping[str, Any] | None = None,
@@ -1875,6 +1932,131 @@ def dispatch_review_for_run(
     )
 
 
+def _dispatch_figure_review_for_run(
+    record: Mapping[str, Any],
+    images: Sequence[str],
+    *,
+    config: Mapping[str, Any] | None,
+    launcher: Callable[..., Any] | None,
+    allow_unreconciled_runs: bool,
+    prefer_local: bool,
+    dry_run: bool,
+) -> dict[str, Any]:
+    """Dispatch a read-only figure review for changed figure images."""
+    run_id = str(record.get("run_id") or "")
+    rubric = review_module.FIGURE_REVIEW_RUBRIC
+    if not run_id or _is_review_node(record):
+        return {"run_id": run_id, "dispatched": False, "reason": "not a scoring run"}
+    row = classify_pointer(record)
+    if row["classification"] != "scoring":
+        return {
+            "run_id": run_id,
+            "dispatched": False,
+            "reason": f"the run is not awaiting review ({row['classification']})",
+        }
+    fields = _review_dispatch_fields(record, delta=None, rubric=rubric, images=images)
+    if not fields["head"] and _worktree_reclaimed(record):
+        reason = (
+            f"the run's worktree {str(record.get('worktree') or '').strip()} "
+            "has been reclaimed and its record names no resolvable head, so no "
+            "figure review composes"
+        )
+        _record_review_dispatch(
+            run_id,
+            status="refused",
+            reason=reason,
+            rubric=rubric,
+        )
+        return {
+            "run_id": run_id,
+            "dispatched": False,
+            "refused": True,
+            "reason": reason,
+        }
+    try:
+        stored = review_module.read_review(
+            fields["project"],
+            run_id,
+            reviewed_head_sha=fields["head"] or None,
+            rubric=rubric,
+        )
+    except (OSError, ValueError) as exc:
+        stored = None
+        review_error = str(exc)
+    else:
+        review_error = ""
+    if stored is not None:
+        return {
+            "run_id": run_id,
+            "dispatched": False,
+            "review_status": "present",
+            "reason": "a figure review is already stored for this run and head",
+        }
+    if review_error:
+        return {
+            "run_id": run_id,
+            "dispatched": False,
+            "review_status": "unreadable",
+            "reason": f"the stored figure review could not be read: {review_error}",
+        }
+    in_flight = _review_in_flight(record, rubric=rubric)
+    if in_flight:
+        return {
+            "run_id": run_id,
+            "dispatched": False,
+            "reason": "a figure review is already in flight for this run and head",
+            "review_run_id": in_flight,
+        }
+    return _dispatch_composed_review(
+        record,
+        fields,
+        config=config,
+        launcher=launcher,
+        allow_unreconciled_runs=allow_unreconciled_runs,
+        prefer_local=prefer_local,
+        dry_run=dry_run,
+    )
+
+
+def dispatch_review_for_run(
+    record: Mapping[str, Any],
+    *,
+    config: Mapping[str, Any] | None = None,
+    launcher: Callable[..., Any] | None = None,
+    allow_unreconciled_runs: bool = True,
+    prefer_local: bool = False,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    """Dispatch the text review and, when needed, its separate figure review."""
+    text_report = _dispatch_text_review_for_run(
+        record,
+        config=config,
+        launcher=launcher,
+        allow_unreconciled_runs=allow_unreconciled_runs,
+        prefer_local=prefer_local,
+        dry_run=dry_run,
+    )
+    if record.get("subject") == "plan" or _is_review_node(record):
+        return text_report
+    images = _changed_figure_paths(record)
+    if not images:
+        return text_report
+    figure_report = _dispatch_figure_review_for_run(
+        record,
+        images,
+        config=config,
+        launcher=launcher,
+        allow_unreconciled_runs=allow_unreconciled_runs,
+        prefer_local=prefer_local,
+        dry_run=dry_run,
+    )
+    return {
+        **text_report,
+        "text_review": text_report,
+        "figure_review": figure_report,
+    }
+
+
 def _queued_pointer_names_directory(project: str, directory: Path) -> bool:
     """Whether a queued pointer names the brief inside this composed directory.
 
@@ -1960,12 +2142,17 @@ def _dispatch_composed_review(
     """Launch either review subject from the shared fields and dispatch path."""
     run_id = str(record.get("run_id") or "")
     dispatch_subject = record if record.get("subject") == "plan" else run_id
+    rubric = str(fields.get("rubric") or "")
+    profile = rubric if rubric == review_module.FIGURE_REVIEW_RUBRIC else None
+
+    def record_dispatch(**values: Any) -> None:
+        _record_review_dispatch(dispatch_subject, rubric=rubric or None, **values)
+
     project = fields["project"]
     repo = str(record.get("repo") or "")
     if not project or not repo:
         reason = "the run records no project or repository to dispatch against"
-        _record_review_dispatch(
-            dispatch_subject,
+        record_dispatch(
             status="refused",
             reason=reason,
             reviewed_head=fields["head"],
@@ -1977,15 +2164,14 @@ def _dispatch_composed_review(
     from reckon.crew.node import TaskNode
 
     resolved = _resolved_review_config(project, config)
-    if record.get("subject") != "plan" or record.get("local"):
+    if (record.get("subject") != "plan" or record.get("local")) and not profile:
         try:
             from reckon import flight
 
             resolved = flight.select_local_backend(resolved)
         except Exception as exc:  # noqa: BLE001 - the configured lane is the reason
             reason = f"the local lane is unavailable: {exc}"
-            _record_review_dispatch(
-                dispatch_subject,
+            record_dispatch(
                 status="awaiting-lane",
                 reason=reason,
                 reviewed_head=fields["head"],
@@ -2008,6 +2194,7 @@ def _dispatch_composed_review(
         done_when=fields["done_when"],
         write_paths=list(fields["write_paths"]),
         time_budget=fields["time_budget"],
+        images=list(fields.get("images") or ()),
     )
     lane_asks: list[Mapping[str, Any]] | None = None
     if record.get("subject") == "plan":
@@ -2016,8 +2203,7 @@ def _dispatch_composed_review(
             reason = _no_lane_reason(
                 run_id, resolved, kind="review", session=fields["session"]
             )
-            _record_review_dispatch(
-                dispatch_subject,
+            record_dispatch(
                 status="awaiting-lane",
                 reason=reason,
                 reviewed_head=fields["head"],
@@ -2040,7 +2226,7 @@ def _dispatch_composed_review(
             declared_node = record.get("node") or {}
             declaration = declared_node.get("lane_declaration") or {}
             owning_lane = str(declaration.get("backend") or "").strip()
-        previous_lane = _failed_review_backend(record)
+        previous_lane = _failed_review_backend(record, rubric=rubric or None)
         reroute = _reroute_held_review(
             record,
             node=node,
@@ -2049,6 +2235,8 @@ def _dispatch_composed_review(
             project=project,
             repo=repo,
             owning_backend=owning_lane,
+            profile=profile,
+            rubric=rubric or None,
         )
         if reroute is not None and not reroute.get("backend"):
             # The answer with the refusing lane left out held the review. It is
@@ -2057,8 +2245,7 @@ def _dispatch_composed_review(
             # question exists to replace.
             reason = str(reroute["reason"])
             refusing = str(reroute.get("refusing_lane") or "")
-            _record_review_dispatch(
-                dispatch_subject,
+            record_dispatch(
                 status="awaiting-lane",
                 reason=reason,
                 backend=refusing,
@@ -2081,10 +2268,13 @@ def _dispatch_composed_review(
             candidates = [
                 name
                 for name in _review_lane_candidates(
-                    resolved, owning_backend=owning_lane, session=fields["session"]
+                    resolved,
+                    owning_backend=owning_lane,
+                    session=fields["session"],
+                    profile=profile,
                 )
                 if name != previous_lane
-                and (not prefer_local or name == (owning_lane or local_lane))
+                and (profile or not prefer_local or name == (owning_lane or local_lane))
             ]
             if not candidates:
                 reason = _no_lane_reason(
@@ -2094,9 +2284,9 @@ def _dispatch_composed_review(
                     kind="review",
                     previous_lane=previous_lane,
                     session=fields["session"],
+                    profile=profile,
                 )
-                _record_review_dispatch(
-                    dispatch_subject,
+                record_dispatch(
                     status="awaiting-lane",
                     reason=reason,
                     backend=previous_lane,
@@ -2224,8 +2414,7 @@ def _dispatch_composed_review(
         )
     except BudgetHold as exc:
         reason = f"the {backend} lane is unavailable: {exc}"
-        _record_review_dispatch(
-            dispatch_subject,
+        record_dispatch(
             status="awaiting-lane",
             reason=reason,
             backend=backend,
@@ -2251,8 +2440,7 @@ def _dispatch_composed_review(
             or str(gate.get("reason") or "").strip()
             or f"the {backend} lane gate is {gate.get('state')!r}"
         )
-        _record_review_dispatch(
-            dispatch_subject,
+        record_dispatch(
             status="lane-paused",
             reason=reason,
             backend=backend,
@@ -2278,8 +2466,7 @@ def _dispatch_composed_review(
         # refusals all arrive here. The automatic path must not be the one place
         # they are skipped, so the refusal is recorded and reported rather than
         # caught and shrugged off.
-        _record_review_dispatch(
-            dispatch_subject,
+        record_dispatch(
             status="refused",
             reason=str(exc),
             backend=backend,
@@ -2294,8 +2481,7 @@ def _dispatch_composed_review(
         }
 
     review_run_id = str(launched.get("run_id") or "")
-    _record_review_dispatch(
-        dispatch_subject,
+    record_dispatch(
         status="dispatched",
         reason=f"the review dispatched automatically as run {review_run_id}",
         review_run_id=review_run_id,
