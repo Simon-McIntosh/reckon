@@ -106,6 +106,20 @@ each driven through <code>edit_plan</code> on a temporary project in <code>tests
 <p><strong>Review.</strong> At <code>835347afd</code> the independent review scored 113/120 with nothing blocking. Its one follow-on is exempted: <code>stop()</code> leaving the backoff state set is unreachable in production, because <code>reckon/mcp.py</code> holds one server per process and never calls it.</p>
   </section>
 
+  <section id="s13">
+    <h2>§13 — an added parameter needs no reconnect</h2>
+    <p>Run <code>r-20261020T062136186026-epw-an-added-parameter-needs-no-reconnect</code>, head <code>8a0feee7f</code>.</p>
+<ul>
+<li>The readiness probe reports each tool's parameters, its required subset, and, when the parent sends its registered schema, a compatibility verdict.</li>
+<li>The verdict comes from <code>signature_compatible</code> and <code>probe_reply</code> in <code>reckon/served_code.py</code>. The child imports them from the checkout, and <code>SERVED_CHILD_PROGRAM</code> only calls them, so a later change to the rule reaches running servers.</li>
+<li>An added optional parameter is served with a <code>schema_note</code> and no reconnect. A removed parameter, a new required one, or a registered optional one made required still returns <code>stale_server_code</code>.</li>
+<li>A probe that carries no registered parameters gets the answer it always had, so a server started before this asks for one reconnect and picks it up.</li>
+</ul>
+<p><strong>Gate.</strong> At <code>81383b260</code>, 24 passed and 1 failed. The failure is <code>test_every_module_fits_a_worker_window</code>, the same two offenders as the base arm, so zero failures are added. Seven named cases are in <code>tests/test_an_added_parameter_needs_no_reconnect.py</code>. One spawns a real child from a temporary checkout whose rule differs, and shows the verdict comes from the checkout. Four negative controls each fail their own case: equal lists, deciding in the parent, nested requiredness, and the rule written into the program string. Their logs are in <code>~/.config/reckon/crew/runs/r-20261020T062136186026-epw-an-added-parameter-needs-no-reconnect/logs/</code>.</p>
+<p><strong>Review.</strong> The section went through four plan-review rounds before it was built. They caught the probe's wire shape for running servers, the compatible serve's routing, and the rule's placement in the child's program string. The node was dispatched before the fourth round, at the lead's request. The code review at <code>61e8da6ab</code> scored 112/120 with nothing blocking. Its two follow-ons asked for a real-child case on the checkout's rule, which <code>81383b260</code> adds.</p>
+<p>The landing waives a review of the final head. The only commits after the reviewed one change the test file and this evidence fragment, with no product source.</p>
+  </section>
+
 </main>
 </body>
 </html>

@@ -22,11 +22,11 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-informs" content="the-crew-surface-is-one-tool-and-a-few-verbs">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;every-plan-write-goes-through-edit-plan#s2&quot;,&quot;every-plan-write-goes-through-edit-plan#s3&quot;],&quot;s5&quot;:[&quot;every-plan-write-goes-through-edit-plan#s4&quot;],&quot;s6&quot;:[&quot;every-plan-write-goes-through-edit-plan#s5&quot;],&quot;s7&quot;:[&quot;every-plan-write-goes-through-edit-plan#s6&quot;],&quot;s8&quot;:[&quot;every-plan-write-goes-through-edit-plan#s7&quot;],&quot;s9&quot;:[&quot;every-plan-write-goes-through-edit-plan#s6&quot;],&quot;s10&quot;:[&quot;every-plan-write-goes-through-edit-plan#s6&quot;],&quot;s11&quot;:[&quot;every-plan-write-goes-through-edit-plan#s9&quot;],&quot;s12&quot;:[&quot;every-plan-write-goes-through-edit-plan#s11&quot;],&quot;s13&quot;:[&quot;every-plan-write-goes-through-edit-plan#s12&quot;,&quot;the-crew-surface-is-one-tool-and-a-few-verbs#s5&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;}">
   <title>Every Plan Write Goes Through edit_plan | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="61">
+<meta name="plan-version" content="62">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -301,7 +301,7 @@
     <p><strong>Done when</strong> <code>tests/test_a_dying_child_is_backed_off.py</code> uses a child that exits right after every spawn. A run of twenty calls starts no more children than the bound, every call is answered by the image, and the last death's stderr is readable at the named path. A stamp move resets the count, and the next call starts a fresh child. The negative control removes the bound, and the spawn-count case then fails. <code>tests/test_a_slow_child_never_forces_a_reconnect.py</code> adds no failure, and nor does <code>tests/test_every_module_fits_a_worker_window.py</code>. Write paths: <code>reckon/served_code.py</code>, <code>tests/test_a_dying_child_is_backed_off.py</code>.</p>
 
     <h2 id="s13">§13 — An added parameter needs no reconnect</h2>
-<section data-reckon="section" data-id="s13" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s13" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> After §11, the only reconnect the guard still asks for is a changed tool signature, and it asks for any difference in a tool's parameter list, additions included. So every landing that adds a parameter makes every session reconnect. The 2026-10-19 and 2026-10-20 reconnects after §11 landed were both "tool edit_plan changed its parameters": §7's added <code>request_id</code>, seen by an imas-codex session at 05:05Z and a reckon session at 23:47Z. crew-surface §5 adds eight actions to <code>crew</code> and would do the same. An added optional parameter leaves every call the client can make valid on the new code, so a reconnect only buys the client the new parameter.</p>
     <p>A second cause keeps this fix from reaching anyone. <code>_probe_signature_changed</code> in <code>reckon/mcp.py</code> compares the lists inside the server's own image, so a better rule never reaches a server that is already running. Each improvement to the guard costs one more reconnect per session.</p>
     <p><strong>Deliverable.</strong></p>
@@ -478,6 +478,9 @@
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261019T234011292854-epw-a-dying-child-is-backed-off" data-who="reckon-build" data-when="2026-10-20T00:06:11.809Z">
     <div class="r-comment-body"><p>§12 landed: a current-code child that keeps dying is backed off after death_bound consecutive deaths within one code stamp (default 3), the running image serving every call meanwhile; a stamp move clears the count and starts one fresh child; the last death's stderr is kept in a bounded file beside the served tree (&lt;root&gt;/.reckon-served-child.stderr.log), rewritten on each spawn. Gate at head 835347afd: 14 passed / 1 pre-existing failed, against the base arm's 11 passed / 1 failed — zero added failures, three added cases.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-close-s13" data-who="reckon-build" data-when="2026-10-20T07:40:00Z">
+    <div class="r-comment-body"><p>§13 landed: a tool that gains an optional parameter is served with a <code>schema_note</code> instead of a reconnect, and the compatibility rule runs from the checkout, so future rule changes reach running servers (head <code>8a0feee7f</code>). Zero failures added; reviewed 112/120. Each session needs one more reconnect to pick it up. <a href="/reckon/evidence/archive/every-plan-write-goes-through-edit-plan-landed.html#s13">evidence</a></p></div>
 </div>
 </section>
 </main>
