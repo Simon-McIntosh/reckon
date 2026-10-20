@@ -1,0 +1,32 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-20T22:07:18Z",
+  "dispatched_at": "2026-10-20T21:54:27Z",
+  "findings": [
+    {
+      "file": "tests/test_ledger.py",
+      "line": "2431",
+      "severity": "follow-on",
+      "text": "the view-list assertion is red at both the base arm and the head arm (the view list literal omits a models view the code's message carries), so a pre-existing defect not introduced by these commits; it should be derived from the view registry rather than written out as a literal."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node goal is to move every reckon caller and citation of `crew ledger` and `crew velocity` behind `crew view` and tombstone both; these two commits complete it by making the retired ledger rollup reach one successor whichever way the caller spelled it \u2014 reckon/crew/tombstones.py:213 carries operand_aliases=(('summary','ledger'),) and reckon/crew/tombstones.py:333 adds successor_name(), so `crew ledger --view summary` renders as and reports `crew view ledger` rather than the fleet summary.\nVERDICT done_when: the source done_when is the eleven-file gate adding zero failures against the base arm; the manifest's baseline_suite records the base arm at 33bb77708 as 2 failed / 257 passed and after_suite the head arm at 0e5a370 as 2 failed / 265 passed with the identical two failing ids, and logs/gate-head.log and logs/gate-base.log each open with their revision header and close with a bare EXIT= footer.\nVERDICT write_paths: the source fence lists twenty paths and the manifest's changed_paths matches; the three files this increment changes \u2014 reckon/crew/tombstones.py, tests/test_read_verbs_retire_behind_crew_view.py and docs/evidence/fragments/the-crew-surface-is-one-tool-and-a-few-verbs/cso-ledger-and-velocity-retire.html \u2014 are all inside them.\nVERDICT manifest: read at manifest.md; it records the gate command verbatim, both arm logs with revision headers and bare exit footers, a red negative control (1 failed, EXIT=1) plus three further controls with their logs, failure_attribution for the two carried reds, and blockers: none.\nVERDICT diff: read the two commits gained since the last review against reviewed_base_sha 493cb5f6d \u2014 0e5a37004 changes reckon/crew/tombstones.py and the test file, cf3b22b05 changes only the evidence fragment; git diff --stat over the pair names exactly those three files and no path outside the declared scope.\nCALL_SITES: reckon/crew_run_commands.py:2719 (crew_ledger = tombstone_command('ledger')), reckon/crew_run_commands.py:2722 (crew_velocity = tombstone_command('velocity), reckon/crew_dispatch_commands.py:30 (_CrewGroup.get_command -> tombstone_command), reckon/crew/tombstones.py:362 (tombstone_command builds the hidden command), reckon/crew/tombstones.py:384 (_tombstone emits tombstone_payload)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/tombstones.py:213 maps the caller's --view summary onto the ledger operand and reckon/crew/tombstones.py:355 reports that view as the successor, so the retired rollup reaches one document however it is spelled.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/gate-head.log closes '2 failed, 265 passed' at 0e5a370 with a bare EXIT=1 and logs/gate-base.log the same two ids at 33bb77708, so zero failures are added; the gated revision is 0e5a370 and the reviewed head cf3b22b is evidence-only.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 493cb5f6d cf3b22b names only reckon/crew/tombstones.py, tests/test_read_verbs_retire_behind_crew_view.py and the evidence fragment, each inside the declared fence, with nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_read_verbs_retire_behind_crew_view.py:311 asserts the printed invocation equals the successor the payload reports and :320 runs it requiring exit 0, and logs/control-summary-alias.log shows the summary case reddening (1 failed, EXIT=1) when the alias is repointed at the fleet summary.\nSCORE fit: 18\nJUSTIFICATION fit: successor_name at reckon/crew/tombstones.py:333 mirrors the branch structure of successor_invocation at :306 and delegates to the same _operand_and_forwarded helper, and no added name or comment carries a plan label.\nSCORE reuse: 18\nJUSTIFICATION reuse: a capability search over reckon/crew for rendering a tombstone's successor found no earlier owner \u2014 the successor field was a static string \u2014 and the addition extends the module's own helper _operand_and_forwarded rather than duplicating it.\nFINDING tests/test_ledger.py:2431 follow-on: the view-list assertion is red at both the base arm and the head arm (the view list literal omits a models view the code's message carries), so a pre-existing defect not introduced by these commits; it should be derived from the view registry rather than written out as a literal.\n",
+  "review_run_id": "r-20261020T215340325844-review-of-cso-ledger-and-velocity-retire-cf3b22b05de1",
+  "reviewed_base_sha": "493cb5f6db7c57ac3ee94397636da8cca484a4e5",
+  "reviewed_head_sha": "cf3b22b05de1edfb31ed95a16ea780eced329d93",
+  "reviewed_run_id": "r-20261020T161011580050-cso-ledger-and-velocity-retire",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T00:00:00+00:00",
+  "total": 112
+}

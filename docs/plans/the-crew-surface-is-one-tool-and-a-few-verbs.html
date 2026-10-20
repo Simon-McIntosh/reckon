@@ -26,7 +26,7 @@
   <title>The Crew Surface Is One Tool And A Few Verbs | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="87">
+<meta name="plan-version" content="88">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -460,7 +460,10 @@
     <div class="r-comment-body"><p>re-review of section 9 node 1 at 493cb5f6d: 109/120, no added failures; one defect (crew ledger --view summary maps to the fleet summary view rather than crew view ledger) and two companions, all in attempt 5's advice; manifest status repaired after the worker's turn ended before rewriting it</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261020T161011580050-cso-ledger-and-velocity-retire" data-who="reckon-build" data-when="2026-10-20T21:52:27Z">
-    <div class="r-comment-body"><p>retired `crew ledger` and `crew velocity` to tombstones naming `crew view ledger` and `crew view velocity`, moved every reckon-side caller and citation to the views, and repointed the three test files that still drove the retired CLI; a caller&#x27;s `--view X` now renders as the successor&#x27;s positional operand so the printed invocation runs as written, with `--view summary` mapped to the `crew view ledger` operand so the retired rollup reaches one successor whichever way it is spelled; the gate at head d2d934b3 is 2 failed / 265 passed against the base arm&#x27;s 2 failed / 257 passed at 33bb77708 with the same two ids and zero added failures, and a tombstone repointed at the wrong view reddens the successor case.</p></div>
+    <div class="r-comment-body"><p>retired `crew ledger` and `crew velocity` to tombstones naming `crew view ledger` and `crew view velocity`, moved every reckon-side caller and citation to the views, and repointed the three test files that still drove the retired CLI; a caller's `--view X` now renders as the successor's positional operand so the printed invocation runs as written, with `--view summary` mapped to the `crew view ledger` operand so the retired rollup reaches one successor whichever way it is spelled; the gate at head d2d934b3 is 2 failed / 265 passed against the base arm's 2 failed / 257 passed at 33bb77708 with the same two ids and zero added failures, and a tombstone repointed at the wrong view reddens the successor case.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261020T215340325844-review-of-cso-ledger-and-velocity-retire-cf3b22b05de1" data-who="reckon-build" data-when="2026-10-20T22:07:18Z">
+    <div class="r-comment-body"><p>attached a parsed independent review to run r-20261020T161011580050-cso-ledger-and-velocity-retire covering only its two gained commits; scored goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 18, reuse 18; added_failure_count 0 with no added ids (base and head arms fail the same two pre-existing ids); one follow-on finding on the base-red test_ledger.py view-list literal.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261019T220254082188-review-of-cso-budget-family-folds-0274b1227df3" data-who="reckon-build" data-when="2026-10-19T22:24:20.259Z">
     <div class="r-comment-body"><p>Reviewed run r-20261019T202350268699-cso-budget-family-folds at 0274b1227df3acf495023b12695d143ed6c129ab against base 0fa62dca44a63a65382c140c82a003dd7a660e02: the budget fold is complete and its gate is green at both arms with zero added failures, but the run's own manifest and gate logs fail its own `crew check-manifest` audit (ok:false, three findings), so the node cannot promote until the negative_control_log and the two gate-log command headers are repaired.</p></div>
