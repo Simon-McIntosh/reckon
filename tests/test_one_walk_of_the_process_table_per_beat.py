@@ -25,8 +25,10 @@ the beat's walk is then missed, and the stop that must signal it fails.
 from __future__ import annotations
 
 import contextlib
+import json
 import os
 import signal
+import socket
 import subprocess
 import sys
 import time
@@ -36,6 +38,7 @@ from pathlib import Path
 import pytest
 
 from reckon.crew import process_signal as ps
+from reckon.crew import recovery_liveness, runs
 from reckon.crew.process_signal import RUN_ID_ENV
 
 NEGATIVE_CONTROL_MUTATION = (
@@ -110,6 +113,42 @@ def _wait_for_environ_mark(pid: int, run_id: str) -> None:
 def _crew_home_of(home: Path) -> str:
     """The crew home ``_processes_owning_run`` is asked about for ``home``."""
     return str(home / "crew")
+
+
+def _absent_pid() -> int:
+    """A pid no process holds, so it reads as a recorded pid that has gone."""
+    for candidate in range(2_000_000, 2_001_000):
+        if not Path(f"/proc/{candidate}").exists():
+            return candidate
+    raise AssertionError("no absent pid found in the scan range")
+
+
+def _record_with_gone_worker(run_id: str, dead_pid: int) -> dict:
+    """A live pointer whose recorded pids have gone, so the read reaches the scan.
+
+    Both the pointer's pid and the run's own worker record name a pid no
+    process holds, which is what leaves the environment mark as the last reach
+    for the run's worker — the branch the production liveness read follows into
+    ``_env_scan_run_pid``.
+    """
+    run_directory = Path(runs.run_dir(run_id))
+    run_directory.mkdir(parents=True, exist_ok=True)
+    (run_directory / "worker.json").write_text(
+        json.dumps(
+            {
+                "run_id": run_id,
+                "pid": dead_pid,
+                "pid_start_time": None,
+                "launched_at": "2026-10-20T00:00:00Z",
+            }
+        )
+    )
+    return {
+        "run_id": run_id,
+        "pid": dead_pid,
+        "pid_start_time": None,
+        "launcher_host": socket.gethostname(),
+    }
 
 
 @pytest.fixture(autouse=True)
@@ -309,6 +348,50 @@ def test_the_stop_path_keeps_its_start_tick_floor(
         )
     finally:
         _reap(child)
+
+
+def test_two_runs_scanned_in_one_beat_list_proc_once_through_the_liveness_read(
+    tmp_path: Path,
+    beat_clock: dict[str, float],
+    proc_listings: list[int],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Two runs scanned in one beat cost one listing of ``/proc`` in production.
+
+    Two live runs whose pointer pid and worker-record pid have both gone leave
+    the environment mark as the last reach, so the production liveness read
+    follows into the per-beat scan for each. The first scan of the beat walks
+    the table and the second is answered from that walk, so ``/proc`` is listed
+    once for the beat. Dropping ``from_beat_map`` from the production call
+    restores one listing per run, which is the cost this change removes, and
+    fails this case.
+    """
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setenv(RECKON_HOME_ENV, str(home))
+    dead = _absent_pid()
+
+    children: list[subprocess.Popen] = []
+    records: list[dict] = []
+    for _ in range(2):
+        run_id = _unique_run_id()
+        child = _start_child(run_id, home)
+        children.append(child)
+        _wait_for_environ_mark(child.pid, run_id)
+        records.append(_record_with_gone_worker(run_id, dead))
+
+    try:
+        proc_listings.clear()
+
+        answers = [recovery_liveness.local_liveness(record) for record in records]
+
+        assert answers == [(True, True), (True, True)], (
+            "positive control: each run's liveness read finds its live worker"
+        )
+        assert len(proc_listings) == 1
+    finally:
+        for child in children:
+            _reap(child)
 
 
 def test_the_stop_path_finds_a_worker_that_started_after_the_beat_walk(
