@@ -420,20 +420,18 @@ def test_a_routed_write_the_child_does_not_answer_may_have_landed(
     )
 
 
-# ── case 6: a changed tool signature still owes a reconnect ────────────────
+# ── case 6: a dropped tool parameter still owes a reconnect ────────────────
 
 
 def test_a_changed_tool_signature_still_owes_a_reconnect(
     tmp_path, monkeypatch, control
 ):
-    """The one refusal left: the client holds the schema it connected with."""
+    """The one refusal left: a parameter the client holds and the code dropped."""
     rig = _rig(
         tmp_path,
         monkeypatch,
         control,
-        params={
-            "edit_plan": ["expected_version", "project", "slug", "added_parameter"]
-        },
+        params={"edit_plan": ["project", "slug"]},
     )
     guarded, _ = rig.tool("edit_plan", answer={"ok": True})
     guarded = _wrap_routed(guarded, None, control)
