@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-window-paces-the-lane">
+  <meta name="plan-title" content="A lift that ends re-anchors the default pace hold">
+  <meta name="plan-summary" content="A lift that ends inside its window is stamped with the group's utilisation there (u_end, beside the instant t_end), once, by the budget read that resolves it or by the clear itself, and a lift already cleared without a stamp is backfilled from its cleared_at on the next read. The default pace hold then compares utilisation against the line that spreads the remaining budget evenly from t_end to the reset, so a group that stood at 75% with 4% of its week gone is no longer held until the reset. Nothing is granted: no lift record is created by the re-anchor.">
+  <meta name="plan-evidence-for" content="reckon:a-window-paces-the-lane">
+  <meta name="plan-node" content="pace-reanchors-at-lift-end">
+  <meta name="plan-recorded-at" content="2026-10-20">
+  <meta name="plan-environment" content="Linux node; Python; pytest; head and base measured in one pass, one fresh process per file">
+  <title>A lift that ends re-anchors the default pace hold &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1 id="pace-reanchors-at-lift-end-title">A lift that ends re-anchors the default pace hold</h1>
+    <p class="plan-summary">A lift lets a group spend ahead of pace. When it stops before the reset of the window
+    it was anchored to, the utilisation spent stays in <code>burn = utilisation / elapsed_fraction</code>, and the
+    default hold <code>burn &gt; multiple</code> keeps holding although the group is back on the ordinary pace.
+    The fix re-anchors the hold at the lift's end rather than granting a successor lift:
+    <code>allowance(t) = u_end + multiple &times; (1 &minus; u_end) &times; (t &minus; t_end) / (reset &minus; t_end)</code>.</p>
+  </header>
+
+  <section data-reckon="record" data-status="done">
+    <h2 id="pace-reanchors-at-lift-end-what-landed">What landed</h2>
+    <p><code>reckon/crew/budget_lift.py</code> stamps a lift's end with the group's utilisation at that moment.
+    <code>clear()</code> records it beside <code>cleared_at</code> from the published readings, and a lift that lapses
+    by its stated end (<code>END_AT</code>) or its hard ceiling (<code>END_CEILING</code>) inside its window is stamped
+    once, by the first budget read that resolves the group. The stamp is <code>u_end</code> beside the instant
+    <code>t_end</code>, and <code>re_anchor_origin(group=...)</code> hands the pace path the latest such point.
+    <strong>Nothing is granted</strong> &mdash; no record is created by the re-anchor, and the lift document is
+    written only to carry the stamp on the lift that already exists.</p>
+
+    <p><code>reckon/budget.py</code> gives <code>group_pace</code>'s no-lift branch a <code>re_anchor</code> block in the
+    allowance when a lift on the group ended inside the current window, and <code>pace_hold</code> then compares
+    utilisation against the re-anchored line rather than against the plain burn. The reason names
+    <code>u_end</code>, <code>t_end</code> and the allowance at the read, and <code>releases_at</code> is solved on the
+    re-anchored line rather than on the plain burn.</p>
+
+    <p><strong>A clear that predates the stamp is filled in on the next read.</strong> The lifts that motivated this
+    node were cleared before it existed: they carry <code>cleared_at</code> and no <code>u_end</code>, so a stamp
+    written only where a clear happens would never reach them and the group would stay on the cumulative
+    comparison. The newest cleared lift on the group with no stamp is therefore filled in once by the next
+    budget read, at <code>t_end = cleared_at</code>, taking <code>u_end</code> from the newest reading observed at or
+    before the clear. With no such reading the current one is used and marked, by <code>u_end_taken_at</code>
+    and <code>u_end_late</code>, as an account of the clear taken after it &mdash; worse than a measurement, and
+    truer than continuing to hold on spend the lift authorised. A lift already cleared <em>by a successor</em>
+    lands in this path too, which is what makes the re-anchor reach a chain of lifts rather than only the
+    last clear. A clear the window's reset has already passed is left alone.</p>
+
+    <p>Two cases are deliberately outside the re-anchor. A group with no lift ended in the current window
+    keeps today's comparison exactly. A lift that ended because its window reset is not a lift that ended
+    <em>inside</em> its window, so it leaves no re-anchor behind &mdash; and the lapse path now checks the window
+    start as well as the reset, so a lift that lapsed in an <em>earlier</em> window is not stamped either. Without
+    that check a lapse the reset had already overtaken would be stamped on every workstation read, recording a
+    point the re-anchor then rejects, which is write churn on a shared control document for nothing.</p>
+
+    <p><code>u_end</code> and <code>t_end</code> travel together: a reading carrying no figure for the lift's own
+    clock stamps neither, so a record with an unusable reading stays readable as unstamped and a later read can
+    fill it in rather than leaving a <code>t_end</code> that claims an end with no figure beside it.</p>
+  </section>
+
+  <section data-reckon="record" data-status="done">
+    <h2 id="pace-reanchors-at-lift-end-reason">Why the burn floor does not close the window</h2>
+    <p>At 4% elapsed the elapsed-fraction burn is unmeasurable &mdash; <code>BURN_ELAPSED_FRACTION_FLOOR</code> is
+    <code>0.05</code> &mdash; so the plain path returns an allowance carrying no <code>burn_multiple</code> and
+    <code>pace_hold</code> admits at that floor path. That is the shape the brief records: a group at 75% with 4%
+    of its week gone is held by the burn ratio <em>elsewhere</em> in the week, and admitted where the ratio is
+    unmeasurable. The re-anchor decides on its own line wherever the burn is measurable or not, because a
+    window too young to project a burn can still have spent past what the lift left it. The measurement gate
+    is therefore <code>if not measured and not re_anchored</code>, and a re-anchored verdict reports
+    <code>allowance</code> and <code>burn_multiple</code> as <code>None</code> rather than inventing a burn, while the
+    reason names the line that did decide.</p>
+  </section>
+
+  <section data-reckon="record" data-status="done">
+    <h2 id="pace-reanchors-at-lift-end-measure">Measurement</h2>
+    <p>The fixture is the brief's shape: a seven-day window resetting 2026-10-27T06:32Z, a lift stopped at 4% of
+    the week elapsed with the group at 75% used, and the configured multiple 1.1&times;. A cleared lift is stamped
+    with <code>u_end = 0.75</code> at the end instant, so the allowance at the end is 0.75 and the line rises toward
+    1.0 at the reset. Asserted:</p>
+    <ul>
+      <li>75% (the lift's own end figure) admits, 70% admits, and 76% &mdash; one point above the line &mdash; holds,
+      with the reason naming <code>75%</code> and the end instant;</li>
+      <li>the line stands above <code>u_end</code> at the window's halfway point and the same group admits there;</li>
+      <li>a lapse by a stated end is stamped once: the second budget read leaves the record byte-identical;</li>
+      <li>a window that has reset since the lift ended reverts to the plain comparison (0.60 over half the week
+      is 1.2&times; burn, above 1.1&times;, so it holds) and carries no <code>re_anchor</code> block;</li>
+      <li>a group that never carried a lift is unchanged (21% spent after 22.0 h holds at 1.6&times; burn);</li>
+      <li>a lift carrying <code>cleared_at</code> and no stamp is backfilled on the first read &mdash; figure from
+      the reading observed at the clear, not one taken after &mdash; the record is unchanged by a second read, and
+      the pace then holds one point above the line that end anchors;</li>
+      <li>with no reading at or before the clear, the figure used is marked <code>u_end_late</code> and stamped
+      with when it was taken.</li>
+    </ul>
+    <p>Every test points <code>RECKON_HOME</code> at a temporary directory and asserts the workstation's own
+    <code>~/.config/reckon/budget-lifts.json</code> is byte-identical before and after, because a test that
+    writes the live lift record is a monitor for the machine rather than a test of the code. All figures are
+    derived from the above fixture at assertion time.</p>
+  </section>
+
+  <section data-reckon="record" data-status="done">
+    <h2 id="pace-reanchors-at-lift-end-live">Checked against the live record, read-only</h2>
+    <p>The document the re-anchor is for is the one it could not read. The workstation's own lift record was
+    copied to a temporary home and the backfill run against the copy, so the live store was read and never
+    written (its version still reads 16 after the check, asserted in the same run). On <code>codex-sub</code> the
+    record the backfill picks is <code>codex-sub-1792501561-9adb4a</code>, cleared 2026-10-20T13:06:52Z inside a
+    window that began 2026-10-20T06:32Z and resets 2026-10-27T06:32Z: it is stamped at that instant with
+    <code>u_end = 0.75</code> taken late, <code>re_anchor_origin</code> returns it as the group's newest end, and
+    the allowance at 13:50Z reads 0.7512 &mdash; so the group is judged against its own remaining week rather
+    than against spend the lift authorised. Two lapsed records from the previous window are deliberately left
+    unstamped. Without the window-start guard they were stamped as well, which is how the guard was found.</p>
+  </section>
+
+  <section data-reckon="record" data-status="done">
+    <h2 id="pace-reanchors-at-lift-end-negative-control">Negative control</h2>
+    <p>Removing the re-anchor branch from <code>pace_hold</code> (forcing <code>re_anchored = False</code>) fails the
+    node's own gate: <code>test_a_cleared_lift_re_anchors_the_hold_at_its_end_utilisation</code> fails because the
+    75% read at 4% elapsed then admits through the unmeasured floor path and the 76% read admits with it, so
+    the hold the re-anchor exists to impose is gone. 2 failed, 3 passed, exit 1. Restoring the branch returns
+    the file to green.</p>
+  </section>
+
+  <section data-reckon="record" data-status="done">
+    <h2 id="pace-reanchors-at-lift-end-delta">Delta against base</h2>
+    <p>Every test file importing the changed modules &mdash; <code>reckon.budget</code> and
+    <code>reckon.crew.budget_lift</code> &mdash; was run at head and at the node's base revision
+    (<code>2f5c6e4d655fb34b33562585497bd7d4d7d4cbde</code>, unpacked from <code>git archive</code> into a temporary
+    tree), each file in its own fresh pytest process and each arm in one consolidated log. The two arms
+    overlap on <strong>40 files</strong>, which covers every lift, budget, pace, reserve, preflight, window and
+    staleness test. Over those 40: <strong>no failure id at head that is absent at base, no id at base that is
+    absent at head, and no exit status that differs</strong>.</p>
+
+    <p>Six files are red in both arms, with the same ids and counts in each: <code>test_preflight_pace</code>
+    (8 failed), <code>test_one_staleness_rule</code> (6), <code>test_a_new_lift_replaces_the_standing_one</code> (1),
+    <code>test_codex_banked_reset</code> (1), <code>test_preflight_reads_the_published_document</code> (1), and
+    <code>test_crew_recover</code>, which reaches the arm's own 150 s per-file bound. Their causes are unrelated to
+    this change &mdash; retired CLI verbs (<code>preflight</code>, <code>budget-lift</code>, whose successor is
+    <code>crew budget --check</code>) and a <code>KeyError: 'codex'</code> in a fixture. Added failures: zero.</p>
+
+    <p><strong>How the ARM is chosen is part of the measurement.</strong> An earlier pair of arms was discarded
+    because each was launched with <code>python -I</code>: <code>-I</code> implies <code>-P</code> and ignores
+    <code>PYTHONPATH</code>, so <code>import reckon</code> resolved to the main checkout for <em>both</em> arms and the
+    comparison was one tree against itself &mdash; a result that would have read as clean while measuring nothing.
+    The arms above run without <code>-I</code>, with <code>PYTHONPATH</code> naming each tree, and the resolved
+    <code>reckon.budget.__file__</code> was printed before the run to show the worktree for the head arm and the
+    unpacked base tree for the base arm. The base tree carries no <code>_re_anchor</code>, and the head worktree
+    carries it, so the two arms are demonstrably different code.</p>
+  </section>
+</main>
+</body>
+</html>

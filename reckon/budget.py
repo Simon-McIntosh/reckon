@@ -2751,6 +2751,58 @@ def _lift_order(entry: Mapping[str, Any]) -> datetime:
     return moment if moment is not None else datetime.min.replace(tzinfo=UTC)
 
 
+def _re_anchor(
+    allowance: Mapping[str, Any],
+    *,
+    group: str,
+    moment: datetime,
+) -> dict[str, Any] | None:
+    """The line a group's last ended lift leaves, or ``None``.
+
+    When a lift stops inside the window it was anchored to, the budget it left
+    unspent is spread evenly from that point to the window's reset, leaned by
+    the configured pace multiple: the line stands at ``u_end`` at ``t_end`` and
+    at ``u_end + multiple * (1 - u_end)`` at the reset. A group still under a
+    lift, one whose last lift ended on the window's reset rather than inside it,
+    and one that never carried a lift all report ``None``, so the pace keeps the
+    comparison it always made.
+    """
+    from reckon.crew import budget_lift
+
+    minutes = allowance.get("window_minutes")
+    reset = _parse_stamp(allowance.get("resets_at"))
+    multiple = allowance.get("pace_multiple")
+    if (
+        isinstance(minutes, bool)
+        or not isinstance(minutes, (int, float))
+        or float(minutes) <= 0
+        or reset is None
+        or isinstance(multiple, bool)
+        or not isinstance(multiple, (int, float))
+        or float(multiple) <= 0
+    ):
+        return None
+    origin = budget_lift.re_anchor_origin(group=group)
+    if origin is None:
+        return None
+    u_end, t_end, lift_id = origin
+    window = timedelta(minutes=float(minutes))
+    if not reset - window < t_end < reset:
+        return None
+    span = (reset - t_end).total_seconds()
+    if span <= 0:
+        return None
+    share = min(1.0, max(0.0, (moment - t_end).total_seconds() / span))
+    line = min(1.0, u_end + float(multiple) * (1.0 - u_end) * share)
+    return {
+        "u_end": u_end,
+        "t_end": _iso(t_end),
+        "allowance": line,
+        "multiple": float(multiple),
+        "lift_id": lift_id,
+    }
+
+
 def group_pace(
     config: Mapping[str, Any],
     *,
@@ -2784,7 +2836,10 @@ def group_pace(
     so a session-scoped lift governs its own dispatch and no other. A group
     under a lift carries the lift and how it withholds inside the allowance the
     entry already reports, so a reader sees the lift without re-reading the
-    document and a group under no lift reports the allowance it always has.
+    document and a group under no lift reports the allowance it always has. A
+    group under no lift whose last one ended inside the current window carries
+    the point it ended at and the allowance that spreads from there in
+    ``re_anchor``, so the hold is judged against the re-anchored line.
     """
     moment = _now(now)
     readings = windows if isinstance(windows, Mapping) else {}
@@ -2872,6 +2927,9 @@ def group_pace(
                 ),
                 moment=moment,
             )
+            anchor = _re_anchor(allowance, group=group, moment=moment)
+            if anchor is not None:
+                allowance = {**allowance, "re_anchor": anchor}
         report.append(
             {
                 "group": group,
@@ -2961,6 +3019,42 @@ def _pace_releases_at(
     return _iso(reset_moment - window + window * share)
 
 
+def _re_anchor_releases_at(
+    allowance: Mapping[str, Any],
+    *,
+    re_anchor: Mapping[str, Any],
+    utilisation: float,
+) -> str | None:
+    """The instant the re-anchored line first admits with utilisation held.
+
+    The line runs from ``u_end`` at ``t_end`` to ``u_end + multiple * (1 - u_end)``
+    at the reset, so the utilisation crosses it at the same share of the span to
+    the reset that separates the two figures, which is where the hold releases
+    with no further spend. A single-point line, where ``u_end`` is already full
+    or the utilisation stands at or below it, has no instant, an absence rather
+    than a release now.
+    """
+    u_end = re_anchor.get("u_end")
+    t_end = _parse_stamp(re_anchor.get("t_end"))
+    reset = _parse_stamp(allowance.get("resets_at"))
+    multiple = allowance.get("pace_multiple")
+    if (
+        isinstance(u_end, bool)
+        or not isinstance(u_end, (int, float))
+        or isinstance(multiple, bool)
+        or not isinstance(multiple, (int, float))
+        or t_end is None
+        or reset is None
+    ):
+        return None
+    slope = float(multiple) * (1.0 - float(u_end))
+    if slope <= 0:
+        return None
+    share = (float(utilisation) - float(u_end)) / slope
+    instant = t_end + (reset - t_end) * min(1.0, max(0.0, share))
+    return _iso(min(instant, reset))
+
+
 def _banked_reset_factor(allowance: Mapping[str, Any]) -> float:
     """The banked-reset factor a scaled allowance was divided by, else ``1.0``.
 
@@ -3010,6 +3104,13 @@ def pace_hold(entry: Mapping[str, Any], role: str | None) -> dict[str, Any]:
     prints that instant rather than the reset, so a reader sees a ten-hour hold
     for the ten hours it is. An admitted or bookend verdict, and one whose
     window cannot be placed, carries ``releases_at`` as ``None``.
+
+    A group under no lift whose last one ended inside the current window is
+    compared instead against the line that spreads its remaining budget from
+    where the lift stopped to the reset, which :func:`_re_anchor` records in the
+    entry's allowance block. The verdict then names ``u_end``, ``t_end`` and the
+    re-anchored allowance it rests on, and ``releases_at`` is computed on that
+    line rather than on the elapsed-fraction burn.
     """
     allowance = entry.get("allowance")
     allowance = allowance if isinstance(allowance, Mapping) else {}
@@ -3019,11 +3120,30 @@ def pace_hold(entry: Mapping[str, Any], role: str | None) -> dict[str, Any]:
     burn = allowance.get("burn_multiple")
     multiple = allowance.get("pace_multiple")
     bookend = reserve_module.is_bookend(role)
+    # A re-anchor judges against the line the group's last lift left behind, and
+    # does not need the elapsed-fraction burn: a window too young to project can
+    # still have spent past what the lift left it. It is read before the
+    # measurement gate so such a window is judged rather than admitted unmeasured.
+    re_anchor = allowance.get("re_anchor")
+    re_anchor = re_anchor if isinstance(re_anchor, Mapping) else None
+    raw_anchor = re_anchor.get("allowance") if re_anchor is not None else None
+    re_anchor_line = (
+        float(raw_anchor)
+        if isinstance(raw_anchor, (int, float)) and not isinstance(raw_anchor, bool)
+        else None
+    )
+    numeric = (
+        isinstance(utilisation, (int, float))
+        and not isinstance(utilisation, bool)
+        and isinstance(multiple, (int, float))
+        and not isinstance(multiple, bool)
+    )
+    re_anchored = not bookend and re_anchor_line is not None and numeric
     measured = all(
         isinstance(value, (int, float)) and not isinstance(value, bool)
         for value in (utilisation, derived, burn, multiple)
     )
-    if not measured:
+    if not measured and not re_anchored:
         measured_utilisation = (
             float(utilisation)
             if isinstance(utilisation, (int, float))
@@ -3065,6 +3185,8 @@ def pace_hold(entry: Mapping[str, Any], role: str | None) -> dict[str, Any]:
         held = False
     elif not bookend and lift_kind == budget_lift.DRAIN_BY:
         held = drain_line is not None and float(utilisation) > drain_line
+    elif re_anchored:
+        held = float(utilisation) > re_anchor_line
     else:
         held = (not bookend) and float(burn) > float(multiple)
     # The reported burn has already been scaled by the banked-reset factor, so
@@ -3104,6 +3226,33 @@ def pace_hold(entry: Mapping[str, Any], role: str | None) -> dict[str, Any]:
                 f"{drain_line * 100:g}% drain-by line {_lift_label(allowance)}, so a "
                 f"{role} dispatch is admitted"
             )
+    elif re_anchored:
+        u_end = float(re_anchor["u_end"])
+        t_end = re_anchor.get("t_end")
+        if held:
+            releases_at = _re_anchor_releases_at(
+                allowance, re_anchor=re_anchor, utilisation=float(utilisation)
+            )
+            reason = format_refusal(
+                "D02",
+                f"the {entry.get('group')!r} group reports utilisation "
+                f"{float(utilisation) * 100:g}%, above the "
+                f"{re_anchor_line * 100:g}% allowance a lift that ended at {t_end} "
+                f"left it (from {u_end * 100:g}% then, spread to the "
+                f"{float(multiple):g}x pace at the reset), so a {role} dispatch is "
+                f"held until the pace releases it at "
+                f"{releases_at or 'an unstated instant'}, with the window itself "
+                f"resetting at {resets_at or 'an unstated time'}",
+            )
+        else:
+            reason = (
+                f"the {entry.get('group')!r} group reports utilisation "
+                f"{float(utilisation) * 100:g}%, at or below the "
+                f"{re_anchor_line * 100:g}% allowance a lift that ended at {t_end} "
+                f"left it (from {u_end * 100:g}% then, spread to the "
+                f"{float(multiple):g}x pace at the reset), so a {role} dispatch is "
+                "admitted"
+            )
     elif held:
         releases_at = _pace_releases_at(
             allowance,
@@ -3128,17 +3277,20 @@ def pace_hold(entry: Mapping[str, Any], role: str | None) -> dict[str, Any]:
             f"the {float(multiple):g}x pace multiple and its "
             f"{float(derived) * 100:g}% allowance, so a {role} dispatch is admitted"
         )
-    return {
+    verdict = {
         "role": str(role),
         "bookend": bookend,
         "held": held,
         "utilisation": float(utilisation),
-        "allowance": float(derived),
-        "burn_multiple": float(burn),
+        "allowance": float(derived) if measured else None,
+        "burn_multiple": float(burn) if measured else None,
         "resets_at": resets_at,
         "releases_at": releases_at,
         "reason": reason,
     }
+    if re_anchor is not None:
+        verdict["re_anchor"] = re_anchor
+    return verdict
 
 
 def _merge_readings(

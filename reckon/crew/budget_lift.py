@@ -48,6 +48,19 @@ standing record is cleared as :func:`clear` clears one, ``cleared_by`` naming
 the granting user and ``replaced_by`` naming the new lift, and the new lift's
 ``replaces`` names the record it cleared. The two links are separate fields so
 ``cleared_by`` always holds a name, and a lift on another scope is untouched.
+
+**An end inside the window is stamped with the group's utilisation there.**
+When a lift stops before the window it was anchored to resets — cleared, or
+lapsed at its stated end or its hard ceiling — the group's utilisation at that
+moment is recorded on the record as ``u_end`` beside the instant as ``t_end``.
+A clear stamps it where it clears; a lapse is stamped once by the next budget
+read that resolves the group, since nothing runs at the moment a lift ends. A
+lift already cleared without a stamp — by a successor, or by a build that
+predates the stamp — is filled in the same way from its ``cleared_at``, so a
+record written before this stamp existed still hands the pace path its point.
+Nothing is granted: the record is the whole of it, and
+:func:`re_anchor_origin` hands the pace path the point from which the group's
+remaining budget is to be spread to the reset.
 """
 
 from __future__ import annotations
@@ -123,6 +136,7 @@ __all__ = [
     "lifts_path",
     "list_lifts",
     "published_readings",
+    "re_anchor_origin",
     "under_pace_hold",
 ]
 
@@ -438,6 +452,13 @@ def clear(
         return None
     governing["cleared_by"] = str(cleared_by or environment.get("USER") or "unknown")
     governing["cleared_at"] = _iso(moment)
+    _stamp_end(
+        governing,
+        reading=_newest_reading(
+            published_readings(config, group=str(group), now=moment)
+        ),
+        lapse=moment,
+    )
     _write_document(document, path=path)
     return governing
 
@@ -535,6 +556,25 @@ def effective_budget(
     block = (config or {}).get("budget") or {}
     moment = _aware(now)
     document = read_document(path)
+    stamped = _stamp_lapsed_ends(
+        document,
+        config=config,
+        group=str(group),
+        readings=readings,
+        now=moment,
+        bound=ceilings(config),
+    )
+    if _stamp_cleared_ends(
+        document,
+        config=config,
+        group=str(group),
+        readings=readings,
+        now=moment,
+        path=path,
+    ):
+        stamped = True
+    if stamped:
+        _write_document(document, path=path)
     lift = _governing_lift(
         document["lifts"],
         group=str(group),
@@ -597,6 +637,199 @@ def drain_line(lift: Mapping[str, Any], *, now: datetime) -> float:
     fraction = (moment - t0).total_seconds() / (target - t0).total_seconds()
     fraction = min(max(fraction, 0.0), 1.0)
     return u0 + (1.0 - u0) * fraction
+
+
+def re_anchor_origin(
+    *,
+    group: str,
+    path: str | Path | None = None,
+) -> tuple[float, datetime, str] | None:
+    """Where a group's most recently ended lift left its utilisation.
+
+    A lift that stopped inside its window records the utilisation it stopped at
+    as ``u_end`` and the instant as ``t_end``. The pace path reads the newest
+    such point — the largest ``t_end`` on the group — because the group's
+    remaining budget is spread from the last time a lift let it go. A group
+    whose lifts all ended on a window reset, or that never carried one, has no
+    stamped end and reports ``None``, which is an absence rather than a point at
+    zero. The lift id rides back with the point so a reader can name the record.
+    """
+    best: tuple[float, datetime, str] | None = None
+    for lift in read_document(path)["lifts"]:
+        if lift.get("group") != str(group):
+            continue
+        end = _parse_stamp(lift.get("t_end"))
+        utilisation = lift.get("u_end")
+        if end is None or not _is_number(utilisation):
+            continue
+        if best is None or end > best[1]:
+            best = (float(utilisation), end, str(lift.get("id") or ""))
+    return best
+
+
+def _stamp_end(
+    lift: dict[str, Any],
+    *,
+    reading: Mapping[str, Any] | None,
+    lapse: datetime,
+) -> bool:
+    """Record the group's utilisation at ``lapse`` and the instant, once.
+
+    ``u_end`` and ``t_end`` travel together: a reading that carries no figure
+    for the lift's own clock stamps neither, so the record still reads as
+    unstamped and a later read with a usable reading can fill it in. The reading
+    used is named by when it was observed, and a reading observed after the end
+    instant is marked, because a figure taken later than the end is the best
+    available account of it rather than a measurement of it. ``False`` when the
+    lift carries no figure to record, so a caller does not write a document for
+    a stamp that did not happen.
+    """
+    utilisation = _clock_utilisation(reading, _lift_clock(lift))
+    if utilisation is None:
+        return False
+    lift["u_end"] = utilisation
+    lift["t_end"] = _iso(lapse)
+    observed = _parse_stamp((reading or {}).get("observed_at"))
+    if observed is not None:
+        lift["u_end_taken_at"] = _iso(observed)
+        if observed > _aware(lapse):
+            lift["u_end_late"] = True
+    return True
+
+
+def _stamp_lapsed_ends(
+    document: dict[str, Any],
+    *,
+    config: Mapping[str, Any] | None,
+    group: str,
+    readings: Sequence[Mapping[str, Any]] | None,
+    now: datetime,
+    bound: LiftCeilings,
+) -> bool:
+    """Stamp each lift that lapsed inside its window, once, from its readings.
+
+    A lift that reaches its stated end or its hard ceiling before the window it
+    was anchored to resets has stopped by its own record, and nothing runs at
+    that moment. The first budget read that resolves the group after the lapse
+    records the group's utilisation then as ``u_end`` and the lapse instant as
+    ``t_end``, so the pace path reads one point rather than one per read. A lift
+    a clear already stamped, one already stamped, and one the window's reset
+    ended are all left alone, and a read carrying no reading stamps nothing so
+    the next read that has one can. ``True`` when the document changed.
+    """
+    newest = _newest_reading(readings)
+    if newest is None:
+        return False
+    changed = False
+    for lift in document["lifts"]:
+        if lift.get("group") != str(group):
+            continue
+        if lift.get("t_end") is not None or lift.get("cleared_at"):
+            continue
+        cause = end_cause(lift, readings=readings, now=now, bound=bound)
+        if cause not in (END_AT, END_CEILING):
+            continue
+        lapse = _lapse_moment(lift, cause=cause, bound=bound)
+        if lapse is None:
+            continue
+        clock = _lift_clock(lift)
+        reset = _parse_stamp((lift.get("ends") or {}).get("resets_at"))
+        if reset is None:
+            reset = _clock_reset(newest, clock)
+        if reset is not None:
+            reset = _aware(reset)
+            # Inside the window that has just closed, or an earlier one: the
+            # reset already took the spend back, so there is no remaining
+            # budget to spread from the lapse and no point to record.
+            if not lapse < reset:
+                continue
+            if lapse < reset - timedelta(hours=CLOCK_HOURS.get(clock, 168.0)):
+                continue
+        changed = _stamp_end(lift, reading=newest, lapse=lapse) or changed
+    return changed
+
+
+def _stamp_cleared_ends(
+    document: dict[str, Any],
+    *,
+    config: Mapping[str, Any] | None,
+    group: str,
+    readings: Sequence[Mapping[str, Any]] | None,
+    now: datetime,
+    path: str | Path | None,
+) -> bool:
+    """Backfill the end of a lift cleared before its stamp was recorded.
+
+    A clear records where the group stood as it stopped, but a lift cleared by a
+    successor, or by a build that predates the stamp, carries ``cleared_at``
+    alone. The re-anchor reads the end point and cannot see the lift without it,
+    so the newest cleared lift on the group with no stamp is filled in once by
+    the next budget read that has a reading. Its end instant is the clear, and
+    the figure is the newest reading observed at or before that instant when one
+    is available, so a read made long after the clear still reports where the
+    group actually stood. With none available the current reading is used and
+    marked late, which is a worse account of the clear and still a truer one
+    than continuing to hold on spend the lift authorised. A clear the window's
+    reset has already passed is left alone: it ended with its window, and the
+    re-anchor is for a lift that stopped inside one. ``True`` when the document
+    changed.
+    """
+    newest = _newest_reading(readings)
+    if newest is None:
+        return False
+    candidates = [
+        lift
+        for lift in document["lifts"]
+        if lift.get("group") == str(group)
+        and lift.get("cleared_at")
+        and lift.get("t_end") is None
+    ]
+    if not candidates:
+        return False
+    lift = max(candidates, key=lambda item: str(item.get("cleared_at") or ""))
+    cleared = _parse_stamp(lift.get("cleared_at"))
+    if cleared is None:
+        return False
+    clock = _lift_clock(lift)
+    reset = _clock_reset(newest, clock)
+    if reset is None:
+        return False
+    if not cleared < _aware(reset):
+        return False
+    window_start = _aware(reset) - timedelta(hours=CLOCK_HOURS.get(clock, 168.0))
+    if cleared < window_start:
+        return False
+    published = published_readings(config, group=str(group), now=now, path=path)
+    history = [item for item in (readings or []) if isinstance(item, Mapping)]
+    history.extend(item for item in published if isinstance(item, Mapping))
+    before = [
+        item
+        for item in history
+        if (_parse_stamp(item.get("observed_at")) or cleared) <= cleared
+    ]
+    pool = before or history
+    if not pool:
+        return False
+    reading = max(
+        pool,
+        key=lambda item: (
+            _parse_stamp(item.get("observed_at")) or datetime.min.replace(tzinfo=UTC)
+        ),
+    )
+    return _stamp_end(lift, reading=reading, lapse=cleared)
+
+
+def _lapse_moment(
+    lift: Mapping[str, Any],
+    *,
+    cause: str,
+    bound: LiftCeilings,
+) -> datetime | None:
+    """The instant a lift stopped by its own record, or ``None``."""
+    if cause == END_CEILING:
+        granted = _parse_stamp(lift.get("granted_at"))
+        return granted + timedelta(hours=bound.max_hours) if granted else None
+    return _parse_stamp((lift.get("ends") or {}).get("at"))
 
 
 def _hold_marker(
