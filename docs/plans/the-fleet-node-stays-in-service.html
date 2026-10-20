@@ -23,7 +23,7 @@
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="58">
+<meta name="plan-version" content="59">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -785,7 +785,10 @@
     <div class="r-comment-body"><p>the identity read no longer loads a derivation module: _git_directory, _file_identity, _common_git_directory and _head_identity moved from reckon/git_dates.py to a new stdlib-only reckon/git_head.py (git_dates imports them back, so change_streams.py and serve.py are unchanged, and _GIT_HEAD_MEMO stays in git_dates), and checkout_trust imports _head_identity from reckon.git_head at module level; test_the_prompt_path_loads_no_derivation_module passes at the change (1 passed in 6.97s, EXIT=0) and fails at the base revision (1 failed, EXIT=1), with the negative control -- checkout_trust importing reckon.git_dates again -- failing it once more (1 failed, EXIT=1); ten test files over change_streams and git_dates pass 91 on both arms and ruff adds no finding</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261020T125848651785-review-of-the-identity-hold-keeps-the-prompt-path-light-bc028cb45ad5" data-who="reckon-build" data-when="2026-10-20T13:09:08.514Z">
-    <div class="r-comment-body"><p>independent review of run r-20261020T121652960809-the-identity-hold-keeps-the-prompt-path-light at reviewed base 934cacaaf0c1a325beeb1ff242a852b82b68ddb8 / head bc028cb45ad5cd4ffc13cae20f851e7d5c3c2e61; scores goal_fidelity 18, evidence 16, scope_discipline 18, durability 18, fit 18, reuse 18; added_failure_count 0; one follow-on finding on the gate logs&#x27; revision header; no blocking finding</p></div>
+    <div class="r-comment-body"><p>independent review of run r-20261020T121652960809-the-identity-hold-keeps-the-prompt-path-light at reviewed base 934cacaaf0c1a325beeb1ff242a852b82b68ddb8 / head bc028cb45ad5cd4ffc13cae20f851e7d5c3c2e61; scores goal_fidelity 18, evidence 16, scope_discipline 18, durability 18, fit 18, reuse 18; added_failure_count 0; one follow-on finding on the gate logs' revision header; no blocking finding</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-s10-repaired" data-who="reckon-build" data-when="2026-10-20T13:20:00Z">
+    <div class="r-comment-body"><p>The import regression recorded in c-s10-regression was repaired in merge <code>88d7257eb</code> (head <code>bc028cb45</code>). Moving the import inside <code>source_code_identity</code> was not enough on its own, because the prompt hook's path calls that function. So the four spawn-free HEAD readers moved into a new stdlib-only <code>reckon/git_head.py</code>. <code>git_dates</code> imports them back, and <code>checkout_trust</code> imports <code>git_head</code> directly. <code>test_the_prompt_path_loads_no_derivation_module</code> fails at the base and passes at the change, and fails again when <code>checkout_trust</code> is pointed back at <code>git_dates</code>. The 91-test paired suite passes in both arms. Review gave 106/120.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261019T224345895827-review-of-a-moved-checkout-is-proved-importable-once-167e407f4d0a" data-who="reckon-build" data-when="2026-10-19T23:00:48.706Z">
     <div class="r-comment-body"><p>Reviewed r-20261019T220614190732 at head 167e407f4 over base e18f609b2 (four files, +499/-9): the shared per-image import verdict is landed and its concurrency guard is verified by a recorded negative control, scoring goal_fidelity 19, evidence 13, scope_discipline 19, durability 18, fit 19, reuse 5, with four follow-on findings and no blocker.</p></div>
