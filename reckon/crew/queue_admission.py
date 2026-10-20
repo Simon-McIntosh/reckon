@@ -910,34 +910,6 @@ def _record_gated_verdicts(
         )
 
 
-def _trim_log_to_bound(path: Path, *, max_bytes: int) -> None:
-    """Keep the newest whole lines of a log that has grown past its bound.
-
-    The oldest bytes are dropped, and a partial leading line goes with them, so
-    the file that remains is a whole number of JSON lines no larger than the
-    bound. The replacement is atomic, so a reader never sees a half-written
-    file.
-    """
-    try:
-        if path.stat().st_size <= max_bytes:
-            return
-        with path.open("rb") as handle:
-            handle.seek(-max_bytes, os.SEEK_END)
-            tail = handle.read()
-    except OSError:
-        return
-    newline = tail.find(b"\n")
-    if newline >= 0:
-        tail = tail[newline + 1 :]
-    temporary = path.with_name(path.name + ".tmp")
-    try:
-        temporary.write_bytes(tail)
-        os.replace(temporary, path)
-    except OSError:
-        with contextlib.suppress(OSError):
-            temporary.unlink()
-
-
 def _record_pass_verdicts(
     result: Mapping[str, Any], *, lane: str, code_stamp: str
 ) -> None:
@@ -946,11 +918,14 @@ def _record_pass_verdicts(
     A pass that examined no queued pointer writes nothing: an idle pass is the
     absence of a line, not a line saying so. The line goes through the shared
     crew-home log writer, so this log and the picker's timings are written the
-    same way, and the trim that follows is what keeps it within its bound.
+    same way. The trim that follows is the service-log one, which edits the file
+    in place under the appender's own descriptor rather than replacing it, so a
+    line appended while this pass is trimming is not lost.
     """
     verdicts = result.get("verdicts") or []
     if not verdicts:
         return
+    from reckon.crew.fleet_supervisor import trim_service_log
     from reckon.crew.picker import _append_crew_log_line
 
     _append_crew_log_line(
@@ -963,9 +938,10 @@ def _record_pass_verdicts(
             "pointers": list(verdicts),
         },
     )
-    _trim_log_to_bound(
+    trim_service_log(
         runs.crew_home() / ADMISSION_VERDICT_LOG,
-        max_bytes=ADMISSION_VERDICT_LOG_MAX_BYTES,
+        limit=ADMISSION_VERDICT_LOG_MAX_BYTES,
+        keep=ADMISSION_VERDICT_LOG_MAX_BYTES,
     )
 
 
