@@ -1,0 +1,68 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T10:38:49.020Z",
+  "dispatched_at": "2026-10-20T10:29:23Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-site-answers-fast-and-agrees.html:342",
+      "id": "reasoning-1",
+      "reason": "the fix is confined to what the refresh child records and stores, so the overstatement changes no node's work, and the wrong-grain argument against \u00a719's revision identity stands regardless.",
+      "text": "\"The served process never runs those derivations itself, so its stale-code check (reckon/served_code.py) never sees them change\" is contradicted by the served read path: _served_result (reckon/route_results.py:422) derives a cold miss inline through _route_compute \u2192 _compute_refresh, and it is called from the served handlers for the rollup (reckon/serve.py:2945), the checks summary (reckon/serve.py:3258) and discovery (reckon/serve.py:3317), so those definitions do enter the served process's ExecutedSource on a cold miss. The incident is explained by the warm case (a stored result meant no in-process derivation ran), not by a structural impossibility",
+      "type": "reasoning",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-site-answers-fast-and-agrees.html:343",
+      "id": "done_when-1",
+      "reason": "the section's own preceding sentence (\"It stores the fingerprint of those definitions' source\") states the definition-level mechanism, so a worker reading the whole deliverable resolves the tension toward fingerprints, and the done-when fails loudly if it does not.",
+      "text": "the cost clause allows a file-level revision check (\"no more than a stat of the files those definitions live in, memoized by file revision\"), but a definition the child did not run may live in a file whose revision moved because a different definition in it changed, and a file-level check would then retire the result and fail the section's own case \"A rewrite of a definition the child did not run leaves the result served\"; only re-fingerprinting the recorded definitions after a file moves satisfies that case",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "bb3ec8ac4cfef6c78a58801d5f8808c5d844e668a87ade3ac4a2458a18a49f94",
+  "plan_slug": "the-site-answers-fast-and-agrees",
+  "plan_version": 112,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T102820859062-plan-review-of-the-site-answers-fast-and-agrees",
+  "reviewed_blob_sha": "1c6d16d5ad514b117ba55698c288042ee9f51095",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 4ebe2643a resolves to \u00a720's merge; _compute_refresh (reckon/route_results.py:235), ExecutedSource (reckon/served_code.py:752), _fingerprint (reckon/served_code.py:325), _attach_schedule (reckon/serve.py:1746) and reckon/route_results.py:251 all resolve exactly as cited.",
+    "done_when": "a finding \u2014 \u00a721's done-when is measurable and carries a negative control, but its cost clause \"Checking costs no more than a stat of the files those definitions live in\" is narrower than the definition-level comparison its own case \"A rewrite of a definition the child did not run leaves the result served\" requires.",
+    "evidence_paths": "pass \u2014 both sections place every log \"under the run directory\" ending in EXIT=, on the durable crew run path, not a scratchpad or a node-local temporary directory.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags appear in either section's prose or in its new test filenames (tests/test_a_stored_result_follows_the_code_that_derived_it.py, tests/test_the_schedule_is_attached_when_it_is_read.py).",
+    "reasoning": "a finding \u2014 \u00a721's mechanism and its done-when are sound and its fix reaches the real code path (the child entry _compute_refresh and the read _refresh_result in reckon/route_results.py), but its stated root cause overstates: the served process does run the derivations itself on a cold miss, so the claim that its stale-code check \"never sees them change\" does not hold universally.",
+    "single_goal": "pass \u2014 \u00a721 carries one deliverable (a stored result's identity is the fingerprints of the definitions that derived it) and \u00a722 carries one (the schedule is attached at read, not at store).",
+    "wiring": "pass \u2014 \u00a722's plan-section-depends-on entry names \u00a721 and resolves, and \u00a721's missing entry is consistent with \u00a719, which likewise reworks \u00a75's store in reckon/route_results.py without declaring it, while every section s21 leans on (\u00a75, \u00a719, \u00a720) is already delivered."
+  },
+  "section_digests": {
+    "_document": "b44091c830539fdf4a196f18fab17677260fdb52f51cd576c6e3376938344364",
+    "s1": "119fda14843398660e67ce4dbc6d52b2466804be618c0bc58fe57d48c4364db4",
+    "s10": "aedffe9563719b3b93e2b36282e17d4d2aeabecf2938ffcbf516cfacc5887281",
+    "s11": "b9aa035553d395057dad26d5353e7b79c6bdec033a1ab82eb1042718d03592cd",
+    "s12": "3086e0ba68e51ca085e7178c914c92d64248be41088440dfa18abf077d5819ee",
+    "s13": "fa208e7c5f148ec329458a9824c867762bc66c986ccb7bc85745b08640484173",
+    "s14": "7f21ec58ce9adf4ba663f205fe60555a585a263354e7954c7dd99543a0d56139",
+    "s15": "884c8ab0e973894007385f537b51e29ef55bf2de18ef2cf6a25966e656f62bf2",
+    "s16": "68b4e68d648fe76ecff74c05d2cdfb995f2e13890befafc25046869d469abcac",
+    "s17": "ac2da828cc6e329bb2d7e56d6983c2cb58531dd49711fa439cc540251e215680",
+    "s18": "24d67d89b37511179c52ceeab7171c15ecf50ae262fe437e8b1c7e85b39f013a",
+    "s19": "148ad5763a772b476be3d3476ef6369a24fae8df34da8415bcbfb333c5b505e9",
+    "s2": "f4d544c85c1a75bc7938448339d0239290de9ffaef0434766aa4baa2571d7436",
+    "s20": "d5e6bc8b957a0aeb45664f4545b683e775e752e5ff3775707ac74b8637d7a39c",
+    "s21": "4725f8eefd9bf3062ff168272099f7a5efaf7e853b36c73f9d2124800c732c94",
+    "s22": "6cc294e4991b5ff22f99c962c3b563f8c825d102848621f9d94bcffdf006a5de",
+    "s3": "50f2ca1f3b1277d5f4b2d70a240688387a89a3136ad2d6aee26f0b3f324b1afc",
+    "s4": "a1ad15bdafaed28134c2565ad8374bc91928064852c10da6661f2499ca286149",
+    "s5": "ccf5b231d2e5d7e02747b8419b3e95dae4622acb080e6eb52c536f2ea9539903",
+    "s6": "fdb08d5e7b8272372c8ced83ee14c031730239025c2a13ccb211329d7951673e",
+    "s7": "90073ced7051cfae8f66fd6b78f99e6ace90b008ffc6c9e5559d87a2e5c31704",
+    "s8": "46535efa968faf1a9d457821c0b182e1f73fbc67570e478aa63cc7eb29d08e37",
+    "s9": "3df747cffcffa70e17ef701d032c7d4a87e78cd03759393f0efa74f96e5fde92"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T10:43:14.291184+00:00"
+}
