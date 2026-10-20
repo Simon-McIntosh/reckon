@@ -179,14 +179,14 @@ def _seat_names_the_project(project: str) -> bool:
 
 
 def _release_armed_producer() -> None:
-    """Stop the producer a refused dispatch armed, once its seat is readable.
+    """Stop the watch producer a dispatch armed, once its seat registration settles.
 
-    Arming happens before the delivery admission refuses a session that cannot
-    dispatch under it, so a refusal leaves a live producer behind. ``unwatch``
-    will not signal a seat whose registration names no project, and the producer
-    rewrites that registration in place at startup: releasing in the
-    truncate-to-write window refuses on a transient state rather than on the
-    refusal under test. Wait for the settled record, then release.
+    A dispatch arms the project's watch producer and the test releases it in its
+    ``finally``. ``unwatch`` will not signal a seat whose registration names no
+    project, and the producer rewrites that registration in place at startup, so
+    a release landing in the truncate-to-write window raises on a transient state
+    rather than on the behaviour under test. Wait for the settled record, then
+    release.
     """
     deadline = time.monotonic() + WATCHER_LOAD_BOUND_SECONDS
     while time.monotonic() < deadline:
@@ -263,9 +263,7 @@ def test_a_scoring_run_dispatches_its_own_review_unasked(
         assert stored["review_dispatch"]["status"] == "dispatched"
         assert stored["review_dispatch"]["run_id"] == report["review_run_id"]
     finally:
-        if crew.watch_state("sample")["watcher_live"]:
-            recovery.unwatch("sample")
-            _wait_for_stopped_producer()
+        _release_armed_producer()
 
 
 def test_an_unavailable_lane_is_recorded_and_a_returning_lane_dispatches(
@@ -292,9 +290,7 @@ def test_an_unavailable_lane_is_recorded_and_a_returning_lane_dispatches(
             )
         assert returned["dispatched"] is True
     finally:
-        if crew.watch_state("sample")["watcher_live"]:
-            recovery.unwatch("sample")
-            _wait_for_stopped_producer()
+        _release_armed_producer()
 
 
 def test_an_unattached_session_refuses_the_automatic_dispatch_too(
