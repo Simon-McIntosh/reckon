@@ -1227,10 +1227,14 @@ def crew_widen(run_id, write_paths, pretty):
     process can still write against the boundary being moved.
     """
     crew_module, _ = _crew_modules()
-    from reckon.crew.claims import widen_claim
+    from reckon.crew.claims import ClaimAmendmentRefusedError, widen_claim
 
     try:
         updated, added = widen_claim(run_id, write_paths)
+    except ClaimAmendmentRefusedError as exc:
+        raise click.ClickException(
+            f"{exc}; use `crew resume` once its turn has ended"
+        ) from exc
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit_crew_result(
