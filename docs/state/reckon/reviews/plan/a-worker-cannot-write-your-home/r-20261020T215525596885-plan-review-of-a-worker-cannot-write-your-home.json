@@ -1,0 +1,72 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T22:25:12.000Z",
+  "dispatched_at": "2026-10-20T22:08:37Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-worker-cannot-write-your-home.html:27",
+      "id": "wiring-1",
+      "reason": "the document records exactly this relationship for the two sibling nodes that write the same module, so a coordinator routing \u00a718 has no declared edge telling it \u00a716's rule binds the new fix and that its order against the fence-writing nodes matters.",
+      "text": "the `plan-section-depends-on` meta declares only `s17\u2192s15` and `s16\u2192s15`, while \u00a718 writes both `reckon/_worker_fence.py` (the module \u00a715/\u00a716/\u00a717 hold) and `reckon/_backends.py` (\u00a716's) and its done-when runs \u00a715's and \u00a716's test files and requires \u00a716's rule to be preserved",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-worker-cannot-write-your-home/r-20261020T215525596885-plan-review-of-a-worker-cannot-write-your-home/plan.html:1574",
+      "id": "reasoning-1",
+      "reason": "without the seam named and the `.git`/`.codex` mismatch stated, the node's first step (\"find which change introduced it\") can be spent re-deriving what the fence's own enumerated set already records, or the fix can be written into a rule the fault never reaches.",
+      "text": "\u00a718's first fix shape, \"giving codex's inner sandbox the writable path it creates\", names no code path, while the fence's node-tmp carve-out is a registered enumeration (`node_tmp_runtime_paths()` in `reckon/_worker_fence.py:1168`) whose only codex entry is `NODE_TMP_ROOT / CODEX_SANDBOX_MARKER_DIRNAME` with `CODEX_SANDBOX_MARKER_DIRNAME = \".codex\"` (`reckon/_worker_fence.py:1165,1203`) \u2014 the observed failure path is `/tmp/.git`, so the plan's own landed record (\u00a715/\u00a717) names a different path from the one \u00a718's evidence names, and \u00a718 never reconciles the two",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-worker-cannot-write-your-home/r-20261020T215525596885-plan-review-of-a-worker-cannot-write-your-home/plan.html:28",
+      "id": "reasoning-2",
+      "reason": "the document's stated completion contradicts its own records, and a coordinator scanning `impl` reads the plan as essentially finished while two sections are implementable.",
+      "text": "the document's `plan-impl` is `0.99`, but the plan's own section records derive `0.872` (`derive_impl_with_source`, source `declarations`: 16 of 18 declared sections done, \u00a76 and \u00a718 implementable), which is the mismatch `reckon/doccheck.py`'s `_IMPL_META_STALE` check exists to report",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "3668155cf3dc03089a683920c92e6e7c31e83ca70354470ce4df57700c3baa34",
+  "plan_slug": "a-worker-cannot-write-your-home",
+  "plan_version": 208,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T215525596885-plan-review-of-a-worker-cannot-write-your-home",
+  "reviewed_blob_sha": "32c904c7be0fed1cf34841306141b208b9b77c73",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited commits resolve (d5c886763 `fix(fence): confine each worker to its own pid namespace`, 06b1d3358 `fix(placement): create node-local bind sources on the node a step runs on`, and the five `plan-commits` shas), the cited files exist (`reckon/_worker_fence.py`, `reckon/_backends.py`, `tests/test_every_module_fits_a_worker_window.py`, `tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py`, `tests/test_a_fenced_codex_review_names_only_writable_roots.py`), `test_fence_pid_namespace.py` is the test d5c886763 added, and the incident's cited error text is real (15 `Can't mkdir /tmp/.git:` records in the named run's stream).",
+    "done_when": "pass \u2014 \u00a718's done-when names two falsifiable arms (the base-reproduces/head-cleared log, and the new test failing with the fix reverted) and states the negative control explicitly (\"Revert the fix, and both the reproduction and the new test must fail\").",
+    "evidence_paths": "pass \u2014 \u00a718's gate logs and both base/head arms go \"in the run directory\" (`~/.config/reckon/crew/runs/<run>/`, on GPFS home), not a scratchpad or node-local `/tmp`.",
+    "naming": "pass \u2014 \u00a718's new file name (`tests/test_a_read_only_codex_worker_runs_inside_the_fence.py`) and the symbols it touches are mechanism-naming, with no plan label, ticket number or version tag.",
+    "reasoning": "two findings \u2014 \u00a718's fix does not name the seam it must extend, and the document's `plan-impl` scalar is contradicted by the figure its own section records derive.",
+    "single_goal": "pass \u2014 \u00a718 carries one deliverable, a read-only codex worker running its commands inside the fence.",
+    "wiring": "a finding \u2014 the document declares section dependencies only for s16 and s17, and the peer review of \u00a718 changed nothing that a coordinator can use to order it against the fence nodes it shares a module with."
+  },
+  "section_digests": {
+    "_document": "fab9b215a8b402b313f036d576ff38f7aba7b254016464b2507c477fd8b222a5",
+    "s1": "20aea2196f748a0a26dcd8c4f13a51e89056dc090927dcbf7c88e3384e3a5ab4",
+    "s10": "c5c7fe720643fd4e73b5f1c9fff30c26f8357f46808e3b91eb33b5271d3a19bc",
+    "s11": "f2f305292dacd47d88930479053d919c6bce05b3f863e60a502ce40a2b1c1239",
+    "s12": "bcbf84b314096bf944f58481d98177c11ed6732c763472dc6bc259bc0ad8f54e",
+    "s13": "274d2cd914af10830f75d7ac253c9a1833d25cf9ac0e37e28c0c48ba60b77628",
+    "s14": "fcefb6cd20b26029bf0d8c785373a493532289cca9f2b4b01a93bf7b4ef7c19a",
+    "s15": "2d4c8c79a854bdbb21757053e30b9cf1366a1b627dc8c8ef6e7760cb15af06a2",
+    "s16": "f2c003eb41a15d4a475407c4f28b7405bf87620a7ee1c9732c823c0bd535923c",
+    "s17": "2d2d08c8567a83cca3bdd3a30b5cca94fa8e377c6e1552aed6dfb8e1d15db707",
+    "s18": "7beebbf00d7590a140051f821878c21d75cd4cee9f4f58898bb6b5cceb36e406",
+    "s2": "dfbb662d3da9aa4d3d153e8d2cd5e2c614534034829ebd298f56063c2150b8b6",
+    "s3": "8a798e91551442bdcf324bf0e8f2801e9ced17b35f45f3867f8314e98619dde9",
+    "s4": "b249a7c0cf7296d1b03a7dcdc45216481b546ee13550784bcaabea3f34abe51d",
+    "s5": "b591d224f29bac0f9b5918e6ee3a87b55260f3424887d057e5a8bec79aec03b1",
+    "s6": "a2ea9ae61376b301400c70bae6a0060a2a2abf072b89cbf83a102cea2ab5f3b4",
+    "s7": "b363364b7464f2f7c7af654833037ddd56f6af79fd55aa44a6d3327083f626a5",
+    "s8": "af9d785f0f9f36ee58ec7010366aec4f06efdf850c84cf4ce0619311174d54dd",
+    "s9": "131001034a4d533c7f8c0beb295eb3570f2b7e1fc7853a1a09da023955ff5c4d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T22:27:24.282039+00:00"
+}
