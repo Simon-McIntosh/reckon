@@ -17,6 +17,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from reckon.crew import promotion, queue_admission, runs
+from tests.test_a_held_request_stays_queued import _stream_file_rows
 from tests.test_a_queued_run_is_admitted import (  # noqa: F401 - fixture
     PROJECT,
     _config_for,
@@ -24,18 +25,6 @@ from tests.test_a_queued_run_is_admitted import (  # noqa: F401 - fixture
     _queue,
     admit_repo,
 )
-
-
-def _stream_rows(run_id: str) -> list:
-    """The rows the project's watch stream carries naming one run."""
-    path = runs.watch_stream_path(PROJECT)
-    if not path.is_file():
-        return []
-    return [
-        event
-        for event in runs.read_stream_events(path)
-        if str(event.get("run_id") or "") == run_id
-    ]
 
 
 def _attempted_request(repository: Path, run_id: str) -> None:
@@ -145,7 +134,9 @@ def test_a_discarded_request_is_reported_nowhere(admit_repo: Path, monkeypatch) 
     result = queue_admission.admit_once(config_for=resolve, launcher=_failing_launcher)
 
     assert promotion.discard_recorded(run_id), "the discard left a record"
-    assert _stream_rows(run_id) == [], "a discarded request is reported nowhere"
+    assert _stream_file_rows(PROJECT, run_id) == [], (
+        "a discarded request is reported nowhere"
+    )
     assert not runs.pointer_path(run_id).exists(), (
         "a discarded request must not be written back by the pass"
     )
@@ -164,7 +155,7 @@ def test_a_kept_request_is_reported_once_as_queued(admit_repo: Path) -> None:
 
     result = queue_admission.admit_once(config_for=resolve, launcher=_failing_launcher)
 
-    rows = _stream_rows(run_id)
+    rows = _stream_file_rows(PROJECT, run_id)
     assert len(rows) == 1, f"expected one row naming the run, got {rows}"
     assert rows[0]["to_state"] == "queued"
     pointer = runs.read_pointer(run_id)
