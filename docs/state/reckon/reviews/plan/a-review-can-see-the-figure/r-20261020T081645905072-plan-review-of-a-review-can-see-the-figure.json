@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T08:27:26.433Z",
+  "dispatched_at": "2026-10-20T08:17:36Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:239",
+      "id": "anchors_resolve-1",
+      "reason": "the done-when names a command that refuses with a tombstone, so a node dispatched to \u00a711 gates its check on a verb that cannot produce the report it asserts, and \u00a711's own sentence about where the finding is surfaced needs the live spelling.",
+      "text": "\u00a711 tells the reader the twin \"is a finding of the shared manifest audit \u2026 so `crew check-manifest` reports it to the worker\", and its done-when at line 242 requires the case \"is reported by `crew check-manifest`\", but `crew check-manifest` is a retired verb: `reckon crew check-manifest --run <id>` exits 10 with `{\"retired\": \"check-manifest\", \"successor\": \"crew check --manifest\", \"exit_code\": 10, \"ok\": false}` (measured in this worktree; `reckon/crew/tombstones.py:155`). The live surface is `crew check --manifest` (`reckon/crew_run_commands.py:880`).",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "782e0e2fe28b8deb9f1849956ecc724a1feed1489380975ffcb63a247944e967",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 63,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T081645905072-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "71efed9b49a4d65f7cee8b50cb3fbf67b67457d5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a711 cites `crew check-manifest`, a verb retired in favour of `crew check --manifest`; the file, module and fixture anchors it names otherwise resolve (see FINDING).",
+    "done_when": "pass \u2014 \u00a711's done-when (line 242) enumerates three pass cases and one refused case, and declares its negative control (\"with the twin check removed, the first case passes both commands and the test fails\"), so the gate can show the guard fires.",
+    "evidence_paths": "pass \u2014 \u00a711 writes no gate log itself and cites no scratchpad path; the fixtures it names (`docs/figures/figure-review-pairs/`) are committed at HEAD.",
+    "naming": "pass \u2014 \u00a711's new surface names no plan label, stage name or ticket number, and its exemption sentence states the mechanism (\"a path absent at the run's base\") rather than a tracker reference.",
+    "reasoning": "pass \u2014 the stated cause matches the cited measurement; the mechanism produces the done-when; the caller set is named and the paths exist. NOTE (checked, not a finding): \u00a711 says the twin check \"is a finding of the shared manifest audit \u2026 and crew complete refuses the promotion with the same text\", but today `audit_manifest` has exactly one production caller, `crew_check_manifest` (`reckon/crew_run_commands.py:825`); `reckon/crew/promotion.py` judges a delivered manifest through its own path (`parse_manifest`, `path_within_declared_scope`) and never calls `audit_manifest`. The claim about `crew complete` therefore describes the wiring the three named write paths are to add, not an existing share \u2014 implementable as written, so it does not change the plan.",
+    "single_goal": "pass \u2014 \u00a711 carries one deliverable, the PNG-twin refusal; its write paths (reports.py, promotion_checks.py, promotion.py, one new test) are one coherent change.",
+    "wiring": "pass \u2014 \u00a711 needs no cross-plan dependency; it declares none, and the one relationship the plan carries (`plan-informs: scoring-should-stop-a-promotion`, line 21) still resolves, with \u00a712 naming that plan's \u00a76 as the follow-on that consumes this selection after it lands."
+  },
+  "section_digests": {
+    "_document": "e592c63ff41bf13f22de51e6ad10d137c29af617ce292c04de91cbfb13c8517b",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s10": "aee314dbe26192cd678dc467a9b229b8cb46873cacefcd4ce369fcbe469a1e37",
+    "s11": "59c4d242577794f57ea7b5db4499d04e77490fbb17a052f64031b8ca3d514f48",
+    "s12": "234f9999257c9e64bf69518cdf0b98e319850465374deeac091e90b1ed118647",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "ce9705dbaad70ab2b3a9425eead9900cc284deb7f1d5ecacb553d3745679b3d7",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a",
+    "s8": "2c200fdd964f328342811e9362e4cd14da60f3c8352368899ccf87797d9e7f5b",
+    "s9": "b62ffeb55dd71d5f62b49f372e069f227a57c7caec9c6c3b45f81a945d284e11"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T08:29:43.402434+00:00"
+}
