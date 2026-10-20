@@ -129,13 +129,29 @@
 
   <section data-reckon="record" data-status="done">
     <h2 id="pace-reanchors-at-lift-end-delta">Delta against base</h2>
-    <p>The lift and budget test files were run at head and at the node's base revision
-    (<code>2f5c6e4d655fb34b33562585497bd7d4d7d4cbde</code>), each file in its own fresh pytest process, over every
-    file matching the lift test globs and every file importing <code>reckon.budget</code> &mdash; 41 files. Five
-    files are red at head, and the same five are red at base with identical failure ids and counts: no
-    head-only id, no base-only id. The causes are unrelated pre-existing breakages &mdash; retired CLI verbs
-    (<code>preflight</code>, <code>budget-lift</code>) and a <code>KeyError: 'codex'</code> in a fixture &mdash; and none of them
-    touches the pace path. Added failures: zero.</p>
+    <p>Every test file importing the changed modules &mdash; <code>reckon.budget</code> and
+    <code>reckon.crew.budget_lift</code> &mdash; was run at head and at the node's base revision
+    (<code>2f5c6e4d655fb34b33562585497bd7d4d7d4cbde</code>, unpacked from <code>git archive</code> into a temporary
+    tree), each file in its own fresh pytest process and each arm in one consolidated log. The two arms
+    overlap on <strong>40 files</strong>, which covers every lift, budget, pace, reserve, preflight, window and
+    staleness test. Over those 40: <strong>no failure id at head that is absent at base, no id at base that is
+    absent at head, and no exit status that differs</strong>.</p>
+
+    <p>Six files are red in both arms, with the same ids and counts in each: <code>test_preflight_pace</code>
+    (8 failed), <code>test_one_staleness_rule</code> (6), <code>test_a_new_lift_replaces_the_standing_one</code> (1),
+    <code>test_codex_banked_reset</code> (1), <code>test_preflight_reads_the_published_document</code> (1), and
+    <code>test_crew_recover</code>, which reaches the arm's own 150 s per-file bound. Their causes are unrelated to
+    this change &mdash; retired CLI verbs (<code>preflight</code>, <code>budget-lift</code>, whose successor is
+    <code>crew budget --check</code>) and a <code>KeyError: 'codex'</code> in a fixture. Added failures: zero.</p>
+
+    <p><strong>How the ARM is chosen is part of the measurement.</strong> An earlier pair of arms was discarded
+    because each was launched with <code>python -I</code>: <code>-I</code> implies <code>-P</code> and ignores
+    <code>PYTHONPATH</code>, so <code>import reckon</code> resolved to the main checkout for <em>both</em> arms and the
+    comparison was one tree against itself &mdash; a result that would have read as clean while measuring nothing.
+    The arms above run without <code>-I</code>, with <code>PYTHONPATH</code> naming each tree, and the resolved
+    <code>reckon.budget.__file__</code> was printed before the run to show the worktree for the head arm and the
+    unpacked base tree for the base arm. The base tree carries no <code>_re_anchor</code>, and the head worktree
+    carries it, so the two arms are demonstrably different code.</p>
   </section>
 </main>
 </body>
