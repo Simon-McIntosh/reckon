@@ -1139,17 +1139,21 @@ def _resolve_promotion_outcome(
     """Return the outcome text a promotion records, defaulting a review run's.
 
     A non-passing gate must land with a summary of what failed or why the
-    evidence could not be produced, so an empty outcome is refused. A review
+    deliverable could not be produced, so an empty outcome is refused. A review
     run's summary already exists in its deliverable, so the demand is met from
     the stored review's total score and finding count instead of requiring the
     operator to restate a figure the review store holds. Every other run still
-    refuses, and a review run with no readable stored review refuses too,
-    because a summary composed from nothing would read as evidence.
+    refuses, and a review run that has not delivered refuses too, because a
+    summary composed from nothing would read as evidence. That refusal names the
+    one delivery condition that failed, with the record path it concerns and the
+    remedy that condition calls for, so a coordinator is told which condition to
+    act on rather than that the record cannot be read.
     """
     supplied = str(outcome).strip()
     if verdict == "passed" or supplied:
         return supplied
     from reckon.crew import recovery
+    from reckon.crew.recovery_review_delivery import review_delivery_refusal
 
     if not recovery._is_review_run(record):
         raise CrewError(
@@ -1157,6 +1161,12 @@ def _resolve_promotion_outcome(
             "the evidence could not be produced"
         )
     project = str(record.get("project") or "")
+    refusal = review_delivery_refusal(record, project)
+    if refusal is not None:
+        raise CrewError(
+            f"run {run_id!r} is a review run refused for delivery: "
+            f"{refusal['condition']}; {refusal['detail']}; {refusal['remedy']}"
+        )
     delivered = recovery._delivered_review_record(record, project)
     if delivered is None:
         raise CrewError(

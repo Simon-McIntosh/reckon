@@ -197,7 +197,6 @@ from .recovery_review_delivery import (
     _complete_manifest_write_time as _complete_manifest_write_time,
     _delivered_review_record as _delivered_review_record,
     _is_review_run as _is_review_run,
-    _read_complete_review as _read_complete_review,
     _resolved_reviewed_run_id as _resolved_reviewed_run_id,
     _review_store_record_paths as _review_store_record_paths,
     _stop_delivered_reviews as _stop_delivered_reviews,

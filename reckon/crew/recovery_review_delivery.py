@@ -324,20 +324,143 @@ def _complete_manifest_write_time(path: Path) -> float | None:
         return None
 
 
-def _read_complete_review(
-    path: Path,
-) -> tuple[Mapping[str, Any], float, Path] | None:
-    """A stored review at ``path``, when it landed, and the record it holds."""
+def _read_review_record(path: Path) -> tuple[Mapping[str, Any], float] | None:
+    """The record at ``path`` and when it landed, without judging it complete.
+
+    Kept separate from the completeness judgement so a refusal can tell a
+    record that cannot be read from one that reads and is not a complete
+    review: the two call for different remedies, and a reader that folds them
+    reports a corrupt file where a good one is merely missing a total.
+    """
     try:
         stored = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return None
-    if not isinstance(stored, Mapping) or not _review_is_complete(stored):
+    if not isinstance(stored, Mapping):
         return None
     try:
-        return stored, path.stat().st_mtime, path
+        return stored, path.stat().st_mtime
     except OSError:
         return None
+
+
+def _review_delivery_verdict(record: Mapping[str, Any], project: str) -> dict[str, Any]:
+    """The single evaluation of the conditions a review's delivery depends on.
+
+    A run review is dispatched to read one revision, and the record that
+    delivers it is the one filed at the head-keyed path that dispatch names. A
+    record delivers only when all six of the conditions the returns below name
+    hold together: the run declares a head-keyed record path; a record there
+    reads as a review; it is a complete review; the head it describes is the
+    head the path names, compared with the owners the promotion gate and the
+    classifier already share; its ``review_run_id``, when it carries one, names
+    this review run; and it was written after this run was dispatched. A record
+    failing any of the six is another round's verdict standing where this run's
+    would be — the defect measured on 2026-10-18, when a run that never wrote
+    its record was promoted on the unsuffixed path an earlier round had left
+    complete. The legacy path and the any-head ``.at-`` glob are therefore no
+    delivery at all.
+
+    The conditions are written once, here, so :func:`_delivered_review_record`
+    and :func:`review_delivery_refusal` are its two projections and no reader
+    restates them. A refusal returns the one condition that failed, the record
+    path it concerns when there is one, and the remedy that condition calls for,
+    so a coordinator is told which condition to act on rather than that the
+    record cannot be read. The watcher adds a refusal this cannot express — the
+    one naming the head when a run review declares no head-keyed path at all, a
+    run this sees only as having stored nothing.
+    """
+    declared = _declared_head_keyed_record(record, project)
+    if declared is None:
+        return {
+            "delivered": False,
+            "condition": "no head-keyed record path",
+            "path": "",
+            "detail": (
+                "declares no head-keyed record path, so the head it was "
+                "dispatched to read is unnamed"
+            ),
+            "remedy": (
+                "re-dispatch the review so the record path it is granted "
+                "carries the head it read"
+            ),
+        }
+    path, head = declared
+    read = _read_review_record(path)
+    if read is None:
+        return {
+            "delivered": False,
+            "condition": "record cannot be read",
+            "path": str(path),
+            "detail": f"stored no record that reads as a review at {path}",
+            "remedy": "store the review record there, or pass --outcome",
+        }
+    body, mtime = read
+    missing = _review_missing_measures(body)
+    if missing:
+        listed = ", ".join(missing)
+        return {
+            "delivered": False,
+            "condition": "record is not a complete review",
+            "path": str(path),
+            "detail": (
+                f"stored a record at {path} that is not a complete review: it "
+                f"lacks {listed}"
+            ),
+            "remedy": (
+                "pass --outcome with the verdict the review reached, or "
+                f"re-store the review with {listed}"
+            ),
+        }
+    described = review_described_head(body, tree=None)
+    if not same_revision(described, head):
+        return {
+            "delivered": False,
+            "condition": "record describes a different head",
+            "path": str(path),
+            "detail": (
+                f"stored a record at {path} describing head "
+                f"{described or '(none)'} while its path names head {head}"
+            ),
+            "remedy": "re-dispatch the review against the head it read",
+        }
+    named = str(body.get("review_run_id") or "").strip()
+    run_id = str(record.get("run_id") or "").strip()
+    if named and named != run_id:
+        return {
+            "delivered": False,
+            "condition": "record names a different review run",
+            "path": str(path),
+            "detail": (
+                f"stores a record at {path} naming review run {named} while "
+                f"this run is {run_id}"
+            ),
+            "remedy": "re-dispatch the review so it writes its own record",
+        }
+    dispatched = _review_dispatch_instant(record, project)
+    if dispatched is None or mtime <= dispatched:
+        written = datetime.fromtimestamp(mtime, UTC).isoformat()
+        if dispatched is None:
+            detail = (
+                f"stores a record at {path} written at {written}, and this "
+                "run's dispatch instant is unknown, so the record cannot be "
+                "told from an earlier round's verdict"
+            )
+        else:
+            dispatched_at = datetime.fromtimestamp(dispatched, UTC).isoformat()
+            detail = (
+                f"stores a record at {path} written at {written}, before this "
+                f"run was dispatched at {dispatched_at}, so it is an earlier "
+                "round's verdict"
+            )
+        return {
+            "delivered": False,
+            "condition": "record written before the dispatch",
+            "path": str(path),
+            "detail": detail,
+            "remedy": "re-dispatch the review so it writes a fresh record",
+        }
+    return {"delivered": True, "mtime": mtime, "path": str(path)}
 
 
 def _delivered_review_record(
@@ -345,44 +468,34 @@ def _delivered_review_record(
 ) -> tuple[float, Path] | None:
     """The stored review record a reviewer wrote and when it landed, or None.
 
-    A run review is dispatched to read one revision, and the record that
-    delivers it is the one filed at the head-keyed path that dispatch names. The
-    record is this run's delivery only when all four hold: it sits at that path;
-    the head it describes is the head the path names, compared with the owners
-    the promotion gate and the classifier already share; its ``review_run_id``,
-    when it carries one, names this review run; and it was written after this
-    run was dispatched. A record failing any of the four is another round's
-    verdict standing where this run's would be — the defect measured on
-    2026-10-18, when a run that never wrote its record was promoted on the
-    unsuffixed path an earlier round had left complete. The legacy path and the
-    any-head ``.at-`` glob are therefore no delivery at all.
-
-    Whether a review has delivered is decided here alone, so every reader that
-    asks the question reads this answer and none of them restates the four
-    conditions. The watcher is the one exception, and it does not decide
-    delivery at all: it adds a refusal that this function cannot express,
-    naming the head when a run review declares no head-keyed path at all —
-    a run this function only sees as having stored nothing.
+    Whether a review has delivered is decided in :func:`_review_delivery_verdict`
+    alone, and this is that decision's answer to the question every delivery
+    reader asks; :func:`review_delivery_refusal` reads the same verdict to name
+    the one condition that failed. The verdict carries the path as a string, so
+    every branch names it one way; this reader returns it as a ``Path``, which
+    is what its callers open.
     """
-    declared = _declared_head_keyed_record(record, project)
-    if declared is None:
+    verdict = _review_delivery_verdict(record, project)
+    if not verdict["delivered"]:
         return None
-    path, head = declared
-    stored = _read_complete_review(path)
-    if stored is None:
+    return verdict["mtime"], Path(verdict["path"])
+
+
+def review_delivery_refusal(
+    record: Mapping[str, Any], project: str
+) -> dict[str, Any] | None:
+    """The one delivery condition a review run failed, or None when it delivered.
+
+    Every field a caller needs to act on the refusal is here: the condition's
+    name, the record path it concerns when there is one, a statement of what was
+    found, and the remedy that condition calls for. A record that delivers
+    returns None, so a refusal reader and a delivery reader judge delivery from
+    one verdict rather than from two copies of the conditions.
+    """
+    verdict = _review_delivery_verdict(record, project)
+    if verdict["delivered"]:
         return None
-    body, mtime, located = stored
-    described = review_described_head(body, tree=None)
-    if not same_revision(described, head):
-        return None
-    named = str(body.get("review_run_id") or "").strip()
-    run_id = str(record.get("run_id") or "").strip()
-    if named and named != run_id:
-        return None
-    dispatched = _review_dispatch_instant(record, project)
-    if dispatched is None or mtime <= dispatched:
-        return None
-    return mtime, located
+    return verdict
 
 
 def review_delivered(record: Mapping[str, Any]) -> dict[str, Any] | None:
@@ -508,7 +621,7 @@ from .recovery_review_dispatch import (  # noqa: E402
 )
 from .recovery_review_subject import (  # noqa: E402
     _is_review_node,
-    _review_is_complete,
+    _review_missing_measures,
     review_described_head,
     same_revision,
 )
