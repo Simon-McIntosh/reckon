@@ -249,6 +249,34 @@ def test_a_record_naming_a_worker_that_still_runs_does_not_end_the_attempt(
     assert snapshot["state"] == "working"
 
 
+def test_the_record_decides_by_the_worker_it_names_not_by_the_worker_record(
+    tmp_path: Path,
+) -> None:
+    """The record answers for the worker it names, not for whatever else is on
+    the run directory.
+
+    The two records can name different processes: the worker record is the
+    attempt's own account of the process it spawned, and the exit record is the
+    supervisor's account of the process it held the wait for. Where they
+    disagree, the recorded end is the record's own worker that has left, and a
+    live pid sitting on the worker record does not revive it.
+    """
+    run_id = "r-record-names-a-worker-other-than-the-worker-record"
+    pointer = _run(
+        tmp_path,
+        run_id,
+        supervisor_pid=os.getpid(),
+        worker_pid=os.getpid(),
+        exit_record=_exit_record(run_id, attempt=1, worker_pid=_reaped_pid()),
+        attempt_record=1,
+    )
+
+    row = recovery.classify_pointer(pointer)
+    assert row["process_alive"] is False
+    assert row["exit_record"] is not None
+    assert row["classification"] == "exited-unfinished", row["detail"]
+
+
 def test_a_predecessor_attempts_exit_does_not_end_the_attempt_now_running(
     tmp_path: Path,
 ) -> None:
