@@ -918,9 +918,15 @@ def _record_pass_verdicts(
     A pass that examined no queued pointer writes nothing: an idle pass is the
     absence of a line, not a line saying so. The line goes through the shared
     crew-home log writer, so this log and the picker's timings are written the
-    same way. The trim that follows is the service-log one, which edits the file
-    in place under the appender's own descriptor rather than replacing it, so a
-    line appended while this pass is trimming is not lost.
+    same way, and the bound that follows is the shared service-log trim.
+
+    The trim keeps the file's inode, so the appender's own descriptor stays
+    valid, but it reads the tail and then rewrites the file in place: a line
+    another lane's service appends in that window is still lost. The window is
+    narrow and accepted, because this log is a best-effort record rather than a
+    decision the service rests on. For the same reason a trim that raises is
+    swallowed: a storage error while bounding the record must not end a service
+    whose admission decision has already been made.
     """
     verdicts = result.get("verdicts") or []
     if not verdicts:
@@ -938,11 +944,14 @@ def _record_pass_verdicts(
             "pointers": list(verdicts),
         },
     )
-    trim_service_log(
-        runs.crew_home() / ADMISSION_VERDICT_LOG,
-        limit=ADMISSION_VERDICT_LOG_MAX_BYTES,
-        keep=ADMISSION_VERDICT_LOG_MAX_BYTES,
-    )
+    try:
+        trim_service_log(
+            runs.crew_home() / ADMISSION_VERDICT_LOG,
+            limit=ADMISSION_VERDICT_LOG_MAX_BYTES,
+            keep=ADMISSION_VERDICT_LOG_MAX_BYTES,
+        )
+    except OSError:  # a pass never fails on its own record
+        return
 
 
 def admit_once(

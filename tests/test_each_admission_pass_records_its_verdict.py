@@ -371,6 +371,50 @@ def test_a_pass_under_a_waiting_gate_records_the_pointer_as_gate_held(
     assert pointer["allowance_source"] == "the session's own worker slots"
 
 
+def test_a_trim_failure_leaves_the_pass_and_its_decision_intact(
+    admit_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A storage error while bounding the log never ends the admission service.
+
+    The log is best effort: the pass may not fail because its record could not
+    be written, or because bounding that record could not be done. A trim that
+    raises is swallowed, and the decision the pass had already reached stands
+    unchanged.
+    """
+    from reckon.crew import fleet_supervisor
+
+    def failing_trim(path: Path, *, limit: int, keep: int) -> bool:
+        raise OSError(28, "No space left on device", str(path))
+
+    monkeypatch.setattr(fleet_supervisor, "trim_service_log", failing_trim)
+    lane = tmp_path / "lane.json"
+    _config, resolve = _config_with_lane(lane)
+    runs.queue_dispatch(_queue(admit_repo))
+    recorded: list = []
+
+    calls = _drive(
+        monkeypatch,
+        lane_document=lane,
+        resolve=resolve,
+        launcher=_launcher(recorded),
+        lanes=[_session_lane(0.0)],
+    )
+
+    assert calls == [1], "the pass ran to its end despite the failing trim"
+    lines = _read_verdict_lines(admit_repo)
+    assert len(lines) == 1, lines
+    pointer = lines[0]["pointers"][0]
+    assert pointer["verdict"] == "held-for-allowance"
+    assert pointer["allowance"] == 0
+    assert recorded == [], "a held request launched nothing"
+    still_queued = [
+        str(entry.get("run_id"))
+        for entry in runs.list_live()
+        if entry.get("phase") == "queued"
+    ]
+    assert still_queued == [RUN_ID], "the held request stayed queued"
+
+
 def test_the_log_is_trimmed_within_its_size_bound(
     admit_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
