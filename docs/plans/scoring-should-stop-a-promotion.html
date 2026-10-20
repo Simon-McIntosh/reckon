@@ -21,7 +21,7 @@
   <title>Scoring Should Stop A Promotion | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="247">
+<meta name="plan-version" content="249">
 <meta name="plan-modified" content="2026-10-20">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;done&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;deferred&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
@@ -2555,6 +2555,7 @@
     <p><strong>Write paths:</strong> <code>reckon/crew/figure_review.py</code> (new),
     <code>reckon/crew/prompts/figure-review.md</code> (new),
     <code>reckon/crew/recovery_review_dispatch.py</code>,
+    <code>reckon/crew/review.py</code>,
     <code>tests/test_figure_review.py</code> (new).</p>
 
     <p><strong>Done when</strong> a run whose commits add or change <code>docs/figures/p/a.svg</code>
@@ -2563,7 +2564,11 @@
     text review and no figure review; with no lane declaring image input the figure review is
     held and its reason names the image modality; the composed brief states each figure rule
     above and that the reviewer writes nothing; the stored review record carries <code>review_kind: "figure"</code>, and a record
-    without the field reads as a text review, so a reader can tell the two apart; the test builds its repository and flight in
+    without the field reads as a text review, so a reader can tell the two apart; the
+    figure review's record is stored at its own path, keyed by its kind as well as the run
+    and the head (<code>review_path</code> in <code>reckon/crew/review.py</code> keys on run and
+    head alone today), so a figure review at the head the text review read never overwrites
+    the text review's record, and both read back afterwards; the test builds its repository and flight in
     a temporary directory and reads nothing outside it; <code>ruff check</code> and
     <code>ruff format --check</code> add no findings on changed files; every log is written
     under the run directory, starts with its revision and the literal command, and ends in
@@ -3363,6 +3368,9 @@
 </div>
 <div class="r-comment" data-section="s17" data-id="c-run-r-20261020T100925571801-review-of-a-landing-write-waits-out-a-held-index-lock-83274eee8458" data-who="reckon-build" data-when="2026-10-20T10:17:06.960Z">
     <div class="r-comment-body"><p>Independent review of run r-20261020T091743111139 landed; the change satisfies its goal (landing staging retries a held index.lock on a bounded window, recording each retry) at reviewed head 83274eee8 against base 2ff02228, with scores goal_fidelity 19, evidence 17, scope_discipline 12, durability 18, fit 15, reuse 8 and three follow-on findings (two test files edited outside the fenced write paths; an unrelated formatting sweep folded into the fix commit; a re-implementation of the index-lock wait merge.py already owns).</p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261020T110419289004-review-of-a-landing-write-waits-out-a-held-index-lock-3bcd48bc49a4" data-who="reckon-build" data-when="2026-10-20T11:18:22.286Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261020T091743111139-a-landing-write-waits-out-a-held-index-lock at reviewed head 3bcd48bc49a4 against reviewed base 83274eee84580; the two commits gained since the prior review move the index-lock wait into the owner reckon/crew/merge.py and the staging calls it, so reuse rises from 8 to 20; scores goal_fidelity 19, evidence 16, scope_discipline 19, durability 17, fit 17, reuse 20; added_failure_count 0; three follow-on findings (the fragment's plan-summary meta still describes the superseded message-match design; the negative-control and lint logs stamp revision 83274eee8 while exercising code from 29525ad5a; one assertion at the test's line 165 reads both sides from the same list).</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">

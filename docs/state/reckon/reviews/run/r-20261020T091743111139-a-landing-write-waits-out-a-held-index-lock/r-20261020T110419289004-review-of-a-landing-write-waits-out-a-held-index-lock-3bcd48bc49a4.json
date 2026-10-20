@@ -1,0 +1,68 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/merge.py:551 land_merge",
+    "reckon/crew/promotion_scope.py:2286 _commit_landing_writes",
+    "reckon/crew/promotion.py:1063 _complete_locked",
+    "reckon/crew/promotion.py:1672 _complete_locked",
+    "reckon/crew/promotion_gate.py:960 record_gate_rerun_at_integrated_revision",
+    "reckon/crew/promotion_release.py:636 _record_release_on_ledger",
+    "reckon/crew_run_commands.py:1104 supersede_run_review"
+  ],
+  "completed_at": "2026-10-20T11:18:22.286Z",
+  "dispatched_at": "2026-10-20T11:05:08Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/scoring-should-stop-a-promotion/a-landing-write-waits-out-a-held-index-lock.html",
+      "line": "10",
+      "severity": "follow-on",
+      "text": "the plan-summary meta still describes the superseded design ('retries a failure whose message names a held index.lock for a bounded window ... a failure that names no lock, and a lock that outlasts the window, refuse as before'), contradicting the body above it and the landed code at reckon/crew/promotion_scope.py:2222, so the record's headline misdescribes what shipped to a reader who does not open the file."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T091743111139-a-landing-write-waits-out-a-held-index-lock/negative-control.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "the log's revision line names 'WORKTREE HEAD (83274eee8)', a sha at which _run_waiting_out_a_held_index_lock does not exist, and the same wrong stamp sits on lint.log:1, so a reader checking out the named revision cannot reproduce either log; the logs were taken against the post-refactor working tree and should name 29525ad5a."
+    },
+    {
+      "file": "tests/test_a_landing_write_waits_out_a_held_index_lock.py",
+      "line": "165",
+      "severity": "follow-on",
+      "text": "the assertion compares the recorded per-entry attempt numbers against list(range(1, len(retries) + 1)) derived from the same list it reads, so it is not independent of the value under test; it guards 1-based sequential numbering only."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read both commits gained since the prior review; 29525ad5a deletes the staging's private loop and _staging_names_a_held_index_lock and adds reckon/crew/merge.py:353 for both callers, and 3bcd48bc4 updates the fragment.",
+    "done_when": "the done_when names tests/test_a_landing_write_waits_out_a_held_index_lock.py; final-gate.log records 1 failed/185 passed EXIT=1 and baseline-suite.log 1 failed/182 passed EXIT=1 with the same environmental failure in both, negative-control.log records the declared first case red at EXIT=1, and a re-run of the file at the reviewed head gave 3 passed EXIT=0.",
+    "goal": "the node's goal is to make the landing staging retry a held index.lock on a bound and record each retry; reckon/crew/promotion_scope.py:2222 _stage_landing_writes calls reckon/crew/merge.py:353 _run_waiting_out_a_held_index_lock for its git add, which retries while the checkout holds index.lock and calls on_retry before each wait.",
+    "manifest": "read; it records status complete, commits afb0bd244..3bcd48bc4, the two-arm gate 1 failed/182 vs 1 failed/185, the negative control at EXIT=1, lint.log, and measurement_module/measurement_cwd for the base arm.",
+    "write_paths": "the dispatch fenced promotion_scope.py, merge.py, the test file, the fragment and two importing tests; the diff 83274eee8..3bcd48bc4 touches only promotion_scope.py, merge.py, tests/test_a_landing_write_waits_out_a_held_index_lock.py and the fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_landing_write_waits_out_a_held_index_lock.py:120 asserts result['committed'] is True, which negative-control.log shows reddens when the retry is removed, but :165 compares the recorded attempt list against a range built from that same list.",
+    "evidence": "final-gate.log and baseline-suite.log record 1 failed/185 passed vs 1 failed/182 passed with the one failure environmental in both arms, and the focused file re-run at the reviewed head passed 3/3 EXIT=0, but negative-control.log:1 and lint.log:1 stamp revision 83274eee8 while exercising code that exists only from 29525ad5a, so their stated revision does not reproduce them.",
+    "fit": "the added names are mechanism-named and promotion_scope.py:2413 follows the file's pre-existing bottom import block, though ruff format --check reports six constructs at reckon/crew/promotion_scope.py:1217 that the parent commit 83274eee8 had cleaned, so head no longer passes the check its parent passed even though the delta against the run's base is zero.",
+    "goal_fidelity": "reckon/crew/promotion_scope.py:2222 _stage_landing_writes retries its git add through the shared helper and records each retry via on_retry, which is what the goal asks, though detection moved from the message to the checkout's own index.lock, a change the prior review requested.",
+    "reuse": "the duplicate _staging_names_a_held_index_lock and its private loop are deleted and reckon/crew/merge.py:353 gains the one helper both land_merge and _stage_landing_writes call, extending the owner merge.py already had at _index_lock_held:350.",
+    "scope_discipline": "the diff 83274eee8..3bcd48bc4 changes only reckon/crew/merge.py, reckon/crew/promotion_scope.py, tests/test_a_landing_write_waits_out_a_held_index_lock.py and the fragment, every one inside the dispatch's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the landing staging retry a held index.lock on a bound and record each retry; reckon/crew/promotion_scope.py:2222 _stage_landing_writes calls reckon/crew/merge.py:353 _run_waiting_out_a_held_index_lock for its git add, which retries while the checkout holds index.lock and calls on_retry before each wait.\nVERDICT done_when: the done_when names tests/test_a_landing_write_waits_out_a_held_index_lock.py; final-gate.log records 1 failed/185 passed EXIT=1 and baseline-suite.log 1 failed/182 passed EXIT=1 with the same environmental failure in both, negative-control.log records the declared first case red at EXIT=1, and a re-run of the file at the reviewed head gave 3 passed EXIT=0.\nVERDICT write_paths: the dispatch fenced promotion_scope.py, merge.py, the test file, the fragment and two importing tests; the diff 83274eee8..3bcd48bc4 touches only promotion_scope.py, merge.py, tests/test_a_landing_write_waits_out_a_held_index_lock.py and the fragment, all inside them.\nVERDICT manifest: read; it records status complete, commits afb0bd244..3bcd48bc4, the two-arm gate 1 failed/182 vs 1 failed/185, the negative control at EXIT=1, lint.log, and measurement_module/measurement_cwd for the base arm.\nVERDICT diff: read both commits gained since the prior review; 29525ad5a deletes the staging's private loop and _staging_names_a_held_index_lock and adds reckon/crew/merge.py:353 for both callers, and 3bcd48bc4 updates the fragment.\nCALL_SITES: reckon/crew/merge.py:551 land_merge, reckon/crew/promotion_scope.py:2286 _commit_landing_writes, reckon/crew/promotion.py:1063 _complete_locked, reckon/crew/promotion.py:1672 _complete_locked, reckon/crew/promotion_gate.py:960 record_gate_rerun_at_integrated_revision, reckon/crew/promotion_release.py:636 _record_release_on_ledger, reckon/crew_run_commands.py:1104 supersede_run_review\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_scope.py:2222 _stage_landing_writes retries its git add through the shared helper and records each retry via on_retry, which is what the goal asks, though detection moved from the message to the checkout's own index.lock, a change the prior review requested.\nSCORE evidence: 16\nJUSTIFICATION evidence: final-gate.log and baseline-suite.log record 1 failed/185 passed vs 1 failed/182 passed with the one failure environmental in both arms, and the focused file re-run at the reviewed head passed 3/3 EXIT=0, but negative-control.log:1 and lint.log:1 stamp revision 83274eee8 while exercising code that exists only from 29525ad5a, so their stated revision does not reproduce them.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff 83274eee8..3bcd48bc4 changes only reckon/crew/merge.py, reckon/crew/promotion_scope.py, tests/test_a_landing_write_waits_out_a_held_index_lock.py and the fragment, every one inside the dispatch's declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_landing_write_waits_out_a_held_index_lock.py:120 asserts result['committed'] is True, which negative-control.log shows reddens when the retry is removed, but :165 compares the recorded attempt list against a range built from that same list.\nSCORE fit: 17\nJUSTIFICATION fit: the added names are mechanism-named and promotion_scope.py:2413 follows the file's pre-existing bottom import block, though ruff format --check reports six constructs at reckon/crew/promotion_scope.py:1217 that the parent commit 83274eee8 had cleaned, so head no longer passes the check its parent passed even though the delta against the run's base is zero.\nSCORE reuse: 20\nJUSTIFICATION reuse: the duplicate _staging_names_a_held_index_lock and its private loop are deleted and reckon/crew/merge.py:353 gains the one helper both land_merge and _stage_landing_writes call, extending the owner merge.py already had at _index_lock_held:350.\nFINDING docs/evidence/fragments/scoring-should-stop-a-promotion/a-landing-write-waits-out-a-held-index-lock.html:10 follow-on: the plan-summary meta still describes the superseded design ('retries a failure whose message names a held index.lock for a bounded window ... a failure that names no lock, and a lock that outlasts the window, refuse as before'), contradicting the body it sits above, which now states the lock is read from the checkout's own file and the bound is an attempt count, and contradicting the landed code at reckon/crew/promotion_scope.py:2222, so the record's headline misdescribes what shipped to a reader who does not open the file.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T091743111139-a-landing-write-waits-out-a-held-index-lock/negative-control.log:1 follow-on: the log's revision line names 'WORKTREE HEAD (83274eee8)', a sha at which _run_waiting_out_a_held_index_lock does not exist, and the same wrong stamp is on lint.log:1, so a reader checking out the named revision cannot reproduce either log; the logs were taken against the post-refactor working tree and should name 29525ad5a.\nFINDING tests/test_a_landing_write_waits_out_a_held_index_lock.py:165 follow-on: the assertion compares the recorded per-entry attempt numbers against list(range(1, len(retries) + 1)) derived from the same list it is reading, so it is not independent of the value under test and cannot detect a regression that keeps the numbering internally sequential while changing what it counts; it guards 1-based numbering only.",
+  "review_run_id": "r-20261020T110419289004-review-of-a-landing-write-waits-out-a-held-index-lock-3bcd48bc49a4",
+  "reviewed_base_sha": "83274eee84580e33d23b3df97b96f00c1024ceb2",
+  "reviewed_head_sha": "3bcd48bc49a4d86acd087de3a3301d920314b694",
+  "reviewed_run_id": "r-20261020T091743111139-a-landing-write-waits-out-a-held-index-lock",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T11:19:17.090747+00:00",
+  "total": 108
+}
