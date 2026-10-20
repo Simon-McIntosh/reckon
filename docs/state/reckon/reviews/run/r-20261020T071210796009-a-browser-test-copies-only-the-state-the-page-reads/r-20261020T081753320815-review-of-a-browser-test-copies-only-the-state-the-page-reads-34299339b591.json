@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-20T08:35:30.129Z",
+  "dispatched_at": "2026-10-20T08:19:11Z",
+  "findings": [
+    {
+      "file": "tests/spa_browser_harness.py",
+      "line": "790",
+      "severity": "follow-on",
+      "text": "follow-on: a missing default file is silently skipped with continue, so a served route that reads a state file outside the fixed six is handed an incomplete state tree with no error, and the set's completeness is asserted only for the routes the six test files exercise."
+    },
+    {
+      "file": "tests/spa_browser_harness.py",
+      "line": "824",
+      "severity": "follow-on",
+      "text": "follow-on: adding TimeoutError to the readiness probe is a behaviour change unrelated to the selective-copy goal and rides in this node's fixture commit rather than the change it serves."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against 6987113166d8a7bb664dc347a4f4cf4c58f325c9; three commits add the selective copy (66cba8d620e1e8cd3fb952c0d525977a28ce81ed), the size-first assertion (e72167676a6053ab964e202168ae2c4816170149) and the evidence fragment (34299339b591b08fce4906cd6a53022807f76b76), all inside the declared scope.",
+    "done_when": "the done_when names tests/test_a_browser_test_copies_only_the_state_it_reads.py asserting under 1 MB of state against the repository's own docs; the manifest records that run (state-bytes.log STATE_BYTES=162311 EXIT=0) and the whole-tree negative control (negative-control-size.log 438673931 bytes EXIT=1).",
+    "goal": "the recorded goal is to make the browser harness copy only the state files the served page reads; tests/spa_browser_harness.py:782 copies a fixed six-file list plus any explicitly named extras, so the deliverable is landed.",
+    "manifest": "read; it states status complete, the head browser arm at 51 passed/24 failed with zero added failure IDs against base, and names its logs (head-parallel-browser-suite.log, baseline-parallel-browser-suite.log, state-bytes.log, negative-control-size.log).",
+    "write_paths": "the four declared paths were read; every path the diff touches (tests/spa_browser_harness.py, tests/test_a_browser_test_copies_only_the_state_it_reads.py, docs/evidence/fragments/the-site-answers-fast-and-agrees/a-browser-test-copies-only-the-state-the-page-reads.html) is inside them."
+  },
+  "justifications": {
+    "durability": "restoring the whole-tree copy reddens the size assertion at tests/test_a_browser_test_copies_only_the_state_it_reads.py:23-26, which negative-control-size.log demonstrates at EXIT=1.",
+    "evidence": "tests/test_a_browser_test_copies_only_the_state_it_reads.py:23-26 asserts the under-1-MB bound against the repository's own docs, recorded in state-bytes.log at 162311 bytes with negative-control-size.log red at 438673931 bytes.",
+    "fit": "tests/spa_browser_harness.py:52 adds a module-level tuple matching the _SPA_STYLESHEETS idiom twenty lines above it.",
+    "goal_fidelity": "tests/spa_browser_harness.py:782 copies only _SPA_STATE_FILES plus explicitly named extras and excludes the ledger and the run and review trees (tests/test_a_browser_test_copies_only_the_state_it_reads.py:27-29).",
+    "reuse": "no existing owner enumerates the page-read state files; a capability search of reckon found only per-file readers (reckon/serve.py:1253, reckon/project_state.py:280, reckon/flight.py:481) and no shared list to extend.",
+    "scope_discipline": "every diff path is inside the four declared write paths, but tests/spa_browser_harness.py:824 folds an unrelated readiness-probe change into this node's fixture commit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the recorded goal is to make the browser harness copy only the state files the served page reads; tests/spa_browser_harness.py:782 copies a fixed six-file list plus any explicitly named extras, so the deliverable is landed.\nVERDICT done_when: the done_when names tests/test_a_browser_test_copies_only_the_state_it_reads.py asserting under 1 MB of state against the repository's own docs; the manifest records that run (state-bytes.log STATE_BYTES=162311 EXIT=0) and the whole-tree negative control (negative-control-size.log 438673931 bytes EXIT=1).\nVERDICT write_paths: the four declared paths were read; every path the diff touches (tests/spa_browser_harness.py, tests/test_a_browser_test_copies_only_the_state_it_reads.py, docs/evidence/fragments/the-site-answers-fast-and-agrees/a-browser-test-copies-only-the-state-the-page-reads.html) is inside them.\nVERDICT manifest: read; it states status complete, the head browser arm at 51 passed/24 failed with zero added failure IDs against base, and names its logs (head-parallel-browser-suite.log, baseline-parallel-browser-suite.log, state-bytes.log, negative-control-size.log).\nVERDICT diff: read commit by commit against 6987113166d8a7bb664dc347a4f4cf4c58f325c9; three commits add the selective copy (66cba8d620e1e8cd3fb952c0d525977a28ce81ed), the size-first assertion (e72167676a6053ab964e202168ae2c4816170149) and the evidence fragment (34299339b591b08fce4906cd6a53022807f76b76), all inside the declared scope.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/spa_browser_harness.py:782 copies only _SPA_STATE_FILES plus explicitly named extras and excludes the ledger and the run and review trees (tests/test_a_browser_test_copies_only_the_state_it_reads.py:27-29).\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_browser_test_copies_only_the_state_it_reads.py:23-26 asserts the under-1-MB bound against the repository's own docs, recorded in state-bytes.log at 162311 bytes with negative-control-size.log red at 438673931 bytes.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every diff path is inside the four declared write paths, but tests/spa_browser_harness.py:824 folds an unrelated readiness-probe change into this node's fixture commit.\nSCORE durability: 18\nJUSTIFICATION durability: restoring the whole-tree copy reddens the size assertion at tests/test_a_browser_test_copies_only_the_state_it_reads.py:23-26, which negative-control-size.log demonstrates at EXIT=1.\nSCORE fit: 19\nJUSTIFICATION fit: tests/spa_browser_harness.py:52 adds a module-level tuple matching the _SPA_STYLESHEETS idiom twenty lines above it.\nSCORE reuse: 20\nJUSTIFICATION reuse: no existing owner enumerates the page-read state files; a capability search of reckon found only per-file readers (reckon/serve.py:1253, reckon/project_state.py:280, reckon/flight.py:481) and no shared list to extend.\nFINDING tests/spa_browser_harness.py:790 follow-on: a missing default file is silently skipped with continue, so a served route that reads a state file outside the fixed six is handed an incomplete state tree with no error, and the set's completeness is asserted only for the routes the six test files exercise.\nFINDING tests/spa_browser_harness.py:824 follow-on: adding TimeoutError to the readiness probe is a behaviour change unrelated to the selective-copy goal and rides in this node's fixture commit rather than the change it serves.\nreviewed_base_sha: 6987113166d8a7bb664dc347a4f4cf4c58f325c9\nreviewed_head_sha: 34299339b591b08fce4906cd6a53022807f76b76",
+  "review_run_id": "r-20261020T081753320815-review-of-a-browser-test-copies-only-the-state-the-page-reads-34299339b591",
+  "reviewed_base_sha": "6987113166d8a7bb664dc347a4f4cf4c58f325c9",
+  "reviewed_head_sha": "34299339b591b08fce4906cd6a53022807f76b76",
+  "reviewed_run_id": "r-20261020T071210796009-a-browser-test-copies-only-the-state-the-page-reads",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T08:38:34.710989+00:00",
+  "total": 110
+}
