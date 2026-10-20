@@ -1,0 +1,91 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "assert \"node-tmp-probe-write-refused\" in results. Fails when the node-tmp seal is absent from fence_argv: _PROBE_STUB's touch of $FENCE_NODE_TMP_PROBE (node_tmp/probe-direct.txt, outside the scratch and the runtime paths) then succeeds and the stub records 'node-tmp-probe-write-ok'. Independently verified: negative-control-seal-removed.log shows exactly this failing line, assert 'node-tmp-probe-write-refused' in 'node-tmp-probe-write-ok' at tests/...:370, 2 failed / 6 passed, EXIT=1. This assertion is a real guard, and it closes a vacuous predecessor: at base revision 2e1f7cc4a the same file's stub touched probes only under $FENCE_OWN and the runtime paths (git show 2e1f7cc4a:tests/...:71,77), so the base's assert not (node.outside.parent / 'probe').exists() could not fail whatever the fence did.",
+      "lines": "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:370"
+    },
+    {
+      "failure_condition": "assert seen. seen is appended by the spy installed over _worker_fence.create_write_roots and is empty unless create_node_tmp_runtime_paths calls it, so reinstating the pre-change separate creation loop reddens it. Independently verified: negative-control-runtime-paths-separate-loop.log shows AssertionError: create_node_tmp_runtime_paths did not call create_write_roots, 1 failed / 7 passed, EXIT=1. Independent of the value under test, because the spy observes the call rather than any value the test itself supplied.",
+      "lines": "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:445"
+    },
+    {
+      "failure_condition": "assert sorted(created) == sorted(_worker_fence.resolved_destination(p) for p in roots). Reddens if create_node_tmp_runtime_paths stops returning the resolved forms of the paths it handed over (e.g. returns the unresolved inputs, or drops the second enumerate). Weak but not self-comparing: created is the function's return while the right side is re-derived from what the spy recorded, so reverting the return to unresolved paths breaks it. It is not the load-bearing assertion of this test; assert seen at :445 is.",
+      "lines": "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:452"
+    },
+    {
+      "failure_condition": "assert argv == expected. expected is a literal list built from the fixture's own paths (node.rec, node.scratch_root, node.node_tmp, node.own, node.run, node.fleet, node.codex), while argv comes from fence_argv via node.argv(); the two sides have independent provenance, so an added, dropped or reordered mount reddens it. It pins the composed fence for a fixed root set, and monkeypatch.setattr(_worker_fence, 'shared_store_seal_roots', list) keeps the host's real delivery stores out of the expected argv.",
+      "lines": "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:510"
+    }
+  ],
+  "call_sites": [
+    "reckon/_worker_fence.py:1440 (fence_argv extends its roots with create_node_tmp_runtime_paths())",
+    "reckon/_backends.py:2227 (fence_argv(...) is composed on the launch path)",
+    "reckon/_backends.py:2158 (create_write_roots(write_roots) on the ordinary write-root path)"
+  ],
+  "changed_paths": [
+    "reckon/_worker_fence.py",
+    "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py",
+    "docs/evidence/fragments/a-worker-cannot-write-your-home/the-node-tmp-seal-has-one-directory-rule.html"
+  ],
+  "commit_list": [
+    "50a119f1b91988c5b2d14a1a79a30e7a35bc71d6",
+    "faafdb7af5d818b77be03af8b08a6a813e50c126",
+    "ea4d59115cf57095d33bfaa6c72bd0e9ca029c7a",
+    "d01e47ee1d6ec3c01f617fda8747370f387fda24"
+  ],
+  "completed_at": "2026-10-20T12:57:30.900Z",
+  "dispatched_at": "2026-10-20T12:48:47Z",
+  "findings": [
+    {
+      "file": ".config/reckon/crew/runs/r-20261020T120938882269-the-node-tmp-seal-has-one-directory-rule/manifest.md",
+      "line": "checkpoint",
+      "severity": "follow-on",
+      "text": "follow-on: both gate arms and both negative-control logs name revision ea4d59115, while the delivered head is d01e47ee1 and the done_when asks the direct-probe control to run 'at the delivered head'. The gap is one commit and it is docs-only: git diff ea4d59115 d01e47ee1 is a single file, docs/evidence/fragments/a-worker-cannot-write-your-home/the-node-tmp-seal-has-one-directory-rule.html, two changed lines of prose correcting the fragment's own revision citation (verified by reading the diff). So the gate measures the code head, but a reader comparing after_suite.revision against the promoted revision sees one commit of separation; the manifest and the fragment both disclose it. A gate re-run at the promoted head, or a gate run placed after the final docs commit, would close the gap."
+    },
+    {
+      "file": "reckon/_worker_fence.py",
+      "line": "1225",
+      "severity": "follow-on",
+      "text": "follow-on: routing create_node_tmp_runtime_paths through create_write_roots also swaps the refusal text. The removed loop raised BackendError('cannot create the node tmp runtime path <target>, which the fence must leave writable beneath the read-only <NODE_TMP_ROOT>: <exc>'); create_write_roots (reckon/_worker_fence.py:568) raises BackendError('cannot create the write root <path>: <exc>'). A launch refused because a runtime path could not be created beneath the read-only node tmp now reports the generic write-root message and no longer names the node-tmp seal as the context the move is specific to, so an operator debugging that refusal loses the pointer to the seal. No test or call site asserts on either message (grep over reckon/ and tests/ finds the new text only at its raise site), so nothing breaks; it is a diagnostics regression of one line, not a blocking defect."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit. 50a119f1 'refactor(fence): create node-tmp runtime paths through create_write_roots' replaces the 14-line creation loop in create_node_tmp_runtime_paths with create_write_roots(paths) plus a return of the resolved paths, so the module has one creation rule instead of two copies; it also removes the node-tmp-specific BackendError message. faafdb7af is ruff format on the tests only. ea4d59115 lands the evidence fragment, and d01e47ee1 corrects that fragment's own revision citation (prose only, one file, two lines). The change is behaviour-preserving: create_write_roots (reckon/_worker_fence.py:561-568) performs the identical resolved_destination -> exists -> mkdir(parents=True, exist_ok=True) -> BackendError sequence the removed loop performed, and the returned list is the same resolved set the loop built. fence_argv and its binds are untouched, confirmed by the pinned-argv test and by reading the function.",
+    "done_when": "The done_when names tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py plus a new direct-probe test, the seal-removed control failing at its probe assertion, an interception test over create_write_roots with its own control, a pinned argv test, no added failures across the test files naming _worker_fence or fence_argv on node-local /tmp under sbatch --partition=all_debug --exclusive, and clean ruff. Every clause is recorded on disk: gate-base-arm.log (125 passed, EXIT=0) and gate-head-arm.log (128 passed, EXIT=0) both run to their summary line, negative-control-seal-removed.log (2 failed, 6 passed, EXIT=1) fails the direct-probe test at tests/...:370, negative-control-runtime-paths-separate-loop.log (1 failed, 7 passed, EXIT=1) fails the interception test at tests/...:445, ruff.log is clean. One clause is short: the controls ran at ea4d59115, not at the delivered head d01e47ee1, and the done_when says the probe control 'runs at the delivered head' - recorded as a follow-on finding, verified harmless because the intervening commit is prose-only. The worker's manifest also cites the interception test failing at 'assert seen' - the log's traceback text matches ('did not call create_write_roots' then 'assert []'), and the line is :445 in the head file.",
+    "goal": "The goal is 'Give the node-tmp seal one directory-creation rule, with create_node_tmp_runtime_paths creating its directories through create_write_roots, proved by a direct node-tmp probe test'. The landed change does exactly that: reckon/_worker_fence.py:1225 is create_write_roots(paths) inside create_node_tmp_runtime_paths, and tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:348 adds test_a_probe_written_directly_into_the_node_tmp_root_is_refused. Met, with the load-bearing part (the probe test) present and demonstrably able to fail.",
+    "manifest": "Read in full. It reports status complete, orientation base 2e1f7cc4a, four commits, three changed paths, gate 125/128 both EXIT=0, and both controls red with their failing ids; baseline_suite and after_suite both carry completed true, failure_count 0, empty failure_ids. Its landing and artifact lines match the logs on disk, and its checkpoint line discloses the docs-only gap between the gate revision ea4d59115 and the delivered head d01e47ee1 rather than hiding it. Its one over-claim is that the controls are red 'at revision ea4d59115' for two-controls-both-red wording that the fragment states precisely; and the negative_control_note describes the seal-removed control accurately against the log.",
+    "write_paths": "The declared scope is reckon/_worker_fence.py, tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py, docs/evidence/fragments/a-worker-cannot-write-your-home/the-node-tmp-seal-has-one-directory-rule.html and docs/figures/a-worker-cannot-write-your-home/the-node-tmp-seal-has-one-directory-rule. git diff --stat 2e1f7cc4a d01e47ee1 lists exactly three files, all of them declared; no undeclared file is touched and the declared figures path is simply unused."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is one directory-creation rule for the node-tmp seal proved by a direct probe test; reckon/_worker_fence.py:1225 routes create_node_tmp_runtime_paths through create_write_roots and tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:348 adds the probe test.\nVERDICT done_when: the done_when names tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py and its recorded arms are gate-base-arm.log (125 passed, EXIT=0) and gate-head-arm.log (128 passed, EXIT=0), with both controls red at EXIT=1 on the ids the manifest claims; the controls ran at ea4d59115 rather than the delivered head d01e47ee1, a docs-only one-commit gap.\nVERDICT write_paths: git diff --stat 2e1f7cc4a d01e47ee1 lists three files, all inside the four declared write paths; the declared figure path is unused and no undeclared file is touched.\nVERDICT manifest: read in full; it reports status complete, four commits, gate 125/128 both EXIT=0, zero added failures, both controls red, and discloses the gate-revision gap in its checkpoint line.\nVERDICT diff: read commit by commit; 50a119f1 replaces the duplicated creation loop with a call to create_write_roots and returns the resolved paths, faafdb7af is rust format on the tests, ea4d59115 lands the evidence fragment and d01e47ee1 corrects its revision citation in prose only.\nCALL_SITES: reckon/_worker_fence.py:1440, reckon/_backends.py:2227, reckon/_backends.py:2158\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/_worker_fence.py:1225 is the single call to create_write_roots that gives the node-tmp seal one creation rule, and tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:348 is the direct-probe test the goal names.\nSCORE evidence: 18\nJUSTIFICATION evidence: the arms are recorded and readable (gate-base-arm.log 125 passed EXIT=0, gate-head-arm.log 128 passed EXIT=0) and both controls are red with the recorded ids, but they ran at ea4d59115 while the done_when asks the probe control to run at the delivered head d01e47ee1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only reckon/_worker_fence.py, tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py and the declared evidence fragment, carrying nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py:370 reddens when the seal is removed and :445 reddens when the separate creation loop is reinstated, both shown by the recorded controls.\nSCORE fit: 20\nJUSTIFICATION fit: the refactor follows the module's own idiom at reckon/_worker_fence.py:547, and the added tests and env var are named by what they do with no banned label.\nSCORE reuse: 20\nJUSTIFICATION reuse: create_write_roots at reckon/_worker_fence.py:547 is the existing owner of directory creation for bound roots, and the change extends it by calling it rather than forking it.\nFINDING .config/reckon/crew/runs/r-20261020T120938882269-the-node-tmp-seal-has-one-directory-rule/manifest.md:checkpoint follow-on: both gate arms and both controls ran at ea4d59115 while the delivered head is d01e47ee1, and the done_when asks the direct-probe control to run at the delivered head; the gap is one docs-only commit (fragment prose only, verified), so the gate measures the code head but not the promoted revision.\nFINDING reckon/_worker_fence.py:1225 follow-on: the shared create_write_roots refusal (reckon/_worker_fence.py:568, 'cannot create the write root <path>') replaces the node-tmp-specific BackendError that named the read-only NODE_TMP_ROOT, so a failed runtime-path creation no longer says which seal the path belonged to; no test or call site asserts on either message.\n",
+  "review_run_id": "r-20261020T124754546697-review-of-the-node-tmp-seal-has-one-directory-rule-d01e47ee1d6e",
+  "reviewed_base_sha": "2e1f7cc4a6aceac8ad4e9e49bc6f79c8b9b02461",
+  "reviewed_head_sha": "d01e47ee1d6ec3c01f617fda8747370f387fda24",
+  "reviewed_run_id": "r-20261020T120938882269-the-node-tmp-seal-has-one-directory-rule",
+  "reviewed_run_orientation_base_sha": "2e1f7cc4a6aceac8ad4e9e49bc6f79c8b9b02461",
+  "scope_note": "Full review of the run's four commits against its orientation base. Base 2e1f7cc4a -> head d01e47ee1; three files changed, all inside the run's declared write paths (reckon/_worker_fence.py, tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py, docs/evidence/fragments/a-worker-cannot-write-your-home/the-node-tmp-seal-has-one-directory-rule.html). The declared fourth path, docs/figures/a-worker-cannot-write-your-home/the-node-tmp-seal-has-one-directory-rule, received no file; the run added no figure.",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T12:58:27.845783+00:00",
+  "total": 117,
+  "verification": [
+    "Reviewed revision pair read from git in the reviewed worktree /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/the-node-tmp-seal-has-one-directory-rule at HEAD d01e47ee1 (working tree clean); the diff was taken git diff 2e1f7cc4a6aceac8ad4e9e49bc6f79c8b9b02461 d01e47ee1d6ec3c01f617fda8747370f387fda24.",
+    "Docs-only gap confirmed: git diff --stat ea4d59115cf57095d33bfaa6c72bd0e9ca029c7a d01e47ee1d6ec3c01f617fda8747370f387fda24 -> 1 file changed, 2 insertions(+), 2 deletions(-), the fragment's revision citation only; the full diff was read.",
+    "Gate logs read (header and tail) at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T120938882269-the-node-tmp-seal-has-one-directory-rule/: gate-base-arm.log ends '125 passed in 80.99s' / EXIT=0 at base 2e1f7cc4a; gate-head-arm.log ends '128 passed in 84.29s' / EXIT=0 at ea4d59115; both reach their summary line, so both arms are readable. The three extra passes are the three added tests.",
+    "Negative-control logs read (header and tail): negative-control-seal-removed.log '2 failed, 3 passed... 2 failed, 6 passed' / EXIT=1 with failing ids test_a_fenced_run_cannot_remove_a_file_outside_its_scratch and test_a_probe_written_directly_into_the_node_tmp_root_is_refused; negative-control-runtime-paths-separate-loop.log '1 failed, 7 passed' / EXIT=1 with failing id test_creating_the_runtime_paths_goes_through_create_write_roots. Both failing ids match the manifest's artifacts line.",
+    "Independent spot check on the single test file the gate names: cd <reviewed worktree> && PYTHONPATH=<reviewed worktree> /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py -> '8 passed in 4.21s', EXIT=0 at the delivered head d01e47ee1. This is the only gate re-run; the full suite was not re-run, per the reading bound.",
+    "Vacuous-predecessor claim in the fragment checked: git show 2e1f7cc4a:tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py lines 71 and 77 show the base stub touching probes only under $FENCE_OWN and the runtime paths, so the base's assert not (node.outside.parent / 'probe').exists() (line 309) could not fail whatever the fence composed. The fragment's statement that the old assertion 'guarded nothing' is accurate.",
+    "Reuse search (the one read outside the diff): searched reckon/ for an existing owner of 'create the directories a writable root is bound from' and found create_write_roots at reckon/_worker_fence.py:547, already the owner, used by reckon/_backends.py:2158 on the ordinary write-root path. The change extends that owner (calls it) rather than duplicating it, which is the node's purpose.",
+    "Naming check over the staged paths of the four commits: no plan, phase, sprint, ticket or version label in any added filename, symbol or comment; the new test names and the RECKON_TEST_RUNTIME_PATHS_NEGATIVE env var are named by what they do. The '\u00a715' reference appears only in the docs fragment's prose, which is a plan-linked evidence artifact whose plan-verifies meta already names the section."
+  ]
+}
