@@ -1,0 +1,75 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "Restoring the old `fingerprints is not None` branch serves the `unverifiable` marker, so line 120 fails even when definitions_unchanged is monkeypatched to True; the recorded negative control shows that failure. Omitting the miss refresh makes line 121 fail, and restoring the empty-map helper's old True result makes line 122 fail. The expected None, single refresh, and False are independent of the stored marker and the empty map supplied to production code.",
+      "lines": "tests/test_a_stored_result_follows_the_code_that_derived_it.py:120-122"
+    },
+    {
+      "failure_condition": "Serving either malformed record instead of rejecting it makes the asserted None false; the two supplied malformed values are inputs, while None is a fixed expected refusal.",
+      "lines": "tests/test_a_stored_result_follows_the_code_that_derived_it.py:137"
+    },
+    {
+      "failure_condition": "Removing the empty collection guard at reckon/route_results.py:533 lets _refresh_main return instead of raising and writes a store file, so both the raises assertion and the absence assertion fail; the previous-head reproduction recorded the missing exception.",
+      "lines": "tests/test_a_stored_result_follows_the_code_that_derived_it.py:149-153"
+    }
+  ],
+  "call_sites": [
+    "reckon/route_results.py:231",
+    "reckon/route_results.py:337",
+    "reckon/route_results.py:454",
+    "reckon/route_results.py:477",
+    "reckon/route_results.py:532",
+    "reckon/serve.py:2645",
+    "reckon/serve.py:2705",
+    "reckon/serve.py:2802"
+  ],
+  "completed_at": "2026-10-20T12:13:32Z",
+  "dispatched_at": "2026-10-20T12:03:43Z",
+  "findings": [],
+  "item_verdicts": {
+    "diff": "VERDICT diff: read 7f3ba17f3 commit by commit as the empty-map read and child-write repair with tests, 7ec9821ec as fixture global-state restoration, and 9e6cd06a3 as updated landing evidence; all changes are within the source run's declared paths.",
+    "done_when": "VERDICT done_when: the \u00a721 measure at docs/plans/the-site-answers-fast-and-agrees.html:344 requires executed-definition invalidation, unrelated-definition reuse, revision independence, a red comparison control and no added importing-test failures; the earlier head established the first three, and the new tests at tests/test_a_stored_result_follows_the_code_that_derived_it.py:105-153 plus focused-final and imports-repair-final logs exercise the repaired fail-closed edge and record 7 passed and zero added failure IDs.",
+    "goal": "VERDICT goal: the source prompt says to key stored route results by refresh-child definition fingerprints; reckon/route_results.py:125-134 now refuses empty or malformed fingerprint records, reckon/served_code.py:525-585 validates the recorded definitions, and reckon/route_results.py:532-539 refuses an empty child collection before storing.",
+    "manifest": "VERDICT manifest: the source run's manifest.md records all five commits, the four changed paths, complete status, empty-map reproduction and red control logs, final focused and importing-suite logs, and baseline_suite/after_suite whose sole failure ID is test_structural_invariants.py::test_only_the_shared_parser_calls_fromisoformat.",
+    "write_paths": "VERDICT write_paths: the source prompt declares reckon/route_results.py, reckon/served_code.py, tests/test_a_stored_result_follows_the_code_that_derived_it.py and the evidence fragment as writable; git diff 10612868335f..9e6cd06a3819 changes exactly those four paths."
+  },
+  "project": "reckon",
+  "review_lines": [
+    "VERDICT goal: the source prompt's fingerprint identity is enforced on empty and malformed records at reckon/route_results.py:125-134 and on empty child collections at reckon/route_results.py:532-539.",
+    "VERDICT done_when: docs/plans/the-site-answers-fast-and-agrees.html:344 names definition-sensitive reuse and a red comparison control; tests/test_a_stored_result_follows_the_code_that_derived_it.py:105-153 and the source manifest's final logs show the repaired refusals and zero added failure IDs.",
+    "VERDICT write_paths: the source prompt declares four paths that git diff 10612868335f..9e6cd06a3819 names exactly, including reckon/route_results.py and the evidence fragment.",
+    "VERDICT manifest: the source run's manifest.md records complete status, all five commits, four changed paths, the baseline and after suite failure IDs, and named gate logs.",
+    "VERDICT diff: commits 7f3ba17f3, 7ec9821ec and 9e6cd06a3 repair empty-map validation at reckon/served_code.py:525, restore test state at tests/test_a_stored_result_follows_the_code_that_derived_it.py:147, and update the evidence fragment.",
+    "CALL_SITES: reckon/route_results.py:231, reckon/route_results.py:337, reckon/route_results.py:454, reckon/route_results.py:477, reckon/route_results.py:532, reckon/serve.py:2645, reckon/serve.py:2705, reckon/serve.py:2802",
+    "SCORE goal_fidelity: 20",
+    "JUSTIFICATION goal_fidelity: reckon/route_results.py:125-134 rejects an unverifiable stored record and reckon/route_results.py:532-539 prevents the child from writing one.",
+    "SCORE evidence: 18",
+    "JUSTIFICATION evidence: tests/test_a_stored_result_follows_the_code_that_derived_it.py:120-153 goes red on the prior head and restored comparison, while imports-repair-final.log reports 131 passed, the one base failure, and zero added failure IDs.",
+    "SCORE scope_discipline: 20",
+    "JUSTIFICATION scope_discipline: the diff from 10612868335f to 9e6cd06a3819 changes only the four declared paths, including reckon/served_code.py and the evidence fragment.",
+    "SCORE durability: 20",
+    "JUSTIFICATION durability: tests/test_a_stored_result_follows_the_code_that_derived_it.py:120 fails when the old empty-map branch is restored, and lines 149-153 fail when the child no longer refuses an empty collection.",
+    "SCORE fit: 19",
+    "JUSTIFICATION fit: reckon/served_code.py:525-585 extends its existing definition comparison with input validation, and the tests at tests/test_a_stored_result_follows_the_code_that_derived_it.py:105-155 use the module's established temporary store pattern.",
+    "SCORE reuse: 20",
+    "JUSTIFICATION reuse: a capability search across reckon found fingerprint production and comparison owned only by reckon/served_code.py:501-585 and the existing route store at reckon/route_results.py:106-159; the diff extends those owners and adds no production definition."
+  ],
+  "review_run_id": "r-20261020T120157067359-review-of-a-stored-route-result-follows-the-code-that-derived-it-9e6cd06a3819",
+  "reviewed_base_sha": "10612868335fcb7afed9e08bd66251ec9ec1e3d8",
+  "reviewed_head_sha": "9e6cd06a3819614d566e572fbb2ebe424d1d0bad",
+  "reviewed_run_id": "r-20261020T104759349311-a-stored-route-result-follows-the-code-that-derived-it",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T12:13:41.427130+00:00",
+  "total": 117
+}
