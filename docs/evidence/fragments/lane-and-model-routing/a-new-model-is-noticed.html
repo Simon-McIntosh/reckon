@@ -28,8 +28,9 @@
   </p>
   <p id="a-new-model-is-noticed-review-followons">
     <strong>Review follow-ons.</strong> Snapshot and error records now use the
-    repository's shared atomic JSON writer. The fixture records the real crew
-    home's snapshot existence and mtime before redirecting to a temporary home,
+    repository's shared atomic JSON writer. The fixture resolves the real crew
+    home through <code>real_store_home()</code>, then records its snapshot's
+    existence and mtime before redirecting to a temporary home,
     then confirms both are unchanged. The follow-on gate had 176 passes and only
     the base arm's window-guard failure; both mutation controls still failed
     their intended assertions, and Ruff added no findings on the edited files.

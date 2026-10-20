@@ -12,16 +12,18 @@ from click.testing import CliRunner
 from reckon import mcp, mcp_views
 from reckon.cli import main
 from reckon.crew import model_catalogue
+from tests.conftest import real_store_home, real_store_is_not_a_fixture_target
 
 
 @pytest.fixture()
 def catalogue(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     from reckon.crew.runs import crew_home
 
-    real_snapshot = model_catalogue.snapshot_path()
+    real_snapshot = real_store_home() / "crew" / "model-catalogue" / "snapshot.json"
     real_existed = real_snapshot.exists()
     real_mtime_ns = real_snapshot.stat().st_mtime_ns if real_existed else None
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    real_store_is_not_a_fixture_target(tmp_path / "home")
     assert crew_home().is_relative_to(tmp_path)
     assert model_catalogue.snapshot_path().is_relative_to(tmp_path)
     served = tmp_path / "served.json"
