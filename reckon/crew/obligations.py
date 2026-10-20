@@ -1290,9 +1290,7 @@ def obligations(project: str, session: str) -> dict[str, Any]:
                 )
                 continue
             if placements is None:
-                placements = queue_admission.queued_placements(
-                    live_pointers, now=now
-                )
+                placements = queue_admission.queued_placements(live_pointers, now=now)
             items.append(_queued_item(row, placements=placements, now=now))
             continue
         kind = ""
