@@ -141,10 +141,15 @@ def test_refresh_child_skips_unverifiable_result(tmp_path, monkeypatch):
     mounts = tmp_path / "mounts.json"
     mounts.write_text("{}", encoding="utf-8")
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("RECKON_MOUNTS_PATH", str(mounts))
     monkeypatch.setattr(route_results, "_compute_refresh", lambda _key: {"ok": True})
     monkeypatch.setattr(served_code, "definition_fingerprints", lambda *_: {})
-    with pytest.raises(RuntimeError, match="no package definitions"):
-        route_results._refresh_main(
-            ["--key", "discover:sample", "--mounts", str(mounts)]
-        )
-    assert not route_results._refresh_store_path(("discover", "sample")).exists()
+    paths = (serve._MOUNTS_FILE, serve._STATE_ROOT, serve._SHARED_ROOT)
+    try:
+        with pytest.raises(RuntimeError, match="no package definitions"):
+            route_results._refresh_main(
+                ["--key", "discover:sample", "--mounts", str(mounts)]
+            )
+        assert not route_results._refresh_store_path(("discover", "sample")).exists()
+    finally:
+        serve._MOUNTS_FILE, serve._STATE_ROOT, serve._SHARED_ROOT = paths
