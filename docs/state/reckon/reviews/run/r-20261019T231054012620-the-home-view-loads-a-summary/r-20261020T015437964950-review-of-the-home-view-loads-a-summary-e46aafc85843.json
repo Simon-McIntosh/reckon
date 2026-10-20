@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms in its manifest: baseline_suite (revision 058515877c36ca6d46588d622b1a6be017a714e9, log final-base-spa.log, 11 failure ids, completed, 11 failed/32 passed, EXIT=1) and after_suite (revision b500733587866e733441f32be49de333ff4effd3, log timestamp-repair-combined-gate-retry.log, 5 failure ids, completed, 5 failed/82 passed, EXIT=1). All five after ids (test_served_home_defers_the_current_project_inventory, three test_spa_project_visibility topbar widths, test_first_visit_renders_live_runs_from_every_mounted_project) are present in the baseline set, so the added delta is empty.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/serve.py:880 compute_project_row -> /_projects/index.json",
+    "reckon/fleet_index.py:258 _recent_landed call inside compute_project_row"
+  ],
+  "completed_at": "2026-10-20T02:07:43.239Z",
+  "dispatched_at": "2026-10-20T01:56:16Z",
+  "findings": [
+    {
+      "file": "tests/test_fleet_index.py",
+      "line": "124",
+      "severity": "follow-on",
+      "text": "follow-on: the added zoned-proof case asserts only that a zoned stamp lands inside the 72-hour window, so it passes unchanged when the code is reverted to datetime.fromisoformat(str(edited)).timestamp() (aware input is handled identically) and when the astimezone-to-local normalisation at reckon/fleet_index.py:151 is dropped, so the assertion does not guard the change it accompanies; the discriminating evidence is the invariant before/after log pair, and the case would gain force by asserting the parsed instant, not membership."
+    },
+    {
+      "file": "docs/evidence/fragments/the-site-answers-fast-and-agrees/the-home-view-loads-a-summary.html",
+      "line": "138",
+      "severity": "follow-on",
+      "text": "follow-on: the gate whose result this delta records (and the manifest's tests line) omits tests/test_structural_invariants.py, the suite the change exists to satisfy, so the declared gate population cannot register a future regression to a local fromisoformat caller; the check exists in the repository but widening the gate lies outside this node's declared scope."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read over a92eb199f; b50073358 replaces datetime.fromisoformat with the shared parse_iso at reckon/fleet_index.py:146, normalises a zoned result to the row's local-naive clock (:151) and an aware supplied reference (:237-238), and adds one zoned fixture at tests/test_fleet_index.py:124-126; e46aafc85 appends the invariant pair and gate receipts to the evidence fragment (28 added lines, no deletions).",
+    "done_when": "the source node's done_when is the fourteen-file gate recorded in its manifest; the after arm at b50073358 reads 5 failed / 82 passed in timestamp-repair-combined-gate-retry.log (EXIT=1) and that population omits tests/test_structural_invariants.py, the suite this delta exists to satisfy, so the invariant's before/after pair (timestamp-invariant-reproduction.log, two offenders; timestamp-invariant-after.log, one) is the evidence that actually measures the change.",
+    "goal": "the delta's goal is to repair the shared-parser violation the prior review flagged blocking and record it; reckon/fleet_index.py:17 imports parse_iso and :146 calls it, retiring fleet_index.py:_recent_landed from the invariant's offender list.",
+    "manifest": "read; it records commits through e46aafc85, baseline_suite at 058515877 (11 failed, completed, final-base-spa.log) and after_suite at b50073358 (5 failed / 82 passed, completed, timestamp-repair-combined-gate-retry.log), both EXIT=1 with the head's five ids a subset of the base's.",
+    "write_paths": "the manifest declares this delta's three paths (reckon/fleet_index.py, tests/test_fleet_index.py, docs/evidence/fragments/the-site-answers-fast-and-agrees/the-home-view-loads-a-summary.html); git diff --stat a92eb199f..e46aafc85 touches exactly those three and nothing else."
+  },
+  "justifications": {
+    "durability": "the added case at tests/test_fleet_index.py:124-126 asserts window membership only, so it still passes under the pre-fix datetime.fromisoformat path and under dropping the astimezone normalisation, and the invariant that does discriminate is red at both revisions and absent from the gate population.",
+    "evidence": "the manifest's gate arm at b50073358 is recorded in timestamp-repair-combined-gate-retry.log (5 failed / 82 passed, EXIT=1) with a completed baseline arm, but the fourteen-file population omits tests/test_structural_invariants.py, so the invariant check that the delta satisfies is evidenced only by the separate timestamp-invariant-reproduction/after log pair.",
+    "fit": "reckon/fleet_index.py:146-151 now follows the one-parser idiom the package states at tests/test_structural_invariants.py:71-113, the added comment names the clock rule and no added name carries a plan label.",
+    "goal_fidelity": "reckon/fleet_index.py:146 now calls the shared parse_iso, so the invariant's offender list drops fleet_index.py:_recent_landed, exactly the repair the prior blocking finding named.",
+    "reuse": "reckon/fleet_index.py:17 now routes through the existing owner reckon/_timestamps.py:parse_iso rather than forking a parser, and the inline local-naive conversion at :151 has no shared owner (the idiom exists unowned at reckon/crew/ticker.py:1949).",
+    "scope_discipline": "git diff --stat a92eb199f..e46aafc85 touches only reckon/fleet_index.py, tests/test_fleet_index.py and the declared evidence fragment, all inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the delta's goal is to repair the shared-parser violation the prior review flagged blocking and record it; reckon/fleet_index.py:17 imports parse_iso and :146 calls it, retiring fleet_index.py:_recent_landed from the invariant's offender list.\nVERDICT done_when: the source node's done_when is the fourteen-file gate recorded in its manifest; the after arm at b50073358 reads 5 failed / 82 passed in timestamp-repair-combined-gate-retry.log (EXIT=1) and that population omits tests/test_structural_invariants.py, the suite this delta exists to satisfy, so the invariant's before/after pair (timestamp-invariant-reproduction.log, two offenders; timestamp-invariant-after.log, one) is the evidence that actually measures the change.\nVERDICT write_paths: the manifest declares this delta's three paths (reckon/fleet_index.py, tests/test_fleet_index.py, docs/evidence/fragments/the-site-answers-fast-and-agrees/the-home-view-loads-a-summary.html); git diff --stat a92eb199f..e46aafc85 touches exactly those three and nothing else.\nVERDICT manifest: read; it records commits through e46aafc85, baseline_suite at 058515877 (11 failed, completed, final-base-spa.log) and after_suite at b50073358 (5 failed / 82 passed, completed, timestamp-repair-combined-gate-retry.log), both EXIT=1 with the head's five ids a subset of the base's.\nVERDICT diff: read over a92eb199f; b50073358 replaces datetime.fromisoformat with the shared parse_iso at reckon/fleet_index.py:146, normalises a zoned result to the row's local-naive clock (:151) and an aware supplied reference (:237-238), and adds one zoned fixture at tests/test_fleet_index.py:124-126; e46aafc85 appends the invariant pair and gate receipts to the evidence fragment (28 added lines, no deletions).\nCALL_SITES: reckon/serve.py:880 compute_project_row -> /_projects/index.json, reckon/fleet_index.py:258 _recent_landed call inside compute_project_row\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/fleet_index.py:146 now calls the shared parse_iso, so the invariant's offender list drops fleet_index.py:_recent_landed, exactly the repair the prior blocking finding named.\nSCORE evidence: 14\nJUSTIFICATION evidence: the manifest's gate arm at b50073358 is recorded in timestamp-repair-combined-gate-retry.log (5 failed / 82 passed, EXIT=1) with a completed baseline arm, but the fourteen-file population omits tests/test_structural_invariants.py, so the invariant check that the delta satisfies is evidenced only by the separate timestamp-invariant-reproduction/after log pair.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat a92eb199f..e46aafc85 touches only reckon/fleet_index.py, tests/test_fleet_index.py and the declared evidence fragment, all inside the manifest's declared write paths.\nSCORE durability: 13\nJUSTIFICATION durability: the added case at tests/test_fleet_index.py:124-126 asserts window membership only, so it still passes under the pre-fix datetime.fromisoformat path and under dropping the astimezone normalisation, and the invariant that does discriminate is red at both revisions and absent from the gate population.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/fleet_index.py:146-151 now follows the one-parser idiom the package states at tests/test_structural_invariants.py:71-113, the added comment names the clock rule and no added name carries a plan label.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/fleet_index.py:17 now routes through the existing owner reckon/_timestamps.py:parse_iso rather than forking a parser, and the inline local-naive conversion at :151 has no shared owner (the idiom exists unowned at reckon/crew/ticker.py:1949).\nFINDING tests/test_fleet_index.py:124 follow-on: the added zoned-proof case asserts only that a zoned stamp lands inside the 72-hour window, so it passes unchanged when the code is reverted to datetime.fromisoformat(str(edited)).timestamp() (aware input is handled identically) and when the astimezone-to-local normalisation at reckon/fleet_index.py:151 is dropped, so the assertion does not guard the change it accompanies; the discriminating evidence is the invariant before/after log pair, and the case would gain force by asserting the parsed instant, not membership.\nFINDING docs/evidence/fragments/the-site-answers-fast-and-agrees/the-home-view-loads-a-summary.html:138 follow-on: the gate whose result this delta records (and the manifest's tests line) omits tests/test_structural_invariants.py, the suite the change exists to satisfy, so the declared gate population cannot register a future regression to a local fromisoformat caller; the check exists in the repository but widening the gate lies outside this node's declared scope.\n",
+  "review_run_id": "r-20261020T015437964950-review-of-the-home-view-loads-a-summary-e46aafc85843",
+  "reviewed_base_sha": "a92eb199f9be7dbbe03f97cb2fb206e33efe5a2a",
+  "reviewed_head_sha": "e46aafc8584381f68b48e34ac459aeed01440d32",
+  "reviewed_run_id": "r-20261019T231054012620-the-home-view-loads-a-summary",
+  "scores": {
+    "durability": 13,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T02:10:00Z",
+  "total": 102
+}
