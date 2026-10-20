@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/cli.py (crew Group)",
+    "reckon/crew/tombstones.py (TOMBSTONE_BY_NAME)"
+  ],
+  "completed_at": "2026-10-20T13:21:43.929Z",
+  "dispatched_at": "2026-10-20T13:14:19Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_families_fold.py",
+      "line": "583",
+      "severity": "follow-on",
+      "text": "follow-on: the source brief's correction 3 asked for the base count to be reconstructed from the registry as the sibling guard at tests/test_crew_families_fold.py:1029 does; the repair instead left only a registration-parity assertion at :583, so the test named test_resume_family_reduces_the_visible_leaf_count no longer bounds any count, and a reader expecting a rebuilt base figure will not find one."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit from 7cbfc4674210df1d5fc2221f281166430432edfb to a4fa445765d67470136a1144689b1569e7d33f90: 6f68725c6 tightens the leaf test, a4fa44576 updates the evidence fragment; 6 insertions and 6 deletions across the two files.",
+    "done_when": "The five-file gate is recorded at 45 passed and EXIT=0 for both revisions in repair-base-suite.log and repair-head-suite.log, and the leaf guard carries no literal base count at head, so no added failure and no written-down base figure.",
+    "goal": "The source node's goal is to correct the four review follow-ons; the gained commits repair correction 3 by deleting the identity at tests/test_crew_families_fold.py:578-579 and adding a tombstone-membership check at :581.",
+    "manifest": "Read; manifest.md:11 names the seven commits, :12 the five changed paths, :15 the exact gate command, :20-22 the three controls and both gate arms with zero failures.",
+    "write_paths": "The gained diff touches only tests/test_crew_families_fold.py and the cso-resume-follow-ons.html evidence fragment, both inside the four declared code/test write paths and the declared evidence path."
+  },
+  "justifications": {
+    "durability": "The new assertion at tests/test_crew_families_fold.py:581 fails when resume-ready is re-registered as a visible command (negative-visible-resume-ready.log, EXIT=1), so the exact regression the prior finding named is now guarded; the parity assertion at :583 is a comparison between two projections of the same crew group and discriminates little on its own.",
+    "evidence": "repair-base-suite.log (revision 7cbfc4674, 45 passed, EXIT=0) and repair-head-suite.log (revision 6f68725c6, 45 passed, EXIT=0) are both recorded in manifest.md:21-22 with zero added failures, and negative-visible-resume-ready.log shows the intended red at EXIT=1.",
+    "fit": "tests/test_crew_families_fold.py:581-583 follows the file's existing census idiom and reuses the module-level _leaf_commands helper at :473, adding no name the repository naming rules forbid.",
+    "goal_fidelity": "The gained commits remove the tautology the prior review flagged at tests/test_crew_families_fold.py:578-579 and replace it with a tombstone-membership check at :581, but they do not reconstruct the base count from the registry as the source brief's correction 3 asked, so no count bound remains beneath the test named '...reduces_the_visible_leaf_count'.",
+    "reuse": "The repair reuses the existing _leaf_commands owner at tests/test_crew_families_fold.py:473 and the registration-parity idiom already present at tests/test_crew_families_fold.py:1020 rather than introducing a new census mechanism.",
+    "scope_discipline": "The two gained commits touch only tests/test_crew_families_fold.py and docs/evidence/fragments/the-crew-surface-is-one-tool-and-a-few-verbs/cso-resume-follow-ons.html, both listed in the source manifest.md:3 orientation_write_paths and in the brief's scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The gained commits repair correction 3's blocking tautology; head replaces tests/test_crew_families_fold.py:578-579's identity with a tombstone-membership check at :581 and a registration-parity check at :583.\nVERDICT done_when: The five-file gate is recorded in repair-base-suite.log (revision 7cbfc4674, 45 passed, EXIT=0) and repair-head-suite.log (revision 6f68725c6, 45 passed, EXIT=0); the head leaf guard at tests/test_crew_families_fold.py:574-583 carries no literal base count.\nVERDICT write_paths: The gained diff touches only tests/test_crew_families_fold.py and docs/evidence/fragments/the-crew-surface-is-one-tool-and-a-few-verbs/cso-resume-follow-ons.html, both declared at manifest.md:3.\nVERDICT manifest: Read; manifest.md:11-22 records seven commits, five changed paths, the exact gate command, and both arms and three controls with zero added failures.\nVERDICT diff: Read both gained commits against base 7cbfc4674; 6f68725c6 tightens the leaf test and a4fa44576 updates the evidence fragment, 6 insertions and 6 deletions across two files.\nCALL_SITES: reckon/cli.py (crew Group), reckon/crew/tombstones.py (TOMBSTONE_BY_NAME)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: tests/test_crew_families_fold.py:581 removes the tautology the prior review flagged but the repair does not reconstruct a base count as the brief's correction 3 asked, leaving the count-named test with no count bound.\nSCORE evidence: 18\nJUSTIFICATION evidence: repair-base-suite.log and repair-head-suite.log each end in 45 passed and EXIT=0 and negative-visible-resume-ready.log shows the resume-ready red at EXIT=1, all recorded in manifest.md:20-22.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two gained commits touch only tests/test_crew_families_fold.py and the cso-resume-follow-ons.html fragment, both inside the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_crew_families_fold.py:581 fails when resume-ready is re-registered (negative-visible-resume-ready.log, EXIT=1), while the parity check at :583 compares two projections of the same crew group and is a weak guard.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_crew_families_fold.py:581-583 follows the file's census idiom and reuses _leaf_commands at :473 with no forbidden name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the repair reuses the _leaf_commands owner at tests/test_crew_families_fold.py:473 and the parity idiom at :1020 rather than forking a new census mechanism.\nFINDING tests/test_crew_families_fold.py:583 follow-on: the brief's correction 3 asked for the base count to be reconstructed from the registry as the sibling guard at :1029 does; the repair left only a registration-parity assertion, so test_resume_family_reduces_the_visible_leaf_count no longer bounds any count.",
+  "review_run_id": "r-20261020T131329825258-review-of-cso-resume-follow-ons-a4fa445765d6",
+  "reviewed_base_sha": "7cbfc4674210df1d5fc2221f281166430432edfb",
+  "reviewed_head_sha": "a4fa445765d67470136a1144689b1569e7d33f90",
+  "reviewed_run_id": "r-20261020T123408094819-cso-resume-follow-ons",
+  "rubric": "landed-node",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T13:25:17.983836+00:00",
+  "total": 111
+}
