@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T22:23:24.270Z",
+  "dispatched_at": "2026-10-20T22:08:14Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:258",
+      "id": "done_when-1",
+      "reason": "the node's whole measure rests on the verdict ladder, and one reachable outcome has no verdict the report can state without fabricating a misread claim.",
+      "text": "the ladder's \"receives\" requires \"each run opened only its PNG\", and its fallback is \"otherwise misreads, naming each counted claim the probe missed or stated wrongly\"; a probe that states every counted claim correctly but whose run also opened another file is therefore labelled \"misreads\" with nothing to name, so the report cannot state an honest verdict for that outcome",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:256",
+      "id": "reasoning-1",
+      "reason": "the node's run set is contradictory, and a worker resolving it either dispatches a run with an undefined third PNG or mis-reports the count the done-when checks.",
+      "text": "the deliverable opens \"Three runs on the local lane ... each with a brief telling the worker to open one named PNG\", but only two PNGs are defined (the copy of `exposure_counts.png` and the blank control) and the third run is described one sentence later as the local node that \"reads the three runs' streams\", so a dispatched worker cannot tell whether to run three PNG-opening probes plus a matcher or two probes plus a matcher",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:255",
+      "id": "anchors_resolve-1",
+      "reason": "the reference supports the rationale only; the probe's mechanism and measure are unchanged whether or not the pointer is restored, though the sentence would be weaker without it.",
+      "text": "\u00a713 grounds its \"path\" claim on \"the 2026-10-13 PDF-page nodes\", a reference no file, plan or commit in the repository names (the only occurrence of \"PDF-page\" under `docs/` is this line), so a reader cannot confirm those nodes took the Read-tool path the probe depends on",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "f8b58c2f23f5ad7f2943e7247cf276d70acef9e2606cb3e5e1526338466bc0fd",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 76,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T220731190984-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "aa639e2da15dbaa48dd5f5af10efa836e7cdfe37",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the reference \"the 2026-10-13 PDF-page nodes\" names no resolvable target.",
+    "done_when": "a finding \u2014 \u00a713's four-verdict ladder cannot express a probe whose counted claims are all correct but whose run read a file other than its PNG, so that outcome has no satisfiable verdict.",
+    "evidence_paths": "pass \u2014 \u00a713 writes logs under the run directory and names the matching node's evidence fragment and report, not a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 \u00a713's verdict words name the mechanism (receives, confabulates, misreads, not delivered) and carry no plan label, ticket number or version tag.",
+    "reasoning": "a finding \u2014 the deliverable's run set is internally inconsistent (three runs each told to open one named PNG, but only two PNGs are defined and the third run is the matcher), so the stated mechanism does not produce the done-when it asserts.",
+    "single_goal": "pass \u2014 \u00a713 carries one deliverable: measure whether the local lane's model receives an image its worker opens, and record the verdict.",
+    "wiring": "pass \u2014 \u00a713 sequences after \u00a76 and \u00a77 in prose, the plan's `plan-informs` relationship still resolves to a live plan, and \u00a713 declares no relationship that points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "b2ac12e22a62f1a04b381606e910962e4836edc1958594c258fdf7587d8d0380",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s10": "aee314dbe26192cd678dc467a9b229b8cb46873cacefcd4ce369fcbe469a1e37",
+    "s11": "22d519df0a82a0edfb23ceef10d63c14a08f3d8d656ce95a4cd03e5049d4e228",
+    "s12": "234f9999257c9e64bf69518cdf0b98e319850465374deeac091e90b1ed118647",
+    "s13": "2463f6db98e8b12c1b8e195be76d6eae17f2be810152a6b90085db34823d0ec7",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "ce9705dbaad70ab2b3a9425eead9900cc284deb7f1d5ecacb553d3745679b3d7",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a",
+    "s8": "2c200fdd964f328342811e9362e4cd14da60f3c8352368899ccf87797d9e7f5b",
+    "s9": "b62ffeb55dd71d5f62b49f372e069f227a57c7caec9c6c3b45f81a945d284e11"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T22:30:49.769994+00:00"
+}
