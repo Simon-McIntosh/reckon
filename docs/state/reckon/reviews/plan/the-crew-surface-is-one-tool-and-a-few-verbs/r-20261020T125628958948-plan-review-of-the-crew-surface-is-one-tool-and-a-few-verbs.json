@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T13:06:33.388Z",
+  "dispatched_at": "2026-10-20T12:57:18Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:339",
+      "id": "done_when-1",
+      "reason": "the node ships a control that cannot fire, and the two readings of the scan (registry-driven vs the fixed three names \u00a79:337 asserts) each break a different node, so the node would guess and mis-scope its gate.",
+      "text": "the mover node's control \"leaves one reckon caller on crew list, and the case that scans reckon/ for the retired names then fails naming it\" cannot make that case fail, because the scan \u00a77 defines is registry-driven (`tests/test_crew_families_fold.py:979` reads `TOMBSTONE_BY_NAME`, and \u00a77:274 states it \"covers each later node's names as they are tombstoned\"), while `crew list` is registered only by the later `cso-list-retires` node, so at the mover's head `crew list` is not yet a retired name",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:324",
+      "id": "reasoning-1",
+      "reason": "the node blocks (or leaves `test_no_string_literal_names_a_tombstoned_verb_as_a_crew_command` red) on a file the plan never names, so the fence must gain `reckon/hooks/native_agent_guard.py`.",
+      "text": "the ledger node is tasked to move \"the callers and citations of `ledger` and `velocity`\" with `reckon/hooks/native_agent_guard.py` absent from its write paths, yet that module's docstring at line 3 reads \"\u2026where the crew ledger already owns worker execution\", which matches the retired-name string-literal scan (`\\bcrew\\s+ledger\\b`) the moment `ledger` is registered, so the node's own change reddens a check it cannot repair",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e90c6edfe90360212281ef5398644350d8686b886499049b5813d1ecc31fe67e",
+  "plan_slug": "the-crew-surface-is-one-tool-and-a-few-verbs",
+  "plan_version": 63,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T125628958948-plan-review-of-the-crew-surface-is-one-tool-and-a-few-verbs",
+  "reviewed_blob_sha": "bece217fd7ba7390d285339121e04080233743b7",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 each cited target resolves: `reckon/mcp_deadlines.py:184`, `reckon/crew/refusals.py:78`, `tests/test_crew_velocity_cli.py`, `CLASSIFICATION_FIELDS` in `tests/test_crew_surface_parity.py:23`, `test_ship_crew_views_match_the_typed_mcp_surface` (`tests/test_skill_contracts.py:1165`), and the revised \"ten views\"/\"nineteen\" figures (`_mcp_tools.py` Literal = 10, `mcp_views.CREW_VIEWS` = 19).",
+    "done_when": "a finding \u2014 the mover node's declared negative control cannot fire the scan it names.",
+    "evidence_paths": "pass \u2014 the fixtures and gates live in committed repository test modules, and no scratchpad or node-local temporary path is named.",
+    "naming": "pass \u2014 the node ids and test filenames describe behaviour; no plan labels, ticket numbers or version tags reach code.",
+    "reasoning": "a finding \u2014 the section's mechanism rests on every citation of the retired verbs lying inside the nodes' write paths, and the cited evidence does not support that.",
+    "single_goal": "pass \u2014 each of the four nodes names one goal (retire ledger+velocity, filter the live view, move crew list's callers, tombstone crew list).",
+    "wiring": "pass \u2014 \u00a79 declares `depends-on` s7 and s8, both of which write `reckon/crew_run_commands.py` that all four \u00a79 nodes also write, and neither edge points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "4d4b24f4aec9178fd9d24a7442e96788d260da61249c8afd730e02ffe7cc56f6",
+    "s1": "7964ee282f4a5255288aa84785a54dbc6a5fec9660f4cee9f9c892a0807894ee",
+    "s10": "033277f14414ff9bc6f07d5fabef9354ec643b0bcb31a42018a8bb7153544427",
+    "s2": "be69292dc4744e91b19438c3129be40ac6c6138f02cd12656616dd3906a1d313",
+    "s3": "bfc4b93502cb69a2a5878f9c282da2cbab878f4f49482f263fdfc074dfce4ba8",
+    "s4": "2feb22a10d53f02161e33412c6f491a2718ee9b88ffede06e39b7fc15799f5d1",
+    "s5": "4a0b632aaec0c9b2538edeab874ccd9fd39723e2eef864da9ae65a3f72b6695c",
+    "s6": "e037f188e4e0784a7a39a208f621ec226cacdda5308e5f226d6ba3e104345522",
+    "s7": "7a66876ae7177f3cc833a9fc9c2885beceef03cf567843584a885f144155809b",
+    "s8": "beb6c1568fe326e8af87c393c93ac9e71dec60ad9a9247b47ffbec9d08fc76a6",
+    "s9": "36f0fd447923cf624b961121aa13c6e2dd7dd5e8b89f1be7f8f60286eb472d90"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T13:10:33.850545+00:00"
+}
