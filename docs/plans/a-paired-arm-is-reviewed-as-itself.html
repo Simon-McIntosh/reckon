@@ -25,7 +25,7 @@
   <title>A Paired Arm Is Reviewed As Itself | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="17">
+<meta name="plan-version" content="20">
 <meta name="plan-modified" content="2026-10-20">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -93,26 +93,27 @@ The test writes nothing outside its temporary directory.</li>
 <ul>
 <li>The review node id's head suffix chooses among them. Read the suffix with <code>round_node_head_suffix</code> (<code>reckon/crew/repair.py:331</code>). A record matches when the head <code>_run_head_for_review</code> (<code>reckon/crew/recovery_review_dispatch.py:577</code>) gives for it starts with that suffix. A node id that carries no suffix matches every record carrying its node id.</li>
 <li>Exactly one match resolves to that record's run id. No match, or more than one, returns the bare source, as today, whether or not <code>refuse_ambiguous</code> is set.</li>
-<li>Read the durable records through <code>RunStore</code> in <code>reckon/run_store.py</code>. Add one reader there that selects rows by the <code>node</code> column across projects, because the dispatch grant holds no project. Open the database nowhere else.</li>
+<li>Read the durable records through <code>RunStore</code> in <code>reckon/run_store.py</code>. Add one reader there that selects rows by the <code>node</code> column, scoped to the resolver's <code>project</code> whenever one is given. The live path scopes by project through <code>list_live(project=...)</code>, and the fallback must never be wider. A caller that passes a project, such as the delivery reader, so never resolves to another project's run. Only when <code>project</code> is None, as for the dispatch grant, does the reader select across projects. Open the database nowhere else.</li>
 <li>A durable read that raises returns the bare source and never propagates.</li>
 </ul>
 <p>Live pointers are still read first, so every case that resolves today resolves the same way. The grant and the review node ids are unchanged.</p>
 <p><strong>Write paths:</strong> <code>reckon/crew/recovery_review_delivery.py</code>, <code>reckon/run_store.py</code>, the new <code>tests/test_a_promoted_runs_review_resolves_its_run.py</code>, and the node's evidence fragment.</p>
 <p><strong>Done when</strong> all of these hold:</p>
 <ul>
-<li>The new test points the crew home and the run store at a temporary directory. It writes durable run records, with each run's <code>review-records/</code> directory, and no live pointer unless a case says so. It asserts five cases:
+<li>The new test points the crew home and the run store at a temporary directory. It writes durable run records, with each run's <code>review-records/</code> directory, and no live pointer unless a case says so. It asserts six cases:
   <ul>
   <li>One promoted run carries node id <code>solo-node</code> at head <code>H</code>. <code>_reviewed_run_id_for_node("review-of-solo-node-" + H[:12])</code> returns that run's id. <code>_review_record_directory_grant</code> then grants that run's <code>review-records/</code> directory for its declared record path.</li>
   <li>Two promoted runs carry node id <code>twice-node</code>, the older at head <code>H1</code> and the newer at <code>H2</code>. The node id with <code>H1</code>'s suffix resolves to the older run, and the one with <code>H2</code>'s suffix to the newer. A suffix matching neither head returns the bare source <code>twice-node</code>.</li>
   <li>Two promoted runs carry node id <code>same-head</code> at one head. The node id with that head's suffix returns the bare source, and the grant refuses.</li>
   <li>A live pointer carries <code>solo-node</code> beside the durable record. Its run id is returned, as today.</li>
   <li>With the run-store reader patched to raise, the resolver returns the bare source and raises nothing.</li>
+  <li>A promoted run in project <code>other</code> carries node id <code>far-node</code>. <code>_resolved_reviewed_run_id</code> called with project <code>here</code> on that review node id returns the bare source. Called with project None, it returns that run's id.</li>
   </ul>
 The test asserts that the real crew home and the real run store are untouched afterwards.</li>
 <li>Run pytest in the foreground with <code>-rA</code> over the new file, <code>tests/test_a_paired_arm_is_reviewed_as_itself.py</code>, <code>tests/test_a_resumed_head_is_reviewed.py</code>, <code>tests/test_a_run_review_with_run_directory_records_dispatches.py</code>, <code>tests/test_a_review_is_not_refused_for_its_run.py</code>, <code>tests/test_review_reflex_sweep.py</code>, <code>tests/test_run_store.py</code>, <code>tests/test_run_store_backend_query.py</code> and <code>tests/test_every_module_fits_a_worker_window.py</code>. It adds no failure against a base arm run at the dispatched base revision. Both arms' logs go in the run directory, and the manifest's <code>baseline_suite</code> names the base log and its failure ids exactly as pytest prints them.</li>
 <li><code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths, judged by delta against the base blobs.</li>
 </ul>
-<p><strong>Negative control.</strong> Remove the durable fallback, and the first case must fail. Separately, return the newest durable match instead of matching the head suffix, and the second case must fail on the older run. Apply each mutation alone and run it under pytest with the default short summary.</p>
+<p><strong>Negative control.</strong> Remove the durable fallback, and the first case must fail. Separately, return the newest durable match instead of matching the head suffix, and the second case must fail on the older run. Separately, read across projects even when a project is given, and the sixth case must fail. Apply each mutation alone and run it under pytest with the default short summary.</p>
 <p><strong>After it lands.</strong> Run the printed obligation command for the next review composed after its run's promotion. It should dispatch under its node-id form.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
