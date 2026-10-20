@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T14:01:03.276Z",
+  "dispatched_at": "2026-10-20T13:54:10Z",
+  "findings": [
+    {
+      "anchor": "plan.html:325",
+      "id": "reasoning-1",
+      "reason": "as written the node can widen exactly as the plan prescribes and still leave its own gate red (or over-match non-crew `view=` parameters), so the plan must state the anchor to keep and that every listed view be written in the form the extractor reads.",
+      "text": "the widening the plan prescribes is not sufficient for the equality it states: the extractor at `tests/test_skill_contracts.py:1167` is `crew\\(project, view=\"([a-z]+)\"\\)`, and the nineteen-view Literal includes `directory` and `obligations`, which `skills/reckon-build/SKILL.md:64` documents only as `crew(view=\"directory\")` and `crew(view=\"obligations\", session=<session>)` \u2014 forms that omit the `crew(project, ` anchor, so no relaxation of \"hyphenated names and further arguments\" alone can capture them; and if the node relaxes or drops the anchor to reach them, the same pattern then captures `raw` and `schema` from the sibling `roadmap(project=\u2026, view=\"raw\")` calls at `skills/reckon-build/SKILL.md:41,78,80`, which are not crew views, so the documented set overshoots the Literal instead of reaching it",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "6f6deae8197241854d9395bb654ac17e9a02ec208c0df49a0330d08f6e705e80",
+  "plan_slug": "the-crew-surface-is-one-tool-and-a-few-verbs",
+  "plan_version": 70,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T135317423816-plan-review-of-the-crew-surface-is-one-tool-and-a-few-verbs",
+  "reviewed_blob_sha": "6d8bee8314ddea0682e9a56da314a1fb0b564f4b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/_mcp_tools.py`, `reckon/mcp_views.py`, `reckon/mcp.py` (`_crew`, `serve_crew_view`), `tests/test_skill_contracts.py` (`test_ship_crew_views_match_the_typed_mcp_surface`, line 1165), `tests/test_crew_view_serves_every_view.py`, `tests/test_mcp_tools.py` and `tests/test_crew_surface_parity.py` (`CLASSIFICATION_FIELDS`, line 23) all resolve; `tests/test_read_verbs_retire_behind_crew_view.py` is the deliverable the nodes create, not a citation.",
+    "done_when": "pass \u2014 \u00a79's done-when names a negative control per node (the filter node's `--mine` drop and the CLI-plumbing drop, the mover's `mcp_deadlines.py` refusal restore, and one control per retiring node), and its gate list includes `tests/test_skill_contracts.py`, which holds the extractor's test.",
+    "evidence_paths": "pass \u2014 the gates cite files under `tests/` and `reckon/`, all durable repository paths; no scratchpad or node-local path is named.",
+    "naming": "pass \u2014 the changed text names mechanisms (`plan-review`, `test_ship_crew_views_match_the_typed_mcp_surface`, the regex itself) and carries no plan label, ticket number or changelog prose into a symbol.",
+    "reasoning": "a finding \u2014 the changed sentence asserts the extractor need only be widened for hyphenated names and calls with further arguments \"so that the documented set can equal the widened Literal\", but the real extractor is anchored to `crew(project, `, and that anchoring is exactly what determines whether the claim holds.",
+    "single_goal": "pass \u2014 each of \u00a79's four nodes names one deliverable: retire ledger+velocity, add the live-view filters with parity coverage, move the list callers, retire list.",
+    "wiring": "pass \u2014 s9 declares depends-on s7 and s8 (both sections exist), and every node in \u00a79's table names write paths that resolve in the tree."
+  },
+  "section_digests": {
+    "_document": "4d4b24f4aec9178fd9d24a7442e96788d260da61249c8afd730e02ffe7cc56f6",
+    "s1": "7964ee282f4a5255288aa84785a54dbc6a5fec9660f4cee9f9c892a0807894ee",
+    "s10": "033277f14414ff9bc6f07d5fabef9354ec643b0bcb31a42018a8bb7153544427",
+    "s2": "be69292dc4744e91b19438c3129be40ac6c6138f02cd12656616dd3906a1d313",
+    "s3": "bfc4b93502cb69a2a5878f9c282da2cbab878f4f49482f263fdfc074dfce4ba8",
+    "s4": "2feb22a10d53f02161e33412c6f491a2718ee9b88ffede06e39b7fc15799f5d1",
+    "s5": "4a0b632aaec0c9b2538edeab874ccd9fd39723e2eef864da9ae65a3f72b6695c",
+    "s6": "e037f188e4e0784a7a39a208f621ec226cacdda5308e5f226d6ba3e104345522",
+    "s7": "7a66876ae7177f3cc833a9fc9c2885beceef03cf567843584a885f144155809b",
+    "s8": "beb6c1568fe326e8af87c393c93ac9e71dec60ad9a9247b47ffbec9d08fc76a6",
+    "s9": "3c2ccc817cfee6cf129d3dfd9811040be7c544f5170b678682893e8c857495df"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T14:05:38.948724+00:00"
+}
