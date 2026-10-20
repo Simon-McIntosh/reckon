@@ -179,8 +179,20 @@
     <code>final-expanded-gate-var-tmp.log</code>. Four failures are the
     inherited project-visibility cases, one is the previously isolated
     pre-navigation server-readiness timeout, and the structural invariant
-    names only the inherited crew parser. The PDF export case skips because
-    this node lacks Playwright's Chromium headless shell, as recorded by
-    <code>final-reader-pdf-skip-reason.log</code>; its four route cases pass.
+    names only the inherited crew parser. That PDF skip arose because pytest
+    redirects its cache root and hid the installed Chromium shell
+    (<code>final-reader-pdf-skip-reason.log</code>). Pointing Playwright at
+    the installed shell makes the real PDF case pass
+    (<strong>1 passed, EXIT=0</strong> in
+    <code>final-reader-pdf-installed-shell.log</code>).
+  </p>
+  <p>
+    The final 16-file gate with writable scratch and the explicit browser
+    path reports <strong>111 passed, 5 failed, no skips, EXIT=1</strong> in
+    <code>final-expanded-gate-browser-ready.log</code>. Its failures are only
+    the four inherited project-visibility IDs and the structural invariant's
+    inherited crew reader; the home, server, PDF route and real PDF browser
+    cases pass. No source or test changed between this run and the prior two
+    expanded attempts.
   </p>
 </section>
