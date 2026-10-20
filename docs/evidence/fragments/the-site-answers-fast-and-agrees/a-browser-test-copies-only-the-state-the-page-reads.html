@@ -1,0 +1,37 @@
+<section id="a-browser-test-copies-only-the-state-the-page-reads">
+  <h2>A served browser test copies only the page's state</h2>
+  <p>
+    <code>served_spa</code> now copies the six small project state files used by
+    the served page. Tests can name additional files through
+    <code>state_files</code>. Run records, review records, picker holds and the
+    crew ledger are absent unless a test names one explicitly. The focused
+    test used the repository's own docs and requested one additional file.
+  </p>
+  <table>
+    <thead><tr><th>Copy</th><th>State bytes</th><th>Check</th></tr></thead>
+    <tbody>
+      <tr><td>Selected files, including the requested extra</td><td>162,311 in seven files</td><td>Size and exclusion assertions passed</td></tr>
+      <tr><td>Whole-tree negative control</td><td>438,673,931</td><td>Under-1-MB assertion failed; EXIT=1</td></tr>
+    </tbody>
+  </table>
+  <p>
+    The same six existing test files ran on the fleet allocation with eight
+    isolated browser workers and node-local scratch. At base they reported
+    <strong>49 passed, 25 failed, no skips</strong> in 248.20 s. At the head,
+    with the new size test included, they reported
+    <strong>51 passed, 24 failed, no skips</strong> in 301.29 s. The failure-ID
+    comparison has zero additions and one removal. This run does not show a
+    shorter full-suite wall time; browser outcomes remained variable against
+    a red base. Ruff check and format check both passed on the changed Python
+    files.
+  </p>
+  <p>
+    Commits <code>66cba8d620e1e8cd3fb952c0d525977a28ce81ed</code> and
+    <code>e72167676a6053ab964e202168ae2c4816170149</code>. Receipts:
+    <code>baseline-parallel-browser-suite.log</code>,
+    <code>head-parallel-browser-suite.log</code>,
+    <code>negative-control-size.log</code>, <code>state-bytes.log</code>,
+    <code>ruff-check.log</code> and <code>ruff-format.log</code> in the run
+    directory.
+  </p>
+</section>
