@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T00:21:10.799Z",
+  "dispatched_at": "2026-10-20T00:14:33Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-fleet-node-stays-in-service.html:622",
+      "id": "wiring-1",
+      "reason": "without \u00a712 named in the followup's wave and ordering, the CPU fix would be silently dropped from the only dispatch list the coordinator reads, exactly as \u00a79 would have been.",
+      "text": "\u00a712 is an implementable 1.5-hour node with no place in the plan's own graph: the driving followup `f-tfnsis-001` names \u00a72, \u00a73, \u00a74, \u00a75, \u00a76, \u00a77, \u00a78, \u00a79, \u00a710 and \u00a711 but never \u00a712, no gate references s12, and the section carries `data-links=\"\"`, so a coordinator dispatching the wave from the followup would never schedule it \u2014 the same defect \u00a79 carried before the prior content review's wiring finding added \u00a79 to the followup.",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1e680be4bee72ed45158bf59a95e7cf4b18cdd43e5fb08c639780bfd65f368ce",
+  "plan_slug": "the-fleet-node-stays-in-service",
+  "plan_version": 44,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T001241414629-plan-review-of-the-fleet-node-stays-in-service",
+  "reviewed_blob_sha": "0184180f575b3eb649535117413fa70f1820e584",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited reader `_processes_owning_run` (reckon/crew/process_signal.py:164) and the caller `_env_scan_run_pid` (reckon/crew/recovery_liveness.py:1091, which calls it at :1116) both resolve, and the new `s12` section declaration matches the section element that carries `data-id=\"s12\"`.",
+    "done_when": "pass \u2014 \u00a712's done-when names six measurable tests (second beat opens no environment, new process read once, reused pid read afresh, another user's process skipped without an `environ` open, a reparented worker still found by liveness and by the stop path, no added failures against the base with paired logs) plus a 10 s strace whose base revision is the positive control, and it declares a negative control (a process read between fork and exec that then execs with the run mark, which a memo keyed on pid and start tick alone would miss).",
+    "evidence_paths": "pass \u2014 \u00a712 directs no evidence to a session scratchpad or node-local temporary path; its measurement runs on the fleet allocation under the plan's evidence convention.",
+    "naming": "pass \u2014 \u00a712 introduces no plan labels, stage names, ticket numbers or version tags into code, and states its mechanism in terms of the kernel facts (pid, start tick, executable identity) rather than any tracker entry.",
+    "reasoning": "pass \u2014 the stated root cause (a full environment read per run per beat) matches the cited strace (14,568 of 15,019 opens being `/proc/<pid>/environ` across 850 processes, about 3.4 table reads a second), the mechanism (one index per beat, memo keyed on pid/start-tick/executable identity, other users skipped by `/proc` owner) is capable of the done-when and the strace target, and the caller chain `_env_scan_run_pid` \u2192 `_processes_owning_run` runs on the production liveness path reached by the beat.",
+    "single_goal": "pass \u2014 \u00a712 carries one deliverable: make the per-beat liveness read build a single index and reuse an already-read environment until its process could have changed it.",
+    "wiring": "a finding \u2014 \u00a712 is added as `implementable` in `plan-section-declarations`, but the driving followup `f-tfnsis-001` names \u00a72, \u00a73, \u00a74, \u00a75, \u00a76, \u00a77, \u00a78, \u00a79, \u00a710 and \u00a711 and never \u00a712, no gate in the evidence-gates block references s12, and s12 carries `data-links=\"\"`, so nothing in the plan's own graph schedules it."
+  },
+  "section_digests": {
+    "_document": "7a0855299caa29a9c12949a5b0997843252be74c3a2ac8b27cdebdf3734b4b85",
+    "s1": "6e04065e334dfddf94228e26ccc5040265b76da7397e5f58cf73c7d37f623504",
+    "s10": "c539e5905cb53e6787632e997cf365eaac45733be5302985d423b16c58f35bba",
+    "s11": "638a64a25b64782ac7af0182a52c621989264701d48b1d52161f418851e3c441",
+    "s12": "62ac6218d6325204fd28836b6cb491028f78242a89500a97ccfd4e3a19975ef3",
+    "s2": "6155f820ac9515ec6066931aa10a1e66fdcff1b4184ba4014c19c572b1e6dfe6",
+    "s3": "5d0267647607a9ea2291a47d2f1faa4d8070d76e274abc94d1d1487ab7d3f1ea",
+    "s4": "9bf0fe68b8db66abd6daa8fdd98af93ada5d71be048a240fee7b2d68906b8b32",
+    "s5": "75dc509fc1a18ffdfecbd3511d159b7ce939377b3c956d53204972e722a91b5e",
+    "s6": "6869c09a477eaafc5a4780340f667b673175561e4bca9b0640c8af759c878f77",
+    "s7": "3a45b0d0d40cbd44ec6f8209f8a125004c44cc3cdccfb33e97882ef8331f7d70",
+    "s8": "e112e1202f352739982d9a42da2469ddd34f8ab2e4c217d172c90ed776b7a354",
+    "s9": "1ce7342558f8dc5f1587a8a947ef2a1b639355d9f39e517ee72d8e930177a2ba"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T00:23:36.117698+00:00"
+}
