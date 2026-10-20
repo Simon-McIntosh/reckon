@@ -179,13 +179,60 @@ def _add_source_only_change(project: dict) -> None:
 def test_changed_figure_dispatches_an_image_review_with_a_png(
     project: dict,
 ) -> None:
+    repository = project["repo"]
+    mount = project["tmp_path"] / "mount"
+    reviewed_tree = project["tmp_path"] / "reviewed-worktree"
+    subprocess.run(
+        ["git", "clone", "--quiet", str(repository), str(mount)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    _git(mount, "config", "user.email", "worker@example.invalid")
+    _git(mount, "config", "user.name", "Worker")
+    _git(mount, "checkout", "--quiet", "--detach", project["base_sha"])
+    _git(
+        mount,
+        "worktree",
+        "add",
+        "--detach",
+        str(reviewed_tree),
+        project["base_sha"],
+    )
+    figure_path = reviewed_tree / FIGURE
+    figure_path.parent.mkdir(parents=True)
+    figure_path.write_text(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="40">'
+        '<path d="M2 38 L78 2" stroke="#245a84"/></svg>\n',
+        encoding="utf-8",
+    )
+    _git(reviewed_tree, "add", FIGURE)
+    _git(reviewed_tree, "commit", "-q", "-m", "feat: add figure")
+    head_sha = _git(reviewed_tree, "rev-parse", "HEAD")
+    project["head_sha"] = head_sha
+    (project["home"] / "mounts.json").write_text(
+        json.dumps({PROJECT: str(mount / "docs")}), encoding="utf-8"
+    )
+    project["record"]["repo"] = str(mount)
+    project["record"]["worktree"] = str(reviewed_tree)
+    project["record"]["base_sha"] = project["base_sha"]
+    Path(project["record"]["manifest_path"]).write_text(
+        f"node: {RUN_ID}\nstatus: complete\ncommits: {head_sha}\n",
+        encoding="utf-8",
+    )
+    crew._write_json(crew.pointer_path(RUN_ID), project["record"])
+    assert not (mount / FIGURE).exists()
+    assert (reviewed_tree / FIGURE).is_file()
+
     recorder = _Recorder()
     report = recovery.dispatch_review_for_run(
         project["record"], config=project["config"], launcher=recorder
     )
 
     figure_report = report["figure_review"]
-    assert figure_report["dispatched"] is True, figure_report
+    assert figure_report["dispatched"] is True, (
+        figure_report.get("reason") or figure_report
+    )
     assert figure_report["backend"] == "image-lane"
     image_arguments = [
         argv[index + 1]

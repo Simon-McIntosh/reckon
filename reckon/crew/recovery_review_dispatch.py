@@ -709,7 +709,7 @@ def _changed_figure_paths(record: Mapping[str, Any]) -> list[str]:
             or not (tree / path).is_file()
         ):
             continue
-        images.append(path.as_posix())
+        images.append(str(tree / path))
     return images
 
 
