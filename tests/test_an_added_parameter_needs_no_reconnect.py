@@ -25,6 +25,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -136,6 +137,59 @@ class Spawner:
         return process
 
 
+#: The package a real child imports, and the copy the checkout case edits.
+_PACKAGE = Path(__file__).resolve().parents[1] / "reckon"
+
+#: Appended to the copy's ``reckon/served_code.py``: the checkout's rule, edited
+#: to judge a removed parameter compatible. The child imports this module, so
+#: the verdict the parent reads is the copy's rather than the one its own image
+#: carries — and the shipped rule would call the same change a refusal.
+_RULE_EDIT = '''
+
+def signature_compatible(registered, params, required):  # noqa: F811
+    """The checkout's rule as this tree holds it: the change is compatible."""
+    return True
+'''
+
+#: Appended to the copy's ``reckon/mcp_edit_plan.py``: the tool stops publishing
+#: a parameter the client registered, and answers with a fixed result so the call
+#: is decided without reading a plan. The append runs before the tool is
+#: registered, so the child's probe reports the shorter parameter list.
+_SIGNATURE_EDIT = """
+
+def _edit_plan_tool(  # noqa: F811
+    project,
+    slug,
+    expected_version,
+    mode="state",
+    ops=None,
+    old_html=None,
+    new_html=None,
+    replacements=None,
+    create=False,
+    checkout_path=None,
+    doc_type=None,
+):
+    return {"ok": True, "served_by": "current code"}
+"""
+
+
+def _copy_the_checkout(tmp_path: Path) -> Path:
+    """A copy of the package whose rule and tool signature are edited."""
+
+    root = tmp_path / "checkout"
+    shutil.copytree(
+        _PACKAGE,
+        root / "reckon",
+        ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+    )
+    rules = root / "reckon" / "served_code.py"
+    rules.write_text(rules.read_text() + _RULE_EDIT)
+    tool = root / "reckon" / "mcp_edit_plan.py"
+    tool.write_text(tool.read_text() + _SIGNATURE_EDIT)
+    return root
+
+
 class Rig:
     """The guard under test, over a temporary tree with a controllable child."""
 
@@ -207,12 +261,124 @@ class Rig:
         return False
 
 
+class CheckoutRig:
+    """The guard over a copy of the checkout, with the shipped child for real.
+
+    The child is the program the image would spawn against a checkout ahead of
+    it, so the compatibility verdict it answers is the copy's own. The copy's
+    rule and one tool's parameter list are edited before it starts, which is why
+    this rig cannot be reached through :class:`Rig`'s substitute child.
+    """
+
+    def __init__(self, tmp_path: Path, monkeypatch, control: str | None, root: Path):
+        self.root = root
+        self.server = served_code.CurrentCodeServer(
+            self.root, spawn=served_code.spawn_served_child, timeout_s=120.0
+        )
+        self.stamp = "2" * 64
+        monkeypatch.setattr(mcp_module, "_current_code_server", lambda: self.server)
+        monkeypatch.setattr(mcp_module, "_SERVE_ON_CURRENT_CODE", set())
+        monkeypatch.setattr(mcp_module, "_moved_checkout_state", self._state)
+        _apply_control(monkeypatch, control)
+
+    def _state(self) -> served_code.MovedCheckout:
+        return served_code.MovedCheckout(
+            moved=True,
+            trusted=True,
+            detail="",
+            running_stamp="0" * 64,
+            disk_stamp=self.stamp,
+        )
+
+    def tool(self):
+        """The guard under test, over a call the running image fails."""
+
+        calls: list[dict] = []
+
+        async def inner(**kwargs):
+            calls.append(kwargs)
+            return {"ok": False, "error": "version_conflict"}
+
+        guarded = mcp_module._refuse_when_stale(inner, name="edit_plan")
+        return guarded, calls
+
+    def probe(self, *, seconds: float = 240.0) -> dict | None:
+        """The shipped child's probe answer, once it has arrived."""
+
+        payload = mcp_module._registered_probe_payload()
+        deadline = time.monotonic() + seconds
+        while time.monotonic() < deadline:
+            answer = self.server.warm(self.stamp, payload)
+            if answer is not None:
+                return answer
+            time.sleep(0.05)
+        return None
+
+
 def call(guarded, **kwargs) -> dict:
     result = asyncio.run(guarded(**kwargs))
     return result if isinstance(result, dict) else {"ok": True, "unstructured": result}
 
 
 # ── the declared negative controls ─────────────────────────────────────────
+
+
+#: The shipped rule written out as text, for the control that takes the rule out
+#: of the checkout and puts it in the parent's own program string. It is the
+#: image's rule, so a copy that judges a removed parameter compatible is never
+#: consulted.
+_INLINE_RULE = """
+
+def local_signature_compatible(registered, params, required):
+    current = (
+        {str(item) for item in params}
+        if isinstance(params, (list, tuple, set, frozenset))
+        else set()
+    )
+    current_required = (
+        {str(item) for item in required}
+        if isinstance(required, (list, tuple, set, frozenset))
+        else set()
+    )
+    for name, was_required in registered.items():
+        if name not in current:
+            return False
+        if not was_required and name in current_required:
+            return False
+    return all(name in registered for name in current_required)
+
+
+def local_probe_reply(params, required, registered):
+    reply = {"params": params, "required": required}
+    if registered:
+        reply["compatible"] = {
+            name: local_signature_compatible(
+                registered.get(name) or {}, params.get(name), required.get(name)
+            )
+            for name in registered
+        }
+    return reply
+
+
+"""
+
+
+def _program_with_the_rule_inlined(program: str) -> str:
+    """The child's program with the rule defined in it, not imported from the tree.
+
+    The parent's own copy of the rule stands in for the checkout's, which is the
+    mutation this control applies: a rule edited in the copy then never reaches
+    the child, so the verdict is the image's rather than the checkout's.
+    """
+
+    marked = "\ndef tool_params():"
+    assert marked in program, "the program no longer marks where its tools are read"
+    program = program.replace(marked, _INLINE_RULE + marked[1:], 1)
+    replaced = program.replace(
+        "**served_code_module.probe_reply(", "**local_probe_reply(", 1
+    )
+    assert replaced != program, "the program no longer asks the tree for its reply"
+    return replaced
 
 
 def _apply_control(monkeypatch, control: str | None) -> None:
@@ -269,6 +435,15 @@ def _apply_control(monkeypatch, control: str | None) -> None:
             return reply
 
         monkeypatch.setattr(served_code, "probe_reply", nested)
+    elif control == "rule-in-program":
+        # The rule written into the parent's program string in place of the
+        # child importing it from the checkout, so the copy's edited rule never
+        # reaches the child and the verdict is the image's, not the tree's.
+        monkeypatch.setattr(
+            served_code,
+            "SERVED_CHILD_PROGRAM",
+            _program_with_the_rule_inlined(served_code.SERVED_CHILD_PROGRAM),
+        )
 
 
 @pytest.fixture
@@ -441,3 +616,57 @@ def test_the_childs_verdict_governs_even_when_the_parents_lists_differ(
 
     assert result.get("served_by") == "current code", result
     assert "stale_server_code" not in json.dumps(result), result
+
+
+# ── case 7: the verdict is the checkout's, not the parent's image's ────────
+
+
+def test_the_verdict_comes_from_the_checkout_not_the_parents_image(
+    tmp_path, monkeypatch, control
+):
+    """A checkout whose rule judges a removed parameter compatible is obeyed.
+
+    The copy's own ``signature_compatible`` answers compatible for a parameter
+    removed from its published list, and the child is the program the image
+    spawns against a checkout ahead of it — the child imports the copy and calls
+    ``probe_reply`` from there, so the verdict the parent reads is the copy's.
+    The image's own rule judges the same change a refusal, and is never asked.
+    """
+
+    root = _copy_the_checkout(tmp_path)
+    rig = CheckoutRig(tmp_path, monkeypatch, control, root)
+    guarded, _ = rig.tool()
+    try:
+        probe = rig.probe()
+        if probe is None:
+            stderr = served_code.child_stderr_path(root)
+            detail = (
+                stderr.read_text()[-2000:] if stderr.exists() else "(no stderr kept)"
+            )
+            pytest.fail(f"the shipped child made no probe answer: {detail}")
+
+        registered = mcp_module._REGISTERED_TOOL_PARAMS["edit_plan"]
+        child_params = probe["params"]["edit_plan"]
+        child_required = probe["required"]["edit_plan"]
+        assert "request_id" in registered, (
+            f"this case needs a parameter the client registered: {registered!r}"
+        )
+        assert "request_id" not in child_params, (
+            f"the copy must have dropped the parameter: {child_params!r}"
+        )
+        assert probe["compatible"]["edit_plan"] is True, (
+            f"the copy's rule must answer compatible: {probe['compatible']!r}"
+        )
+        assert not served_code.signature_compatible(
+            mcp_module._registered_probe_payload()["edit_plan"],
+            child_params,
+            child_required,
+        ), "the image's own rule must judge the same change incompatible"
+
+        result = call(guarded, project="reckon", slug="p", expected_version=1)
+
+        assert result.get("served_by") == "current code", result
+        assert result.get("served_by_code_stamp") == rig.stamp, result
+        assert "stale_server_code" not in json.dumps(result), result
+    finally:
+        rig.server.stop()
