@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/picker/snapshot.py:1441 (budget.burn_blocks, the only production producer)",
+    "reckon/crew/picker/snapshot.py:1705 (Candidate.burn assignment)",
+    "reckon/crew/picker/prompts.py:294 (_candidate_state renders candidate.burn, reached from build_state at prompts.py:441)",
+    "reckon/crew/picker/__init__.py:318 (pick() calls snapshot.candidates)",
+    "reckon/crew/picker/replay.py:58 (snapshot.candidates)"
+  ],
+  "completed_at": "2026-10-20T23:48:37.995Z",
+  "dispatched_at": "2026-10-20T23:31:22Z",
+  "findings": [
+    {
+      "file": "reckon/budget.py",
+      "line": "848",
+      "severity": "follow-on",
+      "text": "follow-on: _declared_group_members is a verbatim duplicate of reckon/crew/budget_lift.py:1291 -- same name, same signature, same body: i.e. `tuple(budget_group.declared_groups(config).get(str(group), ()))` -- so the name now means two things in one package and the two copies can drift independently. budget.py already imports budget_group at line 62, so this could import the sibling or resolve declared_groups at each site rather than growing a second private wrapper."
+    },
+    {
+      "file": "reckon/budget.py",
+      "line": "944",
+      "severity": "follow-on",
+      "text": "follow-on: _published_point selects the first payload entry carrying a numeric utilisation, and budget_lift.published_readings orders those entries by figure order, which is five_hour before seven_day (reckon/crew/paid_lanes.py:57 PERIODS = window_reading.PERIODS = (\"five_hour\", \"seven_day\")). The recorded series _group_points builds applies no period filter either, so on a lane that publishes both windows the point added is the five-hour window's utilisation and reset while the recorded readings are whatever window the live pointer carried; the resulting window_rate_pct_per_hour and window_even_share_pct then mix two windows. The new test publishes only seven_day, so no case exercises the multi-window document and I could not settle whether a metered lane's recorded utilisation_pct and its published five_hour figure are ever the same window. Flagging as a reading, not a proven production wrong: worth a case that publishes both windows before the figure is trusted on a two-window lane."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T224537343815-a-pick-sees-each-lanes-burn/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the node's done-when requires `ruff check and ruff format --check add no finding on the staged paths, judged against the base blobs, with the log in the run directory`, and no ruff log exists in the run directory (it holds only base-arm.log, head-arm.log, negative-control.log). I re-ran the check independently: ruff check adds no finding on the staged paths at head against the base blobs (budget.py 1 ISC004 at 1670 vs base 1 at 1314, _flight_schema.py 35 vs 35, all pre-existing), and ruff format --check reports the same single pre-existing file at both revisions, so the claim is true but the artefact the done-when names is absent and the fragment's ruff sentence currently rests on an unrecorded claim. Also, baseline_suite/after_suite carry the angle-bracket placeholder commands `<50-file gate minus the new test file>`/`<the same 50-file gate>` and the manifest tests: line is a description rather than the literal command, so the gate receipt is not replayable from the record even though the logs' own `# command:` headers carry the literal invocation."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261020T233022591884-review-of-a-pick-sees-each-lanes-burn-46585e4e9498",
+  "reviewed_base_sha": "7643c16f75e737fac6d25e38db4e483a05f3fa9b",
+  "reviewed_head_sha": "46585e4e9498d2f8d3504e769838556810d5bae5",
+  "reviewed_run_id": "r-20261020T224537343815-a-pick-sees-each-lanes-burn",
+  "rubric": "VERDICT goal: ... (see verdicts)",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T23:50:51.724069+00:00",
+  "total": 107,
+  "verdicts": {
+    "diff": "read commit by commit against 7643c16f; ca82461a5 adds the burn block and the picker render, 297bbf042 adds the history=False reading path and the _group_name matching, 46585e4e9 adds the evidence fragment",
+    "done_when": "done-when names the seven cases in the new test file plus a -rA gate with no added failures and two negative controls; the manifest records tests/test_a_pick_sees_each_lanes_burn.py at 10 passed and both arm logs carry EXIT=1 with the same 11 failure ids",
+    "goal": "the node's goal is a per-lane burn block derived once in reckon/budget.py and rendered by the picker; reckon/budget.py:990 burn_block/1122 burn_blocks derive it and reckon/crew/picker/prompts.py:60 renders it, with rate, even share and the four credit fields plus runway_hours exactly as \u00a746 states",
+    "manifest": "read; status complete, three commits ca82461a5/297bbf042/46585e4e9, both gate arms and the negative-control log named",
+    "write_paths": "the manifest declares ten write paths; the diff touches nine of them (reckon/budget.py, the three picker modules, flight.yaml, _flight_schema.py, docs/_shared/flight.schema.json, the new test file, the evidence fragment) and nothing else, and the declared figures directory is correctly untouched"
+  }
+}
