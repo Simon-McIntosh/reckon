@@ -1,0 +1,65 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:534",
+    "reckon/crew/recovery_repair_dispatch.py:736"
+  ],
+  "completed_at": "2026-10-20T17:26:45.244Z",
+  "dispatched_at": "2026-10-20T17:18:15Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_repair_dispatch.py",
+      "line": "672",
+      "severity": "follow-on",
+      "text": "follow-on: the reflex's dispatch pass returns before composing whenever the selected text review carries no finding at all (findings = review_findings(review); if not findings: return at recovery_repair_dispatch.py:672-673), so a run whose text review is clean and whose separate figure review raises a blocking finding still composes no repair round end-to-end \u2014 exactly the defect \u00a720 describes. The landed change makes the composer correct for that case but the reflex short-circuits above it; the guard lives in a module outside this node's declared write paths, so it is recorded rather than repaired here."
+    },
+    {
+      "file": "reckon/crew/repair.py",
+      "line": "653",
+      "severity": "follow-on",
+      "text": "follow-on: the figure record's disposition re-keying (repair.py:653-666) and the self-figure guard (repair.py:600-602) are load-bearing behaviour the commit message and docstring advertise \u2014 an already-disposed figure finding must not be repaired again \u2014 yet no assertion in tests/test_a_blocking_figure_finding_resumes_the_worker.py exercises either; a regression in either would leave the whole added test file green."
+    },
+    {
+      "file": "reckon/crew/repair.py",
+      "line": "600",
+      "severity": "follow-on",
+      "text": "follow-on: _figure_review_of re-derives the figure-rubric discriminator inline (str(review.get('rubric') or '').strip().lower() == review_module.FIGURE_REVIEW_RUBRIC) where reckon/crew/review_lifecycle.py:227 _is_figure_review and reckon/crew/review.py:2159 already own that normalisation, so a change to the stored spelling would have to be made in three places."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against base 084c4de3b; one commit, three files, +361/-2 \u2014 reckon/crew/repair.py:587-666 adds _figure_review_of and review_with_figure and repair.py:697 calls it, plus the new test and an evidence fragment.",
+    "done_when": "the done_when names the three cases (figure blocking opens a round naming figure and finding; figure follow-on opens none; text blocking unchanged); tests/test_a_blocking_figure_finding_resumes_the_worker.py asserts all three and logs/gate-measure.log records 4 passed EXIT=0.",
+    "goal": "the goal is to make the repair reflex resume the worker on a blocking figure finding; reckon/crew/repair.py:697 folds the run's figure review into the record compose_repair_for_run composes from, so the composer opens a round the reflex would otherwise miss.",
+    "manifest": "read; it states the gate passed 4/4, records a negative control at logs/negative-control.log with EXIT=1 and two failing ids, and names two follow-ons; the baseline arm is a prose count, not a logged arm.",
+    "write_paths": "the manifest's orientation_write_paths are reckon/crew/repair.py, tests/test_a_blocking_figure_finding_resumes_the_worker.py, docs/evidence/fragments/scoring-should-stop-a-promotion/the-repair-reflex-resumes-on-a-figure-finding.html and a docs/figures/ directory; the diff touches only the first three, all inside the declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_blocking_figure_finding_resumes_the_worker.py:102 and :160 redden when the fold is removed (logs/negative-control.log EXIT=1), but the disposition re-keying at reckon/crew/repair.py:653-666 and the self-figure guard at repair.py:600 carry no assertion at all.",
+    "evidence": "logs/gate-measure.log records the named gate at EXIT=0 with 4 passed, but the done-when's ruff clause is unrecorded in the manifest and its baseline arm is a prose count with no log of its own.",
+    "fit": "the added helpers follow the module's Mapping-in/dict-out idiom beside compose_repair_node at reckon/crew/repair.py:584, and no name carries a plan label or version.",
+    "goal_fidelity": "reckon/crew/repair.py:697 makes the composer read the figure record, but reckon/crew/recovery_repair_dispatch.py:672-673 returns before composing when the text review carries no finding, so the end-to-end case of a clean text review with a blocking figure finding still composes no round.",
+    "reuse": "the new helper reads through the store's owner review.read_review(rubric=FIGURE_REVIEW_RUBRIC) at reckon/crew/repair.py:611, though the figure-rubric predicate is re-derived inline at repair.py:600 rather than read from review_lifecycle._is_figure_review.",
+    "scope_discipline": "every path in the diff \u2014 reckon/crew/repair.py, tests/test_a_blocking_figure_finding_resumes_the_worker.py and the evidence fragment \u2014 is inside the manifest's declared orientation_write_paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make the repair reflex resume the worker on a blocking figure finding; reckon/crew/repair.py:697 folds the run's figure review into the record compose_repair_for_run composes from.\nVERDICT done_when: the done_when names three cases; tests/test_a_blocking_figure_finding_resumes_the_worker.py asserts all three and logs/gate-measure.log records 4 passed EXIT=0.\nVERDICT write_paths: the manifest's four orientation_write_paths are the fence; the diff touches three of them and nothing else.\nVERDICT manifest: read; gate 4/4, a negative control at logs/negative-control.log EXIT=1, two follow-ons; the baseline arm is a prose count with no log.\nVERDICT diff: one commit against base 084c4de3b, three files, +361/-2; repair.py:587-666 adds the fold and repair.py:697 calls it.\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:534, reckon/crew/recovery_repair_dispatch.py:736\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/repair.py:697 makes the composer read the figure record, but reckon/crew/recovery_repair_dispatch.py:672-673 returns before composing when the text review carries no finding.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-measure.log records the named gate at EXIT=0 with 4 passed, but the done-when's ruff clause is unrecorded and the baseline arm is a prose count with no log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is inside the manifest's declared orientation_write_paths.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_blocking_figure_finding_resumes_the_worker.py:102 and :160 redden when the fold is removed, but reckon/crew/repair.py:653-666 and repair.py:600 carry no assertion.\nSCORE fit: 17\nJUSTIFICATION fit: the added helpers follow the Mapping-in/dict-out idiom of reckon/crew/repair.py:584 and carry no plan label.\nSCORE reuse: 17\nJUSTIFICATION reuse: the helper reads through the owner review.read_review at reckon/crew/repair.py:611, though repair.py:600 re-derives the figure-rubric predicate review_lifecycle.py:227 owns.\nFINDING reckon/crew/recovery_repair_dispatch.py:672 follow-on: the reflex returns before composing when the text review carries no finding, so the section's clean-text case still composes no round end-to-end.\nFINDING reckon/crew/repair.py:653 follow-on: the disposition re-keying and the self-figure guard carry no assertion, so a regression in either leaves the added test file green.\nFINDING reckon/crew/repair.py:600 follow-on: the figure-rubric discriminator is re-derived inline rather than read from its owner in review_lifecycle.py:227.\n",
+  "review_run_id": "r-20261020T171731529772-review-of-the-repair-reflex-resumes-on-a-figure-finding-d460d20c0af5",
+  "reviewed_base_sha": "084c4de3bdeff8901ff5afe13b40944e7a39b331",
+  "reviewed_head_sha": "d460d20c0af5b9efdc60a7d9a5a3c94433c17c27",
+  "reviewed_run_id": "r-20261020T170036775023-the-repair-reflex-resumes-on-a-figure-finding",
+  "reviewer": "r-20261020T171731529772-review-of-the-repair-reflex-resumes-on-a-figure-finding-d460d20c0af5",
+  "rubric": "landed",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 15,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T17:35:00+00:00",
+  "total": 98
+}
