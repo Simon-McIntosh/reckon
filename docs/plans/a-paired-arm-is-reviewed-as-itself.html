@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-paired-arm-is-reviewed-as-itself">
   <meta name="plan-title" content="A Paired Arm Is Reviewed As Itself">
   <meta name="plan-summary" content="Both arms of a pair share a node id, so the composed review of one arm resolves to its partner; a paired arm&#x27;s review must name the arm by its run id.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="done">
   <meta name="plan-roi" content="mid">
   <meta name="plan-effort-hours" content="1.0">
   <meta name="plan-capability-version" content="1.0">
@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-standalone" content="It repairs review composition for the landed paired dispatch of a-shadow-cannot-see-its-primary; no live plan waits on it, and it consumes no plan&#x27;s pending evidence.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s2&quot;: [&quot;a-paired-arm-is-reviewed-as-itself#s1&quot;]}">
   <title>A Paired Arm Is Reviewed As Itself | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="22">
+<meta name="plan-version" content="23">
 <meta name="plan-modified" content="2026-10-20">
 <meta name="plan-north-star" content="unattended-execution">
 </head>
@@ -86,7 +86,7 @@ The test writes nothing outside its temporary directory.</li>
 <p><strong>Negative control.</strong> With the shadow block removed from <code>_review_brief_text</code>, the first case must fail. With the block appended for every paired arm rather than for a shadow, the third case must fail. Each control runs under pytest with its default short summary, so its log lists the failing test id.</p>
 
     <h2 id="s3">§3 — A promoted run&#x27;s review resolves its run</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> On 2026-10-19 power_convertor discarded the first review of <code>r-20261019T214532819779-cs1-ripple-window</code>, then promoted that run with <code>--waive-unreviewed-promotion</code>. Re-attaching the review with the obligation's own command was refused as not-dispatchable on the <code>scoped</code> property. The command used node id <code>review-of-cs1-ripple-window-a317532bd536</code>, and the refusal said that review "reviews run cs1-ripple-window and may write only that run's record directory". The run's <code>review-records/</code> directory exists. The same review dispatched as <code>review-of-r-20261019T214532819779-cs1-ripple-window-a317532bd536</code> launched (<code>r-20261019T233949612668-…</code>).</p>
 <p>The cause is that an unpaired run's review node id is minted from the run's node id, which §1 left unchanged. <code>_resolved_reviewed_run_id</code> (<code>reckon/crew/recovery_review_delivery.py:220</code>) returns a run-id source as it is, and matches any other source against live pointers only (lines 248 to 254). When none matches, it returns the bare source. A promoted run has no live pointer. So <code>_reviewed_run_id_for_node</code> (<code>reckon/crew/dispatch_admission.py</code>) hands <code>_review_record_directory_grant</code> a bare node id, which names no run directory, and nothing is granted. The resolver's other readers, the delivery reader among them, resolve the same way. A queued review that the admit service launches after its run has been promoted meets the same refusal.</p>
 <p><strong>Remedy.</strong> When no live pointer carries the source node id, <code>_resolved_reviewed_run_id</code> resolves it over the durable run records whose node id is that source.</p>
@@ -136,10 +136,11 @@ The test asserts that the real crew home and the real run store are untouched af
     <pre class="r-fu-prompt">/reckon-build a-paired-arm-is-reviewed-as-itself</pre>
     <p class="r-fu-outcome">done — no followup</p>
     </article>
-<article class="r-fu" data-id="f-apairas-004" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-build" data-written-at="2026-10-20" data-recommends-skill="/reckon-build a-paired-arm-is-reviewed-as-itself §3" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-apairas-004" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-build" data-written-at="2026-10-20" data-recommends-skill="/reckon-build a-paired-arm-is-reviewed-as-itself §3" data-resolved-at="2026-10-20T01:51:51+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Resolve a promoted run&#x27;s review without the live fleet</h4>
     <div class="r-fu-body"><p>Filed after power_convertor's obligation command for the review of a promoted run was refused on <code>scoped</code>: its node id resolves against live pointers only. §3 resolves it over the durable run records, chosen by the review's head suffix.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-paired-arm-is-reviewed-as-itself §3</pre>
+    <p class="r-fu-outcome"><p>§3 landed at <code>b3b2dbabe</code>: a review composed after its run's promotion dispatches under its node-id form.</p></p>
     </article>
 </section>
   
@@ -169,7 +170,10 @@ The test asserts that the real crew home and the real run store are untouched af
     <div class="r-comment-body"><p>independent review of r-20261020T004245239090-a-promoted-runs-review-resolves-its-run at head ad8fe0511 (base c83074a2) scores goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 18, reuse 18, with added_failure_count 0 and four follow-on findings and no blocking finding</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261020T004245239090-a-promoted-runs-review-resolves-its-run" data-who="reckon-build" data-when="2026-10-20T01:13:45.987Z">
-    <div class="r-comment-body"><p>resolver now falls back to the durable run rows carrying the source node id when no live pointer does, chosen by the node id&#x27;s head suffix and scoped to the caller&#x27;s project (runs_for_node, windowed to the node column); head arm 1 failed/69 passed against base arm 1 failed/62 passed, the one failure pre-existing in review.py and ledger.py and not this node&#x27;s</p></div>
+    <div class="r-comment-body"><p>resolver now falls back to the durable run rows carrying the source node id when no live pointer does, chosen by the node id's head suffix and scoped to the caller's project (runs_for_node, windowed to the node column); head arm 1 failed/69 passed against base arm 1 failed/62 passed, the one failure pre-existing in review.py and ledger.py and not this node's</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-20T01:50:00Z">
+    <div class="r-comment-body"><p>§3 landed: a promoted run's review resolves its run over the durable run records by its head suffix, scoped to the caller's project (commits <code>d35bae1fc</code>, <code>ad8fe0511</code>, merged at <code>b3b2dbabe</code>). Gate 69 passed against 62 at base, the same window-guard failure in both; all three negative controls fail their case; review no added failures. <a href="/reckon/evidence/archive/a-paired-arm-is-reviewed-as-itself-landed.html#s3">evidence</a></p></div>
 </div>
 </section>
 </main>
