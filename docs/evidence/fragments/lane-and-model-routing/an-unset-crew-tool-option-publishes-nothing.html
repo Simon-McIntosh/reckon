@@ -1,0 +1,31 @@
+<article class="landed-report" data-run-id="r-20261020T123424311495-an-unset-crew-tool-option-publishes-nothing" data-node="an-unset-crew-tool-option-publishes-nothing">
+  <h3 id="an-unset-crew-tool-option-publishes-nothing-summary">An unset crew-tool option publishes nothing</h3>
+  <p id="an-unset-crew-tool-option-publishes-nothing-change">
+    <strong>Change.</strong> Commit <code>ee306a9d1</code> declares
+    <code>CrewArgs.refresh</code> as <code>bool | None = None</code> in
+    <code>reckon/_mcp_tools.py</code>. §42 had added <code>refresh: bool = False</code>,
+    so an option the caller never set still appeared when the argument model was
+    dumped with <code>exclude_none=True</code>. Every other optional crew-tool
+    argument defaults to <code>None</code>; this one now matches. Nothing else
+    changed: the crew handler <code>_crew</code> already treats a missing
+    <code>refresh</code> as no refresh, and the test's expectation was not edited.
+  </p>
+  <p id="an-unset-crew-tool-option-publishes-nothing-measure">
+    <strong>Measure.</strong> The base arm at
+    <code>4c056ffbcdbbff4a63a1f97fc3043c4136b95d4c</code> ran the six-file gate
+    with 136 passes and two failures:
+    <code>test_mcp_tools.py::test_tool_argument_models_publish_cheap_observation_options
+    and test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window</code>.
+    The head arm ran the same command with 137 passes and one failure, removing
+    exactly the in-scope failure on the extra <code>{'refresh': False}</code> item
+    and adding none. The second failure is pre-existing at the base — module-size
+    bounds for <code>reckon/crew/review.py</code> (52107 estimated tokens) and
+    <code>reckon/ledger.py</code> (51666) — and is outside this node's paths.
+    Ruff check and <code>ruff format --check</code> report no finding on the
+    staged path or on the base blob.
+  </p>
+  <p id="an-unset-crew-tool-option-publishes-nothing-next">
+    <strong>Next.</strong> None for this node; the coordinator lands the
+    <code>landing:</code> line on §45.
+  </p>
+</article>
