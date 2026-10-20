@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="437">
+<meta name="plan-version" content="438">
 <meta name="plan-modified" content="2026-10-20">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1709,6 +1709,9 @@ Both cases run under the file's existing temporary crew home.</li>
 </div>
 <div class="r-comment" data-section="s69" data-id="c-close-s69" data-who="reckon-build" data-when="2026-10-20T10:30:00Z">
     <div class="r-comment-body"><p>§69 landed: a run whose recorded worker pid has exited reads exited-unfinished even under a live supervisor, while a live worker still outranks its record (head <code>c4796c16</code>, merge <code>8c59072b4</code>); review 112/120; the 228-file importer population on an exclusive node adds no failing test. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#an-exited-worker-under-a-live-supervisor-reads-halted">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s69" data-id="c-run-r-20261020T053155605869-an-exited-worker-under-a-live-supervisor-reads-halted" data-who="reckon-build" data-when="2026-10-20T09:51:07Z">
+    <div class="r-comment-body"><p>A run whose worker exited under a live supervisor reads exited-unfinished instead of working: local_liveness folds the run&#x27;s exit record into its reading where the record names the attempt now running and the worker that attempt stood up, and that worker is one this host no longer holds. The fixture that read running at base (exit record on disk, process_alive true) reads exited-unfinished at head; a record whose worker still runs, a record naming no attempt, a record whose worker pid this host still holds, a resumed run&#x27;s predecessor record, and a worker record naming a process other than the one the exit record names all leave the live reading standing where the record does not decide it. Five cases hold the reading, one per shape; the discrimination between the two records is shown by a mutant that reads the worker record&#x27;s pid and fails the case written for it.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
