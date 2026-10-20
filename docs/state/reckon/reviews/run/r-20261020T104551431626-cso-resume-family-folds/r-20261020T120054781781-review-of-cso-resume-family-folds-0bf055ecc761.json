@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1284",
+    "reckon/crew_run_commands.py:1760",
+    "reckon/crew_run_commands.py:2237",
+    "reckon/crew/promotion_checks.py:1839"
+  ],
+  "completed_at": "2026-10-20T12:16:27.528Z",
+  "dispatched_at": "2026-10-20T12:01:51Z",
+  "findings": [
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": "1218",
+      "severity": "follow-on",
+      "text": "follow-on: _widen_eligibility is now unreachable because crew_widen (line 1284) calls claims.widen_claim directly, and _widen_running_worker (line 1234), _widen_refusal (line 1255), WIDENABLE_PHASE (line 1105) and WIDEN_REFUSING_MANIFEST_STATUSES (line 1108) lose every caller with it; the surviving stub is kept only because reckon/cli.py:410-437 re-exports the names, and _widen_running_worker's docstring at line 1243 still justifies admitting a pid-less pointer with 'a widening already requires a block stated in a manifest the run itself delivered', a precondition crew_widen no longer applies, so a reader is told a guard exists that does not. Suggest either deleting the unreachable apparatus and its re-exports or restating the rationale against the liveness-only rule."
+    },
+    {
+      "file": "tests/test_crew_families_fold.py",
+      "line": "704",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion compares the config handed to change_lane against the mapping the test's own stub of flight.select_lane_model returned (line 674), and that stub ignores every argument it is given, so the two sides move together: a regression that passed model='' on to ledger.backend_serving_model would still satisfy it, since the stubbed resolver returns 'chosen' whatever it is asked for. Assert instead on the arguments the stubs were called with, which is the fact --model actually controls."
+    },
+    {
+      "file": "tests/test_crew_families_fold.py",
+      "line": "576",
+      "severity": "follow-on",
+      "text": "follow-on: 'assert len(leaves) <= 42 - 2' writes down an absolute base leaf count, which this file's own sibling guard at line 780 explicitly refuses to do ('No base count is written down: the figure is reconstructed from the tree this guard reads'), so two guards in one file hold the same census under two different policies and the literal is the one that has to be edited when the tree changes. The figure is accurate today -- this review counted 42 leaves at 81afebde and 40 at 0bf055ecc -- but the fold's own leaf count can be reconstructed from the registry the same way the sibling does it."
+    },
+    {
+      "file": "tests/test_widen_reaches_a_blocked_run.py",
+      "line": "488",
+      "severity": "follow-on",
+      "text": "follow-on: 'assert \"crew resume\" in result.output or \"exit\" in result.output' cannot distinguish a refusal that names the next move from one that does not, because the refusal text it tests already contains the word 'exit' in its own remedy clause ('wait for that process to exit'), so the second operand of the or is satisfied by the very sentence under test. The guard would be tighter as the single assertion that the remedy names the command a coordinator should reach for."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read both commits against 81afebde; 7e57ff94c folds the two resume verbs, moves widening into claims.py's widen_claim, adds accepted_scope_before_widening, and rewrites the two widen test modules, and 0bf055ecc adds the evidence fragment with the migration census and base name hits.",
+    "done_when": "the done_when names the fifteen-test gate command; head-suite-final.log records it at 0bf055ecc as 3 failed 206 passed with EXIT=1 and the manifest's after_suite names the same three failure ids as its baseline_suite, so zero failures are added; its visible-leaf clause reads 'at most the base count minus four' while the landed guard tests minus two, which the coordinator's resume-3-advice.txt re-specified as 'base minus two, for the two folded verbs'.",
+    "goal": "the goal folds resume-ready and redispatch into one crew resume carrying --ready, --backend with --model and --reopen with --write-path, with widen accepting any non-running run through the claim owner; reckon/crew_run_commands.py:1662-1700 carries all four flags and crew_widen at line 1284 delegates to claims.widen_claim, and the goal's deletion tail is the one clause not delivered, superseded by the coordinator ruling quoted in this run's resume-3-advice.txt.",
+    "manifest": "read; it states the fifteen-test gate ran at 0bf055ecc as 3 failed and 206 passed in 263.13s with zero added failures, names head-suite-final.log, baseline-suite.log, negative-successor-answer.log and ruff-delta.log, and its checkpoint records crew check --manifest reporting ok:true.",
+    "write_paths": "read the manifest's declared paths in orientation_write_paths and its changed_paths list; all 23 changed files sit inside the declared scope and the two declared-but-untouched paths, reckon/cli.py and reckon/crew/gc.py, were not written."
+  },
+  "justifications": {
+    "durability": "tests/test_widen_reaches_a_blocked_run.py:469 and :495 assert a live worker is refused on both the exit code and the unchanged pointer bytes, and negative-successor-answer.log shows a source-side mutation reddening exactly tests/test_crew_families_fold.py::test_resume_successors_preserve_base_answers against an unaltered expected fixture.",
+    "evidence": "head-suite-final.log's header names revision 0bf055ecc and the literal gate command and its last line is EXIT=1, and the manifest records both arms as one-line JSON with revision, command, exit_status, log_path, completed and failure_ids; the worker's 42-leaf base and this review's independent count at each revision (42 at 81afebde, 40 at 0bf055ecc) agree.",
+    "fit": "reckon/crew_run_commands.py:1218 keeps _widen_eligibility and its helpers as a stub with no caller while their docstrings at line 1243 still state a block precondition the command no longer applies, and the tombstones at reckon/crew/tombstones.py:169 follow the existing rows' shape.",
+    "goal_fidelity": "reckon/crew_run_commands.py:1668 carries --ready, --backend with --model, and --reopen with --write-path on one resume command, whose crew_widen at line 1273 delegates to widen_claim; the two migration verbs the goal's tail named are retained rather than deleted, which the coordinator authorised in this run's resume-3-advice.txt because the node's own census found 5,639 missing split files and 11,457 completion updates still outstanding.",
+    "reuse": "reckon/crew/claims.py:63 widens the claim through the module that already owns claim amendment, reusing _declared_paths, _node, _mutate_pointer and refuse_widen_scope_conflicts, and the backend-with-model path at reckon/crew_run_commands.py:1777 reuses ledger.backend_serving_model and flight.select_lane_model rather than restating them.",
+    "scope_discipline": "every path in git diff --name-status 81afebde 0bf055ecc lies inside the manifest's declared write paths, with no file added outside them and reckon/cli.py and reckon/crew/gc.py declared but untouched."
+  },
+  "project": "reckon",
+  "raw_text": "Independent review of r-20261020T104551431626-cso-resume-family-folds at 0bf055ecc761cb2990c9411a1956fde2421ccad8, diffed from 81afebdeac78306914fd32f62850493b26bb9dc0. No blocking defect found: every dimension scored, all six read targets carry a verdict, and the four findings are follow-ons. The one departure from the dispatched goal -- the two migration verbs were retained rather than deleted -- is authorised in this run's own resume-3-advice.txt, which re-specified the leaf-count clause as base minus two after the node's dry run showed 5,639 missing split files and 11,457 completion updates across mounted projects.",
+  "review_run_id": "r-20261020T120054781781-review-of-cso-resume-family-folds-0bf055ecc761",
+  "reviewed_base_sha": "81afebdeac78306914fd32f62850493b26bb9dc0",
+  "reviewed_head_sha": "0bf055ecc761cb2990c9411a1956fde2421ccad8",
+  "reviewed_run_id": "r-20261020T104551431626-cso-resume-family-folds",
+  "rubric": "landed-node",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T12:20:00.630250+00:00",
+  "total": 106
+}
