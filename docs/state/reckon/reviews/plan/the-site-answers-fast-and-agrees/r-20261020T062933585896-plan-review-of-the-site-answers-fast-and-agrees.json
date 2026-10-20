@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T06:46:38.058Z",
+  "dispatched_at": "2026-10-20T06:30:19Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-site-answers-fast-and-agrees.html:275",
+      "id": "reasoning-1",
+      "reason": "a node following the deliverable reaches a gate its own assets cannot pass, and can only get green by lowering the threshold for these routes (changing \u00a713's behaviour, which \u00a717 does not authorise) or by pointing `RECKON_UI_ROOT` (`reckon/serve.py:547`) at a large fixture asset tree the plan never names.",
+      "text": "\"Compiled scripts and runtimes are gzipped above \u00a713's threshold\" is inert at the threshold it names: `_GZIP_MIN_BYTES` is 64 KiB per file (`reckon/serve.py:179`), and of the 34 script-and-stylesheet tags the served shell links (`docs/index.html`) exactly one exceeds it \u2014 `/_runtime/react-dom.js` at 131,835 B; the largest compiled script, `/_ui/plan.js`, is 63,662 B and every other compiled script is smaller, so the clause compresses a single runtime while the done-when's \"a compiled script \u2026 answers `Content-Encoding: gzip`\" (plan.html:282) has no real compiled script that can satisfy it",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-site-answers-fast-and-agrees.html:270",
+      "id": "reasoning-2",
+      "reason": "the discrepancy is marginal for this node \u2014 the section's substantive claim, that the scripts are served `no-store` and uncompressed through `_send` on every load, is verified in the code (`reckon/serve.py:2848-2905` routes `/_runtime/*.js` and compiled `/_ui/*.js` through `_send`, whose fallback header is `Cache-Control: no-store`), and no gate in \u00a717 or \u00a711 turns on the exact byte total \u2014 but the figure should cite its own measurement rather than \u00a711's pass, which does not carry it.",
+      "text": "the byte figures \"719,562 B, or 190,459 B gzipped\" do not reproduce: measured at the reviewed head over the shell's own 34 linked tags, using the server's `compile_jsx`/`client_runtime_assets` for compiled and runtime assets and `gzip.compress(level=5)` as `_send_file` uses, the set totals 784,186 B raw and 203,941 B gzipped (about 8 % above each stated figure), and neither number appears in the run the sentence cites, `r-20261020T053852305957`, whose probe records only the whole-page totals 895,709 B warm and 1,167,379 B cold",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "8f2f62f7816cc5923a051b43f3c2655183b175d7ebffa15be5e792f5f16df337",
+  "plan_slug": "the-site-answers-fast-and-agrees",
+  "plan_version": 91,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T062933585896-plan-review-of-the-site-answers-fast-and-agrees",
+  "reviewed_blob_sha": "f9b69e87df952106de9d17118cd0ba5909501860",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_render_spa_html`, `_send`, `_send_file`, `reckon sync`, `tests/test_build.py`, `tests/test_service_unit.py`, `tests/test_spa_crew_stylesheet.py` and `tests/test_every_module_fits_a_worker_window.py` all resolve; the two paths \u00a717 creates are new by construction; and the anchor it states most precisely, `serve.py` at 45,479 estimated tokens, reproduces exactly by that test's own estimator.",
+    "done_when": "pass \u2014 \u00a717's five assertions are each measurable and one negative control is declared (\"drops the revision from the shell's script URLs, and the shell assertion fails\"); the one assertion the described mechanism cannot satisfy is filed under reasoning below.",
+    "evidence_paths": "pass \u2014 gate logs \"sit under the run directory and end in EXIT=\", and the reader-side re-measure is \u00a711's durable landing record, not a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 `reckon/shell_assets.py` and `tests/test_the_shells_scripts_are_fetched_once.py` are named by mechanism, with no plan label, stage name or ticket number.",
+    "reasoning": "a finding \u2014 \u00a717's compression clause cannot produce the saving the section's own premise claims, and its done-when gzip assertion cannot hold for any real asset.",
+    "single_goal": "pass \u2014 \u00a717 delivers one thing (the shell's scripts and stylesheets fetched once per revision); the `shell_assets.py` split and the token bound are constraints on that deliverable, not a second one.",
+    "wiring": "pass \u2014 the head's `plan-section-depends-on` gives `#s11` a predecessor of `#s17` and s17 itself needs none: \u00a713, \u00a714 and \u00a716, which \u00a717 builds on, are all declared done, so no edge is missing and none points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "f20a6382dafa032cb5dbf23bbfbc0d79c37acaa458d6101917b594f69f5308c9",
+    "s1": "119fda14843398660e67ce4dbc6d52b2466804be618c0bc58fe57d48c4364db4",
+    "s10": "aedffe9563719b3b93e2b36282e17d4d2aeabecf2938ffcbf516cfacc5887281",
+    "s11": "b9aa035553d395057dad26d5353e7b79c6bdec033a1ab82eb1042718d03592cd",
+    "s12": "3086e0ba68e51ca085e7178c914c92d64248be41088440dfa18abf077d5819ee",
+    "s13": "fa208e7c5f148ec329458a9824c867762bc66c986ccb7bc85745b08640484173",
+    "s14": "7f21ec58ce9adf4ba663f205fe60555a585a263354e7954c7dd99543a0d56139",
+    "s15": "884c8ab0e973894007385f537b51e29ef55bf2de18ef2cf6a25966e656f62bf2",
+    "s16": "68b4e68d648fe76ecff74c05d2cdfb995f2e13890befafc25046869d469abcac",
+    "s17": "f4b391a2b83bd02febf17e3c981c52991b39c049ef24cd0815f4a87abebc7e3d",
+    "s2": "f4d544c85c1a75bc7938448339d0239290de9ffaef0434766aa4baa2571d7436",
+    "s3": "50f2ca1f3b1277d5f4b2d70a240688387a89a3136ad2d6aee26f0b3f324b1afc",
+    "s4": "a1ad15bdafaed28134c2565ad8374bc91928064852c10da6661f2499ca286149",
+    "s5": "ccf5b231d2e5d7e02747b8419b3e95dae4622acb080e6eb52c536f2ea9539903",
+    "s6": "fdb08d5e7b8272372c8ced83ee14c031730239025c2a13ccb211329d7951673e",
+    "s7": "90073ced7051cfae8f66fd6b78f99e6ace90b008ffc6c9e5559d87a2e5c31704",
+    "s8": "46535efa968faf1a9d457821c0b182e1f73fbc67570e478aa63cc7eb29d08e37",
+    "s9": "3df747cffcffa70e17ef701d032c7d4a87e78cd03759393f0efa74f96e5fde92"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T06:49:20.971798+00:00"
+}
