@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="A figure review keeps the text review">
+  <meta name="plan-summary" content="Run-review supersession compared only the reviewed run, so a figure review filed after the run's text review at the same head marked the text review superseded and dropped its findings from the obligations view. The subject a run review now supersedes under is the reviewed run together with its rubric family, read from the store's own figure-rubric constant, so a figure review and a text review of one run are separate subjects while dispatch order still decides within one rubric. The new file and the existing lifecycle file pass 25 tests, EXIT=0; the declared mutation leaves the rubric out of the order and reddens the figure-versus-text case (2 failed, EXIT=1).">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-10-20">
+  <meta name="plan-verdict" content="passed">
+  <title>A figure review keeps the text review | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A figure review keeps the text review</h1>
+
+    <section id="a-figure-review-keeps-the-text-review-defect">
+      <h2>The defect</h2>
+      <p>A run review's supersession compared only the reviewed run and the dispatch
+        time (<code>reckon/crew/review_lifecycle.py</code>, <code>_later_run_exists</code>).
+        Once the review reflex files a figure review for the same run, that figure review
+        is a later record of the same run, so it superseded the run's text review: the
+        text review read <code>superseded</code> and the obligations view, which reads its
+        findings only while it is hot, dropped them. A run's text review and its figure
+        review are separate subjects, as a plan's design and content reviews are.</p>
+      <p>The two records coexist at one head rather than replacing each other: the store
+        keys a figure record at <code>&lt;run&gt;.figure.at-&lt;sha&gt;.json beside the
+        text record's <code>&lt;run&gt;.at-&lt;sha&gt;.json</code>, so both are present
+        and both are read by the derivation. Only the supersede rule treated them as one
+        subject.</p>
+    </section>
+
+    <section id="a-figure-review-keeps-the-text-review-change">
+      <h2>The change</h2>
+      <p>The subject a run review is ordered by is now its reviewed run together with its
+        rubric family (<code>_run_subject</code>), and <code>_later_run_exists</code>
+        compares that pair. The family is the store's own figure-rubric constant, read
+        through a small <code>_is_figure_review</code> predicate, so a record under the
+        figure rubric is a figure review and a record under no rubric or another rubric
+        reads as a text review — the field the store writes and the field the derivation
+        reads cannot drift. Ordering within one family is unchanged: a later text review
+        still supersedes an earlier text review, and a later figure review an earlier
+        figure review. The module docstring's <code>superseded</code> paragraph is
+        updated to match.</p>
+      <p>Only the derivation changed; the store, the readers and the views are untouched.
+        A run carrying only text reviews reads exactly as before.</p>
+      <p>Commit: <code>89d8059c</code>.</p>
+    </section>
+
+    <section id="a-figure-review-keeps-the-text-review-gate">
+      <h2>The gate</h2>
+      <p>Every record in the new file is built and stored through the store's own writer
+        (<code>reckon.crew.review.store_review</code>), not written by hand, so the
+        <code>rubric</code> field the store writes and the field the derivation reads are
+        the same fact. The stores and the checkout live under the test's temp tree, and
+        <code>RECKON_HOME</code> is redirected there, so the run reads nothing outside it.
+        The gate ran in the assigned worktree, with <code>PYTHONPATH</code> pointing at
+        the tree named in the log header:</p>
+      <table>
+        <thead>
+          <tr><th>arm</th><th>revision</th><th>command</th><th>result</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>node gate</td>
+            <td><code>93d61013</code></td>
+            <td>new file + <code>tests/test_review_lifecycle.py</code></td>
+            <td><code>25 passed</code> in 3.33s, EXIT=0</td>
+          </tr>
+          <tr>
+            <td>importer population</td>
+            <td><code>89d8059c</code></td>
+            <td>the two above + <code>tests/test_review_gate_reads_the_hot_set.py</code></td>
+            <td><code>33 passed</code> in 16.76s, EXIT=0</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The new file's five cases: a figure review filed after the text review at the
+        same head leaves both reading <code>answered</code>; a later text review still
+        supersedes the earlier text review; a later figure review still supersedes the
+        earlier figure review; a text-only run keeps its open / answered / superseded
+        readings; and the subject predicate carries the rubric family, reading a figure
+        rubric as its own subject and another rubric as a text review.</p>
+      <p>Logs: <code>gate-figure-text.log</code> and
+        <code>importer-population.log</code> under the node's run directory, each opening
+        with its revision and the literal command and closing with a bare
+        <code>EXIT=</code> line. <code>ruff check</code> and
+        <code>ruff format --check</code> over both changed Python paths report
+        <code>All checks passed!</code> and <code>2 files already formatted</code>.</p>
+    </section>
+
+    <section id="a-figure-review-keeps-the-text-review-negative-control">
+      <h2>The negative control</h2>
+      <p>The declared mutation leaves the rubric out of the supersede order
+        (<code>_run_subject</code> returns the run id with the family forced to a text
+        review); the figure review must then supersede the text review and the test must
+        fail. Run against the mutation on top of the change, with the mutation reverted
+        byte-for-byte afterwards:</p>
+      <table>
+        <thead>
+          <tr><th>case</th><th>outcome</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>test_a_figure_review_does_not_supersede_the_run_text_review</code></td>
+            <td>FAILED — the text review read superseded</td>
+          </tr>
+          <tr>
+            <td><code>test_the_run_subject_carries_the_rubric_family</code></td>
+            <td>FAILED — the figure record read as a text review</td>
+          </tr>
+        </tbody>
+      </table>
+      <p><code>2 failed, 3 passed</code>, EXIT=1. The three that pass are the within-text
+        supersession case and the within-figure supersession case, which the mutation does
+        not reach because both records in each are the same family, and the text-only
+        case. Log: <code>negative-control-no-rubric.log</code>.</p>
+    </section>
+
+    <section id="a-figure-review-keeps-the-text-review-limits">
+      <h2>What this node does not do</h2>
+      <p>No base arm was run: this gate measures only this node's own change, and the
+        coordinator runs the importer population of <code>reckon/crew/review_lifecycle.py</code>
+        at merge. Verifying the merged result belongs to a separately dispatched test
+        node. This section keeps a figure review from <em>superseding</em> the text review;
+        making promotion refuse an undisposed blocking figure finding is a separate
+        question the section does not settle.</p>
+    </section>
+  </main>
+</body>
+</html>
