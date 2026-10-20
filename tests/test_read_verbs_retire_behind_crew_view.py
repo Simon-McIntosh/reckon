@@ -24,6 +24,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 import os
+import shlex
 import subprocess
 from pathlib import Path
 
@@ -54,9 +55,8 @@ SUCCESSORS = {
 }
 
 #: For each retired read, the fields its own document and its successor's share
-#: at the base revision. Captured at the base of the node that moved the callers:
-#: ``cso-ledger-and-velocity-retire``. Written down so a successor that drops one
-#: of them is a failure rather than a silently narrower comparison.
+#: at the base revision the callers moved at. Written down so a successor that
+#: drops one of them is a failure rather than a silently narrower comparison.
 SHARED_FIELDS: dict[str, tuple[str, ...]] = {
     # The retired ``--view summary`` rollup and the ``ledger`` view are not one
     # document: both name a ``runs`` field, and one counts them where the other
@@ -281,6 +281,32 @@ def test_each_retired_verb_names_its_view() -> None:
         assert payload["retired"] == retired
         assert payload["successor"] == successor
         assert payload["invocation"].startswith(f"reckon {successor}")
+
+
+def test_the_invocation_a_tombstone_prints_runs_as_written(checkout: Path) -> None:
+    """The invocation the tombstone prints is one the successor accepts.
+
+    A caller follows the arrow literally, so an invocation that carries the
+    retired verb's own selection flag through — ``crew view ledger --view
+    records`` — sends them to a usage error rather than an answer. Each call
+    below is answered by the tombstone, the invocation it prints is read back,
+    and that invocation is then run: exit 2 is the usage error a flag the
+    successor does not define produces, so it is the code this holds out.
+    """
+    runner = CliRunner()
+    tail = ["--project", PROJECT, "--checkout-path", str(checkout)]
+    calls = {
+        "ledger": ["crew", "ledger", *tail],
+        "records": ["crew", "ledger", "--view", "records", *tail],
+        "findings": ["crew", "ledger", "--view", "findings", *tail],
+    }
+    for view, arguments in calls.items():
+        result = runner.invoke(cli_main, arguments)
+        assert result.exit_code == TOMBSTONE_EXIT_CODE, result.output
+        invocation = json.loads(result.output)["invocation"]
+        assert invocation == " ".join(("reckon", "crew", "view", view, *tail))
+        followed = runner.invoke(cli_main, shlex.split(invocation)[1:])
+        assert followed.exit_code == 0, f"{invocation}: {followed.output}"
 
 
 def test_no_reckon_source_names_a_retired_read_as_a_command() -> None:

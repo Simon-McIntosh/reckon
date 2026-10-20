@@ -2422,12 +2422,35 @@ def test_hold_history_is_exposed_with_count_and_total_duration(home, repo) -> No
     assert summary["holds"] == 1
     assert summary["open_holds"] == 0
     assert summary["total_held_seconds"] == 135
-    assert (
-        records["runs"]
-        == mcp._crew(PROJECT, view="records", checkout_path=str(repo))["runs"]
-    )
-    assert held_cli["holds"][0]["held_seconds"] == 135
-    assert committed["holds"][0]["hold_id"] == held_cli["holds"][0]["hold_id"]
+
+    # The rows the records document serves are the committed ones, and this case
+    # commits none: what it writes is a hold. Stated as the empty list rather
+    # than as equality with the MCP read, which resolves the same owner and so
+    # would call an emptied document equal.
+    assert records["project"] == PROJECT
+    assert records["runs"] == []
+
+    # Every field of the hold this case wrote, against the values it wrote them
+    # with: the id derived from the backend and the opening stamp, the duration
+    # measured between the opening check and the clearing one, and the state the
+    # opening check carried. This is what a read returning the aggregate whole,
+    # or returning nothing at all, fails.
+    hold = held_cli["holds"][0]
+    assert hold["hold_id"] == "hold-alpha-20260812120000"
+    assert hold["backend"] == "alpha"
+    assert hold["purpose"] == "dispatch"
+    assert hold["opened_at"] == "2026-08-12T12:00:00Z"
+    assert hold["closed_at"] == "2026-08-12T12:02:15Z"
+    assert hold["held_seconds"] == 135
+    assert hold["closed_by_purpose"] == "resume"
+    assert hold["utilisation_pct"] == 97.0
+    assert hold["resets_at"] == "2026-08-12T12:10:00Z"
+    assert hold["effective_ceiling_pct"] == 95.0
+    assert hold["reason"] == "utilisation is at the effective ceiling"
+    # The MCP read on the same owner returns the same recorded row, so both
+    # surfaces are held to the fixture's values rather than to each other.
+    assert committed["holds"][0]["hold_id"] == "hold-alpha-20260812120000"
+    assert committed["holds"][0]["held_seconds"] == 135
 
 
 def _worktree(repo: Path, name: str) -> Path:

@@ -65,6 +65,15 @@ class Tombstone:
         folded into ``crew view velocity``. Like :attr:`flags` it is carried
         ahead of the caller's arguments and kept out of ``argv``, which stays a
         token path into the live command tree.
+    :param operand_flag: for a retired verb that selected its own case with a
+        flag while the successor names that case with the positional operand,
+        the flag carrying the selection, e.g. ``"--view"`` for the retired
+        ``ledger``, whose ``--view records`` is ``crew view records``. Where it
+        is set the caller's value is rendered as the successor's operand and
+        the flag pair is consumed rather than forwarded: forwarding it verbatim
+        prints an invocation the successor rejects, because ``crew view`` takes
+        a view name as an operand and has no ``--view``. With the flag absent
+        from the call the row's own :attr:`positional` stands.
     :param mcp_view: for an MCP successor, the view the crew tool accepts.
     :param mcp_action: for an MCP successor, the action the crew tool accepts.
     :param detail: one line saying what the successor does, so the refusal
@@ -76,6 +85,7 @@ class Tombstone:
     argv: tuple[str, ...] = ()
     flags: tuple[str, ...] = ()
     positional: tuple[str, ...] = ()
+    operand_flag: str = ""
     mcp_view: str | None = None
     mcp_action: str | None = None
     detail: str = ""
@@ -191,6 +201,7 @@ TOMBSTONES: tuple[Tombstone, ...] = (
         successor="crew view ledger",
         argv=("crew", "view"),
         positional=("ledger",),
+        operand_flag="--view",
         detail=(
             "committed run records are read by `crew view ledger`; the retired "
             "--view records and --view findings name the `records` and "
@@ -244,16 +255,55 @@ def _mcp_arguments(args: tuple[str, ...]) -> list[tuple[str, str]]:
     return pairs
 
 
+def _operand_and_forwarded(
+    args: tuple[str, ...], flag: str, default: tuple[str, ...]
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Split a caller's arguments into the successor's operand and the rest.
+
+    The operand is the value the caller gave ``flag``, or ``default`` when the
+    call does not carry it; the flag and its value are consumed so the
+    successor does not see them. Both ``--flag value`` and ``--flag=value`` are
+    read, and an occurrence with no value falls back to ``default`` rather than
+    emitting an operand the successor would read as its own argument.
+    """
+    operand = default
+    forwarded: list[str] = []
+    index = 0
+    while index < len(args):
+        token = args[index]
+        name, separator, inline = token.partition("=")
+        if name != flag:
+            forwarded.append(token)
+            index += 1
+            continue
+        if separator:
+            value, index = inline, index + 1
+        elif index + 1 < len(args) and not args[index + 1].startswith("-"):
+            value, index = args[index + 1], index + 2
+        else:
+            value, index = "", index + 1
+        operand = (value,) if value else default
+    return operand, tuple(forwarded)
+
+
 def successor_invocation(row: Tombstone, args: tuple[str, ...]) -> str:
     """The invocation the successor takes, with ``args`` carried across.
 
     A CLI successor forwards the caller's arguments verbatim after its own
     token path, because the successor accepts the same option names the retired
-    verb did. An MCP successor renders a ``crew(...)`` call carrying only the
-    options that map onto the tool's parameters.
+    verb did — except where the row names an :attr:`~Tombstone.operand_flag`,
+    in which case the value the caller gave that flag becomes the successor's
+    operand and the flag itself is dropped, so the printed invocation is one
+    the successor accepts. An MCP successor renders a ``crew(...)`` call
+    carrying only the options that map onto the tool's parameters.
     """
     if row.is_cli:
-        return " ".join(("reckon", *row.argv, *row.positional, *row.flags, *args))
+        operand, forwarded = row.positional, args
+        if row.operand_flag:
+            operand, forwarded = _operand_and_forwarded(
+                args, row.operand_flag, row.positional
+            )
+        return " ".join(("reckon", *row.argv, *operand, *row.flags, *forwarded))
     rendered = [f'{key}="{value}"' for key, value in _mcp_arguments(args)]
     view = f'view="{row.mcp_view}"' if row.mcp_view else ""
     action = f'action="{row.mcp_action}"' if row.mcp_action else ""
