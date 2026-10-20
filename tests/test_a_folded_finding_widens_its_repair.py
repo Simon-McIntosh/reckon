@@ -52,6 +52,8 @@ NODE_ID = "a-tier-none-run-owes-no-review"
 FOLDED_RUN_ID = "r-20261019T201233968744-a-tier-none-run-owes-no-review"
 EXEMPTED_RUN_ID = "r-20261019T201233968745-a-tier-none-run-owes-no-review"
 ALIVE_RUN_ID = "r-20261019T201233968746-a-tier-none-run-owes-no-review"
+ELSEWHERE_RUN_ID = "r-20261019T201233968747-a-tier-none-run-owes-no-review"
+OTHER_NODE_ID = "some-other-run-node"
 DECLARED = "reckon/crew/obligations.py"
 MISSING = "reckon/crew/recovery_classification.py"
 DIMENSION = "reuse"
@@ -272,6 +274,26 @@ def folded_finding_over_a_live_worker(
     )
 
 
+@pytest.fixture()
+def folded_finding_naming_another_node(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, crew_home_watch: CrewHomeWatch
+):
+    """A fold of the same kind and dimension, but naming some other node.
+
+    The finding was sent back, though not to this run: another node carries it,
+    so this run has no scope decision outstanding and its boundary must not
+    move. This is the case the node-name half of the read exists for.
+    """
+    monkeypatch.setenv("RECKON_HOME", str(_case_home(tmp_path)))
+    (tmp_path / "repo").mkdir()
+    return _run_pointer(
+        tmp_path,
+        ELSEWHERE_RUN_ID,
+        disposition=_fold_entry("folded", node=OTHER_NODE_ID),
+        pid=_exited_pid(),
+    )
+
+
 def _widen(run_id: str, *paths: str):
     arguments = ["crew", "widen", "--run", run_id]
     for path in paths:
@@ -336,6 +358,31 @@ def test_an_exempted_finding_does_not_widen_a_complete_run(
     assert MISSING not in result.output
     assert _read_pointer(EXEMPTED_RUN_ID)["node"]["write_paths"] == [DECLARED]
     assert _tree_bytes(pointer_path(EXEMPTED_RUN_ID).parent) == before
+    crew_home_watch.assert_untouched()
+
+
+def test_a_fold_naming_another_node_does_not_widen_the_run(
+    folded_finding_naming_another_node: dict, crew_home_watch: CrewHomeWatch
+) -> None:
+    """A fold is this run's only when it names this run's own node.
+
+    The disposition is the same kind and answers the same dimension, so the
+    read that stops at the kind would admit this run; the finding was folded
+    into a different node, which carries it, and this run's boundary must not
+    move for work that is not its own. The refusal is asserted on the reply, on
+    the pointer's write paths and on the pointer directory's bytes, because a
+    command that refuses in name while still rewriting the record would leave a
+    coordinator believing the fence had moved.
+    """
+    before = _tree_bytes(pointer_path(ELSEWHERE_RUN_ID).parent)
+
+    result = _widen(ELSEWHERE_RUN_ID, MISSING)
+
+    assert result.exit_code != 0, result.output
+    assert "in its own manifest" in result.output
+    assert MISSING not in result.output
+    assert _read_pointer(ELSEWHERE_RUN_ID)["node"]["write_paths"] == [DECLARED]
+    assert _tree_bytes(pointer_path(ELSEWHERE_RUN_ID).parent) == before
     crew_home_watch.assert_untouched()
 
 
