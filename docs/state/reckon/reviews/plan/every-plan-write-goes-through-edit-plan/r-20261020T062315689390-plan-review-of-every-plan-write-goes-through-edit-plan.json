@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T06:33:33.064Z",
+  "dispatched_at": "2026-10-20T06:24:02Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-plan-write-goes-through-edit-plan.html:310",
+      "id": "reasoning-1",
+      "reason": "a node implementing the verdict beside `tool_params()` in the embedded program leaves the rule in the parent image, so the reconnect the section exists to remove returns on the next rule change while the section reads as satisfied.",
+      "text": "\"The child answers compatible or not, so a later change to the rule reaches running servers without a reconnect\" does not follow from \"the current code makes the compatibility decision\": the child's probe reply, and any verdict composed beside it, is built in the probe handler of `SERVED_CHILD_PROGRAM` (`reckon/served_code.py:1362-1440`, probe reply at `:1433-1434`), a constant held by the running parent's own image and handed to the child at spawn (`reckon/served_code.py:1471`, `Popen([sys.executable, \"-c\", SERVED_CHILD_PROGRAM, str(root)])`), so a rule written there is the parent's frozen copy \u2014 exactly the defect `:306` blames `_probe_signature_changed` for; only a rule in the module the child imports from the checkout (`reckon/mcp.py`, imported by the child program at `reckon/served_code.py:1368`) reaches a server that is already running, and \u00a713 names no such site.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-plan-write-goes-through-edit-plan.html:322",
+      "id": "done_when-1",
+      "reason": "without a case that fails when the rule sits in the parent's program string, the gate certifies a benefit the delivered code may not have.",
+      "text": "the child's-verdict case cannot falsify the wrong implementation: it needs a child whose rule the test controls, which is a stub child driven through the spawn hook the \u00a711 gate already uses (`tests/test_a_slow_child_never_forces_a_reconnect.py:92-135`), so a stub answering \"compatible\" makes the parent serve whether the compatibility rule lives in the checkout or in the parent image's `SERVED_CHILD_PROGRAM`, and no case requires the verdict to come from checkout code.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "323762e410d0753a6b3619da74ed64ccd0f702fcf46e6d174208232b60a1f4c9",
+  "plan_slug": "every-plan-write-goes-through-edit-plan",
+  "plan_version": 60,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T062315689390-plan-review-of-every-plan-write-goes-through-edit-plan",
+  "reviewed_blob_sha": "4502843b49ef7f27837a1dc833f8f82c0b6b1c63",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_probe_signature_changed` resolves at `reckon/mcp.py:306`; the added `request_id` resolves at `reckon/mcp_edit_plan.py:1059`; both test files carry the added-optional changed-signature case \u00a713 cites (`tests/test_a_slow_child_never_forces_a_reconnect.py:435`, `tests/test_mcp_server_serves_current_code.py:103`).",
+    "done_when": "a finding \u2014 the child's-verdict case (:322) is driven through a stub child, so no case in the section can fail when the compatibility rule is composed by the parent image rather than the checkout.",
+    "evidence_paths": "pass \u2014 the section sends no log to a scratchpad or a node-local temporary path; its controls live with the node's gate record.",
+    "naming": "pass \u2014 `schema_note` and the new test file's name state the mechanism; no plan label, ticket number or version tag reaches a symbol or a path.",
+    "reasoning": "a finding \u2014 the stated benefit that a later change to the compatibility rule reaches a running server without a reconnect is not produced by the mechanism as described, because the child's probe reply is composed by the parent image's own program string.",
+    "single_goal": "pass \u2014 one deliverable, that an added optional parameter is served without a reconnect, measured by one new test file.",
+    "wiring": "pass \u2014 `s13` depends on `s12` and on `the-crew-surface-is-one-tool-and-a-few-verbs#s5`, the two predecessors that hold the files \u00a713 writes (`reckon/served_code.py`, `reckon/mcp.py`)."
+  },
+  "section_digests": {
+    "_document": "16c697b0bb91ca4f3726ea521580f529f248561c3e34b2ee07b4e68a52a3e6cf",
+    "s1": "7f96df198aae5b46c87f2d18f8eff17398ead36155ee67ba73607e91aa1d2fe3",
+    "s10": "fd786ebf0d880e15085a2e0ca5423504f73ce4c013e483f5e3cae145e3ad4079",
+    "s11": "19cc30d79534a21675c806c6d7006ea1e8e052fdccf4583b30258f699ee38e45",
+    "s12": "a518fb035478c3d0ebd8f3e07d9c13babbda5a8ab8f5353e60e41564c96ed1b6",
+    "s13": "02094179d59a4e590248ffc900584ef1275aa09b5e9c90442c1e88c3c16c9060",
+    "s2": "737250903251177035b357be3d656b549480337bc454f97615634dada495e251",
+    "s3": "4150e9281b9c0fe1173e9c23f5582efb0662d22f1d36944861d3033f988d479c",
+    "s4": "e0390ff35ac5e425fa3060cede9882af598c54dc89e0a6069101b3971f8e8367",
+    "s5": "699b049fe374b1219d8b917168575594a5bcb9255bbe13efdbf1d0c928562a86",
+    "s6": "27f4d6436a652181a180df37fa1a640ebff9cb62418e856c86bc907ecda9778f",
+    "s7": "80062db679255aff5087534386e7372545e1cd3414916db8329aec79a1a8388d",
+    "s8": "f9dd6299834b4d039fd1f45b37141d5e265075b4cfd7f341357bea21196f5b35",
+    "s9": "bd2c3090ecc9a89ad8c0b2f7312aae077382dd2709954d9e27f449e984d622a8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T06:35:49.703136+00:00"
+}
