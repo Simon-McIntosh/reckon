@@ -28,7 +28,7 @@
 <meta name="plan-commits" content="505c690b,9701e873,c45e7bac,dd19e201,31509127">
 <meta name="plan-artifacts" content="reckon/review_tiers.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,tests/test_review_tiers.py">
 <meta name="plan-impl" content="0.6666666666666666">
-<meta name="plan-version" content="186">
+<meta name="plan-version" content="189">
 <meta name="plan-modified" content="2026-10-20">
 <meta name="plan-section-depends-on" content="{&quot;s14&quot;:[&quot;a-review-is-sized-to-its-risk#s13&quot;]}">
 </head>
@@ -143,9 +143,7 @@
       is granted rather than refused. The repair's own manifest answers each finding it declines, with a reason. A
       repair that fails or blocks may be redispatched as another attempt of the same round; that is not a second
       round.</p>
-    <p><strong>Done when</strong> a test drives a stored review with three findings through the reflex and observes one
-      repair dispatch naming all three; and over a week of ledger rows every finding-bearing review has exactly one
-      repair round, and no finding is left without either a repair commit or a declined-with-reason answer.</p>
+    <p><strong>Done when</strong> a test drives a stored review with three findings through the reflex and observes one repair dispatch naming all three, with a write scope that is the union of the paths they cite. A second case fails that repair, redispatches it, and finds the redispatch recorded as another attempt of the same round, not a second round. The negative control makes the reflex compose one repair per finding, and the first case then observes three dispatches. The repair reflex's behaviour landed on 2026-10-02, so the node first checks whether such a test exists at main and adds only what is missing. The test files importing <code>reckon/crew/recovery_repair_dispatch.py</code> show no added failure against base, each log starting with its revision and the literal command and ending in <code>EXIT=</code>.</p>
 
     <section class="section-landed">
   <header><span class="badge badge-shipped">&#10003; landed 2026-10-02</span>
@@ -169,13 +167,11 @@
       errored counts on the sprint's evidence; and while the last recorded run failed to collect or exceeded its
       budget, promotions at tier <code>none</code> and <code>light</code> are held with the reason named, until a
       passing run is recorded or the lead waives it.</p>
-    <p><strong>Done when</strong> reckon and nova each declare a suite command and budget; a synthetic project whose
-      suite fails at collection holds a tier-none promotion in a test; and one real wave close in each of the two
-      projects records its counts.</p>
+    <p><strong>Done when</strong> reckon and nova each declare a suite command and budget in their flight configuration's <code>review.suite</code>; a synthetic project whose suite fails at collection holds a tier-none promotion in a test; and reckon records at least one standing-suite run with its collected, passed and failed counts under its <code>suite-runs</code> directory. Nova's first recorded run is a run of nova's own three-hour suite and belongs to nova's coordinator, not to this reckon plan.</p>
 
     <h2 id="s7">§7 — Build the review tiers</h2>
 <section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
-<p>§2 first; then §3, §4 and §5, which all touch the review reflex and run in that order; §6 is independent and can run beside §2.</p><p><strong>Done when</strong> §2 lands and §3–§5 follow in order, with §6 beside §2.</p><p>Moved from followup f-arist-001 on a-review-is-sized-to-its-risk by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.95</p>
+<p>§2 first; then §3, §4 and §5, which all touch the review reflex and run in that order; §6 is independent and can run beside §2.</p><p><strong>Done when</strong> §3 closes. §2, §4 and §5 have landed and §6 is met, so the order this section set is no longer a constraint, and it closes with the last of them.</p><p>Moved from followup f-arist-001 on a-review-is-sized-to-its-risk by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.95</p>
 
     <h2 id="s8">§8 — A read-only run&#x27;s review checks the claims it reports</h2>
 <section data-reckon="section" data-id="s8" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
