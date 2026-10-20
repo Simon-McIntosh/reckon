@@ -1977,68 +1977,6 @@ def missing_input_modalities(
     )
 
 
-def select_profile_backend(
-    config: Mapping[str, Any],
-    profile: str,
-    *,
-    backend: str | None = None,
-) -> ResolvedConfig:
-    """Return a dispatch overlay selecting the lane that can serve ``profile``.
-
-    ``backend`` names the lane the caller would use; absent, the resolved
-    ``default_backend`` is the candidate. Either way the candidate is checked
-    against the modalities the profile requires, and one that does not declare
-    them is refused by name.
-
-    The refusal is terminal. No other backend is tried and ``default_backend``
-    is never substituted for a named candidate, because the substitution is not
-    a downgrade of cost or speed: a lane without image input still answers, with
-    a well-formed verdict formed from the filename and the diff, and the review
-    record then reports a judgement its author could not have made. A profile
-    that needs a capability can therefore only be served by a lane declaring
-    it, or not served at all.
-    """
-    backends = config.get("backends") or {}
-    candidate = str(backend or config.get("default_backend") or "").strip()
-
-    if not candidate:
-        raise FlightConfigError(
-            "<resolved flight>",
-            "default_backend",
-            f"must name the backend that serves a '{profile}' profile, and no "
-            "layer declares one",
-        )
-    if candidate not in backends:
-        known = ", ".join(sorted(backends)) or "none"
-        raise FlightConfigError(
-            "<resolved flight>",
-            "backends",
-            f"names backend '{candidate}', which no layer defines "
-            f"(defined backends: {known})",
-        )
-
-    missing = missing_input_modalities(config, candidate, profile)
-    if missing:
-        declared = declared_input_modalities(config, candidate)
-        declared_text = ", ".join(declared) or "none"
-        missing_text = ", ".join(missing)
-        raise FlightConfigError(
-            "<resolved flight>",
-            f"backends.{candidate}.input_modalities",
-            f"backend '{candidate}' cannot serve a '{profile}' profile: it "
-            f"does not declare {missing_text} input (declared input modalities: "
-            f"{declared_text}). Declare the modality on a lane whose model "
-            "actually receives it; no fallback to another backend is taken, "
-            "because a lane that does not receive the image returns a "
-            "well-formed verdict formed from the filename and the diff",
-        )
-
-    return ResolvedConfig(
-        deep_merge(config, {"default_backend": candidate}),
-        warnings=getattr(config, "warnings", ()),
-    )
-
-
 # ── Availability ────────────────────────────────────────────────────────────
 
 
