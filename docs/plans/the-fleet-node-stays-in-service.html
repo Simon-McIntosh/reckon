@@ -19,11 +19,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-fleet-moves-to-a-new-node">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;}">
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="42">
+<meta name="plan-version" content="43">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -475,7 +475,7 @@
     </p>
 
     <h2 id="s11">&sect;11 &mdash; A moved checkout is proved importable once</h2>
-    <section data-reckon="section" data-id="s11" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s11" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
     <p>
       When the code identity moves, every long-running reckon process proves the new
       image loads before re-executing into it. It does so through
@@ -688,7 +688,10 @@
     <div class="r-comment-body"><p>A published reload image is proved once under an exclusive lock in its own directory, its verdict recorded beside it by rename and keyed by the interpreter, so concurrent askers start one probe between them. The wait for that lock is bounded by the probe's own timeout: a waiter reaches the deadline, reads the verdict once more, and with none refuses with a timeout naming the wait, so a follower takes its jittered retry instead of proving the image on its delivery path. A timeout records nothing and the next asker probes; a recorded pass or failure is returned without probing again; a source checkout keeps its per-process probe. The published-image test is one recogniser shared by the import proof, the running-code identity, the materialised-tree pin and the follower's reload path. Sixteen concurrent askers on one freshly published image start 16 probes at base e18f609b2 (7.09 s) and 1 at change 325a5df12 (7.52 s), all 16 answers inside 30 s. The declared negative control -- an image carrying a module that fails to import -- is 16 askers, 1 probe, 16 refusals, 0 re-executions, one shared failure verdict.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261019T234759174107-review-of-a-moved-checkout-is-proved-importable-once-9e346b0d13ce" data-who="reckon-build" data-when="2026-10-19T23:57:39.417Z">
-    <div class="r-comment-body"><p>The review of r-20261019T220614190732-a-moved-checkout-is-proved-importable-once covers only the commits it gained since its last review, f0b7cc9940d659bcad71d3b9aeac78d618b2ac06..9e346b0d13ced2fda3e2f60829dc491232665bf8 -- one comment-only commit, 9e346b0d1, rewriting reckon/checkout_trust.py:78-87. It removes the plan-document reference the prior review flagged at reckon/checkout_trust.py:83 and states the stranding mechanism instead; no behaviour changes. Verdict: 20/18/20/14/20/20 across goal_fidelity, evidence, scope_discipline, durability, fit, reuse; two follow-on findings, none blocking. The record is stored at review-records/ inside the reviewed run&#x27;s directory, never in a worktree.</p></div>
+    <div class="r-comment-body"><p>The review of r-20261019T220614190732-a-moved-checkout-is-proved-importable-once covers only the commits it gained since its last review, f0b7cc9940d659bcad71d3b9aeac78d618b2ac06..9e346b0d13ced2fda3e2f60829dc491232665bf8 -- one comment-only commit, 9e346b0d1, rewriting reckon/checkout_trust.py:78-87. It removes the plan-document reference the prior review flagged at reckon/checkout_trust.py:83 and states the stranding mechanism instead; no behaviour changes. Verdict: 20/18/20/14/20/20 across goal_fidelity, evidence, scope_discipline, durability, fit, reuse; two follow-on findings, none blocking. The record is stored at review-records/ inside the reviewed run's directory, never in a worktree.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-10-20T00:10:00Z">
+    <div class="r-comment-body"><p>§11 landed in merge <code>782f69ac7</code> (head <code>9e346b0d1</code>). A moved code identity is now proved importable once per published image and interpreter: sixteen concurrent askers start 1 probe instead of 16. The lock wait is bounded by the 30 s probe timeout, and retries carry jitter. Twelve tests were added; the reload and follower suite shows no added failure. The final review gave 112/120. <a href="/reckon/evidence/archive/the-fleet-node-stays-in-service-landed.html#s11">evidence</a></p></div>
 </div>
 </section>
 </main>
