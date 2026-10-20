@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s28">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-20">
+  <meta name="plan-tags" content="test,timeout,subprocess,loaded-node">
+  <title>The deprecation test waits for its follower | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-deprecation-test-waits-for-its-follower" data-reckon="landed" data-when="2026-10-20">
+  <h2 id="the-deprecation-test-waits-for-its-follower-title">The deprecation test waits long enough for its follower.</h2>
+  <p id="the-deprecation-test-waits-for-its-follower-cause"><strong>Cause.</strong>
+  <code>tests/test_removed_flag_migration.py::test_the_deprecation_announcement_reaches_stderr_and_not_the_stream</code>
+  starts <code>reckon crew follow</code> as a subprocess, which imports
+  <code>reckon.cli</code>, and awaits its first stdout row and its stderr notice through
+  <code>_wait_for_the_first_delivery</code>. That helper already returns the moment both
+  facts appear, but it was given a ceiling of <strong>1.5 s</strong>. On a loaded node the
+  subprocess wrote nothing inside that window, so the helper spent its whole ceiling and
+  the assertions then read empty files. The ceiling bought nothing on a fast host — the
+  helper exits early either way — and failed on a slow one.</p>
+  <p id="the-deprecation-test-waits-for-its-follower-fix"><strong>Fix.</strong> The call
+  now passes <code>bound=WATCHER_LOAD_BOUND_SECONDS</code>, the repository's own ceiling
+  for how long the follower may take under load (<code>30.0 s</code> in
+  <code>reckon/crew/dispatch_watch.py</code>, already imported by this test and used by its
+  sibling helper). The helper's early return is unchanged, so a fast host still resolves in
+  under a second; only the ceiling that a slow host runs into was raised. No assertion
+  changed.</p>
+  <p id="the-deprecation-test-waits-for-its-follower-measure"><strong>Measure.</strong>
+  Logs are under the run directory. Base arm (ceiling 1.5 s, test otherwise unchanged, node
+  load average 15&ndash;20): <strong>1 of 10 passed</strong> — the recorded defect
+  reproduces. Head arm (ceiling <code>WATCHER_LOAD_BOUND_SECONDS</code>): <strong>10 of 10
+  passed</strong> while <code>pytest -n 8</code> ran over the 334 test files importing
+  <code>reckon/crew/dispatch.py</code>; load average 19.74 at the sample and 71.17 as the
+  load ramped, with the target's own runtimes stretching from 3.92 s to 16.98 s under that
+  contention. Negative control — the declared mutation, the subprocess pointed at a program
+  that writes nothing (<code>-c "pass"</code>): <strong>1 failed in 34.32 s</strong>,
+  <code>EXIT=1</code>, the target id red. <code>ruff check</code> adds no finding;
+  <code>ruff format --check</code> finds the same three pre-existing unformatted regions
+  (lines 160, 208, 327) at base and at head, so the delta is zero.</p>
+</article>
+</body>
+</html>

@@ -288,7 +288,9 @@ def test_the_deprecation_announcement_reaches_stderr_and_not_the_stream(
             env=env,
         )
         try:
-            _wait_for_the_first_delivery(out_file, err_file, bound=1.5)
+            _wait_for_the_first_delivery(
+                out_file, err_file, bound=WATCHER_LOAD_BOUND_SECONDS
+            )
         finally:
             proc.terminate()
             proc.wait(timeout=5)
