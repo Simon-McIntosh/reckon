@@ -54,7 +54,7 @@
   </p>
 
   <p id="epw-an-added-parameter-needs-no-reconnect-cases">
-    <strong>The six cases</strong> in
+    <strong>The seven cases</strong> in
     <code>tests/test_an_added_parameter_needs_no_reconnect.py</code> drive the
     guard against a temporary tree whose fake child's probed signature and
     verdict the test controls: an added optional parameter on a failed call
@@ -66,6 +66,17 @@
     reports an added parameter as changed; and a child whose rule answers
     compatible makes the parent serve even when the parent's own parameter names
     differ.
+  </p>
+
+  <p id="epw-an-added-parameter-needs-no-reconnect-checkout-verdict">
+    <strong>The verdict is the tree's, not the image's.</strong> A last case
+    spawns the shipped child — the program the image itself would run — against
+    a copy of the package whose <code>signature_compatible</code> judges a
+    parameter the copy dropped as compatible. It drives a failed call of that
+    tool and the parent serves it from the child, while the image's own rule is
+    asserted to judge the same change a refusal. So the answer can only have
+    come from the copy the child imported, which is what makes a later change to
+    the child's rule reach a running server.
   </p>
 
   <p id="epw-an-added-parameter-needs-no-reconnect-existing">
@@ -81,18 +92,22 @@
 
   <p id="epw-an-added-parameter-needs-no-reconnect-controls">
     <strong>Each declared mutation is kept, one log per control:
-    </strong>restoring the equality comparison (the parent ignoring the verdict)
-    fails the added-optional case; deciding in the parent — computing
-    compatibility from the probe's parameters instead of reading the child's
-    verdict — fails the child's-verdict case; and nesting requiredness inside
-    <code>params</code> instead of a sibling key fails the old-parent case,
-    because a parent comparing parameter names then reads a mapping and sees no
-    change. Every control's log ends in a non-zero <code>EXIT=</code> line.
+    </strong>writing the rule into the parent's own program string in place of
+    the child importing it from the checkout fails the checkout's-verdict case,
+    because the child then answers from the image's rule and judges the dropped
+    parameter incompatible, so the parent never serves; restoring the equality
+    comparison (the parent ignoring the verdict) fails the added-optional case;
+    deciding in the parent — computing compatibility from the probe's parameters
+    instead of reading the child's verdict — fails the child's-verdict case; and
+    nesting requiredness inside <code>params</code> instead of a sibling key
+    fails the old-parent case, because a parent comparing parameter names then
+    reads a mapping and sees no change. Every control's log ends in a non-zero
+    <code>EXIT=</code> line.
   </p>
 
   <p id="epw-an-added-parameter-needs-no-reconnect-gate">
     <strong>The gate.</strong> At the node head the four targets run
-    <strong>1 failed, 23 passed</strong> and at the base revision the three that
+    <strong>1 failed, 24 passed</strong> and at the base revision the three that
     exist there run <strong>1 failed, 17 passed</strong>, both exiting 1. The
     one failure is the same test in both arms,
     <code>test_every_module_fits_a_worker_window</code>, naming
