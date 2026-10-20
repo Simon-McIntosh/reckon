@@ -26,7 +26,7 @@
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5,6dcb6cc1d,31e84061f">
 <meta name="plan-impl" content="0.99">
-<meta name="plan-version" content="206">
+<meta name="plan-version" content="207">
 <meta name="plan-modified" content="2026-10-20">
 <meta name="plan-section-depends-on" content="{&quot;s17&quot;: [&quot;a-worker-cannot-write-your-home#s15&quot;], &quot;s16&quot;: [&quot;a-worker-cannot-write-your-home#s15&quot;]}">
 </head>
@@ -2215,6 +2215,9 @@
 </div>
 <div class="r-comment" data-section="s17" data-id="c-close-s17" data-who="reckon-build" data-when="2026-10-20T13:20:00Z">
     <div class="r-comment-body"><p>§17 landed: the node-tmp runtime paths are created through <code>create_write_roots</code>, and a direct probe into the node-tmp root is proved refused (head <code>d01e47ee</code>, merge <code>84b176ef1</code>); review 117/120; the 20-file population adds no failing test. <a href="/reckon/evidence/archive/a-worker-cannot-write-your-home-landed.html#the-node-tmp-seal-has-one-directory-rule">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261020T120938882269-the-node-tmp-seal-has-one-directory-rule" data-who="reckon-build" data-when="2026-10-20T12:46:57.688Z">
+    <div class="r-comment-body"><p>create_node_tmp_runtime_paths creates its directories through create_write_roots (one creation rule, binds unchanged); the test file adds a direct-probe test refused at the node-tmp root, a create_write_roots interception test, and a pinned composed argv; gate 20 fence test files at base 2e1f7cc4a 125 passed / head ea4d59115 128 passed, both EXIT=0, zero added failures, both declared controls red (EXIT=1).</p></div>
 </div>
 </section>
 </main>
