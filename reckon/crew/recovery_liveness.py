@@ -1105,10 +1105,10 @@ def _env_scan_run_pid(record: Mapping[str, Any]) -> int | None:
     this user's process table costs a read per process, so it is asked only
     after the cheaper reads have failed, and only for a run whose own record
     shows a worker existed. A foreign run is never read here: a number is
-    meaningful only on the machine that issued it. The walk itself is served by
-    a shared index of the environment each process was last read with, so a
-    second run scanned in the same beat, or a process unchanged since an
-    earlier beat, is answered without opening an environment.
+    meaningful only on the machine that issued it. The walk is taken from the
+    beat's own reading of the table, so the first run scanned in a beat walks
+    it once and every other run scanned in the same beat is answered from that
+    map, without a listing of ``/proc`` of its own.
     """
     run_id = str(record.get("run_id") or "")
     if not run_id or _record_is_known_foreign(record):
@@ -1116,7 +1116,9 @@ def _env_scan_run_pid(record: Mapping[str, Any]) -> int | None:
     from reckon.crew.routing import _processes_owning_run
 
     own_pid = os.getpid()
-    for candidate in _processes_owning_run(run_id, runs.crew_home()):
+    for candidate in _processes_owning_run(
+        run_id, runs.crew_home(), from_beat_map=True
+    ):
         if candidate == own_pid:
             continue
         if process_alive(candidate) is True:

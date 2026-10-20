@@ -4,6 +4,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import time
 
 from reckon._store import _config_home
 from reckon.crew.routing import (
@@ -263,11 +264,97 @@ def _crew_home_of(environment: Mapping[str, str]) -> Path:
     return _config_home(env=environment) / "crew"
 
 
+# One walk of the process table per beat, shared by every run the liveness read
+# asks about in that beat.
+#
+# The walk maps each pair it sees — a run mark and the crew home that process's
+# own environment places it in — to the pids carrying it, so a run is answered
+# under its own run id and crew home and a process carrying another home's mark
+# is never named as this run's worker. It is keyed by the pair and not by the
+# mark alone because the qualifier a run is selected by is both.
+#
+# A beat is the interval the fleet's producers poll on, which this repository
+# arms at one second; within one beat the table has not moved in any way a
+# caller needs re-walked, so the first ask walks it and the rest are answered
+# from the map. A run asked in a later beat walks again, so a worker that
+# started after the walk is found on the next beat rather than never. The stop
+# path does not read this map: a map up to one beat old must never select a
+# process to signal, so it walks the table afresh at signal time.
+BEAT_SECONDS = 1.0
+# The beat most recently walked, held as one element so the map is replaced
+# without rebinding a module name.
+_MARKED_PROCESSES_BEAT: list[tuple[float, dict[tuple[str, str], list[int]]]] = []
+
+
+def _beat_clock() -> float:
+    """The monotonic clock a beat is measured on, taken through one seam."""
+    return time.monotonic()
+
+
+def _walk_marked_processes() -> dict[tuple[str, str], list[int]]:
+    """One walk of the process table, mapping each marked pair to its pids.
+
+    Every entry of ``/proc`` is visited once. A process owned by another user,
+    or one whose environment cannot be read, contributes nothing: the absence
+    of a mark must not read as ownership. A process of this user whose
+    environment names a run mark is filed under the pair its own environment
+    resolves to — the mark, and the crew home the one config-home resolver
+    places it in — so a later ask for a run is a lookup on that pair and never
+    re-walks the table.
+
+    Each process's environment is taken from the shared index, so a process
+    unchanged since an earlier walk is answered without opening an environment.
+    Readings for pids that have left the table are dropped on the same walk, so
+    the index holds only pids the kernel still shows. Read-only; the caller
+    decides what to do with the pids.
+    """
+    marked: dict[tuple[str, str], list[int]] = {}
+    proc = Path("/proc")
+    if not proc.is_dir():
+        return marked
+    own_pid = os.getpid()
+    present: set[int] = set()
+    for entry in proc.iterdir():
+        if not entry.name.isdigit():
+            continue
+        pid = int(entry.name)
+        present.add(pid)
+        if pid == own_pid:
+            continue
+        environment = _indexed_environment(pid)
+        if environment is None:
+            continue
+        run_mark = environment.get(RUN_ID_ENV)
+        if not run_mark:
+            continue
+        key = (run_mark, str(_crew_home_of(environment)))
+        marked.setdefault(key, []).append(pid)
+    _forget_absent_pids(present)
+    return marked
+
+
+def _beat_marked_processes() -> dict[tuple[str, str], list[int]]:
+    """This beat's walk of the process table, built once and reused.
+
+    The liveness read is reached once per live run in a beat and each reach
+    needs the same table. The first reach of a beat walks it and the rest are
+    answered from that map, which is what makes a beat cost one listing of
+    ``/proc`` rather than one per run. A reach in a later beat walks again.
+    """
+    moment = _beat_clock()
+    if _MARKED_PROCESSES_BEAT and moment - _MARKED_PROCESSES_BEAT[0][0] < BEAT_SECONDS:
+        return _MARKED_PROCESSES_BEAT[0][1]
+    walked = _walk_marked_processes()
+    _MARKED_PROCESSES_BEAT[:] = [(moment, walked)]
+    return walked
+
+
 def _processes_owning_run(
     run_id: str,
     run_home: str | Path,
     *,
     started_no_earlier_than: int | None = None,
+    from_beat_map: bool = False,
 ) -> list[int]:
     """Pids of this user's processes that ``run_id`` names in ``run_home``.
 
@@ -287,38 +374,28 @@ def _processes_owning_run(
     mark must not read as ownership. Read-only; the caller decides what to
     signal.
 
-    Each process's environment is taken from the shared index rather than read
-    directly, so a run answered in the same beat as another — or one answered
-    after a beat in which the process has not execd — costs no environment open.
+    ``from_beat_map`` answers from this beat's walk of the table rather than
+    walking again: the liveness read asks this question once per live run in a
+    beat, so its first ask walks the table once and every other ask in the same
+    beat is a lookup on the pair. Every other caller leaves it False and takes a
+    fresh walk, because the stop path must never select a process from a map up
+    to one beat old.
     """
     if not run_id:
         return []
-    proc = Path("/proc")
-    if not proc.is_dir():
+    if not (Path("/proc")).is_dir():
         return []
-    wanted_home = Path(run_home)
-    own_pid = os.getpid()
-    named: list[int] = []
-    present: set[int] = set()
-    for entry in proc.iterdir():
-        if not entry.name.isdigit():
-            continue
-        pid = int(entry.name)
-        present.add(pid)
-        if pid == own_pid:
-            continue
-        environment = _indexed_environment(pid)
-        if environment is None or environment.get(RUN_ID_ENV) != run_id:
-            continue
-        if _crew_home_of(environment) != wanted_home:
-            continue
-        if started_no_earlier_than is not None:
-            start = _start_tick(pid)
-            if start is None or start < started_no_earlier_than:
-                continue
-        named.append(pid)
-    _forget_absent_pids(present)
-    return named
+    key = (run_id, str(Path(run_home)))
+    table = _beat_marked_processes() if from_beat_map else _walk_marked_processes()
+    named = table.get(key, [])
+    if started_no_earlier_than is None:
+        return list(named)
+    kept: list[int] = []
+    for pid in named:
+        start = _start_tick(pid)
+        if start is not None and start >= started_no_earlier_than:
+            kept.append(pid)
+    return kept
 
 
 def _running_descendants(pid: int) -> list[int]:
