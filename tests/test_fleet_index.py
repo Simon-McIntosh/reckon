@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 from reckon import crew as crew_module
-from reckon.fleet_index import compute_project_row
+from reckon.fleet_index import _recent_landed, compute_project_row
 
 _NOW = datetime(2026, 3, 15, 12, 0, 0)  # noqa: DTZ001 — naive, matches GIT_AUTHOR_DATE below
 
@@ -99,6 +99,47 @@ def test_status_counts_use_the_spa_effective_status_rule(repo):
         row["active"] + row["blocked"] + row["pending"] + row["shipped"]
         == (row["plans_count"])
     )
+
+
+def test_recent_deliveries_use_effective_status_and_the_compute_time_window():
+    def stamp(delta: timedelta) -> str:
+        return (_NOW + delta).isoformat(timespec="seconds")
+
+    inventory = [
+        {"slug": "untagged", "status": "done", "edited": stamp(-timedelta(hours=1))},
+        {
+            "slug": "effective",
+            "type": "plan",
+            "status": "active",
+            "effective_status": "shipped",
+            "edited": stamp(-timedelta(hours=2)),
+        },
+        {
+            "slug": "archived-proof",
+            "type": "evidence",
+            "archived": "1",
+            "edited": stamp(-timedelta(hours=3)),
+        },
+        {"slug": "boundary", "type": "evidence", "edited": stamp(-timedelta(hours=72))},
+        {
+            "slug": "old",
+            "type": "evidence",
+            "edited": stamp(-timedelta(hours=72, seconds=1)),
+        },
+        {"slug": "future", "type": "evidence", "edited": stamp(timedelta(seconds=1))},
+    ]
+
+    rows = _recent_landed(inventory, "sample", _NOW)
+
+    assert [row["slug"] for row in rows] == [
+        "untagged",
+        "effective",
+        "archived-proof",
+        "boundary",
+    ]
+    assert rows[0]["type"] == "plan"
+    assert rows[0]["nav_key"] == "untagged"
+    assert rows[2]["nav_key"] == "evidence:archive:archived-proof"
 
 
 def test_progress_is_the_roll_up_over_the_projects_plans(repo):

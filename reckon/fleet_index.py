@@ -18,6 +18,8 @@ from reckon.lifecycle import COMPLETED_STATUSES
 
 _ACTIVITY_WINDOW_DAYS = 30
 _ACTIVITY_SUBPATHS = ("plans", "research", "evidence")
+_LANDED_WINDOW_HOURS = 72
+_LANDED_LIMIT = 7
 
 # A full-history ``git log`` costs seconds per repository on a shared
 # filesystem, and the fleet index asks for every mounted project on each page
@@ -121,6 +123,54 @@ def _last_edited(inventory: list[dict]) -> str:
     return max(stamps) if stamps else ""
 
 
+def _recent_landed(
+    inventory: list[dict], project: str, reference: datetime
+) -> list[dict]:
+    """Return compact delivered artifacts edited in the preceding 72 hours."""
+
+    end = reference.timestamp()
+    start = end - timedelta(hours=_LANDED_WINDOW_HOURS).total_seconds()
+    candidates = []
+    for item in inventory:
+        kind = item.get("type") or "plan"
+        status = item.get("effective_status") or item.get("status")
+        if kind != "evidence" and not (
+            kind == "plan" and status in {"done", "shipped"}
+        ):
+            continue
+        slug = item.get("slug")
+        edited = item.get("edited") or item.get("last")
+        if not slug or not edited:
+            continue
+        try:
+            stamp = datetime.fromisoformat(str(edited)).timestamp()
+        except (ValueError, OverflowError):
+            continue
+        if not start <= stamp <= end:
+            continue
+        archived = item.get("archived") in {True, "1", "true"}
+        nav_key = (
+            slug
+            if kind == "plan" and not archived
+            else f"{kind}:{'archive:' if archived else ''}{slug}"
+        )
+        candidates.append(
+            (
+                stamp,
+                {
+                    "type": kind,
+                    "slug": slug,
+                    "nav_key": nav_key,
+                    "title": item.get("title") or slug,
+                    "edited": edited,
+                    "project": project,
+                },
+            )
+        )
+    candidates.sort(key=lambda entry: entry[0], reverse=True)
+    return [row for _, row in candidates[:_LANDED_LIMIT]]
+
+
 def _active_sprint(discovered: dict) -> dict | None:
     active_id = discovered.get("active_sprint_id")
     if not active_id:
@@ -196,6 +246,7 @@ def compute_project_row(
         "live": len(live_pointers),
         "last_edited": last_edited,
         "last_modified": last_edited,
+        "recent_landed": _recent_landed(inventory, project, reference),
         "active_sprint": _active_sprint(discovered),
         "activity30": _activity30(docs_dir.parent, docs_dir, reference),
     }

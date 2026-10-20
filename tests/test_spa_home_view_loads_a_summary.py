@@ -265,8 +265,8 @@ def test_summary_landed_rows_keep_artifact_types_without_discovery(
           return Promise.resolve(response({ projects: [{ project: 'alpha', data: { projects: [{
             project: 'alpha', plans_count: 2, active: 0, blocked: 0,
             pending: 0, shipped: 2, recent_landed: [
-              { slug: 'proof', title: 'Proof', type: 'evidence', edited: new Date().toISOString() },
-              { slug: 'release', title: 'Release', edited: new Date().toISOString() },
+              { project: 'alpha', slug: 'proof', nav_key: 'evidence:proof', title: 'Proof', type: 'evidence', edited: new Date().toISOString() },
+              { project: 'alpha', slug: 'release', nav_key: 'release', title: 'Release', type: 'plan', edited: new Date(Date.now() - 60000).toISOString() },
             ],
           }] } }] }));
         if (url.endsWith('/crew')) return Promise.resolve(response({ runs: [] }));

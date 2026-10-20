@@ -115,6 +115,37 @@ def test_activity_distinguishes_empty_from_recorded_series() -> None:
     assert streak.index("if (!activity)") < streak.index("<polyline")
 
 
+def test_landed_rows_take_the_seven_newest_across_visible_projects() -> None:
+    projects = [
+        {
+            "project": project,
+            "recent_landed": [
+                {
+                    "project": project,
+                    "slug": f"{project}-{index}",
+                    "edited": f"2026-10-{index + 10:02d}T12:00:00",
+                }
+                for index in indices
+            ],
+        }
+        for project, indices in (("alpha", [0, 2, 4, 6]), ("beta", [1, 3, 5, 7]))
+    ]
+    landed = _evaluate(
+        [(HOME, "homeLandedRows")],
+        f"homeLandedRows({json.dumps(projects)}).map(row => row.slug)",
+    )
+
+    assert landed == [
+        "beta-7",
+        "alpha-6",
+        "beta-5",
+        "alpha-4",
+        "beta-3",
+        "alpha-2",
+        "beta-1",
+    ]
+
+
 def test_dormant_and_in_flight_rows_obey_the_visible_set() -> None:
     projects = [
         {"project": "alpha", "plans_count": 2},
@@ -145,6 +176,6 @@ def test_home_surface_carries_the_six_stats_and_read_only_panels() -> None:
     assert "Just landed" in source
     assert "last 72 hours" in source
     assert "project.recent_landed || []" in source
-    assert "homeArtifactKind(item)" in source
+    assert "className={`r-home-kind ${item.type}`}" in source
     assert "project.progress == null" in source
     assert "action queue" not in source.lower()

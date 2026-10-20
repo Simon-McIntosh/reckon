@@ -60,6 +60,18 @@ def _plan_html(
     )
 
 
+def _evidence_html(slug: str, *, project: str) -> str:
+    return (
+        "<!doctype html><html><head>"
+        f'<meta name="docs-project" content="{project}">'
+        '<meta name="reckon-type" content="evidence">'
+        f'<meta name="plan-slug" content="{slug}">'
+        f'<meta name="plan-title" content="{slug}">'
+        f"<title>{slug}</title></head><body>"
+        '<main class="plan-doc"></main></body></html>'
+    )
+
+
 def _git(repo: Path, *args: str, env: dict | None = None) -> None:
     subprocess.run(
         ["git", "-C", str(repo), *args],
@@ -70,8 +82,14 @@ def _git(repo: Path, *args: str, env: dict | None = None) -> None:
     )
 
 
-def _seed_repo(repo: Path, plans: dict[str, str], committed_at: datetime) -> Path:
-    """Write a project's plans and commit them at one backdated stamp."""
+def _seed_repo(
+    repo: Path,
+    plans: dict[str, str],
+    committed_at: datetime,
+    *,
+    evidence: dict[str, str] | None = None,
+) -> Path:
+    """Write a project's artifacts and commit them at one backdated stamp."""
 
     docs = repo / "docs"
     plan_dir = docs / "plans"
@@ -79,6 +97,11 @@ def _seed_repo(repo: Path, plans: dict[str, str], committed_at: datetime) -> Pat
     _git(repo, "init", "-q")
     for slug, body in plans.items():
         (plan_dir / f"{slug}.html").write_text(body, encoding="utf-8")
+    if evidence:
+        evidence_dir = docs / "evidence"
+        evidence_dir.mkdir()
+        for slug, body in evidence.items():
+            (evidence_dir / f"{slug}.html").write_text(body, encoding="utf-8")
     stamp = committed_at.strftime("%Y-%m-%dT%H:%M:%S")
     env = {
         **os.environ,
@@ -89,7 +112,7 @@ def _seed_repo(repo: Path, plans: dict[str, str], committed_at: datetime) -> Pat
         "GIT_COMMITTER_NAME": "tester",
         "GIT_COMMITTER_EMAIL": "tester@example.com",
     }
-    _git(repo, "add", "docs/plans", env=env)
+    _git(repo, "add", "docs", env=env)
     _git(repo, "commit", "-q", "-m", "seed", env=env)
     return docs
 
@@ -240,6 +263,76 @@ def test_each_project_row_carries_counts_progress_activity_and_sprint(fleet) -> 
     assert len(beta["activity30"]) == 30
     assert beta["activity30"][_activity_index(fleet["commit_day"])] == 1
     assert beta["active_sprint"] == {"id": "current", "theme": "Present work"}
+
+
+def test_served_summary_bounds_typed_recent_deliveries(tmp_path, monkeypatch) -> None:
+    reference = datetime.now().replace(microsecond=0)  # noqa: DTZ005 — matches the summary's local clock
+    evidence_slugs = ["proof", *[f"proof-{index}" for index in range(6)]]
+    stamps = {"done": reference - timedelta(hours=1)}
+    stamps.update(
+        {
+            slug: reference - timedelta(hours=index + 2)
+            for index, slug in enumerate(evidence_slugs)
+        }
+    )
+    stamps["old"] = reference - timedelta(days=5)
+    stamps["pending"] = reference - timedelta(minutes=30)
+    docs = _seed_repo(
+        tmp_path / "alpha",
+        {
+            "done": _plan_html(
+                "done", project="alpha", status="done", impl=1.0, effort_hours=1.0
+            ),
+            "old": _plan_html(
+                "old", project="alpha", status="shipped", impl=1.0, effort_hours=1.0
+            ),
+            "pending": _plan_html(
+                "pending", project="alpha", status="pending", impl=0.0, effort_hours=1.0
+            ),
+        },
+        reference - timedelta(days=10),
+        evidence={
+            slug: _evidence_html(slug, project="alpha") for slug in evidence_slugs
+        },
+    )
+    for slug, stamp in stamps.items():
+        folder = "evidence" if slug in evidence_slugs else "plans"
+        os.utime(docs / folder / f"{slug}.html", (stamp.timestamp(), stamp.timestamp()))
+
+    mounts = tmp_path / "mounts.json"
+    mounts.write_text(json.dumps({"alpha": str(docs)}), encoding="utf-8")
+    monkeypatch.setattr(serve, "_MOUNTS_FILE", mounts)
+    monkeypatch.setattr(serve, "_STATE_ROOT", tmp_path / "state")
+    monkeypatch.setattr(crew_module, "list_live", lambda **_kwargs: [])
+    serve._DISC_CACHE.clear()
+
+    landed = _served_summary()["alpha"]["recent_landed"]
+    expected = [
+        {
+            "type": "plan",
+            "slug": "done",
+            "nav_key": "done",
+            "title": "done",
+            "edited": stamps["done"].isoformat(timespec="seconds"),
+            "project": "alpha",
+        },
+        *[
+            {
+                "type": "evidence",
+                "slug": slug,
+                "nav_key": f"evidence:{slug}",
+                "title": slug,
+                "edited": stamps[slug].isoformat(timespec="seconds"),
+                "project": "alpha",
+            }
+            for slug in evidence_slugs
+        ],
+    ]
+    assert landed == expected[:7]
+    assert len(landed) == 7
+    assert {row["slug"] for row in landed}.isdisjoint(
+        {"old", "pending", evidence_slugs[-1]}
+    )
 
 
 def test_the_roll_up_imputes_a_missing_plan_with_the_mean_of_the_hours_present() -> (

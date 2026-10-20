@@ -32,13 +32,9 @@ function homeVisibleRuns(runs, projects) {
 }
 
 function homeLandedRows(projects) {
-  return (projects || []).flatMap(project => (project.recent_landed || []).map(item => ({...item, project: project.project})))
-    .sort((left, right) => String(right.edited || right.last || "").localeCompare(String(left.edited || left.last || "")))
+  return (projects || []).flatMap(project => project.recent_landed || [])
+    .sort((left, right) => new Date(right.edited) - new Date(left.edited))
     .slice(0, 7);
-}
-
-function homeArtifactKind(item) {
-  return item.type || "plan";
 }
 
 function homeActivityProjection(series) {
@@ -107,7 +103,7 @@ function FleetHome({ projects, fleetRuns, mountedProjectCount, onConfigureVisibi
   const stats = [["projects moving", summary.moving], ["plans", summary.plans], ["active", summary.active], ["in flight", summary.inFlight], ["held", summary.held], ["shipped", summary.shipped]];
   const today = new Date().toLocaleDateString([], {year: "numeric", month: "short", day: "numeric"});
   const openProject = project => { window.location.href = `/${project}/#plans`; };
-  const openArtifact = item => { window.location.href = `/${item.project}/#plan/${encodeURIComponent(item.nav_key || item.slug)}`; };
+  const openArtifact = item => { window.location.href = `/${item.project}/#plan/${encodeURIComponent(item.nav_key)}`; };
   if (error) return <main className="r-home" aria-label="Fleet home"><div className="r-home-inner"><div className="r-home-error" role="alert"><strong>Fleet summary unavailable</strong><span>{error}</span><button type="button" onClick={onRetry}>Retry summary</button></div></div></main>;
   if (!loaded) return <main className="r-home" aria-label="Fleet home"><div className="r-home-inner"><p role="status">Loading fleet summary…</p></div></main>;
 
@@ -145,7 +141,7 @@ function FleetHome({ projects, fleetRuns, mountedProjectCount, onConfigureVisibi
       </section>
       <section className="r-home-panel r-home-landed" aria-labelledby="home-landed-heading">
         <header><h2 id="home-landed-heading">Just landed</h2><span>last 72 hours</span></header>
-        {landed.map(item => <button type="button" key={`${item.project}:${item.nav_key || item.slug}`} onClick={() => openArtifact(item)}><span className={`r-home-kind ${homeArtifactKind(item)}`}>{homeArtifactKind(item)}</span><strong>{item.title || item.slug}</strong><time>{homeRelativeTime(item.edited || item.last).replace(/^edited /, "")}</time></button>)}
+        {landed.map(item => <button type="button" key={`${item.project}:${item.nav_key}`} onClick={() => openArtifact(item)}><span className={`r-home-kind ${item.type}`}>{item.type}</span><strong>{item.title}</strong><time>{homeRelativeTime(item.edited).replace(/^edited /, "")}</time></button>)}
         {landed.length === 0 && <p className="r-home-empty">Nothing landed in the visible set during the last 72 hours.</p>}
       </section>
     </div>
@@ -153,4 +149,4 @@ function FleetHome({ projects, fleetRuns, mountedProjectCount, onConfigureVisibi
 }
 
 window.ReckonShell = window.ReckonShell || {};
-window.ReckonShell.home = {homeVisibleSummary, homeProjectRows, homeDormantRows, homePendingRows, homeVisibleRuns, homeLandedRows, homeArtifactKind, homeActivityProjection, homeRelativeTime, homeBudget, HomeStreak, HomeStatusBar, FleetHome};
+window.ReckonShell.home = {homeVisibleSummary, homeProjectRows, homeDormantRows, homePendingRows, homeVisibleRuns, homeLandedRows, homeActivityProjection, homeRelativeTime, homeBudget, HomeStreak, HomeStatusBar, FleetHome};
