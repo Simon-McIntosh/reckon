@@ -26,7 +26,7 @@
   <title>Every Plan Write Goes Through edit_plan | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="56">
+<meta name="plan-version" content="57">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -307,9 +307,9 @@
     <p><strong>Deliverable.</strong></p>
     <ul>
       <li>The readiness probe reports each tool's parameters with whether each one is required.</li>
-      <li>The current code makes the compatibility decision. The parent sends its registered parameters with the probe, and the child answers compatible or not, so a later change to the rule reaches running servers without a reconnect.</li>
-      <li>A change is compatible when every registered parameter is still accepted and no new parameter is required. A compatible change is served on current code with no refusal, and its answer carries a <code>schema_note</code> naming the parameters the client cannot send until it reconnects.</li>
-      <li><code>stale_server_code</code> remains for an incompatible change: a registered parameter removed or renamed, or a new required one.</li>
+      <li>The current code makes the compatibility decision. The parent sends its registered parameters, each with whether it was required, along with the probe. The child answers compatible or not, so a later change to the rule reaches running servers without a reconnect.</li>
+      <li>A change is compatible when every registered parameter is still accepted, no registered optional parameter has become required, and no new parameter is required. A compatible change is served on current code with no refusal, and its answer carries a <code>schema_note</code> naming the parameters the client cannot send until it reconnects.</li>
+      <li><code>stale_server_code</code> remains for an incompatible change: a registered parameter removed or renamed, a registered optional parameter made required, or a new required one.</li>
     </ul>
     <p>A server started before this lands still compares in its own image, so each session needs one reconnect to pick this up. After that, an added optional parameter and any later change to the rule need none.</p>
     <p><strong>Done when</strong> <code>tests/test_an_added_parameter_needs_no_reconnect.py</code> drives the guard with a child whose tool signature it controls:</p>
@@ -317,6 +317,7 @@
       <li>An added optional parameter is served on current code with a <code>schema_note</code> naming it, and with no <code>reconnect</code> field.</li>
       <li>A removed parameter returns <code>stale_server_code</code>.</li>
       <li>A new required parameter returns <code>stale_server_code</code>.</li>
+      <li>A registered optional parameter that becomes required returns <code>stale_server_code</code>.</li>
       <li>The verdict is the child's. A child whose rule answers compatible makes the parent serve, even when the parent's own lists differ.</li>
     </ul>
     <p>Two negative controls, each logged:</p>
@@ -324,7 +325,7 @@
       <li>Restoring the equality comparison fails the first case.</li>
       <li>Deciding in the parent fails the fourth.</li>
     </ul>
-    <p><code>tests/test_a_slow_child_never_forces_a_reconnect.py</code>, whose changed-signature case becomes a removal, <code>tests/test_mcp_server_serves_current_code.py</code> and <code>tests/test_every_module_fits_a_worker_window.py</code> add no failure. Write paths: <code>reckon/mcp.py</code>, <code>reckon/served_code.py</code>, <code>tests/test_an_added_parameter_needs_no_reconnect.py</code>, <code>tests/test_a_slow_child_never_forces_a_reconnect.py</code>. crew-surface §5 holds <code>reckon/mcp.py</code> until it lands, so this section dispatches after it.</p>
+    <p><code>tests/test_a_slow_child_never_forces_a_reconnect.py</code> and <code>tests/test_mcp_server_serves_current_code.py</code> each have a changed-signature case built on an added optional parameter. In both, that case becomes a removal, so it still asks for the refusal §13 keeps. Both files, and <code>tests/test_every_module_fits_a_worker_window.py</code>, add no failure. Write paths: <code>reckon/mcp.py</code>, <code>reckon/served_code.py</code>, <code>tests/test_an_added_parameter_needs_no_reconnect.py</code>, <code>tests/test_a_slow_child_never_forces_a_reconnect.py</code>, <code>tests/test_mcp_server_serves_current_code.py</code>. crew-surface §5 holds <code>reckon/mcp.py</code> until it lands, so this section dispatches after it.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
