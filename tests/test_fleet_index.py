@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -120,6 +120,11 @@ def test_recent_deliveries_use_effective_status_and_the_compute_time_window():
             "archived": "1",
             "edited": stamp(-timedelta(hours=3)),
         },
+        {
+            "slug": "zoned-proof",
+            "type": "evidence",
+            "edited": (_NOW - timedelta(hours=4)).astimezone(UTC).isoformat(),
+        },
         {"slug": "boundary", "type": "evidence", "edited": stamp(-timedelta(hours=72))},
         {
             "slug": "old",
@@ -135,6 +140,7 @@ def test_recent_deliveries_use_effective_status_and_the_compute_time_window():
         "untagged",
         "effective",
         "archived-proof",
+        "zoned-proof",
         "boundary",
     ]
     assert rows[0]["type"] == "plan"

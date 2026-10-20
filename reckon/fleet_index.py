@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from reckon._plan_html import derive_fleet_impl_imputing_effort
+from reckon._timestamps import parse_iso
 from reckon.lifecycle import COMPLETED_STATUSES
 
 _ACTIVITY_WINDOW_DAYS = 30
@@ -142,9 +143,15 @@ def _recent_landed(
         edited = item.get("edited") or item.get("last")
         if not slug or not edited:
             continue
+        parsed = parse_iso(edited)
+        if parsed is None:
+            continue
+        # Discovery stamps are local-naive; zoned inputs join that same clock.
+        if parsed.tzinfo is not None:
+            parsed = parsed.astimezone().replace(tzinfo=None)
         try:
-            stamp = datetime.fromisoformat(str(edited)).timestamp()
-        except (ValueError, OverflowError):
+            stamp = parsed.timestamp()
+        except (ValueError, OverflowError, OSError):
             continue
         if not start <= stamp <= end:
             continue
@@ -227,6 +234,8 @@ def compute_project_row(
     from reckon.serve import discover_plans
 
     reference = now or datetime.now()  # noqa: DTZ005 — naive local, matches serve._row_times
+    if reference.tzinfo is not None:
+        reference = reference.astimezone().replace(tzinfo=None)
     discovered = discover_plans(docs_dir, project, state_root)
     inventory = discovered.get("inventory", [])
     counts = _status_counts(inventory)
