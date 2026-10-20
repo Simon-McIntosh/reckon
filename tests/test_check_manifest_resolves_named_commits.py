@@ -1,4 +1,4 @@
-"""check-manifest resolves every commit citation in the run's repository.
+"""check --manifest resolves every commit citation in the run's repository.
 
 A manifest's ``commits`` field is the pointer a coordinator follows to the
 work, and a cited object id that resolves to nothing reads as evidence while
@@ -181,7 +181,7 @@ def test_a_store_that_cannot_answer_leaves_the_check_unarmed(tmp_path: Path) -> 
 def test_the_command_reports_the_unresolvable_citation(
     tmp_path: Path, isolated_reckon_home: Path
 ) -> None:
-    """check-manifest itself, the surface a worker runs before it ends."""
+    """check --manifest itself, the surface a worker runs before it ends."""
     root = _repository(tmp_path)
     resolving = _head(root)
     fabricated = "b" * 40
@@ -209,7 +209,9 @@ def test_the_command_reports_the_unresolvable_citation(
     # The pointer write stayed in the home the case substituted.
     assert pointer_path(RUN_ID).is_relative_to(isolated_reckon_home)
 
-    result = CliRunner().invoke(cli_main, ["crew", "check-manifest", "--run", RUN_ID])
+    result = CliRunner().invoke(
+        cli_main, ["crew", "check", "--manifest", "--run", RUN_ID]
+    )
 
     assert result.exit_code != 0, result.output
     findings = json.loads(result.output)["findings"]

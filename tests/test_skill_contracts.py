@@ -852,7 +852,7 @@ def test_ship_has_one_advisory_fleet_size_table() -> None:
 # named there, so the line is a rule the decision point needs rather than
 # reference that can be read conditionally.
 #
-# Raised from 15_600 to admit the repair-status verb, whose inventory line
+# Raised from 15_600 to admit the repair verb, whose inventory line
 # costs 27 estimated tokens and names the state a coordinator reads before
 # restating a manifest's status word. Raised only as far as that line requires
 # against the base reading, not rounded up for headroom.
@@ -1137,15 +1137,6 @@ CREW_VERBS_OUTSIDE_ORCHESTRATION = {
         "the fleet service that launches queued dispatches when the lane opens "
         "a slot; the supervisor runs it, an orchestrator never calls it"
     ),
-    ("crew", "check-review"): (
-        "a review worker checks its own record against the refusal rules "
-        "delivery would apply, before it files it; the worker runs it, not the "
-        "orchestrator loop"
-    ),
-    ("crew", "repair-review"): (
-        "repairs a filed review record's status or missing subject identity in "
-        "place, a repair reached outside the orchestration loop"
-    ),
 }
 
 
@@ -1215,7 +1206,7 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
             "--tests-added",
             "--scope-changed",
         },
-        ("crew", "check-manifest"): {"--run"},
+        ("crew", "check"): {"--manifest", "--review", "--run", "--record"},
         ("crew", "directory"): {"--project", "--run", "--node"},
         ("crew", "dispatch"): {
             "--project",
@@ -1268,7 +1259,7 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
         ("crew", "placement"): {"--ensure", "--session", "--project"},
         ("crew", "recover"): set(),
         ("crew", "redispatch"): {"--run", "--backend", "--reason"},
-        ("crew", "repair-status"): {"--run", "--status", "--reason"},
+        ("crew", "repair"): {"--run", "--status", "--review", "--record", "--set", "--reason"},
         ("crew", "resume"): {"--run", "--advice"},
         ("crew", "resume-ready"): {"--project"},
         ("crew", "review"): {

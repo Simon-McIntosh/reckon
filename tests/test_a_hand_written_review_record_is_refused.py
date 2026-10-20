@@ -1,4 +1,4 @@
-"""check-manifest refuses a review record whose status no reader acts on.
+"""check --manifest refuses a review record whose status no reader acts on.
 
 A reviewer delivers its record by writing JSON straight into the record path
 its dispatch granted — the one file a review produces, outside the repository.
@@ -7,7 +7,7 @@ reader that selects ``parsed`` alone acts on nothing else; a reviewer that
 composes the file by hand bypasses that check entirely, so a record carrying a
 status no consumer reads sits on disk while the reviewed run reads as
 unreviewed and promotion acts on that absence. Every reviewer passes
-check-manifest before its turn ends, so the same status check is applied there,
+check --manifest before its turn ends, so the same status check is applied there,
 through the one shared definition, and the refusal names the record, the status
 found and the accepted set.
 
@@ -75,7 +75,9 @@ def _manifest_body(paths: list[str]) -> str:
 
 
 def _check(run_id: str = RUN_ID):
-    return CliRunner().invoke(cli_main, ["crew", "check-manifest", "--run", run_id])
+    return CliRunner().invoke(
+        cli_main, ["crew", "check", "--manifest", "--run", run_id]
+    )
 
 
 def _read(manifest: Path, body: str) -> tuple[int, list[str]]:
@@ -132,7 +134,7 @@ def review_run(isolated_reckon_home: Path, tmp_path: Path) -> dict[str, Path]:
 def test_a_hand_written_record_with_an_unrecognised_status_is_refused(
     review_run: dict[str, Path],
 ) -> None:
-    """The bypass store_review closes is closed at check-manifest too."""
+    """The bypass store_review closes is closed at check --manifest too."""
     record = review_run["record"]
     record.write_text(json.dumps(HAND_WRITTEN_RECORD), encoding="utf-8")
     exit_code, findings = _read(review_run["manifest"], _manifest_body([str(record)]))

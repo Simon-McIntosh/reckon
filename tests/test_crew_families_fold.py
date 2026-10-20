@@ -35,6 +35,8 @@ from click.testing import CliRunner
 
 from reckon.cli import crew, main
 from reckon.crew import paid_lanes
+from reckon.crew import review as review_module
+from reckon.crew import runs as runs_module
 from reckon.crew.tombstones import TOMBSTONE_BY_NAME, TOMBSTONE_EXIT_CODE
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -508,6 +510,175 @@ def test_unwatch_tombstone_names_watch_stop() -> None:
         "reckon crew watch --stop --project fixture-project"
     )
     assert "unwatch" not in crew.commands
+
+
+REPAIR_AND_CHECK_NAMES = {
+    "repair-status": "crew repair --status",
+    "repair-review": "crew repair --review",
+    "check-manifest": "crew check --manifest",
+    "check-review": "crew check --review",
+}
+
+
+def test_repair_and_check_tombstones_name_their_successors() -> None:
+    runner = CliRunner()
+    cases = {
+        "repair-status": (
+            ["--run", "r-fixture", "--status", "complete", "--reason", "fixture"],
+            "reckon crew repair --run r-fixture --status complete --reason fixture",
+        ),
+        "repair-review": (
+            [
+                "--run",
+                "r-fixture",
+                "--record",
+                "record.json",
+                "--set",
+                "status=parsed",
+                "--reason",
+                "fixture",
+            ],
+            "reckon crew repair --review --run r-fixture --record record.json --set status=parsed --reason fixture",
+        ),
+        "check-manifest": (
+            ["--run", "r-fixture"],
+            "reckon crew check --manifest --run r-fixture",
+        ),
+        "check-review": (
+            ["--record", "record.json"],
+            "reckon crew check --review --record record.json",
+        ),
+    }
+    for retired, successor in REPAIR_AND_CHECK_NAMES.items():
+        args, invocation = cases[retired]
+        result = runner.invoke(main, ["crew", retired, *args])
+        assert result.exit_code == TOMBSTONE_EXIT_CODE, result.output
+        answer = json.loads(result.output)
+        assert answer["retired"] == retired
+        assert answer["successor"] == successor
+        assert answer["invocation"] == invocation
+        assert retired not in crew.commands
+
+
+def test_repair_and_check_successors_preserve_recorded_answers(
+    tmp_path: Path, isolated_reckon_home: Path
+) -> None:
+    """The four old verbs' base answers are replayed through their replacements."""
+    record_path = tmp_path / "review.json"
+    record_path.write_text(
+        json.dumps(
+            {
+                "project": "p",
+                "reviewed_run_id": "r-old",
+                "review_run_id": "r-review",
+                "reviewed_base_sha": "a" * 40,
+                "reviewed_head_sha": "b" * 40,
+                "scores": dict.fromkeys(review_module.REVIEW_DIMENSIONS, 17),
+                "added_failure_count": 0,
+                "added_failure_ids": [],
+                "findings": [],
+                "status": "parsed",
+            }
+        )
+    )
+    runner = CliRunner()
+    valid = runner.invoke(
+        main, ["crew", "check", "--review", "--record", str(record_path)]
+    )
+    assert valid.exit_code == 0, valid.output
+    assert json.loads(valid.output) == {
+        "ok": True,
+        "record": str(record_path),
+        "findings": [],
+    }
+
+    missing = tmp_path / "missing.json"
+    refused = runner.invoke(
+        main, ["crew", "check", "--review", "--record", str(missing)]
+    )
+    assert refused.exit_code == 1
+    assert json.loads(refused.output)["findings"] == [
+        f"record could not be read as JSON: [Errno 2] No such file or directory: '{missing}'"
+    ]
+    manifest = runner.invoke(main, ["crew", "check", "--manifest", "--run", "r-absent"])
+    assert manifest.exit_code == 1
+    assert "no live run 'r-absent'" in manifest.output
+    repair_review = runner.invoke(
+        main,
+        [
+            "crew",
+            "repair",
+            "--review",
+            "--run",
+            "r-absent",
+            "--record",
+            str(missing),
+            "--set",
+            "status=parsed",
+            "--reason",
+            "fixture",
+        ],
+    )
+    assert repair_review.exit_code == 1
+    assert (
+        "record is outside the reviewed run's review-records directory"
+        in repair_review.output
+    )
+    repair_status = runner.invoke(
+        main,
+        [
+            "crew",
+            "repair",
+            "--run",
+            "r-absent",
+            "--status",
+            "complete",
+            "--reason",
+            "fixture",
+        ],
+    )
+    assert repair_status.exit_code == 1
+    assert "run 'r-absent' has no manifest to repair" in repair_status.output
+
+
+def test_check_review_resolves_a_run_record(isolated_reckon_home: Path) -> None:
+    run_id = "r-reviewed-fixture"
+    project = "review-fixture"
+    runs_module._write_json(
+        runs_module.pointer_path(run_id), {"run_id": run_id, "project": project}
+    )
+    record_path = review_module.review_path(project, run_id)
+    record_path.parent.mkdir(parents=True, exist_ok=True)
+    record_path.write_text(
+        json.dumps(
+            {
+                "project": project,
+                "reviewed_run_id": run_id,
+                "review_run_id": "r-review-fixture",
+                "reviewed_base_sha": "a" * 40,
+                "reviewed_head_sha": "b" * 40,
+                "scores": dict.fromkeys(review_module.REVIEW_DIMENSIONS, 17),
+                "added_failure_count": 0,
+                "added_failure_ids": [],
+                "findings": [],
+                "status": "parsed",
+            }
+        )
+    )
+    result = CliRunner().invoke(main, ["crew", "check", "--review", "--run", run_id])
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output) == {
+        "ok": True,
+        "record": str(record_path),
+        "findings": [],
+    }
+
+
+def test_repair_and_check_replace_four_visible_leaves_with_two() -> None:
+    leaves = _leaf_commands(crew)
+    family = {("repair",), ("check",)} | {(name,) for name in REPAIR_AND_CHECK_NAMES}
+    visible_family = family & leaves.keys()
+    assert visible_family == {("repair",), ("check",)}
 
 
 def test_watch_stop_replaces_one_visible_leaf() -> None:

@@ -77,7 +77,7 @@ def review_run(isolated_reckon_home: Path, tmp_path: Path) -> tuple[Path, Path]:
 
 def _check() -> tuple[int, list[str]]:
     result = CliRunner().invoke(
-        cli_main, ["crew", "check-manifest", "--run", REVIEW_RUN]
+        cli_main, ["crew", "check", "--manifest", "--run", REVIEW_RUN]
     )
     return result.exit_code, json.loads(result.output)["findings"]
 

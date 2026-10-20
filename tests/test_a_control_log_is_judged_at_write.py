@@ -246,7 +246,9 @@ def test_a_run_that_has_not_claimed_completion_is_not_judged(tmp_path: Path) -> 
 
 
 def _check(run_id: str = RUN_ID):
-    return CliRunner().invoke(cli_main, ["crew", "check-manifest", "--run", run_id])
+    return CliRunner().invoke(
+        cli_main, ["crew", "check", "--manifest", "--run", run_id]
+    )
 
 
 def _home_tree(root: Path) -> set[str]:

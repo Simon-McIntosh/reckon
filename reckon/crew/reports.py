@@ -1757,7 +1757,7 @@ def _review_record_status_findings(node: TaskNode | None) -> list[str]:
     A reviewer can bypass :func:`reckon.crew.review.store_review`'s check
     by writing its record straight into the record path its dispatch granted,
     leaving an unreadable status or a finding that states no claim. Every
-    reviewer passes check-manifest before it finishes, so the
+    reviewer passes crew check --manifest before it finishes, so the
     check the store applies is re-applied here, to each record the node's own
     declarations grant, through the one shared
     :func:`reckon.crew.review.review_status_refusal`. The refusal names the
@@ -2387,7 +2387,7 @@ def audit_manifest(
     # manifest that records its suite arms as an object keyed by arm normalises
     # to an observation whose fields are all empty, and promotion refuses it
     # hours later as an arm that declares no completion — past the point where
-    # its author can restructure the record. check-manifest reads this finding
+    # its author can restructure the record. crew check --manifest reads this finding
     # while the worker still holds a turn.
     for name in ("baseline_suite", "after_suite"):
         observation = manifest.get(name)

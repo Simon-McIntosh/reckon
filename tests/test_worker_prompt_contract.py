@@ -122,7 +122,7 @@ def test_each_required_wait_field_appears_in_the_manifest_block():
 # ── The worker is told to check its own record while it can still fix it ──
 
 CHECK_HEADER = "CONTRACT — CHECK YOUR OWN RECORD BEFORE YOU CLOSE IT"
-CHECK_COMMAND = "reckon crew check-manifest"
+CHECK_COMMAND = "reckon crew check --manifest"
 RUN_ID = "r-20260922T102837159099-manifest-block-node"
 
 

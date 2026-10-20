@@ -89,7 +89,7 @@ def test_check_review_names_unfileable_fields_and_accepts_a_valid_record(
         ({"reviewed_run_id": ""}, "reviewed_run_id"),
     ):
         delivery.write_text(json.dumps(_record(**changed)), encoding="utf-8")
-        result = _invoke("check-review", "--record", str(delivery))
+        result = _invoke("check", "--review", "--record", str(delivery))
         assert result.exit_code == 1, result.output
         assert field in result.output
         if field == "status":
@@ -97,7 +97,7 @@ def test_check_review_names_unfileable_fields_and_accepts_a_valid_record(
                 value in result.output for value in review.RECOGNISED_REVIEW_STATUSES
             )
     delivery.write_text(json.dumps(_record()), encoding="utf-8")
-    result = _invoke("check-review", "--record", str(delivery))
+    result = _invoke("check", "--review", "--record", str(delivery))
     assert result.exit_code == 0, result.output
     assert json.loads(result.output)["findings"] == []
     assert not review.review_path(PROJECT, REVIEWED_RUN).exists()
@@ -129,14 +129,14 @@ def test_review_manifest_audit_refuses_unfileable_delivery(
         "node: review-of-fixture\nstatus: complete\ncommits: none\nchanged_paths: []\ntests: review record checked\n",
         encoding="utf-8",
     )
-    result = _invoke("check-manifest", "--run", REVIEW_RUN)
+    result = _invoke("check", "--manifest", "--run", REVIEW_RUN)
     assert result.exit_code == 1, result.output
     assert any(field in finding for finding in json.loads(result.output)["findings"])
 
 
 def test_review_brief_reads_the_contract_vocabulary() -> None:
     brief = _review_brief_text({"run_id": REVIEWED_RUN, "node": {}}, "b" * 40)
-    assert "crew check-review --record" in brief
+    assert "crew check --review --record" in brief
     for key in (
         "project",
         "reviewed_run_id",
@@ -167,7 +167,8 @@ def test_delivery_reports_refusal_and_status_repair_files_without_changing_revie
     assert "status 'complete'" in filed.refused[0]["reason"]
 
     result = _invoke(
-        "repair-review",
+        "repair",
+        "--review",
         "--run",
         REVIEWED_RUN,
         "--record",
@@ -205,7 +206,8 @@ def test_subject_repair_fills_only_missing_identity_and_rejects_other_sets(
     delivery.write_text(json.dumps(body), encoding="utf-8")
     delivered_bytes = delivery.read_bytes()
     refused = _invoke(
-        "repair-review",
+        "repair",
+        "--review",
         "--run",
         REVIEWED_RUN,
         "--record",
@@ -218,7 +220,8 @@ def test_subject_repair_fills_only_missing_identity_and_rejects_other_sets(
     assert refused.exit_code != 0
     assert "status" in refused.output and "subject" in refused.output
     result = _invoke(
-        "repair-review",
+        "repair",
+        "--review",
         "--run",
         REVIEWED_RUN,
         "--record",
@@ -303,7 +306,7 @@ def test_obligation_names_a_delivered_refusal_and_its_repair(
     )
     assert item["kind"] == "review-refused"
     assert reason in item["reason"]
-    assert "crew repair-review" in item["next_command"]
+    assert "crew repair --review" in item["next_command"]
     assert "redispatch" not in item["next_command"]
     monkeypatch.setattr(
         obligations_module.flight,
@@ -348,4 +351,4 @@ def test_obligation_names_a_delivered_refusal_and_its_repair(
     )
     report = obligations_module.obligations(PROJECT, "session-fixture")
     assert report["obligations"][0]["kind"] == "review-refused"
-    assert "crew repair-review" in report["obligations"][0]["next_command"]
+    assert "crew repair --review" in report["obligations"][0]["next_command"]

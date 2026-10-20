@@ -1,4 +1,4 @@
-"""check-manifest reads its commitless-role set from promotion's own list.
+"""check --manifest reads its commitless-role set from promotion's own list.
 
 The audit a worker runs against its delivered manifest and the gate promotion
 applies hours later must agree about which roles promote with no commit.
@@ -118,7 +118,9 @@ def _check(
     manifest.write_text(
         MANIFEST.format(run=RUN_ID, commits=commits, deliverable=deliverable)
     )
-    result = CliRunner().invoke(cli_main, ["crew", "check-manifest", "--run", RUN_ID])
+    result = CliRunner().invoke(
+        cli_main, ["crew", "check", "--manifest", "--run", RUN_ID]
+    )
     return result.exit_code, json.loads(result.output)["findings"]
 
 

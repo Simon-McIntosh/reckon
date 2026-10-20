@@ -8,7 +8,7 @@ reviewed run's own promotion noticed — it found no review of the revision the
 run had reached and refused, and the reflex then dispatched a whole second
 review. So the pair is resolved against the reviewed run's own repository at
 both points a record passes while its author still holds a turn: ``store_review``,
-which is the write, and ``crew check-manifest`` on the review run.
+which is the write, and ``crew check --manifest`` on the review run.
 
 Every refusal is paired with the true-head case the same rule must accept, so
 the refusal is shown to rest on the resolution rather than on a blanket ban on
@@ -93,7 +93,9 @@ def _record(*, base: str, head: str) -> dict:
 
 
 def _check(run_id: str = REVIEW_RUN_ID):
-    return CliRunner().invoke(cli_main, ["crew", "check-manifest", "--run", run_id])
+    return CliRunner().invoke(
+        cli_main, ["crew", "check", "--manifest", "--run", run_id]
+    )
 
 
 def _findings(run_id: str = REVIEW_RUN_ID) -> tuple[int, list[str]]:

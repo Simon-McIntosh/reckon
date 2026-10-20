@@ -413,7 +413,7 @@ def _review_brief_text(record: Mapping[str, Any], head: str) -> str:
     lines.extend(
         [
             "",
-            "Review record contract (run crew check-review --record <path> on each written record before ending):",
+            "Review record contract (run crew check --review --record <path> on each written record before ending):",
             "Required: project, reviewed_run_id, review_run_id, reviewed_base_sha, reviewed_head_sha,",
             "scores (" + ", ".join(review_module.REVIEW_DIMENSIONS) + "),",
             "added_failure_count, added_failure_ids, findings, status.",
