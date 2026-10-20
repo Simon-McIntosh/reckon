@@ -111,6 +111,31 @@
 </ul>
   </section>
 
+  <section id="s7-resume">
+    <h2>§7 — the resume family folds</h2>
+    <p>Run <code>r-20261020T104551431626-cso-resume-family-folds</code>, head <code>0bf055ecc</code>, on the codex lane. Landed at merge <code>3bd15f105</code>.</p>
+<ul>
+<li><code>resume-ready</code> and <code>redispatch</code> fold into <code>crew resume --ready</code> and <code>crew resume --backend B --model M</code>. Both old CLI names are tombstones that print their successor. The MCP action value <code>resume-ready</code> is unchanged, so no session needs to reconnect.</li>
+<li><code>crew resume --reopen --write-path P</code> grants the path and repairs a completed manifest before resuming it.</li>
+<li><code>widen</code> accepts any run whose worker is not running, and refuses a live one.</li>
+<li><code>complete --accept-path</code> checks its added path against the run's original scope, through the same claim owner.</li>
+<li>CLI leaves go from 42 to 40.</li>
+</ul>
+<p><strong>Retained migrations.</strong> <code>split-runs</code> and <code>repair-completion</code> stay visible with no tombstones, because their report-only checks still find input on mounted projects: 5,639 missing per-run files across 6 projects, and 11,457 records whose completion fields would update, across 18. The table is in the worker's <a href="/reckon/evidence/fragments/the-crew-surface-is-one-tool-and-a-few-verbs/cso-resume-family-folds.html">fragment</a>.</p>
+<p><strong>Gate.</strong> On the focused set, 206 passed and 3 failed at head. The base arm at <code>81afebdea</code> fails the same three tests:</p>
+<ul>
+<li><code>test_every_module_fits_a_worker_window</code>, with the same two offenders;</li>
+<li><code>test_tool_argument_models_publish_cheap_observation_options</code>, from lane-and-model-routing §42;</li>
+<li><code>test_the_prompt_path_loads_no_derivation_module</code>, from <code>3280f08cc</code>, which the-fleet-node-stays-in-service §10 is repairing.</li>
+</ul>
+<p>Zero failures are added. The negative control alters one successor's answer, and exactly that fixture case fails.</p>
+<p><strong>Review.</strong> All six dimensions scored 16 to 20. Four follow-ons, none blocking:</p>
+<ul>
+<li>the old widen-eligibility helpers are now unreachable, and one docstring describes a guard that no longer exists;</li>
+<li>three test assertions are weaker than they look.</li>
+</ul>
+  </section>
+
 </main>
 </body>
 </html>
