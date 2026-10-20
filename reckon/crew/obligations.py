@@ -34,6 +34,7 @@ from reckon.crew import (
     review_lifecycle,
     runs,
 )
+from reckon.crew import queue_admission
 from reckon.crew import review as review_module
 from reckon.crew.node import INTERRUPTED_RUN_PHASE, CrewError, parse_duration
 from reckon.crew.routing import (
@@ -83,10 +84,20 @@ REVIEW_LANE_PAUSED_STATUS = "lane-paused"
 # one action.
 QUEUED_AWAITING_SESSION_DUTY_KIND = "queued-awaiting-session"
 
+# A request waiting its turn on the lane: nothing is owed for it, but it is not
+# missing either, so it is listed as waiting for as long as its pointer exists.
+# This is the run-level reading the review-queued kind is for a review, and the
+# two stay distinct because the waits are: a refused review attempt is bounded
+# by the refusal instant, while a queued request waits until the lane takes it,
+# so this kind carries no bound. It is not the session-refusal kind above
+# either — that names a condition only the session can clear, where this names
+# a wait the lane's own admission pass ends.
+QUEUED_RUN_DUTY_KIND = "run-queued"
+
 # The duty kinds that are listed but never hold a stop open: the work behind
 # them is already owned by a reflex that retries, so blocking would ask the
 # coordinator to act on a wait it cannot shorten.
-NON_BLOCKING_DUTY_KINDS = frozenset({REVIEW_QUEUED_DUTY_KIND})
+NON_BLOCKING_DUTY_KINDS = frozenset({REVIEW_QUEUED_DUTY_KIND, QUEUED_RUN_DUTY_KIND})
 
 
 def _utc_now() -> datetime:
@@ -1224,20 +1235,43 @@ def obligations(project: str, session: str) -> dict[str, Any]:
         str(pointer.get("run_id") or ""): pointer
         for pointer in runs.list_live(project=project)
     }
+    live_pointers = list(pointers.values())
+    # Read once, for the first queued row the loop meets, from the ordering
+    # the admission pass admits by; a project with nothing queued never
+    # orders anything.
+    placements: dict[str, dict[str, int]] | None = None
     for row in _classified_rows(project):
         if str(row.get("session") or "") != session:
             continue
         classification = str(row.get("classification") or "")
         recovery_classification = str(row.get("recovery_classification") or "")
         if classification == "queued":
-            # A queued request is normally the lane's to launch, so it is not a
-            # duty and stays out of the list: it is being waited on, not
-            # skipped. A refusal naming the session is the exception — nothing
-            # on the lane clears it, so the session owes the fix.
+            # A queued request is the lane's to launch, but it is not missing:
+            # for as long as its pointer exists it is listed as waiting, beside
+            # its place in the queue, so a coordinator reading this view sees
+            # the request it dispatched rather than an absence. The place is
+            # the admission pass's own, read from the ordering that pass
+            # admits by, so this view cannot disagree with the lane about
+            # which request goes first. A refusal naming the session is
+            # listed under its own kind instead: nothing on the lane clears
+            # that one, so the session owes the fix.
             if row.get("session_refusal"):
                 items.append(
                     _live_item(row, kind=QUEUED_AWAITING_SESSION_DUTY_KIND, now=now)
                 )
+                continue
+            if placements is None:
+                placements = queue_admission.queued_placements(live_pointers, now=now)
+            item = _live_item(row, kind=QUEUED_RUN_DUTY_KIND, now=now)
+            placement = placements.get(str(row.get("run_id") or ""))
+            if placement is not None:
+                item.update(placement)
+                item["next_command"] = (
+                    f"waiting for a lane slot: position {placement['position']} "
+                    f"of the queued requests, rank {placement['rank']} among "
+                    f"this session's"
+                )
+            items.append(item)
             continue
         kind = ""
         if classification in REVIEW_CLASSIFICATION_KINDS:

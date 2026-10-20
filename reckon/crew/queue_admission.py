@@ -39,6 +39,10 @@ from reckon.crew.node import CrewError, TaskNode
 
 ADMIT_LOCK_NAME = "admit.lock"
 DEFAULT_ADMIT_INTERVAL_SECONDS = 5.0
+#: The phase a request carries while it waits for a lane slot. The admission
+#: pass admits from this phase, and every reader that reports where a request
+#: stands reads its place through :func:`queued_placements`.
+QUEUED_PHASE = "queued"
 LAUNCH_FAILED_PHASE = "launch-failed"
 # A queued request whose last attempt failed for a reason other than a lane
 # hold waits this long before it is attempted again, doubling per consecutive
@@ -952,6 +956,57 @@ def _record_pass_verdicts(
         )
     except OSError:  # a pass never fails on its own record
         return
+
+
+def queued_placements(
+    pointers: Sequence[Mapping[str, Any]],
+    *,
+    now: datetime | None = None,
+    lane: str = "",
+) -> dict[str, dict[str, int]]:
+    """Return each queued request's place in the order the pass admits by.
+
+    Every surface that reports where a queued run stands reads its place here
+    rather than ordering the queue itself: a second ordering is how two
+    surfaces come to disagree about which request goes first. The order is the
+    admission pass's own, computed by
+    :func:`reckon.crew.queue_order.admission_order` on the same snapshot the
+    pass ranks, so a request's reported place is the place it will be launched
+    at.
+
+    The place is published as two figures, because they answer two questions.
+    ``position`` is its place among every queued request on the lane, which is
+    the figure a dispatch reports when a dispatch is queued. ``rank`` is its
+    place among its own session's queued requests, which is what a coordinator
+    reading its own queue wants. ``lane`` narrows the ordering to one backend's
+    queued requests, matching the narrowing the pass applies to its own queue.
+
+    A queued request the snapshot does not carry reads no place, so a caller
+    asks only about requests it already holds. ``queued_at`` is required by the
+    ordering; a snapshot with a queued pointer that does not carry one raises
+    there, as it does in the pass.
+    """
+    moment = now or _now()
+    queued = [
+        pointer
+        for pointer in pointers
+        if str(pointer.get("phase") or "") == QUEUED_PHASE
+        and (not lane or str(pointer.get("backend") or "") == lane)
+    ]
+    if not queued:
+        return {}
+    placements: dict[str, dict[str, int]] = {}
+    session_rank: dict[str, int] = {}
+    for position, pointer in enumerate(
+        queue_order.admission_order(queued, pointers, now=moment), 1
+    ):
+        session = str(pointer.get("session") or "")
+        session_rank[session] = session_rank.get(session, 0) + 1
+        placements[str(pointer.get("run_id") or "")] = {
+            "position": position,
+            "rank": session_rank[session],
+        }
+    return placements
 
 
 def admit_once(

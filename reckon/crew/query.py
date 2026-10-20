@@ -71,6 +71,14 @@ LIVE_OVERRUN_FIELDS = frozenset(
 )
 
 
+#: The fields a queued row carries for where it stands in the lane's queue,
+#: read from the admission pass's own order rather than recomputed here. A row
+#: that is not queued carries no place, so the names join the live vocabulary
+#: unconditionally: a caller asking where a queued run stands must not have its
+#: request refused on a lane that happens to have no queued request in flight.
+LIVE_PLACEMENT_FIELDS = ("position", "rank")
+
+
 class RunQueryError(ValueError):
     """A runs-view request cannot be represented by the compact read model."""
 
@@ -137,9 +145,11 @@ def _live_field_vocabulary(
         vocabulary.update(row)
     if not vocabulary:
         vocabulary.update(classify_pointer({}))
-    # These appear only once a run passes a budget, but a live query may ask
-    # for them while every run is still inside its allowance.
+    # These appear only once a run passes a budget, and a place in the queue
+    # only while a run is queued, but a live query may ask for either before
+    # such a row exists.
     vocabulary.update(LIVE_OVERRUN_FIELDS)
+    vocabulary.update(LIVE_PLACEMENT_FIELDS)
     if with_mine:
         vocabulary.add("mine")
     return vocabulary
@@ -182,10 +192,24 @@ def project_live_rows(
     is computed from the full classification and kept on every projected row,
     because a session-scoped read that dropped ``mine`` would answer nothing
     about which rows are the caller's.
+
+    A queued row carries where it stands in the lane's queue, as
+    ``position`` and ``rank``, read from the admission pass's own ordering. The
+    place is derived once, in :func:`reckon.crew.queue_admission
+    .queued_placements`, so this view and any other surface that reports it
+    answer from one order rather than each ordering the queue itself.
     """
+    records = list(records)
     classified = group_terminal_lane_events(
         [classify_pointer(record) for record in records]
     )
+    from reckon.crew.queue_admission import queued_placements
+
+    placements = queued_placements(records)
+    for row in classified:
+        placement = placements.get(str(row.get(LIVE_ROW_ANCHOR) or ""))
+        if placement is not None:
+            row.update(placement)
     if session is not None:
         for row in classified:
             row["mine"] = str(row.get("session") or "") == session
