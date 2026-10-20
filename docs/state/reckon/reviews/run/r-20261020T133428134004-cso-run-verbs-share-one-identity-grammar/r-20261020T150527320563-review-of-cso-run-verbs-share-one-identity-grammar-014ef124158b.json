@@ -1,0 +1,63 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:crew_directory",
+    "reckon/crew_run_commands.py:crew_view",
+    "reckon/crew_run_commands.py:crew_path",
+    "reckon/crew_run_commands.py:crew_dispose",
+    "reckon/crew_run_commands.py:crew_check",
+    "reckon/crew_run_commands.py:crew_repair",
+    "reckon/crew_run_commands.py:crew_supersede_review",
+    "reckon/crew_run_commands.py:crew_widen",
+    "reckon/crew_run_commands.py:crew_ack",
+    "reckon/crew_run_commands.py:crew_gc",
+    "reckon/crew_run_commands.py:crew_resume",
+    "reckon/crew_run_commands.py:crew_stop",
+    "reckon/crew_run_commands.py:crew_discard",
+    "reckon/crew_run_commands.py:crew_complete",
+    "reckon/crew_run_commands.py:crew_verify_gate",
+    "reckon/crew_dispatch_commands.py:crew_shadow",
+    "reckon/crew_dispatch_commands.py:crew_attach",
+    "reckon/crew_dispatch_commands.py:crew_observe",
+    "reckon/crew_dispatch_commands.py:_run_review"
+  ],
+  "completed_at": "2026-10-20T15:21:37.064Z",
+  "dispatched_at": "2026-10-20T15:07:03Z",
+  "findings": [
+    "FINDING tests/test_run_verbs_share_one_identity_grammar.py:301 follow-on: the selection test asserts only that the finding is no longer unanswered, which holds whichever covering review answered, so a regression that dropped --review-run and landed the answer on the other covering review stays green; it does not guard the selection it is named for.",
+    "FINDING tests/test_run_verbs_share_one_identity_grammar.py:146 follow-on: the matching-project arm asserts only that the disagreement string is absent from the output and never asserts the invocation was accepted (agreed.exit_code is unchecked), so it cannot redden when a matching --project is silently mishandled; the disagreeing arm is the guard that fires."
+  ],
+  "item_verdicts": {
+    "diff": "VERDICT diff: read commit by commit against base fc7f48ca7 -- 8bac47b79 feat, 66965b811 fix, 014ef1241 docs -- five files, +606/-31, all inside the declared scope.",
+    "done_when": "VERDICT done_when: plan section 8 names tests/test_run_verbs_share_one_identity_grammar.py; the file drives every swept verb with a matching and a disagreeing --project and drives the repeated-finding answer both ways, and the recorded gate-head.log reads \"16 failed, 207 passed in 677.86s (0:11:17)\" with zero added failures against the base arm and negative-control.log naming stop.",
+    "goal": "VERDICT goal: the goal is one identity grammar for every single-run crew verb; reckon/crew_dispatch_commands.py:51 defines the shared resolver _accept_a_matching_project, the eighteen --run verbs in reckon/crew_run_commands.py and reckon/crew_dispatch_commands.py call it, dispose's --project is now optional at reckon/crew_run_commands.py:564, and crew review answers through _one_run_to_complete at reckon/crew_dispatch_commands.py:86 with --review-run added at reckon/crew_dispatch_commands.py:2354.",
+    "manifest": "VERDICT manifest: read; it records status complete, commits 8bac47b79/66965b811/014ef1241, the gate-head and gate-base results and the negative control, and each recorded figure reconciles with the log it names.",
+    "write_paths": "VERDICT write_paths: read the source fence and the manifest's declared paths; every path the diff touches -- reckon/crew_run_commands.py, reckon/crew_dispatch_commands.py, tests/test_run_verbs_share_one_identity_grammar.py, tests/test_review_plan_command.py and docs/evidence/fragments/the-crew-surface-is-one-tool-and-a-few-verbs/cso-run-verbs-share-one-identity-grammar.html -- is inside them."
+  },
+  "justifications": {
+    "durability": "the declaration sweep at tests/test_run_verbs_share_one_identity_grammar.py:131 and the disagreeing arm at :151 redden on a reverted guard -- the negative control at negative-control.log:8 shows the sweep failing named stop -- but the selection test at :301 passes whichever covering review answers.",
+    "evidence": "gate-head.log's summary line records the run and added_failure_count resolves to 0 from the base and head logs, but the matching-project arm at tests/test_run_verbs_share_one_identity_grammar.py:146 asserts only the absence of the disagreement string rather than exit 0.",
+    "fit": "the additions follow the module's idiom (click options, mechanism docstrings at reckon/crew_dispatch_commands.py:51) and introduce no plan, sprint or version identifier in a symbol, filename or comment.",
+    "goal_fidelity": "reckon/crew_dispatch_commands.py:51 collapses the cross-check into one resolver the eighteen --run verbs call, and reckon/crew_run_commands.py:564 makes dispose's --project optional, so all four section-8 deliverables land.",
+    "reuse": "no owner for a supplied-project cross-check exists; the nearest neighbour reckon/mcp_deadlines.py:623 _run_worktree reads only the live pointer for MCP write scoping, and _accept_a_matching_project extends that capability with the promoted-record fallback and the refusal rather than re-implementing it.",
+    "scope_discipline": "every hunk in the diff lies in reckon/crew_run_commands.py, reckon/crew_dispatch_commands.py, the two test files or the landing fragment, and no hunk carries anything the goal does not imply."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261020T150527320563-review-of-cso-run-verbs-share-one-identity-grammar-014ef124158b",
+  "reviewed_base_sha": "fc7f48ca75f0f41d9d2ce5a08cdb3e66ff1f929b",
+  "reviewed_head_sha": "014ef124158b8274454ded9613bb69d53bc3a318",
+  "reviewed_run_id": "r-20261020T133428134004-cso-run-verbs-share-one-identity-grammar",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T16:03:06.371280+00:00",
+  "total": 104
+}
