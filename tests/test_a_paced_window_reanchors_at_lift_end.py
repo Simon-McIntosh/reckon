@@ -349,3 +349,101 @@ def test_a_group_that_never_carried_a_lift_is_unchanged(
     assert "re_anchor" not in entry["allowance"]
     assert entry["allowance"]["burn_multiple"] > MULTIPLE
     assert budget.pace_hold(entry, "implement")["held"] is True
+
+
+def _write_cleared_lift(fixture: _Fixture, *, cleared_at: datetime) -> Path:
+    """Write a lift record that carries a clear and no end stamp.
+
+    This is the shape a record written by a build that predates the stamp, or by
+    a clear superseded by a successor, is left in: the clear is there and the
+    end point is not.
+    """
+    lifts = bl.lifts_path()
+    lifts.parent.mkdir(parents=True, exist_ok=True)
+    lifts.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "lifts": [
+                    {
+                        "id": "cleared-before-the-stamp",
+                        "group": GROUP,
+                        "scope": bl.GLOBAL,
+                        "form": bl.UNCAPPED,
+                        "granted_at": budget._iso(fixture.window_start),
+                        "granted_by": "lead",
+                        "cleared_at": budget._iso(cleared_at),
+                        "cleared_by": "lead",
+                    }
+                ],
+            }
+        )
+    )
+    return lifts
+
+
+def test_a_cleared_lift_with_no_stamp_is_backfilled_once_and_re_anchors(
+    fixture: _Fixture,
+) -> None:
+    """A clear the stamp never reached is filled in, once, at the pace read."""
+    config = _config()
+    lifts = _write_cleared_lift(fixture, cleared_at=fixture.end)
+    before = lifts.read_bytes()
+
+    reading = _reading(utilisation=U_END, observed=fixture.end, reset=fixture.reset)
+    bl.effective_budget(
+        config,
+        group=GROUP,
+        readings=[reading],
+        now=fixture.end + timedelta(minutes=1),
+    )
+
+    stamped = bl.list_lifts(group=GROUP)[0]
+    assert stamped["u_end"] == pytest.approx(U_END)
+    assert datetime.fromisoformat(stamped["t_end"]) == fixture.end
+    # The figure came from the reading observed at the clear, not from one taken
+    # afterwards, so it is the group's state where the lift stopped.
+    assert datetime.fromisoformat(stamped["u_end_taken_at"]) == fixture.end
+    assert "u_end_late" not in stamped
+
+    after_first = lifts.read_bytes()
+    assert after_first != before, "the clear was never stamped"
+    bl.effective_budget(
+        config,
+        group=GROUP,
+        readings=[reading],
+        now=fixture.end + timedelta(minutes=2),
+    )
+    assert lifts.read_bytes() == after_first, "the clear was stamped twice"
+
+    # And the pace reads the point it now carries: one point above the line the
+    # backfilled end anchors holds, where the plain comparison alone did not.
+    above = _entry(
+        config, now=fixture.end, utilisation=U_END + 0.01, reset=fixture.reset
+    )
+    assert above["allowance"]["re_anchor"]["u_end"] == pytest.approx(U_END)
+    assert budget.pace_hold(above, "implement")["held"] is True
+
+
+def test_a_backfilled_figure_taken_after_the_clear_is_marked_late(
+    fixture: _Fixture,
+) -> None:
+    """With no reading at or before the clear, the figure used is marked late."""
+    config = _config()
+    lifts = _write_cleared_lift(fixture, cleared_at=fixture.end)
+    assert lifts.exists()
+
+    later = fixture.end + timedelta(hours=6)
+    reading = _reading(utilisation=0.62, observed=later, reset=fixture.reset)
+    bl.effective_budget(
+        config,
+        group=GROUP,
+        readings=[reading],
+        now=later,
+    )
+
+    stamped = bl.list_lifts(group=GROUP)[0]
+    assert stamped["u_end"] == pytest.approx(0.62)
+    assert datetime.fromisoformat(stamped["t_end"]) == fixture.end
+    assert datetime.fromisoformat(stamped["u_end_taken_at"]) == later
+    assert stamped["u_end_late"] is True
