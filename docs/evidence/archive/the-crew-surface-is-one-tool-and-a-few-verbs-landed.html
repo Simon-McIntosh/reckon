@@ -80,6 +80,20 @@
 <p><strong>Gate.</strong> At <code>6c1f03f8a</code>, 115 passed and 1 failed. The failure is <code>test_every_module_fits_a_worker_window</code>, the same two offenders as the base arm, so zero failures are added. The review scored 111/120 with nothing blocking, and its two follow-ons are exempted.</p>
   </section>
 
+  <section id="s5">
+    <h2>§5 — the crew MCP tool carries the coordinator&#x27;s write verbs</h2>
+    <p>Run <code>r-20261020T025656353610-cso-crew-tool-carries-the-write-verbs</code>, head <code>9f5d9dda6</code>. The MCP <code>crew</code> tool takes eight write actions: <code>complete</code>, <code>land</code>, <code>dispose</code>, <code>ack</code>, <code>answer</code>, <code>widen</code>, <code>stop</code> and <code>discard</code>. <code>reckon/mcp_crew_actions.py</code> owns them, and each calls its CLI verb's own function with the same arguments. Its <code>CREW_WRITE_ACTIONS</code> is the one declaration of the set. The obligations view prints each duty's command as before, and adds a <code>next_action_form</code> beside it. That form maps every option of the printed command and escapes every value. A command with an option that has no action parameter gets no action form, rather than a form that drops the option.</p>
+<p><strong>Test.</strong> <code>tests/test_crew_tool_carries_the_write_verbs.py</code> runs each action through the MCP tool and through the CLI on copies of one temporary project, and compares the answers. The negative control remaps one action argument (<code>ack</code>'s <code>until</code>), and only that action's case fails.</p>
+<p><strong>Gate.</strong> At the repaired head, 94 passed and 1 failed. The failure is <code>test_every_module_fits_a_worker_window</code>, the same two offenders as the base arm, so zero failures are added.</p>
+<p><strong>Review.</strong></p>
+<ul>
+<li>The first review, at 85/120, found two blocking defects. The action form dropped unmapped options, so a commitless promotion lost <code>--no-commit</code>, and a repeated <code>--commit</code> rendered as a duplicate keyword. It also raised three follow-ons. All five were repaired.</li>
+<li>The second, at 102/120, found the list-valued commits case vacuous and the values unescaped. Both were repaired.</li>
+<li>The third, at 108/120, had nothing blocking. Its one follow-on is exempted.</li>
+</ul>
+<p><strong>Effect on sessions.</strong> This adds parameters to the <code>crew</code> tool. A server running from before this landing refuses a failed <code>crew</code> call with <code>stale_server_code</code> until it reconnects. every-plan-write-goes-through-edit-plan §13 ends that for added parameters.</p>
+  </section>
+
 </main>
 </body>
 </html>
