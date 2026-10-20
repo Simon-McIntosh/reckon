@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T14:23:33.203Z",
+  "dispatched_at": "2026-10-20T14:10:59Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:325",
+      "id": "done_when-1",
+      "reason": "without a sentence repointing the control at the new source (or naming a control that mutates the dispatcher registry), the node meets a red gate it was not warned about and the least-effort repair is to weaken the control, leaving the registry case unproven even as the plan claims it was made able to fail.",
+      "text": "the filter node is told to make the registry case \"compare the views the MCP tool's schema advertises with the dispatcher's\", replacing its input `mcp.CREW_TOOL_VIEWS` with the `view` Literal in `reckon/_mcp_tools.py`; but \u00a76's declared negative control at tests/test_crew_view_serves_every_view.py:236-240 monkeypatches `mcp.CREW_TOOL_VIEWS` and asserts that the same registry case raises, so after the prescribed change the control asserts on an input the registry case no longer reads and the control itself fails \u2014 while the plan names no replacement control for the registry change (its filter-node control at plan.html:339 only drops `--mine`)",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "3405fb1ff7890928b47e6c0745f811fc797455131c2921458ffb8a2384b8c0a5",
+  "plan_slug": "the-crew-surface-is-one-tool-and-a-few-verbs",
+  "plan_version": 71,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T140844894708-plan-review-of-the-crew-surface-is-one-tool-and-a-few-verbs",
+  "reviewed_blob_sha": "4ced90f250eeaea83c571680c1aa88e316ff4f04",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited path resolves, including the foreign guide `imas-ambix ops/lane-cycle/AGENTS.md:40` and the correction that `skills/reckon-build/scripts/worktree_fleet.py` reads live pointers rather than calling `crew directory`.",
+    "done_when": "a finding \u2014 the filter node changes the registry case's source of truth to the MCP schema, which stops \u00a76's declared control (`tests/test_crew_view_serves_every_view.py:229-242`) from exercising it, and no replacement control is named (plan.html:325,339).",
+    "evidence_paths": "pass \u2014 fixtures land in `tests/test_read_verbs_retire_behind_crew_view.py` and gate logs under the repository's evidence tree; nothing is written to a session scratchpad or node-local temp.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches a symbol or comment in the changed text; `cso-*` are node identifiers, which are the plan's own dispatch vocabulary.",
+    "reasoning": "pass \u2014 the stated root cause (a tautological registry comparison and a narrower-than-dispatcher schema) matches the cited code, the prescribed mechanism produces the stated counts (verified 10/19/13/6), and the invoked path is real: `_crew` (reckon/mcp.py:1936) forwards to `serve_crew_view` and is the registered `crew` tool.",
+    "single_goal": "pass \u2014 each s9 node has one deliverable (retire `ledger`+`velocity`; grow the live view and reconcile the view surface; move `crew list` callers; tombstone `crew list`), and the filter node's schema/view-list/extractor work is the single \"make the surfaces' declared view sets agree\" goal its gate proves.",
+    "wiring": "pass \u2014 \u00a79 depends-on s7 and s8, both resolve, and \u00a79's nodes write `reckon/crew_run_commands.py` which \u00a78 owns; the \u00a75 edge into `reckon/mcp.py`/`_mcp_tools.py` is satisfied because \u00a75 has landed, so no dependency it needs is missing."
+  },
+  "section_digests": {
+    "_document": "4d4b24f4aec9178fd9d24a7442e96788d260da61249c8afd730e02ffe7cc56f6",
+    "s1": "7964ee282f4a5255288aa84785a54dbc6a5fec9660f4cee9f9c892a0807894ee",
+    "s10": "033277f14414ff9bc6f07d5fabef9354ec643b0bcb31a42018a8bb7153544427",
+    "s2": "be69292dc4744e91b19438c3129be40ac6c6138f02cd12656616dd3906a1d313",
+    "s3": "bfc4b93502cb69a2a5878f9c282da2cbab878f4f49482f263fdfc074dfce4ba8",
+    "s4": "2feb22a10d53f02161e33412c6f491a2718ee9b88ffede06e39b7fc15799f5d1",
+    "s5": "4a0b632aaec0c9b2538edeab874ccd9fd39723e2eef864da9ae65a3f72b6695c",
+    "s6": "e037f188e4e0784a7a39a208f621ec226cacdda5308e5f226d6ba3e104345522",
+    "s7": "7a66876ae7177f3cc833a9fc9c2885beceef03cf567843584a885f144155809b",
+    "s8": "beb6c1568fe326e8af87c393c93ac9e71dec60ad9a9247b47ffbec9d08fc76a6",
+    "s9": "8ed073cf18167a5f4dd243dffd412b27afcfd41f9ad37a560efc3d3d8d8c3683"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T14:31:28.791834+00:00"
+}
