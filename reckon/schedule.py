@@ -23,26 +23,9 @@ from typing import Any
 
 from reckon._timestamps import parse_utc
 from reckon.resources import nav_key
+from reckon.sprint_liveness import HELD_CLASSIFICATIONS, LIVE_STATES
 
 RECORDED_STATUSES = frozenset({"shipped", "done", "superseded", "historical"})
-
-# A live pointer at work on its plan right now. The vocabulary is the fleet
-# pane's and the sprint liveness derivation's: "dispatched" is a run still in
-# its starting phase, "working" one that has advanced past it.
-LIVE_RUN_PHASES = frozenset({"working", "starting", "dispatched"})
-
-# A pointer sitting on the plan but not at work on it and not done with it: a
-# worker waiting on a person, or a completion nobody has promoted yet.
-HELD_RUN_PHASES = frozenset(
-    {
-        "blocked",
-        "unpromoted",
-        "completed_unpromoted",
-        "complete",
-        "promotable",
-        "scoring",
-    }
-)
 
 HELD_STATUS = "blocked"
 
@@ -118,23 +101,26 @@ def _run_phase(run: dict[str, Any]) -> str:
 def _bar_state(plan: dict[str, Any], plan_runs: list[dict[str, Any]]) -> str:
     """Classify a bar from its plan's status and the pointers serving it.
 
-    A terminal status is recorded however the pointers read. A pointer whose
-    phase is live puts the bar in flight. Otherwise a blocked effective status
-    — persisted or derived from a dependency — or a plan whose every pointer is
-    held reads as held. Everything else is predicted. A pointer in any other
-    phase — complete, stalled, waiting, abandoned — sets no state at all.
+    A terminal status is recorded however the pointers read. A pointer in a
+    live state — the fleet's own live states, taken from ``sprint_liveness`` —
+    puts the bar in flight. Otherwise a blocked effective status, persisted or
+    derived from a dependency, or a plan whose every pointer is held reads as
+    held; the held states are that module's too, so a run waiting on a person
+    and a completion nobody has promoted yet both hold the bar. Everything else
+    is predicted. A pointer whose state is stalled, waiting or abandoned is in
+    neither set and decides nothing here.
     """
 
     status = str(plan.get("status") or "pending").lower()
     if status in RECORDED_STATUSES:
         return STATE_RECORDED
     phases = [_run_phase(run) for run in plan_runs]
-    if any(phase in LIVE_RUN_PHASES for phase in phases):
+    if any(phase in LIVE_STATES for phase in phases):
         return STATE_IN_FLIGHT
     effective = str(plan.get("effective_status") or status).lower()
     if effective == HELD_STATUS:
         return STATE_HELD
-    if phases and all(phase in HELD_RUN_PHASES for phase in phases):
+    if phases and all(phase in HELD_CLASSIFICATIONS for phase in phases):
         return STATE_HELD
     return STATE_PREDICTED
 

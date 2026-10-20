@@ -26,6 +26,7 @@ from pathlib import Path
 import pytest
 
 from reckon import serve
+from reckon.resources import nav_key
 from reckon.roadmap import schedule_report
 from reckon.schedule import derive_schedule
 
@@ -232,14 +233,25 @@ def test_a_plan_and_a_research_document_sharing_a_slug_keep_distinct_keys() -> N
                 "status": "done",
                 "wall_clock_hours": 6,
             },
+            {
+                "slug": "filed",
+                "type": "plan",
+                "status": "pending",
+                "archived": True,
+                "wall_clock_hours": 6,
+            },
         ]
     )
-    # The derivation places the plan; the research document of the same slug is
-    # not a bar at all. The bar's key is the plan's, distinct from the research
-    # row's, so a reader keyed on the typed key cannot swap one for the other.
-    assert list(bars) == ["shared"]
-    assert bars["shared"]["nav_key"] == "shared"
-    assert bars["shared"]["nav_key"] != "research:shared"
+    # The derivation places the plans; the research document of the same slug
+    # is not a bar at all. Each bar carries the typed key its own document type
+    # yields, asserted in full against the one function that defines it, so a
+    # reader keyed on the typed key cannot swap one document for another.
+    assert sorted(bars) == ["filed", "shared"]
+    assert bars["shared"]["nav_key"] == nav_key("plan", "shared")
+    assert bars["filed"]["nav_key"] == nav_key("plan", "filed", archived=True)
+    # The archived key is the one a bar keyed on the bare slug cannot produce.
+    assert bars["filed"]["nav_key"] == "plan:archive:filed"
+    assert bars["shared"]["nav_key"] != nav_key("research", "shared")
 
 
 def test_every_bar_carries_a_lane_and_no_two_bars_in_one_lane_overlap() -> None:
@@ -278,8 +290,29 @@ def test_every_bar_carries_a_lane_and_no_two_bars_in_one_lane_overlap() -> None:
         "sample",
         REFERENCE,
     )
-    for item in schedule["items"]:
-        assert isinstance(item["lane"], int), item["slug"]
+    by_slug = {item["slug"]: item for item in schedule["items"]}
+    # The packing is asserted against values written here, not against the
+    # lane index the packer stamped on the same bar: the recorded bar opens a
+    # lane, the two pending bars overlap and so cannot share one, and the
+    # dependent bar returns to the lane that fits it.
+    assert {slug: bar["lane"] for slug, bar in by_slug.items()} == {
+        "c": 0,
+        "a": 0,
+        "b": 1,
+        "d": 0,
+    }
+    assert [item["slug"] for item in schedule["lanes"][0]["items"]] == ["c", "a", "d"]
+    assert [item["slug"] for item in schedule["lanes"][1]["items"]] == ["b"]
+    assert len(schedule["lanes"]) == 2
+
+    # The overlapping pairs are in different lanes, and the overlap is real —
+    # each pair genuinely covers hours the other also covers.
+    for first, second in (("a", "b"), ("b", "d")):
+        assert by_slug[first]["lane"] != by_slug[second]["lane"]
+        assert by_slug[second]["start"] < by_slug[first]["end"] - 1e-6
+        assert by_slug[first]["start"] < by_slug[second]["end"] - 1e-6
+
+    # And no lane holds two bars that overlap, whichever lane it is.
     for index, lane in enumerate(schedule["lanes"]):
         assert all(item["lane"] == index for item in lane["items"])
         ordered = sorted(lane["items"], key=lambda item: item["start"])
