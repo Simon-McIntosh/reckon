@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/model_catalogue.py:376 model_notices reads the snapshot through obligation_snapshot.read_model_catalogue_snapshot",
+    "reckon/crew/model_catalogue.py:378 model_notices filters through obligation_snapshot.unacknowledged_model_notices",
+    "reckon/hooks/coordinator_obligations.py:616 pending_model_notices reads both through the same two functions",
+    "reckon/hooks/coordinator_obligations.py:693 format_checklist calls pending_model_notices",
+    "reckon/hooks/coordinator_obligations.py:955 _inject_list calls pending_model_notices"
+  ],
+  "completed_at": "2026-10-20T12:21:58.231Z",
+  "dispatched_at": "2026-10-20T12:11:49Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": 282,
+      "severity": "follow-on",
+      "text": "follow-on: model_catalogue_snapshot_path re-implements reckon/crew/model_catalogue.py:32 snapshot_path, the path the catalogue itself writes to, without the catalogue delegating to it, so the snapshot location is now defined twice and the new docstring's claim that the hook and the catalogue 'agree on where the notices live' rests only on the two copies happening to match; read_model_catalogue_snapshot at obligation_snapshot.py:293 duplicates reckon/crew/model_catalogue.py:36 _read_snapshot in the same way."
+    },
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": 279,
+      "severity": "follow-on",
+      "text": "follow-on: commit d49c5b014 writes reckon/crew/obligation_snapshot.py, which is outside \u00a743's declared write paths (docs/plans/lane-and-model-routing.html lists reckon/crew/model_catalogue.py, recovery_watch.py, coordinator_obligations.py, flight.yaml, _flight_schema.py, the two test files and the fragment, not this module); the prior review directed the move here and this node's brief names the file, so the remedy is to widen the reviewed run's record rather than revert the change."
+    },
+    {
+      "file": "tests/test_a_model_notice_reaches_the_session.py",
+      "line": 39,
+      "severity": "follow-on",
+      "text": "follow-on: the fixture asserts the temporary home against model_catalogue.snapshot_path() alone, so the second path definition added at obligation_snapshot.py:282 has no assertion that it resolves to the same location; a divergence between the two copies would not redden any test in the gate."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read both commits against base afcfb8ee: d49c5b014 moves the notice reader into obligation_snapshot.py and points model_catalogue.model_notices and the hook at it, and 8c5c4db0c updates the evidence fragment to the clean-arm figure, with nothing outside those four files.",
+    "done_when": "The done_when names the ten-file pytest gate and a base/head arm delta; the manifest records baseline_suite 2 failed/227 passed at 81afebde and after_suite 2 failed/232 passed at d49c5b014, both logs ending EXIT=1, so the gate is measured and recorded.",
+    "goal": "The node goal is a daily producer refresh, one hook line and a single opt-in probe; the reviewed delta lands the consolidation that makes the hook line and the models view read one definition of 'unacknowledged', at reckon/hooks/coordinator_obligations.py:616 and reckon/crew/model_catalogue.py:378.",
+    "manifest": "Read; it carries literal tests and both arm commands, names logs/base-arm.log and logs/head-arm-clean.log, and records the single documented follow-on for test_a_producer_sweeps_only_on_change.py, whose failure the clean extraction does not reproduce.",
+    "write_paths": "The brief grants ten paths under \u00a743; the delta changes four files and three of them are inside the grant, with reckon/crew/obligation_snapshot.py outside it (the prior review directed the move and this brief names the file)."
+  },
+  "justifications": {
+    "durability": "The delta adds no assertion (no test file changes in afcfb8ee..8c5c4db0c); the refactor's behaviour is covered by the pre-existing tests/test_a_model_notice_reaches_the_session.py:218 hook-line case and the models-view case, but nothing fails if the two snapshot-path definitions diverge.",
+    "evidence": "The manifest's after_suite command is the literal gate at manifest.md:16 and logs/head-arm-clean.log ends '2 failed, 232 passed' EXIT=1 against logs/base-arm.log's '2 failed, 227 passed', and the fragment's stated figure matches the log it cites.",
+    "fit": "reckon/crew/obligation_snapshot.py:279 uses the same '# \u2500\u2500 Reader \u2500\u2500' section-header idiom as the module's existing reckon/crew/obligation_snapshot.py:258, and the added function names describe behaviour with no plan or ticket label.",
+    "goal_fidelity": "reckon/crew/model_catalogue.py:378 and reckon/hooks/coordinator_obligations.py:616 now both call obligation_snapshot.unacknowledged_model_notices, so the count the hook shows and the list the models view opens come from one definition, which is what the delta exists to deliver.",
+    "reuse": "unacknowledged_model_notices at reckon/crew/obligation_snapshot.py:309 is now the single owner the hook and the view both read, but the added model_catalogue_snapshot_path at :282 and read_model_catalogue_snapshot at :293 duplicate the path and read still owned by reckon/crew/model_catalogue.py:32 and :36, which were left undelegated.",
+    "scope_discipline": "Three of the four changed files are inside the ten declared write paths, but reckon/crew/obligation_snapshot.py:279 is outside them and only this brief names it for review."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is a daily producer refresh, one hook line and a single opt-in probe; the reviewed delta lands the consolidation that makes the hook line and the models view read one definition of 'unacknowledged', at reckon/hooks/coordinator_obligations.py:616 and reckon/crew/model_catalogue.py:378.\nVERDICT done_when: The done_when names the ten-file pytest gate and a base/head arm delta; the manifest records baseline_suite 2 failed/227 passed at 81afebde and after_suite 2 failed/232 passed at d49c5b014, both logs ending EXIT=1, so the gate is measured and recorded.\nVERDICT write_paths: The brief grants ten paths under \u00a743; the delta changes four files and three of them are inside the grant, with reckon/crew/obligation_snapshot.py outside it (the prior review directed the move and this brief names the file).\nVERDICT manifest: Read; it carries literal tests and both arm commands, names logs/base-arm.log and logs/head-arm-clean.log, and records the single documented follow-on for test_a_producer_sweeps_only_on_change.py, whose failure the clean extraction does not reproduce.\nVERDICT diff: Read both commits against base afcfb8ee: d49c5b014 moves the notice reader into obligation_snapshot.py and points model_catalogue.model_notices and the hook at it, and 8c5c4db0c updates the evidence fragment to the clean-arm figure, with nothing outside those four files.\nCALL_SITES: reckon/crew/model_catalogue.py:376 model_notices reads the snapshot through obligation_snapshot.read_model_catalogue_snapshot, reckon/crew/model_catalogue.py:378 model_notices filters through obligation_snapshot.unacknowledged_model_notices, reckon/hooks/coordinator_obligations.py:616 pending_model_notices reads both through the same two functions, reckon/hooks/coordinator_obligations.py:693 format_checklist calls pending_model_notices, reckon/hooks/coordinator_obligations.py:955 _inject_list calls pending_model_notices\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/model_catalogue.py:378 and reckon/hooks/coordinator_obligations.py:616 now both call obligation_snapshot.unacknowledged_model_notices, so the count the hook shows and the list the models view opens come from one definition, which is what the delta exists to deliver.\nSCORE evidence: 18\nJUSTIFICATION evidence: The manifest's after_suite command is the literal gate at manifest.md:16 and logs/head-arm-clean.log ends '2 failed, 232 passed' EXIT=1 against logs/base-arm.log's '2 failed, 227 passed', and the fragment's stated figure matches the log it cites.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: Three of the four changed files are inside the ten declared write paths, but reckon/crew/obligation_snapshot.py:279 is outside them and only this brief names it for review.\nSCORE durability: 15\nJUSTIFICATION durability: The delta adds no assertion (no test file changes in afcfb8ee..8c5c4db0c); the refactor's behaviour is covered by the pre-existing tests/test_a_model_notice_reaches_the_session.py:218 hook-line case and the models-view case, but nothing fails if the two snapshot-path definitions diverge.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/obligation_snapshot.py:279 uses the same '# \u2500\u2500 Reader \u2500\u2500' section-header idiom as the module's existing reckon/crew/obligation_snapshot.py:258, and the added function names describe behaviour with no plan or ticket label.\nSCORE reuse: 8\nJUSTIFICATION reuse: unacknowledged_model_notices at reckon/crew/obligation_snapshot.py:309 is now the single owner the hook and the view both read, but the added model_catalogue_snapshot_path at :282 and read_model_catalogue_snapshot at :293 duplicate the path and read still owned by reckon/crew/model_catalogue.py:32 and :36, which were left undelegated.\nFINDING reckon/crew/obligation_snapshot.py:282 follow-on: model_catalogue_snapshot_path re-implements reckon/crew/model_catalogue.py:32 snapshot_path, the path the catalogue itself writes to, without the catalogue delegating to it, so the snapshot location is now defined twice and the new docstring's claim that the hook and the catalogue 'agree on where the notices live' rests only on the two copies happening to match; read_model_catalogue_snapshot at obligation_snapshot.py:293 duplicates reckon/crew/model_catalogue.py:36 _read_snapshot in the same way.\nFINDING reckon/crew/obligation_snapshot.py:279 follow-on: commit d49c5b014 writes reckon/crew/obligation_snapshot.py, which is outside \u00a743's declared write paths (docs/plans/lane-and-model-routing.html lists reckon/crew/model_catalogue.py, recovery_watch.py, coordinator_obligations.py, flight.yaml, _flight_schema.py, the two test files and the fragment, not this module); the prior review directed the move here and this node's brief names the file, so the remedy is to widen the reviewed run's record rather than revert the change.\nFINDING tests/test_a_model_notice_reaches_the_session.py:39 follow-on: the fixture asserts the temporary home against model_catalogue.snapshot_path() alone, so the second path definition added at obligation_snapshot.py:282 has no assertion that it resolves to the same location; a divergence between the two copies would not redden any test in the gate.\n",
+  "review_run_id": "r-20261020T121038504019-review-of-a-model-notice-reaches-the-session-8c5c4db0cf24",
+  "reviewed_base_sha": "afcfb8ee2856f933f73506cc4c5b5291649e3d57",
+  "reviewed_head_sha": "8c5c4db0cf244596912a937dbf2b2d0f9c24a3da",
+  "reviewed_run_id": "r-20261020T104551937288-a-model-notice-reaches-the-session",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 8,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T12:28:48.709616+00:00",
+  "total": 92
+}
