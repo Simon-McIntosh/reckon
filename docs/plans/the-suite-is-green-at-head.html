@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="419">
+<meta name="plan-version" content="420">
 <meta name="plan-modified" content="2026-10-20">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;implementable&quot;,&quot;s28&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
@@ -1955,6 +1955,9 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 </div>
 <div class="r-comment" data-section="s26" data-id="c-run-r-20261019T085956924678-the-host-handoff-test-runs-the-same-on-a-compute-node" data-who="reckon-build" data-when="2026-10-19T09:35:34.567Z">
     <div class="r-comment-body"><p>the host-handoff case no longer reads the ambient harness: the reloaded-follower test ran crew follow in-process and inherited whatever RECKON_/CLAUDE_/CODEX_ identity the suite was launched under, so an ambient CODEX_SESSION_ID made it resolve a codex harness, find no host, and stream to the pytest timeout; a new _isolated_harness_env helper scrubs those variables exactly as _follower_env does for the subprocess cases and the case arms lifetime=8s so a streamer fails naming the missing handoff line; 5 passed / 5 in an exclusive all_debug job on 98dci4-clu-3143 under CODEX_SESSION_ID, 1 passed on the fleet node, negative control red at 15.37s EXIT=1 naming the missing line.</p></div>
+</div>
+<div class="r-comment" data-section="s28" data-id="c-run-r-20261020T001108161034-review-of-the-deprecation-test-waits-for-its-follower-9aac6bf452d6" data-who="reckon-build" data-when="2026-10-20T00:20:17.341Z">
+    <div class="r-comment-body"><p>Reviewed r-20261019T235223014399-the-deprecation-test-waits-for-its-follower at 9aac6bf452d600f44441d59f8988c98cd3f78ce4 (base 4b0c037a4bb8783f80093ce683f2452fc2afa39b, one commit, one call changed): parsed record scoring goal_fidelity 20, evidence 19, scope_discipline 20, durability 13, fit 20, reuse 20, one follow-on finding, zero added failures.</p></div>
 </div>
 </section>
 </main>

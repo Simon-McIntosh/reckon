@@ -1,0 +1,51 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-20T00:20:17.341Z",
+  "dispatched_at": "2026-10-20T00:13:02Z",
+  "findings": [
+    {
+      "file": "tests/test_removed_flag_migration.py",
+      "line": "292",
+      "severity": "follow-on",
+      "text": "follow-on: the hardened ceiling is itself unguarded \u2014 nothing asserts the bound is WATCHER_LOAD_BOUND_SECONDS, so a later edit back to a small fixed bound (the exact regression this node repairs) passes on an unloaded host and reddens only intermittently under load, which is the signal that let this failure spend two earlier nodes' time."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "the landed change is one test file and one static HTML fragment; no production runtime code reaches either.",
+    "diff": "read the single commit against its parent 4b0c037a4bb8783f80093ce683f2452fc2afa39b; it changes one call in tests/test_removed_flag_migration.py:291-293 from bound=1.5 to bound=WATCHER_LOAD_BOUND_SECONDS and adds the evidence fragment, 54 insertions and 1 deletion, with no assertion changed and the WATCHER_LOAD_BOUND_SECONDS import at :26 pre-existing.",
+    "done_when": "read \u00a728's done-when; the manifest's gate runs the target ten times beside a pytest -n 8 load (logs/head-arm-under-load.log: run 1..10 all '1 passed', '# passed 10 of 10', EXIT=0), the base arm records 1 of 10 (logs/base-arm-10x.log), the negative control fails after its ceiling (logs/negative-control-silent-follower.log, 34.32 s, EXIT=1), and each log opens with its revision and literal command and ends EXIT=.",
+    "goal": "the node's goal is to raise the startup ceiling in test_the_deprecation_announcement_reaches_stderr_and_not_the_stream so it passes on a loaded node while still returning as soon as both facts appear; tests/test_removed_flag_migration.py:291-293 now passes bound=WATCHER_LOAD_BOUND_SECONDS and the helper's early return at :144-145 is untouched, so the ceiling is raised while the helper still returns the instant both facts appear.",
+    "manifest": "read; status complete, commit 9aac6bf452d600f44441d59f8988c98cd3f78ce4, tests: names head-arm-under-load.sh, and the four named log paths exist on disk and reconcile with the reported figures.",
+    "write_paths": "the node's declared write paths are tests/test_removed_flag_migration.py, docs/evidence/fragments/the-suite-is-green-at-head/the-deprecation-test-waits-for-its-follower.html, and a figures directory; the commit touches only the test file and the fragment, both inside them, and writes no figure."
+  },
+  "justifications": {
+    "durability": "the diff adds no assertion (only the bound argument at :292 changes) and no guard ties the ceiling to WATCHER_LOAD_BOUND_SECONDS, so a revert to a fixed small bound passes unloaded and reappears only as load-dependent flake; the negative control (EXIT=1, 34.32 s) does show the raised ceiling left the test non-vacuous.",
+    "evidence": "logs/head-arm-under-load.log records 10 of 10 under a pytest -n 8 load averaging 19.74 and peaking 71.17, logs/base-arm-10x.log records 1 of 10, logs/negative-control-silent.log ends EXIT=1, and logs/ruff.log records a zero format delta; each log opens with rev=9aac6bf4 and its literal command, though the head runtimes reach 16.98 s against the 30 s ceiling so the margin is real but not large.",
+    "fit": "the call now matches its sibling helper _wait_for at tests/test_removed_flag_migration.py:381, which already defaults to WATCHER_LOAD_BOUND_SECONDS, and no new name is introduced.",
+    "goal_fidelity": "tests/test_removed_flag_migration.py:292 replaces the fixed bound=1.5 with bound=WATCHER_LOAD_BOUND_SECONDS while _wait_for_the_first_delivery:144-145 keeps its early return, so the ceiling rises for a loaded node and the fast-path is unchanged.",
+    "reuse": "the change reuses WATCHER_LOAD_BOUND_SECONDS, the ceiling owned by reckon/crew/dispatch_watch.py:48, rather than defining a second bound for the same wait.",
+    "scope_discipline": "git diff 4b0c037a4 9aac6bf4 touches only tests/test_removed_flag_migration.py and docs/evidence/fragments/the-suite-is-green-at-head/the-deprecation-test-waits-for-its-follower.html, both inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to raise the startup ceiling in test_the_deprecation_announcement_reaches_stderr_and_not_the_stream so it passes on a loaded node while still returning as soon as both facts appear; tests/test_removed_flag_migration.py:291-293 passes bound=WATCHER_LOAD_BOUND_SECONDS and the helper's early return at :144-145 is untouched.\nVERDICT done_when: read \u00a728's done-when; logs/head-arm-under-load.log records 10 of 10 under a pytest -n 8 load, the base arm 1 of 10, the negative control EXIT=1, and each log opens with its revision and literal command and ends EXIT=.\nVERDICT write_paths: the declared write paths are tests/test_removed_flag_migration.py, the evidence fragment and a figure dir; the commit touches only the first two.\nVERDICT manifest: read; status complete, commit 9aac6bf452d600f44441d59f8988c98cd3f78ce4, tests names head-arm-under-load.sh, and its four log paths exist and reconcile.\nVERDICT diff: read against parent 4b0c037a4; one call at tests/test_removed_flag_migration.py:291-293 changes bound=1.5 to bound=WATCHER_LOAD_BOUND_SECONDS plus the evidence fragment, 54 insertions and 1 deletion, no assertion changed.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_removed_flag_migration.py:292 replaces the fixed bound=1.5 with WATCHER_LOAD_BOUND_SECONDS while _wait_for_the_first_delivery:144-145 keeps its early return.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/head-arm-under-load.log records 10 of 10 at loadavg 19.74 peaking 71.17, base 1 of 10, negative control EXIT=1, ruff delta 0, each log opening with rev=9aac6bf4 and its literal command; head runtimes reach 16.98 s against the 30 s ceiling.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 4b0c037a4 9aac6bf4 touches only tests/test_removed_flag_migration.py and the declared evidence fragment.\nSCORE durability: 13\nJUSTIFICATION durability: the diff adds no assertion and no guard ties the ceiling to WATCHER_LOAD_BOUND_SECONDS, so a revert to a small fixed bound passes unloaded; the negative control shows only that the raised ceiling left the test non-vacuous.\nSCORE fit: 20\nJUSTIFICATION fit: the call matches the sibling helper _wait_for at tests/test_removed_flag_migration.py:381, which already defaults to WATCHER_LOAD_BOUND_SECONDS.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change reuses WATCHER_LOAD_BOUND_SECONDS, the ceiling owned by reckon/crew/dispatch_watch.py:48.\nFINDING tests/test_removed_flag_migration.py:292 follow-on: the hardened ceiling is itself unguarded \u2014 nothing asserts the bound is WATCHER_LOAD_BOUND_SECONDS, so a revert to a small fixed bound passes unloaded and reddens only intermittently under load.\n",
+  "review_run_id": "r-20261020T001108161034-review-of-the-deprecation-test-waits-for-its-follower-9aac6bf452d6",
+  "reviewed_base_sha": "4b0c037a4bb8783f80093ce683f2452fc2afa39b",
+  "reviewed_head_sha": "9aac6bf452d600f44441d59f8988c98cd3f78ce4",
+  "reviewed_run_id": "r-20261019T235223014399-the-deprecation-test-waits-for-its-follower",
+  "scores": {
+    "durability": 13,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T00:40:00Z",
+  "total": 112
+}
