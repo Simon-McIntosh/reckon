@@ -1,0 +1,73 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-10-20T03:00:35Z",
+  "emission": [
+    "VERDICT goal: the commits gained since 5e9c53d7a repair the field the node goal requires the obligations view to print \u2014 reckon/crew/obligations.py:185 action_form now carries every option the eight verbs accept, renders a repeated option as one list-valued parameter and refuses a command it cannot carry, and reckon/crew/obligations.py:267 publishes the rendered call as next_action_form.",
+    "VERDICT done_when: the node's measure is the FENCE EVIDENCE pytest command; the manifest's tests line is that command verbatim, after_suite.log's first line names revision 6266478bb and its last line is EXIT=1 with 92 passed / 1 failed against a base arm of 74 passed / 1 failed / 1 error, so the gate ran and added no failure, and the one failure (test_every_module_fits_a_worker_window) is the base-red one the node is fenced from.",
+    "VERDICT write_paths: the manifest declares seven paths; the gain since 5e9c53d7a touches five of them.",
+    "VERDICT manifest: read; it records commits 6266478bb and 9d2e95729, the re-run gate at 92 passed / 1 failed / EXIT=1, the re-run negative control at EXIT=1 with one failing id (test_each_action_matches_its_cli_verb[ack]) and 15 passed, the three log paths, and a repairs list answering all five findings of the prior review at 5e9c53d7a.",
+    "VERDICT diff: read both commits against 5e9c53d7a; reckon/crew/obligations.py gains the option, flag and list parameter maps plus whole-or-none rendering and the next_action_form key, reckon/mcp.py reads CREW_WRITE_ACTIONS instead of a second copy and drops the test-only obligations import, the parity test gains four cases, and the fragment records the repair round.",
+    "CALL_SITES: reckon/mcp_views.py:3818, reckon/crew/obligations.py:1274, reckon/mcp.py:2109",
+    "SCORE goal_fidelity: 18",
+    "JUSTIFICATION goal_fidelity: the two blocking defects the prior review found are repaired at reckon/crew/obligations.py:204 (an unmapped option or a missing value returns None) and :249 (a repeated scalar returns None while a repeated listed option renders one list), so the form now matches the commands reckon/crew/recovery_classification.py:1652 composes, including the commitless promotion the review found it dropped.",
+    "SCORE evidence: 16",
+    "JUSTIFICATION evidence: the gate log at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T025656353610-cso-crew-tool-carries-the-write-verbs/logs/after_suite.log carries its revision header, its summary and a bare EXIT=1 beside a base arm at baseline_suite.log, but the gate's own clause 'the obligations view's printed commands use the action form' is asserted only as the presence of a new sibling key at tests/test_crew_tool_carries_the_write_verbs.py:260, and the parity case that would cover the list transport at :367 cannot see the value it passes.",
+    "SCORE scope_discipline: 19",
+    "JUSTIFICATION scope_discipline: every path in the diff (reckon/crew/obligations.py, reckon/mcp.py, the two test files, the landing fragment) is inside the manifest's declared write paths, and the only change beyond the five findings is deleting the test-only import at reckon/mcp.py:50 and re-formatting one wrapped call at :2161.",
+    "SCORE durability: 14",
+    "JUSTIFICATION durability: the repair's two blocking defects each carry a real guard \u2014 tests/test_crew_tool_carries_the_write_verbs.py:278 fails if --no-commit is dropped (the command comes from the classifier's own composition at reckon/crew/recovery_classification.py:1652, not from a literal the test passed) and :311 fails if two --commit flags render as two parameters \u2014 but the two-commit case at :367 holds whatever the tool does with the commits (probed: identical documents for two, none and one unrelated commit), and no test covers a quoted value at reckon/crew/obligations.py:247.",
+    "SCORE fit: 17",
+    "JUSTIFICATION fit: the added names (_ACTION_FLAG_PARAM, _ACTION_LIST_PARAM, _action_parameter, next_action_form) are mechanism-named with no plan label or version suffix, and the obligation to import reckon/mcp_crew_actions from a crew view module is the price of the single declaration the prior review asked for, which reckon/mcp_crew_actions.py imports only click to sustain.",
+    "SCORE reuse: 18",
+    "JUSTIFICATION reuse: the eight action names are now declared once at reckon/mcp_crew_actions.py:30 and read by reckon/mcp.py:2109 and reckon/crew/obligations.py:176, and the search for an existing command-to-action renderer over reckon/ (shlex.split, action_form, parse_command) found no owner other than action_form itself.",
+    "FINDING tests/test_crew_tool_carries_the_write_verbs.py:367 follow-on: the two-commit parity case compares a run-missing refusal that is byte-identical with, without, or with different commits, so the guarantee its name states cannot fail.",
+    "FINDING reckon/crew/obligations.py:247 follow-on: an option value containing a double quote or a newline is interpolated unescaped, rendering a call that is not callable where an unmapped option is refused."
+  ],
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "cso-crew-tool-carries-the-write-verbs",
+      "recorded_at": "2026-10-20T04:58:55.576459+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "cso-crew-tool-carries-the-write-verbs",
+      "recorded_at": "2026-10-20T04:59:26.593682+00:00"
+    }
+  },
+  "findings": [
+    {
+      "anchor": "tests/test_crew_tool_carries_the_write_verbs.py:367",
+      "id": "the-two-commit-guard-cannot-see-the-commits",
+      "severity": "follow-on",
+      "text": "the added case named for the list-valued parameter compares two documents that do not depend on the value it passes. `mcp_module._crew(action=\"complete\", run_id=\"run-missing\", gate=\"not-run\", commits=[...], dry_run=True)` returns the same document for two commits, for no commits, and for one unrelated commit: probed against the module at the reviewed head, all three answers are `{\"dry_run\": true, \"gate\": \"not-run\", \"invocation\": \"reckon crew complete --run run-missing --gate not-run\", \"ok\": false, \"refusal_count\": 1, ...}` with the refusal `no live run 'run-missing' ...`, because reckon/crew/promotion.py:663 `_dry_run_invocation` composes the invocation from the refusals and never prints a commit. The assertion therefore holds whatever the tool does with `commits` \u2014 dropping the argument, passing a bare string, or passing the wrong list all leave `tool == cli` true, so the parity case does not guard the transport it is named for. What it does guard: that the two surfaces agree on the refusal itself."
+    },
+    {
+      "anchor": "reckon/crew/obligations.py:247",
+      "id": "a-value-with-a-quote-renders-a-broken-call",
+      "severity": "follow-on",
+      "text": "the rendering is whole-or-none for the option NAMES, not for the values: the value is interpolated into a double-quoted string with no escaping, so `reckon crew complete --run run-x --gate passed --outcome 'say \"hi\" now'` renders `crew(action=\"complete\", run_id=\"run-x\", gate=\"passed\", outcome=\"say \"hi\" now\")` \u2014 not a callable form, which is the property the repair exists to give the field, and unlike an unmapped option it is not refused. Verified by running the reviewed `action_form` on that command. Not reachable today: every command the classifier composes for a `complete` or `land` duty carries only `<...>` placeholders and commit shas (reckon/crew/recovery_classification.py:1652-1661), so no live duty renders a quoted value \u2014 the hole is latent rather than live."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261020T043547375711-review-of-cso-crew-tool-carries-the-write-verbs",
+  "reviewed_base_sha": "5e9c53d7ae0ec2ebbdbfa04db0e7506423fecd5c",
+  "reviewed_commit": "9d2e9572967f49354113ba0f936c35524c9a5300",
+  "reviewed_head_sha": "9d2e9572967f49354113ba0f936c35524c9a5300",
+  "reviewed_run_id": "r-20261020T025656353610-cso-crew-tool-carries-the-write-verbs",
+  "rubric": "node",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T04:57:44.580843+00:00",
+  "total": 102
+}
