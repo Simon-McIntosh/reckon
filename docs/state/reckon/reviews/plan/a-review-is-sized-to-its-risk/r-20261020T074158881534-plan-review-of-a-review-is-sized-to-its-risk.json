@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T07:50:54.943Z",
+  "dispatched_at": "2026-10-20T07:43:10Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-review-is-sized-to-its-risk/r-20261020T074158881534-plan-review-of-a-review-is-sized-to-its-risk/plan.html:141",
+      "id": "reasoning-1",
+      "reason": "the test as written cannot pass against the correct reflex, so a builder either reports the done-when unmeetable or widens the advice to name follow-ons, reversing the deliberate blocking-only rule \u00a713's Why and \u00a714's first bullet both state.",
+      "text": "\u00a73's done-when requires observing \"one repair round opened and the reviewed run resumed once, with advice naming all three findings\" for \"a stored review with three findings, one of them blocking\", and the deliverable at :140 says the same (\"with every finding of the review composed into the advice\"); but the round is composed from blocking findings alone \u2014 `blocking_findings` (`reckon/crew/repair.py:224`) is the one list `compose_repair_node` (`reckon/crew/repair.py:510`) builds the brief, ids and scope from, and `_repair_resume_advice` (`reckon/crew/recovery_repair_dispatch.py:440-447`) names exactly that list (\"found N blocking finding(s)\"), so a review with one blocking and two follow-on findings yields advice naming one. Reproduced by driving `compose_repair_node` on a three-finding review (one `severity: blocking`, two `severity: follow-on`): `blocking_findings` returns one id, the composed findings list one id, and the advice reads \"An independent review of this run found 1 blocking finding(s) (f5304452345)\" with a single brief line and write scope `reckon/x.py` \u2014 not all three findings.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "bb6de014f01a54860800e347842389096932fe52f5e02f9c877e5b38ed750e53",
+  "plan_slug": "a-review-is-sized-to-its-risk",
+  "plan_version": 194,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T074158881534-plan-review-of-a-review-is-sized-to-its-risk",
+  "reviewed_blob_sha": "b433b82da9573475199de336e21082dca131cbd7",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon crew widen` resolves (`reckon/crew_run_commands.py:1110`), the \u00a712 reference resolves to section s12, and both write paths exist or are files the node creates.",
+    "done_when": "pass \u2014 \u00a73's done-when is measurable and names a declared negative control (\"makes the reflex open one round per finding, and the first case then observes three\"); its unachievable assertion is recorded under reasoning.",
+    "evidence_paths": "pass \u2014 \u00a73 names no scratchpad path; its only outputs are the new test file and, conditionally, the reflex module, and its gate logs are the \"revision \u2026 literal command \u2026 EXIT=\" logs the manifest contract records.",
+    "naming": "pass \u2014 the new test path `tests/test_one_repair_round_per_review_round.py` carries no plan label, stage name or ticket number, and \u00a73's symbols describe the mechanism.",
+    "reasoning": "a finding \u2014 \u00a73's mechanism composes the advice from blocking findings alone, so its done-when's \"advice naming all three findings\" for a review with one blocking finding cannot be observed.",
+    "single_goal": "pass \u2014 \u00a73 carries one goal, one repair round per review round; the widen, decline-answer and retry clauses are properties of that same round, not separable deliverables.",
+    "wiring": "pass \u2014 \u00a73 declares no depends-on and needs none: its done-when exercises the reflex's own entry point, and the widen path it names in \u00a712 is landed (`_widen_folded_disposition`, `reckon/crew_run_commands.py:1110`)."
+  },
+  "section_digests": {
+    "_document": "608ebca3acc9631af825886c397a17445078bdda5b09f7384da8d502634b94a4",
+    "s1": "1bca4570a6dc141df8190260147c4603fdbd4e237bbd0fa1f635f166cdf5637b",
+    "s10": "a07df53b22b91585addeb98d5e88c71b2cd22d03d1da30561685f96e03a0aa2e",
+    "s11": "6bbc86e3fa4868ea28a6bedc4cfe44870bae0e69abb21473626929baf05d9b00",
+    "s12": "1931543f8774db891c6e51b885d5953ddc9f2d3b93d870f9c4f9d4a2156593c4",
+    "s13": "654b501c481eae64e085c1884ebb02603fb65497f5c801e8332e7dee8814e93e",
+    "s14": "b93a34f77c5761b652f5edda5ed95e6fd385eb6671a15404ad6d1c73e28fcd17",
+    "s2": "d87e94711b1191be6062f6581f0bf3c2f7793876a327c35be59e3dd37bbe72c8",
+    "s3": "fba0b0a8a75da0217667155d3dd34f7970678620a4a11f7898a76f57d07a18ed",
+    "s4": "834dc20a74581e06fc6c6b99a07ea7b628c9c36d7c390cee1b4e599eeec7b070",
+    "s5": "dd9455e66ea742a997a12400b194e02c6557b19217a06db0a58f82d7d82b8fde",
+    "s6": "67f7f1ef9139a592a260927a721ccb4248838feb1b3fe4fd0167874185c134fa",
+    "s7": "143784c1871fb72acb67e0ca8d619cb3760d180a84ec84614a147a9cfb515315",
+    "s8": "a12e7aff5d1cfd541706cc743c3d78ed9c0a96dba6af2c4f8b6dbb2309ea9582",
+    "s9": "3cc2a52825983e24d6bcb3f342f8f21cbd91f2144772c41418b9a0362bf5da37"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T07:54:58.415026+00:00"
+}
