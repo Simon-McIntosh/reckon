@@ -63,7 +63,11 @@ def _run_probe(
 ) -> object:
     source = CREW.read_text(encoding="utf-8") + TEST_EXPORTS
     compiled = serve.compile_jsx(source, filename="derived-flow-probe.jsx").decode()
-    served = f"const servedSchedule = {json.dumps(schedule)};" if schedule else "const servedSchedule = null;"
+    served = (
+        f"const servedSchedule = {json.dumps(schedule)};"
+        if schedule
+        else "const servedSchedule = null;"
+    )
     script = "\n".join(
         (
             NODE_PRELUDE,

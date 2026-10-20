@@ -313,8 +313,10 @@ window.__scheduleParity = { flowLanes, flowTicks };
             NODE_PRELUDE,
             compiled,
             f"const bars = {json.dumps(served['bars'])};",
-            ("const lanes = window.__scheduleParity.flowLanes(bars)"
-             ".map(lane => lane.items.map(item => item.plan));"),
+            (
+                "const lanes = window.__scheduleParity.flowLanes(bars)"
+                ".map(lane => lane.items.map(item => item.plan));"
+            ),
             f"const ticks = window.__scheduleParity.flowTicks({served['low']}, {served['high']});",
             "process.stdout.write(JSON.stringify({ lanes, ticks: ticks.map(tick => tick.label) }));",
         )
