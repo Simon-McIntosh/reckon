@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T06:17:28.678Z",
+  "dispatched_at": "2026-10-20T06:06:00Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/every-plan-write-goes-through-edit-plan.html:328",
+      "id": "done_when-1",
+      "reason": "this control is the only one guarding \u00a713's new back-compat paragraph (:314), and aimed at the sixth case it would not fire, so the check that proves a pre-\u00a713 parent stays readable would be recorded as unmet or as a non-firing control.",
+      "text": "the third negative control says \"nesting requiredness inside `params` fails the last case\", but the case it can actually falsify is the fifth (:321), which asserts the pre-\u00a713 parent still reads `params` as a list of names; nesting requiredness inside `params` breaks that reading, while the last case (:322) measures only that the child's verdict is authoritative and is unaffected by the shape of `params`",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/every-plan-write-goes-through-edit-plan.html:311",
+      "id": "reasoning-1",
+      "reason": "without a sentence making the verdict itself the routing trigger, an implementer who only drops the refusal satisfies no-reconnect but leaves case 1's `schema_note` unreachable on the documented path, and the fix that suggests itself is weakening case 1 rather than routing the call.",
+      "text": "\"A compatible change is served on current code with no refusal, and its answer carries a `schema_note`\" presupposes that a call of a compatibly-changed tool is routed to the child, but the plan's own routing rule (:270, \u00a711) sends a call to the child only when the tool has already fallen back, and returns a successful image answer untouched, so on the stated mechanism a compatible change that the image can still answer is never served from current code and can carry no `schema_note`",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "03dd299d69b0adb21eedc3e50a7bfd52b656718fa94b07c817249cc50aebf57c",
+  "plan_slug": "every-plan-write-goes-through-edit-plan",
+  "plan_version": 59,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T060515527234-plan-review-of-every-plan-write-goes-through-edit-plan",
+  "reviewed_blob_sha": "1f74c82dce724b434884757b6a9bdf1e20843b25",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_probe_signature_changed` resolves (reckon/mcp.py:306), the probe's `params` payload resolves (reckon/served_code.py:1403), `request_id` resolves (reckon/mcp_edit_plan.py:1059), both re-used test files exist and still carry a changed-signature case built on an added optional parameter (`added_parameter`), and `the-crew-surface-is-one-tool-and-a-few-verbs#s5` exists with `reckon/mcp.py` among its write paths.",
+    "done_when": "a finding \u2014 the third negative control (:328) names a case it cannot falsify.",
+    "evidence_paths": "pass \u2014 the section's gates and negative controls land on the run's manifest and the plan's durable `docs/evidence/archive/every-plan-write-goes-through-edit-plan-landed.html` / fragment paths, as \u00a72\u2013\u00a712 did, and \u00a713 names no node-local or scratchpad path.",
+    "naming": "pass \u2014 `schema_note`, `params` and the probe keys name the mechanism, and no ticket, version or stage label reaches a symbol or a comment.",
+    "reasoning": "a finding \u2014 the compatible-serve clause at :311 asserts a code path \u00a711's own routing rule (:270) does not reach.",
+    "single_goal": "pass \u2014 \u00a713 carries one deliverable: one compatibility rule, applied by the child, reaching running servers through the probe.",
+    "wiring": "pass \u2014 s13's edges (`every-plan-write-goes-through-edit-plan#s12` and `the-crew-surface-is-one-tool-and-a-few-verbs#s5`) both resolve, both are the nodes that hold `reckon/mcp.py` and `reckon/served_code.py`, and they cover \u00a713's whole write-path set."
+  },
+  "section_digests": {
+    "_document": "16c697b0bb91ca4f3726ea521580f529f248561c3e34b2ee07b4e68a52a3e6cf",
+    "s1": "7f96df198aae5b46c87f2d18f8eff17398ead36155ee67ba73607e91aa1d2fe3",
+    "s10": "fd786ebf0d880e15085a2e0ca5423504f73ce4c013e483f5e3cae145e3ad4079",
+    "s11": "19cc30d79534a21675c806c6d7006ea1e8e052fdccf4583b30258f699ee38e45",
+    "s12": "a518fb035478c3d0ebd8f3e07d9c13babbda5a8ab8f5353e60e41564c96ed1b6",
+    "s13": "e9fd28aef2f2075f31e9d8bd16e9e94eb75a311a61e3c45bc97932957ee8be81",
+    "s2": "737250903251177035b357be3d656b549480337bc454f97615634dada495e251",
+    "s3": "4150e9281b9c0fe1173e9c23f5582efb0662d22f1d36944861d3033f988d479c",
+    "s4": "e0390ff35ac5e425fa3060cede9882af598c54dc89e0a6069101b3971f8e8367",
+    "s5": "699b049fe374b1219d8b917168575594a5bcb9255bbe13efdbf1d0c928562a86",
+    "s6": "27f4d6436a652181a180df37fa1a640ebff9cb62418e856c86bc907ecda9778f",
+    "s7": "80062db679255aff5087534386e7372545e1cd3414916db8329aec79a1a8388d",
+    "s8": "f9dd6299834b4d039fd1f45b37141d5e265075b4cfd7f341357bea21196f5b35",
+    "s9": "bd2c3090ecc9a89ad8c0b2f7312aae077382dd2709954d9e27f449e984d622a8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T06:19:29.973013+00:00"
+}
