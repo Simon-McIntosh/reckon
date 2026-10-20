@@ -35,6 +35,10 @@ from reckon.crew import review as review_module
 from reckon.crew.node import CrewError
 from reckon.crew.promotion_checks import _resolve_promotion_outcome
 from reckon.crew.recovery_review_delivery import review_delivery_refusal
+from reckon.crew.recovery_review_subject import (
+    _review_is_complete,
+    _review_missing_measures,
+)
 from reckon.crew.runs import _write_json, pointer_path, run_dir
 from tests.helpers.git import git as _git
 
@@ -225,6 +229,44 @@ def _refusal(repository: Path) -> str:
     with pytest.raises(CrewError) as raised:
         crew.complete(REVIEW_RUN_ID, gate="not-run", root=repository)
     return str(raised.value)
+
+
+def _write_corrupt_record(path: Path) -> Path:
+    """A file at the record path that does not parse as a review record."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("{ this is not json\n", encoding="utf-8")
+    return path
+
+
+def test_an_unreadable_record_is_refused_saying_it_cannot_be_read(
+    repository: Path, tmp_path: Path
+) -> None:
+    """A corrupt file is the one delivery condition the refusal says unreadable."""
+    _write_pointer(repository, tmp_path, _declared_paths())
+    _write_corrupt_record(_head_path())
+
+    refusal = _refusal(repository)
+
+    assert "record cannot be read" in refusal, refusal
+    assert _head_path().name in refusal, refusal
+
+
+def test_an_absent_value_that_is_not_a_list_reads_as_incomplete() -> None:
+    """A malformed ``absent`` value reads as incomplete rather than raising.
+
+    The completeness rule is read from four classification paths, so a record
+    carrying ``absent: true`` — which cannot name the dimensions it excludes —
+    must leave the record incomplete instead of taking the pass down with a
+    TypeError.
+    """
+    for absent in (True, 1, "goal_fidelity"):
+        review = _round(DISPATCHED_HEAD)
+        review["absent"] = absent
+
+        missing = _review_missing_measures(review)
+
+        assert missing, (absent, missing)
+        assert _review_is_complete(review) is False, absent
 
 
 @pytest.mark.parametrize("case", sorted(CASES))

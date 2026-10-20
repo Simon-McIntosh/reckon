@@ -344,33 +344,22 @@ def _read_review_record(path: Path) -> tuple[Mapping[str, Any], float] | None:
         return None
 
 
-def _read_complete_review(
-    path: Path,
-) -> tuple[Mapping[str, Any], float, Path] | None:
-    """A stored review at ``path``, when it landed, and the record it holds."""
-    read = _read_review_record(path)
-    if read is None:
-        return None
-    body, mtime = read
-    if not _review_is_complete(body):
-        return None
-    return body, mtime, path
-
-
 def _review_delivery_verdict(record: Mapping[str, Any], project: str) -> dict[str, Any]:
     """The single evaluation of the conditions a review's delivery depends on.
 
     A run review is dispatched to read one revision, and the record that
-    delivers it is the one filed at the head-keyed path that dispatch names. The
-    record is this run's delivery only when all four hold: it sits at that path;
-    it is a complete review; the head it describes is the head the path names,
-    compared with the owners the promotion gate and the classifier already
-    share; its ``review_run_id``, when it carries one, names this review run;
-    and it was written after this run was dispatched. A record failing any of
-    the four is another round's verdict standing where this run's would be — the
-    defect measured on 2026-10-18, when a run that never wrote its record was
-    promoted on the unsuffixed path an earlier round had left complete. The
-    legacy path and the any-head ``.at-`` glob are therefore no delivery at all.
+    delivers it is the one filed at the head-keyed path that dispatch names. A
+    record delivers only when all six of the conditions the returns below name
+    hold together: the run declares a head-keyed record path; a record there
+    reads as a review; it is a complete review; the head it describes is the
+    head the path names, compared with the owners the promotion gate and the
+    classifier already share; its ``review_run_id``, when it carries one, names
+    this review run; and it was written after this run was dispatched. A record
+    failing any of the six is another round's verdict standing where this run's
+    would be — the defect measured on 2026-10-18, when a run that never wrote
+    its record was promoted on the unsuffixed path an earlier round had left
+    complete. The legacy path and the any-head ``.at-`` glob are therefore no
+    delivery at all.
 
     The conditions are written once, here, so :func:`_delivered_review_record`
     and :func:`review_delivery_refusal` are its two projections and no reader
@@ -471,7 +460,7 @@ def _review_delivery_verdict(record: Mapping[str, Any], project: str) -> dict[st
             "detail": detail,
             "remedy": "re-dispatch the review so it writes a fresh record",
         }
-    return {"delivered": True, "mtime": mtime, "path": path}
+    return {"delivered": True, "mtime": mtime, "path": str(path)}
 
 
 def _delivered_review_record(
@@ -482,12 +471,14 @@ def _delivered_review_record(
     Whether a review has delivered is decided in :func:`_review_delivery_verdict`
     alone, and this is that decision's answer to the question every delivery
     reader asks; :func:`review_delivery_refusal` reads the same verdict to name
-    the one condition that failed.
+    the one condition that failed. The verdict carries the path as a string, so
+    every branch names it one way; this reader returns it as a ``Path``, which
+    is what its callers open.
     """
     verdict = _review_delivery_verdict(record, project)
     if not verdict["delivered"]:
         return None
-    return verdict["mtime"], verdict["path"]
+    return verdict["mtime"], Path(verdict["path"])
 
 
 def review_delivery_refusal(
@@ -630,7 +621,6 @@ from .recovery_review_dispatch import (  # noqa: E402
 )
 from .recovery_review_subject import (  # noqa: E402
     _is_review_node,
-    _review_is_complete,
     _review_missing_measures,
     review_described_head,
     same_revision,

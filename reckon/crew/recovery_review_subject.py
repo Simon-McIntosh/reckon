@@ -1051,7 +1051,14 @@ def _review_missing_measures(
 
 
 def _landed_missing_measures(review: Mapping[str, Any]) -> list[str]:
-    """The dimensions and total a landed record does not carry."""
+    """The dimensions and total a landed record does not carry.
+
+    An ``absent`` value that is not a list cannot name the dimensions it
+    excludes, so it is reported as a single unnamed missing measure rather than
+    iterated. A record read by this function reaches it from four
+    classification paths, so a malformed value must still read as incomplete
+    rather than raise and take the pass down with it.
+    """
     missing: list[str] = []
     scores = review.get("scores")
     if not isinstance(scores, Mapping):
@@ -1064,7 +1071,10 @@ def _landed_missing_measures(review: Mapping[str, Any]) -> list[str]:
         )
     absent = review.get("absent")
     if absent:
-        missing.extend(str(dimension) for dimension in absent)
+        if isinstance(absent, (list, tuple)):
+            missing.extend(str(dimension) for dimension in absent)
+        else:
+            missing.append("absent dimensions")
     total = review.get("total")
     if not isinstance(total, int) or isinstance(total, bool):
         missing.append("total")
