@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import random
 import re
 import shlex
 import shutil
@@ -221,6 +222,26 @@ _FOLLOWER_RELOAD_PROBE = (
 FOLLOWER_RELOAD_PROBE_RETRY_INITIAL_SECONDS = 60.0
 FOLLOWER_RELOAD_PROBE_RETRY_CAP_SECONDS = 900.0
 
+# The share of a probe retry gap, drawn at random for each timeout, by which the
+# wait before the next probe is shortened. Every follower on a node checks its
+# checkout on the same cadence, so without it the retries a herd of followers
+# earns for one slow checkout stay in step and re-probe together; drawing each
+# wait back by its own fraction spreads them. The shortening is downward only,
+# so the gap and its cap remain a true ceiling on how long a checkout waits.
+FOLLOWER_RELOAD_PROBE_RETRY_JITTER_FRACTION = 0.25
+
+
+def _probe_retry_jitter(gap: float) -> float:
+    """The random part of the wait before a timed-out probe is retried.
+
+    Drawn fresh on every timeout, so two followers that timed out together do
+    not re-probe together: they share the gap's nominal length but not the
+    instant it is measured from.
+    """
+    return random.uniform(  # noqa: S311 - scheduling jitter, not a secret
+        0.0, gap * FOLLOWER_RELOAD_PROBE_RETRY_JITTER_FRACTION
+    )
+
 
 class _FollowerReloader:
     """Replace a stale follower only at a complete stream-record boundary."""
@@ -273,7 +294,9 @@ class _FollowerReloader:
                     self.image_pin = candidate_pin
             except (OSError, ValueError):
                 self.image_pin = None
-        if self.image_pin is None and (self.import_root / ".complete").is_file():
+        if self.image_pin is None and checkout_trust.published_reload_image(
+            self.import_root
+        ):
             self.image_pin = checkout_trust.pin_materialized_tree(self.import_root)
         self.replacement_pin: int | None = None
         self.source_root = Path(
@@ -303,6 +326,9 @@ class _FollowerReloader:
         # rather than inheriting a backoff the previous checkout earned.
         self.probe_retry_at: float | None = None
         self.probe_retry_gap = FOLLOWER_RELOAD_PROBE_RETRY_INITIAL_SECONDS
+        # How far the nominal retry instant is brought forward for this timeout,
+        # so two followers that timed out together do not re-probe together.
+        self.probe_retry_jitter = 0.0
         self.probe_retry_stamp: str | None = None
         # Whether a timeout's deferral line has already been said for the
         # present contiguous run of timeouts, so a slow node says it once
@@ -313,6 +339,7 @@ class _FollowerReloader:
         """Forget a timeout's backoff: the code moved, or a probe answered."""
         self.probe_retry_at = None
         self.probe_retry_gap = FOLLOWER_RELOAD_PROBE_RETRY_INITIAL_SECONDS
+        self.probe_retry_jitter = 0.0
         self.probe_retry_stamp = None
         self.timeout_deferral = False
 
@@ -501,10 +528,15 @@ class _FollowerReloader:
                 return
             self.replacement_root = self.import_root
         self.dirty_deferral = False
-        if self.probe_retry_at is not None and moment < self.probe_retry_at:
+        if (
+            self.probe_retry_at is not None
+            and moment < self.probe_retry_at - self.probe_retry_jitter
+        ):
             # A probe on this stamp ran out of its bound a moment ago, and the
-            # gap it earned has not passed: leave it alone rather than spending
-            # another thirty seconds on a node that is still slow.
+            # wait it earned has not passed: leave it alone rather than spending
+            # another thirty seconds on a node that is still slow. The jitter
+            # only ever brings that wait forward, so the nominal gap stays the
+            # longest a checkout waits.
             return
         reloadable, reason = self._replacement_imports()
         if not reloadable:
@@ -521,6 +553,7 @@ class _FollowerReloader:
                     self.timeout_deferral = False
                     self.probe_retry_stamp = current_stamp
                 self.probe_retry_at = moment + self.probe_retry_gap
+                self.probe_retry_jitter = _probe_retry_jitter(self.probe_retry_gap)
                 self.probe_retry_gap = min(
                     self.probe_retry_gap * 2, FOLLOWER_RELOAD_PROBE_RETRY_CAP_SECONDS
                 )
