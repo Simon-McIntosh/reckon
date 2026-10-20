@@ -384,6 +384,22 @@
 <p>One review follow-on is carried by §24. The schedule is now derived inside the discovery handler's error path, so a failure listing the crew rows would fail the whole discovery read rather than only its schedule. The other follow-on, a redundant first-read assertion, was exempted. Attaching on each read costs about 200 ms for power_convertor, the project with the most live runs.</p>
   </section>
 
+  <section id="s23">
+    <h2>§23 — A cold discovery walks the docs tree once</h2>
+    <p>One discovery derivation stats each covered file at most once. The covered-file walk's set and observed times in <code>reckon/metadata_index.py</code> are reused for the whole derivation. The change signature in <code>reckon/serve.py</code> is computed from them, and <code>figure_rows</code> in <code>reckon/figures.py</code> takes its paths from the covered set. The stat identity now has one owner, <code>signature_from_stat</code> in <code>reckon/file_memo.py</code>, which <code>file_signature</code> delegates to with an unchanged result. Run <code>r-20261020T135748634340</code>, commits <code>c59e2c69e</code>, <code>1be872811</code> and <code>c29a257f8</code>, merged at <code>49472d19f</code>.</p>
+<table>
+<thead><tr><th>Check</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>Filesystem calls, one derivation over a 2,000-file tree</td><td>6,234 at base, 2,192 at head (1.096 per covered file)</td></tr>
+<tr><td>Negative controls</td><td>restoring the signature's stat of every file reaches 4,192 calls and fails the bound; a figure walk of its own under <code>figures/</code> fails the guard</td></tr>
+<tr><td>Population, 174 files importing <code>serve</code>, <code>metadata_index</code> or <code>figures</code>, and the SPA tests</td><td>the same 21 failures at base <code>9ec547635</code> and the merge candidate; none added</td></tr>
+<tr><td>Live, srv-1006, nova's first discovery read after the reload onto §23 at 16:05 UTC (host load 3.6)</td><td>11.1 s, against 13.6 s after §21's reload; stored reads afterwards 47 to 104 ms</td></tr>
+<tr><td>Independent review</td><td>13 to 19 on the first head; 12 to 19 after one repair round on the local lane, with an out-of-scope extraction in <code>file_memo.py</code> accepted at promotion</td></tr>
+</tbody>
+</table>
+<p>The cold read fell by 2.5 s, not the 6 to 7 s the profile suggested, and stays above §11's 10 s cold budget. The profiled share of the walks overstated their unprofiled cost: per-call profiler overhead inflates a stat-heavy walk more than the work around it. What remains of nova's cold derivation lies in roadmap derivation, plan metadata parsing, per-row figure work and the git dates, none of which this section changed.</p>
+  </section>
+
 </main>
 </body>
 </html>
