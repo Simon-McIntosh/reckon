@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured from the reviewed run's own gate arms: baseline_suite (revision 56205216, failure_ids [tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window]) and after_suite (revision 6c1f03f8, same single failure id), plus the confirmed logs baseline-suite.log and final-head-suite.log at those revisions; no id in the after arm is absent from the base arm, so the count is zero.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:3602",
+    "reckon/crew_follow_commands.py:2255",
+    "reckon/cli.py:401",
+    "reckon/cli.py:521",
+    "reckon/crew_dispatch_commands.py:30"
+  ],
+  "completed_at": "2026-10-20T05:01:07.632Z",
+  "dispatched_at": "2026-10-20T04:42:57Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T035609523314-cso-watch-family-folds/manifest.md",
+      "line": "1",
+      "text": "follow-on: the manifest's changed_paths and orientation_write_paths omit reckon/crew/recovery_watch.py even though the diff changes its docstring under the widened fence; a coordinator reading only the manifest cannot see that path was touched."
+    },
+    {
+      "file": "tests/test_crew_families_fold.py",
+      "line": "500",
+      "text": "follow-on: the node added no assertion pinning its own leaf-count claim (45 to 44); the shared leaf-count test at tests/test_crew_families_fold.py:562 is budget-scoped (FOLDED_INTO_BUDGET, BUDGET_PARENT), so the reduction rests only on 'unwatch' not in crew.commands at tests/test_crew_families_fold.py:510, which guards the removal but not the arrival of a replacement visible leaf."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew_follow_commands.py:3602 (the `--stop` handler), reckon/crew_follow_commands.py:2255 (the remedy composed by `runs.watch_cycle_line`), reckon/cli.py:401 and reckon/cli.py:521 (the `crew_watch` and `crew_unwatch` re-exports), and reckon/crew_dispatch_commands.py:30 (the group's `get_command` resolving the tombstone).",
+    "diff": "read both commits against base 56205216: 14775a212 folds the flag, the tombstone, the callers and the citations, and 6c1f03f8 adds only the landing fragment.",
+    "done_when": "the measure names the full pytest command at both arms with zero added failures and logs whose first line names the revision and last line is EXIT=; baseline-suite.log (113 passed/1 failed at 56205216) and final-head-suite.log (115 passed/1 failed at 6c1f03f8) carry the same single failure id, so the added-failure count is zero, and negative-control.log records EXIT=1.",
+    "goal": "the node goal is to fold `crew unwatch` into `crew watch --stop`, tombstone `unwatch` and move every caller to the new form; reckon/crew_follow_commands.py:3602 adds the `--stop` flag, reckon/crew/tombstones.py:135 registers the row, and a head grep finds no remaining `crew unwatch` citation under reckon/, skills/ or tests/.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T035609523314-cso-watch-family-folds/manifest.md; status complete, commits 14775a212 and 6c1f03f8, baseline_suite and after_suite one-line JSON with the shared failure id, negative_control_log with EXIT=1, and the leaf-count claim 45 to 44 in evidence_inputs.",
+    "write_paths": "read the manifest's declared paths and the \u00a77 fence; every one of the 17 paths in the diff lies inside the fence, including reckon/crew/recovery_watch.py which the resume advice added to the fence before it was edited."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_families_fold.py:513 fails when the `watch --stop` answer changes (negative-control.log reddens it under exactly that mutation) and tests/test_crew_families_fold.py:500 fails if the tombstone row is removed by asserting payload['successor']=='crew watch --stop' and 'unwatch' not in crew.commands; the leaf-count reduction has no assertion of its own.",
+    "evidence": "the done-when names the full pytest command at both arms with zero added failures and logs whose first line names the revision and last line is EXIT=; baseline-suite.log (113 passed/1 failed) and final-head-suite.log (115 passed/1 failed) record the same single pre-existing failure id tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window at 6c1f03f8 and negative-control.log records EXIT=1, but the leaf-count claim 45 to 44 is stated in the fragment and manifest without a gate assertion behind it.",
+    "fit": "reckon/crew/tombstones.py:133 follows the row shape of the four budget rows above it, reckon/crew_follow_commands.py:3602 follows the sibling command bodies in that file, and the added names carry no plan, issue or version label.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:3602 adds the `--stop` flag on `crew watch` and routes it to `unwatch`, reckon/crew/tombstones.py:135 registers the `unwatch` tombstone, and a grep at head finds no remaining `crew unwatch` citation under reckon/, skills/ or tests/, so the fold, the tombstone and every caller move.",
+    "reuse": "the change adds no new capability: `crew watch --stop` calls the existing owner reckon/crew/recovery_watch.py:383 `unwatch`, and the tombstone reuses reckon/crew/tombstones.py:211 `tombstone_command`, so a search over reckon/ found no duplicated watcher-stop or retirement mechanism.",
+    "scope_discipline": "all 17 paths in the diff lie inside the \u00a77 fence; the one base hit outside the original list, reckon/crew/recovery_watch.py, was added to the fence by the coordinator's resume advice before it was edited, so no out-of-scope path is touched."
+  },
+  "node": "review-of-cso-watch-family-folds-6c1f03f8a605",
+  "node:reviewed": "cso-watch-family-folds",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to fold crew unwatch into crew watch --stop, tombstone unwatch and move every caller; reckon/crew_follow_commands.py:3602 adds the --stop flag routing to unwatch and reckon/crew/tombstones.py:135 registers the row, and a head grep finds no remaining 'crew unwatch' citation under reckon/, skills/ or tests/.\nVERDICT done_when: the measure names the full pytest command at both arms with zero added failures and logs whose first line names the revision and last line is EXIT=; baseline-suite.log (113 passed/1 failed) and final-head-suite.log (115 passed/1 failed at 6c1f03f8) carry the same single failure id, so the added-failure count is zero, and negative-control.log records EXIT=1.\nVERDICT write_paths: read the manifest's declared paths and the section fence; every one of the 17 paths in the diff lies inside it, including reckon/crew/recovery_watch.py which the resume advice added to the fence before it was edited.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T035609523314-cso-watch-family-folds/manifest.md; status complete, commits 14775a212 and 6c1f03f8, baseline_suite and after_suite JSON with the shared failure id, negative_control_log with EXIT=1, and the leaf-count claim 45 to 44.\nVERDICT diff: read both commits against base 56205216: 14775a212 folds the flag, the tombstone, the callers and the citations, and 6c1f03f8 adds only the landing fragment.\nCALL_SITES: reckon/crew_follow_commands.py:3602, reckon/crew_follow_commands.py:2255, reckon/cli.py:401, reckon/cli.py:521, reckon/crew_dispatch_commands.py:30\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:3602 adds the --stop flag on crew watch and routes it to unwatch, reckon/crew/tombstones.py:135 registers the unwatch tombstone, and a head grep finds no remaining 'crew unwatch' citation under reckon/, skills/ or tests/.\nSCORE evidence: 18\nJUSTIFICATION evidence: the done-when names the full pytest command and baseline-suite.log and final-head-suite.log record the same single pre-existing failure id at base and head, but the leaf-count claim 45 to 44 is stated in the fragment and manifest without a gate assertion behind it.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: all 17 paths in the diff lie inside the section fence; reckon/crew/recovery_watch.py was added to the fence by the resume advice before it was edited, so no out-of-scope path is touched, though the manifest's changed_paths omits that path.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_crew_families_fold.py:513 fails when the watch --stop answer changes (negative-control.log reddens it) and tests/test_crew_families_fold.py:500 fails if the tombstone row is removed, but no assertion pins the leaf-count reduction.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/tombstones.py:133 follows the row shape of the four budget rows above it and reckon/crew_follow_commands.py:3602 follows the sibling command bodies in that file, with no plan, issue or version label in the added names.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no new capability -- crew watch --stop calls the existing owner reckon/crew/recovery_watch.py:383 unwatch and reuses reckon/crew/tombstones.py:211 tombstone_command, so a search over reckon/ found no duplicated watcher-stop or retirement mechanism.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T035609523314-cso-watch-family-folds/manifest.md:1 follow-on: the manifest's changed_paths and orientation_write_paths omit reckon/crew/recovery_watch.py even though the diff changes its docstring under the widened fence; a coordinator reading only the manifest cannot see that path was touched.\nFINDING tests/test_crew_families_fold.py:500 follow-on: the node added no assertion pinning its own leaf-count claim (45 to 44); the shared leaf-count test at tests/test_crew_families_fold.py:562 is budget-scoped, so the reduction rests only on 'unwatch' not in crew.commands at tests/test_crew_families_fold.py:510, which guards the removal but not the arrival of a replacement visible leaf.",
+  "review_run_id": "r-20261020T044113923490-review-of-cso-watch-family-folds-6c1f03f8a605",
+  "reviewed_base_sha": "56205216f76f7fec5c5f91a81a1bde20c8051480",
+  "reviewed_head_sha": "6c1f03f8a6053b22078783af4a4fbc6dab8e3a5a",
+  "reviewed_run_id": "r-20261020T035609523314-cso-watch-family-folds",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T04:52:00+00:00",
+  "total": 111
+}
