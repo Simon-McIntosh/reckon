@@ -3038,6 +3038,11 @@ reckon/crew/dispatch.py:4535: TypeError
     <p>The deprecation-announcement test now waits for the follower's first delivery under <code>WATCHER_LOAD_BOUND_SECONDS</code> (30 s, from <code>reckon/crew/dispatch_watch.py</code>, already imported by the test) instead of a fixed 1.5 s. The helper's early return is unchanged, so a fast host still resolves in under a second. No assertion changed.</p><p>Measure: at base the defect reproduced, 1 of 10 passing at load average 15 to 20. At head 10 of 10 passed while <code>pytest -n 8</code> ran beside it over the test files importing <code>reckon/crew/dispatch.py</code>, at load average 19.7 rising to 71.2, with the target's runtime stretching from 3.9 s to 17.0 s. The negative control pointed the subprocess at a program that writes nothing and failed in 34.3 s, after its ceiling.</p><p>Landing: run <code>r-20261019T235223014399-the-deprecation-test-waits-for-its-follower</code>, head <code>9aac6bf452d600f44441d59f8988c98cd3f78ce4</code>, merged to main as <code>4108ff06e</code>. Code review 117/120 with no dimension under its floor; its follow-on, that nothing guards the ceiling itself, is not acted on.</p>
   </section>
 
+  <section id="the-unattached-session-dispatch-test-passes">
+    <h2>§27 — the unattached-session dispatch test passes landed</h2>
+    <p><code>tests/test_scoring_dispatches_its_review.py::test_an_unattached_session_refuses_the_automatic_dispatch_too</code> was red because its teardown called <code>recovery.unwatch</code> while the producer rewrote its seat registration in place, and unwatch refused the empty registration as foreign. All three teardowns in the file now share one helper that waits for the settled record before releasing. The file passes five of five alone on an exclusive compute node and on the fleet node; restoring the immediate release reproduces the failure. The product-side cause, unwatch reading the raw registration, is filed as the-monitor-shows-the-work-it-watches §70.</p><p>Landing: run <code>r-20261020T203929222890-the-unattached-session-dispatch-test-passes</code>, head <code>eec91fe30ed20db383837bf6766d70628a18f496</code>. Code review 111/120 with no dimension under its floor.</p>
+  </section>
+
 </main>
 </body>
 </html>
