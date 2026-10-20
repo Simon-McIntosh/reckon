@@ -26,8 +26,8 @@
   <title>The Crew Surface Is One Tool And A Few Verbs | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="86">
-<meta name="plan-modified" content="2026-10-20">
+<meta name="plan-version" content="87">
+<meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
   <main class="plan-doc">
@@ -457,7 +457,10 @@
     <div class="r-comment-body"><p>reviewed run r-20261020T161011580050-cso-ledger-and-velocity-retire at head f38a69738ec07e7ddd36cd91ec9358ed072a3f0c against base 748831614dde572026fad63d5cf95de2bb72a25a; parsed record scoring goal_fidelity 18, evidence 15, scope_discipline 19, durability 15, fit 16, reuse 20, added_failure_count 0 against the source run's own baseline_suite/after_suite, with three follow-on findings and no blocking finding.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261020T210751617947-review-of-cso-ledger-and-velocity-retire-493cb5f6db7c" data-who="reckon-build" data-when="2026-10-20T21:23:45.508Z">
-    <div class="r-comment-body"><p>re-review of section 9 node 1 at 493cb5f6d: 109/120, no added failures; one defect (crew ledger --view summary maps to the fleet summary view rather than crew view ledger) and two companions, all in attempt 5&#x27;s advice; manifest status repaired after the worker&#x27;s turn ended before rewriting it</p></div>
+    <div class="r-comment-body"><p>re-review of section 9 node 1 at 493cb5f6d: 109/120, no added failures; one defect (crew ledger --view summary maps to the fleet summary view rather than crew view ledger) and two companions, all in attempt 5's advice; manifest status repaired after the worker's turn ended before rewriting it</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261020T161011580050-cso-ledger-and-velocity-retire" data-who="reckon-build" data-when="2026-10-20T21:52:27Z">
+    <div class="r-comment-body"><p>retired `crew ledger` and `crew velocity` to tombstones naming `crew view ledger` and `crew view velocity`, moved every reckon-side caller and citation to the views, and repointed the three test files that still drove the retired CLI; a caller&#x27;s `--view X` now renders as the successor&#x27;s positional operand so the printed invocation runs as written, with `--view summary` mapped to the `crew view ledger` operand so the retired rollup reaches one successor whichever way it is spelled; the gate at head d2d934b3 is 2 failed / 265 passed against the base arm&#x27;s 2 failed / 257 passed at 33bb77708 with the same two ids and zero added failures, and a tombstone repointed at the wrong view reddens the successor case.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261019T220254082188-review-of-cso-budget-family-folds-0274b1227df3" data-who="reckon-build" data-when="2026-10-19T22:24:20.259Z">
     <div class="r-comment-body"><p>Reviewed run r-20261019T202350268699-cso-budget-family-folds at 0274b1227df3acf495023b12695d143ed6c129ab against base 0fa62dca44a63a65382c140c82a003dd7a660e02: the budget fold is complete and its gate is green at both arms with zero added failures, but the run's own manifest and gate logs fail its own `crew check-manifest` audit (ok:false, three findings), so the node cannot promote until the negative_control_log and the two gate-log command headers are repaired.</p></div>
