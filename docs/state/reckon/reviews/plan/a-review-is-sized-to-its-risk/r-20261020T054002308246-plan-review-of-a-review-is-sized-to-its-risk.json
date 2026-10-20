@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T05:53:32.636Z",
+  "dispatched_at": "2026-10-20T05:41:09Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-review-is-sized-to-its-risk/r-20261020T054002308246-plan-review-of-a-review-is-sized-to-its-risk/plan.html:209",
+      "id": "reasoning-1",
+      "reason": "the node's write paths include `reckon/crew/repair.py` but the deliverable never says to make `blocking_findings` \u2014 the one list its own docstring calls \"the one filtered list both the brief and the write scope are built from\" \u2014 disposition-aware, so a worker can place the guard where the composed round never reads it and done-when case 2 (\"The round's brief and write scope name only the second\") cannot pass.",
+      "text": "the deliverable says \"The repair reflex leaves out of its round every finding that carries a disposition\", but the round's brief, write scope and finding ids are composed in `repair.py`, not the reflex: `compose_repair_node` (`reckon/crew/repair.py:476`) opens with `findings = blocking_findings(review)` and builds `compose_repair_brief(review, findings, \u2026)` and `repair_write_scope(review, \u2026)` (`repair.py:392`), whose own body loops `for finding in blocking_findings(review)`, and `blocking_findings` (`repair.py:224`) is disposition-blind; the reflex reaches all of this only through `compose_repair_for_run` (`repair.py:566`), and its own decline-only branch (`recovery_repair_dispatch.py:765`) is likewise gated on `blocking_findings(review)`, so a filter added to the reflex's local list leaves the composed brief and scope still naming the disposed finding and the all-disposed round still not taking the decline-only branch",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-review-is-sized-to-its-risk/r-20261020T054002308246-plan-review-of-a-review-is-sized-to-its-risk/plan.html:213",
+      "id": "reasoning-2",
+      "reason": "the merge loop already resolves a tie by `_answer_stamp` and keeps the later copy, and `stored.update(merged)` preserves a key it does not overwrite, so adding the clause changes no behaviour and no test can distinguish it.",
+      "text": "the merge bullet claims \"A finding disposition may be stored as a rendered string with no stamp, so where neither entry carries one, the copy merged last wins\", but both writers of the key (`record_finding_disposition` at `reckon/crew/review_dispositions.py:389` and the code-review writer at `:349`, both through `_build_disposition_entry` at `:146`) store a mapping carrying `recorded_at`, and the reader `finding_disposition` (`reckon/crew/findings.py:206`) returns `open` for any non-mapping entry, so a string entry is one the reader ignores \u2014 the clause describes a shape no writer produces and no reader honours",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "646bb46796440220fe6241efe43c0817d4528a7632ea2662fc82b4dbc9067be8",
+  "plan_slug": "a-review-is-sized-to-its-risk",
+  "plan_version": 183,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T054002308246-plan-review-of-a-review-is-sized-to-its-risk",
+  "reviewed_blob_sha": "ea58c0e107f7bf1665b61012e8a940968bd2fbce",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 verified `reckon/crew/repair.py:224` (`blocking_findings`), `reckon/crew/review.py:128` (`declared_severity`), `review.py:3983` (`FINDING_DISPOSITIONS_KEY`), `reckon/crew/findings.py:206` (`finding_disposition`), `review.py:3039` (`_merge_record_answers`), the crew-home record (`...cso-watch-family-folds.at-6c1f03f8a\u2026.json`, mtime 05:03:07Z, `finding_dispositions: null`) and its committed copy (`docs/state/reckon/reviews/run/r-20261020T035609523314-cso-watch-family-folds/r-20261020T044113923490-\u2026-6c1f03f8a605.json`, also null). The \"around lines 690 and 720\" pointer sits inside `dispatch_repair_for_run` (defined `recovery_repair_dispatch.py:591`), whose actual `blocking_findings` calls are at 765 and 795 \u2014 loose, but the section names the correct module and function.",
+    "done_when": "pass \u2014 \u00a714 names five concrete cases, a bounded pytest list plus `ruff` delta, and an explicit negative control with two single mutations (\"stop the reflex reading dispositions\" and \"leave `FINDING_DISPOSITIONS_KEY` out of `_merge_record_answers` again\"), each asserted to fail a named case.",
+    "evidence_paths": "pass \u2014 gate logs, both suite arms and the mutation logs are placed in the crew run directory and the node's evidence fragment, not a session scratchpad or node-local temp path.",
+    "naming": "pass \u2014 the new test file `tests/test_a_disposed_finding_ends_its_repair_round.py` and the section's symbols are mechanism-named; no plan labels, stage names or version tags reach code.",
+    "reasoning": "a finding \u2014 the deliverable names the reflex as the site of the disposition filter, but the brief, the write scope, the done-when ids and the composed node are all derived from `blocking_findings` in `repair.py`, which the reflex reaches only through the composer, so a guard placed in the reflex alone does not reach the production path the done-when measures.",
+    "single_goal": "pass \u2014 the node carries one outcome (a disposed finding ends its repair round); the merge-key survival (bullet 3) is the prerequisite that makes that outcome reachable, and the done-when's case 5 measures it under the same goal rather than as a second deliverable.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares `{\"s14\":[\"a-review-is-sized-to-its-risk#s13\"]}`, and \u00a714's prose states the same ordering (both \u00a713 and \u00a714 write `reckon/crew/recovery_repair_dispatch.py`), so the declared edge matches the reason given."
+  },
+  "section_digests": {
+    "_document": "608ebca3acc9631af825886c397a17445078bdda5b09f7384da8d502634b94a4",
+    "s1": "1bca4570a6dc141df8190260147c4603fdbd4e237bbd0fa1f635f166cdf5637b",
+    "s10": "a07df53b22b91585addeb98d5e88c71b2cd22d03d1da30561685f96e03a0aa2e",
+    "s11": "6bbc86e3fa4868ea28a6bedc4cfe44870bae0e69abb21473626929baf05d9b00",
+    "s12": "1931543f8774db891c6e51b885d5953ddc9f2d3b93d870f9c4f9d4a2156593c4",
+    "s13": "654b501c481eae64e085c1884ebb02603fb65497f5c801e8332e7dee8814e93e",
+    "s14": "e33d4f854be9b01ead8bc5c482ca41a378d14c2093d71657e10d84c81472161b",
+    "s2": "d87e94711b1191be6062f6581f0bf3c2f7793876a327c35be59e3dd37bbe72c8",
+    "s3": "865c2c7d189405d6ba0566cebd8df5e459211cc93a64a9332de51cff756b47ac",
+    "s4": "834dc20a74581e06fc6c6b99a07ea7b628c9c36d7c390cee1b4e599eeec7b070",
+    "s5": "dd9455e66ea742a997a12400b194e02c6557b19217a06db0a58f82d7d82b8fde",
+    "s6": "cb4e838e28a346993a653862da66ac934c2c1b8e7e1aa1d7cb23c7082672067d",
+    "s7": "044f93aa0d0fd0aed5a7b5b535f5b7a2efacfc541ef12f41a04af14289440d7c",
+    "s8": "a12e7aff5d1cfd541706cc743c3d78ed9c0a96dba6af2c4f8b6dbb2309ea9582",
+    "s9": "3cc2a52825983e24d6bcb3f342f8f21cbd91f2144772c41418b9a0362bf5da37"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T06:24:44.466548+00:00"
+}
