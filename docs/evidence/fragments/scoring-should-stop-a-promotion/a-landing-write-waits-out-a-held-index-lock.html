@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="The landing staging made one git add and refused on any failure, so a transient .git/index.lock a peer's git command held for a second turned an already-committed promotion into a failed verb. The staging now retries a failure whose message names a held index.lock for a bounded window, recording each retry on the run's landing record; a failure that names no lock, and a lock that outlasts the window, refuse as before.">
   <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
   <meta name="plan-recorded-at" content="2026-10-20">
-  <meta name="plan-verdict" content="blocked">
+  <meta name="plan-verdict" content="passed">
   <title>A landing write waits out a held index lock | reckon</title>
   <link rel="stylesheet" href="/reckon/_shared/foundation.css">
   <link rel="stylesheet" href="/reckon/_shared/dashboard.css">
@@ -62,7 +62,7 @@
     </section>
 
     <section id="a-landing-write-waits-out-a-held-index-lock-open">
-      <h2>Open: two importing tests encode the single-attempt behaviour</h2>
+      <h2>Two importing tests encoded the single-attempt behaviour</h2>
       <p>The done-when requires the test files importing
         <code>reckon/crew/promotion_scope.py</code> to show no added failure against base. Two
         of them assert the old single-attempt staging and now fail at head, neither at base:
@@ -72,8 +72,8 @@
         asserts the git trace is exactly <code>[("add", 128), ("restore", 128)]</code>. Both
         assertions are of the behaviour this node changes, so both must be updated — but
         neither file is in this node's write scope, which the plan fixes to
-        <code>promotion_scope.py</code> and the new test file. The node stops rather than edit
-        them unilaterally, and the two required edits are recorded for the coordinator.</p>
+        <code>promotion_scope.py</code> and the new test file, so the node reported them
+        rather than editing them unilaterally.</p>
       <p>The delta was measured rather than asserted. At base the importing set is
         <code>1 failed, 167 passed</code> (log <code>baseline-suite.log</code>) and at head
         <code>3 failed, 168 passed</code> (log <code>after-suite.log</code>) — the single added
@@ -85,6 +85,16 @@
         tree gives <code>1 failed, 170 passed</code> (log
         <code>after-suite-with-proposed.log</code>): the delta closes to that one environmental
         failure, so the two edits are sufficient and no further change is needed.</p>
+      <p>The scope was extended to the two files and both assertions updated without
+        changing what either checks. The held-lock case now asserts the landing record ends
+        with its one <code>stage</code> refusal and that every earlier entry is a
+        <code>stage_retry</code>; the rollback case asserts one or more <code>add</code>
+        attempts each failing with 128, followed by the <code>restore</code> with 128. At
+        the updated head the importing set is <code>1 failed, 170 passed</code> (log
+        <code>after-suite.log</code>) — the same single environmental failure the base arm
+        carries and no added failure. Ruff adds none: head and base report the identical
+        pre-existing <code>PT011</code> at <code>test_rollback_asks_head.py:201</code>, and the
+        head format check is clean.</p>
     </section>
   </main>
 </body>
