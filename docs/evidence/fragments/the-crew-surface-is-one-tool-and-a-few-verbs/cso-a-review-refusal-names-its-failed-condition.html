@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-crew-surface-is-one-tool-and-a-few-verbs">
+  <meta name="plan-evidence-for" content="the-crew-surface-is-one-tool-and-a-few-verbs">
+  <title>A review refusal names its failed condition | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A review refusal names its failed condition</h1>
+      <p class="lead">A review run's outcome is taken from the record it stored, and a promotion of a review whose record has not delivered was refused with one generic sentence whatever the cause. The commonest cause &mdash; a record that parses, scores every dimension, and carries no total &mdash; read as a corrupt file and sent a coordinator to inspect a good record. The refusal now names the one delivery condition that failed, with the record path it concerns and the remedy that condition calls for.</p>
+    </header>
+
+    <section id="cso-a-review-refusal-names-its-failed-condition-defect">
+      <h2>The gap: one message for five causes</h2>
+      <p><code>_delivered_review_record</code> in <code>reckon/crew/recovery_review_delivery.py</code> decides delivery from five conditions and returns <code>None</code> for all of them. <code>_resolve_promotion_outcome</code> in <code>reckon/crew/promotion_checks.py</code> saw only that <code>None</code> and refused with <em>&ldquo;a review run whose stored review cannot be read&rdquo;</em>. Measured 2026-10-19 in power_convertor: two review runs whose records parsed and whose finding text was readable were refused, because each scored all six dimensions and carried no <code>total</code>.</p>
+    </section>
+
+    <section id="cso-a-review-refusal-names-its-failed-condition-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/crew/recovery_review_delivery.py</code> gains <code>_review_delivery_verdict</code>, the single evaluation of the five conditions. <code>_delivered_review_record</code> and the new <code>review_delivery_refusal</code> are its two projections, so the delivery rule keeps one owner and no reader restates the conditions. <code>_read_review_record</code> separates reading a record from judging it complete, so a refusal can tell a record that cannot be read from one that reads and is incomplete.</li>
+        <li><code>reckon/crew/recovery_review_subject.py</code>: <code>_review_is_complete</code> becomes the negation of the new <code>_review_missing_measures</code>, which returns the measures a review lacks. The completeness rule keeps one owner, and a refusal names the missing measure rather than restating the rule.</li>
+        <li><code>reckon/crew/promotion_checks.py</code>: <code>_resolve_promotion_outcome</code> reads <code>review_delivery_refusal</code> and raises a refusal naming the condition, the record path and the remedy.</li>
+      </ul>
+      <p>Refusals read, for a record that parses: <em>&ldquo;run &lsquo;r-&hellip;&rsquo; is a review run refused for delivery: record is not a complete review; stored a record at &hellip;/x.at-&lt;head&gt;.json that is not a complete review: it lacks total; pass --outcome with the verdict the review reached, or re-store the review with total&rdquo;</em>. The same sentence for a corrupt file says the record &ldquo;cannot be read&rdquo;; for a record that parses it never does.</p>
+    </section>
+
+    <section id="cso-a-review-refusal-names-its-failed-condition-gate">
+      <h2>The gate</h2>
+      <p><code>tests/test_a_review_refusal_names_its_failed_condition.py</code> builds one review run for each of the five conditions on a temporary project. The incomplete case is the shape the cited runs had: six scored dimensions and no <code>total</code>. Each is refused by <code>crew complete --gate not-run</code> with no <code>--outcome</code>, and the refusal names that condition. A delivered record still promotes with its outcome taken from the stored review.</p>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>Base arm, the three pre-existing gate files, at <code>64b0c433</code></td><td>12 passed, 1 failed, <code>EXIT=1</code></td><td><code>r-20261020T015009269364-cso-a-review-refusal-names-its-failed-condition/gate/base-arm.log</code></td></tr>
+          <tr><td>Head arm, the four gate files, at <code>e3010ebb</code></td><td>23 passed, 1 failed, <code>EXIT=1</code></td><td><code>r-20261020T015009269364-cso-a-review-refusal-names-its-failed-condition/gate/head-arm.log</code></td></tr>
+          <tr><td>Declared negative control, every reason collapsed to one generic refusal</td><td>1 passed, 10 failed, <code>EXIT=1</code>; the per-condition cases fail</td><td><code>r-20261020T015009269364-cso-a-review-refusal-names-its-failed-condition/gate/negative-control.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>The one failure in both arms is <code>test_every_module_fits_a_worker_window</code>, naming <code>reckon/crew/review.py</code> and <code>test_every_module_fits_a_worker_window</code>'s own two module-size rows &mdash; identical ids at base and head, so zero added failures and outside this node's scope.</p>
+      <p>Logs live under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T015009269364-cso-a-review-refusal-names-its-failed-condition/</code>. The base arm ran in an extracted tree at the base revision; the head and control arms ran in the assigned worktree.</p>
+    </section>
+
+    <section id="cso-a-review-refusal-names-its-failed-condition-negative-control">
+      <h2>Declared negative control</h2>
+      <p>Declared mutation: <em>collapse every delivery reason into one generic refusal; the per-condition cases must then fail</em>. Applied by returning one fixed <code>{condition: &ldquo;the review did not deliver&rdquo;}</code> from <code>review_delivery_refusal</code> for every non-delivered record in <code>reckon/crew/recovery_review_delivery.py</code>. All five per-condition cases and both parsing cases fail, alongside the incomplete-total case, <code>EXIT=1</code>. Reverted; the tree returned clean and the head arm above ran after the revert.</p>
+    </section>
+
+    <section id="cso-a-review-refusal-names-its-failed-condition-commits">
+      <h2>Commits</h2>
+      <p><code>e3010ebb</code> &mdash; fix(crew): name the delivery condition a review promotion refused. Adds <code>_review_delivery_verdict</code>, <code>review_delivery_refusal</code> and <code>_read_review_record</code>; makes <code>_review_is_complete</code> the negation of <code>_review_missing_measures</code>; names the failed condition in the promotion refusal. Changes <code>reckon/crew/recovery_review_delivery.py</code>, <code>reckon/crew/recovery_review_subject.py</code>, <code>reckon/crew/promotion_checks.py</code>, <code>tests/test_a_review_refusal_names_its_failed_condition.py</code>.</p>
+    </section>
+  </main>
+</body>
+</html>
