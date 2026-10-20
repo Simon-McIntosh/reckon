@@ -227,6 +227,31 @@
 <p>Two repair rounds. The coordinator's first population found one added failure: the shell stat'ed every linked file, so one missing asset made the whole shell request die without a response. The worker now keeps such a URL unrevisioned. The same round removed a second copy of the compression cache. The review's follow-ons then made the renderer test able to fail, and moved the immutable header and the match check into the leaf module, which <code>serve</code> now imports. The four <code>tests/test_build.py</code> browser failures the worker first reported also fail at base, so they predate this change.</p>
   </section>
 
+  <section id="s20">
+    <h2>§20 — The flow draws each plan where its progress and live runs put it</h2>
+    <p><code>derive_schedule</code> in <code>reckon/schedule.py</code> gives each bar a state: recorded for a terminal status; in flight when a run in a working, starting or dispatched phase serves the plan, with the phase sets imported from <code>reckon/sprint_liveness.py</code>; held when the plan's effective status is blocked or its only runs are held; predicted otherwise. Each bar that is not recorded is anchored at now, or at its last prerequisite's end when that is later. Its done share sits behind the anchor and its remaining share runs ahead of it. Each bar carries its split point, its plan's typed key and its lane from the server's packing. <code>docs/ui/crew.jsx</code> draws them as served, shading the done share, and keeps no lane packing, status mapping or slug lookup of its own. The parity harness reads the served lanes. Run <code>r-20261020T080016028790</code>, commits <code>6c3ca3417</code>, <code>7a83309a5</code>, <code>20745b9de</code> and <code>34ac7b6ea</code>, merged at <code>4ebe2643a</code>.</p>
+<p>power_convertor's flow read from srv-1006 after the merge, at reference 10:21 UTC, beside the reading that opened this section:</p>
+<table>
+<thead><tr><th>Plan</th><th>Progress</th><th>Before (06:08 UTC)</th><th>After (10:21 UTC)</th></tr></thead>
+<tbody>
+<tr><td><code>iter-dummy-load-validation</code></td><td>50%</td><td>0 to 18, all ahead</td><td>predicted, −9 to +9, split at now</td></tr>
+<tr><td><code>iter-switched-terminal-transients</code></td><td>88%</td><td>−58.6 to −13.1, drawn in flight</td><td>held (blocked), −39.9 to +5.6</td></tr>
+<tr><td><code>jt60sa-power-supply-sources</code></td><td>100%</td><td>0 to 8, drawn in flight</td><td>held (blocked), −8 to 0</td></tr>
+<tr><td><code>tf-cold-test-validation</code></td><td>22%</td><td>predicted, though a run serves it</td><td>in flight, −13.3 to +47.0</td></tr>
+<tr><td><code>iter-pf-winding-line-resonance</code></td><td>done</td><td>"– 0%", the research row</td><td>recorded, resolved to the plan</td></tr>
+</tbody>
+</table>
+<table>
+<thead><tr><th>Check</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>Population, 96 files importing <code>schedule</code> or <code>roadmap</code>, the SPA tests and <code>tests/test_surface_parity.py</code></td><td>16 failed at base <code>3eecb59d2</code> and the same 16 at the merge candidate; none added</td></tr>
+<tr><td>Negative controls</td><td>full-length placement fails the 50% case; the parity harness on its old lane packer fails 11 cases; a bare-slug key fails the shared-slug case; a packer ignoring its fit test fails the fixed lane expectation</td></tr>
+<tr><td>Independent review</td><td>8 to 19 on the first head, reuse 8 against a floor of 10; 17 to 20 after the repair</td></tr>
+</tbody>
+</table>
+<p>One repair round. The review found that removing <code>flowPackLanes</code> broke the parity harness, which sat outside the node's scope; the coordinator stopped the automatic repair, granted the two parity files, and folded in the phase-set reuse and two tests that could not fail. The new code reached the reader only after <code>reckon.service</code> was restarted at 10:21 UTC. Discovery is derived in a refresh child and stored, so the served process never executed the changed schedule code and never reloaded, and the stored result kept its old shape under the unchanged parent revision. Plan sections for that follow.</p>
+  </section>
+
 </main>
 </body>
 </html>
