@@ -256,7 +256,7 @@ def test_a_dimension_below_its_floor_surfaces_beside_a_passing_total(
     assert row["floor"] == DECLARED_FLOOR
     assert row["plan"] == FIXTURE_PLAN
     assert "folded" in str(row["next_command"])
-    assert "exempted" in str(row["next_command"])
+    assert "exempted" in str(row["exempt_alternative"])
 
 
 def test_a_review_of_a_superseded_revision_owes_nothing(fixture: Fixture) -> None:
