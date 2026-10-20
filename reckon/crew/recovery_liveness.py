@@ -408,9 +408,7 @@ def _process_reading(
 
 def _record_newest_stream(record: Mapping[str, Any]) -> tuple[Path, float] | None:
     """A record's newest stream, through the shared reader."""
-    return newest_stream(
-        _run_directory(record), include=(record.get("log_path"),)
-    )
+    return newest_stream(_run_directory(record), include=(record.get("log_path"),))
 
 
 def _run_stream_mtime(record: Mapping[str, Any]) -> float | None:
@@ -612,9 +610,7 @@ def _stranded_launch(record: Mapping[str, Any], *, now_seconds: float) -> bool:
     return now_seconds - started > STRANDED_LAUNCH_BOUND_SECONDS
 
 
-def _run_stream_quiet_seconds(
-    record: Mapping[str, Any], *, now_seconds: float
-) -> int:
+def _run_stream_quiet_seconds(record: Mapping[str, Any], *, now_seconds: float) -> int:
     """Quiet time for a run, from its current attempt's own log and launch.
 
     Two clocks bound the reading, and the later of them decides. One is the
@@ -834,9 +830,7 @@ def _manifest_wait(
         if reason
     )
     if files and declared_probe:
-        missing.append(
-            "either wait_probe or wait_file, not both: a wait has one shape"
-        )
+        missing.append("either wait_probe or wait_file, not both: a wait has one shape")
     if declared_probe and _wait_probe_cannot_fail(declared_probe):
         # A probe that runs but cannot differ is satisfied unconditionally, so
         # a wait resting on it reads the same however the awaited work is
@@ -1105,7 +1099,10 @@ def _env_scan_run_pid(record: Mapping[str, Any]) -> int | None:
     this user's process table costs a read per process, so it is asked only
     after the cheaper reads have failed, and only for a run whose own record
     shows a worker existed. A foreign run is never read here: a number is
-    meaningful only on the machine that issued it.
+    meaningful only on the machine that issued it. The walk itself is served by
+    a shared index of the environment each process was last read with, so a
+    second run scanned in the same beat, or a process unchanged since an
+    earlier beat, is answered without opening an environment.
     """
     run_id = str(record.get("run_id") or "")
     if not run_id or _record_is_known_foreign(record):
