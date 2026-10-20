@@ -1,0 +1,51 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-20T02:31:46.081Z",
+  "dispatched_at": "2026-10-20T02:16:32Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T013926648835-each-admission-pass-records-its-verdict/logs/importer-head.log",
+      "line": 8,
+      "severity": "blocking",
+      "severity_note": "the arm's own log does not support the completed:true it is recorded with; repair by re-running the head population arm to a log that ends in a bare EXIT= line, or by correcting after_suite.completed.",
+      "text": "the head importer arm's log is truncated mid-run: its last line reads '...F' with no pytest summary line and no bare EXIT= line, yet the manifest records after_suite as completed:true, exit_status:1, failure_count:1, log_path importer-head.log. The receipt the record cites therefore cannot show the 76 passed/1 failed it claims, and the landed evidence fragment's own claim that every log 'ends in a bare EXIT= line' is false of this one. The figures do appear in the worker's own stream (stream.jsonl carries '1 failed, 76 passed in 183.22s'), and the base arm logs/importer-base.log is complete with a readable summary and EXIT=1, so the substance is corroborated, but the named artefact is not readable and promotion reads the EXIT= line from a log."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": 910,
+      "severity": "follow-on",
+      "text": "_append_bounded_log_line duplicates an owner the repository already has: reckon/crew/picker/__init__.py:76 _append_crew_log_line is the declared shared crew-home log writer ('Both callers ... pass through here'), and the addition copies its body verbatim -- crew_home() parent mkdir, json.dumps(separators=(',',':'), default=str), one os.write on an O_APPEND descriptor, the same swallowed exception -- without calling or extending it. Only the trim is new, so the crew-home JSONL writer now exists twice and a change to one (locking, encoding, error policy) silently diverges from the other."
+    },
+    {
+      "file": "docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/each-admission-pass-records-its-verdict.html",
+      "line": 4,
+      "severity": "follow-on",
+      "text": "the measure paragraph opens 'Measure, all at revision 3b7793ab3', but the focused gate ran at the head: logs/focused-head.log's header reads '# rev 46b9411e99ff8f45d4cebf2723f14878b58ba997 tree <the reviewed worktree>', and importer-head.log's header names the same head with module_file under it. Only the base arm and the pre-commit negative control belong to 3b7793ab3, so the landed fragment cites the base revision for a measure taken at the head."
+    },
+    {
+      "file": "tests/test_each_admission_pass_records_its_verdict.py",
+      "line": 259,
+      "severity": "follow-on",
+      "text": "assert launched_pointer['allowance'] == 2 has the same-variable shape: the 2 is the worker_slots figure the test itself published into the lane document at line 220, so both sides move together and the assertion holds for any implementation that passes the published figure straight through, including one that never applies the held-versus-open decision. The sibling at line 254 does discriminate, because the code maps a held read to a literal 0 rather than echoing the input, and line 260's allowance_source compares against a string the test never supplies."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to append one bounded JSON line per admission pass recording each queued pointer's verdict; reckon/crew/queue_admission.py:931 _record_pass_verdicts writes it from admit_until_stopped and the log lands at <crew home>/admission-verdicts.jsonl (reckon/crew/queue_admission.py:56), beside pick-timings.jsonl as the plan's Deliverable requires.\nVERDICT done_when: the plan's \u00a730 Done-when is asserted by tests/test_each_admission_pass_records_its_verdict.py -- held-then-launched through a stub launch (line 229), refusal then back-off with the pointer's own retry_at (line 270), no-pointer pass writes no line (line 297), and the size-bound trim (line 314); logs/focused-head.log records 4 passed EXIT=0 at 46b9411e9.\nVERDICT write_paths: the manifest declares reckon/crew/queue_admission.py, tests/test_each_admission_pass_records_its_verdict.py, the evidence fragment and a figures directory; git show --stat at 46b9411e9 changes exactly the first three, all inside that scope.\nVERDICT manifest: read; it records the focused gate, the negative control (3 failed, 1 passed, EXIT=1), the two population arms, ruff, and the head arm's module_file and cwd; its after_suite.completed:true is the one field the artefacts do not support.\nVERDICT diff: read commit by commit against base 3b7793ab3; a single commit 46b9411e9 touches reckon/crew/queue_admission.py (+221), tests/test_each_admission_pass_records_its_verdict.py (+338) and the evidence fragment (+11), and the _session_allowance -> _session_allowance_read rename leaves no dangling reference (git grep finds only the new name).\nCALL_SITES: reckon/crew_run_commands.py:3383 (queue_admission.admit_until_stopped, the crew admit CLI entry)\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:931 writes the line and every verdict the Deliverable lists is emitted, but the Why's 'never considered' class still leaves no line because admit_once filters by lane before it decides, as the manifest's follow_ons concedes.\nSCORE evidence: 12\nJUSTIFICATION evidence: tests/test_each_admission_pass_records_its_verdict.py's run is recorded green in logs/focused-head.log (4 passed, EXIT=0) with a red control in logs/negative-control.log, but the after_suite arm's log logs/importer-head.log has no summary and no EXIT= line.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git show --stat 46b9411e9 changes only the three files the manifest declares, and no path outside the declared write paths is touched.\nSCORE durability: 16\nJUSTIFICATION durability: logs/negative-control.log shows removing the per-pass append reddens test_a_held_then_launched_pass_writes_one_line_each at tests/test_each_admission_pass_records_its_verdict.py:246 (AssertionError: [] == 2), so the guard is falsified by the regression it names.\nSCORE fit: 18\nJUSTIFICATION fit: the new helpers at reckon/crew/queue_admission.py:855-968 follow the module's existing private-helper and docstring idiom, the broad except carries the same noqa rationale as reckon/crew/picker/__init__.py:94, and no name carries a plan, sprint or ticket identifier.\nSCORE reuse: 4\nJUSTIFICATION reuse: reckon/crew/queue_admission.py:910 re-implements reckon/crew/picker/__init__.py:76 _append_crew_log_line, the repository's declared shared crew-home log writer, instead of wrapping or extending it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T013926648835-each-admission-pass-records-its-verdict/logs/importer-head.log:8 blocking: the head importer arm's log is truncated with no summary and no bare EXIT= line, so the after_suite record it is cited for cannot be read from it.\nFINDING reckon/crew/queue_admission.py:910 follow-on: _append_bounded_log_line duplicates reckon/crew/picker/__init__.py:76 _append_crew_log_line rather than extending the owner of the capability.\nFINDING docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/each-admission-pass-records-its-verdict.html:4 follow-on: the measure is cited as taken at revision 3b7793ab3 while the focused gate and the head arm ran at 46b9411e9.\nFINDING tests/test_each_admission_pass_records_its_verdict.py:259 follow-on: the launched allowance assertion compares against the value the test itself published, so it holds for a pass-through implementation.",
+  "review_run_id": "r-20261020T021446338073-review-of-each-admission-pass-records-its-verdict-46b9411e99ff",
+  "reviewed_base_sha": "3b7793ab3e873e3ab2e7c2a69ec064a1d8945d42",
+  "reviewed_head_sha": "46b9411e99ff8f45d4cebf2723f14878b58ba997",
+  "reviewed_run_id": "r-20261020T013926648835-each-admission-pass-records-its-verdict",
+  "scores": {
+    "durability": 16,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 4,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T02:44:25.024372+00:00",
+  "total": 84
+}
