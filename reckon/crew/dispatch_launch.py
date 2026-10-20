@@ -1076,11 +1076,63 @@ def resolve_launch_executable(
     return dataclasses.replace(plan, argv=argv)
 
 
+# The node-local directories a placed step creates before it execs the fence,
+# separated by os.pathsep. The fence binds node-local paths by source, and the
+# launch is composed on whichever host dispatched it, which need not be the
+# node the step lands on, so the sources are created where the step runs.
+STEP_NODE_DIRS_ENV = "RECKON_STEP_NODE_DIRS"
+
+# The roots whose contents belong to one node: its own /tmp and its RAM-backed
+# /dev/shm. A bind source beneath either exists only on the host that made it.
+NODE_LOCAL_SHM_ROOT = Path("/dev/shm")
+
+_FENCE_BIND_FLAGS = ("--bind", "--ro-bind", "--dev-bind")
+
 _STEP_TASK_WRAPPER = (
+    f'if [ -n "${{{STEP_NODE_DIRS_ENV}:-}}" ]; then '
+    f"(set -f; IFS=:; mkdir -p -- ${STEP_NODE_DIRS_ENV}) || exit 1; fi && "
     "start=$(awk '{print $22}' \"/proc/$$/stat\") && "
     'printf "%s %s %s %s\\n" "$SLURM_JOB_ID" "$SLURM_STEP_ID" "$$" "$start" '
     '> "$RECKON_STEP_RECORD" && exec "$@"'
 )
+
+
+def step_node_directories(argv: Iterable[str]) -> list[str]:
+    """The node-local directory bind sources a placed step must find on its node.
+
+    Read from the fence's own bind triples, up to its ``--`` separator: every
+    source beneath the node's ``/tmp`` or ``/dev/shm`` that is a directory on
+    the composing host. A file or socket source is left out, so the step never
+    turns one into a directory, and a source that is a node-local root itself
+    exists on every node and is left out too.
+    """
+    from reckon import _worker_fence
+
+    roots = (Path(_worker_fence.NODE_TMP_ROOT), NODE_LOCAL_SHM_ROOT)
+    words = [str(word) for word in argv]
+    try:
+        start = next(
+            index
+            for index, word in enumerate(words)
+            if Path(word).name == _backends.FENCE_BINARY
+        )
+    except StopIteration:
+        return []
+    found: list[str] = []
+    index = start + 1
+    while index < len(words) and words[index] != "--":
+        if words[index] in _FENCE_BIND_FLAGS and index + 2 < len(words):
+            source = Path(words[index + 1])
+            if (
+                any(source != root and source.is_relative_to(root) for root in roots)
+                and source.is_dir()
+                and str(source) not in found
+            ):
+                found.append(str(source))
+            index += 3
+            continue
+        index += 1
+    return found
 
 
 def apply_backend_placement(
@@ -2356,6 +2408,9 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
         step_record = Path(str(spec["run_directory"])) / "step-task.txt"
         step_record.unlink(missing_ok=True)
         environment["RECKON_STEP_RECORD"] = str(step_record)
+        node_directories = step_node_directories(argv)
+        if node_directories:
+            environment[STEP_NODE_DIRS_ENV] = os.pathsep.join(node_directories)
 
     def attempt() -> subprocess.Popen:
         with (
