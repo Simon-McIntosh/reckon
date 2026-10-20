@@ -71,6 +71,9 @@ def test_project_roadmap_enumerates_named_and_unnamed_endpoints() -> None:
     assert all("handle" in row for row in rows)
     assert rows[0]["completion"] == {"shipped": 1, "total": 3}
     assert rows[0]["shipped_fraction"] == 0.333
+    # The endpoint carries the closure's progress roll-up: one shipped member of
+    # three, no authored hours, so the plain mean of the members' figures.
+    assert rows[0]["progress"] == pytest.approx(1 / 3)
     assert rows[0]["held"] == 1
     assert rows[0]["open_decision_count"] == 1
     assert rows[0]["structural_depth"] == 3
@@ -95,6 +98,7 @@ def test_unnamed_endpoint_matches_the_authored_handle_read() -> None:
     }
     assert unnamed["structural_depth"] == named["critical_path"]["depth"]
     assert unnamed["completion"] == named["completion"]
+    assert unnamed["progress"] == pytest.approx(named["progress"])
     assert [row["repository"] for row in unnamed["repositories"]] == named[
         "repositories"
     ]

@@ -114,7 +114,14 @@ function _graphEndpointView(endpoint, members, hopCount, fallbackProject) {
     shipped,
     held,
     total,
-    shippedPercent: total ? Math.round((shipped / total) * 100) : 0,
+    // No progress figure on this path. The closure's roll-up is computed
+    // server-side and reaches the surface as endpoint.progress, which only the
+    // served roadmap payload carries. Deriving one from the members here would
+    // be the surface inventing a figure, and showing the endpoint plan's own
+    // impl would put a member's number in the closure's slot — a reader could
+    // not tell the two apart. The slot stays empty until the payload supplies
+    // the roll-up.
+    shippedPercent: null,
     openDecisions,
     structuralDepth,
     averageWidth: total ? (total / structuralDepth).toFixed(2) : "0.00",
@@ -191,7 +198,10 @@ function _roadmapEndpointRows(endpoints) {
       shipped,
       held,
       total,
-      shippedPercent: Math.round(Number(endpoint.shipped_fraction || 0) * 100),
+      // The closure's progress roll-up, computed by the roadmap's one roll-up
+      // function over the member plans; the shipped/total counts above stay
+      // counts. The surface renders the served figure, it derives nothing.
+      shippedPercent: Math.round(Number(endpoint.progress || 0) * 100),
       openDecisions,
       structuralDepth,
       averageWidth: Number(endpoint.average_width || 0).toFixed(2),
@@ -574,9 +584,13 @@ function DependencyChainView({ onNav }) {
               <span className="r-graph-index-title">{row.title}</span>
               <span className="r-graph-index-slug">/{row.slug}</span>
               <span className="r-graph-index-bar">
-                <i style={{ width: `${row.shippedPercent}%` }} />
+                {row.shippedPercent !== null && (
+                  <i style={{ width: `${row.shippedPercent}%` }} />
+                )}
               </span>
-              <span className="r-graph-index-pct">{row.shippedPercent}%</span>
+              <span className="r-graph-index-pct">
+                {row.shippedPercent === null ? "—" : `${row.shippedPercent}%`}
+              </span>
               <span className="r-graph-index-shape">
                 {row.total} members · {row.structuralDepth} deep
               </span>

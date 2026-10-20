@@ -119,6 +119,10 @@ function DerivedFlow({ runs, project }) {
                     const plan = item.plan;
                     const status = String(plan.status || "pending").toLowerCase();
                     const dimmed = Boolean(selectedSprint && plan.sprint !== selectedSprint);
+                    // The plan's progress figure, as served on the inventory
+                    // row the bar resolved against: the surface states it, it
+                    // derives nothing.
+                    const progressPct = Math.round(Number(plan.impl || 0) * 100);
                     return (
                       <a
                         href={`#plan/${plan.slug}`}
@@ -129,10 +133,11 @@ function DerivedFlow({ runs, project }) {
                           width: `${Math.max(0, flowPercent(item.end, schedule) - flowPercent(item.start, schedule))}%`,
                           opacity: dimmed ? 0.28 : 1,
                         }}
-                        title={`${plan.title || plan.slug} · ${plan.sprint || "unscheduled"} · ${status} · ${item.wall_hours}h wall-clock`}
+                        title={`${plan.title || plan.slug} · ${plan.sprint || "unscheduled"} · ${status} · ${item.wall_hours}h wall-clock · ${progressPct}%`}
                       >
                         <span className="r-derived-flow-sprint-chip">{plan.sprint || "—"}</span>
                         <strong>{plan.title || plan.slug}</strong>
+                        <span className="r-derived-flow-progress">{progressPct}%</span>
                         <span className="r-derived-flow-hours">{item.wall_hours}h</span>
                       </a>
                     );

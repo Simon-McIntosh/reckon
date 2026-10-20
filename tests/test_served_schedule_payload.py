@@ -192,14 +192,14 @@ def test_discovery_serves_the_derived_schedule(
     # are exact because their positions come from status and the chain, not
     # from an edited stamp.
     assert served["lane_count"] == 2
-    assert [bar["slug"] for bar in served["bars"]] == [
+    assert [bar["plan"] for bar in served["bars"]] == [
         "recorded-wide",
         "recorded-early",
         "active-work",
         "pending-first",
         "pending-second",
     ]
-    by_slug = {bar["slug"]: bar for bar in served["bars"]}
+    by_slug = {bar["plan"]: bar for bar in served["bars"]}
     early, wide = by_slug["recorded-early"], by_slug["recorded-wide"]
     assert early["end"] - early["start"] == pytest.approx(8, abs=0.01)
     assert wide["end"] - wide["start"] == pytest.approx(32, abs=0.01)
@@ -215,10 +215,11 @@ def test_discovery_serves_the_derived_schedule(
     )
     assert by_slug["pending-second"]["end"] == pytest.approx(34, abs=0.02)
     for bar in served["bars"]:
-        assert {"slug", "plan", "start", "end", "wall_hours"} <= set(bar)
-        # The bar names its plan by slug; the reader resolves it against the
-        # inventory the same payload carries, so no bar repeats a whole row.
-        assert bar["plan"] == bar["slug"]
+        assert {"plan", "start", "end", "wall_hours"} <= set(bar)
+        # The bar names its plan once, by slug; the reader resolves it against
+        # the inventory the same payload carries, so no bar repeats a whole row
+        # and no bar states its plan twice.
+        assert "slug" not in bar
     assert "decisions" not in json.dumps(served["bars"])
     assert served["low"] <= 0 <= served["high"]
     assert served["high"] == max(24.0, served["latest_end_hours"])
@@ -263,7 +264,7 @@ def test_attach_schedule_uses_the_live_runs_and_the_given_reference(
     # The live run's dispatch reaches the derivation: the active bar starts at
     # the dispatch, 4 hours before the reference, rather than at the reference.
     active = next(
-        bar for bar in payload["schedule"]["bars"] if bar["slug"] == "active-work"
+        bar for bar in payload["schedule"]["bars"] if bar["plan"] == "active-work"
     )
     assert active["start"] == -4
     assert active["end"] == 4
@@ -277,7 +278,7 @@ def test_attach_schedule_uses_the_live_runs_and_the_given_reference(
         reference=REFERENCE + timedelta(hours=6),
     )
     moved = next(
-        bar for bar in raised["schedule"]["bars"] if bar["slug"] == "active-work"
+        bar for bar in raised["schedule"]["bars"] if bar["plan"] == "active-work"
     )
     assert moved["start"] == -10
     assert moved["end"] == -2
@@ -321,7 +322,6 @@ def test_state_loader_carries_the_served_schedule_to_window_state() -> None:
         "high": 30.0,
         "bars": [
             {
-                "slug": "pending-second",
                 "plan": "pending-second",
                 "start": 18.0,
                 "end": 30.0,
@@ -340,7 +340,7 @@ def test_state_loader_carries_the_served_schedule_to_window_state() -> None:
         }
     )
     assert state["schedule"] == served
-    assert state["schedule"]["bars"][0]["slug"] == "pending-second"
+    assert "slug" not in state["schedule"]["bars"][0]
     assert state["schedule"]["bars"][0]["plan"] == "pending-second"
 
 
@@ -376,8 +376,8 @@ def test_the_schedule_payload_references_plans_by_slug_and_halves_its_size(
         **{key: value for key, value in served.items() if key != "bars"},
         "bars": [
             {
-                "slug": bar["slug"],
-                "plan": by_slug[bar["slug"]],
+                "slug": bar["plan"],
+                "plan": by_slug[bar["plan"]],
                 "start": bar["start"],
                 "end": bar["end"],
                 "wall_hours": bar["wall_hours"],
@@ -388,6 +388,8 @@ def test_the_schedule_payload_references_plans_by_slug_and_halves_its_size(
 
     assert served["bars"]
     for bar in served["bars"]:
-        assert bar["plan"] == bar["slug"]
+        assert "slug" not in bar
+        # The bar names its plan once, under the key the surface resolves.
+        assert bar["plan"] in by_slug
     assert "decisions" not in json.dumps(served)
     assert len(json.dumps(served)) <= len(json.dumps(embedded)) / 2
