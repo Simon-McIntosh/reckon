@@ -1,4 +1,4 @@
-"""``crew unwatch`` leaves a sender record before it signals the watcher.
+"""``crew watch --stop`` leaves a sender record before it signals the watcher.
 
 A watcher has no run directory, so before this the stop it issued recorded
 nothing: the producer's stream simply ended and the next unattributed watcher

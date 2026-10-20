@@ -6,6 +6,7 @@ from typing import Any
 
 import click
 
+from reckon.crew.tombstones import tombstone_command
 from reckon.crew_dispatch_commands import (
     _budget_check_report,
     _crew_modules,
@@ -17,6 +18,10 @@ from reckon.crew_dispatch_commands import (
     _resolved_session,
     crew,
 )
+
+# Preserve the CLI re-export while the retired name resolves through the
+# crew group's tombstone lookup.
+crew_unwatch = tombstone_command("unwatch")
 
 
 @crew.command(name="resume-ready")
@@ -96,21 +101,6 @@ def crew_merge(project, head, message, body, candidate, pretty):
     except merge.MergeError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit_crew_result(report, pretty)
-
-
-@crew.command(name="unwatch")
-@click.option("--project", required=True, help="Project whose watcher to stop.")
-@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_unwatch(project, pretty):
-    """Stop the registered project watcher and release its live seat."""
-    from reckon.crew.node import CrewError
-    from reckon.crew.recovery import unwatch
-
-    try:
-        result = unwatch(project)
-    except CrewError as exc:
-        raise click.ClickException(str(exc)) from exc
-    _emit_crew_result(result, pretty)
 
 
 @crew.command(name="placement")

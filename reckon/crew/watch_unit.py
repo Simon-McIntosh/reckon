@@ -932,12 +932,12 @@ def watch_cycle_line(project: str) -> str:
     The ensure command alone cannot do it: a unit already active on an unchanged
     definition is reported rather than restarted, and a watcher armed as a plain
     process is not a unit at all. Releasing the seat first is what makes the
-    arming take — ``unwatch`` stops the registered watcher and clears its
+    arming take — ``watch --stop`` stops the registered watcher and clears its
     record, so the arming that follows finds no live seat to contend with and
     starts on the code on disk now.
     """
     return (
-        f"reckon crew unwatch --project {shlex.quote(project)} && "
+        f"reckon crew watch --stop --project {shlex.quote(project)} && "
         + watcher_ensure_line(project)
     )
 

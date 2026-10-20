@@ -2224,13 +2224,13 @@ def _follow_watch_lines(
 
         The follower and the seat are judged from the same shared home, so a
         reader routinely reads a seat armed on another node. There the cycle
-        pair is a command this reader cannot run: ``unwatch`` refuses a seat
+        pair is a command this reader cannot run: ``watch --stop`` refuses a seat
         whose record names a foreign host, so printing it sends the reader to a
         refusal. A producer runs the follower's own image held as a seat, and
         that image re-executes in place when the code stamp moves -- the reload
         the note for it already names -- so a foreign seat is one that will
         catch up on its own rather than one to cycle by hand. The line says so,
-        and carries no command the reader's ``unwatch`` would refuse.
+        and carries no command the reader's ``watch --stop`` would refuse.
         """
         host, foreign = _read_seat_host(project)
         stamps = (
@@ -3544,6 +3544,11 @@ def crew_follow(
 @crew.command(name="watch")
 @click.option("--project", required=True, help="Project whose live fleet to watch.")
 @click.option(
+    "--stop",
+    is_flag=True,
+    help="Stop the registered project watcher and release its live seat.",
+)
+@click.option(
     "--stall-window",
     default="15m",
     show_default=True,
@@ -3594,6 +3599,7 @@ def crew_follow(
 @_ticker_options
 def crew_watch(
     project,
+    stop,
     stall_window,
     exit_on_empty,
     once,
@@ -3613,6 +3619,17 @@ def crew_watch(
     ``watcher-required`` instead of a worker. Following holds the seat from an
     empty project, through every landing, until the fleet drains.
     """
+    if stop:
+        from reckon.crew.node import CrewError
+        from reckon.crew.recovery import unwatch
+
+        try:
+            result = unwatch(project)
+        except CrewError as exc:
+            raise click.ClickException(str(exc)) from exc
+        _emit_crew_result(result, pretty)
+        return
+
     from reckon.crew.dispatch_watch import _scrub_session_identity
 
     # The producer outlives the session that armed it and sweeps every

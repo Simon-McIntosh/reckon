@@ -2,7 +2,7 @@
 
 A per-project ``crew watch`` producer is detached and reparented to init, so
 nothing but its own lease ends it. The seat record at ``watch_lock_path`` is the
-file ``crew unwatch`` opens to find it: the record holds the advisory lock the
+file ``crew watch --stop`` opens to find it: the record holds the advisory lock the
 process table reads liveness from and carries the pid unwatch signals. When that
 file is unlinked under a running producer nothing recreates it, so unwatch opens
 a fresh inode, takes a lock the producer believes it still holds, and answers

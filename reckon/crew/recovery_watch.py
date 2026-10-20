@@ -2308,7 +2308,7 @@ def _refuse_unresolvable_watch(project: str) -> None:
 def _recreate_unlinked_registration(project: str, watcher: Mapping[str, Any]) -> bool:
     """Restore the seat record when an unlink took its path out from under us.
 
-    The seat record is the file ``crew unwatch`` opens to find the producer it
+    The seat record is the file ``crew watch --stop`` opens to find the producer it
     must stop. Its record holds the advisory lock the process table reads
     liveness from and carries the pid unwatch signals. A record unlinked under a
     live producer leaves nothing at the path,

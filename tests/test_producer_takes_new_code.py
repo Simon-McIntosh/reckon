@@ -66,10 +66,12 @@ RELOAD_WITHIN_SECONDS = 15.0
 
 @pytest.fixture()
 def isolated_home(tmp_path, monkeypatch) -> Path:
-    """Keep registrations, pointers, and streams in temporary state."""
+    """Keep watcher state and source identity inside the test copy."""
     home = tmp_path / "config"
     home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(home))
+    monkeypatch.delenv("RECKON_FOLLOWER_SOURCE_ROOT", raising=False)
+    monkeypatch.delenv("RECKON_FOLLOWER_IMAGE_COMMIT", raising=False)
     return home
 
 
@@ -625,7 +627,7 @@ def test_the_follower_names_a_producer_running_older_code(
     # The remedy is a release and an arming, in that order, and both parse.
     remedy_parts = [part.strip() for part in event["remedy"].split("&&")]
     assert len(remedy_parts) == 2, event["remedy"]
-    assert remedy_parts[0].startswith("reckon crew unwatch")
+    assert remedy_parts[0].startswith("reckon crew watch --stop")
     assert remedy_parts[1].startswith("reckon crew watch --ensure")
     for part in remedy_parts:
         assert _command_parses(part), f"the remedy does not parse: {part!r}"
