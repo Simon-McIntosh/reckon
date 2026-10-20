@@ -74,6 +74,17 @@
         neither file is in this node's write scope, which the plan fixes to
         <code>promotion_scope.py</code> and the new test file. The node stops rather than edit
         them unilaterally, and the two required edits are recorded for the coordinator.</p>
+      <p>The delta was measured rather than asserted. At base the importing set is
+        <code>1 failed, 167 passed</code> (log <code>baseline-suite.log</code>) and at head
+        <code>3 failed, 168 passed</code> (log <code>after-suite.log</code>) — the single added
+        baseline failure is the bwrap sandbox case
+        <code>test_the_primary_arm_cannot_read_the_shadows_session_directory</code>, which fails
+        because the fence mounts the pytest temporary directory read-only and is unrelated to
+        this change. A proposed patch for the two stale tests
+        (<code>proposed-test-updates.patch</code>, in this run's directory) applied in a scratch
+        tree gives <code>1 failed, 170 passed</code> (log
+        <code>after-suite-with-proposed.log</code>): the delta closes to that one environmental
+        failure, so the two edits are sufficient and no further change is needed.</p>
     </section>
   </main>
 </body>
