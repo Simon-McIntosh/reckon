@@ -23,8 +23,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S26">
-<meta name="plan-version" content="60">
-<meta name="plan-modified" content="2026-10-17">
+<meta name="plan-version" content="61">
+<meta name="plan-modified" content="2026-10-20">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;deferred&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="f2ea9301,5b1759ab,428477c7">
 <meta name="plan-impl" content="0.4">
@@ -417,14 +417,14 @@
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="svg-figure-delivery" data-choice="" data-by="" data-when="" data-sections="s4,s8" data-recommended="render-to-png" data-recommended-by="reckon-build">
+<div class="r-dec" data-key="svg-figure-delivery" data-choice="render-to-png" data-by="smc" data-when="2026-10-20T06:40:37+00:00" data-sections="s4,s8" data-recommended="render-to-png" data-recommended-by="reckon-build">
     <p class="r-dec-q">How should a figure review handle an SVG figure?</p>
     <p class="r-dec-ctx">§8 measured that codex judges a PNG correctly and receives nothing from an SVG: all ten SVG runs answered NO IMAGE RECEIVED, though each launch carried the -i flag naming the file. The workstation&#x27;s figure rule is one SVG per figure under docs/figures/, so most figures a review would check are SVGs. Today a figure review of an SVG would therefore see nothing.</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="render-to-png">The dispatch renders each SVG figure to PNG (as rsvg-convert -w 1400 does for the producer&#x27;s own check) and attaches the PNG</button>
+      <button class="r-opt chosen" data-value="render-to-png">The dispatch renders each SVG figure to PNG (as rsvg-convert -w 1400 does for the producer&#x27;s own check) and attaches the PNG</button>
       <button class="r-opt" data-value="png-only-scope">A figure review accepts PNG figures only and refuses a node whose figures are SVG</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">§8 measured codex judging all five pairs correctly as PNG and none as SVG: every SVG run answered NO IMAGE RECEIVED although its launch carried the file, and codex raised no error. The figure rule keeps one SVG per figure, so a review limited to PNG would refuse almost every figure, or force the PNG twins the rule bans. The dispatch therefore renders each SVG to a 1400 px PNG in the run directory and attaches that, and the repository keeps the SVG alone. Accepted cost: one section of work, and a renderer wherever dispatch runs (rsvg-convert on login nodes, the convert fallback on compute nodes).</p>
     </div>
 <div class="r-dec" data-key="figure-review-on-metered-lane" data-choice="" data-by="" data-when="" data-sections="s4" data-recommended="exempt-figure-reviews" data-recommended-by="reckon-build">
     <p class="r-dec-q">May a figure review run on a metered lane?</p>
