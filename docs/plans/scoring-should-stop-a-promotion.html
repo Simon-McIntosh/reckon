@@ -21,7 +21,7 @@
   <title>Scoring Should Stop A Promotion | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="254">
+<meta name="plan-version" content="256">
 <meta name="plan-modified" content="2026-10-20">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s2c&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s4b&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s5c&quot;:&quot;done&quot;,&quot;s5d&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;deferred&quot;}">
 <meta name="plan-informs" content="background-agent-fitness-and-dispatch-scope">
@@ -2552,10 +2552,19 @@
     <code>a-review-can-see-the-figure</code> §10 renders on the dispatch. §18 keeps it from superseding the text review, and §19 makes
     promotion read its verdict.</p>
 
-    <p><strong>Write paths:</strong> <code>reckon/crew/figure_review.py</code> (new),
-    <code>reckon/crew/prompts/figure-review.md</code> (new),
+    <p><strong>Reuse.</strong> The run-review machinery already takes a rubric: the claims
+    and health reviews are rubrics of <code>reckon/crew/review.py</code>, each a versioned prompt
+    file in <code>reckon/crew/prompts/</code> read at call time, with the rubric's name stored on
+    the review record. The figure review is one more rubric of that machinery, not a new role
+    module: a <code>figure</code> rubric constant, its prompt
+    <code>reckon/crew/prompts/figure_review.md</code>, and its parser beside the claims rubric's.
+    The trigger lives where the reflex already decides what to dispatch. The section adds one
+    prompt file and one rubric and no public module; the per-lane refusal it once needed was
+    retired with <code>select_profile_backend</code>.</p>
+
+    <p><strong>Write paths:</strong> <code>reckon/crew/review.py</code>,
+    <code>reckon/crew/prompts/figure_review.md</code> (new),
     <code>reckon/crew/recovery_review_dispatch.py</code>,
-    <code>reckon/crew/review.py</code>,
     <code>tests/test_figure_review.py</code> (new).</p>
 
     <p><strong>Done when</strong> a run whose commits add or change <code>docs/figures/p/a.svg</code>
@@ -2563,8 +2572,9 @@
     rendered from that SVG rather than the SVG itself; a run that changes only source has its
     text review and no figure review; with no lane declaring image input the figure review is
     held and its reason names the image modality; the composed brief states each figure rule
-    above and that the reviewer writes nothing; the stored review record carries <code>review_kind: "figure"</code>, and a record
-    without the field reads as a text review, so a reader can tell the two apart; the
+    above and that the reviewer writes nothing; the stored review record carries <code>rubric: "figure"</code>, written by
+    <code>reckon/crew/review.py</code>, and a run review with no rubric or another rubric reads as
+    a text review, so a reader can tell the two apart; the
     figure review's record is stored at its own path, keyed by its kind as well as the run
     and the head (<code>review_path</code> in <code>reckon/crew/review.py</code> keys on run and
     head alone today), so a figure review at the head the text review read never overwrites
@@ -2638,9 +2648,9 @@
 
     <h2 id="s18">§18 — A figure review does not supersede the run&#x27;s text review</h2>
 <section data-reckon="section" data-id="s18" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
-<p><code>reckon/crew/review_lifecycle.py</code> treats a run review as superseded by any later review of the same run. A figure review (§6) is a later review of the same run, so without this section it would supersede the run's text review, and the obligations view, the reader that consults a run review's supersession, would drop the text review's findings. A run's text review and its figure review are separate subjects, as a plan's design and content reviews are: a later review supersedes an earlier one of the same kind only. The kind is the <code>review_kind</code> field §6 writes on the stored record, <code>"figure"</code> for a figure review, with a record that has no such field read as a text review. §6 also stores the figure review at its own path, so the two records coexist at one head rather than one replacing the other.</p>
+<p><code>reckon/crew/review_lifecycle.py</code> treats a run review as superseded by any later review of the same run. A figure review (§6) is a later review of the same run, so without this section it would supersede the run's text review, and the obligations view, the reader that consults a run review's supersession, would drop the text review's findings. A run's text review and its figure review are separate subjects, as a plan's design and content reviews are: a later review supersedes an earlier one under the same rubric only. The rubric is the <code>rubric</code> field <code>reckon/crew/review.py</code> stores on a run review, <code>"figure"</code> for a figure review, with a review under no rubric or another rubric read as a text review. §6 also stores the figure review at its own path, so the two records coexist at one head rather than one replacing the other.</p>
 <p><strong>Write paths:</strong> <code>reckon/crew/review_lifecycle.py</code>, <code>tests/test_a_figure_review_keeps_the_text_review.py</code> (new).</p>
-<p><strong>Done when</strong> a run with a stored text review followed by a figure review at the same head reads both as current and neither as superseded, where the figure review's record is built and stored by §6's own record writer in <code>reckon/crew/figure_review.py</code> rather than written by hand, so the key §6 writes and the key this section reads cannot drift apart; a later text review still supersedes the earlier text review, and a later figure review the earlier figure review; a run with only text reviews reads exactly as it does today; the test builds its stores in a temporary directory and reads nothing outside it; <code>ruff check</code> and <code>ruff format --check</code> add no findings on changed files; every log is written under the run directory, starts with its revision and the literal command, and ends in <code>EXIT=</code>; the coordinator runs the importer population of <code>reckon/crew/review_lifecycle.py</code> at merge. <strong>Negative control:</strong> with <code>review_kind</code> left out of the supersede order, the figure review supersedes the text review and the test fails.</p>
+<p><strong>Done when</strong> a run with a stored text review followed by a figure review at the same head reads both as current and neither as superseded, where the figure review's record is built and stored by the record writer in <code>reckon/crew/review.py</code> that §6 uses, rather than written by hand, so the field §6 writes and the field this section reads cannot drift apart; a later text review still supersedes the earlier text review, and a later figure review the earlier figure review; a run with only text reviews reads exactly as it does today; the test builds its stores in a temporary directory and reads nothing outside it; <code>ruff check</code> and <code>ruff format --check</code> add no findings on changed files; every log is written under the run directory, starts with its revision and the literal command, and ends in <code>EXIT=</code>; the coordinator runs the importer population of <code>reckon/crew/review_lifecycle.py</code> at merge. <strong>Negative control:</strong> with the rubric left out of the supersede order, the figure review supersedes the text review and the test fails.</p>
 
     <h2 id="s19">§19 — A blocking figure finding refuses promotion</h2>
 <section data-reckon="section" data-id="s19" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
@@ -3380,7 +3390,7 @@
     <div class="r-comment-body"><p>§17 landed: the landing staging waits out a briefly held index lock through the helper it now shares with the merge landing (head <code>3bcd48bc</code>, merge <code>576e64bb4</code>); review 108/120; the 78-file importer population adds no failing test. <a href="/reckon/evidence/archive/scoring-should-stop-a-promotion-landed.html#a-landing-write-waits-out-a-held-index-lock">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s17" data-id="c-run-r-20261020T091743111139-a-landing-write-waits-out-a-held-index-lock" data-who="reckon-build" data-when="2026-10-20T11:03:22Z">
-    <div class="r-comment-body"><p>The landing staging now runs its `git add` through the shared helper `reckon/crew/merge.py` already owned: it retries while the checkout holds a real `.git/index.lock`, for a bounded number of attempts, and each retry is recorded on the run&#x27;s landing record; the staging&#x27;s private loop and its `index.lock` message match are deleted. Two-arm gate base 1 failed/182 passed against head 1 failed/185 passed at 29525ad5a — no added failure; the negative control, which removes the wait, turns the declared first case red (EXIT=1).</p></div>
+    <div class="r-comment-body"><p>The landing staging now runs its `git add` through the shared helper `reckon/crew/merge.py` already owned: it retries while the checkout holds a real `.git/index.lock`, for a bounded number of attempts, and each retry is recorded on the run's landing record; the staging's private loop and its `index.lock` message match are deleted. Two-arm gate base 1 failed/182 passed against head 1 failed/185 passed at 29525ad5a — no added failure; the negative control, which removes the wait, turns the declared first case red (EXIT=1).</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
