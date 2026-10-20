@@ -249,3 +249,21 @@ def test_sessions_keep_their_temp_on_the_node_per_allocation(
     assert own.is_dir() and (own.stat().st_mode & 0o777) == 0o700
     assert removed == [stale]
     assert not stale.exists() and foreign.exists()
+
+
+def test_every_fleet_takes_service_leases_in_one_place(
+    isolated: dict[str, str],
+) -> None:
+    root = Path(isolated["HOME"]) / ".local" / "state" / "fleet"
+    # A named fleet's own state is apart, but its service leases are shared,
+    # so a service another fleet's node already runs is not started twice.
+    named = {
+        "FLEET_NAME": "codex-ambix",
+        "FLEET_STATE_DIR": str(root / "fleets" / "codex-ambix"),
+    }
+    assert fleet_supervisor.state_directory(named) == root / "fleets" / "codex-ambix"
+    assert fleet_supervisor.service_lease_directory(named) == root
+    assert fleet_supervisor.service_lease_directory({}) == root
+    assert fleet_supervisor.service_lease_directory(
+        {"FLEET_STATE_DIR": "/isolated"}
+    ) == Path("/isolated")
