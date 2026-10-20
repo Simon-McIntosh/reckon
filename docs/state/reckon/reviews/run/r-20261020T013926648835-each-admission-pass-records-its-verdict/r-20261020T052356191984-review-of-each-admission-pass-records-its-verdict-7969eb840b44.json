@@ -1,0 +1,25 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-20T05:37:17.757Z",
+  "dispatched_at": "2026-10-20T05:25:45Z",
+  "findings": [],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is one bounded JSON line per admission pass whose lane has a queued pointer, carrying each queued pointer's allowance read with its published source and the pass's verdict; the two gained commits repair the record's bound rather than change the goal, guarding the trim at reckon/crew/queue_admission.py:947-954 so a failing bound cannot end the service, and correcting the bound's description in the fragment.\nVERDICT done_when: the done-when names tests/test_each_admission_pass_records_its_verdict.py; the gained case test_a_trim_failure_leaves_the_pass_and_its_decision_intact (tests/test_each_admission_pass_records_its_verdict.py:374) injects an OSError-raising trim and asserts the pass ran to its end with its decision intact, and the manifest records the focused gate 6 passed EXIT=0 (logs/focused-head.log), the negative control 5 failed 1 passed EXIT=1 (logs/negative-control.log) and the pre-fix red of the new case alone (logs/trim-failure-prefix.log, EXIT=1).\nVERDICT write_paths: the node's declared write paths are reckon/crew/queue_admission.py, tests/test_each_admission_pass_records_its_verdict.py and docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/each-admission-pass-records-its-verdict.html; the gained diff cace3ca34..7969eb840 touches exactly those three files and nothing else.\nVERDICT manifest: read; it records status complete, the focused gate 6 passed EXIT=0 at f148c6d93, the negative control 5 failed 1 passed EXIT=1, the head importer arm 78 passed/1 failed against base 72 passed/the same 1 failed, and ruff check_exit=0 fmt_exit=0, each log named and ending in a bare EXIT= line.\nVERDICT diff: read commit by commit across the two gained commits; f148c6d93 wraps the reckon/crew/fleet_supervisor.py trim_service_log call in reckon/crew/queue_admission.py:947 with try/except OSError and adds the test at tests/test_...:374, and 7969eb840 rewrites the fragment's landing, measure, control and population paragraphs to state the read-then-truncate window, the f148c6d93 revision and the six-case counts; 3 files changed, 65 insertions, 12 deletions.\nCALL_SITES: reckon/crew_run_commands.py:3383\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:947-954 now bounds the pass record through the shared owner and survives a failing trim, which is the goal's 'one bounded JSON line per pass' kept true in the failure case.\nSCORE evidence: 18\nJUSTIFICATION evidence: the done-when's focused gate and its negative control are recorded at logs/focused-head.log (6 passed, EXIT=0) and logs/negative-control.log (5 failed, EXIT=1), and the new case's pre-fix red is logged at logs/trim-failure-prefix.log, though every code gate ran one commit behind the reviewed head 7969eb840 (at f148c6d93, whose code the docs-only head does not change).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained diff touches only the three declared write paths -- reckon/crew/queue_admission.py, tests/test_each_admission_pass_records_its_verdict.py and docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/each-admission-pass-records-its-verdict.html -- and carries nothing the repair does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_each_admission_pass_records_its_verdict.py:403 asserts calls == [1] and :405 asserts len(lines) == 1, which redden when the try/except at reckon/crew/queue_admission.py:947 is removed -- logs/trim-failure-prefix.log shows that reinstating the regression turns the case red with the OSError propagating out of the pass.\nSCORE fit: 18\nJUSTIFICATION fit: the guard at reckon/crew/queue_admission.py:947 follows the file's existing best-effort idiom, matching the internal swallow at reckon/crew/picker/__init__.py:76, and the updated docstring at reckon/crew/queue_admission.py:922-932 states the read-then-truncate window the mechanism actually has.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition; it wraps the existing owner reckon/crew/fleet_supervisor.py:610 trim_service_log and the existing writer reckon/crew/picker/__init__.py:76 _append_crew_log_line, so no capability is forked.\n",
+  "review_run_id": "r-20261020T052356191984-review-of-each-admission-pass-records-its-verdict-7969eb840b44",
+  "reviewed_base_sha": "cace3ca34cb03a3bb23a24fbfeff2ee7bd9f5e3f",
+  "reviewed_head_sha": "7969eb840b44fbd8f1c44b3c99ee1b1259f7ec3e",
+  "reviewed_run_id": "r-20261020T013926648835-each-admission-pass-records-its-verdict",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T05:38:24.497444+00:00",
+  "total": 113
+}
