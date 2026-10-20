@@ -1172,10 +1172,20 @@ def _sub_floor_items_by_session(
                 "score": finding["score"],
                 "floor": finding["floor"],
                 "next_command": (
-                    f"dispose {finding['dimension']} scored "
-                    f"{finding['score']} against a floor of {finding['floor']} "
-                    f"on run {run_id}: folded with the dispatched node's id, or "
-                    "exempted with the recorded reason"
+                    f"reckon crew dispose --project {shlex.quote(project)} "
+                    f"--run {shlex.quote(run_id)} "
+                    f"--dimension {shlex.quote(str(finding['dimension']))} "
+                    "--kind folded --node '<the node the finding went into>'"
+                ),
+                # The exemption is the other shape the same disposition takes,
+                # so it travels as guidance beside the command rather than in
+                # next_command: that field is read as one runnable command, and
+                # a second --kind in it would name two dispositions at once.
+                "exempt_alternative": (
+                    f"reckon crew dispose --project {shlex.quote(project)} "
+                    f"--run {shlex.quote(run_id)} "
+                    f"--dimension {shlex.quote(str(finding['dimension']))} "
+                    "--kind exempted --reason '<why this finding is not being acted on>'"
                 ),
             }
             for finding in review_dispositions.sub_floor_dimensions(record, floors)
