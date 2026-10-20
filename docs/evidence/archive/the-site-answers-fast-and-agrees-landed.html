@@ -353,6 +353,21 @@
 <p>One repair round. The review found that removing <code>flowPackLanes</code> broke the parity harness, which sat outside the node's scope; the coordinator stopped the automatic repair, granted the two parity files, and folded in the phase-set reuse and two tests that could not fail. The new code reached the reader only after <code>reckon.service</code> was restarted at 10:21 UTC. Discovery is derived in a refresh child and stored, so the served process never executed the changed schedule code and never reloaded, and the stored result kept its old shape under the unchanged parent revision. Plan sections for that follow.</p>
   </section>
 
+  <section id="s21">
+    <h2>§21 — A stored route result follows the code that derived it</h2>
+    <p>A refresh child in <code>reckon/route_results.py</code> runs its derivation under <code>ExecutedSource</code> and stores the fingerprint of every package definition it reached, through <code>definition_fingerprints</code> in <code>reckon/served_code.py</code>. A read serves the result only while <code>definitions_unchanged</code> holds. Files whose revision is unchanged cost one stat each; in a file that moved, only the recorded definitions are fingerprinted again. A change to another definition in the same file therefore keeps the result. An empty or malformed fingerprint map is unverifiable and misses, and a child that recorded nothing stores nothing. The store version moved to 2, retiring the revision-keyed results §19 wrote. Run <code>r-20261020T104759349311</code>, five commits ending at <code>9e6cd06a3</code>, merged at <code>dd4235485</code>.</p>
+<table>
+<thead><tr><th>Check</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>Population, the 17 files referencing <code>route_results</code> or <code>served_code</code></td><td>one base failure in both arms (the shared-parser invariant, which flags files outside this plan); none added; 131 passed at head</td></tr>
+<tr><td>Negative controls</td><td>dropping the fingerprint comparison serves the result after a rewritten definition; restoring the <code>is not None</code> test serves an empty map</td></tr>
+<tr><td>Live, srv-1006 after its reload onto <code>dd4235485</code> at 12:23 UTC</td><td>stored results carry fingerprints: nova's discovery 663 definitions in 33 files, reckon's 860 in 43; reads served from the store in 50 to 67 ms</td></tr>
+<tr><td>Independent review</td><td>16 to 20 with one fail-open follow-on (an empty map was served forever); 18 to 20 with no findings after the repair</td></tr>
+</tbody>
+</table>
+<p>The first discovery read for nova after the reload, with the new store version empty, took 13.6 s to derive. That is the server-cold reading §11 recorded beside its gate. §21 makes such a miss rare, since a reload that changes no derivation now keeps every result, but each merged change to a derivation still makes its first reader wait for a cold derivation.</p>
+  </section>
+
 </main>
 </body>
 </html>
