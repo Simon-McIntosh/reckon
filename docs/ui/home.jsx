@@ -22,6 +22,10 @@ function homeDormantRows(projects) {
   return (projects || []).filter(project => project.plans_count === 0);
 }
 
+function homePendingRows(projects) {
+  return (projects || []).filter(project => project.plans_count == null || !Number.isFinite(Number(project.plans_count)));
+}
+
 function homeVisibleRuns(runs, projects) {
   const visible = new Set((projects || []).map(project => project.project));
   return (runs || []).filter(run => visible.has(run.project));
@@ -82,15 +86,17 @@ function HomeStatusBar({ project }) {
   </span>;
 }
 
-function FleetHome({ projects, fleetRuns, mountedProjectCount, onConfigureVisibility, loaded }) {
+function FleetHome({ projects, fleetRuns, mountedProjectCount, onConfigureVisibility, loaded, error, onRetry }) {
   const [dormantOpen, setDormantOpen] = useHomeState(false);
   const rows = useHomeMemo(() => homeProjectRows(projects), [projects]);
   const dormant = useHomeMemo(() => homeDormantRows(projects), [projects]);
+  const pending = useHomeMemo(() => homePendingRows(projects), [projects]);
   const runs = useHomeMemo(() => homeVisibleRuns(fleetRuns, projects), [fleetRuns, projects]);
   const summary = useHomeMemo(() => homeVisibleSummary(projects, runs), [projects, runs]);
   const stats = [["projects moving", summary.moving], ["plans", summary.plans], ["active", summary.active], ["in flight", summary.inFlight], ["held", summary.held], ["shipped", summary.shipped]];
   const today = new Date().toLocaleDateString([], {year: "numeric", month: "short", day: "numeric"});
   const openProject = project => { window.location.href = `/${project}/#plans`; };
+  if (error) return <main className="r-home" aria-label="Fleet home"><div className="r-home-inner"><div className="r-home-error" role="alert"><strong>Fleet summary unavailable</strong><span>{error}</span><button type="button" onClick={onRetry}>Retry summary</button></div></div></main>;
   if (!loaded) return <main className="r-home" aria-label="Fleet home"><div className="r-home-inner"><p role="status">Loading fleet summary…</p></div></main>;
 
   return <main className="r-home" aria-label="Fleet home"><div className="r-home-inner">
@@ -103,6 +109,12 @@ function FleetHome({ projects, fleetRuns, mountedProjectCount, onConfigureVisibi
         <span className="r-home-project-id"><span><i className={`r-live-dot ${project.live ? "is-live" : ""}`}></i><strong>{project.project}</strong></span><small>{homeRelativeTime(project.last_edited)}</small></span>
         <HomeStreak series={project.activity30}/><HomeStatusBar project={project}/>
         <span className="r-home-sprint"><strong>{project.active_sprint?.id || "no active sprint"}</strong><small>{project.active_sprint?.theme || ""}</small></span>
+      </button>)}
+      {pending.map(project => <button className="r-home-project r-home-project-pending" type="button" key={project.project} onClick={() => openProject(project.project)}>
+        <span className="r-home-project-id"><span><strong>{project.project}</strong></span><small>plan count pending</small></span>
+        <span className="r-home-no-activity">activity unavailable</span>
+        <span>summary incomplete</span>
+        <span className="r-home-sprint"><strong>—</strong></span>
       </button>)}
       {dormant.length > 0 && <div className="r-home-dormant">
         <button type="button" onClick={() => setDormantOpen(open => !open)} aria-expanded={dormantOpen}>{dormant.length} visible projects with no recorded work — {dormantOpen ? "hide" : "show"}</button>
@@ -129,4 +141,4 @@ function FleetHome({ projects, fleetRuns, mountedProjectCount, onConfigureVisibi
 }
 
 window.ReckonShell = window.ReckonShell || {};
-window.ReckonShell.home = {homeVisibleSummary, homeProjectRows, homeDormantRows, homeVisibleRuns, homeActivityProjection, homeRelativeTime, homeBudget, HomeStreak, HomeStatusBar, FleetHome};
+window.ReckonShell.home = {homeVisibleSummary, homeProjectRows, homeDormantRows, homePendingRows, homeVisibleRuns, homeActivityProjection, homeRelativeTime, homeBudget, HomeStreak, HomeStatusBar, FleetHome};

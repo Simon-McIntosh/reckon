@@ -199,6 +199,8 @@ function App() {
 
   const [mountNames, setMountNames] = useState([]);
   const [fleetIndex, setFleetIndex] = useState(null);
+  const [fleetIndexError, setFleetIndexError] = useState("");
+  const fleetRequest = useRef(0);
   const [fleetDiscoveries, setFleetDiscoveries] = useState({});
   const requestedDiscoveries = useRef(new Set());
   const [fleetRuns, setFleetRuns] = useState([]);
@@ -212,9 +214,25 @@ function App() {
       return Array.isArray(stored) ? stored : null;
     } catch { return null; }
   });
+  const refreshFleetIndex = useCallback(() => {
+    const request = ++fleetRequest.current;
+    setFleetIndexError("");
+    return Promise.resolve()
+      .then(() => fetch("/_projects/index.json"))
+      .then(response => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      })
+      .then(data => {
+        if (!Array.isArray(data?.projects)) throw new Error("Invalid fleet summary");
+        if (request === fleetRequest.current) setFleetIndex(data);
+      })
+      .catch(error => {
+        if (request === fleetRequest.current) setFleetIndexError(error?.message || "Request failed");
+      });
+  }, []);
   useEffect(() => {
     let cancelled = false;
-    let fleetRequest = 0;
     // The mount list is a static file, so the project picker is populated at
     // once and never waits on — or disappears with — the computed rollup.
     fetch("/_projects/mounts.json")
@@ -223,20 +241,13 @@ function App() {
         if (!cancelled && mounts && typeof mounts === "object") setMountNames(Object.keys(mounts).sort());
       })
       .catch(() => {});
-    const refreshFleetIndex = () => {
-      const request = ++fleetRequest;
-      return fetch("/_projects/index.json")
-        .then(response => response.ok ? response.json() : null)
-        .then(data => { if (!cancelled && request === fleetRequest && Array.isArray(data?.projects)) setFleetIndex(data); })
-        .catch(() => {});
-    };
     const onFleetChange = event => {
       if (event.detail?.key === "rollup") refreshFleetIndex();
     };
     refreshFleetIndex();
     window.addEventListener("reckon-fleet", onFleetChange);
-    return () => { cancelled = true; window.removeEventListener("reckon-fleet", onFleetChange); };
-  }, []);
+    return () => { cancelled = true; ++fleetRequest.current; window.removeEventListener("reckon-fleet", onFleetChange); };
+  }, [refreshFleetIndex]);
   // The command palette is the first reader of other projects' full inventories.
   useEffect(() => {
     if (!cmdKOpen) return;
@@ -487,7 +498,7 @@ function App() {
             <window.ReckonShell.title.TitleBar route={route} onNav={nav} onOpenPrompt={() => setPromptOpen(true)} onPlanMutated={bumpInv} />
             <div className="r-reader-with-attachments">
               <div className="r-body">
-                {canvasView === "home" && <window.ReckonShell.home.FleetHome projects={shownProjects} fleetRuns={window.ReckonShell.home.homeVisibleRuns(fleetRuns, shownProjects)} mountedProjectCount={projects.length} loaded={Boolean(fleetIndex)} onConfigureVisibility={() => document.querySelector(".r-project-configure")?.click()} />}
+                {canvasView === "home" && <window.ReckonShell.home.FleetHome projects={shownProjects} fleetRuns={window.ReckonShell.home.homeVisibleRuns(fleetRuns, shownProjects)} mountedProjectCount={projects.length} loaded={Boolean(fleetIndex)} error={fleetIndexError} onRetry={refreshFleetIndex} onConfigureVisibility={() => document.querySelector(".r-project-configure")?.click()} />}
                 {canvasView === "sprint" && <window.Sprint sprintId={route.sprint} onNav={nav} />}
                 {canvasView === "graph" && <window.GraphView onNav={nav} items={items} focal={graphFocal} setFocal={setGraphFocal} />}
                 {canvasView === "crew" && <window.CrewView visibleProjects={shownProjectNames} mountedProjectCount={projects.length} selectedProject={M?.project || null} runs={fleetRuns} loaded={fleetRunsLoaded} error={fleetRunsError} />}

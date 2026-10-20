@@ -133,3 +133,115 @@ def test_served_home_defers_the_current_project_inventory(tmp_path: Path) -> Non
 
     assert result["before"] == []
     assert sorted(result["after"]) == ["/_discover/alpha", "/_discover/reckon"]
+
+
+def test_failed_summary_shows_retry_without_counts(tmp_path: Path) -> None:
+    state = {"project": "reckon", "inventory": [], "plans": {}, "sprints": []}
+    preload = """(() => {
+      window.__summaryRequests = 0;
+      const response = payload => new Response(JSON.stringify(payload), {
+        status: 200, headers: { 'Content-Type': 'application/json' },
+      });
+      const summary = count => ({ projects: [{ project: 'alpha', data: { projects: [{
+        project: 'alpha', plans_count: count, active: 1, blocked: 0,
+        pending: 0, shipped: count - 1, progress: 0.5, activity30: [1],
+      }] } }] });
+      window.fetch = resource => {
+        const url = String(resource);
+        if (url.endsWith('/_projects/mounts.json'))
+          return Promise.resolve(response({ alpha: '/srv/alpha/docs' }));
+        if (url.endsWith('/_projects/index.json')) {
+          const request = ++window.__summaryRequests;
+          if (request === 1) return Promise.resolve(new Response('{}', { status: 404 }));
+          if (request === 3) return Promise.reject(new Error('offline'));
+          return Promise.resolve(response(summary(request === 2 ? 3 : 4)));
+        }
+        if (url.endsWith('/crew')) return Promise.resolve(response({ runs: [] }));
+        if (url.includes('/_discover/')) return Promise.resolve(response({ inventory: [] }));
+        return Promise.reject(new Error(`unmocked request: ${url}`));
+      };
+    })()"""
+    probe = """(async () => {
+      const waitFor = async predicate => {
+        const deadline = performance.now() + 3000;
+        while (performance.now() < deadline) {
+          if (predicate()) return true;
+          await new Promise(resolve => setTimeout(resolve, 25));
+        }
+        return false;
+      };
+      const firstError = await waitFor(() => Boolean(document.querySelector('.r-home-error')));
+      const initial = {
+        errorVisible: firstError,
+        text: document.querySelector('.r-home')?.textContent || '',
+        statsVisible: Boolean(document.querySelector('.r-home-stats')),
+        retryVisible: Boolean(document.querySelector('.r-home-error button')),
+      };
+      if (!firstError) return { initial };
+      document.querySelector('.r-home-error button').click();
+      await waitFor(() => document.querySelector('.r-home-stats')?.textContent.includes('3'));
+      const retried = document.querySelector('.r-home-stats')?.textContent || '';
+      window.dispatchEvent(new CustomEvent('reckon-fleet', { detail: { key: 'rollup' } }));
+      const eventError = await waitFor(() => Boolean(document.querySelector('.r-home-error')));
+      window.dispatchEvent(new CustomEvent('reckon-fleet', { detail: { key: 'rollup' } }));
+      await waitFor(() => document.querySelector('.r-home-stats')?.textContent.includes('4'));
+      return {
+        initial, retried, eventError,
+        recovered: document.querySelector('.r-home-stats')?.textContent || '',
+        requests: window.__summaryRequests,
+      };
+    })()"""
+    with file_spa(tmp_path, installed_browser_or_skip(), state, route="#home") as spa:
+        result = spa.run_probe(
+            probe,
+            preload_expression=preload,
+            ready_expression="Boolean(document.querySelector('.r-home'))",
+        )
+
+    assert result["initial"]["errorVisible"] is True
+    assert "Fleet summary unavailable" in result["initial"]["text"]
+    assert result["initial"]["statsVisible"] is False
+    assert result["initial"]["retryVisible"] is True
+    assert "plans3" in result["retried"]
+    assert result["eventError"] is True
+    assert "plans4" in result["recovered"]
+    assert result["requests"] == 4
+
+
+def test_project_missing_plan_count_has_a_visible_pending_row(tmp_path: Path) -> None:
+    state = {"project": "reckon", "inventory": [], "plans": {}, "sprints": []}
+    preload = """(() => {
+      const response = payload => new Response(JSON.stringify(payload), {
+        status: 200, headers: { 'Content-Type': 'application/json' },
+      });
+      window.fetch = resource => {
+        const url = String(resource);
+        if (url.endsWith('/_projects/mounts.json'))
+          return Promise.resolve(response({ alpha: '/srv/alpha/docs', beta: '/srv/beta/docs' }));
+        if (url.endsWith('/_projects/index.json'))
+          return Promise.resolve(response({ projects: [
+            { project: 'alpha', data: { projects: [{ project: 'alpha', plans_count: 2, active: 1, shipped: 1 }] } },
+            { project: 'beta', data: { projects: [{ project: 'beta', active: 1 }] } },
+          ] }));
+        if (url.endsWith('/crew')) return Promise.resolve(response({ runs: [] }));
+        if (url.includes('/_discover/')) return Promise.resolve(response({ inventory: [] }));
+        return Promise.reject(new Error(`unmocked request: ${url}`));
+      };
+    })()"""
+    probe = """(() => ({
+      scope: document.querySelector('.r-home-scope')?.textContent || '',
+      rows: [...document.querySelectorAll('.r-home-project')]
+        .map(row => row.querySelector('.r-home-project-id strong')?.textContent),
+      pending: document.querySelector('.r-home-project-pending')?.textContent || '',
+    }))()"""
+    with file_spa(tmp_path, installed_browser_or_skip(), state, route="#home") as spa:
+        result = spa.run_probe(
+            probe,
+            preload_expression=preload,
+            ready_expression="Boolean(document.querySelector('.r-home-stats'))",
+        )
+
+    assert result["scope"] == "2 of 2 shown"
+    assert len(result["rows"]) == 2
+    assert result["rows"] == ["alpha", "beta"]
+    assert "plan count pending" in result["pending"]
