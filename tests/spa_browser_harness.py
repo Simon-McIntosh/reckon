@@ -49,6 +49,14 @@ _SPA_STYLESHEETS = (
     "ui/crew.css",
     "ui/graph.css",
 )
+_SPA_STATE_FILES = (
+    "project.json",
+    "index.json",
+    "timeline.html",
+    "review.html",
+    "flight.yaml",
+    "model-catalogue.yaml",
+)
 
 
 class _IndexScriptParser(HTMLParser):
@@ -764,14 +772,25 @@ def served_spa(
     docs: Path = ROOT / "docs",
     project: str = "reckon",
     route: str = "#cockpit",
+    state_files: tuple[str, ...] = (),
 ) -> Iterator[ServedSpa]:
     port = _unused_port()
     mounts = tmp_path / "mounts.json"
     mounts.write_text(json.dumps({project: str(docs)}), encoding="utf-8")
     server_home = Path(tempfile.mkdtemp(prefix="reckon-server-", dir=tmp_path))
     fixture_state = docs / "state" / project
-    if fixture_state.is_dir():
-        shutil.copytree(fixture_state, server_home / "state" / project)
+    for name in (*_SPA_STATE_FILES, *state_files):
+        relative = Path(name)
+        if relative.is_absolute() or ".." in relative.parts:
+            raise ValueError(f"state file must be relative to its project: {name}")
+        source = fixture_state / relative
+        if not source.is_file():
+            if name in state_files:
+                raise FileNotFoundError(source)
+            continue
+        destination = server_home / "state" / project / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, destination)
     environment = dict(os.environ)
     environment["RECKON_HOME"] = str(server_home)
     server = subprocess.Popen(
@@ -802,7 +821,7 @@ def served_spa(
                 with urlopen(url, timeout=0.5) as response:
                     if response.status == 200:
                         break
-            except URLError:
+            except (URLError, TimeoutError):
                 time.sleep(0.1)
         else:
             raise AssertionError("reckon server did not become ready within 15 seconds")
