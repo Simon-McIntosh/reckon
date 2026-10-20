@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="422">
+<meta name="plan-version" content="423">
 <meta name="plan-modified" content="2026-10-20">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;implementable&quot;,&quot;s28&quot;:&quot;done&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
@@ -883,10 +883,11 @@ Importing <code>routing</code> first runs all of its definitions before the re-e
     <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §3</pre>
     <p class="r-fu-outcome">Re-attributed at 95ff28824: 26 of the 30 ids are still red. The follower family (14 ids) stays in §3; every other group is now a repair section, §4 to §14, with §6 held until a peer's routing.py change lands.</p>
     </article>
-<article class="r-fu" data-id="f-tsigah-repair-wave-at-95ff28824" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-13" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tsigah-repair-wave-at-95ff28824" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-13" data-recommends-skill="" data-resolved-at="2026-10-20T20:37:10+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Repair the deterministic reds (§4–§14), then find the follower family&#x27;s shared cause (§3)</h4>
     <div class="r-fu-body"><p>§4, §5, §7, §8, §9, §11, §12, §13 and §14 are independent and dispatch together. §10 follows a-read-answers-inside-its-deadline §8. §6 waits for the peer run a-worktree-release-is-whole to land. The fourteen follower-family ids fail alone with zero emissions, so §3 next looks for one shared cause.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §4</pre>
+    <p class="r-fu-outcome">Superseded: §4 to §14 have all landed. §3, the follower family's shared cause, stays open as an implementable section, which the roadmap schedules directly.</p>
     </article>
 <article class="r-fu" data-id="f-tsigah-017-018" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-written-by="reckon-build" data-written-at="2026-10-17" data-recommends-skill="/reckon-build the-suite-is-green-at-head §17" data-resolved-at="2026-10-17T10:15:30+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Repair the two tests red on main (§17, §18)</h4>
@@ -1964,7 +1965,7 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
     <div class="r-comment-body"><p>§28 landed: the deprecation-announcement test waits under the watcher load bound (head <code>9aac6bf4</code>, merge <code>4108ff06e</code>); 10 of 10 under load against 1 of 10 at base; review 117/120. <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed.html#the-deprecation-test-waits-for-its-follower">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s28" data-id="c-run-r-20261019T235223014399-the-deprecation-test-waits-for-its-follower" data-who="reckon-build" data-when="2026-10-20T00:10:06.629Z">
-    <div class="r-comment-body"><p>Raised the deprecation test&#x27;s follower-wait ceiling to WATCHER_LOAD_BOUND_SECONDS (30.0) in tests/test_removed_flag_migration.py; base arm 1 of 10 passed, head arm 10 of 10 passed under pytest -n 8 load, negative control red.</p></div>
+    <div class="r-comment-body"><p>Raised the deprecation test's follower-wait ceiling to WATCHER_LOAD_BOUND_SECONDS (30.0) in tests/test_removed_flag_migration.py; base arm 1 of 10 passed, head arm 10 of 10 passed under pytest -n 8 load, negative control red.</p></div>
 </div>
 </section>
 </main>
