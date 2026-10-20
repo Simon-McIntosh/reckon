@@ -8,6 +8,7 @@ import click
 
 from reckon.crew.tombstones import tombstone_command
 from reckon.crew_dispatch_commands import (
+    _accept_a_matching_project,
     _budget_check_report,
     _crew_modules,
     _emit,
@@ -268,6 +269,7 @@ def crew_list(project, phase, session, mine, pretty):
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_directory(project, run_id, node_id, pretty):
     """List live coordinator ownership across repositories, not individual run state."""
+    _accept_a_matching_project(run_id, project)
     from reckon.crew.directory import DirectoryError, directory
 
     try:
@@ -364,6 +366,7 @@ def crew_view(
     two surfaces cannot disagree about a view. NAME is a view name; `summary`
     is served when none is given.
     """
+    _accept_a_matching_project(run_id, project)
     import json as _json
 
     from reckon.mcp_views import serve_crew_view
@@ -445,6 +448,11 @@ def crew_path(kind, project, run_id):
     selector the kind does not accept is refused rather than ignored: a
     silently dropped `--run` answers a different question than the one asked.
     """
+    # The run's own project, resolved from the run and refused when a --project
+    # disagrees with it; a kind keyed by run can then fall back to it when
+    # --project is omitted rather than demanding a project the run already
+    # names.
+    resolved_project = _accept_a_matching_project(run_id, project)
     from reckon._store import _config_home
     from reckon.crew.review import review_path, review_store_root
     from reckon.crew.runs import live_dir, pointer_path, reports_dir, run_dir, runs_dir
@@ -464,25 +472,26 @@ def crew_path(kind, project, run_id):
             )
         path = reports_dir() / project if project is not None else reports_dir()
     elif kind in ("runs", "live"):
-        if project is not None:
-            raise click.ClickException(
-                f"--kind {kind} takes --run only, the form of the path is "
-                "decided by the run it names."
-            )
         if run_id is None:
+            if project is not None:
+                raise click.ClickException(
+                    f"--kind {kind} takes --run only, the form of the path is "
+                    "decided by the run it names."
+                )
             path = runs_dir() if kind == "runs" else live_dir()
         else:
             path = run_dir(run_id) if kind == "runs" else pointer_path(run_id)
     else:  # kind == "reviews"; click.Choice admits nothing else
-        if project is None:
+        store_project = project or resolved_project
+        if store_project is None:
             raise click.ClickException(
-                "--kind reviews requires --project, the review store is keyed "
-                "by project first."
+                "--kind reviews requires --project or a --run whose project "
+                "resolves, the review store is keyed by project first."
             )
         path = (
-            review_store_root() / project
+            review_store_root() / store_project
             if run_id is None
-            else review_path(project, run_id)
+            else review_path(store_project, run_id)
         )
     click.echo(str(path))
 
@@ -555,8 +564,10 @@ def _reviewed_head_from_run_records(project: str, reviewed_run_id: str) -> str:
 @crew.command(name="dispose")
 @click.option(
     "--project",
-    required=True,
-    help="Project whose review store holds the run's record.",
+    default=None,
+    help="Project whose review store holds the run's record. Optional: the "
+    "run's own project is resolved from the run, and a --project that "
+    "disagrees with it is refused.",
 )
 @click.option(
     "--run",
@@ -632,6 +643,15 @@ def crew_dispose(
     from reckon.crew import recovery, review_dispositions, runs
     from reckon.crew import review as review_module
 
+    # The run's own project is the store the disposition is written to, so
+    # --project is optional and a disagreeing one is refused rather than
+    # redirecting the write to a store the run does not belong to.
+    project = _accept_a_matching_project(reviewed_run_id, project)
+    if not project:
+        raise click.ClickException(
+            f"cannot resolve a project for run {reviewed_run_id!r}; name its "
+            "project with --project"
+        )
     named_dimension = str(dimension or "").strip() if dimension is not None else ""
     if bool(named_dimension) == (finding_index is not None):
         raise click.ClickException(
@@ -867,14 +887,18 @@ def crew_repair_review(reviewed_run_id, record_path, change, reason, pretty):
 )
 @click.option("--run", "run_id", help="Run whose manifest or stored review to check.")
 @click.option(
+    "--project", default=None, help="Project owning the run; cross-checks the run."
+)
+@click.option(
     "--record",
     "record_path",
     type=click.Path(path_type=Path),
     help="Delivered review record to check.",
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_check(manifest, review, run_id, record_path, pretty):
+def crew_check(manifest, review, run_id, record_path, pretty, project=None):
     """Judge a delivered manifest or run review against its filing contract."""
+    _accept_a_matching_project(run_id, project)
     if manifest == review:
         raise click.UsageError("choose exactly one of --manifest or --review")
     if manifest:
@@ -919,6 +943,9 @@ def crew_check(manifest, review, run_id, record_path, pretty):
     "--run", "run_id", required=True, help="Run whose manifest or review is repaired."
 )
 @click.option(
+    "--project", default=None, help="Project owning the run; cross-checks the run."
+)
+@click.option(
     "--record",
     "record_path",
     type=click.Path(path_type=Path),
@@ -927,8 +954,11 @@ def crew_check(manifest, review, run_id, record_path, pretty):
 @click.option("--set", "change", help="Review field and value to repair.")
 @click.option("--reason", required=True, help="Why the recorded repair is justified.")
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_repair(status, repair_review, run_id, record_path, change, reason, pretty):
+def crew_repair(
+    status, repair_review, run_id, record_path, change, reason, pretty, project=None
+):
     """Repair a manifest's status word or a review's status or subject identity."""
+    _accept_a_matching_project(run_id, project)
     if bool(status) == repair_review:
         raise click.UsageError("choose exactly one of --status or --review")
     if status:
@@ -951,6 +981,7 @@ def crew_repair(status, repair_review, run_id, record_path, change, reason, pret
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_supersede_review(project, run_id, reason, pretty):
     """Append a correction that supersedes a misattributed row's review; every reader then reads the row as unreviewed."""
+    _accept_a_matching_project(run_id, project)
     from reckon.crew.node import CrewError
 
     try:
@@ -1212,6 +1243,9 @@ def _widen_folded_disposition(record: Mapping[str, Any]) -> dict[str, Any] | Non
 @crew.command(name="widen")
 @click.option("--run", "run_id", required=True, help="Run whose fence to widen.")
 @click.option(
+    "--project", default=None, help="Project owning the run; cross-checks the run."
+)
+@click.option(
     "--write-path",
     "write_paths",
     multiple=True,
@@ -1219,13 +1253,14 @@ def _widen_folded_disposition(record: Mapping[str, Any]) -> dict[str, Any] | Non
     help="Path to add to the run's declared write scope. Repeat for each path.",
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_widen(run_id, write_paths, pretty):
+def crew_widen(run_id, write_paths, pretty, project=None):
     """Add a path to any run whose worker process has stopped.
 
     Claim mutation checks the worker and peer claims under the pointer lock.
     The run's phase and manifest status describe its work, not whether its
     process can still write against the boundary being moved.
     """
+    _accept_a_matching_project(run_id, project)
     crew_module, _ = _crew_modules()
     from reckon.crew.claims import ClaimAmendmentRefusedError, widen_claim
 
@@ -1330,6 +1365,9 @@ def crew_drain(project, session, leaves, pretty):
     "--notice", "notice_id", default=None, help="Model notice to acknowledge."
 )
 @click.option(
+    "--project", default=None, help="Project owning the run; cross-checks the run."
+)
+@click.option(
     "--reason",
     required=True,
     help="Why the deferral is deliberate, for example awaiting a peer's release.",
@@ -1340,12 +1378,13 @@ def crew_drain(project, session, leaves, pretty):
     help="ISO-8601 instant the deferral expires; the obligation returns after it.",
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_ack(run_id, notice_id, reason, until, pretty):
+def crew_ack(run_id, notice_id, reason, until, pretty, project=None):
     """Defer one run's obligations until an instant, recording why.
 
     A live run's deferral is written beside its pointer; one for a run already
     promoted is written under the crew home and swept once its instant passes.
     """
+    _accept_a_matching_project(run_id, project)
     if bool(run_id) == bool(notice_id):
         raise click.ClickException("exactly one of --run and --notice is required")
     if notice_id:
@@ -1564,6 +1603,7 @@ def crew_gc(
     pretty,
 ):
     """Report workspaces whose integrated state makes them disposable; remove on request."""
+    _accept_a_matching_project(run_id, project)
     crew_module, flight_module = _crew_modules()
     if scratch and run_id:
         raise click.ClickException(
@@ -1666,6 +1706,7 @@ def crew_resume(
     Reopening grants paths and repairs a completed delivery before its session
     continues; a backend move may choose the lane's declared model.
     """
+    _accept_a_matching_project(run_id, project)
     if ready:
         if not project or run_id or reopen or backend or model or write_paths or advice:
             raise click.UsageError("--ready needs --project and no single-run options")
@@ -1817,9 +1858,13 @@ crew_redispatch = tombstone_command("redispatch")
 
 @crew.command(name="stop")
 @click.option("--run", "run_id", required=True, help="Run id to stop.")
+@click.option(
+    "--project", default=None, help="Project owning the run; cross-checks the run."
+)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_stop(run_id, pretty):
+def crew_stop(run_id, pretty, project=None):
     """Stop one running spawned worker and record its stopped state."""
+    _accept_a_matching_project(run_id, project)
     crew_module, _ = _crew_modules()
     try:
         record = crew_module.terminate(run_id)
@@ -1830,9 +1875,13 @@ def crew_stop(run_id, pretty):
 
 @crew.command(name="discard")
 @click.option("--run", "run_id", required=True, help="Run id to discard.")
+@click.option(
+    "--project", default=None, help="Project owning the run; cross-checks the run."
+)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_discard(run_id, pretty):
+def crew_discard(run_id, pretty, project=None):
     """Remove one non-running live pointer without recording promoted evidence."""
+    _accept_a_matching_project(run_id, project)
     crew_module, _ = _crew_modules()
     try:
         result = crew_module.discard(run_id)
@@ -1889,6 +1938,9 @@ def _refuse_a_flag_as_a_reason(
 
 @crew.command(name="complete")
 @click.option("--run", "run_id", required=True, help="Run id to promote.")
+@click.option(
+    "--project", default=None, help="Project owning the run; cross-checks the run."
+)
 @click.option(
     "--gate",
     required=True,
@@ -2139,6 +2191,7 @@ def crew_complete(
     dry_run,
     land,
     pretty,
+    project=None,
 ):
     """Promote one finished run into the owning repository's committed ledger.
 
@@ -2156,6 +2209,7 @@ def crew_complete(
     before the worktree is released. A step that fails stops the call and the
     report names the command that resumes from it.
     """
+    _accept_a_matching_project(run_id, project)
     if land and dry_run:
         raise click.ClickException(
             "--land merges and pushes, which --dry-run promises not to do; run "
@@ -2549,6 +2603,7 @@ def crew_verify_gate(
     log carries unless --timeout-seconds names one explicitly; the report
     records which bound applied and its value either way.
     """
+    _accept_a_matching_project(run_id, project)
     crew_module, _ = _crew_modules()
     try:
         result = crew_module.record_gate_rerun_at_integrated_revision(
