@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="unattended-execution">
 <meta name="plan-impl" content="0.8823529411764706">
-<meta name="plan-version" content="296">
+<meta name="plan-version" content="297">
 <meta name="plan-modified" content="2026-10-21">
 <meta name="plan-commits" content="8d517e2a8775813f593e7168f5237bd4bb338fcf,d6bf49adc2ab44b3640182a1d3e8db0074909d62,5a93a1477648d72ea9e15571ed84101dfee33edc,26dc670d410b6f6779dc88c57f3865462f054c37">
 </head>
@@ -1415,6 +1415,9 @@ The test asserts the real crew home is untouched.</li>
 </div>
 <div class="r-comment" data-section="s47" data-id="c-run-r-20261020T221015331070-review-of-a-credit-lifted-lane-is-open-but-scarce-7e382df33e2b" data-who="reckon-build" data-when="2026-10-20T22:27:45.886Z">
     <div class="r-comment-body"><p>Independent review of run r-20261020T212725923185-a-credit-lifted-lane-is-open-but-scarce at base 3d3e2b547b1299184ff88e561522272fcbc3d1d1 head 7e382df33e2bd767e6accd3de85fcb7e5c454039 lands parsed: goal_fidelity 17, evidence 18, scope_discipline 20, durability 18, fit 17, reuse 15 (total 105), added_failure_count 0; two follow-on findings on reckon/crew/picker/snapshot.py:1161 (the added effective_ceiling comparison duplicates budget.decide's own ceiling branch and contradicts §47's "makes no raw ceiling comparison of its own", and is unreachable for a fresh reading) and :1080 (block-resolution and policy/decide composition partly restate routing._config_with_effective_budget and routing._budget_verdict); no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s47" data-id="c-run-r-20261020T212725923185-a-credit-lifted-lane-is-open-but-scarce" data-who="reckon-build" data-when="2026-10-20T22:25:54Z">
+    <div class="r-comment-body"><p>The picker&#x27;s budget gate now reads the verdict of budget.decide through the group&#x27;s lift-aware block (budget_group.effective_block), quoting the verdict&#x27;s reason, and applies budget.effective_ceiling where no credits lift rides, so a lane is excluded exactly when a dispatch of the pick&#x27;s purpose would be held; `_reserved_lane_exclusion` gains a credit_lift term that judges a reserved lane under a credits lift by its credit pool rather than its window, leaving the tier and attempts terms unchanged. The six-file gate ran 1 failed, 36 passed at head 0dcb440da against 4 failed, 33 passed at base 3d3e2b54 — the head adds no failure id; the single head failure is the pre-existing module-window bound on reckon/budget.py and reckon/crew/review.py. The one test that pinned the replaced rule, tests/test_picker_pressure.py::test_reserve_hold_below_hard_ceiling_remains_offered, now asserts the new rule under the name test_a_reserve_hold_below_the_hard_ceiling_withholds_the_lane and cites the verdict&#x27;s reason, naming the effective 70.0% ceiling and the withheld resume reserve. It is the only test in that file this node changed. The seven-file gate at c89c8561d ran 1 failed, 55 passed with the same module-window id as its only failure.</p></div>
 </div>
 <div class="r-comment" data-section="s49" data-id="c-close-s49" data-who="reckon-build" data-when="2026-10-20T21:15:00Z">
     <div class="r-comment-body"><p>§49 recorded as landed: the codex credit line (commit <code>6ebe65ba4</code>, merged at <code>3dcfc77c0</code>), built by power-convertor-02. <a href="/reckon/evidence/archive/lane-and-model-routing-landed.html#s49">evidence</a></p></div>
