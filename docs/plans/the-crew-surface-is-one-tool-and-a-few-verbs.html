@@ -26,7 +26,7 @@
   <title>The Crew Surface Is One Tool And A Few Verbs | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="72">
+<meta name="plan-version" content="73">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -525,6 +525,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261020T043547375711-review-of-cso-crew-tool-carries-the-write-verbs-9d2e9572967f" data-who="reckon-build" data-when="2026-10-20T04:57:42.289Z">
     <div class="r-comment-body"><p>independent review of r-20261020T025656353610-cso-crew-tool-carries-the-write-verbs over the two commits gained since its first review (5e9c53d7a..9d2e95729): both prior blocking findings (an unmapped option dropped from the action form, a repeated option rendered as duplicate keywords) are repaired and each carries a real guard; scores goal_fidelity 18, evidence 16, scope_discipline 19, durability 14, fit 17, reuse 18; two follow-on findings, at tests/test_crew_tool_carries_the_write_verbs.py:367 (the two-commit parity case compares a run-missing refusal that cannot depend on the commits) and reckon/crew/obligations.py:247 (an option value carrying a double quote renders a non-callable form rather than none); zero added failures against the base arm.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261020T133428134004-cso-run-verbs-share-one-identity-grammar" data-who="reckon-build" data-when="2026-10-20T15:41:27Z">
+    <div class="r-comment-body"><p>Every single-run crew verb now takes one identity grammar - all 18 accept --project beside --run and refuse a --project that disagrees naming both, dispose no longer requires --project, crew review answers with one run id to complete and names the reviewed run as reviewed_run_id, and crew review --answer refuses a finding two covering reviews carry unless --review-run names one; tests/test_run_verbs_share_one_identity_grammar.py 22 passed, head gate 16 failed, 207 passed in 249.63s (0:04:09) with zero failures added against the base arm&#x27;s same ids. The sweep&#x27;s matching arm now asserts each verb&#x27;s own exit code and, where the fixture run holds only a live pointer, its own refusal; its selection arm asserts the named review carries the answer and the other carries none.</p></div>
 </div>
 </section>
 </main>
