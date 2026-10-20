@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:318 (snapshot.candidates via pick)",
+    "reckon/crew/picker/replay.py:58 (snapshot.candidates)",
+    "reckon/crew/dispatch_picker.py:449 (pick)",
+    "reckon/crew_dispatch_commands.py:927 (pick)"
+  ],
+  "completed_at": "2026-10-20T22:27:45.886Z",
+  "dispatched_at": "2026-10-20T22:11:04Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/snapshot.py",
+      "line": "1161",
+      "severity": "follow-on",
+      "text": "follow-on: the added effective_ceiling comparison (limit = budget.effective_ceiling(judged, 'dispatch'); utilisation >= limit) duplicates the ceiling branch budget.decide already performs at reckon/budget.py:1455-1472 and contradicts the plan's fixed design that the budget exclusion \"makes no raw ceiling comparison of its own\"; because a fresh reading already requires headroom 'known' and unexpired, decide returns held before this block in every reachable state, so the block is unreachable dead logic whose docstring at :1148-1151 claims a refusal it cannot produce."
+    },
+    {
+      "file": "reckon/crew/picker/snapshot.py",
+      "line": "1080",
+      "severity": "follow-on",
+      "text": "follow-on: _effective_budget_block restates the effective-block resolution routing._config_with_effective_budget already owns at reckon/crew/routing.py:406-428, and _budget_exclusion_reasons restates the wallet-block-plus-budget.decide composition routing._budget_verdict owns at reckon/crew/routing.py:434-491; the picker could share that composition instead of keeping a second copy that can drift from the dispatch path it is meant to mirror."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit from 3d3e2b547 to 7e382df33; 0dcb440da replaces the picker's raw ceiling comparison with three helpers and a credit_lift term, and 7e382df33 adds only the evidence fragment, so the landed surface is one production file, one new test file and one fragment.",
+    "done_when": "the node's done_when names five cases, a six-file -rA gate with a base arm, two negative controls and a ruff pair; the manifest records each and the logs back it (gate-head.log 1 failed/36 passed EXIT=1, gate-base.log 4 failed/33 passed EXIT=1, negative-control-raw-ceiling.log EXIT=1, negative-control-window-term.log EXIT=1, ruff.log no added finding), and tests/test_a_credit_lifted_lane_is_open_but_scarce.py asserts the five named cases.",
+    "goal": "the node's goal is that the picker exclude a lane exactly when a dispatch of the pick's purpose would be held, reading the lift-aware budget verdict, and judge a reserved lane under a credits lift by its credit pool; reckon/crew/picker/snapshot.py:1120 _budget_exclusion_reasons now reads budget.decide through the group's effective block, and :1214 gives _reserved_lane_exclusion a credit_lift term that yields to the credit pool.",
+    "manifest": "read; it names commits 0dcb440da and 7e382df33, the 1-failed/36-passed head gate against 4-failed/33-passed base, both negative controls with red EXIT=1, the ruff pair, and a follow-on naming tests/test_picker_pressure.py whose stale reserve-hold test the coordinator must bring along.",
+    "write_paths": "the brief grants reckon/crew/picker/snapshot.py, tests/test_a_credit_lifted_lane_is_open_but_scarce.py, the node's evidence fragment and docs/figures/lane-and-model-routing/a-credit-lifted-lane-is-open-but-scarce; git diff --stat 3d3e2b547..7e382df33 changes exactly the first three, all inside the grant, and the figures directory is unused."
+  },
+  "justifications": {
+    "durability": "tests/test_a_credit_lifted_lane_is_open_but_scarce.py reads the candidate output rather than the value it passed in, and the two negative-control logs show each declared mutation reddens it, so the assertions do not move with the input they were handed.",
+    "evidence": "the manifest's baseline_suite and after_suite name gate-base.log and gate-head.log with their failure ids, and gate-head.log carries the 1-failed/36-passed summary and its EXIT=1 line.",
+    "fit": "reckon/crew/picker/snapshot.py:1120-1171 follows the module's deferred-import and reason-string idiom and introduces no plan, ticket or version identifier in a name or comment.",
+    "goal_fidelity": "reckon/crew/picker/snapshot.py:1132-1140 reads the verdict of budget.decide through budget_group.effective_block for purpose dispatch, and :1214 makes a reserved lane under a credits lift yield its window term to the credit pool the verdict already judges.",
+    "reuse": "the new gate calls the existing owners budget.decide (reckon/budget.py:1344) and budget_group.effective_block (reckon/crew/budget_group.py:158) rather than reimplementing budget logic, but its block resolution and policy/decide composition partly restate routing._config_with_effective_budget and routing._budget_verdict.",
+    "scope_discipline": "git diff --stat 3d3e2b547..7e382df33 changes only reckon/crew/picker/snapshot.py, tests/test_a_credit_lifted_lane_is_open_but_scarce.py and the node fragment, all inside the declared grant."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the picker exclude a lane exactly when a dispatch of the pick's purpose would be held, reading the lift-aware budget verdict, and judge a reserved lane under a credits lift by its credit pool; reckon/crew/picker/snapshot.py:1120 _budget_exclusion_reasons now reads budget.decide through the group's effective block, and :1214 gives _reserved_lane_exclusion a credit_lift term that yields to the credit pool.\nVERDICT done_when: the node's done_when names five cases, a six-file -rA gate with a base arm, two negative controls and a ruff pair; the manifest records each and the logs back it (gate-head.log 1 failed/36 passed EXIT=1, gate-base.log 4 failed/33 passed EXIT=1, negative-control-raw-ceiling.log EXIT=1, negative-control-window-term.log EXIT=1, ruff.log no added finding), and tests/test_a_credit_lifted_lane_is_open_but_scarce.py asserts the five named cases.\nVERDICT write_paths: the brief grants reckon/crew/picker/snapshot.py, tests/test_a_credit_lifted_lane_is_open_but_scarce.py, the node's evidence fragment and docs/figures/lane-and-model-routing/a-credit-lifted-lane-is-open-but-scarce; git diff --stat 3d3e2b547..7e382df33 changes exactly the first three, all inside the grant, and the figures directory is unused.\nVERDICT manifest: read; it names commits 0dcb440da and 7e382df33, the 1-failed/36-passed head gate against 4-failed/33-passed base, both negative controls with red EXIT=1, the ruff pair, and a follow-on naming tests/test_picker_pressure.py whose stale reserve-hold test the coordinator must bring along.\nVERDICT diff: read commit by commit from 3d3e2b547 to 7e382df33; 0dcb440da replaces the picker's raw ceiling comparison with three helpers and a credit_lift term, and 7e382df33 adds only the evidence fragment, so the landed surface is one production file, one new test file and one fragment.\nCALL_SITES: reckon/crew/picker/__init__.py:318 (snapshot.candidates via pick), reckon/crew/picker/replay.py:58 (snapshot.candidates), reckon/crew/dispatch_picker.py:449 (pick), reckon/crew_dispatch_commands.py:927 (pick)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/picker/snapshot.py:1132-1140 reads the verdict of budget.decide through budget_group.effective_block for purpose dispatch, and :1214 makes a reserved lane under a credits lift yield its window term to the credit pool the verdict already judges.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's baseline_suite and after_suite name gate-base.log and gate-head.log with their failure ids, and gate-head.log carries the 1-failed/36-passed summary and its EXIT=1 line.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 3d3e2b547..7e382df33 changes only reckon/crew/picker/snapshot.py, tests/test_a_credit_lifted_lane_is_open_but_scarce.py and the node fragment, all inside the declared grant.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_credit_lifted_lane_is_open_but_scarce.py reads the candidate output rather than the value it passed in, and the two negative-control logs show each declared mutation reddens it, so the assertions do not move with the input they were handed.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/picker/snapshot.py:1120-1171 follows the module's deferred-import and reason-string idiom and introduces no plan, ticket or version identifier in a name or comment.\nSCORE reuse: 15\nJUSTIFICATION reuse: the new gate calls the existing owners budget.decide (reckon/budget.py:1344) and budget_group.effective_block (reckon/crew/budget_group.py:158) rather than reimplementing budget logic, but its block resolution and policy/decide composition partly restate routing._config_with_effective_budget and routing._budget_verdict.\nFINDING reckon/crew/picker/snapshot.py:1161 follow-on: the added effective_ceiling comparison (limit = budget.effective_ceiling(judged, 'dispatch'); utilisation >= limit) duplicates the ceiling branch budget.decide already performs at reckon/budget.py:1455-1472 and contradicts the plan's fixed design that the budget exclusion \"makes no raw ceiling comparison of its own\"; because a fresh reading already requires headroom 'known' and unexpired, decide returns held before this block in every reachable state, so the block is unreachable dead logic whose docstring at :1148-1151 claims a refusal it cannot produce.\nFINDING reckon/crew/picker/snapshot.py:1080 follow-on: _effective_budget_block restates the effective-block resolution routing._config_with_effective_budget already owns at reckon/crew/routing.py:406-428, and _budget_exclusion_reasons restates the wallet-block-plus-budget.decide composition routing._budget_verdict owns at reckon/crew/routing.py:434-491; the picker could share that composition instead of keeping a second copy that can drift from the dispatch path it is meant to mirror.\n",
+  "review_run_id": "r-20261020T221015331070-review-of-a-credit-lifted-lane-is-open-but-scarce-7e382df33e2b",
+  "reviewed_base_sha": "3d3e2b547b1299184ff88e561522272fcbc3d1d1",
+  "reviewed_head_sha": "7e382df33e2bd767e6accd3de85fcb7e5c454039",
+  "reviewed_run_id": "r-20261020T212725923185-a-credit-lifted-lane-is-open-but-scarce",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T22:25:19.997891+00:00",
+  "total": 105
+}

@@ -26,8 +26,8 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="unattended-execution">
 <meta name="plan-impl" content="0.8823529411764706">
-<meta name="plan-version" content="294">
-<meta name="plan-modified" content="2026-10-20">
+<meta name="plan-version" content="295">
+<meta name="plan-modified" content="2026-10-21">
 <meta name="plan-commits" content="8d517e2a8775813f593e7168f5237bd4bb338fcf,d6bf49adc2ab44b3640182a1d3e8db0074909d62,5a93a1477648d72ea9e15571ed84101dfee33edc,26dc670d410b6f6779dc88c57f3865462f054c37">
 </head>
 <body>
@@ -1412,6 +1412,9 @@ The test asserts the real crew home is untouched.</li>
 </div>
 <div class="r-comment" data-section="s47" data-id="c-s47-lead-direction" data-who="reckon-build" data-when="2026-10-20T20:30:00Z">
     <div class="r-comment-body"><p>Lead direction, 2026-10-20, recorded before the session moved fleet nodes. This section's text predates it and must be rewritten before it is built. On codex the lead does not want the 92% hold, the 100% ceiling less the 5% resume and 3% coordinator reserves, nor any hard cap that discards the remaining share. The lead wants a burn-rate metric fed back to Jev, and the burn available for the upcoming period, so the router can decide by priority, task difficulty and availability rather than be held. Two facts found while acting on it: <code>pace_hold</code> (<code>reckon/budget.py:2989</code>) holds nothing while the burn multiple is withheld, so a drain-by lift releases the reserves and holds nothing in a window's first 5%. And the picker excludes a lane only at the raw 100% ceiling (<code>reckon/crew/picker/snapshot.py:1315</code>). A drain-by lift to the reset was granted at 14:32Z and cleared at 14:35Z for that reason; no codex lift is in force. The content review r-20261020T142703888386 of the old text has delivered and is unpromoted.</p></div>
+</div>
+<div class="r-comment" data-section="s47" data-id="c-run-r-20261020T221015331070-review-of-a-credit-lifted-lane-is-open-but-scarce-7e382df33e2b" data-who="reckon-build" data-when="2026-10-20T22:27:45.886Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261020T212725923185-a-credit-lifted-lane-is-open-but-scarce at base 3d3e2b547b1299184ff88e561522272fcbc3d1d1 head 7e382df33e2bd767e6accd3de85fcb7e5c454039 lands parsed: goal_fidelity 17, evidence 18, scope_discipline 20, durability 18, fit 17, reuse 15 (total 105), added_failure_count 0; two follow-on findings on reckon/crew/picker/snapshot.py:1161 (the added effective_ceiling comparison duplicates budget.decide&#x27;s own ceiling branch and contradicts §47&#x27;s &quot;makes no raw ceiling comparison of its own&quot;, and is unreachable for a fresh reading) and :1080 (block-resolution and policy/decide composition partly restate routing._config_with_effective_budget and routing._budget_verdict); no blocking finding.</p></div>
 </div>
 <div class="r-comment" data-section="s49" data-id="c-close-s49" data-who="reckon-build" data-when="2026-10-20T21:15:00Z">
     <div class="r-comment-body"><p>§49 recorded as landed: the codex credit line (commit <code>6ebe65ba4</code>, merged at <code>3dcfc77c0</code>), built by power-convertor-02. <a href="/reckon/evidence/archive/lane-and-model-routing-landed.html#s49">evidence</a></p></div>
