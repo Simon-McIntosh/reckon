@@ -2920,6 +2920,7 @@ def _budget_lift_payload(
     reason,
     clear_flag,
     lift_id,
+    credits=None,
 ):
     """Grant or clear a lift on a budget group's pace.
 
@@ -2932,12 +2933,18 @@ def _budget_lift_payload(
     """
     from reckon.crew import budget_lift as budget_lift_module
 
-    form_flags = [multiple is not None, drain_by is not None, uncapped]
+    form_flags = [
+        multiple is not None,
+        drain_by is not None,
+        uncapped,
+        credits is not None,
+    ]
     try:
         if clear_flag:
             if any(form_flags):
                 raise click.ClickException(
-                    "--clear takes none of --multiple, --drain-by or --uncapped"
+                    "--clear takes none of --multiple, --drain-by, --uncapped "
+                    "or --credits"
                 )
             cleared = budget_lift_module.clear(
                 group=group,
@@ -2965,7 +2972,8 @@ def _budget_lift_payload(
 
         if sum(form_flags) != 1:
             raise click.ClickException(
-                "name exactly one lift form: --multiple, --drain-by or --uncapped"
+                "name exactly one lift form: --multiple, --drain-by, --uncapped "
+                "or --credits"
             )
         if global_scope and session:
             raise click.ClickException(
@@ -2978,8 +2986,12 @@ def _budget_lift_payload(
         _, flight_module = _crew_modules()
         config = _resolved_flight(flight_module, None, None, ())
 
+        balance_at_grant = None
         if uncapped:
             form = budget_lift_module.UNCAPPED
+        elif credits is not None:
+            form = budget_lift_module.CREDITS
+            balance_at_grant = _group_credit_balance(config, group)
         elif drain_by is not None:
             form = budget_lift_module.DRAIN_BY
         else:
@@ -3020,6 +3032,8 @@ def _budget_lift_payload(
             starts_at=starts,
             readings=readings,
             now=now,
+            credits=credits,
+            balance_at_grant=balance_at_grant,
         )
     except budget_lift_module.LiftRefusedError as exc:
         raise click.ClickException(str(exc)) from exc
@@ -3043,6 +3057,28 @@ def _budget_lift_payload(
             "is admitted regardless of when the projection lands"
         ),
     }
+
+
+def _group_credit_balance(config, group):
+    """Read the credit balance a credit lift is measured from, or ``None``.
+
+    The balance comes from the account surface of the group's first member that
+    reads one, at the moment of the grant. A grant with no readable balance is
+    refused downstream rather than measured from a guess.
+    """
+    from reckon import budget as budget_module
+    from reckon.crew import budget_group as budget_group_module
+
+    backends = (config or {}).get("backends") or {}
+    members = budget_group_module.declared_groups(config).get(group) or ()
+    for name in members:
+        settings = backends.get(name)
+        if not isinstance(settings, Mapping) or not settings.get("budget_check"):
+            continue
+        state = budget_module.state_for(name, settings)
+        if state.credit_balance is not None:
+            return state.credit_balance
+    return None
 
 
 def _budget_lifts_payload(group):
@@ -3117,6 +3153,15 @@ def _budget_lifts_payload(group):
     "--uncapped",
     is_flag=True,
     help="With --lift, release the group to its whole window, no pace cap.",
+)
+@click.option(
+    "--credits",
+    type=float,
+    default=None,
+    help=(
+        "With --lift, admit the group past a spent window on purchased credits "
+        "until this many credits have been drawn since the grant."
+    ),
 )
 @click.option(
     "--global",
@@ -3260,6 +3305,7 @@ def crew_budget(
     multiple,
     drain_by,
     uncapped,
+    credits,
     global_scope,
     session,
     starts_at,
@@ -3345,6 +3391,7 @@ def crew_budget(
             reason=reason,
             clear_flag=clear_flag,
             lift_id=lift_id,
+            credits=credits,
         )
     _emit_crew_result(result, pretty)
 

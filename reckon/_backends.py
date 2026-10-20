@@ -680,6 +680,28 @@ def _epoch_to_iso(value: Any) -> str | None:
         return None
 
 
+def _credit_reading(raw: Any) -> dict[str, Any] | None:
+    """Read the account's purchased-credit balance from a rate-limit answer.
+
+    The provider keeps serving past an exhausted window while the account holds
+    credits, drawing each turn from the balance, so the balance is the headroom
+    that remains once the window reads 100%. The balance arrives as a decimal
+    string. An answer whose balance cannot be read records no credits at all,
+    because a guessed balance would admit spend nobody measured.
+    """
+    if not isinstance(raw, Mapping):
+        return None
+    try:
+        balance = float(raw.get("balance"))
+    except (TypeError, ValueError):
+        return None
+    return {
+        "has_credits": raw.get("hasCredits") is True,
+        "unlimited": raw.get("unlimited") is True,
+        "balance": balance,
+    }
+
+
 # The account surface the claude-shaped harness publishes and the stored
 # credential that authenticates it. The endpoint is the client's internal
 # contract rather than a published API; a moved or unreachable surface folds
@@ -1543,6 +1565,9 @@ class _CodexDialect(Dialect):
                 "detail": "backend's account surface reports utilisation and reset time",
             }
         )
+        credits = _credit_reading(snapshot.get("credits"))
+        if credits is not None:
+            budget["credits"] = credits
         return budget
 
 

@@ -918,7 +918,19 @@ def _readonly_budget_verdict(
         recorded=recorded.get(backend_name),
         unattributed=recorded.unattributed,
     )
-    return budget_module.decide(state, budget_module.policy(config), purpose="resume")
+    from reckon.crew import budget_group as budget_group_module
+
+    # The launcher judges against the backend's group block with any lift in
+    # force, so the prediction must too, or a lift the launcher honours would be
+    # reported as a hold here.
+    group = budget_group_module.declared_group_for(config, backend_name)
+    judged = config
+    if group is not None:
+        block = budget_group_module.effective_block(
+            config, str(group), readings=None, now=None, session=None
+        )
+        judged = {**(config or {}), "budget": block}
+    return budget_module.decide(state, budget_module.policy(judged), purpose="resume")
 
 
 def _launcher_refusal(
