@@ -23,7 +23,7 @@
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="51">
+<meta name="plan-version" content="52">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -813,6 +813,9 @@
 </div>
 <div class="r-comment" data-section="s13" data-id="c-s13-origin" data-who="reckon-build" data-when="2026-10-20T02:35:00Z">
     <div class="r-comment-body"><p>This section was added after §12 landed. A strace and a <code>py-spy</code> profile of the imas-codex producer, running the merged code, showed environment reads gone but the per-run walk of <code>/proc</code> still in place. The same profile found a larger cost that this plan does not schedule: the obligation sweep thread, which took 54% of samples. Of that, 35% was <code>_resolved_reviewed_run_id</code> (<code>recovery_review_delivery.py</code>) re-resolving review records on every sweep, and 17% was <code>_held_worktree_records</code> (<code>obligations.py</code>). That code is reckon's obligations machinery, which other reckon sessions work on, so it is offered to the lead rather than dispatched from here. The section prose is a hand edit, because no op replaces section prose.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261020T033931786467-review-of-one-walk-of-the-process-table-per-beat-2b2afcaa3e55" data-who="reckon-build" data-when="2026-10-20T04:02:21.713Z">
+    <div class="r-comment-body"><p>one walk of the process table per beat is reviewed at head 2b2afcaa3 against base e0f9d54b2: goal_fidelity 19, evidence 16, scope_discipline 20, durability 13, fit 17, reuse 20 (total 105), with the added-failure count 0 against the reviewed run&#x27;s own paired gate logs; one blocking finding (reckon/crew/recovery_liveness.py:1120 — the production call site passing from_beat_map=True is exercised by no test, so removing it reverts the node silently and green) and one follow-on (the reviewed manifest&#x27;s baseline_suite command carries an angle-bracket placeholder and its strace logs carry no revision/tree/command header).</p></div>
 </div>
 </section>
 </main>
