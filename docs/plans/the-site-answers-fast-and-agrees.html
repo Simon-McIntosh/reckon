@@ -25,7 +25,7 @@
   <title>The Site Answers Fast and Agrees With Itself | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="96">
+<meta name="plan-version" content="97">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -402,7 +402,7 @@
 <p>The home-view line fails at 895,709 B warm against 500 KB. Its cause is that the scripts are served <code>no-store</code> and uncompressed, and §17 now owns it. The thirty-plan agreement line is unverified. The probe built <code>/reckon/plans/plans/&lt;slug&gt;</code>, doubling the <code>plans/</code> its <code>href</code> already carries, and the server answers that path 409. The probe is being corrected before the run is promoted. The negative control at <code>b98f7a160</code> fails four of six lines. §11 stays implementable and runs again after §17 lands.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261020T053852305957-the-site-is-measured-the-way-the-reader-meets-it" data-who="reckon-build" data-when="2026-10-20T07:19:02Z">
-    <div class="r-comment-body"><p>§11 measured: the served site passes the progress-bar (warm max 33 ms), view (warm max 32 ms, cold max 544 ms), console-error (0) and figure-list (nova 0 B warm in 3 ms, power_convertor 10 KB warm in 2 ms) lines, and all 30 sampled plans agree on every surface; it misses the home-view byte budget at 896 KB warm against 500 KB, owned by §17 (the shell&#x27;s scripts are fetched once per revision), whose /_ui/*.js and /_runtime/*.js answer through _send with Cache-Control: no-store, no ETag and no gzip. The negative control at base revision b98f7a160 fails four of six lines.</p></div>
+    <div class="r-comment-body"><p>§11 measured: the served site passes the progress-bar (warm max 33 ms), view (warm max 32 ms, cold max 544 ms), console-error (0) and figure-list (nova 0 B warm in 3 ms, power_convertor 10 KB warm in 2 ms) lines, and all 30 sampled plans agree on every surface; it misses the home-view byte budget at 896 KB warm against 500 KB, owned by §17 (the shell's scripts are fetched once per revision), whose /_ui/*.js and /_runtime/*.js answer through _send with Cache-Control: no-store, no ETag and no gzip. The negative control at base revision b98f7a160 fails four of six lines.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-design-duplicate-owner-1" data-who="reckon-build" data-when="2026-10-18T13:30:00Z">
     <div class="r-comment-body"><p>Design review <code>r-20261018T131121570570</code>, finding <code>duplicate_owner-1</code>: three sibling caches under <code>_config_home()/cache/</code> have the same defect. Each keys its path without the writer's format and rejects a version mismatch on read: the git-creation cache (<code>_git_creation_cache_path</code>, <code>reckon/serve.py</code> near line 1434), the git last-modified cache (near line 1815) and the compliance store (<code>_store_path</code>, <code>reckon/compliance.py</code> near line 139). Before §4 is dispatched, its deliverable becomes one owner for a cache path that includes the writer's format, applied at all four sites, with a test case for each.</p></div>
@@ -607,6 +607,9 @@
 </div>
 <div class="r-comment" data-section="s16" data-id="c-close-s16" data-who="reckon-build" data-when="2026-10-19T14:58:00Z">
     <div class="r-comment-body"><p>§16 closed: serve.py fits a worker window again (merge <code>d71859d00</code>), 44,178 estimated tokens after the git-date readers and change watches moved to <code>reckon/git_dates.py</code> and <code>reckon/change_streams.py</code>. §3 is now unblocked. <a href="/reckon/evidence/archive/the-site-answers-fast-and-agrees-landed.html#s16">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s19" data-id="c-run-r-20261020T073614612117-review-of-a-stored-route-result-is-served-only-by-the-code-that-derived-it-8959b8ac743c" data-who="reckon-build" data-when="2026-10-20T07:47:25.193Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261020T071534950992-a-stored-route-result-is-served-only-by-the-code-that-derived-it at head 8959b8ac743c, base 9b2645fd. Six dimensions scored (goal_fidelity 19, evidence 17, scope_discipline 20, durability 12, fit 19, reuse 19), record status parsed and accepted by crew check-review; added_failure_count 0; one blocking finding on tests/test_a_stored_result_is_served_by_the_code_that_derived_it.py:80, whose assertion cannot fail when the `--source-revision` plumbing at reckon/route_results.py:396 is removed.</p></div>
 </div>
 </section>
 </main>

@@ -1,0 +1,27 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-20T07:47:25.193Z",
+  "dispatched_at": "2026-10-20T07:37:13Z",
+  "findings": [
+    "FINDING tests/test_a_stored_result_is_served_by_the_code_that_derived_it.py:80 blocking: the assertion `payload[\"source_revision\"] == revision` is not independent of the value under test \u2014 `run_child` runs `_refresh_main` in-process while `serve._SOURCE_SNAPSHOT` still carries the test's `revision`, and reckon/route_results.py:139-141 falls back to `_source_revision()` whenever the parsed value is None, so deleting the `--source-revision` plumbing at reckon/route_results.py:396 leaves this test green while a production child (which never loads `_SOURCE_SNAPSHOT`) would store null and every read would miss forever."
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to bind each stored route result to the deriving code's identity; reckon/route_results.py:122 rejects a stored record whose `source_revision` differs from the served snapshot, and reckon/route_results.py:139-141 writes that identity into every stored record.\nVERDICT done_when: the done_when names tests/test_a_stored_result_is_served_by_the_code_that_derived_it.py; the manifest records that gate, and the logs on disk back it \u2014 baseline.log 2 failed EXIT=1 at 9b2645fd, head-committed.log 2 passed EXIT=0 at b9c53e6f, negative-control.log 1 failed 1 passed EXIT=1 with the identity comparison dropped.\nVERDICT write_paths: the manifest declares reckon/route_results.py, the new test file, the evidence fragment and a figures directory; the diff touches the first three and nothing else.\nVERDICT manifest: read at r-20261020T071534950992/manifest.md; it states the 64-test importing population green and names each log, all of which resolve on disk.\nVERDICT diff: read commit by commit against base 9b2645fd \u2014 b9c53e6f2 adds the revision field, its read-side rejection and the `--source-revision` child flag; 8959b8ac7 adds the evidence fragment; 3 files, 110 insertions, 2 deletions.\nCALL_SITES: reckon/serve.py:2912 `_served_result((\"rollup\",))`, reckon/serve.py:3225 and reckon/serve.py:3284 `_served_result(...)`, reckon/serve.py:3236 `_start_refresh(key)`, reckon/serve.py:2781 `velocity_result(key)`, reckon/serve.py:2624 and reckon/serve.py:2684 `_stored_discovery(...)`, reckon/change_streams.py:374-375 `_start_refresh(...)`\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/route_results.py:122 makes a stored result from another revision read as absent, which is exactly the goal, and reckon/route_results.py:396 carries the parent's identity to the child that stores it.\nSCORE evidence: 17\nJUSTIFICATION evidence: the four logs under r-20261020T071534950992/ each end in a bare EXIT= line, and the baseline is genuinely red on the pre-change source, but one of the two assertions the done_when names cannot fail for the mechanism it claims (test file:80).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only reckon/route_results.py, tests/test_a_stored_result_is_served_by_the_code_that_derived_it.py and docs/evidence/fragments/the-site-answers-fast-and-agrees/a-stored-route-result-is-served-only-by-the-code-that-derived-it.html, all inside the declared write paths.\nSCORE durability: 12\nJUSTIFICATION durability: the read-side guard is real \u2014 negative-control.log reddens test_discovery_from_another_revision_is_a_miss when the comparison at reckon/route_results.py:122 is dropped \u2014 but the write-side `--source-revision` plumbing at reckon/route_results.py:396 is guarded only by tests/test_a_stored_result_is_served_by_the_code_that_derived_it.py:80, whose assertion stays true with that line deleted.\nSCORE fit: 19\nJUSTIFICATION fit: `_source_revision` follows the module's lazy-import idiom already used at reckon/route_results.py:376 for `serve._MOUNTS_FILE`, and adds no plan, sprint or ticket name.\nSCORE reuse: 19\nJUSTIFICATION reuse: the only owner of the served revision is the `revision` field on served_code.SourceSnapshot (reckon/served_code.py:74), which the new helper reads rather than re-derives; a search of reckon/ found no existing accessor for the current served revision to extend.\nFINDING tests/test_a_stored_result_is_served_by_the_code_that_derived_it.py:80 blocking: the assertion `payload[\"source_revision\"] == revision` is not independent of the value under test \u2014 `run_child` runs `_refresh_main` in-process while `serve._SOURCE_SNAPSHOT` still carries the test's `revision`, and reckon/route_results.py:139-141 falls back to `_source_revision()` whenever the parsed value is None, so deleting the `--source-revision` plumbing at reckon/route_results.py:396 leaves this test green while a production child (which never loads `_SOURCE_SNAPSHOT`) would store null and every read would miss forever.",
+  "review_run_id": "r-20261020T073614612117-review-of-a-stored-route-result-is-served-only-by-the-code-that-derived-it-8959b8ac743c",
+  "reviewed_base_sha": "9b2645fd2628629e245d647052978f785daabe34",
+  "reviewed_head_sha": "8959b8ac743cce8a21a5d7da6a687441a3ef7197",
+  "reviewed_run_id": "r-20261020T071534950992-a-stored-route-result-is-served-only-by-the-code-that-derived-it",
+  "scores": {
+    "durability": 12,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T07:53:44.737011+00:00",
+  "total": 106
+}
