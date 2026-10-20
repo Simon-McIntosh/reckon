@@ -73,6 +73,13 @@
 <p><strong>Review.</strong> At <code>b520f7339</code> the review scored 105/120 and raised five follow-ons. They covered a crash on a truthy, non-list <code>absent</code>, the dead <code>_read_complete_review</code>, a mixed-type <code>path</code>, a missing test for an unreadable record, and a docstring miscount. All were repaired at <code>b49a1da35</code>, with the fence widened to <code>reckon/crew/recovery.py</code> for the re-export. The re-review scored 114/120. Its one follow-on, a test docstring still counting five conditions, is exempted as prose only.</p>
   </section>
 
+  <section id="s7-watch">
+    <h2>§7 — crew unwatch folds into crew watch --stop</h2>
+    <p>Run <code>r-20261020T035609523314-cso-watch-family-folds</code>, head <code>6c1f03f8a</code>, on the codex lane. Its fence came to about 241,000 input tokens, above the local window. <code>crew unwatch</code> folds into <code>crew watch --stop</code>, and <code>unwatch</code> becomes a tombstone that prints its successor. The emitter in <code>reckon/crew/watch_unit.py</code>, the skills, and six test callers now cite the folded form, as does a docstring in <code>reckon/crew/recovery_watch.py</code>.</p>
+<p><strong>Fence.</strong> The first round stopped before changing anything, on that docstring. The string-literal sweep matches any <code>crew &lt;retired verb&gt;</code> in a docstring, so the plan was wrong to leave the file out of the fence. The fence was widened to it.</p>
+<p><strong>Gate.</strong> At <code>6c1f03f8a</code>, 115 passed and 1 failed. The failure is <code>test_every_module_fits_a_worker_window</code>, the same two offenders as the base arm, so zero failures are added. The review scored 111/120 with nothing blocking, and its two follow-ons are exempted.</p>
+  </section>
+
 </main>
 </body>
 </html>
