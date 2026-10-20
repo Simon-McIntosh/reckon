@@ -2516,14 +2516,13 @@ def test_the_crew_tool_reads_the_worktrees_ledger_not_the_main_one(home, repo) -
 
 def test_an_unknown_crew_view_names_every_view_it_has(home, repo) -> None:
     from reckon import mcp
+    from reckon.mcp_views import CREW_VIEWS
 
     result = mcp._crew(PROJECT, view="everything")
 
     assert result["ok"] is False
-    assert (
-        "directory, drain, scopes, summary, flight, live, records, ledger, "
-        "budget or obligations" in result["detail"]
-    )
+    missing = [name for name in CREW_VIEWS if name not in result["detail"]]
+    assert not missing, f"refusal omits {missing}"
 
 
 def test_the_crew_tool_reads_budget_headroom_from_the_ledger(home, repo) -> None:

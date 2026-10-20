@@ -3624,6 +3624,25 @@ def crew_view_names() -> tuple[str, ...]:
     return CREW_VIEWS
 
 
+def crew_view_refusal_detail() -> str:
+    """The refusal for a view outside :data:`CREW_VIEWS`, naming every view served.
+
+    The names are composed from the registry rather than written out, so a view
+    added to :data:`CREW_VIEWS` is named by the refusal without a second edit,
+    and one removed from the registry is no longer named.
+    """
+
+    named = ", ".join(CREW_VIEWS[:-1]) + " or " + CREW_VIEWS[-1]
+    return (
+        f"view must be {named}; lanes is the endpoint quota view, routing is the "
+        "cross-ledger cost view, runs is the compact joined view, scores is the "
+        "per-dimension review view, velocity is the delivery-rate view, and fleet "
+        "is the cross-project view; plan-review reads a plan review and its "
+        "unanswered findings; findings reads stored review findings grouped by "
+        "the repository path they name"
+    )
+
+
 def serve_crew_view(
     view: str = "summary",
     *,
@@ -3727,16 +3746,7 @@ def serve_crew_view(
         return {
             "ok": False,
             "error": "invalid_view",
-            "detail": (
-                "view must be directory, drain, scopes, summary, flight, live, "
-                "records, ledger, budget, models or obligations; lanes is the endpoint "
-                "quota view, routing is the cross-ledger cost view, runs is the "
-                "compact joined view, scores is the per-dimension review view, "
-                "velocity is the delivery-rate view, and fleet is the "
-                "cross-project view; plan-review reads a plan review and its unanswered findings; "
-                "findings reads stored review findings grouped by the repository "
-                "path they name"
-            ),
+            "detail": crew_view_refusal_detail(),
         }
     if view == "models":
         from reckon.crew.model_catalogue import model_notices
