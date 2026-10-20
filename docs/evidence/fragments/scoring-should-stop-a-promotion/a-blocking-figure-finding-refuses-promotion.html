@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="scoring-should-stop-a-promotion">
   <meta name="plan-title" content="A blocking figure finding refuses promotion">
-  <meta name="plan-summary" content="Promotion keyed a stored review's status and reviewed head, so a figure review carrying a blocking finding satisfied every guard and the defect it named landed unrepaired. The landing path now also reads the run's newest figure review through the figure rubric and refuses while it carries an open blocking finding, naming the figure path and the finding's claim. The severity is read through repair.blocking_findings, so an answered finding no longer refuses. The node gate passes 4 tests, EXIT=0; the declared mutation leaves the figure review out of the promotion read and reddens the refusal case (2 failed, EXIT=1).">
+  <meta name="plan-summary" content="Promotion keyed a stored review's status and reviewed head, so a figure review carrying a blocking finding satisfied every guard and the defect it named landed unrepaired. The landing path now also reads the run's newest figure review through the figure rubric and refuses while it carries an open blocking finding, naming the figure path and the finding's claim. The severity is read through repair.blocking_findings, so an answered finding no longer refuses. A figure review that cannot be read refuses too, because the store answers None for an unreadable record and for a run carrying none alike, and the record that could not be read is the one that might hold the finding. The node gate passes 6 tests, EXIT=0; the declared mutation leaves the figure review out of the promotion read and reddens the refusal case (2 failed, EXIT=1), and a second mutation that drops the existence question reddens the unreadable-record case alone (1 failed, EXIT=1).">
   <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
   <meta name="plan-recorded-at" content="2026-10-20">
   <meta name="plan-verdict" content="passed">
@@ -48,6 +48,26 @@
       <p>Commit: <code>02a433003</code>.</p>
     </section>
 
+    <section id="a-blocking-figure-finding-refuses-promotion-unreadable">
+      <h2>A figure review that cannot be read</h2>
+      <p>The store answers <code>None</code> both for a figure review it could not parse and
+        for a run carrying no figure review — deliberately, because a review worker composes its
+        record by hand and a reader can meet one mid-write. The guard took that single answer
+        for the first absence, so a figure review that could not be read promoted unread — and
+        the record that could not be read is the one that might carry the blocking finding.</p>
+      <p>The guard now asks <em>whether a figure record exists for the run</em> before it acts
+        on the reader's silence, and refuses naming the record and the error the store met. The
+        candidates are the files the run's figure review could sit in, enumerated by the store's
+        own path rules in the staging store and in the project's committed reviews tree,
+        together with the files the store met and could not read on the way — the committed tree
+        answers first and a read that names no revision returns on it alone, so a committed
+        record that does not parse is reported from the store's own account rather than from the
+        enumeration. A file counts only when its name marks it as a figure record, so a text
+        review met mid-write still promotes, and a run carrying no figure review behaves exactly
+        as before.</p>
+      <p>Commit: <code>febf84aed</code>.</p>
+    </section>
+
     <section id="a-blocking-figure-finding-refuses-promotion-gate">
       <h2>The gate</h2>
       <p>Every record in the new file is built through the store's own writer
@@ -73,20 +93,38 @@
             <td>the promotion-tree, claims-review, figure-text and dispose-finding files</td>
             <td><code>27 passed</code> in 23.18s, EXIT=0</td>
           </tr>
+          <tr>
+            <td>node gate</td>
+            <td><code>febf84aed</code></td>
+            <td>the same file, with the unreadable-record and text-record cases added</td>
+            <td><code>6 passed</code> in 4.65s, EXIT=0</td>
+          </tr>
+          <tr>
+            <td>neighbour smoke</td>
+            <td><code>febf84aed</code></td>
+            <td>the promotion-tree, claims-review, figure-text and dispose-finding files</td>
+            <td><code>27 passed</code> in 27.40s, EXIT=0</td>
+          </tr>
         </tbody>
       </table>
-      <p>The four cases: a text review with no blocking finding and a figure review with one
+      <p>The six cases: a text review with no blocking finding and a figure review with one
         undisposed blocking finding is refused with a reason naming the figure and the
         finding; the same run with that finding answered no longer refuses; a text review's
-        blocking finding with no figure review is left alone; and
+        blocking finding with no figure review is left alone;
         <code>_landing_preconditions</code> carries the refusal, so the path
-        <code>crew complete</code> runs reaches it.</p>
-      <p>Logs: <code>gate-head.log</code> and <code>neighbours.log</code> under the node's
-        run directory, each opening with its revision and the literal command and closing
-        with a bare <code>EXIT=</code> line. <code>ruff check</code> over the changed Python
-        paths reports only the two <code>UP017</code> findings <code>promotion_checks.py</code>
-        already carried at the base revision, and <code>ruff format --diff</code> leaves
-        every added line untouched; the new test file is clean on both.</p>
+        <code>crew complete</code> runs reaches it; a figure record that does not parse is
+        refused naming the file; and an unreadable <em>text</em> record with no figure review
+        is promoted, which is what pins the rubric to the figure record's name rather than to
+        whether a record parses.</p>
+      <p>Logs: <code>gate-head.log</code>, <code>neighbours.log</code>,
+        <code>gate-unreadable-figure.log</code> and
+        <code>neighbours-unreadable-figure.log</code> under the node's run directory, each
+        opening with its revision and the literal command and closing with a bare
+        <code>EXIT=</code> line. <code>ruff check</code> over the changed Python paths reports
+        only the two <code>UP017</code> findings <code>promotion_checks.py</code> already
+        carried at the base revision, and <code>ruff format --diff</code> leaves every added
+        line untouched while the six hunks it would rewrite in that file sit in the same
+        regions at the base revision; the new test file is clean on both.</p>
     </section>
 
     <section id="a-blocking-figure-finding-refuses-promotion-negative-control">
@@ -113,6 +151,11 @@
       <p><code>2 failed, 2 passed</code>, EXIT=1. The two that pass are the disposed case and
         the no-figure-review case, which the mutation cannot reach because both expect the
         guard to return without refusing. Log: <code>negative-control.log</code>.</p>
+      <p>The unreadable-record case gets its own arm, because the declared mutation leaves the
+        existence question in place and so cannot reach it. With the guard's enumeration
+        forced empty it no longer asks whether a figure record exists, and that case goes red
+        alone while the five others pass — <code>1 failed, 5 passed</code>, EXIT=1. Log:
+        <code>unreadable-record-control.log</code>.</p>
     </section>
 
     <section id="a-blocking-figure-finding-refuses-promotion-limits">
