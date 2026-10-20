@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 9,
+  "added_failure_ids": [
+    "tests/test_a_crashed_producer_is_restarted.py::test_a_steady_run_resets_the_delay_and_crash_count",
+    "tests/test_a_crashed_producer_is_restarted.py::test_crashed_producer_reoccupies_the_seat[crash]",
+    "tests/test_a_crashed_producer_is_restarted.py::test_crashed_producer_reoccupies_the_seat[kill]",
+    "tests/test_a_crashed_producer_is_restarted.py::test_deliberate_stop_is_not_restarted[lease]",
+    "tests/test_a_crashed_producer_is_restarted.py::test_deliberate_stop_is_not_restarted[producer-term]",
+    "tests/test_a_crashed_producer_is_restarted.py::test_deliberate_stop_is_not_restarted[supervisor-term]",
+    "tests/test_a_crashed_producer_is_restarted.py::test_repeated_crashes_reach_a_reported_limit",
+    "tests/test_closure_fence_agreement.py::test_dispatch_accepts_a_handed_off_pointer",
+    "tests/test_crew_dispatch_arming.py::test_dispatch_refuses_a_session_whose_runs_would_finish_unheard"
+  ],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T053155605869-an-exited-worker-under-a-live-supervisor-reads-halted/logs/population_head.log",
+  "base_log_revision": "2998d0bd5968b57d4a28510e9f67fe815777ff4e",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T063445008608-population-mon69/base.log",
+  "completed_at": "2026-10-20T10:01:51.704Z",
+  "dispatched_at": "2026-10-20T09:53:38Z",
+  "findings": [
+    {
+      "file": "tests/test_an_exited_worker_under_a_live_supervisor_reads_halted.py",
+      "line": "186",
+      "severity": "follow-on",
+      "text": "the replacement assertions hardcode the flag spellings --run and --status complete, the same brittleness class the commit names (main already renamed this run's action subcommand from repair-status to repair), and the commit message's claim that the flags are read from the composer that builds next_action is not what the diff does, so a future flag rename reddens the case again."
+    }
+  ],
+  "gate_logs_read": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T053155605869-an-exited-worker-under-a-live-supervisor-reads-halted/logs/head_full_test.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T053155605869-an-exited-worker-under-a-live-supervisor-reads-halted/logs/negative_control_head.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T053155605869-an-exited-worker-under-a-live-supervisor-reads-halted/logs/mutant_reads_the_worker_record.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T053155605869-an-exited-worker-under-a-live-supervisor-reads-halted/logs/ruff.log"
+  ],
+  "head_log_revision": "77ef0c137390e84306ccdd17ae06dd0a1933e763",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node's goal is to reproduce a run whose worker exited with an in-progress manifest and an exit record while the pointer's recorded supervisor pid stays alive, and make it read exited-unfinished; the gained commit c4796c160 is a within-node correction of that node's own evidence, at tests/test_an_exited_worker_under_a_live_supervisor_reads_halted.py:185-188 and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/an-exited-worker-under-a-live-supervisor-reads-halted.html:16.\nVERDICT done_when: The done_when names tests/test_an_exited_worker_under_a_live_supervisor_reads_halted.py with the first case failing at base and passing at head and the exit-record check removed leaving it working; the manifest records both arms at the reviewed head -- head_full_test.log reads 5 passed (EXIT=0) and negative_control_head.log reads 2 failed, 3 passed (EXIT=1), both stamped rev=c4796c16050c197a0b40b75a211951a314afc881.\nVERDICT write_paths: The source node is fenced to reckon/crew/recovery_liveness.py, tests/test_an_exited_worker_under_a_live_supervisor_reads_halted.py, the evidence fragment and docs/figures/the-monitor-shows-the-work-it-watches/an-exited-worker-under-a-live-supervisor-reads-halted; the gained diff changes only the test file and the fragment, both inside that set.\nVERDICT manifest: Read; it records the full test file at 5 passed and the declared negative control at 2 failed and 3 passing with its log path, and its artifact note states the after_suite arm (9 added ids) was run at 77ef0c13, not at the reviewed head.\nVERDICT diff: Read c4796c160 against its base 8b004ab5 commit by commit; two files changed, one assertion pair replaced and one clause of the fragment corrected, both inside the declared scope.\nCALL_SITES: reckon/crew/recovery_classification.py:702, reckon/crew_run_commands.py:277, reckon/crew/obligations.py:318, reckon/crew/promotion.py:414\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: The gained commit keeps the node's test truthful after the merge rename and corrects its fragment count at tests/test_an_exited_worker_under_a_live_supervisor_reads_halted.py:185-188, serving the node goal without itself changing reckon/crew/recovery_liveness.py.\nSCORE evidence: 17\nJUSTIFICATION evidence: The fragment's corrected count is verified against logs/negative_control_head.log (2 failed, 3 passed) and the head gate against logs/head_full_test.log (5 passed), both at c4796c160, though the after_suite population arm in the manifest was run at 77ef0c13 rather than the reviewed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Every path in the diff (the test file and the evidence fragment) is inside the source node's declared write paths and carries nothing the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: The replacement assertions at tests/test_an_exited_worker_under_a_live_supervisor_reads_halted.py:186-187 redden if the composer drops --run <id> or --status complete, so they are genuine guards, but they pin the flag spellings as literals and no longer couple the action to the recovery verb it must carry.\nSCORE fit: 19\nJUSTIFICATION fit: The change follows the surrounding test idiom and the fragment's prose style, introducing no plan, sprint or ticket identifier in tests/test_an_exited_worker_under_a_live_supervisor_reads_halted.py:185-188.\nSCORE reuse: 20\nJUSTIFICATION reuse: The diff adds no function, class or module, so there is no added definition to fork a capability; the searched surface is reckon/crew/recovery_classification.py, whose action composer the assertion reads.\nFINDING tests/test_an_exited_worker_under_a_live_supervisor_reads_halted.py:186\n follow-on: The replacement assertions hardcode the flag spellings --run and --status complete, the same brittleness class the commit names (main already renamed this action's subcommand from repair-status to repair), and the commit message's claim that the flags are \"read from the composer that builds next_action\" is not what the diff does, so a future flag rename reddens this case again; a robust form would name the composer's own tokens rather than literals.\n",
+  "review_run_id": "r-20261020T095247459756-review-of-an-exited-worker-under-a-live-supervisor-reads-halted-c4796c16050c",
+  "reviewed_base_sha": "8b004ab5420deeb42350582e1548e16f5c85c8e5",
+  "reviewed_commits": [
+    "c4796c16050c197a0b40b75a211951a314cfc881"
+  ],
+  "reviewed_head_sha": "c4796c16050c197a0b40b75a211951a314cfc881",
+  "reviewed_run_id": "r-20261020T053155605869-an-exited-worker-under-a-live-supervisor-reads-halted",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T10:02:45.747098+00:00",
+  "total": 112
+}
