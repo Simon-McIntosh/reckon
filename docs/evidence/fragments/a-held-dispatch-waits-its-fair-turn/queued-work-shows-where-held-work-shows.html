@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-held-dispatch-waits-its-fair-turn">
+  <meta name="plan-title" content="Queued work shows where held work shows">
+  <meta name="plan-summary" content="A request waiting for a lane slot is read as queued by every surface that reports held work: the obligations view lists it as waiting with the place it holds in the queue, and a live row carries that place as position and rank, both computed once from the ordering the admission pass admits by.">
+  <meta name="plan-evidence-for" content="reckon:a-held-dispatch-waits-its-fair-turn">
+  <meta name="plan-verifies" content="reckon:a-held-dispatch-waits-its-fair-turn#s5">
+  <meta name="plan-recorded-at" content="2026-10-20">
+  <meta name="plan-verdict" content="partial">
+  <meta name="plan-tags" content="crew,queue,admission,obligations">
+  <title>Queued work shows where held work shows — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="queued-work-shows-where-held-work-shows-record" data-node="queued-work-shows-where-held-work-shows" data-reckon="landed" data-when="2026-10-20">
+  <h2 id="queued-work-shows-where-held-work-shows-head">Queued work shows where held work shows</h2>
+  <p id="queued-work-shows-where-held-work-shows-place">A request waiting for a lane slot is no longer reported inconsistently. The follower's waiting counter already counted it, while the obligations view listed nothing for it and the live rows carried no place in the lane's queue, so a request waiting its turn read as missing on two of the three. The order the admission pass admits by is now exposed once, by <code>queue_admission.queued_placements()</code>, and every surface that reports a queued request's place reads it from there. A live row carries <code>position</code>, its place among the lane's queued requests, which is the figure a queued dispatch already reports, and <code>rank</code>, its place among its own session's queued requests. Both come from the one ordering, so no surface derives an order of its own and two surfaces cannot disagree about which request goes first.</p>
+  <p id="queued-work-shows-where-held-work-shows-obligations">The obligations view lists a queued request as waiting for as long as its pointer exists, under <code>run-queued</code>, carrying the place it holds and naming that place in the row's next command. The kind is listed among the non-blocking kinds, because the lane's own admission pass ends the wait and the coordinator has nothing to shorten. It is deliberately not <code>review-queued</code>, whose reading stays bounded by the 30-minute bound that kind already carried, and not <code>queued-awaiting-session</code>, which names a condition only the session can clear.</p>
+  <p id="queued-work-shows-where-held-work-shows-gate">The gate is the declared mutation. With one queued pointer the follower's waiting count reads 1, the obligations view lists one <code>run-queued</code> row at position 1 rank 1, and the live view returns one queued row at position 1 rank 1. Removing that same pointer empties every one of those readings. Run against the base revision's own modules, the first case fails at the obligations reading — the follower still counts the run and the obligations payload lists nothing — ending <code>EXIT=1</code>. Head gate: <code>pytest tests/test_queued_work_shows_where_held_work_shows.py</code>, 2 passed and 1 expected-to-fail, <code>EXIT=0</code>.</p>
+  <p id="queued-work-shows-where-held-work-shows-list">The run list is the one surface this node could not carry. It composes its rows in <code>reckon/crew_run_commands.py</code>, which a concurrent run holds, so its place is asserted in a case marked expected-to-fail that names that claim and the two keys its row dict needs.</p>
+  <p id="queued-work-shows-where-held-work-shows-regression">The regression arm over the sixty-seven test files that import these modules reports 7 failed and 411 passed. Five of the seven fail identically against the base arm, and one more could not be compared because the base arm's copy errors on that file's setup. Two are added by this node and are the reading this node replaces: <code>test_a_session_side_refusal_reaches_the_session.py::test_a_lane_hold_keeps_the_waiting_reading</code> and <code>::test_the_two_readings_hold_side_by_side</code> assert a queued request is absent from the obligations payload, which is the reading the plan replaces. Both files lie outside this node's write grant, so the node is reported blocked rather than complete: the two expectations are named in the manifest for the coordinator to update.</p>
+</article>
+</body>
+</html>
