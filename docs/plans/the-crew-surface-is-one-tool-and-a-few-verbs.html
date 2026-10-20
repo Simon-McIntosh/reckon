@@ -26,7 +26,7 @@
   <title>The Crew Surface Is One Tool And A Few Verbs | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="79">
+<meta name="plan-version" content="80">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -534,6 +534,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261020T154443457568-review-of-cso-action-form-survives-an-unsplittable-command-359bcf8de782" data-who="reckon-build" data-when="2026-10-20T15:52:04.975Z">
     <div class="r-comment-body"><p>independent review of run r-20261020T152857439333-cso-action-form-survives-an-unsplittable-command at head 359bcf8d (base 8d6af7e9); all six dimensions scored, no findings; record parsed and validated by crew check --review</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261020T161241582456-cso-sub-floor-duty-names-a-runnable-command" data-who="reckon-build" data-when="2026-10-20T16:44:42Z">
+    <div class="r-comment-body"><p>The sub-floor duty&#x27;s next_command is now a runnable `reckon crew dispose --project &lt;p&gt; --run &lt;r&gt; --dimension &lt;d&gt; --kind folded --node &#x27;&lt;the node the finding went into&gt;&#x27;` (every value shlex.quote&#x27;d, exemption shape moved to a prose `exempt_alternative` field, and the assertion that reads it moved with it), measured by tests/test_a_sub_floor_duty_names_a_runnable_command.py: head gate 70 passed EXIT=0 at 3b34f6afa against base 65 passed EXIT=0 at 33bb77708, zero failures added; negative control restoring the prose gives 4 failed EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261020T133428134004-cso-run-verbs-share-one-identity-grammar" data-who="reckon-build" data-when="2026-10-20T15:41:27Z">
     <div class="r-comment-body"><p>Every single-run crew verb now takes one identity grammar - all 18 accept --project beside --run and refuse a --project that disagrees naming both, dispose no longer requires --project, crew review answers with one run id to complete and names the reviewed run as reviewed_run_id, and crew review --answer refuses a finding two covering reviews carry unless --review-run names one; tests/test_run_verbs_share_one_identity_grammar.py 22 passed, head gate 16 failed, 207 passed in 249.63s (0:04:09) with zero failures added against the base arm's same ids. The sweep's matching arm now asserts each verb's own exit code and, where the fixture run holds only a live pointer, its own refusal; its selection arm asserts the named review carries the answer and the other carries none.</p></div>
