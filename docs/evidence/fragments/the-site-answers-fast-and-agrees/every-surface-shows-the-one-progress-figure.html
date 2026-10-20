@@ -35,6 +35,24 @@
     each bar repeated the whole inventory row it referenced.
   </p>
   <p>
+    A row holds one figure or none, never two. The graph draws its rows from
+    the roadmap payload when the page carries one and from the plan inventory
+    when it does not, and those two paths differ in what they know: the
+    inventory path has no closure roll-up, because the roll-up is computed
+    server-side. That path used to fall back to the endpoint plan's own
+    <code>impl</code>, which put one member's figure in the closure's slot where
+    a reader could not tell it from the closure's own. It now shows an em dash
+    and leaves the bar unfilled, and never reads the endpoint plan's figure in
+    that slot.
+  </p>
+  <p>
+    The crew flow item's progress readout takes a style rule beside its
+    siblings: <code>.r-derived-flow-progress</code> in
+    <code>docs/ui/crew.css</code>, sharing the hours readout's
+    <code>flex: none</code> and opacity and taking tabular figures so the
+    percentages line up down a lane.
+  </p>
+  <p>
     The gate is
     <code>tests/test_every_surface_shows_the_one_progress_figure.py</code>: it
     serves one temporary project of two sectioned plans and reads the figure
@@ -45,33 +63,43 @@
     be confused: the roll-up reads 0.10 where shipped-over-total reads 0.50. The
     file's second case asserts the graph and crew sources state the figure and
     derive none — <code>endpoint.progress</code> in the graph,
-    <code>plan.impl</code> in the crew flow, and neither a
-    <code>shipped_fraction</code> read nor an inline shipped-over-total
-    expression.
+    <code>plan.impl</code> in the crew flow, an empty slot on the inventory-only
+    path, and neither a <code>shipped_fraction</code> read nor an inline
+    shipped-over-total expression.
   </p>
   <p>
     At the merged population of the nine affected files the suite is
-    <strong>57 passed, EXIT=0</strong> against <strong>55 passed, EXIT=0</strong>
-    at the base revision — the two added cases are this file's, and no case was
-    deleted or loosened. The SPA cases in that population drive a real browser
-    and run rather than skip. Logs:
-    <code>final-suite-clean.log</code> (head),
-    <code>base-focused.log</code> (base), <code>rerun-served-schedule.log</code>.
+    <strong>58 passed, EXIT=0</strong> against <strong>55 passed, EXIT=0</strong>
+    at the base revision — the three added cases are this node's two files, and
+    no case was deleted or loosened. The SPA cases in that population drive a
+    real browser and run rather than skip; the count of skips across the run is
+    zero. The empty-slot case renders the inventory-only state in that browser
+    and reads the rendered cells, asserting every row's percent cell reads the
+    em dash and no bar has a fill, with every member authoring a figure of its
+    own (0.4) so a slot that showed one would be visible. Logs:
+    <code>gate-round2-final.log</code> (head),
+    <code>base-focused.log</code> (base).
   </p>
   <p>
-    The declared negative control — restore the shipped-over-total endpoint
-    figure — turns the parity assertion red: <strong>1 failed, EXIT=1</strong>,
-    reading <code>assert 0.5 == 0.1 ± 1.0e-07</code> at the endpoint's
-    <code>progress</code>. That is exactly the divergence the file exists to
-    catch, since 0.5 is the shipped-over-total figure the endpoint used to
-    serve. Log: <code>negative-control.log</code>.
+    Two negative controls, both run and both reverted by an exact second edit
+    rather than a checkout. The declared one — restore the shipped-over-total
+    endpoint figure — turns the parity assertion red: <strong>1 failed,
+    EXIT=1</strong>, reading <code>assert 0.5 == 0.1 ± 1.0e-07</code> at the
+    endpoint's <code>progress</code>; 0.5 is the shipped-over-total figure the
+    endpoint used to serve. The second — put the endpoint plan's own
+    <code>impl</code> back in the inventory-only slot — turns the empty-slot
+    case red in the browser: <strong>1 failed, EXIT=1</strong>, reading
+    <code>At index 0 diff: '40%' != '—'</code>. Both are the divergences the
+    cases exist to catch. Logs: <code>negative-control-round2.log</code>,
+    <code>negative-control-fallback-round2.log</code>.
   </p>
   <p>
     <code>ruff check</code> adds no finding on the changed Python files: the
     base revision of those paths carries three findings and this head carries
     the same three, both of them pre-existing in <code>roadmap.py</code> and
-    <code>test_graph_target.py</code>. <code>ruff format --check</code> likewise
-    adds none: the two files it would reformat at base are the same two at head,
-    and the new test file formats clean.
+    <code>test_graph_target.py</code>; the new test file is clean in its own
+    right. <code>ruff format --check</code> likewise adds none: the two files it
+    would reformat at base are the same two at head, and the new test file
+    formats clean.
   </p>
 </section>

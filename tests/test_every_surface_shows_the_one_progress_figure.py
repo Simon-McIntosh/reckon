@@ -278,4 +278,9 @@ def test_the_surfaces_state_the_figure_and_never_derive_it() -> None:
     assert "endpoint.progress" in graph
     assert "endpoint.shipped_fraction" not in graph
     assert "(shipped / total) * 100" not in graph
+    # The inventory-only fallback holds no closure roll-up and shows no figure
+    # in the slot: it neither derives one nor reads the endpoint plan's own
+    # impl, which is a member's number standing where the closure's belongs.
+    assert "shippedPercent: null" in graph
+    assert "Number(endpoint.impl" not in graph
     assert "plan.impl" in crew

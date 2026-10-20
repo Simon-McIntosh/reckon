@@ -134,6 +134,18 @@ MEASUREMENT_EXPRESSION = """(() => {
 })()"""
 
 
+FALLBACK_MEASUREMENT_EXPRESSION = """(() => {
+  const rows = [...document.querySelectorAll('.r-graph-index-row')];
+  return {
+    rowCount: rows.length,
+    percentCells: rows.map(row =>
+      row.querySelector('.r-graph-index-pct')?.textContent || ''),
+    barFills: rows.map(row =>
+      row.querySelector('.r-graph-index-bar i') ? 1 : 0),
+  };
+})()"""
+
+
 def _screenshot(context, browser: str, destination: Path, width: int) -> bytes:
     with temporary_browser_profile(destination.parent) as profile:
         result = subprocess.run(
@@ -416,6 +428,41 @@ def test_an_unnamed_endpoint_renders_the_same_detail_without_a_ship_target() -> 
     assert measured["needsHandle"] == "needs plan-graph-handle"
 
 
+def test_the_inventory_only_fallback_renders_no_progress_figure() -> None:
+    """Without a roadmap payload there is no roll-up, so the slot stays empty.
+
+    This adapter holds a plan inventory and no endpoint rows, so it has no
+    closure figure to render. It must not fall back to the endpoint plan's own
+    served figure — that is one member's number standing where the closure's
+    figure belongs, and a reader cannot tell the two apart — and it may not
+    derive one. Every member authors a figure here, so a slot that showed a
+    figure at all would be visible.
+    """
+    state, _member_count = _sprint_federation_state()
+    fallback = deepcopy(state)
+    fallback["endpoints"] = []
+    for item in fallback["inventory"]:
+        item["impl"] = 0.4
+    fallback["plans"] = {item["slug"]: item for item in fallback["inventory"]}
+
+    browser = installed_browser_or_skip()
+    with (
+        tempfile.TemporaryDirectory(prefix="graph-fallback-") as temporary,
+        file_spa(
+            Path(temporary), browser, fallback, project="reckon", route="#graph"
+        ) as context,
+    ):
+        measured = context.run_probe(
+            FALLBACK_MEASUREMENT_EXPRESSION,
+            viewport=(PUBLICATION_WIDTHS[0], VIEWPORT_HEIGHT),
+            ready_expression="Boolean(document.querySelector('.r-graph-index-row'))",
+        )
+
+    assert measured["rowCount"] > 0
+    assert measured["percentCells"] == ["—"] * measured["rowCount"]
+    assert measured["barFills"] == [0] * measured["rowCount"]
+
+
 def test_graph_handle_derives_membership_authority_and_ship_hold() -> None:
     result = _evaluate_graph_helpers(
         [
@@ -555,6 +602,11 @@ def test_the_ship_control_is_replaced_by_the_missing_precondition_chip() -> None
 
 def test_index_rows_list_named_endpoints_before_unnamed() -> None:
     inventory = deepcopy(UNNAMED_INVENTORY)
+    # The endpoint plan authors a figure of its own: it must not reach the
+    # row's progress slot, which belongs to the closure rather than to this
+    # member. The served roadmap payload supplies the roll-up; this adapter is
+    # handed an inventory and so carries none.
+    inventory[2]["impl"] = 0.4
     inventory.append(
         {
             "slug": "named-endpoint",
@@ -569,15 +621,17 @@ def test_index_rows_list_named_endpoints_before_unnamed() -> None:
     rows = _evaluate_graph_helpers(inventory, "endpoint")["rows"]
     assert [row["slug"] for row in rows] == ["named-endpoint", "endpoint"]
     assert [row["named"] for row in rows] == [True, False]
-    # A row carries the same shape figures the detail shows. The percent is
-    # the endpoint plan's served progress figure: the fallback path here is
-    # handed only an inventory, and the surface states a served figure rather
-    # than dividing shipped over total (no plan authors an impl in this
-    # inventory, so it reads zero).
+    # A row carries the same shape figures the detail shows, except the
+    # progress slot: this adapter is handed only an inventory, so it holds no
+    # closure roll-up to render. The slot stays empty rather than falling back
+    # to the endpoint plan's own impl. The plan authors one here, and it must
+    # still not appear — a member's number in the closure's slot is
+    # indistinguishable to a reader from the closure's own figure.
+    assert inventory[2]["impl"] == 0.4
     unnamed_row = rows[1]
     assert unnamed_row["total"] == 3
     assert unnamed_row["structuralDepth"] == 3
-    assert unnamed_row["shippedPercent"] == 0
+    assert unnamed_row["shippedPercent"] is None
     # One blocked member, no open decisions.
     assert unnamed_row["flag"] == "1 held"
     assert rows[0]["flag"] == "ready"
