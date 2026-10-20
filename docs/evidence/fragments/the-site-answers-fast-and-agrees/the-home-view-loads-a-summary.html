@@ -119,4 +119,32 @@
     attempt had one additional test-server readiness timeout before browser
     navigation; that case passed alone and in the repeated gate.
   </p>
+  <p>
+    The structural ISO-parser check later named this node's delivery-window
+    reader beside an inherited crew reader. Its first run listed
+    <code>fleet_index.py:_recent_landed</code> and
+    <code>crew/recovery_review_delivery.py:_review_dispatch_instant</code>
+    (<strong>1 failed, EXIT=1</strong> in
+    <code>timestamp-invariant-reproduction.log</code>). The delivery reader
+    now uses the shared <code>parse_iso</code> helper. Zoned stamps and an
+    aware supplied reference are converted to local naive time, matching
+    discovery's edited stamps and the row's compute-time clock. The invariant
+    then listed only the inherited crew reader (<strong>1 failed, EXIT=1</strong>
+    in <code>timestamp-invariant-after.log</code>); the landed-window unit
+    case also passes with a zoned stamp.
+  </p>
+  <p>
+    At <code>b500733587866e733441f32be49de333ff4effd3</code>, the
+    14-file gate was run twice. Each completed with <strong>82 passed,
+    5 failed, EXIT=1</strong> in
+    <code>timestamp-repair-combined-gate.log</code> and
+    <code>timestamp-repair-combined-gate-retry.log</code>. Four failure IDs
+    are the inherited visibility cases. The extra served-home case timed out
+    in the test server's readiness <code>urlopen</code> before browser
+    navigation; it passed alone at the same revision
+    (<strong>1 passed, EXIT=0</strong> in
+    <code>timestamp-served-browser-check.log</code>). The harness's
+    readiness loop catches URL errors but lets a socket read timeout escape;
+    that harness path is outside this worker's write grant.
+  </p>
 </section>
