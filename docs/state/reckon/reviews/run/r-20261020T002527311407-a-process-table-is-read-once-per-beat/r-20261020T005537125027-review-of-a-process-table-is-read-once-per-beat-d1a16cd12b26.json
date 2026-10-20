@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run's baseline_suite records failure_count 0 and failure_ids [] (baseline-suite.log, completed true, '155 passed, 1 skipped', EXIT=0 at fe1cca8a) and its after_suite records failure_count 0 and failure_ids [] (after-suite.log, completed true, '163 passed, 1 skipped', EXIT=0 at d1a16cd12) over the same file population plus the new file, so the delta is 0 added failures; the base arm's wall clock (54 s against the head's 27 s) corroborates that the base arm ran the pre-change code, whose walks open one environment per process per run per beat.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery_liveness.py:_env_scan_run_pid",
+    "reckon/crew/process_signal.py:_run_process_pids:413",
+    "reckon/crew/dispatch_sessions.py:2156",
+    "reckon/crew/routing.py:3737"
+  ],
+  "completed_at": "2026-10-20T01:08:02.789Z",
+  "dispatched_at": "2026-10-20T00:56:24Z",
+  "findings": [
+    {
+      "file": "reckon/crew/process_signal.py",
+      "line": 181,
+      "text": "follow-on: the reused key is (start tick, /proc/<pid>/exe target), so a process that re-execs the same binary path with a changed RECKON_RUN_ID or RECKON_HOME keeps its key and is answered from its pre-exec reading; the in-place os.execve/os.execv re-execs the repository performs (reckon/crew/queue_admission.py:540, reckon/crew/fleet_supervisor.py:1261) carry an unchanged mark today, so the exposure is latent rather than live, and the manifest names it as an open judgement call."
+    },
+    {
+      "file": "reckon/crew/recovery_liveness.py",
+      "line": 411,
+      "text": "follow-on: three call sites (:411, :613, :833) are reformatted by a whole-file ruff format run inside a behavioural commit, so the diff carries churn on lines the goal never touches and a reviewer can no longer read the commit as one change."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T002527311407-a-process-table-is-read-once-per-beat/manifest.md",
+      "line": 21,
+      "text": "follow-on: baseline_suite:21 and after_suite:22 carry '<16 existing test files ...>' and '<the 16 existing files plus ...>' placeholders in their command fields instead of the literal command that ran, so promotion cannot re-run either arm from the record; the real command survives only in the '# command:' header of baseline-suite.log and after-suite.log."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_process_table_is_read_once_per_beat.py:160 fails if the index is not reused, :181 fails if a later beat re-reads an unchanged process, :221 fails if the start tick leaves the key, and :288 is demonstrated red by the declared mutation (negative-control.log, EXIT=1), so each guards a condition the change could regress.",
+    "evidence": "tests/test_a_process_table_is_read_once_per_beat.py:140-361 asserts five of the six done-when bullets and after-suite.log records '163 passed, 1 skipped' with EXIT=0 at d1a16cd12, but the strace arm of the measure is read as 'one open per distinct process the window ever showed' (measure-environ-opens.log) while the harness counts only the one child it starts deliberately, so the 'at most one per process started during the window' claim is inferred from distinct-pid count rather than measured.",
+    "fit": "the helpers at reckon/crew/process_signal.py:166-223 are private, mechanism-named and documented by what they observe, matching the surrounding idiom of the module, and commit aa0f71322 carries a mechanism body with no plan, phase or version label.",
+    "goal_fidelity": "reckon/crew/process_signal.py:192-223 returns the cached reading while the pid still names a process with the same start tick and executable and reads afresh otherwise, and line 203 skips another user's process by the /proc entry owner before opening its environment, so the landed change does what the goal states.",
+    "reuse": "reckon/crew/process_signal.py:122 _process_environment is the repository's only reader of /proc/<pid>/environ and the index extends it in place; searches for an existing process-table memo, for a /proc/<pid>/exe reader and for a pid-ownership helper found none, and the unchecked calls beside it are _proc walks in gc.py, follower_registration.py and dispatch_accounting.py that memoise nothing.",
+    "scope_discipline": "git diff fe1cca8a..d1a16cd12 touches only the four declared paths, but reckon/crew/recovery_liveness.py:411, :613 and :833 carry three call-site reformattings that no part of the goal needs."
+  },
+  "node": "review-of-a-process-table-is-read-once-per-beat-d1a16cd12b26",
+  "node:reviewed": "a-process-table-is-read-once-per-beat",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that every run's environment-mark liveness read is answered from one process-table index per beat, reusing a reading until the pid, its start tick or its executable changes and skipping other users' processes by owner; reckon/crew/process_signal.py:192-223 implements exactly that and _processes_owning_run:283 draws every reading through it.\nVERDICT done_when: the done_when names six checks (a second beat over an unchanged table opens no environ, a new process is read once, a recycled pid is read afresh, another user's process is skipped without an open, a reparented worker is found by the liveness read and the stop path, and no added failures with paired logs) plus a 10 s strace on the fleet allocation; tests/test_a_process_table_is_read_once_per_beat.py:140-361 asserts the first five and after-suite.log records 163 passed 1 skipped at EXIT=0 over the paired file list.\nVERDICT write_paths: the node declared reckon/crew/process_signal.py, reckon/crew/recovery_liveness.py, tests/test_a_process_table_is_read_once_per_beat.py, the evidence fragment and a figures directory; git diff fe1cca8a..d1a16cd12 touches only the first three plus the fragment, so the diff is inside the declared scope and the figures directory is correctly empty because the done-when names no artifact.\nVERDICT manifest: read (manifest.md); it records the 10 s strace (146,969 environ opens, 803 per scan at the base against 598 and 6 at the change), the paired suite 155 passed 1 skipped then 163 passed 1 skipped, the negative control at EXIT=1, and an open judgement call about same-binary re-exec, but its baseline_suite:21 and after_suite:22 command fields carry unsubstituted <...> placeholders rather than the literal command that ran.\nVERDICT diff: read commit by commit against fe1cca8a4; aa0f71322 adds the shared index to reckon/crew/process_signal.py (84 lines changed) and reformats three unrelated call sites in reckon/crew/recovery_liveness.py, and d1a16cd12 adds only the evidence fragment.\nCALL_SITES: reckon/crew/recovery_liveness.py:_env_scan_run_pid (from local_liveness:1048 and live_worker_pid:1087), reckon/crew/process_signal.py:_run_process_pids:413 (the stop path reached through signal_worker reach_run), reckon/crew/dispatch_sessions.py:2156, reckon/crew/routing.py:3737\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/process_signal.py:192-223 reuses a reading while the pid still names a process with the same start tick and executable and reads afresh otherwise, and line 203 skips another user's process by the owner of its /proc entry before opening its environment, so the goal's mechanism is landed as stated.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_a_process_table_is_read_once_per_beat.py:140-361 asserts five of the six done-when bullets and after-suite.log records 163 passed 1 skipped EXIT=0, while the strace arm reads 'one open per distinct process the window ever showed' (measure-environ-opens.log) although the harness counts only the single child it starts deliberately, so the 'one per process started during the window' figure is inferred rather than measured.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: the range fe1cca8a..d1a16cd12 stays inside the four declared paths, but reckon/crew/recovery_liveness.py:411, :613 and :833 carry three whole-file formatter collapses of call sites the goal does not touch.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_process_table_is_read_once_per_beat.py:160 fails if a second run in the beat re-reads a process, :181 fails if a later beat re-reads an unchanged one, :221 fails if the start tick leaves the key, and :288 is shown red by the declared mutation (negative-control.log EXIT=1), so each names the regression it would catch.\nSCORE fit: 18\nJUSTIFICATION fit: the helpers at reckon/crew/process_signal.py:166-223 are private, mechanism-named and documented by what they observe, matching the module's existing idiom, and commit aa0f71322 carries a mechanism body with no plan, phase or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/process_signal.py:122 _process_environment is the repository's only /proc/<pid>/environ reader and the index extends it in place, and searches for an existing process-table memo, a /proc/<pid>/exe reader and a pid-ownership helper found no other owner.\nFINDING reckon/crew/process_signal.py:181 follow-on: the reused key is (start tick, /proc/<pid>/exe target), so a process that re-execs the same binary path with a changed RECKON_RUN_ID or RECKON_HOME keeps its key and is answered from its pre-exec reading; the in-place re-execs the repository performs (queue_admission.py:540, fleet_supervisor.py:1261) change no mark today, so the exposure is latent.\nFINDING reckon/crew/recovery_liveness.py:411 follow-on: three call sites (:411, :613, :833) are reformatted by a whole-file ruff format inside a behavioural commit, so the diff carries churn on lines the goal never touches.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T002527311407-a-process-table-is-read-once-per-beat/manifest.md:21 follow-on: baseline_suite:21 and after_suite:22 carry <...> placeholders in their command fields instead of the literal command that ran, so neither arm can be re-run from the record; the literal commands survive only in the '# command:' headers of baseline-suite.log and after-suite.log.\n",
+  "review_run_id": "r-20261020T005537125027-review-of-a-process-table-is-read-once-per-beat-d1a16cd12b26",
+  "reviewed_base_sha": "fe1cca8a4fb3576bd3a6a4629c9982ec8c973361",
+  "reviewed_head_sha": "d1a16cd12b261d423bbdc9d78ba10283e1bfedfa",
+  "reviewed_run_id": "r-20261020T002527311407-a-process-table-is-read-once-per-beat",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T01:15:00+00:00",
+  "total": 108
+}
