@@ -509,7 +509,7 @@ def _surface_answers(run_id: str, now) -> dict[str, dict]:
     command = json.loads(
         runner.invoke(
             cli_module.main,
-            ["crew", "resume-ready", "--project", PROJECT, "--dry-run"],
+            ["crew", "resume", "--ready", "--project", PROJECT, "--dry-run"],
         ).output
     )
     commanded = (command["resumed"] or command["skipped"])[0]
@@ -528,7 +528,7 @@ def _surface_answers(run_id: str, now) -> dict[str, dict]:
     }
 
 
-def test_resume_ready_is_the_only_cli_spelling_and_matches_the_mcp_action(
+def test_resume_ready_cli_flag_matches_the_unchanged_mcp_action(
     home: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The two caller-facing surfaces name the same recovery sweep."""
@@ -546,7 +546,7 @@ def test_resume_ready_is_the_only_cli_spelling_and_matches_the_mcp_action(
     runner = CliRunner()
     command = runner.invoke(
         cli_module.main,
-        ["crew", "resume-ready", "--project", PROJECT, "--dry-run"],
+        ["crew", "resume", "--ready", "--project", PROJECT, "--dry-run"],
     )
     removed_name = "resume-" + "held"
     removed = runner.invoke(
@@ -576,11 +576,11 @@ def test_recovery_command_help_names_the_state_and_the_boundary() -> None:
     from click.testing import CliRunner
 
     runner = CliRunner()
-    ready = runner.invoke(cli_module.main, ["crew", "resume-ready", "--help"])
+    ready = runner.invoke(cli_module.main, ["crew", "resume", "--help"])
     recover = runner.invoke(cli_module.main, ["crew", "recover", "--help"])
     completion = runner.invoke(cli_module.main, ["crew", "repair-completion", "--help"])
 
-    assert "provider hold or declared external wait has ended" in ready.output
+    assert "Resume one stopped run, every ready run" in ready.output
     # The boundary is now stated as the scoped opt-in that launches reviews and
     # the default that launches nothing, rather than as a blanket refusal.
     help_text = " ".join(recover.output.split())

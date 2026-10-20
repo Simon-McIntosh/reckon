@@ -758,7 +758,7 @@ work *is*, not by whichever worker is convenient:
 |---|---|---|
 | A `NEEDS-HELP:` brief from a CLI-launched live run | that same run's session | `reckon crew resume --run <id> --advice "…"` |
 | A `NEEDS-HELP:` brief from an in-harness run | that attached harness task/session | answer it through the host harness; CLI resume cannot launch it |
-| The same run on another lane — an outage, a lane fault, a redispatch | that same run, a new lane | `reckon crew redispatch --run <id> --backend …` |
+| The same run on another lane — an outage, a lane fault, a redispatch | that same run, a new lane | `reckon crew resume --run <id> --backend …` |
 | A repair of the same node — a review comment, gate evidence, a fix inside the node's own scope | a **new run on that node** | `reckon crew dispatch …` with the same node id |
 | A re-review of an already-reviewed run | a **new review run of that reviewed run** | the review reflex for that run |
 | New scope, a different file set, or a new node | a **fresh dispatch**, its own worktree and node | `reckon crew dispatch …` with a new node id |

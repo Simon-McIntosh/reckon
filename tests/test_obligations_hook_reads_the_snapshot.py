@@ -274,7 +274,7 @@ def test_the_prompt_path_loads_no_derivation_module(
         backend=FOREIGN_BACKEND,
     )
     continuation = (
-        f"reckon crew redispatch --run {CONTINUATION_RUN_ID} "
+        f"reckon crew resume --run {CONTINUATION_RUN_ID} "
         f"--backend {FOREIGN_BACKEND} --reason continue"
     )
     _publish_with_continuation(continuation)

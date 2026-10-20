@@ -24,31 +24,7 @@ from reckon.crew_dispatch_commands import (
 crew_unwatch = tombstone_command("unwatch")
 
 
-@crew.command(name="resume-ready")
-@click.option("--project", required=True, help="Project whose ready runs to resume.")
-@click.option(
-    "--dry-run",
-    is_flag=True,
-    help="Report what would be resumed without resuming anything.",
-)
-@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_resume_ready(project, dry_run, pretty):
-    """Resume when a provider hold or declared external wait has ended; sweep all blocked runs, answer none with advice.
-
-    Idempotent and cheap: eligibility is computed from records already on disk,
-    so nothing is spent to discover it and a second pass over the same fleet
-    reports nothing to do. The follower runs this on a cadence, which is how
-    the recovery happens without anyone noticing the outage; this command is
-    the same sweep by hand.
-    """
-    from reckon.crew.node import CrewError
-    from reckon.crew.resumption import sweep
-
-    try:
-        report = sweep(project, dry_run=dry_run)
-    except CrewError as exc:
-        raise click.ClickException(str(exc)) from exc
-    _emit_crew_result(report, pretty)
+crew_resume_ready = tombstone_command("resume-ready")
 
 
 @crew.command(name="merge")
@@ -1141,7 +1117,7 @@ WIDEN_FOLDED_MANIFEST_STATUS = "complete"
 
 
 WIDEN_RULE = (
-    "only a run whose worker process has stopped on a blocked fence is widened, "
+    "only a run whose worker process has stopped is widened, "
     "because a live worker is already writing against the boundary a widening "
     "would move"
 )
@@ -1240,48 +1216,8 @@ def _widen_folded_disposition(record: Mapping[str, Any]) -> dict[str, Any] | Non
 
 
 def _widen_eligibility(record: Mapping[str, Any]) -> tuple[str, str, str]:
-    """The state refusing this run's fence, its manifest status, and its remedy.
-
-    The first value is the state that refuses a widening, or ``""`` when the
-    fence may move; the second is the manifest's own reported status, so the
-    answer can name which of the two accounts authorised the write; the third is
-    what a refused caller can do next, and is empty when the refusal leaves no
-    move open.
-
-    One rule decides this, and the command's own documentation states the same
-    sentence: only a run whose worker process has stopped on a blocked fence is
-    widened. Its two halves are read from different places on purpose. Whether
-    the run has stopped is read from the worker the record names, never from the
-    phase -- a phase mirrors the stream that folded it and the manifest the run
-    wrote, so a live worker under a blocked-looking phase is exactly the writer
-    this refusal exists for. Whether the run stated a block is read from the
-    folded phase and from the manifest the run delivered. A run is wideniable
-    when either reports ``blocked``, because a run launched through a backend
-    folds its phase from a terminal stream event and a worker that writes
-    ``status: blocked`` before ending its turn leaves the two disagreeing.
-
-    A manifest reporting ``complete`` or ``failed`` refuses on its own -- a
-    finished run has no scope decision outstanding -- with one exception: a
-    review that read the run may have folded a sub-floor finding back into the
-    run's own node, which is exactly such a decision, and the ``complete``
-    refusal then yields through :func:`_widen_folded_disposition`. Only
-    ``complete`` yields, and only to a fold naming this run's own node; a
-    ``failed`` run states no decision a fold could answer, so it is refused as
-    before.
-    """
-    phase = str(record.get("phase") or "")
+    """Refuse a live worker; phase and manifest status are descriptive only."""
     reported = _manifest_reported_status(record)
-    # A fold recorded against the finding's own node answers exactly the
-    # ``complete`` refusal: the run ended with scope work outstanding, and the
-    # review that read it sent that work back. Any other refusing status, and
-    # any complete run carrying no such fold, is refused as before.
-    folded = _widen_folded_disposition(record)
-    folded_authorises = folded is not None and reported == WIDEN_FOLDED_MANIFEST_STATUS
-    if reported in WIDEN_REFUSING_MANIFEST_STATUSES and not folded_authorises:
-        return f"it reports {reported!r} in its own manifest", reported, ""
-    if not folded_authorises and WIDENABLE_PHASE not in (phase, reported):
-        label = phase or "unphased"
-        return f"it reads {label!r}, not {WIDENABLE_PHASE!r}", reported, ""
     running = _widen_running_worker(record)
     if running:
         return (
@@ -1335,121 +1271,27 @@ def _widen_refusal(run_id: str, state: str, remedy: str, *, where: str) -> str:
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_widen(run_id, write_paths, pretty):
-    """Add a path to a blocked run's own fence, in place and without a redispatch.
+    """Add a path to any run whose worker process has stopped.
 
-    A worker that blocks because its write scope was drawn too narrowly can be
-    answered but not re-scoped: ``--write-path`` is read once, at dispatch, and
-    no later command touches scope, so the fence is fixed for the life of the
-    run. The coordinator's remaining moves were a redispatch that discards the
-    run's session and whatever it had committed, or a hand-edit of the live
-    pointer. This is that edit, declared and auditable.
-
-    Only the run's own pointer changes, and only its ``write_paths``: every
-    other field — the session id, the recorded commits, the worktree — is
-    carried through byte for byte, so the widened run resumes on its own
-    session with its own work intact. The field written is the one promotion
-    reads, so a scope granted here is the scope the promotion validator honours.
-
-    The run must have stopped, and it must have stated a block. Whether it has
-    stopped is read from the worker process the pointer records -- a run whose
-    worker is still running is refused whatever its phase and its manifest say,
-    because that worker is already writing against the boundary a widening would
-    move. Whether it stated a block is read from two sources rather than from the
-    folded phase alone: the phase, and the status the run's own manifest reports.
-    A run whose manifest reports ``blocked`` is wideniable even when its phase
-    has folded to ``complete``, because a run launched through a backend folds
-    its phase from its stream's terminal event -- so a worker that ends its turn
-    after writing ``status: blocked`` folds to ``complete``, and its own
-    delivery is the only place the block is stated. A manifest reporting
-    ``failed`` is refused, because a run that ended abnormally states no scope
-    decision to widen for. A manifest reporting ``complete`` is refused too --
-    unless the run's newest review record folds a sub-floor finding back into
-    the run's own node. A review that scored a dimension below its declared
-    floor records what answered it, and a fold naming this run's node is the one
-    kind that sends that work back: the run ended with a finding to repair, and
-    the repair resume is the only moment the boundary can be moved for it --
-    after the resume the run reads ``working`` and a widening refuses a live
-    worker. The grant is recorded in this command's reply, naming the dimension
-    and the node the finding was folded into. A complete run whose review
-    carries no such fold, and one whose fold names any other node, is refused as
-    before. Eligibility is read twice -- once on the pointer as it
-    stands and again on the record read under the per-run lock -- so a run that
-    reaches either read in a non-wideniable state is refused rather than widened
-    in place. Added paths are checked against other binding live claims during
-    that locked write; a conflict names its holder and leaves this pointer
-    unchanged.
+    Claim mutation checks the worker and peer claims under the pointer lock.
+    The run's phase and manifest status describe its work, not whether its
+    process can still write against the boundary being moved.
     """
     crew_module, _ = _crew_modules()
+    from reckon.crew.claims import widen_claim
+
     try:
-        record = crew_module.read_pointer(run_id)
+        updated, added = widen_claim(run_id, write_paths)
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
-
-    state, manifest_status, remedy = _widen_eligibility(record)
-    if state:
-        raise click.ClickException(_widen_refusal(run_id, state, remedy, where=""))
-    if not isinstance(record.get("node"), Mapping):
-        raise click.ClickException(
-            f"live pointer for {run_id!r} records no node holding a write scope"
-        )
-
-    requested = [str(path).strip() for path in write_paths if str(path).strip()]
-    added: list[str] = []
-
-    def widen(pointer: dict[str, Any]) -> dict[str, Any]:
-        # The eligibility above was read before the per-run lock, so it is a claim
-        # about the pointer as it was, not as it is. Re-check it on the record this
-        # mutation read under the lock: between the two reads a run can leave the
-        # wideniable state and start writing against its boundary, and widening
-        # there would move that boundary under a live process. Raising before the
-        # write leaves the pointer as this mutation found it.
-        locked_state, _, locked_remedy = _widen_eligibility(pointer)
-        if locked_state:
-            raise click.ClickException(
-                _widen_refusal(
-                    run_id,
-                    locked_state,
-                    locked_remedy,
-                    where=" at the pointer write, and nothing was written",
-                )
-            )
-        node = dict(pointer.get("node") or {})
-        declared = [str(path) for path in node.get("write_paths") or ()]
-        for path in requested:
-            if path not in declared:
-                declared.append(path)
-                added.append(path)
-        if added:
-            from reckon.crew.dispatch import refuse_widen_scope_conflicts
-
-            try:
-                refuse_widen_scope_conflicts(pointer, added)
-            except crew_module.CrewError as exc:
-                raise click.ClickException(str(exc)) from exc
-        node["write_paths"] = declared
-        pointer["node"] = node
-        return pointer
-
-    updated = crew_module._mutate_pointer(run_id, widen)
-    # Read the authorising fold from the pointer as it stands after the write,
-    # so the grant this command reports names the same finding eligibility was
-    # decided on. A run admitted off its manifest or its phase carries none.
-    folded = _widen_folded_disposition(updated)
     _emit_crew_result(
         {
             "run_id": run_id,
             "phase": str(updated.get("phase") or ""),
-            # The status the run's own manifest reported. It is carried because
-            # the phase alone can read complete here: a widening authorised by
-            # the manifest would otherwise look, in this very output, like a
-            # widening of a finished run.
-            "manifest_status": manifest_status,
+            "manifest_status": _manifest_reported_status(updated),
             "node": str((updated.get("node") or {}).get("id") or ""),
             "session_id": str(updated.get("session_id") or ""),
-            # The finding this grant answers, or null when the run was admitted
-            # on its own block. The grant is recorded against it so a reader can
-            # see which finding needed the boundary moved.
-            "folded_disposition": folded,
+            "folded_disposition": _widen_folded_disposition(updated),
             "added": added,
             "write_paths": [
                 str(path)
@@ -1807,17 +1649,42 @@ def crew_gc(
 
 
 @crew.command(name="resume")
-@click.option("--run", "run_id", required=True, help="Run id to answer.")
-@click.option("--advice", required=True, help="The orchestrator's answer.")
+@click.option("--run", "run_id", help="Run id to answer or reopen.")
+@click.option("--project", help="Project whose ready runs to sweep.")
+@click.option("--advice", default="", help="The orchestrator's answer.")
+@click.option(
+    "--ready", is_flag=True, help="Resume every newly ready run in a project."
+)
+@click.option(
+    "--reopen", is_flag=True, help="Reopen a completed run before resuming it."
+)
+@click.option(
+    "--write-path",
+    "write_paths",
+    multiple=True,
+    help="Path to add to a reopened run's write scope. Repeat as needed.",
+)
 @click.option(
     "--backend",
     default="",
     help="Move the blocked run to this backend while retaining its identity.",
 )
+@click.option("--model", default="", help="Model served by the destination backend.")
 @click.option(
     "--reason",
     default="",
     help="Why a backend move is required; recorded in the run's lane history.",
+)
+@click.option(
+    "--estimated-hours",
+    type=click.FloatRange(min=0.0, min_open=True),
+    default=None,
+    help="Neutral worker-hours for a backend move.",
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Report a ready-run sweep without resuming anything.",
 )
 @click.option(
     "--print-only",
@@ -1825,20 +1692,76 @@ def crew_gc(
     help="Show the resume invocation without running it.",
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_resume(run_id, advice, backend, reason, print_only, pretty):
-    """Continue one blocked run with advice; do not sweep all newly ready runs.
+def crew_resume(
+    run_id,
+    project,
+    advice,
+    ready,
+    reopen,
+    write_paths,
+    backend,
+    model,
+    reason,
+    estimated_hours,
+    dry_run,
+    print_only,
+    pretty,
+):
+    """Resume one stopped run, every ready run, or a run on another backend.
 
-    Without a backend override, the resumed turn carries the prior context.
-    A cross-harness move reports that it must start a fresh session.
+    The ready sweep answers provider holds and declared external waits.
+    Reopening grants paths and repairs a completed delivery before its session
+    continues; a backend move may choose the lane's declared model.
     """
-    if reason and not backend:
-        raise click.UsageError("--reason requires --backend")
+    if ready:
+        if not project or run_id or reopen or backend or model or write_paths or advice:
+            raise click.UsageError("--ready needs --project and no single-run options")
+        from reckon.crew.node import CrewError
+        from reckon.crew.resumption import sweep
+
+        try:
+            report = sweep(project, dry_run=dry_run)
+        except CrewError as exc:
+            raise click.ClickException(str(exc)) from exc
+        _emit_crew_result(report, pretty)
+        return
+    if dry_run:
+        raise click.UsageError("--dry-run requires --ready")
+    if not run_id:
+        raise click.UsageError("--run is required unless --ready is set")
+    if model and not backend:
+        raise click.UsageError("--model requires --backend")
+    if reason and not (backend or reopen):
+        raise click.UsageError("--reason requires --backend or --reopen")
+    if write_paths and not reopen:
+        raise click.UsageError("--write-path requires --reopen")
+    if reopen and (not write_paths or backend or print_only):
+        raise click.UsageError(
+            "--reopen needs --write-path and cannot combine with --backend or --print-only"
+        )
+    if not advice:
+        if reopen or backend:
+            advice = "continue"
+        else:
+            raise click.UsageError("--advice is required for a single-run resume")
     crew_module, flight_module = _crew_modules()
     from reckon.crew import runs as runs_module
     from reckon.crew.dispatch import LanePaused
 
     try:
         record = crew_module.read_pointer(run_id)
+        if reopen:
+            from reckon.crew.claims import widen_claim
+
+            if str(record.get("phase") or "") != "complete" and (
+                _manifest_reported_status(record) != "complete"
+            ):
+                raise click.ClickException("--reopen requires a completed run")
+            widen_claim(run_id, write_paths)
+            runs_module.repair_manifest_status(
+                run_id, "blocked", reason or "reopening the completed run"
+            )
+            record = crew_module.read_pointer(run_id)
         project = str(record.get("project") or "")
         config = (
             _resolved_flight(
@@ -1851,14 +1774,31 @@ def crew_resume(run_id, advice, backend, reason, print_only, pretty):
             else None
         )
         if backend:
+            from reckon import ledger
             from reckon.crew.dispatch import change_lane
+
+            destination = backend
+            if model:
+                entry = (config or {}).get("backends", {}).get(backend, {})
+                lane = str(entry.get("lane") or backend)
+                try:
+                    destination, lane_name, model_key = ledger.backend_serving_model(
+                        config or {}, lane=lane, model=model
+                    )
+                except ValueError as exc:
+                    raise click.ClickException(str(exc)) from exc
+                if lane_name and model_key:
+                    config = flight_module.select_lane_model(
+                        config, destination, lane_name, model_key
+                    )
 
             moved = change_lane(
                 run_id,
-                backend,
-                reason,
+                destination,
+                reason or "backend move requested",
                 config=config or {},
                 advice=advice,
+                estimated_hours=estimated_hours,
                 launch=not print_only,
             )
             _emit_crew_result(moved, pretty)
@@ -1919,92 +1859,7 @@ def crew_resume(run_id, advice, backend, reason, print_only, pretty):
     _emit_crew_result(payload, pretty)
 
 
-@crew.command(name="redispatch")
-@click.option("--run", "run_id", required=True, help="Run id to move.")
-@click.option("--backend", required=True, help="Destination backend.")
-@click.option(
-    "--reason",
-    required=True,
-    help="Why the run must change backend; recorded in its lane history.",
-)
-@click.option(
-    "--advice",
-    default="",
-    help="Continuation advice for a reusable session or fresh worker.",
-)
-@click.option(
-    "--estimated-hours",
-    type=click.FloatRange(min=0.0, min_open=True),
-    default=None,
-    help=(
-        "Neutral worker-hours for this attempt; replaces the estimate the run "
-        "carried and is recorded on it."
-    ),
-)
-@click.option(
-    "--print-only",
-    is_flag=True,
-    help="Show the lane-change launch without stopping or starting a worker.",
-)
-@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_redispatch(
-    run_id, backend, reason, advice, estimated_hours, print_only, pretty
-):
-    """Move one working run to another backend without replacing its identity."""
-    crew_module, flight_module = _crew_modules()
-    from reckon.crew import runs as runs_module
-    from reckon.crew.dispatch import LanePaused
-
-    try:
-        record = crew_module.read_pointer(run_id)
-        project = str(record.get("project") or "")
-        config = (
-            _resolved_flight(
-                flight_module,
-                project,
-                record.get("repo"),
-                runs_module.recorded_dispatch_overrides(record),
-            )
-            if project
-            else {}
-        )
-        from reckon.crew.dispatch import change_lane
-
-        moved = change_lane(
-            run_id,
-            backend,
-            reason,
-            config=config,
-            advice=advice,
-            estimated_hours=estimated_hours,
-            launch=not print_only,
-        )
-    except LanePaused as exc:
-        _emit(
-            {
-                "ok": False,
-                "error": "lane-paused",
-                "detail": _lane_paused_detail(exc.gate),
-                "reason": exc.gate.get("reason"),
-                "lane_gate": exc.gate,
-            },
-            pretty,
-        )
-        raise click.exceptions.Exit(75) from exc
-    except crew_module.BudgetHold as exc:
-        _emit(
-            {
-                "ok": False,
-                "error": "budget-hold",
-                "detail": str(exc),
-                "hold": exc.verdict,
-            },
-            pretty,
-        )
-        raise click.exceptions.Exit(3) from exc
-    except crew_module.CrewError as exc:
-        raise click.ClickException(str(exc)) from exc
-    _emit_crew_result(moved, pretty)
+crew_redispatch = tombstone_command("redispatch")
 
 
 @crew.command(name="stop")
@@ -2362,6 +2217,27 @@ def crew_complete(
         pointer = runs_module.read_pointer(run_id)
     except crew_module.CrewError:
         pointer = {}
+    if accepted_paths and not dry_run:
+        from reckon.crew.claims import widen_claim
+
+        if any(not str(reason).strip() for _, reason in accepted_paths):
+            raise click.ClickException("--accept-path requires a stated reason")
+        original = pointer.get("accepted_scope_before_widening")
+        declared = set(
+            original
+            if original is not None
+            else (pointer.get("node") or {}).get("write_paths") or ()
+        )
+        named = [path for path, _ in accepted_paths]
+        if len(set(named)) != len(named) or any(path in declared for path in named):
+            raise click.UsageError(
+                "--accept-path must name distinct paths outside the run's declared fence"
+            )
+        try:
+            widen_claim(run_id, named, acceptance=True)
+            pointer = runs_module.read_pointer(run_id)
+        except crew_module.CrewError as exc:
+            raise click.ClickException(str(exc)) from exc
     if (
         pointer
         and str(pointer.get("role") or (pointer.get("node") or {}).get("role") or "")

@@ -11,7 +11,7 @@ A session continues the task it began and nothing else. Reusing a transcript
 for a different node pays for unrelated context on every turn: a measurement
 found 312 of 2,089 local runs and 1,315 of 3,105 metered runs resumed another
 task, with substantial inherited context. The deliberately valid continuations
-are `reckon crew resume` of the same run, `reckon crew redispatch` of the same
+are `reckon crew resume` of the same run, `reckon crew resume --backend` of the same
 run, and new work on that same node for a repair or re-review. Every new node,
 new write scope, and widened file set starts a fresh session.
 

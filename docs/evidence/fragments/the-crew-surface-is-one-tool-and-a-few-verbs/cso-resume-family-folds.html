@@ -1,0 +1,146 @@
+<article id="cso-resume-family-folds-report" class="landed-report" data-run-id="r-20261020T104551431626-cso-resume-family-folds" data-node="cso-resume-family-folds">
+<h3 id="cso-resume-family-folds-summary">Resume carries ready sweeps, lane changes and reopening</h3>
+<p id="cso-resume-family-folds-change"><strong>Change.</strong> <code>crew resume --ready</code> and <code>crew resume --backend B --model M</code> replace two visible verbs. Their old CLI names print the successor through tombstones; the MCP action value <code>resume-ready</code> is unchanged. <code>crew resume --reopen --write-path P</code> grants the path and repairs a completed manifest before resuming. Widening accepts a run whose worker is not running; a live worker is refused. <code>complete --accept-path</code> passes its added path through the same claim owner.</p>
+<p id="cso-resume-family-folds-deferred"><strong>Retained migrations.</strong> <code>split-runs</code> and <code>repair-completion</code> remain visible, with no tombstones, because their read-only checks still find input on mounted projects. The table counts missing per-run files for the split migration, records whose completion fields the repair would update, records with no surviving stream, and total records inspected by the repair. A zero in one column is supported by nonzero control counts elsewhere: the split report also found 1,321 matching per-run files in reckon, and the repair found 11,457 updatable records overall.</p>
+<table id="cso-resume-family-folds-migration-census"><thead><tr><th>Mounted project</th><th>Split missing</th><th>Completion updates</th><th>No stream</th><th>Repair records</th></tr></thead><tbody>
+<tr><th scope="row">L2G</th><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><th scope="row">RabbitPy</th><td>0</td><td>67</td><td>0</td><td>67</td></tr>
+<tr><th scope="row">hanney</th><td>0</td><td>0</td><td>12</td><td>12</td></tr>
+<tr><th scope="row">helix</th><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><th scope="row">imas-ambix</th><td>536</td><td>1113</td><td>0</td><td>1469</td></tr>
+<tr><th scope="row">imas-codex</th><td>1359</td><td>1845</td><td>0</td><td>2859</td></tr>
+<tr><th scope="row">imas-efit</th><td>166</td><td>603</td><td>0</td><td>661</td></tr>
+<tr><th scope="row">imas-ink</th><td>0</td><td>43</td><td>0</td><td>43</td></tr>
+<tr><th scope="row">imas-standard-names</th><td>7</td><td>37</td><td>0</td><td>48</td></tr>
+<tr><th scope="row">imas-standard-names-catalog</th><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><th scope="row">iter_uda</th><td>0</td><td>11</td><td>0</td><td>13</td></tr>
+<tr><th scope="row">mctb</th><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><th scope="row">norma</th><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><th scope="row">nova</th><td>1768</td><td>1498</td><td>2</td><td>2770</td></tr>
+<tr><th scope="row">power_convertor</th><td>0</td><td>669</td><td>0</td><td>1012</td></tr>
+<tr><th scope="row">reckon</th><td>1803</td><td>5571</td><td>1011</td><td>6843</td></tr>
+<tr><th scope="row">tessera</th><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><th scope="row">vv</th><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+</tbody><tfoot><tr><th scope="row">Total</th><td>5639</td><td>11457</td><td>1025</td><td>15797</td></tr></tfoot></table>
+<p id="cso-resume-family-folds-census-source">Census inputs: <code>migration-base.json</code> and <code>completion-census.jsonl</code> in this run's directory. Both commands ran in report-only mode; the split run wrote nothing and the completion calls passed <code>write_changes=False</code>.</p>
+<p id="cso-resume-family-folds-base-names">Base revision <code>81afebdeac78306914fd32f62850493b26bb9dc0</code> contained the following 116 lines naming the four candidate verbs under <code>reckon/</code> and <code>skills/</code>. This includes the two migration names retained by the deferral ruling. The source scan is <code>base-name-hits.txt</code> in this run directory; the old CLI answers are in <code>old-answers.json</code> and the successor fixture cases.</p>
+<table id="cso-resume-family-folds-base-hits"><thead><tr><th>Base file and line</th><th>Names on that line</th></tr></thead><tbody>
+<tr><td><code>reckon/_backends.py:2211</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/capabilities.py:626</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/capabilities.py:627</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/capabilities.py:629</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/capabilities.py:632</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/capabilities.py:811</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/capabilities.py:838</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/capabilities.py:885</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/capabilities.py:886</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/cli.py:494</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/AGENTS.md:32</code></td><td>repair-completion</td></tr>
+<tr><td><code>reckon/crew/AGENTS.md:61</code></td><td>resume-ready</td></tr>
+<tr><td><code>reckon/crew/AGENTS.md:70</code></td><td>resume-ready</td></tr>
+<tr><td><code>reckon/crew/claims.py:8</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/digests/implement.md:371</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/digests/implement.md:410</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/digests/implement.md:496</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/digests/implement.md:499</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/digests/report.md:315</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/digests/report.md:318</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/digests/review.md:294</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/digests/review.md:297</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/digests/test.md:334</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/digests/test.md:417</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/digests/test.md:420</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/dispatch.py:1989</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/dispatch.py:2261</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/dispatch_claims.py:761</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/dispatch_launch.py:1380</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/dispatch_plan.py:424</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/dispatch_sessions.py:149</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/dispatch_sessions.py:591</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/dispatch_sessions.py:1662</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/metering.py:5</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/metering.py:688</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/node.py:1310</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/picker/outcomes.py:514</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/picker/outcomes.py:585</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/promotion.py:1821</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/promotion_checks.py:1333</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/promotion_scope.py:280</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/recovery_classification.py:836</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/recovery_classification.py:1012</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/recovery_classification.py:1061</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/recovery_classification.py:1149</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/recovery_classification.py:1157</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/recovery_classification.py:1318</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/recovery_classification.py:1321</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/recovery_classification.py:1344</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/recovery_classification.py:1403</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/recovery_liveness.py:1408</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/recovery_repair_dispatch.py:507</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/recovery_review_dispatch.py:1939</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/recovery_vocabulary.py:78</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/recovery_vocabulary.py:94</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/recovery_vocabulary.py:127</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/refusals.py:22</code></td><td>resume-ready</td></tr>
+<tr><td><code>reckon/crew/refusals.py:45</code></td><td>resume-ready</td></tr>
+<tr><td><code>reckon/crew/repair.py:17</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/reports.py:2296</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/resumption.py:1898</code></td><td>resume-ready</td></tr>
+<tr><td><code>reckon/crew/runs.py:687</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew/ticker.py:52</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew_run_commands.py:27</code></td><td>resume-ready</td></tr>
+<tr><td><code>reckon/crew_run_commands.py:1338</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew_run_commands.py:1343</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew_run_commands.py:1922</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew_run_commands.py:1950</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew_run_commands.py:2249</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/crew_run_commands.py:3468</code></td><td>split-runs</td></tr>
+<tr><td><code>reckon/crew_run_commands.py:3485</code></td><td>repair-completion</td></tr>
+<tr><td><code>reckon/evidence.py:574</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/hooks/coordinator_obligations.py:571</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/mcp.py:1952</code></td><td>resume-ready</td></tr>
+<tr><td><code>reckon/mcp.py:2012</code></td><td>resume-ready</td></tr>
+<tr><td><code>reckon/mcp.py:2302</code></td><td>resume-ready</td></tr>
+<tr><td><code>reckon/mcp.py:2311</code></td><td>resume-ready</td></tr>
+<tr><td><code>reckon/mcp.py:2315</code></td><td>resume-ready</td></tr>
+<tr><td><code>reckon/mcp.py:2317</code></td><td>resume-ready</td></tr>
+<tr><td><code>reckon/mcp.py:2322</code></td><td>resume-ready</td></tr>
+<tr><td><code>reckon/mcp.py:2333</code></td><td>resume-ready</td></tr>
+<tr><td><code>reckon/mcp.py:3092</code></td><td>resume-ready</td></tr>
+<tr><td><code>reckon/mcp_views.py:1868</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/velocity.py:2065</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/velocity.py:2070</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/velocity.py:2079</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/velocity.py:2080</code></td><td>redispatch</td></tr>
+<tr><td><code>reckon/velocity.py:2529</code></td><td>redispatch</td></tr>
+<tr><td><code>skills/reckon-build/SKILL.md:215</code></td><td>redispatch</td></tr>
+<tr><td><code>skills/reckon-build/SKILL.md:218</code></td><td>resume-ready</td></tr>
+<tr><td><code>skills/reckon-build/SKILL.md:420</code></td><td>redispatch</td></tr>
+<tr><td><code>skills/reckon-build/references/conditional-guidance.md:14</code></td><td>redispatch</td></tr>
+<tr><td><code>skills/reckon-build/references/conditional-guidance.md:91</code></td><td>redispatch</td></tr>
+<tr><td><code>skills/reckon-build/references/conditional-guidance.md:179</code></td><td>redispatch</td></tr>
+<tr><td><code>skills/reckon-build/references/coordinator-reference.md:55</code></td><td>redispatch</td></tr>
+<tr><td><code>skills/reckon-build/references/coordinator-reference.md:68</code></td><td>redispatch</td></tr>
+<tr><td><code>skills/reckon-build/references/coordinator-reference.md:542</code></td><td>redispatch</td></tr>
+<tr><td><code>skills/reckon-build/references/coordinator-reference.md:611</code></td><td>redispatch</td></tr>
+<tr><td><code>skills/reckon-build/references/coordinator-reference.md:614</code></td><td>resume-ready</td></tr>
+<tr><td><code>skills/reckon-build/references/coordinator-reference.md:624</code></td><td>redispatch</td></tr>
+<tr><td><code>skills/reckon-build/references/coordinator-reference.md:665</code></td><td>redispatch</td></tr>
+<tr><td><code>skills/reckon-build/references/coordinator-reference.md:817</code></td><td>redispatch</td></tr>
+<tr><td><code>skills/reckon-build/references/effort-routing.md:41</code></td><td>redispatch</td></tr>
+<tr><td><code>skills/reckon-build/references/effort-routing.md:190</code></td><td>redispatch</td></tr>
+<tr><td><code>skills/reckon-build/references/lane-routing.md:97</code></td><td>redispatch</td></tr>
+<tr><td><code>skills/reckon-build/references/outage-recovery.md:108</code></td><td>resume-ready</td></tr>
+<tr><td><code>skills/reckon-build/references/outage-recovery.md:135</code></td><td>resume-ready</td></tr>
+<tr><td><code>skills/reckon-build/references/sprint-orchestration.md:167</code></td><td>redispatch</td></tr>
+<tr><td><code>skills/reckon-build/references/sprint-orchestration.md:184</code></td><td>redispatch</td></tr>
+<tr><td><code>skills/reckon-build/references/sprint-orchestration.md:204</code></td><td>redispatch</td></tr>
+<tr><td><code>skills/reckon-build/references/sprint-orchestration.md:736</code></td><td>redispatch</td></tr>
+<tr><td><code>skills/reckon-build/references/sprint-orchestration.md:761</code></td><td>redispatch</td></tr>
+<tr><td><code>skills/reckon-build/references/worker-protocol.md:52</code></td><td>redispatch</td></tr>
+<tr><td><code>skills/reckon-build/references/worker-protocol.md:75</code></td><td>redispatch</td></tr>
+<tr><td><code>skills/reckon-build/references/worker-protocol.md:81</code></td><td>redispatch</td></tr>
+<tr><td><code>skills/reckon-build/references/worker-protocol.md:146</code></td><td>resume-ready</td></tr>
+</tbody></table>
+<p id="cso-resume-family-folds-controls"><strong>Guard controls.</strong> With the successor’s ready-sweep answer changed from its captured fixture, <code>tests/test_crew_families_fold.py</code> reported exactly one failure, <code>test_resume_successors_preserve_base_answers</code>, and 16 passes; the log ends <code>EXIT=1</code>. The source was restored after that run. The unchanged reasoned companion-path promotion case passes: promotion checks accepted paths against the run’s original declared scope while the durable claim retains the widening and its scope-acceptance reason.</p>
+</article>

@@ -212,10 +212,10 @@ reckon crew list    reckon crew member add    reckon crew member list --project 
 reckon crew observe --run <id>    reckon crew budget --check --project <project> --role <role>
 reckon crew pick --project <project> --role <role> --spec-level <level> --goal <goal> --done-when <measure> --replay <n> --outcomes --since <ISO> --all-projects --checkout-path <path>    # reads routing state or outcome history, dispatches nothing
 reckon crew placement --ensure --session <session> --project <project>
-reckon crew recover    reckon crew redispatch --run <id> --backend <backend> --reason <text>
+reckon crew recover    reckon crew resume --run <id> --backend <backend> --model <model> --reason <text>
 reckon crew repair --run <id> --status <verdict> --reason <text>    # replaces a manifest's status word, keeping the file as delivered
 reckon crew repair --review --run <id> --record <path> --set <field=value> --reason <text>
-reckon crew resume --run <id> --advice <text>    reckon crew resume-ready --project <project>
+reckon crew resume --run <id> --advice <text>    reckon crew resume --ready --project <project>    reckon crew resume --run <id> --reopen --write-path <path>
 reckon crew review --project <project> --plan <slug> --rubric <rubric> --session <session> --local --answer <finding> --acted --declined <reason>
 reckon crew shadow    reckon crew stop    reckon crew watch --stop --project <project>
 reckon crew supersede-review --project <project> --run <id> --reason <text>    # call it when a promoted row's review block names another round: it appends a correction the readers honour and leaves the recorded fields in place
