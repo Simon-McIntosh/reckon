@@ -120,6 +120,31 @@ def _obligation_items():
     return obligations.obligations(PROJECT, SESSION)["obligations"]
 
 
+def _snapshot_items():
+    """The payload a sweep publishes for the session, sliced from the fleet state."""
+    from reckon.crew import obligation_snapshot
+
+    state = obligation_snapshot.fleet_state(PROJECT)
+    return obligation_snapshot.payload_for(state, SESSION)["obligations"]
+
+
+def _without_age(items):
+    """The duty rows with the two age readings dropped.
+
+    A slice timestamps a row as an instant and a derivation reports its age in
+    seconds, so the age is the one field the two producers are not required to
+    spell alike; every other field is.
+    """
+    return [
+        {
+            key: value
+            for key, value in item.items()
+            if key not in {"age_seconds", "age_since"}
+        }
+        for item in items
+    ]
+
+
 def _crew_view_rows():
     from reckon import cli
 
@@ -190,6 +215,52 @@ def test_crew_list_names_the_queued_runs_place(tmp_path, monkeypatch):
     _queue(repository, "r-queued-nine", queued_at=datetime.now(tz=UTC))
     row = _row_for(_crew_list_rows(), "r-queued-nine")
     assert (row.get("position"), row.get("rank")) == (1, 1)
+
+
+def test_the_published_snapshot_lists_the_queued_run_the_derivation_lists(
+    tmp_path, monkeypatch
+):
+    """Both producers of the payload list the queued run, field for field.
+
+    The obligations view has two producers — the derivation a caller gets by
+    asking, and the slice a sweep publishes for the stop hook and the prompt
+    path — and a reader takes whichever is in front of it. They have to agree
+    about a queued request, or the same pointer reads as waiting on one and as
+    nothing on the other.
+    """
+    from reckon.crew import obligations as obligations_module
+
+    repository = _mounted_project(tmp_path, monkeypatch)
+    _queue(repository, "r-queued-published", queued_at=datetime.now(tz=UTC))
+
+    derived = _row_for(_obligation_items(), "r-queued-published")
+    published = _row_for(_snapshot_items(), "r-queued-published")
+    assert derived["kind"] == obligations_module.QUEUED_RUN_DUTY_KIND, derived
+    assert (published["position"], published["rank"]) == (1, 1), published
+    assert _without_age(_snapshot_items()) == _without_age(_obligation_items())
+
+
+def test_a_queued_run_never_holds_a_coordinator_stop_open(tmp_path, monkeypatch):
+    """The hook that decides what holds a stop open reads the waiting kind too.
+
+    A queued request waits on the lane's own admission pass, so no action of
+    the coordinator's shortens it: listing the duty is right, holding the turn
+    open for it is not. The hook keeps its own copy of the vocabulary because
+    the paths that read a fresh snapshot cannot import the derivation's, so the
+    two copies are held together here.
+    """
+    from reckon.crew import obligations as obligations_module
+    from reckon.hooks import coordinator_obligations
+
+    repository = _mounted_project(tmp_path, monkeypatch)
+    _queue(repository, "r-queued-stop", queued_at=datetime.now(tz=UTC))
+    items = _obligation_items()
+    assert [item["kind"] for item in items] == [obligations_module.QUEUED_RUN_DUTY_KIND]
+    assert coordinator_obligations._blocking_items(items) == []
+    assert (
+        obligations_module.NON_BLOCKING_DUTY_KINDS
+        <= coordinator_obligations._NON_BLOCKING_KINDS
+    )
 
 
 def test_two_queued_runs_follow_the_admission_order(tmp_path, monkeypatch):

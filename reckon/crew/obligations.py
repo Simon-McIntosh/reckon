@@ -519,6 +519,35 @@ def _live_item(row: Mapping[str, Any], *, kind: str, now: datetime) -> dict[str,
     }
 
 
+def _queued_item(
+    row: Mapping[str, Any],
+    *,
+    placements: Mapping[str, Mapping[str, int]],
+    now: datetime,
+) -> dict[str, Any]:
+    """The waiting duty one queued request owes the session that dispatched it.
+
+    It carries the place the admission pass would launch it at when the
+    ordering resolved one. Both producers of a session's payload — the
+    derivation and the slice a sweep publishes — build a queued row through
+    here, so neither lists a queued request the other omits. A refusal naming a
+    condition of the session is not built here: that one is the session's own
+    duty and is listed under its own kind by each caller before the ordering
+    is read, which is what keeps a refusal from costing an ordering that
+    cannot be resolved.
+    """
+    item = _live_item(row, kind=QUEUED_RUN_DUTY_KIND, now=now)
+    placement = placements.get(str(row.get("run_id") or ""))
+    if placement is not None:
+        item.update(placement)
+        item["next_command"] = (
+            f"waiting for a lane slot: position {placement['position']} "
+            f"of the queued requests, rank {placement['rank']} among "
+            f"this session's"
+        )
+    return item
+
+
 def _published_worker_slots(session: str) -> Any:
     """The session's share of the local lane's published admission block.
 
@@ -1261,17 +1290,10 @@ def obligations(project: str, session: str) -> dict[str, Any]:
                 )
                 continue
             if placements is None:
-                placements = queue_admission.queued_placements(live_pointers, now=now)
-            item = _live_item(row, kind=QUEUED_RUN_DUTY_KIND, now=now)
-            placement = placements.get(str(row.get("run_id") or ""))
-            if placement is not None:
-                item.update(placement)
-                item["next_command"] = (
-                    f"waiting for a lane slot: position {placement['position']} "
-                    f"of the queued requests, rank {placement['rank']} among "
-                    f"this session's"
+                placements = queue_admission.queued_placements(
+                    live_pointers, now=now
                 )
-            items.append(item)
+            items.append(_queued_item(row, placements=placements, now=now))
             continue
         kind = ""
         if classification in REVIEW_CLASSIFICATION_KINDS:
