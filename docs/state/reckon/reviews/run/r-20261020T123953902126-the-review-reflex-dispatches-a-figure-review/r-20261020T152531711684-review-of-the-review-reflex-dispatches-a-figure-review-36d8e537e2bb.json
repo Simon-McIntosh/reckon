@@ -1,0 +1,86 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:2964",
+    "reckon/crew/recovery_review_acceptance.py:498",
+    "reckon/crew_dispatch_commands.py:2485",
+    "reckon/crew/promotion_release.py:944",
+    "reckon/crew/obligations.py:673",
+    "reckon/crew/obligations.py:1073",
+    "reckon/crew_run_commands.py:685",
+    "reckon/crew/recovery_review_subject.py:139",
+    "reckon/crew/repair.py:603",
+    "reckon/crew/dispatch.py:2062"
+  ],
+  "completed_at": "2026-10-20T15:39:01.416Z",
+  "dispatched_at": "2026-10-20T15:27:28Z",
+  "failure_basis": {
+    "after": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 30,
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T123953902126-the-review-reflex-dispatches-a-figure-review/coordinator-population-head-repaired.log",
+      "revision": "d7c9b416ecb8fef11f002d8efbefdaf908353324"
+    },
+    "baseline": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 30,
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T123953902126-the-review-reflex-dispatches-a-figure-review/coordinator-population-base.log",
+      "revision": "a5b7f077711de024ecdc7416318ab8f57c30fdb6"
+    },
+    "note": "The two arms carry identical failure-id sets (comm -3 empty in both directions), so the delta is zero. The coordinator's arm at the promoted head, coordinator-population-head-final.log, is a two-line header with no summary and no EXIT line, so it is unreadable and the after arm used here is the parent revision's."
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "544",
+      "severity": "follow-on",
+      "text": "follow-on: _FIGURE_RUBRIC_LINE_RE (reckon/crew/review.py:544) compiles a second pattern for the RUBRIC verdict line that reckon/crew/review.py:1013 _PLAN_RUBRIC_LINE_RE already owns and whose comment declares it the one compiled pattern the plan parser, the health parser and the delivered-report check all read, so the new figure rubric forks an owned grammar instead of extending it; the item names in FIGURE_REVIEW_ITEMS are all [a-z_]+ so the wider [A-Za-z_-]* class the copy introduces buys nothing. parse_figure_review (reckon/crew/review.py:944) repeats the same rubric_items/absent_items skeleton as parse_plan_review_report (reckon/crew/review.py:1065). Behaviour is correct; the cost is that a later change to the shared grammar must now be made in two places, and the comment that promises one pattern is false."
+    },
+    {
+      "file": "tests/test_recover_launches_only_what_it_is_asked.py",
+      "line": "146",
+      "severity": "follow-on",
+      "text": "follow-on: this file is outside the node's declared write paths and carries the node's change at :146 and :149, where the _review_in_flight and _failed_review_backend stubs were widened to accept keyword arguments so they follow the new rubric parameter (reckon/crew/recovery_review_dispatch.py:324, :1153). The edit is necessary \u2014 a fenced signature change breaks a peer test \u2014 but the remedy is a scope extension, not an unrequested write; the earlier ~200-line reformat of this file that drew a blocking finding is gone, leaving a four-line net change."
+    },
+    {
+      "file": "reckon/crew/recovery_review_subject.py",
+      "line": "141",
+      "severity": "follow-on",
+      "text": "follow-on: the figure-rubric skip branches at :141 and :149 are unreachable in production, because the read_review call on the line above already excludes figure records (review_module.read_review with rubric=None reaches _review_rubric_matches at reckon/crew/review.py:2198, which keeps figure records out of text selection), so the guard that makes the done_when's text-selection clause true lives in reckon/crew/review.py and not in select_review_for_head; the declared negative control for it reddens through the monkeypatched read_review at tests/test_figure_review.py:350 rather than through the store. Harmless defence, but recording it as the selector's own guard overstates what the selector does."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T123953902126-the-review-reflex-dispatches-a-figure-review/coordinator-population-head-final.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the population arm at the promoted head is unreadable \u2014 the file is two header lines with no summary line and no EXIT line \u2014 so the reviewed run has no completed whole-suite arm at 36d8e537e, the revision being promoted; the added-failure figure for this review therefore rests on the parent's arm at d7c9b416e, which is two product commits behind the head (695c2125a and 36d8e537e landed after it). The node's own named gate did run at the head and is recorded (repair-round4-final-targeted.log, 9 passed, EXIT=0)."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against a5b7f07: b11687d2c adds the prompt, rubric, parser, trigger, storage and selection with the new test file; ab87a9ccc adds the evidence fragment; d7c9b416 adds _review_pointer_rubric and the rubric-keyed in-flight lookup; 695c2125a resolves changed figures from the run worktree as absolute paths; 36d8e537e removes the unrelated reformat from the sweep test and keeps only the keyword-compatible stubs.",
+    "done_when": "The done_when names tests/test_figure_review.py and the manifest records that gate: figure-review-committed.log records 6 passed at ab87a9ccc and repair-round4-final-targeted.log records 9 passed at the reviewed head 36d8e537e, EXIT=0; each clause of the done_when has an assertion in that file, including the repaired fixture that now separates the project mount from the reviewed worktree (tests/test_figure_review.py:181, :212), which is the condition under which the earlier image-path defect could not show.",
+    "goal": "The goal is a read-only figure review dispatched as a rubric of the run-review machinery on a lane declaring image input; reckon/crew/recovery_review_dispatch.py:2056 dispatch_review_for_run composes it via _dispatch_figure_review_for_run with profile='figure', reckon/crew/review.py:276 gives it its own rubric constant, prompt and parser, and the image-path defect the earlier review raised is repaired at reckon/crew/recovery_review_dispatch.py:712, so the deliverable reaches the reviewer on the path a real scored run takes.",
+    "manifest": "Read; status: complete, commits b11687d2c/ab87a9ccc/d7c9b416/695c2125a/36d8e537e, the gate and both negative controls recorded with results, and the two acted mutation ids (f3ea7edd20e, f08a52d5f31) naming the answering commits; baseline_suite and after_suite are empty on the manifest, so the added-failure figure is derived from the coordinator's own population arms instead.",
+    "write_paths": "The manifest declares seven paths; the diff touches six of them and one it was not fenced to write, tests/test_recover_launches_only_what_it_is_asked.py, whose net change is now two stub signature adaptations (4 lines) after the earlier reformat was reverted (FINDING below)."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261020T152531711684-review-of-the-review-reflex-dispatches-a-figure-review-36d8e537e2bb",
+  "reviewed_base_sha": "a5b7f077711de024ecdc7416318ab8f57c30fdb6",
+  "reviewed_head_sha": "36d8e537e2bbc6e033b5d1006736e788066d7bca",
+  "reviewed_run_id": "r-20261020T123953902126-the-review-reflex-dispatches-a-figure-review",
+  "rubric": "code",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T15:41:09.537901+00:00",
+  "total": 86
+}
