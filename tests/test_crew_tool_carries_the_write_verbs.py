@@ -224,16 +224,23 @@ def test_the_negative_control_breaks_one_action_only(
 def test_the_obligations_view_prints_the_action_form(
     config_home, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A duty's printed command carries the tool's action form beside it."""
+    """A duty's printed command carries the tool's action form beside it.
+
+    The form travels under its own key: ``next_action`` already means a printed
+    command string on the classifier's rows, so overwriting it with a rendered
+    call would hand a reader a different kind of value under one name.
+    """
     from reckon.crew import obligations as obligations_module
 
+    command = "reckon crew complete --run run-x --gate <verdict>"
     item = {
         "kind": "review-ready",
         "run_id": "run-x",
         "node": "node-x",
         "plan": "p",
         "age_seconds": 5,
-        "next_command": "reckon crew complete --run run-x --gate <verdict>",
+        "next_command": command,
+        "next_action": command,
     }
     monkeypatch.setattr(
         obligations_module,
@@ -250,8 +257,11 @@ def test_the_obligations_view_prints_the_action_form(
     view = mcp_module._crew(PROJECT, view="obligations", session="s")
     row = view["obligations"][0]
 
-    assert row["next_action"] == (
+    assert row["next_action_form"] == (
         'crew(action="complete", run_id="run-x", gate="<verdict>")'
+    )
+    assert row["next_action"] == command, (
+        "the rendered form displaced the printed command that key already carried"
     )
 
 
@@ -262,4 +272,100 @@ def test_action_form_leaves_other_commands_alone() -> None:
     assert obligations_module.action_form("not a command") is None
     assert obligations_module.action_form("reckon crew stop --run r") == (
         'crew(action="stop", run_id="r")'
+    )
+
+
+def test_a_commitless_promotion_keeps_its_waiver_and_outcome(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The commitless promotion renders with every option it was composed with.
+
+    A run that changed nothing is offered a completion naming the commitless
+    waiver and the outcome instead of a citation. A form that dropped either
+    would offer a call the promotion refuses for the very reason the command
+    was composed to answer.
+    """
+    from reckon.crew import obligations as obligations_module
+    from reckon.crew import recovery_classification
+
+    base = "a" * 40
+    monkeypatch.setattr(recovery_classification, "_review_tree", lambda record: None)
+    monkeypatch.setattr(
+        recovery_classification, "_canonical_commits", lambda tree, commits: [base]
+    )
+
+    command = recovery_classification._promotion_command(
+        "run-x", {"base_sha": base}, [base]
+    )
+    assert "--no-commit" in command and "--outcome" in command, (
+        f"the commitless branch did not compose the command under test: {command}"
+    )
+
+    assert obligations_module.action_form(command) == (
+        'crew(action="complete", run_id="run-x", gate="not-run", '
+        'no_commit="<why the run produced no commit>", '
+        'outcome="<what the run produced>")'
+    )
+
+
+def test_a_repeated_option_renders_as_one_list_parameter() -> None:
+    """Two occurrences of an option become one list, not one parameter twice."""
+    from reckon.crew import obligations as obligations_module
+
+    form = obligations_module.action_form(
+        "reckon crew complete --run run-x --gate passed "
+        "--commit 1111111 --commit 2222222"
+    )
+
+    assert form == (
+        'crew(action="complete", run_id="run-x", gate="passed", '
+        'commits=["1111111", "2222222"])'
+    )
+
+
+def test_an_option_the_form_cannot_carry_renders_no_form() -> None:
+    """A command carrying an unmapped option is left as a printed command.
+
+    Rendering it without that option would offer a call that answers about a
+    different request than the one the command states.
+    """
+    from reckon.crew import obligations as obligations_module
+
+    assert (
+        obligations_module.action_form(
+            "reckon crew complete --run run-x --gate passed --land"
+        )
+        is None
+    )
+    assert obligations_module.action_form("reckon crew stop --run") is None
+
+
+def test_two_commits_reach_the_verb_as_a_list(config_home) -> None:
+    """The action passes a list of commits, the way the CLI passes two flags."""
+    cli = _cli_answer(
+        [
+            "complete",
+            "--run",
+            "run-missing",
+            "--gate",
+            "not-run",
+            "--commit",
+            "1111111",
+            "--commit",
+            "2222222",
+            "--dry-run",
+        ]
+    )
+    tool = mcp_module._crew(
+        action="complete",
+        run_id="run-missing",
+        gate="not-run",
+        commits=["1111111", "2222222"],
+        dry_run=True,
+    )
+
+    assert tool == cli, (
+        "two commits reached the verb differently through the two surfaces\n"
+        f"  cli : {cli}\n"
+        f"  tool: {tool}"
     )

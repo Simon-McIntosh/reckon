@@ -47,8 +47,8 @@ except ImportError:
 
 import reckon.crew.resumption as resumption_module
 from reckon import served_code
-from reckon.crew import obligations as obligations_module  # noqa: F401
 from reckon.crew.follower_registration import follower_code_stamp
+from reckon.mcp_crew_actions import CREW_WRITE_ACTIONS
 from reckon import (
     _plan_html,
 )
@@ -2106,9 +2106,10 @@ def _crew(
     )
 
 
-_WRITE_ACTIONS = frozenset(
-    {"complete", "land", "dispose", "ack", "answer", "widen", "stop", "discard"}
-)
+# The action names are owned by the module that runs them, so the tool's own
+# dispatch reads that one declaration rather than a second copy that a new
+# action would have to be added to twice.
+_WRITE_ACTIONS = frozenset(CREW_WRITE_ACTIONS)
 
 
 def _crew_write_action(action: str, **kwargs: Any) -> dict[str, Any]:
@@ -2157,9 +2158,7 @@ def _promotion_guards(
         return promotion_module.complete_dry_run(
             run_id,
             gate=str(arguments.get("gate") or ""),
-            failure_classification=str(
-                arguments.get("failure_classification") or ""
-            ),
+            failure_classification=str(arguments.get("failure_classification") or ""),
             commits=tuple(arguments.get("commits") or ()),
             outcome=str(arguments.get("outcome") or ""),
             no_commit=str(arguments.get("no_commit") or ""),

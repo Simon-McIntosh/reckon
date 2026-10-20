@@ -41,7 +41,11 @@ from reckon.crew import (
 # shapes rather than a second, drifting copy.
 census = importlib.import_module("tests.test_crew_obligations")
 
-obligations_module = mcp_module.obligations_module
+# The module under test is the one the obligations view is served from, read
+# from its own import site rather than through the MCP module: the view reaches
+# it lazily at call time, so a binding published on the MCP module would be a
+# second name for it that production code has no reason to carry.
+obligations_module = importlib.import_module("reckon.crew.obligations")
 
 PROJECT = census.PROJECT
 SESSION = census.SESSION
