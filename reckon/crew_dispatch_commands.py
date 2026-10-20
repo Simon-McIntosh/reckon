@@ -48,6 +48,66 @@ def crew():
     """
 
 
+def _accept_a_matching_project(run_id: Any, project: Any) -> str | None:
+    """Refuse a --project that disagrees with the run it is given beside.
+
+    One identity grammar for every single-run verb: --run names the run and
+    --project is an optional cross-check, so a caller carrying both from a loop
+    is not silently answered about a run belonging to a different project. The
+    run's own project is read from its live pointer, or from the ledger record
+    of a run already promoted. The run's project is returned so a verb that
+    needs it can fall back to it when --project is omitted. An unknown run is
+    left to the verb's own refusal, which names the run rather than inventing a
+    disagreement from a run nothing could resolve.
+    """
+    wanted = str(project).strip() if project else ""
+    if not run_id:
+        return wanted or None
+    from reckon.crew import runs as runs_module
+    from reckon.crew.node import CrewError
+
+    resolved = ""
+    try:
+        record = runs_module.read_pointer(str(run_id))
+        resolved = str(record.get("project") or "").strip()
+    except (OSError, ValueError, CrewError):
+        resolved = ""
+    if not resolved:
+        try:
+            resolved = str(
+                runs_module._promoted_record_project(str(run_id), None) or ""
+            ).strip()
+        except (OSError, ValueError, CrewError):
+            resolved = ""
+    if resolved and wanted and resolved != wanted:
+        raise click.ClickException(
+            f"--project {wanted!r} disagrees with run {run_id!r}, which belongs "
+            f"to project {resolved!r}; name the run's own project or drop --project"
+        )
+    return resolved or wanted or None
+
+
+def _one_run_to_complete(result: Mapping[str, Any]) -> dict[str, Any]:
+    """Answer a composed review with one run id to complete, and one provenance id.
+
+    A composed plan review answers with the run it is reviewing and the review
+    run it launched. Only the review run carries a live pointer to complete, so
+    it is returned as the answer's ``run_id``, and the run being reviewed is
+    named ``reviewed_run_id`` for provenance rather than left as a second id a
+    caller might complete by mistake. The stored review records keep their own
+    ``review_run_id`` field; this changes only the composing command's answer.
+    """
+    review_run_id = str(result.get("review_run_id") or "").strip()
+    reviewed_run_id = str(result.get("run_id") or "").strip()
+    if not review_run_id or review_run_id == reviewed_run_id:
+        return dict(result)
+    answer = dict(result)
+    answer["run_id"] = review_run_id
+    answer["reviewed_run_id"] = reviewed_run_id
+    answer.pop("review_run_id", None)
+    return answer
+
+
 @crew.command(name="gate")
 @click.option("--pause", default=None, metavar="REASON")
 @click.option("--open", "open_gate", is_flag=True)
@@ -2080,6 +2140,9 @@ def crew_dispatch(
 @crew.command(name="shadow")
 @click.option("--run", "run_id", required=True, help="Committed primary run id.")
 @click.option(
+    "--project", default=None, help="Project owning the run; cross-checks the run."
+)
+@click.option(
     "--session", required=True, help="Dispatching session that owns this shadow."
 )
 @click.option(
@@ -2120,11 +2183,21 @@ def crew_dispatch(
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_shadow(
-    run_id, session, wave, backend, model_name, overrides, member, dry_run, pretty
+    run_id,
+    session,
+    wave,
+    backend,
+    model_name,
+    overrides,
+    member,
+    dry_run,
+    pretty,
+    project=None,
 ):
     """Re-run a committed run at its original base as isolated evidence."""
     from reckon.crew.dispatch import shadow, shadow_source
 
+    _accept_a_matching_project(run_id, project)
     crew_module, flight_module = _crew_modules()
     repo = _repo_root(None)
     try:
@@ -2250,6 +2323,15 @@ def _review_options(callback):
         click.option("--dry-run", is_flag=True),
         click.option("--pretty", is_flag=True),
         click.option("--answer", default=""),
+        click.option(
+            "--review-run",
+            "review_run",
+            default="",
+            help=(
+                "Review run whose finding --answer answers, when a plan carries "
+                "more than one covering review."
+            ),
+        ),
         click.option("--acted", is_flag=True),
         click.option(
             "--declined", default=None, help="Decline a finding with this reason."
@@ -2277,6 +2359,7 @@ def crew_review(
     answer,
     acted,
     declined,
+    review_run="",
 ):
     """Review one plan's content, a code neighbourhood or a portfolio, or answer a finding.
 
@@ -2302,6 +2385,7 @@ def crew_review(
         answer=answer,
         acted=acted,
         declined=declined,
+        review_run=review_run,
         sprint_id=sprint_id,
         portfolio=portfolio,
     )
@@ -2321,6 +2405,7 @@ def _run_review(
     answer,
     acted,
     declined,
+    review_run="",
     sprint_id="",
     portfolio=False,
 ):
@@ -2351,7 +2436,9 @@ def _run_review(
     if sprint_id:
         named.append("sprint")
     detail = ""
-    if len(named) > 1:
+    if review_run and not answer:
+        detail = "--review-run applies only to --answer FINDING_ID"
+    elif len(named) > 1:
         detail = (
             "name one subject: --plan, --around/--path, --portfolio and --sprint "
             f"are alternatives, but {', '.join(named)} were given"
@@ -2407,6 +2494,58 @@ def _run_review(
                 design = plan_review.newest_design_review(project, plan_slug)
                 if design is not None and answer in plan_review.finding_ids(design):
                     record = design
+            # Every stored review that raises this finding is a covering review.
+            # A finding carried by two of them names an ambiguous answer.
+            covering = []
+            seen_identities = set()
+            for candidate in (
+                record,
+                plan_review.newest_design_review(project, plan_slug),
+            ):
+                if candidate is None or answer not in plan_review.finding_ids(
+                    candidate
+                ):
+                    continue
+                identity = plan_review._plan_review_identity(candidate) or id(candidate)
+                if identity in seen_identities:
+                    continue
+                seen_identities.add(identity)
+                covering.append(candidate)
+            if review_run:
+                wanted_review = str(review_run).strip()
+                matched = [
+                    candidate
+                    for candidate in covering
+                    if plan_review._record_run_id(candidate) == wanted_review
+                ]
+                if not matched:
+                    named_ids = ", ".join(
+                        repr(plan_review._record_run_id(candidate) or "unattributed")
+                        for candidate in covering
+                    )
+                    detail = (
+                        f"--review-run {review_run!r} does not raise finding "
+                        f"{answer!r} for {project}:{plan_slug}"
+                    )
+                    if named_ids:
+                        detail += f"; the covering reviews are {named_ids}"
+                    _emit({"error": "crew_error", "detail": detail}, pretty)
+                    raise click.exceptions.Exit(1)
+                record = matched[0]
+            elif len(covering) > 1:
+                named_ids = ", ".join(
+                    repr(plan_review._record_run_id(candidate) or "unattributed")
+                    for candidate in covering
+                )
+                detail = (
+                    f"finding {answer!r} is carried by {len(covering)} covering "
+                    f"reviews; name --review-run to choose which one answers it: "
+                    f"{named_ids}"
+                )
+                _emit({"error": "crew_error", "detail": detail}, pretty)
+                raise click.exceptions.Exit(1)
+            elif len(covering) == 1:
+                record = covering[0]
             path = plan_review.record_response(
                 record,
                 answer,
@@ -2511,7 +2650,7 @@ def _run_review(
                     report_run_id=result.get("run_id"),
                 )
             )
-        _emit(result, pretty)
+        _emit(_one_run_to_complete(result), pretty)
         if result.get("refused") or result.get("awaiting_lane") or result.get("error"):
             raise click.exceptions.Exit(1)
     except (ValueError, OSError, CrewError) as exc:
@@ -2521,10 +2660,14 @@ def _run_review(
 
 @crew.command(name="attach")
 @click.option("--run", "run_id", required=True, help="Run id returned by dispatch.")
+@click.option(
+    "--project", default=None, help="Project owning the run; cross-checks the run."
+)
 @click.option("--task", required=True, help="The harness's own task identifier.")
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_attach(run_id, task, pretty):
+def crew_attach(run_id, task, pretty, project=None):
     """Bind a prepared in-harness run to the task executing it."""
+    _accept_a_matching_project(run_id, project)
     crew_module, _ = _crew_modules()
     try:
         record = crew_module.attach(run_id, task)
@@ -2564,6 +2707,7 @@ def crew_observe(run_id, project, pretty):
     reported as a stated absence naming what was consulted rather than as a
     bare null a reader has to interpret.
     """
+    _accept_a_matching_project(run_id, project)
     crew_module, flight_module = _crew_modules()
     config = None
     if project:

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-crew-surface-is-one-tool-and-a-few-verbs">
+  <meta name="plan-evidence-for" content="the-crew-surface-is-one-tool-and-a-few-verbs">
+  <title>Every run verb takes one identity grammar | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>Every run verb takes one identity grammar</h1>
+      <p class="lead">The single-run crew verbs each spelled their identity differently: some took only <code>--run</code>, some required <code>--project</code>, <code>dispose</code> required a project the run already named, <code>crew review</code> answered with two run ids where only one had a live pointer to complete, and <code>crew review --answer</code> silently picked one of two covering reviews. Every one now accepts <code>--project</code> beside <code>--run</code>, refuses a project that disagrees with the run's own, answers with one run id to complete, and refuses an ambiguous answer naming both reviews.</p>
+    </header>
+
+    <section id="cso-run-verbs-share-one-identity-grammar-grammar">
+      <h2>The gap: one identity, spelled five ways</h2>
+      <p>A census of the crew command tree at base found eighteen single-run verbs. Nine took no <code>--project</code> at all; among the rest, <code>dispose</code> and <code>verify-gate</code> and <code>supersede-review</code> required a project the run's own pointer already recorded, while <code>directory</code>, <code>view</code>, <code>path</code>, <code>gc</code>, <code>resume</code> and <code>observe</code> took it optionally. A caller looping over runs could not pass one project flag to all of them, and a mistaken project was answered about a different run rather than refused. <code>crew review</code> returned both <code>run_id</code> (the run being reviewed) and <code>review_run_id</code> (the review run it launched), only the second of which carries a live pointer to complete. <code>crew review --answer</code> fell back from the newest record to the newest design review and, when both raised the finding, landed on one of them silently.</p>
+    </section>
+
+    <section id="cso-run-verbs-share-one-identity-grammar-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/crew_dispatch_commands.py</code> gains <code>_accept_a_matching_project</code>, the one resolver: it reads the run's project from its live pointer, or from the promoted record when the pointer is gone, refuses a <code>--project</code> that disagrees naming both, and returns the run's project so a verb keyed by run can fall back to it. It also gains <code>_one_run_to_complete</code>, which presents a composed review answer as one <code>run_id</code> to complete with the reviewed run named <code>reviewed_run_id</code> for provenance; the stored records keep their own <code>review_run_id</code> field.</li>
+        <li>Every single-run verb in <code>reckon/crew_run_commands.py</code> and <code>reckon/crew_dispatch_commands.py</code> now declares <code>--project</code> and calls <code>_accept_a_matching_project</code> before its own logic. <code>dispose</code> no longer requires it. <code>crew path</code> accepts <code>--project</code> beside <code>--run</code> for the run-keyed kinds instead of refusing any project, and resolves one from the run for <code>--kind reviews</code>.</li>
+        <li><code>crew review --answer</code> gathers every covering review that raises the finding. Without <code>--review-run</code> a finding carried by two is refused naming both; with <code>--review-run</code> the answer lands on the named review, and an unknown review is refused naming the ones that do.</li>
+      </ul>
+    </section>
+
+    <section id="cso-run-verbs-share-one-identity-grammar-gate">
+      <h2>The gate</h2>
+      <p><code>tests/test_run_verbs_share_one_identity_grammar.py</code> enumerates the crew command tree rather than a fixed list, so a verb added later is covered, and names <code>follow</code> as its one exclusion (a repeatable delivery filter that already takes <code>--project</code>). It asserts every swept verb declares <code>--project</code>, then invokes every one with a matching project and a disagreeing one, asserting the first is not refused for the disagreement and the second is refused naming it. It drives the repeated-finding answer both ways on a temporary project: two covering reviews raise <code>dup-1</code>, the answer without <code>--review-run</code> is refused naming both <code>r-design-0</code> and <code>r-content-1</code>, and with <code>--review-run r-design-0</code> it lands on that review.</p>
+      <p>The negative control drops <code>--project</code> from one verb's options; the sweep then fails naming that verb, because <code>test_every_single_run_verb_declares_a_project_option</code> reads the tree the verb still sits in.</p>
+    </section>
+  </main>
+</body>
+</html>
