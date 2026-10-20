@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="A landing write waits out a held index lock">
+  <meta name="plan-summary" content="The landing staging made one git add and refused on any failure, so a transient .git/index.lock a peer's git command held for a second turned an already-committed promotion into a failed verb. The staging now retries a failure whose message names a held index.lock for a bounded window, recording each retry on the run's landing record; a failure that names no lock, and a lock that outlasts the window, refuse as before.">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-10-20">
+  <meta name="plan-verdict" content="blocked">
+  <title>A landing write waits out a held index lock | reckon</title>
+  <link rel="stylesheet" href="/reckon/_shared/foundation.css">
+  <link rel="stylesheet" href="/reckon/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A landing write waits out a held index lock</h1>
+
+    <section id="a-landing-write-waits-out-a-held-index-lock-defect">
+      <h2>The defect</h2>
+      <p>The landing commit staged its writes with a single <code>git add</code> and refused
+        on any failure. A <code>.git/index.lock</code> that another session's git command
+        holds for a fraction of a second is enough for that one <code>git add</code> to fail,
+        so a promotion that had already committed its landing was reported as a refused verb.
+        Two runs on 2026-10-20 lost that way — <code>r-...074209872047</code> whose promote
+        commit landed at 07:55:31Z and whose next staging failed at 07:56:00Z, and
+        <code>r-...082557577198</code>, already promoted at 08:38:53Z, whose record rewrite at
+        08:47:10Z failed to stage on the lock and rolled back to the committed copy. Both
+        landed a <code>landing.json</code> refusal at step <code>stage</code>.</p>
+    </section>
+
+    <section id="a-landing-write-waits-out-a-held-index-lock-change">
+      <h2>The change</h2>
+      <p>In <code>reckon/crew/promotion_scope.py</code>, staging is now performed by
+        <code>_stage_landing_writes</code>. It calls <code>git add</code> as before, and on a
+        failure whose message names a held <code>index.lock</code>
+        (<code>_staging_names_a_held_index_lock</code>) it retries for a bounded window
+        (<code>_INDEX_LOCK_RETRY_WINDOW_SECONDS = 5.0</code>, spacing
+        <code>_INDEX_LOCK_RETRY_INTERVAL_SECONDS = 0.5</code>), appending a
+        <code>step: "stage_retry"</code> entry with its attempt number and git's message to
+        the run's <code>landing.json</code> before each wait. A staging failure whose message
+        names no lock is returned at once, so a real error — an unreadable file, a bad path —
+        is never hidden behind the window. A lock that outlasts the window returns the failing
+        result to the caller, which refuses exactly as before.</p>
+    </section>
+
+    <section id="a-landing-write-waits-out-a-held-index-lock-evidence">
+      <h2>The evidence</h2>
+      <p><code>tests/test_a_landing_write_waits_out_a_held_index_lock.py</code> drives
+        <code>_commit_landing_writes</code> against a temporary repository holding a real
+        <code>.git/index.lock</code>. Its three cases: a lock released once the first retry is
+        recorded commits, with the retries present in <code>landing.json</code>; a lock held
+        past a shrunk window refuses with a message naming the lock and records its retries;
+        and a staging failure naming no lock — an unreadable file — refuses with no retry
+        recorded. The focused gate is 3 passed (log <code>head-gate.log</code>).</p>
+      <p>The negative control reverts the retry around the staging <code>git add</code> to a
+        single direct call; under it the briefly-held-lock case fails (log
+        <code>negative-control.log</code>, <code>EXIT=1</code>).</p>
+    </section>
+
+    <section id="a-landing-write-waits-out-a-held-index-lock-open">
+      <h2>Open: two importing tests encode the single-attempt behaviour</h2>
+      <p>The done-when requires the test files importing
+        <code>reckon/crew/promotion_scope.py</code> to show no added failure against base. Two
+        of them assert the old single-attempt staging and now fail at head, neither at base:
+        <code>tests/test_a_landing_checks_what_it_left.py::test_a_held_index_lock_records_the_stage_step</code>
+        asserts the landing record holds exactly one entry with step <code>stage</code>, and
+        <code>tests/test_rollback_asks_head.py::test_real_index_lock_preserves_head_path</code>
+        asserts the git trace is exactly <code>[("add", 128), ("restore", 128)]</code>. Both
+        assertions are of the behaviour this node changes, so both must be updated — but
+        neither file is in this node's write scope, which the plan fixes to
+        <code>promotion_scope.py</code> and the new test file. The node stops rather than edit
+        them unilaterally, and the two required edits are recorded for the coordinator.</p>
+    </section>
+  </main>
+</body>
+</html>
