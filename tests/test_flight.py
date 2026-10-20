@@ -42,7 +42,6 @@ from reckon.flight import (
     parse_overrides,
     probe_availability,
     resolve,
-    select_profile_backend,
 )
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -1489,42 +1488,7 @@ def test_the_schema_declares_the_modality_slot_a_backend_carries():
 def test_a_lane_declaring_image_input_serves_a_figure_profile(layers):
     config = _modality_config(layers)
     assert declared_input_modalities(config, "codex-sol") == ("text", "image")
-
-    selected = select_profile_backend(config, "figure", backend="codex-sol")
-
-    assert selected["default_backend"] == "codex-sol"
     assert declared_input_modalities(config, "local-flash") == ()
-
-
-def test_a_figure_profile_is_refused_by_name_on_a_lane_declaring_no_image(layers):
-    config = _modality_config(layers)
-
-    with pytest.raises(FlightConfigError) as refusal:
-        select_profile_backend(config, "figure", backend="local-flash")
-
-    message = str(refusal.value)
-    assert "local-flash" in message
-    assert "image" in message
-
-
-def test_a_refused_figure_profile_never_falls_through_to_the_default_lane(layers):
-    """The default lane here declares image input, so a resolver that ignored
-    the slot would return it and the refusal would never happen — the silent
-    wrong verdict this slot exists to prevent."""
-    config = _modality_config(layers, default="codex-sol")
-    assert "image" in declared_input_modalities(config, config["default_backend"])
-
-    with pytest.raises(FlightConfigError):
-        select_profile_backend(config, "figure", backend="local-flash")
-
-
-def test_the_default_lane_is_checked_when_the_profile_names_no_backend(layers):
-    config = _modality_config(layers, default="local-flash")
-
-    with pytest.raises(FlightConfigError) as refusal:
-        select_profile_backend(config, "figure")
-
-    assert "local-flash" in str(refusal.value)
 
 
 def test_an_undeclared_modality_is_absent_and_a_prompt_needs_no_declaration(layers):
@@ -1537,15 +1501,7 @@ def test_an_undeclared_modality_is_absent_and_a_prompt_needs_no_declaration(laye
     assert missing_input_modalities(config, "codex-sol", "figure") == ()
     assert input_modalities_required("text") == ()
 
-    text_route = select_profile_backend(config, "text", backend="local-flash")
-    assert text_route["default_backend"] == "local-flash"
 
-
-def test_a_lane_or_profile_no_layer_defines_is_refused(layers):
-    config = _modality_config(layers)
-
-    with pytest.raises(FlightConfigError):
-        select_profile_backend(config, "figure", backend="absent")
-
+def test_a_profile_no_layer_defines_is_refused():
     with pytest.raises(FlightConfigError):
         input_modalities_required("panorama")

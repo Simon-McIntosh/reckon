@@ -1228,8 +1228,43 @@ def _review_in_harness_backends(config: Mapping[str, Any]) -> set[str]:
 LANE_READING_FRESH_SECONDS = 45
 
 
+def _required_modalities(profile: str | None) -> tuple[str, ...]:
+    """The input modalities a review profile requires, empty for none.
+
+    No profile, or a profile such as ``text`` that requires nothing, leaves the
+    review's lane selection untouched; a profile naming a modality is what
+    turns the selection into a filter and carries the review exclusion's
+    exemption.
+    """
+    if not profile:
+        return ()
+    from reckon import flight
+
+    return flight.input_modalities_required(profile)
+
+
+def _serves_profile(config: Mapping[str, Any], name: str, profile: str | None) -> bool:
+    """Whether the named backend declares every modality ``profile`` requires.
+
+    Absent profile means no modality is required, so every lane serves it. A
+    named profile is read through :func:`reckon.flight.missing_input_modalities`,
+    which maps the profile to the modalities it needs and reports the ones the
+    lane does not declare; an empty report is a lane that can receive what the
+    work sends.
+    """
+    if not _required_modalities(profile):
+        return True
+    from reckon import flight
+
+    return not flight.missing_input_modalities(config, name, profile)
+
+
 def _ordered_review_lanes(
-    config: Mapping[str, Any], *, owning_backend: str = "", session: str | None = None
+    config: Mapping[str, Any],
+    *,
+    owning_backend: str = "",
+    session: str | None = None,
+    profile: str | None = None,
 ) -> list[str]:
     """Configured backends a composed review may run on, in preference order.
 
@@ -1250,20 +1285,43 @@ def _ordered_review_lanes(
     actually carried on rather than substituting one the reader did not choose;
     whether a named lane can be dispatched is dispatch's own check, not this
     ordering's.
+
+    ``profile`` names what the review's work needs from its lane. When it is
+    given, only a lane declaring every modality the profile requires is a
+    candidate, and such a lane is exempt from the review exclusion: no local
+    lane declares image input, so the exclusion would otherwise leave a figure
+    review no lane at all, and the exclusion is a rule about reviews generally
+    rather than a statement that a lane cannot receive what this review sends.
+    The exemption is here, before the candidate list is built, so a review that
+    needs a modality and a review that does not cannot be reconciled by
+    different readings of the exclusion. A text review (no ``profile``, or one
+    requiring nothing) is unchanged.
     """
     backends = config.get("backends") or {}
     excluded = _review_excluded_backends(config, session=session)
     lifted = _lifted_backends(config, session=session)
     in_harness = _review_in_harness_backends(config)
+    requires = _required_modalities(profile)
     names = [
         str(name)
         for name in sorted(backends)
-        if str(name) not in excluded and str(name) not in in_harness
+        if str(name) not in in_harness
+        and _serves_profile(config, str(name), profile)
+        # A review that requires no modality keeps the exclusion unchanged. A
+        # review that requires one has already kept only the lanes that declare
+        # it, and those are admitted here whatever the exclusion says — the
+        # exemption the profile exists to carry.
+        and (requires or str(name) not in excluded)
     ]
     local = str(config.get("local_backend") or "").strip()
     owning = str(owning_backend or "").strip()
 
     def excluded_for_review(name: str) -> bool:
+        # A lane that declares what this review requires is admitted whatever
+        # an exclusion says, because no other lane can serve the review and
+        # withholding it would leave the figure unreviewed.
+        if requires and _serves_profile(config, name, profile):
+            return False
         # A lift in force opens the lane: the fleet means to spend it, so the
         # lane is admitted here whatever an exclusion says, and however the
         # exclusion spells it. Without a lift, every candidate is judged through
@@ -1276,6 +1334,7 @@ def _ordered_review_lanes(
     for preferred in (owning, local):
         if (
             preferred
+            and _serves_profile(config, preferred, profile)
             and not excluded_for_review(preferred)
             and preferred not in in_harness
             and preferred not in ordered
@@ -1336,7 +1395,11 @@ def _lane_over_ceiling(
 
 
 def _review_lane_plan(
-    config: Mapping[str, Any], *, owning_backend: str = "", session: str | None = None
+    config: Mapping[str, Any],
+    *,
+    owning_backend: str = "",
+    session: str | None = None,
+    profile: str | None = None,
 ) -> tuple[list[str], tuple[str, int | float, int | float] | None]:
     """The review lanes still eligible, and the lane withholding the selection.
 
@@ -1356,11 +1419,15 @@ def _review_lane_plan(
 
     The lane that withholds the selection comes back with the counts its own
     document published, so the hold can name the figures it rests on.
+
+    ``profile`` names what the review needs from its lane and is threaded to
+    :func:`_ordered_review_lanes`, so a review requiring a modality draws only
+    from lanes that declare it.
     """
     local = str(config.get("local_backend") or "").strip()
     eligible: list[str] = []
     for name in _ordered_review_lanes(
-        config, owning_backend=owning_backend, session=session
+        config, owning_backend=owning_backend, session=session, profile=profile
     ):
         reading = _current_lane_reading(config, name)
         over = None if reading is None else _lane_over_ceiling(reading)
@@ -1373,7 +1440,11 @@ def _review_lane_plan(
 
 
 def _review_lane_candidates(
-    config: Mapping[str, Any], *, owning_backend: str = "", session: str | None = None
+    config: Mapping[str, Any],
+    *,
+    owning_backend: str = "",
+    session: str | None = None,
+    profile: str | None = None,
 ) -> list[str]:
     """Configured backends a composed review may run on, in selection order.
 
@@ -1386,9 +1457,12 @@ def _review_lane_candidates(
     to a metered one. A lane whose reading is stale, unreadable or absent keeps
     its place: the hold exists to avoid composing onto a lane measured over its
     limit, not to withhold work no document speaks about.
+
+    ``profile`` names what the review needs from its lane, so a review requiring
+    a modality draws only from lanes that declare it.
     """
     eligible, _withheld = _review_lane_plan(
-        config, owning_backend=owning_backend, session=session
+        config, owning_backend=owning_backend, session=session, profile=profile
     )
     return eligible
 
@@ -1401,6 +1475,7 @@ def _no_lane_reason(
     kind: str,
     previous_lane: str = "",
     session: str | None = None,
+    profile: str | None = None,
 ) -> str:
     """Why the composed ``kind`` for a run has no lane left, naming each rule.
 
@@ -1415,10 +1490,25 @@ def _no_lane_reason(
     candidate list — so ``kind`` names which run is being held rather than which
     rules applied. ``previous_lane`` is the lane an attempt for the same work
     already used, and is empty where a kind places no lane by that rule.
+
+    ``profile`` names what the review needs from its lane. When a review
+    requires a modality no configured backend declares, that absence is the
+    reason it has no lane, and it is named here as the modality rather than as
+    a lane, because the lever the reader must reach for is the declaration, not
+    the exclusion.
     """
     parts: list[str] = []
+    requires = _required_modalities(profile)
+    if requires and not any(
+        _serves_profile(config, str(name), profile)
+        for name in config.get("backends") or {}
+    ):
+        parts.append(
+            f"no configured backend declares {' and '.join(requires)} input, "
+            f"which the {profile} review requires"
+        )
     withheld = _review_lane_plan(
-        config, owning_backend=owning_backend, session=session
+        config, owning_backend=owning_backend, session=session, profile=profile
     )[1]
     if withheld is not None:
         lane, running, ceiling = withheld

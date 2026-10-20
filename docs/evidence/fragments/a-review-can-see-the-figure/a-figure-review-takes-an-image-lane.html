@@ -1,0 +1,37 @@
+<!doctype html>
+<html>
+<head>
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="doc">
+</head>
+<body>
+<section id="a-figure-review-takes-an-image-lane">
+<h2 id="a-figure-review-takes-an-image-lane-landed">Review lane selection admits a lane declaring the modality the review requires</h2>
+<p id="a-figure-review-takes-an-image-lane-landing">
+A review that requires an input modality now draws only from the lanes that
+declare it, and such a lane is admitted despite
+<code>review_excluded_backends</code>. The exemption lives in
+<code>_ordered_review_lanes</code> in
+<code>reckon/crew/recovery_review_dispatch.py</code>, before the candidate list
+is built, threaded through <code>_review_lane_plan</code>,
+<code>_review_lane_candidates</code> and <code>_no_lane_reason</code> as a
+<code>profile</code>; a lane's eligibility is read through
+<code>reckon.flight.missing_input_modalities</code>. A review requiring no
+modality keeps the exclusion unchanged. When no configured lane declares the
+modality, the hold names the modality rather than a lane.
+<code>select_profile_backend</code> is retired from <code>reckon/</code> and
+<code>tests/</code>.
+</p>
+<p id="a-figure-review-takes-an-image-lane-measure">
+Measure: with a flight whose only image-declaring lane is listed in
+<code>review_excluded_backends</code>, the review lane candidates for the
+<code>figure</code> profile are exactly the image-declaring lanes, that lane
+included; the candidates for a <code>text</code> review still exclude it; with
+no lane declaring image input the figure review gets no lane and its reason
+names the image modality. The declared negative control removes the exemption,
+and the image-lane case then returns no candidate while the text case is
+unchanged.
+</p>
+</section>
+</body>
+</html>
