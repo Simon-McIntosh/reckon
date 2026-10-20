@@ -28,7 +28,6 @@ import subprocess
 import sys
 import threading
 import time
-from datetime import UTC, datetime
 from pathlib import Path
 
 from reckon import compliance, metadata_index, served_code
@@ -249,7 +248,6 @@ def _compute_refresh(key: tuple[str, ...]) -> object:
 
     from reckon.serve import (
         _STATE_ROOT,
-        _attach_schedule,
         collect_projects,
         discover_plans,
         load_mounts,
@@ -259,8 +257,7 @@ def _compute_refresh(key: tuple[str, ...]) -> object:
     kind = key[0]
     if kind == "discover":
         project = key[1]
-        result = discover_plans(mounts[project], project, _STATE_ROOT)
-        return _attach_schedule(result, project, mounts, reference=datetime.now(UTC))
+        return discover_plans(mounts[project], project, _STATE_ROOT)
     if kind == "checks":
         project = key[1]
         docs_dir = Path(mounts[project])

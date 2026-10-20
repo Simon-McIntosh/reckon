@@ -3296,6 +3296,9 @@ class Handler(BaseHTTPRequestHandler):
             _note_tree_read(disc_mounts[project])
             try:
                 result, age = route_results._served_result(("discover", project))
+                result = _attach_schedule(
+                    result, project, disc_mounts, reference=datetime.now(UTC)
+                )
             except Exception as exc:  # noqa: BLE001
                 self._send_json(
                     HTTPStatus.INTERNAL_SERVER_ERROR,
