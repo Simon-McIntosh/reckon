@@ -216,9 +216,15 @@ def test_a_tier_none_run_citing_only_its_base_offers_the_no_commit_form(
     the offer takes the declaration a commitless run promotes under. The duty
     reads that case from the same helper the classifier does, so the two agree
     about it without a second reading of the rule here.
+
+    The base is a commit past the repository's first, touching only a
+    non-runtime path, because a cited commit's scope is read from its diff
+    against its own first parent: a first commit has none, and an unreadable
+    diff owes the full review rather than none. The case under test is the
+    base citation, so its base has to be readable.
     """
     root = project
-    base = _git(root, "rev-parse", "HEAD")
+    base = _commit_change(root, "seed.txt", "seed\nbase-only change\n")
     _write_pointer(
         root,
         BASE_RUN,
