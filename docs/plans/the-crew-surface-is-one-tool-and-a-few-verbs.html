@@ -26,7 +26,7 @@
   <title>The Crew Surface Is One Tool And A Few Verbs | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="82">
+<meta name="plan-version" content="83">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -435,6 +435,20 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-s9-revised" data-who="reckon-build" data-when="2026-10-20T12:45:00Z">
     <div class="r-comment-body"><p>Revised for the three findings in <code>c-s9-review-deferred</code>.</p><ul><li><strong>wiring-1:</strong> the filter node's fence gains <code>reckon/_mcp_tools.py</code> and <code>skills/reckon-build/SKILL.md</code>. Its row now states that the schema Literal lists ten views and the dispatcher serves nineteen. §5 has landed, so nothing upstream holds <code>_mcp_tools.py</code> any more.</li><li><strong>done_when-1:</strong> the mover node gets its own negative control.</li><li><strong>reasoning-1:</strong> the serial reason is restated as the files the nodes share, plus the mover's need for the filter node's flags.</li></ul></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-s9-handoff-fleet-move" data-who="reckon-build" data-when="2026-10-20T19:50:00Z">
+    <div class="r-comment-body"><p><strong>In flight at the fleet move, 2026-10-20 ~19:50Z.</strong> §9's first node is <code>cso-ledger-and-velocity-retire</code>, run <code>r-20261020T161011580050-cso-ledger-and-velocity-retire</code>. It has delivered <code>status: complete</code> at <code>f38a69738</code>, with commits <code>748831614</code>, <code>a50b336e9</code> and <code>f38a69738</code>. It is not promoted and not landed. Its worktree is clean.</p>
+<p>The three test callers that build the argv over several lines are repointed to <code>crew view records</code>: <code>test_derived_figures_reach_a_reader.py</code>, <code>test_old_names_resolve.py</code> and <code>test_ledger.py</code>.</p>
+<p><strong>Before it lands, resume it once</strong> with <code>crew resume --run r-20261020T161011580050-cso-ledger-and-velocity-retire --advice …</code> to fix five things. The first two were checked at <code>f38a69738</code>:</p>
+<ol>
+<li>The tombstone's <code>successor_invocation</code> forwards the old arguments unfiltered. <code>crew ledger --view records</code> prints <code>reckon crew view ledger --project reckon --view records</code>, which exits 2. A <code>--view X</code> must map to <code>crew view X</code>.</li>
+<li><code>tests/test_read_verbs_retire_behind_crew_view.py:58</code> names the plan node id in a comment. Name the mechanism instead.</li>
+<li><code>tests/test_ledger.py</code>, near line 2418: the records assertion compares the CLI read against the MCP read of the same <code>serve_crew_view</code> owner. Assert the document's content.</li>
+<li>The <code>hold_id</code> equality in the same block is self-comparing in the same way.</li>
+<li><code>baseline_suite.command</code> carries a <code>&lt;…&gt;</code> placeholder. Write the literal file list from <code>logs/gate-base.log</code> line 2.</li>
+</ol>
+<p>Findings 1 and 2 come from review <code>r-20261020T164004709334</code>, at <code>748831614</code>. Findings 3 to 5 come from review <code>r-20261020T172945596426</code>, at <code>f38a69738</code>. Neither review is promoted. They were left unpromoted so that the repair reflex would not resume the worker during the move. Promote them, and dispose their findings as folded into this node, when the resume is sent.</p>
+<p>The other three §9 nodes follow in order: filter, mover, list-retire. The filter node's brief must also ask for a tool-side registry control beside the dispatcher-side one, which answers <code>done_when-1</code> of review <code>r-20261020T150456567607</code>. A multiline census confirms that the mover and list-retire fences cover every <code>crew list</code> test caller.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261019T220254082188-review-of-cso-budget-family-folds-0274b1227df3" data-who="reckon-build" data-when="2026-10-19T22:24:20.259Z">
     <div class="r-comment-body"><p>Reviewed run r-20261019T202350268699-cso-budget-family-folds at 0274b1227df3acf495023b12695d143ed6c129ab against base 0fa62dca44a63a65382c140c82a003dd7a660e02: the budget fold is complete and its gate is green at both arms with zero added failures, but the run's own manifest and gate logs fail its own `crew check-manifest` audit (ok:false, three findings), so the node cannot promote until the negative_control_log and the two gate-log command headers are repaired.</p></div>
