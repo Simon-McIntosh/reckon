@@ -2054,9 +2054,8 @@ def dispatch(
             run_id=run_id,
             session=session,
         )
-        worktree = _create_worktree(repo_root, worktree_identity, node.id, base)
-        directory.mkdir(parents=True, exist_ok=True)
         rendered_images = []
+        pending_pngs = []
         for index, image in enumerate(node.images):
             source = Path(image)
             if source.suffix.lower() != ".svg":
@@ -2069,8 +2068,12 @@ def dispatch(
             except Exception as exc:
                 raise CrewError(f"cannot render SVG image {source}: {exc}") from exc
             output = directory / f"image-{index}.png"
-            output.write_bytes(png)
+            pending_pngs.append((output, png))
             rendered_images.append(str(output))
+        worktree = _create_worktree(repo_root, worktree_identity, node.id, base)
+        directory.mkdir(parents=True, exist_ok=True)
+        for output, png in pending_pngs:
+            output.write_bytes(png)
         node.images = rendered_images
         working_directory = worktree["path"]
         if launch_kind == "cli":

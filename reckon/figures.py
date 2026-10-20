@@ -32,6 +32,8 @@ def rasterise_svg(source: Path, width: int) -> bytes:
     height = (
         max(1, round(width * size[1] / size[0])) if size and min(size) > 0 else width
     )
+    # Matplotlib writes canvas dimensions in points. resvg needs a DPI to
+    # resolve those units; 96 is the CSS reference resolution.
     return resvg_py.svg_to_bytes(
         svg_string=source.read_text(encoding="utf-8", errors="replace"),
         width=width,

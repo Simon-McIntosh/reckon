@@ -182,3 +182,4 @@ def test_invalid_svg_refuses_dispatch_naming_the_source(
             check_budget=False,
             launcher=figures_dispatch._Recorder(),
         )
+    assert not (tmp_path / "worktrees").exists()
