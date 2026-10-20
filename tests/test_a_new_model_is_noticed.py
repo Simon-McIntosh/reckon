@@ -19,13 +19,18 @@ from tests.conftest import real_store_home, real_store_is_not_a_fixture_target
 def catalogue(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     from reckon.crew.runs import crew_home
 
-    real_snapshot = real_store_home() / "crew" / "model-catalogue" / "snapshot.json"
-    real_existed = real_snapshot.exists()
-    real_mtime_ns = real_snapshot.stat().st_mtime_ns if real_existed else None
+    real_home = real_store_home().resolve()
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
     real_store_is_not_a_fixture_target(tmp_path / "home")
     assert crew_home().is_relative_to(tmp_path)
     assert model_catalogue.snapshot_path().is_relative_to(tmp_path)
+    # The guard is that no write can reach the workstation's real crew home:
+    # every write target the module resolves is under the fixture home and
+    # outside the real one. Comparing the live snapshot's mtime instead made
+    # this fail whenever another process refreshed the catalogue legitimately,
+    # which is not a defect this test owns.
+    assert not crew_home().is_relative_to(real_home)
+    assert not model_catalogue.snapshot_path().is_relative_to(real_home)
     served = tmp_path / "served.json"
     served.write_text(
         json.dumps({"models": [{"slug": "gpt-6-sol", "visibility": "list"}]})
@@ -73,9 +78,8 @@ def catalogue(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         lambda *args, **kwargs: SimpleNamespace(config=config),
     )
     yield config, listing, served, read_list
-    assert real_snapshot.exists() == real_existed
-    if real_existed:
-        assert real_snapshot.stat().st_mtime_ns == real_mtime_ns
+    assert model_catalogue.snapshot_path().is_relative_to(tmp_path)
+    assert not model_catalogue.snapshot_path().is_relative_to(real_home)
 
 
 def _check(catalogue):

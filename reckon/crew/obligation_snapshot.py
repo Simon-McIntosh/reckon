@@ -276,6 +276,56 @@ def read_snapshot(project: str, session: str) -> dict[str, Any] | None:
     return document if isinstance(document, dict) else None
 
 
+# ── Model catalogue notices ─────────────────────────────────────────────────
+
+
+def model_catalogue_snapshot_path() -> Path:
+    """The path the model catalogue publishes its snapshot to.
+
+    Resolved here so the prompt hook reads the notices without importing
+    ``reckon.crew.model_catalogue``, whose package the hook must not reach on a
+    turn's opening, and so the hook and the catalogue agree on where the
+    notices live.
+    """
+    return crew_home() / "model-catalogue" / "snapshot.json"
+
+
+def read_model_catalogue_snapshot() -> dict[str, Any]:
+    """Read the published model catalogue snapshot, or an empty mapping.
+
+    An absent or unreadable snapshot reads as empty rather than raising: the
+    catalogue is refreshed by the watch producer, so a session that has never
+    had one simply has no notices.
+    """
+    try:
+        document = json.loads(
+            model_catalogue_snapshot_path().read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return {}
+    return document if isinstance(document, dict) else {}
+
+
+def unacknowledged_model_notices(
+    document: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    """The snapshot's notices that no acknowledgement has taken up.
+
+    This is the one definition of "unacknowledged": a notice is unacknowledged
+    until it carries an ``acknowledgement``. The hook that counts them and the
+    view that lists them both read the notices through here, so the count a
+    coordinator sees and the list it opens cannot disagree.
+    """
+    notices = document.get("notices")
+    if not isinstance(notices, list):
+        return []
+    return [
+        dict(item)
+        for item in notices
+        if isinstance(item, Mapping) and not item.get("acknowledgement")
+    ]
+
+
 def _process_stat_fields(pid: Any) -> list[str]:
     """The space-separated per-process stat fields, or [] when unreadable.
 

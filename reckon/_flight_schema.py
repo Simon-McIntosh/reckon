@@ -398,6 +398,7 @@ class LaneConfig(BackendConfig):
     default_model: str | None = Field(default=None, description="""Model key a dispatch on this lane resolves to when it names no model. A lane declaring none has no default, and only its derived model entries are reachable by name.""")
     models: dict[str, LaneModelConfig] | None = Field(default=None, description="""The models this lane offers, keyed by the short name a caller types. A lane with no models expands to its own named entry alone.""")
     served_models: str | None = Field(default=None, description="""Path to this lane's CLI-published served-model JSON file.""")
+    probe_new_models: bool | None = Field(default=None, description="""Whether the model catalogue may send this lane one headless request to confirm a released model it declares no served-model file for. Absent means the lane is never probed.""")
     name: str = Field(default=..., description="""Map key for an inlined entry.""")
     launch: LaunchMode | None = Field(default=None, description="""How this backend's workers are started.""")
     command: str | None = Field(default=None, description="""Executable name or path looked up on PATH for a `cli` backend. User data; the schema never supplies one.""")
