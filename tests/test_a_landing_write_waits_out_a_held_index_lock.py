@@ -70,12 +70,12 @@ def _release_lock_after_first_retry(run_id: str, lock: Path) -> threading.Thread
     its first ``git add``. Waiting for the retry entry instead makes the hold
     end exactly when the retry it is meant to serve has happened, so the next
     attempt stages and the case does not depend on timing. The thread gives up
-    after the window so a landing that never retries fails its assertion
-    rather than hanging.
+    after a minute so a landing that never retries fails its assertion rather
+    than hanging.
     """
 
     def release() -> None:
-        deadline = time.monotonic() + 10.0
+        deadline = time.monotonic() + 60.0
         while time.monotonic() < deadline:
             if any(
                 entry.get("step") == "stage_retry" for entry in _landing_entries(run_id)
@@ -89,6 +89,25 @@ def _release_lock_after_first_retry(run_id: str, lock: Path) -> threading.Thread
     return thread
 
 
+class _AdvancingClock:
+    """A stand-in for the staging's ``time``, handing out fixed readings.
+
+    The retry window is wall-clock, so a case that proves the window expires
+    would have to wait for it and would race a slow ``git add``. Handing the
+    loop a start, a reading inside the window and then one past it exercises
+    the same deadline logic with no wait and no dependence on load.
+    """
+
+    def __init__(self, readings: list[float]) -> None:
+        self._readings = iter(readings)
+
+    def monotonic(self) -> float:
+        return next(self._readings, 1_000.0)
+
+    def sleep(self, _seconds: float) -> None:
+        return None
+
+
 def test_a_landing_write_waits_out_a_briefly_held_lock(repository, monkeypatch):
     """A lock released within the window is waited out and the write commits.
 
@@ -98,6 +117,10 @@ def test_a_landing_write_waits_out_a_briefly_held_lock(repository, monkeypatch):
     landing record, and the commit itself is recorded as committed.
     """
     root, plan = repository
+    # The window is widened so a slow git call under load cannot end the wait
+    # before the lock is released; what bounds this case is the release, not
+    # the clock.
+    monkeypatch.setattr(promotion_scope, "_INDEX_LOCK_RETRY_WINDOW_SECONDS", 600.0)
     monkeypatch.setattr(promotion_scope, "_INDEX_LOCK_RETRY_INTERVAL_SECONDS", 0.02)
     plan.write_text("landing narrative the promotion writes\n", encoding="utf-8")
     lock = _hold_index_lock(root)
@@ -110,7 +133,7 @@ def test_a_landing_write_waits_out_a_briefly_held_lock(repository, monkeypatch):
             paths=[plan],
         )
     finally:
-        releaser.join(timeout=5.0)
+        releaser.join(timeout=60.0)
         if lock.exists():
             lock.unlink()
 
@@ -132,14 +155,14 @@ def test_a_landing_write_waits_out_a_briefly_held_lock(repository, monkeypatch):
 def test_a_lock_held_past_the_window_refuses_naming_the_lock(repository, monkeypatch):
     """A lock held for the whole window refuses, and the refusal names it.
 
-    The window is shrunk so the case runs quickly. The lock never clears, so
-    the staging returns the failing result: the landing refuses, the refusal
-    names the lock, every retry is recorded, and the final refusal is recorded
-    at step ``stage``.
+    The clock hands out a start, a reading inside the window and then one past
+    it, so the staging retries once and returns the failing result on the next
+    attempt. The lock never clears, so the landing refuses; the refusal names
+    the lock, the retry is recorded, and the final refusal is recorded at step
+    ``stage``.
     """
     root, plan = repository
-    monkeypatch.setattr(promotion_scope, "_INDEX_LOCK_RETRY_WINDOW_SECONDS", 0.2)
-    monkeypatch.setattr(promotion_scope, "_INDEX_LOCK_RETRY_INTERVAL_SECONDS", 0.02)
+    monkeypatch.setattr(promotion_scope, "time", _AdvancingClock([0.0, 1.0, 100.0]))
     plan.write_text("landing narrative the promotion writes\n", encoding="utf-8")
     lock = _hold_index_lock(root)
     try:
@@ -160,9 +183,7 @@ def test_a_lock_held_past_the_window_refuses_naming_the_lock(repository, monkeyp
     assert any(entry.get("step") == "stage_retry" for entry in entries), (
         "a lock held past the window still records its retries"
     )
-    assert any(entry.get("step") == "stage" for entry in entries), (
-        "the final refusal is recorded at step stage"
-    )
+    assert entries[-1]["step"] == "stage", "the final refusal is recorded at step stage"
 
 
 def test_a_staging_failure_naming_no_lock_refuses_on_its_first_attempt(repository):
