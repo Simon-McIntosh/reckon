@@ -23,7 +23,7 @@
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="53">
+<meta name="plan-version" content="54">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -818,7 +818,10 @@
     <div class="r-comment-body"><p>one walk of the process table per beat is reviewed at head 2b2afcaa3 against base e0f9d54b2: goal_fidelity 19, evidence 16, scope_discipline 20, durability 13, fit 17, reuse 20 (total 105), with the added-failure count 0 against the reviewed run's own paired gate logs; one blocking finding (reckon/crew/recovery_liveness.py:1120 — the production call site passing from_beat_map=True is exercised by no test, so removing it reverts the node silently and green) and one follow-on (the reviewed manifest's baseline_suite command carries an angle-bracket placeholder and its strace logs carry no revision/tree/command header).</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261020T041849845482-review-of-one-walk-of-the-process-table-per-beat-ac8da7b3f7fd" data-who="reckon-build" data-when="2026-10-20T04:36:45.878Z">
-    <div class="r-comment-body"><p>review of r-20261020T024209119155-one-walk-of-the-process-table-per-beat at head ac8da7b3f, read against base 2b2afcaa3 — the gained commit is a test-only repair that pins the production liveness read to the beat&#x27;s walk, so the prior blocking finding (recovery_liveness.py:1120 untested) is answered; scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 18, reuse 18, one follow-on finding on the manifest&#x27;s placeholder baseline_suite command.</p></div>
+    <div class="r-comment-body"><p>review of r-20261020T024209119155-one-walk-of-the-process-table-per-beat at head ac8da7b3f, read against base 2b2afcaa3 — the gained commit is a test-only repair that pins the production liveness read to the beat's walk, so the prior blocking finding (recovery_liveness.py:1120 untested) is answered; scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 18, reuse 18, one follow-on finding on the manifest's placeholder baseline_suite command.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261020T024209119155-one-walk-of-the-process-table-per-beat" data-who="reckon-build" data-when="2026-10-20T04:17:39Z">
+    <div class="r-comment-body"><p>one walk of the process table per beat answers every run&#x27;s environment mark: _walk_marked_processes files each marked process under (run mark, crew home), the liveness read (_env_scan_run_pid) answers from this beat&#x27;s walk via from_beat_map=True, and the stop path keeps a fresh walk with its start-tick floor and crew-home checks. Repair round: the new case test_two_runs_scanned_in_one_beat_list_proc_once_through_the_liveness_read drives the production path (local_liveness, two runs whose recorded pids have gone so the environment mark is the last reach) and asserts both found live with one listing of /proc for the beat; removing from_beat_map=True from recovery_liveness.py leaves the other seven cases green and fails only this one at `assert 2 == 1` listings. Measure: 5 s strace of a producer harness over 5 beats with the scan needed for 8 runs lists /proc 40 times at the base and 5 times at the change (all 40 scans still answered their worker); new test file 8 passed, paired suite over the 34 existing files importing the two modules base 2 failed/557 passed vs change 1 failed/558 passed (no added failures), declared stop-path negative control EXIT=1.</p></div>
 </div>
 </section>
 </main>
