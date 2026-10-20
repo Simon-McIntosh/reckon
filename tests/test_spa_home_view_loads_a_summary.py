@@ -245,3 +245,52 @@ def test_project_missing_plan_count_has_a_visible_pending_row(tmp_path: Path) ->
     assert len(result["rows"]) == 2
     assert result["rows"] == ["alpha", "beta"]
     assert "plan count pending" in result["pending"]
+
+
+def test_summary_landed_rows_keep_artifact_types_without_discovery(
+    tmp_path: Path,
+) -> None:
+    state = {"project": "reckon", "inventory": [], "plans": {}, "sprints": []}
+    preload = """(() => {
+      window.__requests = [];
+      const response = payload => new Response(JSON.stringify(payload), {
+        status: 200, headers: { 'Content-Type': 'application/json' },
+      });
+      window.fetch = resource => {
+        const url = String(resource);
+        window.__requests.push(url);
+        if (url.endsWith('/_projects/mounts.json'))
+          return Promise.resolve(response({ alpha: '/srv/alpha/docs' }));
+        if (url.endsWith('/_projects/index.json'))
+          return Promise.resolve(response({ projects: [{ project: 'alpha', data: { projects: [{
+            project: 'alpha', plans_count: 2, active: 0, blocked: 0,
+            pending: 0, shipped: 2, recent_landed: [
+              { slug: 'proof', title: 'Proof', type: 'evidence', edited: new Date().toISOString() },
+              { slug: 'release', title: 'Release', edited: new Date().toISOString() },
+            ],
+          }] } }] }));
+        if (url.endsWith('/crew')) return Promise.resolve(response({ runs: [] }));
+        if (url.includes('/_discover/')) return Promise.resolve(response({ inventory: [] }));
+        return Promise.reject(new Error(`unmocked request: ${url}`));
+      };
+    })()"""
+    probe = """(() => ({
+      rows: [...document.querySelectorAll('.r-home-landed > button')].map(row => ({
+        kind: row.querySelector('.r-home-kind')?.textContent,
+        className: row.querySelector('.r-home-kind')?.className,
+        title: row.querySelector('strong')?.textContent,
+      })),
+      discoveries: window.__requests.filter(url => url.includes('/_discover/')),
+    }))()"""
+    with file_spa(tmp_path, installed_browser_or_skip(), state, route="#home") as spa:
+        result = spa.run_probe(
+            probe,
+            preload_expression=preload,
+            ready_expression="document.querySelectorAll('.r-home-landed > button').length === 2",
+        )
+
+    assert result["rows"] == [
+        {"kind": "evidence", "className": "r-home-kind evidence", "title": "Proof"},
+        {"kind": "plan", "className": "r-home-kind plan", "title": "Release"},
+    ]
+    assert result["discoveries"] == []

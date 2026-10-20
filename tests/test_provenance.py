@@ -76,11 +76,11 @@ def _assert_spa_typed_facets_and_provenance(
     assert '{ archive: "Archive" }' in authored
     assert "evidence_for" in plan and "verifies" in plan
     assert "research → plan → evidence" in graph
-    # The home surface keeps the artifact type on every landed row: the panel
-    # that carries a delivery names what kind of artifact it is, defaulting to a
-    # plan when none is recorded. The project card that used to carry this badge
-    # was rewritten into the shell, so the badge is read where the delivery is.
-    assert 'item.type || "plan"' in home
+    # The summary-backed landed panel keeps each delivery's artifact type and
+    # defaults to a plan when none is recorded.
+    assert 'return item.type || "plan"' in home
+    assert "className={`r-home-kind ${homeArtifactKind(item)}`}" in home
+    assert ">{homeArtifactKind(item)}</span>" in home
 
 
 @pytest.fixture()

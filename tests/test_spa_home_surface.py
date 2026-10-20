@@ -142,7 +142,9 @@ def test_home_surface_carries_the_six_stats_and_read_only_panels() -> None:
     assert "visible projects with no recorded work" in source
     assert "In flight" in source
     assert "polling every 3s" in source
-    assert "Recent project activity" in source
-    assert "progress across visible projects" in source
+    assert "Just landed" in source
+    assert "last 72 hours" in source
+    assert "project.recent_landed || []" in source
+    assert "homeArtifactKind(item)" in source
     assert "project.progress == null" in source
     assert "action queue" not in source.lower()

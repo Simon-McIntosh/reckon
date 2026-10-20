@@ -285,6 +285,7 @@ function App() {
         pending: Number(summary?.pending || 0),
         shipped: Number(summary?.shipped || 0),
         last_edited: summary?.last_edited || summary?.last_modified || "",
+        recent_landed: Array.isArray(summary?.recent_landed) ? summary.recent_landed : [],
         activity30: Array.isArray(summary?.activity30) ? summary.activity30 : [],
         active_sprint: summary?.active_sprint || null,
         artifacts: inventory,
