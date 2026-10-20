@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
-import tempfile
 from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
@@ -13,6 +11,7 @@ from typing import Any
 from urllib.request import urlopen
 
 from reckon import flight
+from reckon._store import write_json_atomically
 from reckon.crew.runs import crew_home
 
 
@@ -30,17 +29,6 @@ def _read_snapshot() -> dict[str, Any]:
     except FileNotFoundError:
         return {}
     return value if isinstance(value, dict) else {}
-
-
-def _write_json(path: Path, value: Mapping[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(
-        mode="w", encoding="utf-8", dir=path.parent, delete=False
-    ) as stream:
-        temporary = Path(stream.name)
-        json.dump(value, stream, indent=2, sort_keys=True)
-        stream.write("\n")
-    os.replace(temporary, path)
 
 
 def _fetch_list(url: str) -> dict[str, Any]:
@@ -236,11 +224,21 @@ def check_model_catalogue(
                 notices.values(), key=lambda item: (item["first_seen"], item["id"])
             ),
         }
-        _write_json(snapshot_path(), snapshot)
-        _write_json(_root() / "error.json", {"at": now.isoformat(), "error": None})
+        write_json_atomically(snapshot_path(), snapshot, indent=2, sort_keys=True)
+        write_json_atomically(
+            _root() / "error.json",
+            {"at": now.isoformat(), "error": None},
+            indent=2,
+            sort_keys=True,
+        )
         return snapshot
     except Exception as exc:  # noqa: BLE001 - a failed fetch preserves the snapshot
-        _write_json(_root() / "error.json", {"at": now.isoformat(), "error": str(exc)})
+        write_json_atomically(
+            _root() / "error.json",
+            {"at": now.isoformat(), "error": str(exc)},
+            indent=2,
+            sort_keys=True,
+        )
         return previous
 
 
@@ -286,6 +284,6 @@ def acknowledge_notice(notice_id: str, reason: str) -> dict[str, Any]:
                 "reason": reason,
                 "at": datetime.now(UTC).isoformat(),
             }
-            _write_json(snapshot_path(), snapshot)
+            write_json_atomically(snapshot_path(), snapshot, indent=2, sort_keys=True)
             return notice
     raise ValueError(f"unknown model notice {notice_id}")

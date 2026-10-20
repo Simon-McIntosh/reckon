@@ -18,6 +18,9 @@ from reckon.crew import model_catalogue
 def catalogue(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     from reckon.crew.runs import crew_home
 
+    real_snapshot = model_catalogue.snapshot_path()
+    real_existed = real_snapshot.exists()
+    real_mtime_ns = real_snapshot.stat().st_mtime_ns if real_existed else None
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
     assert crew_home().is_relative_to(tmp_path)
     assert model_catalogue.snapshot_path().is_relative_to(tmp_path)
@@ -67,7 +70,10 @@ def catalogue(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         "resolve",
         lambda *args, **kwargs: SimpleNamespace(config=config),
     )
-    return config, listing, served, read_list
+    yield config, listing, served, read_list
+    assert real_snapshot.exists() == real_existed
+    if real_existed:
+        assert real_snapshot.stat().st_mtime_ns == real_mtime_ns
 
 
 def _check(catalogue):
