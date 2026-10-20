@@ -25,7 +25,7 @@
   <title>The Site Answers Fast and Agrees With Itself | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="92">
+<meta name="plan-version" content="93">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -267,12 +267,12 @@
 
     <h2 id="s17">§17 — The shell&#x27;s scripts are fetched once per revision</h2>
 <section data-reckon="section" data-id="s17" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-<p><strong>Why.</strong> §11's first pass, run <code>r-20261020T053852305957</code>, measured the home view at 895,709 B warm and 1,167,379 B cold against its 500 KB gate. The scripts and stylesheets the shell links total 719,562 B, or 190,459 B gzipped. <code>/_ui/*.js</code> compiles a JSX source and <code>/_runtime/*.js</code> reads a pinned runtime, and both answer through <code>_send</code>, which sends <code>Cache-Control: no-store</code> with no ETag and no compression. Every load, warm or cold, therefore downloads every script uncompressed. §13's compression and §14's revision URLs reach only files sent by <code>_send_file</code>. The stylesheets do go through <code>_send_file</code>, so each costs one revalidation round trip through the tunnel per load.</p>
+<p><strong>Why.</strong> §11's first pass, run <code>r-20261020T053852305957</code>, measured the home view at 895,709 B warm and 1,167,379 B cold against its 500 KB gate. The 34 scripts and stylesheets the shell links total 784,186 B, or 203,941 B gzipped at level 5. <code>/_ui/*.js</code> compiles a JSX source and <code>/_runtime/*.js</code> reads a pinned runtime, and both answer through <code>_send</code>, which sends <code>Cache-Control: no-store</code> with no ETag and no compression. Every load, warm or cold, therefore downloads every script uncompressed. §13's compression and §14's revision URLs reach only files sent by <code>_send_file</code>. The stylesheets do go through <code>_send_file</code>, so each costs one revalidation round trip through the tunnel per load.</p>
 <p><strong>Deliverable.</strong></p>
 <ul>
 <li>The shell the server answers for a project names each linked script and stylesheet under <code>/_shared/</code>, <code>/_ui/</code> and <code>/_runtime/</code> by a URL carrying its revision (<code>?rev=&lt;token&gt;</code>). A compiled script's token is the revision of its <code>.jsx</code> source, a runtime's is its pinned digest, and a file's is its <code>file_revision</code>.</li>
 <li>Those routes answer a URL naming the current revision with <code>Cache-Control: max-age=31536000, immutable</code>. A URL with no revision, or a stale one, is answered with an ETag and <code>no-cache</code>, and a matching <code>If-None-Match</code> gets 304. None of these routes answers <code>no-store</code>.</li>
-<li>Compiled scripts and runtimes are gzipped above §13's threshold when the request accepts gzip, and compressed once per revision.</li>
+<li>Scripts and stylesheets on these routes are gzipped above 1 KiB when the request accepts gzip, and compressed once per revision. §13's 64 KiB threshold (<code>_GZIP_MIN_BYTES</code>) would leave every compiled script uncompressed, since the largest, <code>/_ui/plan.js</code>, is 63,662 B. That threshold spares responses that would be compressed on every request, so it stays as it is for every other response.</li>
 <li>The revision is added where the server answers the shell. <code>_render_spa_html</code> is unchanged, because <code>reckon sync</code> and the static export write its output to disk, and a token there would churn every committed <code>index.html</code>.</li>
 <li>Code beyond the routing lives in <code>reckon/shell_assets.py</code>, which does not import <code>reckon.serve</code>. <code>serve.py</code> stands at 45,479 estimated tokens against the 50,000 bound.</li>
 </ul>
