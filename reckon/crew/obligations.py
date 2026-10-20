@@ -42,6 +42,7 @@ from reckon.crew.routing import (
     _retained_worktree,
     record_names_worktree,
 )
+from reckon.mcp_crew_actions import CREW_WRITE_ACTIONS
 
 CLASSIFICATION_DUTY_KINDS = {
     "scoring": "review-missing",
@@ -91,6 +92,184 @@ NON_BLOCKING_DUTY_KINDS = frozenset({REVIEW_QUEUED_DUTY_KIND})
 def _utc_now() -> datetime:
     """Return the observation instant through a patchable clock boundary."""
     return datetime.now(tz=UTC)
+
+
+#: The coordinator write verbs the crew MCP tool carries as actions, and the
+#: tool parameter name each verb's own option maps onto. A duty's printed
+#: command is rendered in the tool's action form so a coordinator reading the
+#: obligations view can call the action directly rather than composing a shell
+#: command from the printed tokens.
+#:
+#: Every option the eight verbs accept is listed, including the ones no duty
+#: composes today: a form that silently dropped an option it did not know would
+#: offer a call that answers differently from the command it was rendered from.
+#: An option this map does not carry, or a bare token that names no option,
+#: makes the whole command unrenderable rather than lossily rendered.
+_ACTION_OPTION_PARAM: dict[str, str] = {
+    # complete, and the same verb again under the landing step
+    "--run": "run_id",
+    "--gate": "gate",
+    "--failure-classification": "failure_classification",
+    "--commit": "commits",
+    "--outcome": "outcome",
+    "--no-commit": "no_commit",
+    "--tests-added": "tests_added",
+    "--completed-at": "completed_at",
+    "--checkout-path": "checkout_path",
+    "--gate-command": "gate_command",
+    "--gate-exit-status": "gate_exit_status",
+    "--gate-log-path": "gate_log_path",
+    "--gate-log-digest": "gate_log_digest",
+    "--waive-suite-delta": "waive_suite_delta",
+    "--waive-boundary-refusal": "waive_boundary_refusal",
+    "--waive-resume-path": "waive_resume_path",
+    "--waive-unreviewed-promotion": "waive_unreviewed_promotion",
+    "--waive-negative-control": "waive_negative_control",
+    "--accept-path": "accepted_paths",
+    "--no-impl-change": "no_impl_change",
+    "--waive-live-run": "waive_live_run",
+    "--plan-link": "plan_link",
+    "--unplanned-reason": "unplanned_reason",
+    # dispose
+    "--project": "project",
+    "--dimension": "dimension",
+    "--finding": "finding_index",
+    "--kind": "kind",
+    "--node": "node",
+    "--reason": "reason",
+    # ack
+    "--until": "until",
+    # widen
+    "--write-path": "write_paths",
+    # answer, the review verb's own answering options
+    "--plan": "plan",
+    "--session": "session",
+    "--answer": "finding",
+    "--declined": "declined",
+    "--finding-id": "finding",
+}
+
+#: The options that take no value and turn their parameter on. Rendered as the
+#: tool's own ``True``, which is what the action expects for the same flag. An
+#: option that is a flag on the command but has no tool parameter — the landing
+#: step, a lane choice — is deliberately absent: the action selects those by its
+#: own name, so such a command is left to the reader rather than half-rendered.
+_ACTION_FLAG_PARAM: dict[str, str] = {
+    "--scope-changed": "scope_changed",
+    "--dry-run": "dry_run",
+    "--acted": "acted",
+}
+
+#: The options written more than once on one command — two ``--commit`` flags,
+#: two ``--write-path`` flags — and the tool parameters that take the list they
+#: accumulate into. Appending the parameter once per occurrence would render a
+#: call no caller can make, so a repeated option renders as one list.
+_ACTION_LIST_PARAM: dict[str, str] = {
+    "--commit": "commits",
+    "--accept-path": "accepted_paths",
+    "--write-path": "write_paths",
+}
+
+_ACTION_VERBS = frozenset(CREW_WRITE_ACTIONS)
+
+
+def _action_parameter(option: str) -> str | None:
+    """The tool parameter one printed option writes, or ``None`` if unmapped."""
+    return (
+        _ACTION_OPTION_PARAM.get(option)
+        or _ACTION_LIST_PARAM.get(option)
+        or _ACTION_FLAG_PARAM.get(option)
+    )
+
+
+def action_form(command: str) -> str | None:
+    """Render a printed crew command in the MCP tool's action form.
+
+    One of the eight coordinator write verbs — ``reckon crew complete --run X
+    --gate <verdict>`` — becomes ``crew(action="complete", run_id="X",
+    gate="<verdict>")``, so the command a duty prints is one the coordinator
+    can call on the tool surface rather than a shell invocation to assemble.
+    A command naming any other verb, or none at all, has no action form and
+    reads as ``None``: the reader keeps the printed command it already had.
+
+    Every option on the command is rendered, and an option this form cannot
+    carry — one with no tool parameter, one whose value is missing — makes the
+    whole command unrenderable. Half a command is worse than a printed one: it
+    reads as callable and is refused, or is silently called without the
+    argument that the command it came from carried.
+
+    Each value is written as a literal, escaped by ``json.dumps`` rather than
+    wrapped in quotes, so a reason carrying a quotation mark or a path carrying
+    a backslash renders a form the caller can still run.
+    """
+    tokens = shlex.split(command)
+    if len(tokens) < 3 or tokens[0] != "reckon" or tokens[1] != "crew":
+        return None
+    verb = tokens[2]
+    if verb not in _ACTION_VERBS:
+        return None
+    values: dict[str, list[str]] = {}
+    order: list[tuple[str, bool]] = []
+    index = 3
+    while index < len(tokens):
+        token = tokens[index]
+        if not token.startswith("-"):
+            return None
+        option, _, inline = token.partition("=")
+        parameter = _action_parameter(option)
+        if parameter is None:
+            return None
+        if option in _ACTION_FLAG_PARAM:
+            if parameter not in values:
+                values[parameter] = []
+                order.append((parameter, True))
+            index += 1
+            continue
+        if inline:
+            value = inline
+        elif index + 1 < len(tokens) and not tokens[index + 1].startswith("-"):
+            value = tokens[index + 1]
+            index += 1
+        else:
+            return None
+        if parameter not in values:
+            values[parameter] = []
+            order.append((parameter, False))
+        values[parameter].append(value)
+        index += 1
+    rendered = [f"action={json.dumps(verb)}"]
+    for parameter, is_flag in order:
+        if is_flag:
+            rendered.append(f"{parameter}=True")
+            continue
+        found = values[parameter]
+        if parameter in _ACTION_LIST_PARAM.values():
+            rendered.append(
+                f"{parameter}=[" + ", ".join(json.dumps(one) for one in found) + "]"
+            )
+        elif len(found) == 1:
+            rendered.append(f"{parameter}={json.dumps(found[0])}")
+        else:
+            # A scalar repeated cannot be one call: the last would win and the
+            # earlier values would vanish from the offered form.
+            return None
+    return "crew(" + ", ".join(rendered) + ")"
+
+
+def _with_action_form(item: Mapping[str, Any]) -> dict[str, Any]:
+    """Return one duty row carrying its command's action form, when it has one.
+
+    The printed command is left as it stands, in ``next_command`` and in
+    ``next_action`` alike — that spelling is the CLI's own, and some readers
+    still run it. The rendered form travels under its own key, so no reader
+    that already knows ``next_action`` as a command string has to tell the two
+    apart.
+    """
+    row = dict(item)
+    rendered = action_form(str(item.get("next_command") or ""))
+    if rendered is not None:
+        row["next_action_form"] = rendered
+    return row
 
 
 def _seconds_since(value: Any, *, now: datetime) -> int:
@@ -192,7 +371,7 @@ def _refused_delivered_review(pointer: Mapping[str, Any]) -> dict[str, str] | No
         try:
             body = json.loads(path.read_text(encoding="utf-8"))
             reasons = (
-                    review_module.store_review_refusals(body)
+                review_module.store_review_refusals(body)
                 if isinstance(body, Mapping)
                 else ["record is not an object"]
             )
@@ -1096,6 +1275,8 @@ def obligations(project: str, session: str) -> dict[str, Any]:
         )
     )
     closure = runs.drain(project, session=session)
+    items = [_with_action_form(item) for item in items]
+    acknowledged = [_with_action_form(item) for item in acknowledged]
     return {
         "project": project,
         "session": session,

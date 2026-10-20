@@ -48,6 +48,7 @@ except ImportError:
 import reckon.crew.resumption as resumption_module
 from reckon import served_code
 from reckon.crew.follower_registration import follower_code_stamp
+from reckon.mcp_crew_actions import CREW_WRITE_ACTIONS
 from reckon import (
     _plan_html,
 )
@@ -1862,7 +1863,21 @@ def _crew(
     cursor: str | None = None,
     candidates: list[dict[str, Any]] | None = None,
     session: str | None = None,
-    action: Literal["resume", "session", "resume-ready", "sweep"] | None = None,
+    action: Literal[
+        "resume",
+        "session",
+        "resume-ready",
+        "sweep",
+        "complete",
+        "land",
+        "dispose",
+        "ack",
+        "answer",
+        "widen",
+        "stop",
+        "discard",
+    ]
+    | None = None,
     run_id: str | None = None,
     advice: str | None = None,
     dry_run: bool = False,
@@ -1875,6 +1890,36 @@ def _crew(
     source: str = "all",
     scope: str = "project",
     fields: list[str] | None = None,
+    gate: str | None = None,
+    failure_classification: str | None = None,
+    commits: list[str] | None = None,
+    outcome: str | None = None,
+    no_commit: str | None = None,
+    tests_added: int | None = None,
+    scope_changed: bool = False,
+    completed_at: str | None = None,
+    gate_command: str | None = None,
+    gate_exit_status: int | None = None,
+    gate_log_path: str | None = None,
+    gate_log_digest: str | None = None,
+    waive_suite_delta: str | None = None,
+    waive_boundary_refusal: str | None = None,
+    waive_resume_path: str | None = None,
+    waive_unreviewed_promotion: str | None = None,
+    waive_negative_control: str | None = None,
+    accepted_paths: list[list[str]] | None = None,
+    no_impl_change: str | None = None,
+    waive_live_run: str | None = None,
+    plan_link: str | None = None,
+    unplanned_reason: str | None = None,
+    dimension: str | None = None,
+    finding_index: int | None = None,
+    kind: str | None = None,
+    reason: str | None = None,
+    write_paths: list[str] | None = None,
+    finding: str | None = None,
+    acted: bool = False,
+    declined: str | None = None,
 ) -> dict[str, Any]:
     """Read crew state or perform one recovery action through the crew surface.
 
@@ -1882,6 +1927,21 @@ def _crew(
     rather than a tool per operation. Set ``action`` to ``resume``, ``session``
     or ``resume-ready`` to reach the same implementation as the corresponding
     crew CLI operation. Omit ``action`` for the read views below.
+
+    Eight further actions carry the coordinator's write verbs, each calling the
+    same function its CLI verb calls with the same arguments and returning the
+    same JSON: ``complete`` (``run_id``, ``gate``, ``commits``, ``outcome``,
+    ``failure_classification``, ``tests_added``, ``scope_changed``,
+    ``completed_at``, ``checkout_path``, ``gate_command``, ``gate_exit_status``,
+    ``gate_log_path``, ``gate_log_digest``, the ``waive_*`` reasons,
+    ``accepted_paths``, ``no_impl_change``, ``plan_link``, ``unplanned_reason``,
+    ``dry_run``), ``land`` (the same arguments, promoting then merging and
+    pushing the reviewed head), ``dispose`` (``project``, ``run_id``,
+    ``dimension``, ``finding_index``, ``kind``, ``node``, ``reason``), ``ack``
+    (``run_id``, ``reason``, ``until``), ``answer`` (``project``, ``plan``,
+    ``finding``, ``acted``, ``declined``, ``session``), ``widen`` (``run_id``,
+    ``write_paths``), ``stop`` (``run_id``) and ``discard`` (``run_id``). A
+    refused ``complete`` or ``land`` carries every failing guard in ``guards``.
     ``directory`` reads every live coordinator across the workstation, or one
     project's coordinators, and resolves a run or human node id to its owner.
     ``ledger``, ``records`` and ``summary`` read the project's committed runs —
@@ -1956,6 +2016,48 @@ def _crew(
     ``read_plan``: with it, the ledger and the routing project layer resolve
     inside that checkout instead of the registered main one.
     """
+    if action in _WRITE_ACTIONS:
+        return _crew_write_action(
+            action,
+            project=project,
+            run_id=run_id,
+            gate=gate,
+            failure_classification=failure_classification,
+            commits=commits,
+            outcome=outcome,
+            no_commit=no_commit,
+            tests_added=tests_added,
+            scope_changed=scope_changed,
+            completed_at=completed_at,
+            checkout_path=checkout_path,
+            gate_command=gate_command,
+            gate_exit_status=gate_exit_status,
+            gate_log_path=gate_log_path,
+            gate_log_digest=gate_log_digest,
+            waive_suite_delta=waive_suite_delta,
+            waive_boundary_refusal=waive_boundary_refusal,
+            waive_resume_path=waive_resume_path,
+            waive_unreviewed_promotion=waive_unreviewed_promotion,
+            waive_negative_control=waive_negative_control,
+            accepted_paths=accepted_paths,
+            no_impl_change=no_impl_change,
+            waive_live_run=waive_live_run,
+            plan_link=plan_link,
+            unplanned_reason=unplanned_reason,
+            dry_run=dry_run,
+            dimension=dimension,
+            finding_index=finding_index,
+            kind=kind,
+            node=node,
+            reason=reason,
+            write_paths=write_paths,
+            until=until,
+            plan=plan,
+            session=session,
+            finding=finding,
+            acted=acted,
+            declined=declined,
+        )
     if action is not None:
         return _crew_recover(
             action,
@@ -2002,6 +2104,88 @@ def _crew(
         scope=scope,
         fields=fields,
     )
+
+
+# The action names are owned by the module that runs them, so the tool's own
+# dispatch reads that one declaration rather than a second copy that a new
+# action would have to be added to twice.
+_WRITE_ACTIONS = frozenset(CREW_WRITE_ACTIONS)
+
+
+def _crew_write_action(action: str, **kwargs: Any) -> dict[str, Any]:
+    """Run one coordinator write action, carrying every failing guard on a refusal.
+
+    The action runs through :mod:`reckon.mcp_crew_actions`, which calls the
+    same implementation function the crew CLI verb calls, so the tool and the
+    CLI answer one call identically. A promotion the tool refuses — ``complete``
+    or ``land`` — is re-evaluated by the promotion's dry run, whose whole list
+    of refusals rides the answer as ``guards``: a coordinator fixing a run by
+    trial learns every way it falls short from one call rather than one refusal
+    at a time.
+    """
+    from reckon.mcp_crew_actions import crew_action
+
+    compact = {key: value for key, value in kwargs.items() if value is not None}
+    answer = crew_action(action, **compact)
+    if (
+        action in ("complete", "land")
+        and not answer.get("ok")
+        and not compact.get("dry_run")
+    ):
+        guards = _promotion_guards(action, compact)
+        if guards is not None:
+            answer.setdefault("guards", guards["refusals"])
+            answer.setdefault("invocation", guards.get("invocation") or "")
+    return answer
+
+
+def _promotion_guards(
+    action: str, arguments: Mapping[str, Any]
+) -> dict[str, Any] | None:
+    """The whole refusal list a refused promotion would raise, or ``None``.
+
+    Read through the promotion module's own dry run, so the guards are the
+    promotion's guards in its own order; the same evidence is what a passing
+    promotion would have run against.
+    """
+    run_id = str(arguments.get("run_id") or "")
+    if not run_id:
+        return None
+    from reckon.crew import promotion as promotion_module
+
+    accepted = dict(arguments.get("accepted_paths") or ())
+    try:
+        return promotion_module.complete_dry_run(
+            run_id,
+            gate=str(arguments.get("gate") or ""),
+            failure_classification=str(arguments.get("failure_classification") or ""),
+            commits=tuple(arguments.get("commits") or ()),
+            outcome=str(arguments.get("outcome") or ""),
+            no_commit=str(arguments.get("no_commit") or ""),
+            tests_added=arguments.get("tests_added"),
+            scope_changed=bool(arguments.get("scope_changed")),
+            completed_at=str(arguments.get("completed_at") or ""),
+            root=arguments.get("checkout_path"),
+            gate_check={
+                "command": arguments.get("gate_command") or "",
+                "exit_status": arguments.get("gate_exit_status"),
+                "log_path": arguments.get("gate_log_path") or "",
+                "log_digest": arguments.get("gate_log_digest") or "",
+            },
+            require_gate_check=True,
+            suite_delta_waiver=str(arguments.get("waive_suite_delta") or ""),
+            boundary_waiver=str(arguments.get("waive_boundary_refusal") or ""),
+            resume_waiver=str(arguments.get("waive_resume_path") or ""),
+            review_waiver=str(arguments.get("waive_unreviewed_promotion") or ""),
+            negative_control_waiver=arguments.get("waive_negative_control") or "",
+            accepted_paths=accepted,
+            no_impl_change=str(arguments.get("no_impl_change") or ""),
+            live_run_waiver=str(arguments.get("waive_live_run") or ""),
+            plan_link=str(arguments.get("plan_link") or ""),
+            unplanned_reason=str(arguments.get("unplanned_reason") or ""),
+        )
+    except Exception:  # noqa: BLE001 - the guard read never masks the refusal
+        return None
 
 
 def _crew_recover(
