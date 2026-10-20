@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "Revert the fingerprint comparison in definitions_unchanged (the declared negative control): the rewritten _compute_refresh assertion at line 99 reddens because _stored_discovery returns the stored dict instead of None; observed in negative-control.log (assert {...} is None -> AssertionError, EXIT=1). Remove the file-revision memo: len(source_reads) == 1 at line 86 reddens (two reads). Revert _refresh_main's fingerprint recording: line 66 raises KeyError on payload['source_fingerprints']. Revert the read's fingerprints branch to the source_revision comparison: line 63 reddens, because the child stored source_revision None while the parent's _SOURCE_SNAPSHOT.revision is monkeypatched to 'new-process'. These assertions compare production output against test-side expectations (a spawn list, None-ness, a read count), independent of the values under test.",
+      "lines": "tests/test_a_stored_result_follows_the_code_that_derived_it.py:63,86,95-100"
+    },
+    {
+      "failure_condition": "assert stored[0] == payload['result'] compares _refresh_result's return against the same store file's content, so both sides read the one JSON the code wrote; it reddens only if _refresh_result stops returning the stored result and is not by itself a guard for the fingerprint path. The discriminating assertions for this change are lines 63, 86, 95-100.",
+      "lines": "tests/test_a_stored_result_follows_the_code_that_derived_it.py:65"
+    }
+  ],
+  "call_sites": [
+    "reckon/route_results.py:229",
+    "reckon/route_results.py:335",
+    "reckon/route_results.py:452",
+    "reckon/route_results.py:475",
+    "reckon/route_results.py:530",
+    "reckon/serve.py:2645",
+    "reckon/serve.py:2705",
+    "reckon/serve.py:2945",
+    "reckon/serve.py:3258",
+    "reckon/serve.py:3317"
+  ],
+  "completed_at": "2026-10-20T11:25:38.787Z",
+  "dispatched_at": "2026-10-20T11:17:17Z",
+  "findings": [
+    {
+      "file": "reckon/served_code.py",
+      "line": "565",
+      "severity": "follow-on",
+      "text": "follow-on: definitions_unchanged returns True for an empty recorded mapping, and the read at reckon/route_results.py:126 tests `fingerprints is not None` rather than its truth, so a stored result whose fingerprint map is empty is served indefinitely even after the deriving code changes. The map is empty only when the child's ExecutedSource recorded no definition (definition_fingerprints returns {} from an empty _used_definitions), which the child's own start() guard makes unlikely, so this is a fail-open edge rather than a live defect; a stricter read would treat an empty map as unverifiable."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Production runtime code that reaches the change: reckon/route_results.py:530 (inside _refresh_main, defined at 502, the refresh-child entry point launched by _start_refresh at reckon/route_results.py:376 via _spawn_refresh at 417) writes the fingerprints; reckon/route_results.py:229/335/452/475 (velocity_result, _publish_refresh, _served_result, _stored_discovery) all read through _refresh_result, and their callers reckon/serve.py:2945/3258/3317 (rollup and discover routes) and reckon/serve.py:2645/2705 (the change stream) can reach the new definitions_unchanged check at runtime.",
+    "diff": "Read commit by commit against base 81afebdea: ae2a4d8ff adds definition_fingerprints/definitions_unchanged to reckon/served_code.py and the fingerprint store/read to reckon/route_results.py plus the new test; 106128683 adds only the evidence fragment. Four files, all inside the declared scope.",
+    "done_when": "The done_when (plan s21, docs/plans/the-site-answers-fast-and-agrees.html:344) names a test that stores through the child, rewrites an executed definition in a temp copy for a miss, rewrites an unexecuted definition for a hit, and serves under another process revision; tests/test_a_stored_result_follows_the_code_that_derived_it.py:63-100 asserts each of those, and the manifest records the focused run (focused-final.log, 3 passed) and the importing-suite run (imports-final.log, 126 passed, 1 pre-existing failure).",
+    "goal": "The node's goal is that a stored refresh result follows the code that derived it; reckon/route_results.py:519-531 records the definitions the refresh child executed and stores their fingerprints with the result, and reckon/route_results.py:125-130 treats the result as absent when a reached definition has changed on disk.",
+    "manifest": "Read; it records status complete, both commits (ae2a4d8ff, 106128683), the changed paths, the focused and importing-suite logs, the declared negative control, and baseline_suite/after_suite as JSON objects, both failing only test_structural_invariants.py::test_only_the_shared_parser_calls_fromisoformat.",
+    "write_paths": "The node declared reckon/route_results.py, reckon/served_code.py, tests/test_a_stored_result_follows_the_code_that_derived_it.py and docs/evidence/fragments/the-site-answers-fast-and-agrees/a-stored-route-result-follows-the-code-that-derived-it.html; git diff 81afebdea..1061286 --stat names exactly those four paths plus no other."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261020T111628881946-review-of-a-stored-route-result-follows-the-code-that-derived-it-10612868335f",
+  "reviewed_base_sha": "81afebdeac78306914fd32f62850493b26bb9dc0",
+  "reviewed_head_sha": "10612868335fcb7afed9e08bd66251ec9ec1e3d8",
+  "reviewed_run_id": "r-20261020T104759349311-a-stored-route-result-follows-the-code-that-derived-it",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T11:31:44.001441+00:00",
+  "total": 111
+}
