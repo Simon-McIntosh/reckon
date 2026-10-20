@@ -23,7 +23,7 @@
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="56">
+<meta name="plan-version" content="57">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -780,6 +780,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-s10-regression" data-who="reckon-build" data-when="2026-10-20T12:20:00Z">
     <div class="r-comment-body"><p>The §10 merge <code>93a355e5b</code> caused a regression on main. Its repair commit <code>3280f08cc</code> added a module-level <code>from reckon import git_dates</code> to <code>reckon/checkout_trust.py</code>. <code>git_dates</code> imports <code>metadata_index</code>, which brings in <code>reckon._plan_html</code>, so that module now loads on the coordinator prompt hook's path: <code>_prompt</code> → <code>freshness_reading</code> → <code>source_code_stamp</code> → <code>checkout_trust</code>. As a result, <code>tests/test_obligations_hook_reads_the_snapshot.py::test_the_prompt_path_loads_no_derivation_module</code> fails with <code>{'reckon._plan_html'}</code>. reckon-c4 reported it, from investigation <code>r-20261020T120054775988</code>. §10's 25-file regression set did not include that test: it covered callers of the identity, not the import weight of the hook's path. The repair is node <code>the-identity-hold-keeps-the-prompt-path-light</code>, which moves the import into <code>source_code_identity</code>.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261020T121652960809-the-identity-hold-keeps-the-prompt-path-light" data-who="reckon-build" data-when="2026-10-20T12:56:43Z">
+    <div class="r-comment-body"><p>the identity read no longer loads a derivation module: _git_directory, _file_identity, _common_git_directory and _head_identity moved from reckon/git_dates.py to a new stdlib-only reckon/git_head.py (git_dates imports them back, so change_streams.py and serve.py are unchanged, and _GIT_HEAD_MEMO stays in git_dates), and checkout_trust imports _head_identity from reckon.git_head at module level; test_the_prompt_path_loads_no_derivation_module passes at the change (1 passed in 6.97s, EXIT=0) and fails at the base revision (1 failed, EXIT=1), with the negative control -- checkout_trust importing reckon.git_dates again -- failing it once more (1 failed, EXIT=1); ten test files over change_streams and git_dates pass 91 on both arms and ruff adds no finding</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261019T224345895827-review-of-a-moved-checkout-is-proved-importable-once-167e407f4d0a" data-who="reckon-build" data-when="2026-10-19T23:00:48.706Z">
     <div class="r-comment-body"><p>Reviewed r-20261019T220614190732 at head 167e407f4 over base e18f609b2 (four files, +499/-9): the shared per-image import verdict is landed and its concurrency guard is verified by a recorded negative control, scoring goal_fidelity 19, evidence 13, scope_discipline 19, durability 18, fit 19, reuse 5, with four follow-on findings and no blocker.</p></div>
