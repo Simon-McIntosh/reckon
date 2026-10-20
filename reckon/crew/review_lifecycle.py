@@ -23,7 +23,9 @@ Four states, checked in this order, first match wins:
     content that has since been re-read. A plan review is superseded by a later
     review of the same plan under the same rubric — design and content reviews
     are separate subjects — ordered by plan version and then by dispatch time; a
-    run review by a later review of the same run, ordered by dispatch time.
+    run review by a later review of the same run under the same rubric — a run's
+    text review and its figure review are separate subjects, as a plan's design
+    and content reviews are — ordered by dispatch time.
 ``open``
     A blocking finding is unanswered. A plan review's blocking findings are the
     ones the dispatch gate still refuses on, read through
@@ -222,15 +224,40 @@ def _later_plan_exists(
     )
 
 
+def _is_figure_review(record: Mapping[str, Any]) -> bool:
+    """Whether a run review judges a rendered figure rather than the text.
+
+    The rubric a review was filed under is the ``rubric`` field the store writes
+    on the record, ``"figure"`` for a figure review; a record under no rubric or
+    another rubric reads as a text review. The discriminator is the store's own
+    constant, so a reader of the field and its writer cannot drift apart.
+    """
+    rubric = str(record.get("rubric") or "").strip().lower()
+    return rubric == _review_store.FIGURE_REVIEW_RUBRIC
+
+
+def _run_subject(record: Mapping[str, Any]) -> tuple[str, bool]:
+    """The subject a run review is about: its reviewed run and its rubric family."""
+    return (
+        str(record.get("reviewed_run_id") or "").strip(),
+        _is_figure_review(record),
+    )
+
+
 def _later_run_exists(
     record: Mapping[str, Any], later_records: tuple[Mapping[str, Any], ...]
 ) -> bool:
-    """Whether a later review of the same run exists."""
-    reviewed_run = str(record.get("reviewed_run_id") or "").strip()
+    """Whether a later review of the same run under the same rubric exists.
+
+    A run's text review and its figure review are separate subjects, so a later
+    review supersedes an earlier one under the same rubric only: a figure review
+    filed at the head the text review read leaves the text review current, and a
+    later text review leaves a figure review current in the same way.
+    """
+    subject = _run_subject(record)
     order = _dispatch_time(record)
     return any(
-        str(other.get("reviewed_run_id") or "").strip() == reviewed_run
-        and _dispatch_time(other) > order
+        _run_subject(other) == subject and _dispatch_time(other) > order
         for other in later_records
     )
 
