@@ -222,17 +222,38 @@ def _findings_of_kind(review: Mapping[str, Any], kind: str) -> list[dict[str, An
 
 
 def blocking_findings(review: Mapping[str, Any]) -> list[dict[str, Any]]:
-    """Return the findings a repair answers: every finding that blocks.
+    """Return open blocking findings a repair answers.
 
     This is the one filtered list both the brief and the write scope are built
     from, so the goals, the ids the done-when names and the paths the scope
     grants can never disagree about which findings became work. A finding that
     declares no severity blocks, because the store admits it rather than
     refusing it and it is a finding a reviewer raised. A review whose findings
-    are all follow-ons yields an empty list, which is what composes no repair
+    are all follow-ons or disposed yields an empty list, which composes no repair
     rather than a node with an empty brief.
     """
-    return _findings_of_kind(review, _BLOCKING)
+    return [
+        finding
+        for _, finding, disposition in _blocking_finding_dispositions(review)
+        if disposition == "open"
+    ]
+
+
+def _blocking_finding_dispositions(
+    review: Mapping[str, Any],
+) -> list[tuple[int, dict[str, Any], str]]:
+    """Keep blocking findings paired with their original indexes and answers."""
+    from reckon.crew.findings import finding_disposition, parse_finding_disposition
+
+    return [
+        (
+            index,
+            finding,
+            parse_finding_disposition(finding_disposition(review, index))["kind"],
+        )
+        for index, finding in enumerate(review_findings(review))
+        if _finding_kind(finding) == _BLOCKING
+    ]
 
 
 def unmarked_findings(review: Mapping[str, Any]) -> list[dict[str, Any]]:
@@ -245,7 +266,7 @@ def unmarked_findings(review: Mapping[str, Any]) -> list[dict[str, Any]]:
     value, or a word outside the vocabulary — the same decision the audit reads
     through :func:`declared_severity`, so the two never disagree about a record
     one calls unmarked and the other repairs. The finding is repaired as
-    blocking anyway; listing it here lets the composed node name it for the
+    blocking while open; listing it here lets the composed node name it for the
     coordinator. A record stamped before the audit predates the instruction, so
     it carries no such flag.
     """
@@ -253,8 +274,8 @@ def unmarked_findings(review: Mapping[str, Any]) -> list[dict[str, Any]]:
         return []
     return [
         finding
-        for finding in review_findings(review)
-        if review_module.declared_severity(finding) is None
+        for _, finding, disposition in _blocking_finding_dispositions(review)
+        if disposition == "open" and review_module.declared_severity(finding) is None
     ]
 
 
