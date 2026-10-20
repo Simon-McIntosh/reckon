@@ -64,6 +64,15 @@ class Candidate:
     # it is a prior to weigh beside the outcomes rather than in place of them.
     # Null when neither the model nor its lane declares one.
     suits: str | None = None
+    # The candidate's lane model key's earlier generations: the same gate
+    # vocabulary over the runs recorded under this lane and model key with a
+    # different model id, plus ``model_ids``, the ids those runs were recorded
+    # under. A key re-pointed to a new model id starts with no outcomes of its
+    # own, so its key's record stands in as a prior until its own results are
+    # enough to weigh on their own. Null for a candidate whose own model id
+    # already carries at least the configured threshold of outcomes, so a
+    # candidate with enough history of its own renders unchanged.
+    prior_outcomes: dict[str, Any] | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)

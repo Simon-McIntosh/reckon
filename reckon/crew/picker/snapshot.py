@@ -255,7 +255,11 @@ def _request_requirement(request: PickRequest) -> tuple[str | None, str | None] 
 
 
 def _candidates_scan(
-    records: list[dict[str, Any]], request: PickRequest, *, now: datetime
+    records: list[dict[str, Any]],
+    request: PickRequest,
+    *,
+    now: datetime,
+    key_counts: MutableMapping[tuple[str, str], dict[str, Counter[str]]] | None = None,
 ) -> tuple[
     dict[tuple[str, str | None], dict[str, int]],
     dict[str, list[float]],
@@ -299,11 +303,26 @@ def _candidates_scan(
     requirement has no difficulty to read at, so both figures count every moved
     row. A row with a lane change but no pick (an explicit route that was later
     moved) is not a move and counts under its final lane as before.
+
+    The same walk also tallies the gate vocabulary under the ``lane`` and
+    ``model_key`` the row's identity carries, broken down by the model id the
+    row ran as. A lane model key re-pointed to a new model id loses its whole
+    record when the tally is keyed by the exact id, so this second tally is
+    what a candidate reads its key's earlier generations from. The identity
+    comes from :func:`ledger.normalize_identity`, so a recorded pair is
+    authoritative and a row is never matched by today's lane default: the
+    tally is keyed by what the run recorded, never by what its id resolves to
+    now. A caller wanting those tallies passes ``key_counts`` and receives them
+    in it, the way a caller wanting the context estimate passes ``context_out``
+    to ``_fit``; a caller that passes none pays nothing for the tally.
     """
 
     cutoff = now - timedelta(days=14)
     request_requirement = _request_requirement(request)
     counts: dict[tuple[str, str | None], Counter[str]] = {}
+    key_record: MutableMapping[tuple[str, str], dict[str, Counter[str]]] = (
+        key_counts if key_counts is not None else {}
+    )
     peaks: dict[str, list[float]] = {}
     at_requirement: dict[tuple[str, str | None], dict[str, Any]] | None = (
         {} if request_requirement is not None else None
@@ -347,6 +366,15 @@ def _candidates_scan(
                 moved_off[away] = moved_off.get(away, 0) + 1
             continue
         counts.setdefault(key, Counter())[gate] += 1
+        identity = ledger.normalize_identity(row)
+        identity_lane = identity.get("lane")
+        identity_key = identity.get("model_key")
+        if isinstance(identity_lane, str) and isinstance(identity_key, str):
+            recorded_model = (row.get("agent") or {}).get("model")
+            per_model = key_record.setdefault((identity_lane, identity_key), {})
+            per_model.setdefault(
+                recorded_model if isinstance(recorded_model, str) else "", Counter()
+            )[gate] += 1
         if at_requirement is None:
             continue
         entry = at_requirement.setdefault(
@@ -393,6 +421,35 @@ def _outcome_counts(counts: Counter[str]) -> dict[str, int]:
     """The fixed outcome vocabulary, absent gates reading zero."""
 
     return {key: counts[key] for key in ("passed", "failed", "not-run", "unknown")}
+
+
+def _prior_block(
+    entry: Mapping[str, Counter[str]] | None, model: str | None
+) -> dict[str, Any] | None:
+    """One candidate's prior block: its key's record under an earlier model id.
+
+    ``entry`` is the key's tallies broken down by the model id each run was
+    recorded as. The candidate's own model id falls out -- its runs are already
+    the candidate's own outcomes -- and every other id's runs are summed. The
+    block names those ids so a reader can see which earlier generation the
+    prior rests on. None when no run was recorded under the key at another id,
+    so a key whose record is entirely its current id carries no prior and its
+    candidate renders exactly as it did before prior blocks existed.
+    """
+
+    if not entry:
+        return None
+    own = model or ""
+    counts: Counter[str] = Counter()
+    ids: list[str] = []
+    for recorded_id, tally in entry.items():
+        if recorded_id == own or not recorded_id:
+            continue
+        counts.update(tally)
+        ids.append(recorded_id)
+    if not any(counts.values()):
+        return None
+    return {**_outcome_counts(counts), "model_ids": sorted(ids)}
 
 
 def _fully_scored(scores: Any) -> bool:
@@ -1222,13 +1279,21 @@ def candidates(
     # One pass over the rows yields every backend's outcome counts and peak
     # utilisation, and one document cache is threaded through the loop so each
     # lane document is parsed once per pick.
+    key_counts: dict[tuple[str, str], dict[str, Counter[str]]] = {}
     (
         outcome_counts,
         peak_values,
         requirement_counts,
         moved_in_counts,
         moved_off_counts,
-    ) = _candidates_scan(rows, request, now=now)
+    ) = _candidates_scan(rows, request, now=now, key_counts=key_counts)
+    # A candidate stands on its own model id's record once it holds this many
+    # outcomes; below it the candidate also reads its lane model key's earlier
+    # generations as a prior. Read from the routing config so a host or project
+    # layer retunes it, with the shipped figure when no layer declares one.
+    prior_threshold = (config.get("routing") or {}).get("prior_outcome_threshold")
+    if not isinstance(prior_threshold, int) or isinstance(prior_threshold, bool):
+        prior_threshold = 5
     lane_utilisation = {
         name: _peak_summary(peak_values.get(name, []))
         for name in config.get("backends", {})
@@ -1430,6 +1495,19 @@ def candidates(
                 "no recorded account-window reading for the candidate's budget group"
             )
         budget_source = state.get("source") if reading_known else None
+        own_outcomes = _outcome_counts(outcome_counts.get((name, model), Counter()))
+        # The candidate's lane model key pairs with the lane the resolved
+        # backend serves, so a key re-pointed to this model id reads the runs
+        # recorded under the same lane and key at an earlier id. A candidate
+        # already holding the threshold of its own outcomes carries no prior.
+        candidate_lane = backend.get("lane") or name
+        candidate_key = model_key if model_key is not None else backend.get("model_key")
+        prior_block = (
+            _prior_block(key_counts.get((candidate_lane, candidate_key)), model)
+            if isinstance(candidate_key, str)
+            and sum(own_outcomes.values()) < prior_threshold
+            else None
+        )
         result.append(
             BudgetCandidate(
                 backend=name,
@@ -1448,7 +1526,7 @@ def candidates(
                 days_to_reset=days_to_reset,
                 worker_slots=slots,
                 congestion=congestion,
-                outcomes=_outcome_counts(outcome_counts.get((name, model), Counter())),
+                outcomes=own_outcomes,
                 outcomes_at_requirement=(
                     None
                     if requirement_counts is None
@@ -1462,6 +1540,7 @@ def candidates(
                 stale=stale,
                 budget_age_s=budget_age_s,
                 context=context_block,
+                prior_outcomes=prior_block,
             )
         )
     return result
