@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery_repair_dispatch.py:dispatch_repair_for_run",
+    "reckon/crew/recovery_review_acceptance.py:534",
+    "reckon/crew/repair.py:blocking_findings",
+    "reckon/crew/repair.py:unmarked_findings",
+    "reckon/crew/repair.py:compose_repair_node"
+  ],
+  "completed_at": "2026-10-20T08:28:19.531Z",
+  "dispatched_at": "2026-10-20T08:18:44Z",
+  "findings": [
+    {
+      "file": "tests/test_a_disposed_finding_ends_its_repair_round.py",
+      "line": 224,
+      "severity": "follow-on",
+      "text": "assert persisted[\"findings\"] == FINDINGS now reads a persisted copy rather than the store's own return, so it is no longer a tautology, but it can only fail on a store that mangles the findings list: it holds under every regression of the disposition filter or of the answer merge this node changes, so it adds no guard for the goal's mechanism beside the assertion at line 225 that assertion is worth keeping as a round-trip check only."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 5e054a617a4c; one commit 5f5a0a2cf renames the helper to public and rewrites the folded-finding assertion to read persisted state.",
+    "done_when": "the done_when names tests/test_a_disposed_finding_ends_its_repair_round.py and the ten companion files with no added failure against a base arm; the manifest records after-suite-followons.log with 75 passed 1 failed and its failure id also failing at base.",
+    "goal": "the node goal is to leave every disposed finding out of a repair round by filtering blocking_findings and keeping dispositions across a re-store; the landed increment exposes reckon/crew/repair.py:245 and makes tests/test_a_disposed_finding_ends_its_repair_round.py:222 read the re-stored record.",
+    "manifest": "read; it records status complete, after_suite after-suite-followons.log at 5f5a0a2c with failure_count 1 and one failure id, and negative_control_log negative-blocking-filter-followons.log.",
+    "write_paths": "declared paths are recovery_repair_dispatch.py, repair.py, review.py, the new test file and the fragment; every path in the increment is inside them."
+  },
+  "justifications": {
+    "durability": "the new assertion at tests/test_a_disposed_finding_ends_its_repair_round.py:225 reads the disposition back through review.py:3039 which merges FINDING_DISPOSITIONS_KEY, so the declared omit-dispositions mutation (negative-record-merge.log) raises there.",
+    "evidence": "the head arm is logged at the reviewed head (after-suite-followons.log EXIT=1, 75 passed 1 failed at 5f5a0a2c) against baseline-suite.log (70 passed 5 failed), giving added_failure_count 0, but the base arm ran at 6e98d51c rather than the reviewed base 5e054a61 so it does not isolate this increment.",
+    "fit": "reckon/crew/recovery_repair_dispatch.py:770 now calls the public repair_module.blocking_finding_dispositions instead of the former module-private name, matching the module's public surface used at line 765.",
+    "goal_fidelity": "reckon/crew/repair.py:245 names the disposition-pairing helper publicly and reckon/crew/recovery_repair_dispatch.py:770 reads it through that name, so the reflex's decline-only path uses the same helper the goal's filter is built from.",
+    "reuse": "reckon/crew/repair.py:245 remains the owner of pairing blocking findings with their dispositions; the change renames that one definition and by a capability search over reckon/crew no second implementation exists.",
+    "scope_discipline": "git show --stat 5f5a0a2cf lists only reckon/crew/recovery_repair_dispatch.py, reckon/crew/repair.py and tests/test_a_disposed_finding_ends_its_repair_round.py, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to leave every disposed finding out of a repair round by filtering blocking_findings and keeping dispositions across a re-store; the landed increment exposes reckon/crew/repair.py:245 and makes tests/test_a_disposed_finding_ends_its_repair_round.py:222 read the re-stored record.\nVERDICT done_when: the done_when names tests/test_a_disposed_finding_ends_its_repair_round.py and the ten companion files with no added failure against a base arm; the manifest records after-suite-followons.log with 75 passed 1 failed and its failure id also failing at base.\nVERDICT write_paths: declared paths are recovery_repair_dispatch.py, repair.py, review.py, the new test file and the fragment; every path in it is inside them.\nVERDICT manifest: read; it records status complete, after_suite after-suite-followons.log at 5f5a0a2c with failure_count 1 and one failure id, and negative_control_log negative-blocking-filter-followons.log.\nVERDICT diff: read commit by commit against 5e054a617a4c; one commit 5f5a0a2cf renames the helper to public and rewrites the folded-finding assertion to read persisted state.\nCALL_SITES: reckon/crew/recovery_repair_dispatch.py:dispatch_repair_for_run, reckon/crew/recovery_review_acceptance.py:534, reckon/crew/repair.py:blocking_findings, reckon/crew/repair.py:unmarked_findings, reckon/crew/repair.py:compose_repair_node\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/repair.py:245 names the disposition-pairing helper publicly and reckon/crew/recovery_repair_dispatch.py:770 reads it through that name, so the reflex's decline-only path uses the same helper the goal's filter is built from.\nSCORE evidence: 17\nJUSTIFICATION evidence: the head arm is logged at the reviewed head (after-suite-followons.log EXIT=1, 75 passed 1 failed at 5f5a0a2c) against baseline-suite.log (70 passed 5 failed), giving added_failure_count 0, but the base arm ran at 6e98d51c rather than the reviewed base 5e054a61 so it does not isolate this increment.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 5f5a0a2cf lists only reckon/crew/recovery_repair_dispatch.py, reckon/crew/repair.py and tests/test_a_disposed_finding_ends_its_repair_round.py, all inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the new assertion at tests/test_a_disposed_finding_ends_its_repair_round.py:225 reads the disposition back through review.py:3039 which merges FINDING_DISPOSITIONS_KEY, so the declared omit-dispositions mutation (negative-record-merge.log) raises there.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/recovery_repair_dispatch.py:770 now calls the public repair_module.blocking_finding_dispositions instead of the former module-private name, matching the module's public surface used at line 765.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/repair.py:245 remains the owner of pairing blocking findings with their dispositions; the change renames that one definition and by a capability search over reckon/crew no second implementation exists.\nFINDING tests/test_a_disposed_finding_ends_its_repair_round.py:224 follow-on: assert persisted[\"findings\"] == FINDINGS reads a persisted copy and is no longer a tautology, but it can only fail on a store that mangles the findings list and holds under every regression of the disposition filter or the answer merge this node changes.\n",
+  "review_run_id": "r-20261020T081750139516-review-of-a-disposed-finding-ends-its-repair-round-5f5a0a2cf8c4",
+  "reviewed_base_sha": "5e054a617a4c53be964bf09a092db61abe5d6a7c",
+  "reviewed_head_sha": "5f5a0a2cf8c482236d50be961d72aee956f03292",
+  "reviewed_run_id": "r-20261020T070948843165-a-disposed-finding-ends-its-repair-round",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T08:30:08.956575+00:00",
+  "total": 113
+}
