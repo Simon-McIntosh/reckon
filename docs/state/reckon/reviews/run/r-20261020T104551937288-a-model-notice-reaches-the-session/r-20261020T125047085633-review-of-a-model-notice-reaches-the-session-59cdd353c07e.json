@@ -1,0 +1,45 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:2698 the producer clock cadence calls model_catalogue.check_model_catalogue(project)",
+    "reckon/crew_run_commands.py:1559 acknowledge_notice rewrites the snapshot path the delta now sources from obligation_snapshot",
+    "reckon/mcp_views.py:3737 model_notices reads the same snapshot through model_catalogue._read_snapshot",
+    "reckon/hooks/coordinator_obligations.py:606 pending_model_notices reads the notices through snapshot_module, the owner the delta makes model_catalogue delegate to"
+  ],
+  "completed_at": "2026-10-20T12:58:47.879Z",
+  "dispatched_at": "2026-10-20T12:51:33Z",
+  "findings": [
+    {
+      "file": "tests/test_a_model_notice_reaches_the_session.py",
+      "line": 45,
+      "severity": "follow-on",
+      "text": "follow-on: the assertion compares coordinator_obligations.snapshot_module().model_catalogue_snapshot_path() with model_catalogue.snapshot_path(), and the latter is written as `return obligation_snapshot.model_catalogue_snapshot_path()`, so both sides call the same production function and the assertion holds whatever that function returns; it cannot redden on a change to the owner's definition, so the comment's claim that a divergence in either reddens the gate overstates the coverage it provides. It does guard the narrow case of a literal re-fork in model_catalogue.snapshot_path."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "VERDICT diff: read commit by commit against 8c5c4db0; the range holds one commit 59cdd353, changing only reckon/crew/model_catalogue.py and tests/test_a_model_notice_reaches_the_session.py.",
+    "done_when": "VERDICT done_when: the done_when names a `pytest -rA` run over ten files against a base arm with both negative controls and a ruff delta; the manifest records head 2F/232P at 59cdd353 against base 2F/227P at 81afebde, the same failure ids, EXIT=1 in both logs.",
+    "goal": "VERDICT goal: the source node goal is a daily producer refresh, one hook line and one opt-in probe of a flagged model; the reviewed delta folds the notice snapshot's path and reader into one owner, reckon/crew/model_catalogue.py:22 delegating to reckon/crew/obligation_snapshot.py:282.",
+    "manifest": "VERDICT manifest: read; status complete, the head gate log head-arm-clean-reuse.log named, and baseline_suite/after_suite both carry completed:true with the same two failure ids.",
+    "write_paths": "VERDICT write_paths: the source node's declared write paths name reckon/crew/model_catalogue.py and tests/test_a_model_notice_reaches_the_session.py; the delta changes exactly those two files."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node goal is a daily producer refresh, one hook line and one opt-in probe of a flagged model; the reviewed delta folds the notice snapshot's path and reader into one owner, reckon/crew/model_catalogue.py:22 delegating to reckon/crew/obligation_snapshot.py:282.\nVERDICT done_when: the done_when names a `pytest -rA` run over ten files against a base arm with both negative controls and a ruff delta; the manifest records head 2F/232P at 59cdd353 against base 2F/227P at 81afebde, the same failure ids, EXIT=1 in both logs.\nVERDICT write_paths: the source node's declared write paths name reckon/crew/model_catalogue.py and tests/test_a_model_notice_reaches_the_session.py; the delta changes exactly those two files.\nVERDICT manifest: read; status complete, the head gate log head-arm-clean-reuse.log named, and baseline_suite/after_suite both carry completed:true with the reviewed ids.\nVERDICT diff: read commit by commit against 8c5c4db0; the range holds one commit 59cdd353, changing only reckon/crew/model_catalogue.py and tests/test_a_model_notice_reaches_the_session.py.\nCALL_SITES: reckon/crew/recovery_watch.py:2698, reckon/crew_run_commands.py:1559, reckon/mcp_views.py:3737, reckon/hooks/coordinator_obligations.py:606\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/model_catalogue.py:22 derives _root() from snapshot_path() and delegates snapshot_path() and _read_snapshot() to reckon/crew/obligation_snapshot.py:282-308, so the notice store has one owner.\nSCORE evidence: 17\nJUSTIFICATION evidence: the head arm at 59cdd353 is recorded in logs/head-arm-clean-reuse.log at 2 failed / 232 passed against base 2 failed / 227 passed, the same ids, so the delta adds no failure.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the delta touches only reckon/crew/model_catalogue.py and tests/test_a_model_notice_reaches_the_session.py, both inside the declared write paths.\nSCORE durability: 10\nJUSTIFICATION durability: the only assertion guarding the one-owner claim, tests/test_a_model_notice_reaches_the_session.py:45, calls the same obligation_snapshot function on both sides, so reverting the delegation to a matching literal leaves it green.\nSCORE fit: 18\nJUSTIFICATION fit: the delegating wrappers and their docstrings at reckon/crew/model_catalogue.py:22-46 match the surrounding style and introduce no plan or version identifiers.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta removes the duplicate path and reader definition by delegating to the owner reckon/crew/obligation_snapshot.py:282, which is the reuse the prior review's follow-on asked for.\nFINDING tests/test_a_model_notice_reaches_the_session.py:45 follow-on: the assertion compares two calls to the same production function, so it holds whatever model_catalogue_snapshot_path returns and cannot redden on a change to the owner; the comment's claim that a divergence in either reddens the gate overstates its coverage.",
+  "review_run_id": "r-20261020T125047085633-review-of-a-model-notice-reaches-the-session-59cdd353c07e",
+  "reviewed_base_sha": "8c5c4db0cf244596912a937dbf2b2d0f9c24a3da",
+  "reviewed_head_sha": "59cdd353c07e112e5acc0d862f62614940a1c18d",
+  "reviewed_run_id": "r-20261020T104551937288-a-model-notice-reaches-the-session",
+  "scores": {
+    "durability": 10,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T13:05:15.204954+00:00",
+  "total": 103
+}
