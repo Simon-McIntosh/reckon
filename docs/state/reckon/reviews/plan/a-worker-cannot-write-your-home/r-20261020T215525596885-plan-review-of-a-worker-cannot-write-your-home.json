@@ -53,6 +53,13 @@
       "finding": "reasoning-2",
       "reason": "impl is derived on every read from the section declarations and the store refuses a set of plan-impl; the stale 0.99 scalar is rewritten by the store on the next write, and the derived 0.872 is the figure coordinators read",
       "when": "2026-10-20T22:48:20.975996+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "impl is derived on every read from the section declarations (0.872 here), and the store refuses a set of plan-impl, so a coordinator never reads the scalar; the stale 0.99 meta survives writes (checked after the v210 write), which is a store defect outside this plan's sections, not a fact \u00a718's builder acts on",
+      "when": "2026-10-20T22:50:23.932121+00:00"
     }
   ],
   "responses": {
@@ -65,8 +72,8 @@
     "reasoning-2": {
       "action": "declined",
       "by": "",
-      "reason": "impl is derived on every read from the section declarations and the store refuses a set of plan-impl; the stale 0.99 scalar is rewritten by the store on the next write, and the derived 0.872 is the figure coordinators read",
-      "when": "2026-10-20T22:48:20.975996+00:00"
+      "reason": "impl is derived on every read from the section declarations (0.872 here), and the store refuses a set of plan-impl, so a coordinator never reads the scalar; the stale 0.99 meta survives writes (checked after the v210 write), which is a store defect outside this plan's sections, not a fact \u00a718's builder acts on",
+      "when": "2026-10-20T22:50:23.932121+00:00"
     },
     "wiring-1": {
       "action": "acted",
