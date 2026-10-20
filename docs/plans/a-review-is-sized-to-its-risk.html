@@ -20,7 +20,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;}">
   <meta name="plan-blocks" content="a-small-change-is-a-small-node">
   <title>A Review Is Sized To Its Risk | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -28,7 +28,7 @@
 <meta name="plan-commits" content="505c690b,9701e873,c45e7bac,dd19e201,31509127">
 <meta name="plan-artifacts" content="reckon/review_tiers.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,tests/test_review_tiers.py">
 <meta name="plan-impl" content="0.6666666666666666">
-<meta name="plan-version" content="201">
+<meta name="plan-version" content="202">
 <meta name="plan-modified" content="2026-10-20">
 <meta name="plan-section-depends-on" content="{&quot;s14&quot;:[&quot;a-review-is-sized-to-its-risk#s13&quot;],&quot;s7&quot;:[&quot;a-review-is-sized-to-its-risk#s3&quot;,&quot;a-review-is-sized-to-its-risk#s6&quot;]}">
 </head>
@@ -165,7 +165,7 @@
     <p><strong>Done when</strong> reckon and nova each declare a suite command and budget in their flight configuration's <code>review.suite</code>; a synthetic project whose suite fails at collection holds a tier-none promotion in a test; and reckon records at least one standing-suite run with its collected, passed and failed counts under its <code>suite-runs</code> directory. The negative control is the release: the same synthetic project's hold lifts after a later passing run is recorded, and again after a recorded waiver, so a hold that never releases fails the measure. Nova's first recorded run is a run of nova's own three-hour suite and belongs to nova's coordinator, not to this reckon plan.</p>
 
     <h2 id="s7">§7 — Build the review tiers</h2>
-<section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
 <p>§2 first; then §3, §4 and §5, which all touch the review reflex and run in that order; §6 is independent and can run beside §2.</p><p><strong>Done when</strong> §3 closes. §2, §4 and §5 have landed and §6 is met, so the order this section set is no longer a constraint, and it closes with the last of them.</p><p>Moved from followup f-arist-001 on a-review-is-sized-to-its-risk by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.95</p>
 
     <h2 id="s8">§8 — A read-only run&#x27;s review checks the claims it reports</h2>
@@ -291,10 +291,11 @@ The test asserts that the real crew home is untouched afterwards.</li>
     <pre class="r-fu-prompt">/reckon-build a-review-is-sized-to-its-risk §5</pre>
     <p class="r-fu-outcome">All four bullets are closed. (1) Racing claims: a dispatch that loses a race to an unlaunched winner now waits for it to launch or withdraw (a-racing-loser-outlives-a-withdrawn-winner, merged at 2cd8e47a1). The _raise_live_scope_conflict facade has no production caller; it is only re-exported in reckon/crew.py, so its missing ordering reaches no dispatch. (2) The follower's flapping on a promoted run is addressed by the follower latch in fleet_transitions (merge 100498b84). (3) The always-zero unmarked count was dropped from the no-repair reason in d91c91fe4. (4) Section 4 landed and is collapsed (merge ecdd531ca).</p>
     </article>
-<article class="r-fu" data-id="f-arist-012" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="s25-coord" data-written-at="2026-10-03" data-recommends-skill="/reckon-build a-review-is-sized-to-its-risk §3" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-arist-012" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="s25-coord" data-written-at="2026-10-03" data-recommends-skill="/reckon-build a-review-is-sized-to-its-risk §3" data-resolved-at="2026-10-20T08:48:30+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Close sections 3 and 6, then section 7</h4>
     <div class="r-fu-body"><ul><li>Section 3: read the verdict of the repair-round census (docs/evidence/fragments/a-review-is-sized-to-its-risk/repair-round-census.html, window 2026-09-25 to 2026-10-02). If every finding-bearing review had exactly one repair round, collapse section 3. Otherwise name each review with more than one round and its cause. The retry guards landed tonight should be counted toward that cause: a same-round retry is no longer re-sent into a refused turn, and a resumed repair carries its own deadline.</li><li>Section 6: nova's declaration of review.suite and its first real wave close are nova-side edits that nova-f5 is landing. Confirm they landed, then collapse section 6.</li><li>Section 7 closes when sections 3 and 6 close.</li></ul></div>
     <pre class="r-fu-prompt">/reckon-build a-review-is-sized-to-its-risk §3</pre>
+    <p class="r-fu-outcome">§3 proved (merge b9e982b7a), §6 closed on evidence already in the tree, and §7 closed with them.</p>
     </article>
 <article class="r-fu" data-id="f-arist-013" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build" data-written-at="2026-10-19" data-recommends-skill="/reckon-build a-review-is-sized-to-its-risk §10" data-resolved-at="2026-10-20T02:34:05+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Build §10 — a run whose review tier is none owes no review duty</h4>
@@ -619,6 +620,9 @@ The test asserts that the real crew home is untouched afterwards.</li>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261020T082557577198-review-of-one-repair-round-per-review-round-f56138b1ce6c" data-who="reckon-build" data-when="2026-10-20T08:36:00.510Z">
     <div class="r-comment-body"><p>Independent review of r-20261020T075914642109-one-repair-round-per-review-round at f56138b1ce6c (base ae127e3bb): six dimensions scored 19/15/20/18/19/17, added_failure_count 0, three follow-on findings, status parsed; the record validated by `reckon crew check --review`.</p></div>
 </div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-20T08:50:00Z">
+    <div class="r-comment-body"><p>§3 closed: a test proves one repair round per review round, carrying the blocking findings only, with a retry as another attempt of the same round (merge <code>b9e982b7a</code>); review 108/120. <a href="/reckon/evidence/archive/a-review-is-sized-to-its-risk-landed.html#one-repair-round-per-review-round">evidence</a></p></div>
+</div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260928T233552756785-review-of-the-suite-is-declared-and-recorded" data-who="reckon-build" data-when="2026-09-29T00:21:22.662Z">
     <div class="r-comment-body"><p>review stored for r-20260928T223146627061-the-suite-is-declared-and-recorded at cd36faeb against base 348688e8 - total 77 (goal_fidelity 14, evidence 15, scope_discipline 19, durability 13, fit 16), four findings, added_failure_count 0</p></div>
 </div>
@@ -807,6 +811,9 @@ The test asserts that the real crew home is untouched afterwards.</li>
 </div>
 <div class="r-comment" data-section="s14" data-id="c-close-s14" data-who="reckon-build" data-when="2026-10-20T08:35:00Z">
     <div class="r-comment-body"><p>§14 landed: a disposed finding is left out of its repair round, and finding dispositions now survive a review record's re-store (merged at <code>de2d6db85</code>, head <code>5f5a0a2cf</code>). Gate 75 passed with the pre-existing window-guard failure; both negative controls fail their case; re-review no added failures. <a href="/reckon/evidence/archive/a-review-is-sized-to-its-risk-landed.html#s14">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-close-s7" data-who="reckon-build" data-when="2026-10-20T08:50:00Z">
+    <div class="r-comment-body"><p>§7 closed: it closed on §3 and §6, both now done, with §2, §4 and §5 landed earlier.</p></div>
 </div>
 </section>
 </main>
