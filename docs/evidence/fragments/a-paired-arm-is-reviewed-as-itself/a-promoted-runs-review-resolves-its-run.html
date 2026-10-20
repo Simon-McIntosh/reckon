@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-paired-arm-is-reviewed-as-itself">
+  <meta name="plan-verifies" content="reckon:a-paired-arm-is-reviewed-as-itself#s3">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-20">
+  <title>A promoted run's review resolves its run | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="a-promoted-runs-review-resolves-its-run">
+  <h2>A promoted run's review resolves its run</h2>
+
+  <p><strong>Change.</strong> A review node id minted from a run's node id resolved against
+  the live fleet alone, so once the run was promoted there was no pointer left carrying that
+  node id and the resolver handed the grant a bare node id. A bare node id names no run
+  directory, so the record directory was refused — the <code>scoped</code> refusal that
+  blocked re-attaching <code>r-20261019T214532819779-cs1-ripple-window</code>'s review.
+  Two edits close it. <code>_resolved_reviewed_run_id</code>
+  (<code>reckon/crew/recovery_review_delivery.py</code>) falls back, when no live pointer
+  carries the source node id, to <code>_durable_reviewed_run_id</code> — the durable rows
+  carrying that source node id, chosen by the head suffix the node id mints through
+  <code>round_node_head_suffix</code> and compared against the head
+  <code>_run_head_for_review</code> gives each row. Exactly one match resolves; no match and
+  more than one both return the bare source whether or not <code>refuse_ambiguous</code> is
+  set, and a read that raises is answered the same way and never propagates. The reader,
+  <code>runs_for_node</code> (<code>reckon/run_store.py</code>), selects rows by the indexed
+  <code>node</code> column, scoped to the caller's project whenever it has one and across
+  projects only when it has none, over a read-only connection that creates and migrates
+  nothing. Live pointers are still read first, so every resolution that worked before works
+  unchanged.</p>
+
+  <p><strong>Gate.</strong> The declared gate ran in the foreground over the nine named
+  files, both arms logged under the run directory with an <code>EXIT=</code> last line. The
+  base arm (<code>git archive</code> of <code>c83074a2</code>, the dispatched base revision,
+  its eight pre-existing files — the new file does not exist there) reports <strong>1 failed,
+  62 passed in 209.65s</strong>, <code>EXIT=1</code>, failing
+  <code>test_every_module_fits_a_worker_window</code> on
+  <code>reckon/crew/review.py: 52048</code> and <code>reckon/ledger.py: 51666</code> exceeded
+  the 50000-token bound. The head arm (the same eight plus
+  <code>tests/test_a_promoted_runs_review_resolves_its_run.py</code>, at commit
+  <code>d35bae1f</code>) reports <strong>1 failed, 69 passed in 253.82s</strong>,
+  <code>EXIT=1</code>, the same failure id with byte-identical wording. <strong>Added failure
+  ids: none.</strong> The lone failure is pre-existing and outside this node's declared
+  scope: neither module is written here, and it is listed under follow-ons rather than
+  triaged. Each base-arm header names the tree it measured and the run's probe printed
+  <code>module.__file__</code> resolving inside the scratch extraction, so the base arm could
+  not have been served by the worktree. <code>ruff check</code> and
+  <code>ruff format --check</code> add no finding on the staged paths: the three staged files
+  are clean, and the two findings a naive blob copy of the base reports are <code>EXE002</code>
+  artefacts of the copy's permissions, present identically in both blobs.</p>
+
+  <p><strong>New test</strong> (<code>tests/test_a_promoted_runs_review_resolves_its_run.py</code>,
+  <code>RECKON_HOME</code> and <code>RECKON_RUN_STORE</code> both under <code>tmp_path</code>,
+  durable rows written through <code>run_store.append</code> with a reclaimed worktree and a
+  completed manifest naming the head, and no live pointer unless a case writes one):</p>
+  <ul>
+    <li>one promoted run at node <code>solo-node</code> at head <code>H</code>:
+      <code>_reviewed_run_id_for_node("review-of-solo-node-" + H[:12])</code> returns
+      <code>r-solo</code>, and <code>_review_record_directory_grant</code> on that run's own
+      declared record path grants its <code>review-records/</code> directory;</li>
+    <li>two runs at node <code>twice-node</code>, older at <code>H1</code> and newer at
+      <code>H2</code>: each head suffix resolves to its own run, and a suffix matching neither
+      returns the bare source <code>twice-node</code>;</li>
+    <li>two runs at node <code>same-head</code> at one head: the suffixed node id returns the
+      bare source <code>same-head</code>, and the grant refuses that bare source;</li>
+    <li>a live pointer at <code>solo-node</code> beside the durable row: its run id
+      <code>r-live-solo</code> is returned, as before;</li>
+    <li>with <code>run_store.runs_for_node</code> patched to raise <code>OSError</code>, the
+      resolver returns the bare source and raises nothing;</li>
+    <li>a promoted run at node <code>far-node</code> in project <code>other</code>: the
+      resolver called with project <code>here</code> returns the bare source, and called with
+      project <code>None</code> returns <code>r-far</code>;</li>
+    <li>the real crew home and the real run store carry no trace of the run and node ids this
+      file mints, searched by needle so a peer's own rows and pointers never read as a hit.</li>
+  </ul>
+
+  <p><strong>Negative control</strong>, three mutations, each applied alone in a scratch
+  extraction of the base revision with this node's head files copied over it, each run under
+  pytest with its default short summary, each <code>EXIT=1</code>:</p>
+  <ul>
+    <li>the durable fallback removed (<code>return source</code> at the fallback site) makes
+      <code>test_one_promoted_run_resolves_by_its_head_suffix</code> fail, and case 2, case 6
+      and the real-home case with it
+      (<code>negative-control-no-durable-fallback.log</code>);</li>
+    <li>the newest durable row returned instead of the head suffix being matched makes
+      <code>test_two_runs_sharing_a_node_resolve_by_their_own_suffixes</code> fail on the
+      older run (<code>negative-control-newest-durable-match.log</code>);</li>
+    <li>the durable read no longer passing the caller's project makes
+      <code>test_a_run_in_another_project_is_reached_only_without_a_project</code> fail
+      (<code>negative-control-reads-across-projects.log</code>).</li>
+  </ul>
+
+  <p><strong>After it lands.</strong> The printed obligation command for the next review
+  composed after its run's promotion should dispatch under its node-id form; that check
+  belongs to the coordinator, since it needs a promotion this node does not perform.</p>
+</section>
+</main>
+</body>
+</html>
