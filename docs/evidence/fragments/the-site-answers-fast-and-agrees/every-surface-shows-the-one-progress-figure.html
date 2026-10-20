@@ -1,0 +1,77 @@
+<section id="every-surface-shows-the-one-progress-figure">
+  <h2>Every surface shows the one progress figure</h2>
+  <p>
+    A plan's progress reached the surfaces by two different routes. The plan
+    list, the project index and the discovery row carried the
+    effort-weighted figure the section parser derives, while a graph endpoint
+    divided shipped members by total members and rendered that percentage into
+    the same bar-and-percent slot. Two readers of the same closure therefore saw
+    two numbers, and neither surface could tell which one it was showing.
+  </p>
+  <p>
+    The graph endpoint now carries the closure's rolled-up figure under
+    <code>progress</code>, computed by
+    <code>derive_fleet_impl_imputing_effort</code> — the one roll-up
+    function — over the endpoint's own member plans. <code>roadmap.py</code>
+    weights nothing of its own: it hands the member plan rows to that function
+    in both places it reports a closure, so an endpoint and the fleet summary
+    cannot disagree. The
+    <code>completion</code> counts stay counts, and <code>shipped_fraction</code>
+    stays on the endpoint for readers that want the raw ratio.
+  </p>
+  <p>
+    The surfaces render what they are served. The graph's endpoint row paints
+    <code>endpoint.progress</code>; the endpoint detail paints the plan row's
+    served <code>impl</code>; and the crew flow bar paints the
+    <code>impl</code> of the inventory row its bar resolved against, so a flow
+    item and the plan card it points at agree by construction. No surface
+    divides shipped by total.
+  </p>
+  <p>
+    The schedule bar names its plan once. Layout is unchanged; the duplicate
+    <code>slug</code> key is gone and <code>plan</code> carries the slug the
+    surface's bar readers already resolve against the inventory in the same
+    payload. On one fixture the bar list is less than half the size it was when
+    each bar repeated the whole inventory row it referenced.
+  </p>
+  <p>
+    The gate is
+    <code>tests/test_every_surface_shows_the_one_progress_figure.py</code>: it
+    serves one temporary project of two sectioned plans and reads the figure
+    back through every served surface — the index row, the discovery row, the
+    graph endpoint, the schedule bar and the fleet summary — asserting each one
+    equals a reference computed in the test from the section's own progress and
+    roll-up functions. The fixture is chosen so the two candidate numbers cannot
+    be confused: the roll-up reads 0.10 where shipped-over-total reads 0.50. The
+    file's second case asserts the graph and crew sources state the figure and
+    derive none — <code>endpoint.progress</code> in the graph,
+    <code>plan.impl</code> in the crew flow, and neither a
+    <code>shipped_fraction</code> read nor an inline shipped-over-total
+    expression.
+  </p>
+  <p>
+    At the merged population of the nine affected files the suite is
+    <strong>57 passed, EXIT=0</strong> against <strong>55 passed, EXIT=0</strong>
+    at the base revision — the two added cases are this file's, and no case was
+    deleted or loosened. The SPA cases in that population drive a real browser
+    and run rather than skip. Logs:
+    <code>final-suite-clean.log</code> (head),
+    <code>base-focused.log</code> (base), <code>rerun-served-schedule.log</code>.
+  </p>
+  <p>
+    The declared negative control — restore the shipped-over-total endpoint
+    figure — turns the parity assertion red: <strong>1 failed, EXIT=1</strong>,
+    reading <code>assert 0.5 == 0.1 ± 1.0e-07</code> at the endpoint's
+    <code>progress</code>. That is exactly the divergence the file exists to
+    catch, since 0.5 is the shipped-over-total figure the endpoint used to
+    serve. Log: <code>negative-control.log</code>.
+  </p>
+  <p>
+    <code>ruff check</code> adds no finding on the changed Python files: the
+    base revision of those paths carries three findings and this head carries
+    the same three, both of them pre-existing in <code>roadmap.py</code> and
+    <code>test_graph_target.py</code>. <code>ruff format --check</code> likewise
+    adds none: the two files it would reformat at base are the same two at head,
+    and the new test file formats clean.
+  </p>
+</section>
