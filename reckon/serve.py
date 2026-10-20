@@ -2370,6 +2370,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_response(HTTPStatus.NOT_MODIFIED)
                 self.send_header("ETag", etag)
                 self.send_header("Cache-Control", cache_control)
+                if stat.st_size >= gzip_min_bytes and _is_compressible_text(ctype):
+                    self.send_header("Vary", "Accept-Encoding")
                 self.end_headers()
                 return
             body = target.read_bytes()
@@ -2388,10 +2390,11 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", ctype)
         if compressed is not None:
             self.send_header("Content-Encoding", "gzip")
-            self.send_header("Vary", "Accept-Encoding")
             self.send_header("Content-Length", str(len(compressed)))
         else:
             self.send_header("Content-Length", str(len(body)))
+        if len(body) >= gzip_min_bytes and _is_compressible_text(ctype):
+            self.send_header("Vary", "Accept-Encoding")
         self.send_header("Cache-Control", cache_control)
         self.send_header("ETag", etag)
         self.end_headers()

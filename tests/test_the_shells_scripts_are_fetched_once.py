@@ -111,15 +111,23 @@ def test_shell_assets_are_revisioned_and_revalidated(tmp_path: Path, monkeypatch
         status, runtime_headers, _ = _get(port, runtime_url)
         assert status == 200
         assert runtime_headers["Cache-Control"] == "max-age=31536000, immutable"
+        assert runtime_headers["Vary"] == "Accept-Encoding"
         assert parse_qs(urlsplit(runtime_url).query)["rev"] == [
             serve.CLIENT_ASSETS["react.js"][1]
         ]
+        status, runtime_headers, runtime_body = _get(
+            port, runtime_url, {"Accept-Encoding": "gzip"}
+        )
+        assert status == 200
+        assert runtime_headers["Content-Encoding"] == "gzip"
+        assert gzip.decompress(runtime_body) == runtime.read_bytes()
 
         bare_url = urlsplit(compiled_url).path
         status, bare_headers, _ = _get(port, bare_url)
         assert status == 200
         assert bare_headers["Cache-Control"] == "no-cache"
         assert "ETag" in bare_headers
+        assert bare_headers["Vary"] == "Accept-Encoding"
         status, _, _ = _get(port, bare_url, {"If-None-Match": bare_headers["ETag"]})
         assert status == 304
 
