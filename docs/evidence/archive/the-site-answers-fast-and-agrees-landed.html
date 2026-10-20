@@ -400,6 +400,21 @@
 <p>The cold read fell by 2.5 s, not the 6 to 7 s the profile suggested, and stays above §11's 10 s cold budget. The profiled share of the walks overstated their unprofiled cost: per-call profiler overhead inflates a stat-heavy walk more than the work around it. What remains of nova's cold derivation lies in roadmap derivation, plan metadata parsing, per-row figure work and the git dates, none of which this section changed.</p>
   </section>
 
+  <section id="s24">
+    <h2>§24 — A schedule failure leaves discovery served</h2>
+    <p>A failure while attaching the schedule no longer fails the discovery read. <code>_attach_schedule_for_read</code> in <code>reckon/serve.py</code> catches a failure in the attach alone. It serves the stored inventory with <code>schedule</code> null, names the failure in <code>schedule_error</code>, and logs one line for the read. A failure reading the stored result itself still answers 500 with <code>distributed_project_state_invalid</code>. Run <code>r-20261020T160409508288</code>, commit <code>1a0d696f6</code>, merged at <code>611c77a62</code>.</p>
+<table>
+<thead><tr><th>Check</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>Focused test at <code>1a0d696f6</code></td><td>3 passed: a crew-row failure is served with a null schedule and one log line, a restored listing carries the schedule, and a stored-result failure still answers 500</td></tr>
+<tr><td>Negative control</td><td>putting the attach back inside the handler's error path fails both crew-row cases with 500</td></tr>
+<tr><td>Population, 165 files importing <code>serve</code>, and the SPA tests</td><td>the same 21 failures at base <code>33bb77708</code> and the merge candidate; none added</td></tr>
+<tr><td>Ruff on the changed paths</td><td><code>reckon/serve.py</code> 17 findings at base and head; the new test clean; both formatted</td></tr>
+<tr><td>Independent review</td><td>16 to 20, two record follow-ons exempted</td></tr>
+</tbody>
+</table>
+  </section>
+
 </main>
 </body>
 </html>
