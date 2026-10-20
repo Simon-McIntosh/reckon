@@ -95,14 +95,16 @@ def test_svg_cli_dispatch_records_a_run_local_png_and_resume_reuses_it(
     record = json.loads(result.output)
     run_id = record["run_id"]
     directory = crew.run_dir(run_id)
+    expected_png = directory / "image-0.png"
+    assert _images(record["argv"]) == [str(expected_png)], record["argv"]
+    assert _images(recorder.argv[0]) == [str(expected_png)]
     image = Path(record["node"]["images"][0])
+    assert image == expected_png
     assert image.is_relative_to(directory), image
     assert image.suffix == ".png"
     with Image.open(image) as rendered:
         assert rendered.format == "PNG"
         assert rendered.size == (1400, 700)
-    assert _images(record["argv"]) == [str(image)]
-    assert _images(recorder.argv[0]) == [str(image)]
     assert source.as_posix() not in record["argv"]
     assert _tree(repo) == before
 
