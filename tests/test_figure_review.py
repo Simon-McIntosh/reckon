@@ -334,8 +334,7 @@ def test_text_selection_skips_a_figure_only_record(
             "status": "parsed",
             "rubric_items": dict.fromkeys(review_module.FIGURE_REVIEW_ITEMS, "pass"),
             "findings": [],
-        },
-        base_dir=project["tmp_path"] / "figure-only-store",
+        }
     )
     actual, _actual_other_head = review_subject.select_review_for_head(
         PROJECT, figure_only_id, project["head_sha"]
@@ -356,3 +355,40 @@ def test_text_selection_skips_a_figure_only_record(
 
     assert selected is None
     assert other_head == ""
+
+
+def test_in_flight_review_reads_rubric_from_its_record_path(
+    project: dict, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    review_directory = runs.run_dir("review-run")
+    head = project["head_sha"]
+    pointer = {
+        "run_id": "review-run",
+        "project": PROJECT,
+        "role": "review",
+        "node": {
+            "id": "hand-named-figure",
+            "role": "review",
+            "write_paths": review_module.run_review_record_paths(
+                review_directory, RUN_ID, reviewed_head_sha=head
+            ),
+        },
+    }
+    monkeypatch.setattr(recovery, "list_live", lambda **_kwargs: [pointer])
+
+    assert recovery._review_in_flight(project["record"], rubric="figure") == ""
+    assert recovery._review_in_flight(project["record"]) == "review-run"
+
+    pointer["node"]["id"] = "hand-named-review"
+    pointer["node"]["write_paths"] = review_module.run_review_record_paths(
+        review_directory,
+        RUN_ID,
+        reviewed_head_sha=head,
+        rubric=review_module.FIGURE_REVIEW_RUBRIC,
+    )
+    assert (
+        recovery._review_in_flight(
+            project["record"], rubric=review_module.FIGURE_REVIEW_RUBRIC
+        )
+        == "review-run"
+    )

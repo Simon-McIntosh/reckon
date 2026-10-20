@@ -232,6 +232,43 @@ def _recorded_review_is_live(recorded: Any) -> bool:
     return True
 
 
+def _review_pointer_rubric(
+    pointer: Mapping[str, Any], reviewed_run_id: str, reviewed_head: str
+) -> str | None:
+    """The rubric encoded by the review record paths on a live pointer.
+
+    The composed review fields select the record paths, including the rubric
+    suffix and reviewed head. Reading those declared paths identifies the
+    rubric a live review will write without treating its node id as a type tag.
+    """
+    reviewer_run_id = str(pointer.get("run_id") or "")
+    node = pointer.get("node") or {}
+    declared_paths = {str(path) for path in node.get("write_paths") or ()}
+    if not reviewer_run_id or not declared_paths:
+        return None
+    review_directory = runs.run_dir(reviewer_run_id)
+    for candidate in (review_module.FIGURE_REVIEW_RUBRIC, None):
+        expected = set(
+            review_module.run_review_record_paths(
+                review_directory,
+                reviewed_run_id,
+                reviewed_head_sha=reviewed_head,
+                rubric=candidate,
+            )
+        )
+        if declared_paths.intersection(expected):
+            return candidate or ""
+        if reviewed_head:
+            legacy = set(
+                review_module.run_review_record_paths(
+                    review_directory, reviewed_run_id, rubric=candidate
+                )
+            )
+            if declared_paths.intersection(legacy):
+                return candidate or ""
+    return None
+
+
 def _readable_standing_review(review_run_id: str) -> Mapping[str, Any] | None:
     """The standing review's pointer, or None when nothing readable is there."""
     if not review_run_id:
@@ -328,14 +365,12 @@ def _review_in_flight(record: Mapping[str, Any], *, rubric: str | None = None) -
     for pointer in list_live(project=project):
         if not _is_review_run(pointer):
             continue
-        pointer_node = pointer.get("node") or {}
-        pointer_node_id = (
-            pointer_node.get("id")
-            if isinstance(pointer_node, Mapping)
-            else pointer_node
-        )
-        pointer_is_figure = str(pointer_node_id or "").endswith("-figure")
-        if pointer_is_figure != (rubric == review_module.FIGURE_REVIEW_RUBRIC):
+        pointer_rubric = _review_pointer_rubric(pointer, run_id, head)
+        if pointer_rubric is not None:
+            if pointer_rubric != (rubric or ""):
+                continue
+            return str(pointer.get("run_id") or "")
+        if rubric == review_module.FIGURE_REVIEW_RUBRIC:
             continue
         reviewed, reviewed_head = _review_subject(pointer, project)
         if reviewed and reviewed == run_id and _review_head_covers(reviewed_head, head):

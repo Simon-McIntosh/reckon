@@ -142,7 +142,6 @@ def select_review_for_head(
         and stored.get("rubric") == review_module.FIGURE_REVIEW_RUBRIC
     ):
         stored = None
-
     if stored is not None:
         return ledger.normalize_identity(stored), ""
     newest = review_module.read_review(project, run_id)
@@ -151,7 +150,6 @@ def select_review_for_head(
         and newest.get("rubric") == review_module.FIGURE_REVIEW_RUBRIC
     ):
         newest = None
-
     if newest is None:
         return None, ""
     described = review_described_head(newest, tree=tree)
