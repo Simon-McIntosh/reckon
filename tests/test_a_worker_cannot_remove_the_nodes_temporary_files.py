@@ -54,6 +54,17 @@ NEGATIVE_CONTROL_MUTATION = (
 )
 NEGATIVE_CONTROL = os.environ.get("RECKON_TEST_NODE_TMP_SEAL_NEGATIVE") == "1"
 
+# The second declared negative control: restore the separate creation loop, so
+# ``create_node_tmp_runtime_paths`` creates its directories itself and never
+# routes through :func:`reckon._worker_fence.create_write_roots`, and the
+# interception test finds no call to it.
+RUNTIME_PATHS_NEGATIVE_MUTATION = (
+    "restore the separate creation loop in create_node_tmp_runtime_paths, so it "
+    "creates its directories itself and never calls create_write_roots; the "
+    "interception test then fails because create_write_roots was never called"
+)
+RUNTIME_PATHS_NEGATIVE = os.environ.get("RECKON_TEST_RUNTIME_PATHS_NEGATIVE") == "1"
+
 requires_bwrap = pytest.mark.skipif(
     shutil.which("bwrap") is None, reason="bubblewrap is not installed"
 )
@@ -83,6 +94,22 @@ done
 rm -f "$FENCE_OUTSIDE"
 """
 
+# Stands in for a run's stray write: it puts a probe directly into the node tmp
+# root, outside its own scratch and the runtime paths the fence carves out, and
+# records whether that write was allowed. It writes nowhere else, so the probe
+# check is the first and only thing the run does — nothing stands between the
+# seal and the assertion.
+_PROBE_STUB = """#!/bin/sh
+set -u
+: > "$FENCE_RESULTS"
+if touch "$FENCE_NODE_TMP_PROBE" 2>/dev/null; then
+  echo "node-tmp-probe-write-ok" >> "$FENCE_RESULTS"
+  exit 0
+fi
+echo "node-tmp-probe-write-refused" >> "$FENCE_RESULTS"
+touch "$FENCE_NODE_TMP_PROBE"
+"""
+
 
 class NodeTmp:
     """A synthetic node tmp: the run's owner scratch, runtime paths, an outsider."""
@@ -97,6 +124,10 @@ class NodeTmp:
         # paths: the file the fence must refuse to let the worker remove.
         self.outside = self.node_tmp / "tmp-outside.txt"
         self.outside.write_text("other session's file\n")
+        # A path a direct-probe stub writes straight into the node tmp root,
+        # outside its own scratch and the runtime paths. It must never come into
+        # existence, whatever else the fence composes.
+        self.node_tmp_probe = self.node_tmp / "probe-direct.txt"
         self.fleet = self.node_tmp / "39486-fleet"
         self.codex = self.node_tmp / ".codex"
         # A node where the harness has never run: codex creates its sandbox
@@ -106,7 +137,10 @@ class NodeTmp:
             self.fleet.mkdir()
             self.codex.mkdir()
         self.home = root / "home"
-        self.run = self.home / ".config" / "reckon" / "crew" / "runs" / RUN_ID
+        # The protected path the synthetic home carries on disk, so a composed
+        # fence seals it read-only and re-binds the run directory beneath it.
+        self.rec = self.home / ".config" / "reckon"
+        self.run = self.rec / "crew" / "runs" / RUN_ID
         self.run.mkdir(parents=True)
         self.manifest = self.run / "manifest.md"
         self.results = self.run / "results.txt"
@@ -138,6 +172,7 @@ class NodeTmp:
             "FENCE_RESULTS": str(self.results),
             "FENCE_OWN": str(self.own),
             "FENCE_OUTSIDE": str(self.outside),
+            "FENCE_NODE_TMP_PROBE": str(self.node_tmp_probe),
             "FENCE_RUNTIME_PATHS": " ".join(str(p) for p in self.runtime_paths()),
         }
         return subprocess.run(
@@ -307,3 +342,169 @@ def test_a_fenced_run_cannot_remove_a_file_outside_its_scratch(
     assert "Read-only file system" in proc.stderr, proc.stderr
     assert node.outside.exists(), "the outside file created in the node tmp was removed"
     assert not (node.outside.parent / "probe").exists()
+
+
+@requires_bwrap
+def test_a_probe_written_directly_into_the_node_tmp_root_is_refused(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    declared_seal_mutation: None,
+) -> None:
+    """A probe straight into the node tmp root is refused and never lands.
+
+    The removal case proves the seal against a file that already exists; this
+    one proves it against a *write*, which is the operation a stray cleanup
+    actually performs. The probe is the first assertion in the test — nothing
+    stands between the seal and this check — so with the seal removed the
+    write succeeds and the test fails here rather than on a later assertion
+    about a file some other step placed. The stub writes only the probe, so the
+    record in its results file is the write's own outcome.
+    """
+    node = NodeTmp(tmp_path)
+    node.point_the_node_tmp(monkeypatch)
+    node.stub.write_text(_PROBE_STUB)
+    proc = node.run_fence(node.argv())
+    results = node.results_text()
+    # Positive control: the stub records only from inside the fence, so a record
+    # naming the refusal proves the shim ran and reached the node tmp root.
+    assert "node-tmp-probe-write-refused" in results, (
+        f"the probe write into the node tmp root was not refused: {results!r}"
+    )
+    assert not node.node_tmp_probe.exists(), (
+        f"a probe landed directly in the node tmp root at {node.node_tmp_probe}"
+    )
+    assert proc.returncode != 0, (
+        f"the fenced probe write exited {proc.returncode}, not non-zero; "
+        f"stderr: {proc.stderr!r}"
+    )
+    assert "Read-only file system" in proc.stderr, proc.stderr
+
+
+def _separate_creation_loop() -> list[Path]:
+    """The pre-routing creation loop, kept only for the declared mutation.
+
+    This is the shape ``create_node_tmp_runtime_paths`` had before it routed
+    through :func:`reckon._worker_fence.create_write_roots`: its own resolved-
+    destination existence check and ``mkdir`` per path. The second negative
+    control installs it so the interception test finds no call to the shared
+    creation rule.
+    """
+    created: list[Path] = []
+    for path in _worker_fence.node_tmp_runtime_paths():
+        target = _worker_fence.resolved_destination(path)
+        if not target.exists():
+            target.mkdir(parents=True, exist_ok=True)
+        created.append(target)
+    return created
+
+
+@pytest.fixture
+def declared_runtime_creation_mutation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Apply the second negative control when the env var asks for it.
+
+    The mutation restores the separate creation loop exactly as the control
+    string states: ``create_node_tmp_runtime_paths`` is replaced by the loop
+    that creates its directories itself, so it never calls
+    :func:`reckon._worker_fence.create_write_roots` and the interception test's
+    ``assert seen`` fails.
+    """
+    if not RUNTIME_PATHS_NEGATIVE:
+        return
+    monkeypatch.setattr(
+        _worker_fence, "create_node_tmp_runtime_paths", _separate_creation_loop
+    )
+
+
+def test_creating_the_runtime_paths_goes_through_create_write_roots(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    declared_runtime_creation_mutation: None,
+) -> None:
+    """Every runtime path is created by the module's one creation rule.
+
+    ``create_node_tmp_runtime_paths`` once re-implemented
+    :func:`reckon._worker_fence.create_write_roots` — the same existence check,
+    ``mkdir`` and refusal — so the rule had two copies that could drift. It now
+    routes through the shared rule, and this test pins that by intercepting
+    ``create_write_roots`` and asserting every runtime path is among the roots
+    it hands over.
+    """
+    node = NodeTmp(tmp_path, runtime_paths_exist=False)
+    node.point_the_node_tmp(monkeypatch)
+    seen: list[list[Path]] = []
+    real_create = _worker_fence.create_write_roots
+
+    def spy(roots) -> None:
+        seen.append([Path(root) for root in roots])
+        real_create(roots)
+
+    monkeypatch.setattr(_worker_fence, "create_write_roots", spy)
+    created = _worker_fence.create_node_tmp_runtime_paths()
+    assert seen, "create_node_tmp_runtime_paths did not call create_write_roots"
+    roots = seen[-1]
+    for runtime in node.runtime_paths():
+        assert runtime in roots, (
+            f"{runtime} was not among the roots handed to create_write_roots: {roots}"
+        )
+        assert runtime.is_dir(), f"the runtime path {runtime} was not created"
+    assert sorted(created) == sorted(
+        _worker_fence.resolved_destination(p) for p in roots
+    )
+
+
+def test_the_composed_fence_argv_for_a_fixed_root_set_is_literal(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The composed argv for the fixture's fixed roots is exactly this list.
+
+    A downstream shape assertion cannot tell a fence that holds from one spelled
+    correctly and doing nothing, so the whole argv for a fixed set of roots is
+    pinned here: an added, dropped or reordered mount changes this list. The
+    host's two shared delivery stores are pointed away from the machine's real
+    ones, so the fixture — not the environment the test runs in — determines the
+    expected argv.
+    """
+    node = NodeTmp(tmp_path)
+    node.point_the_node_tmp(monkeypatch)
+    monkeypatch.setattr(_worker_fence, "shared_store_seal_roots", list)
+    resolve = _worker_fence.resolved_destination
+    argv = node.argv()
+    expected = [
+        _worker_fence.FENCE_BINARY,
+        "--dev-bind",
+        "/",
+        "/",
+        # The one protected path the synthetic home holds on disk, sealed
+        # read-only before the node tmp seal.
+        "--ro-bind",
+        str(resolve(node.rec)),
+        str(resolve(node.rec)),
+        # The run-scratch root, sealed read-only by the scratch seal.
+        "--ro-bind",
+        str(resolve(node.scratch_root)),
+        str(resolve(node.scratch_root)),
+        # The node tmp itself, sealed read-only.
+        "--ro-bind",
+        str(resolve(node.node_tmp)),
+        str(resolve(node.node_tmp)),
+        # Then the writable grants, in root order: the run's own scratch, the
+        # run directory the manifest lives in, then the two runtime paths.
+        "--bind",
+        str(resolve(node.own)),
+        str(resolve(node.own)),
+        "--bind",
+        str(resolve(node.run)),
+        str(resolve(node.run)),
+        "--bind",
+        str(resolve(node.fleet)),
+        str(resolve(node.fleet)),
+        "--bind",
+        str(resolve(node.codex)),
+        str(resolve(node.codex)),
+        "--",
+        str(node.stub),
+    ]
+    assert argv == expected

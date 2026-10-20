@@ -1209,33 +1209,21 @@ def create_node_tmp_runtime_paths() -> list[Path]:
     created here, before the argv is composed, exactly as the launch would
     create it.
 
-    A path that is already there is left exactly as it is: the enumerated set
-    also covers a runtime path some other process created, which may be a socket
-    or a file rather than a directory, and the fence neither replaces one with a
-    directory nor refuses over it — it is granted writable as it stands, which
-    is what the launch needs and what the pre-seal composition did.
-
-    A path that cannot be created refuses the launch, rather than being composed
-    as a grant the fence could not honour. The returned paths are what
-    :func:`fence_argv`'s grant loop consumes.
+    Every enumerated path is created through :func:`create_write_roots`, the
+    module's one rule for creating the directories a fence is about to bind
+    writable — the same resolved-destination existence check, ``mkdir`` and
+    ``BackendError`` the ordinary write roots go through, so the rule has one
+    copy rather than two that can drift. A path that is already there is left
+    exactly as it is: the enumerated set also covers a runtime path some other
+    process created, which may be a socket or a file rather than a directory,
+    and the fence neither replaces one with a directory nor refuses over it —
+    it is granted writable as it stands, which is what the launch needs and what
+    the pre-seal composition did. What stays specific to this function is the
+    returned list, resolved the way :func:`fence_argv`'s grant loop consumes it.
     """
     paths = node_tmp_runtime_paths()
-    created: list[Path] = []
-    for path in paths:
-        target = resolved_destination(path)
-        if target.exists():
-            created.append(target)
-            continue
-        try:
-            target.mkdir(parents=True, exist_ok=True)
-        except OSError as exc:
-            raise BackendError(
-                f"cannot create the node tmp runtime path {target}, which the "
-                f"fence must leave writable beneath the read-only {NODE_TMP_ROOT}: "
-                f"{exc}"
-            ) from exc
-        created.append(target)
-    return created
+    create_write_roots(paths)
+    return [resolved_destination(path) for path in paths]
 
 
 def node_tmp_seal_root() -> Path | None:
