@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_spa_plans_geometry.py::test_rendered_plan_index_fills_the_window[1920]",
+    "tests/test_spa_plans_geometry.py::test_rendered_status_chips_reduce_the_plan_feed"
+  ],
+  "call_sites": [
+    "reckon/serve.py:3298",
+    "reckon/route_results.py:260",
+    "reckon/route_results.py:435",
+    "reckon/serve.py:2626",
+    "docs/ui/state-loader.js:584"
+  ],
+  "completed_at": "2026-10-20T13:40:09.148Z",
+  "dispatched_at": "2026-10-20T13:25:46Z",
+  "findings": [
+    {
+      "file": "tests/test_the_schedule_is_attached_when_it_is_read.py",
+      "line": 80,
+      "severity": "follow-on",
+      "text": "the first-read reference assertion compares the response against STORE_TIME, the constant the test itself hands the injected clock, so it stays true under the declared mutation and guards nothing the assertion at line 81 does not."
+    },
+    {
+      "file": "reckon/serve.py",
+      "line": 3299,
+      "severity": "follow-on",
+      "text": "deriving the schedule on the request path inside the handler's generic except widens the failure surface from the cold miss to every read, so any error enumerating live crew rows \u2014 a read this route did not previously make \u2014 answers 500 labelled distributed_project_state_invalid, surfaced as a discovery load error at docs/ui/state-loader.js:598."
+    }
+  ],
+  "project": "reckon",
+  "review": "VERDICT goal: the node goal is to attach the discovery schedule on each read rather than store it with the result; reckon/serve.py:3299 now attaches it on the /_discover read while reckon/route_results.py:262 returns the schedule-less inventory from the store-time derivation that attached it at base (reckon/route_results.py:263 at 6c5f2f2).\nVERDICT done_when: the done_when names tests/test_the_schedule_is_attached_when_it_is_read.py, the fleet-allocation cost, the base/head no-added-failure comparison, the 50,000-token bound and the ruff delta; the manifest records each with a log under the run directory, and head-focused.log shows 3 passed EXIT=0 for the named file.\nVERDICT write_paths: the manifest declares five paths; the diff 6c5f2f2..914c90dc touches exactly four of them \u2014 reckon/route_results.py, reckon/serve.py, tests/test_the_schedule_is_attached_when_it_is_read.py and the evidence fragment \u2014 and nothing outside them.\nVERDICT manifest: read; it states complete, names three commits, the negative-control log, the 22-vs-57 population delta, the two replayed browser flakes and the attachment costs, each pointing at a log on disk.\nVERDICT diff: read commit by commit against 6c5f2f2 \u2014 dedcde92 moves the attach from the store-time derivation to the HTTP read and adds the 99-line test, 0bda5480 and 914c90dc add the evidence fragment and reconcile its population figures.\nCALL_SITES: reckon/serve.py:3298 (the /_discover/<project> route in Handler, the read that now attaches), reckon/route_results.py:260 (_compute_refresh, the refresh child and cold-route producer, now schedule-less), reckon/route_results.py:435 (_served_result, the stored-result reader feeding the attach), reckon/serve.py:2626 (_stored_discovery, the change-stream digest over the changed stored payload), docs/ui/state-loader.js:584 (the SPA fetch whose response carries the schedule)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/serve.py:3299 attaches the schedule on each read and reckon/route_results.py:262 no longer does, which is the goal exactly, and the base at reckon/route_results.py:263 carried the store-time attach the goal removes.\nSCORE evidence: 17\nJUSTIFICATION evidence: the negative-control log records the mutation's red in-flight assertion ('predicted' == 'in-flight', EXIT=1) and head-focused.log records 3 passed EXIT=0, but the base population arm ran from a reduced /var/tmp/reckon-base-jDWQpf extraction (43 failed + 14 errors) so the no-added-failure result rests on the two isolated browser replays rather than a clean base.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in 6c5f2f2..914c90dc sits inside the manifest's declared write paths, and the declared figures directory was left unwritten as the brief permits for a node whose done-when names no figure.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_schedule_is_attached_when_it_is_read.py:79 fails when store-time attachment is restored, as the negative-control log shows, while line 80 compares the response against the constant the test itself injected and holds under the declared mutation.\nSCORE fit: 19\nJUSTIFICATION fit: the new module's docstring, datetime and monkeypatch idiom follow tests/test_the_served_schedule_payload.py, and the `__wrapped__` fixture reuse is the idiom of ten other test files under tests/.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition \u2014 it reuses reckon/serve.py:1747 _attach_schedule and its owner reckon/roadmap.py:1890 schedule_report, and the test extends the existing served fixture at tests/test_the_slow_routes_answer_from_stored_results.py:167 rather than forking it.\nFINDING tests/test_the_schedule_is_attached_when_it_is_read.py:80 follow-on: the first-read reference assertion compares the response against STORE_TIME, the constant the test itself hands the injected clock, so it stays true under the declared mutation and guards nothing the assertion at line 81 does not.\nFINDING reckon/serve.py:3299 follow-on: deriving the schedule on the request path inside the handler's generic except widens the failure surface from the cold miss to every read, so any error enumerating live crew rows \u2014 a read this route did not previously make \u2014 answers 500 labelled distributed_project_state_invalid, which docs/ui/state-loader.js:598 surfaces as a discovery load error.",
+  "review_run_id": "r-20261020T132424120404-review-of-the-schedule-is-attached-when-it-is-read-914c90dca5c7",
+  "reviewed_base_sha": "6c5f2f206a9854b2219de9181bb9cdf8c33b5441",
+  "reviewed_head_sha": "914c90dca5c797241c69747d971b3e862c87f779",
+  "reviewed_run_id": "r-20261020T122855187753-the-schedule-is-attached-when-it-is-read",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T13:42:56.146710+00:00",
+  "total": 113,
+  "verdicts": {
+    "call_sites": "reckon/serve.py:3298, reckon/route_results.py:260, reckon/route_results.py:435, reckon/serve.py:2626, docs/ui/state-loader.js:584",
+    "diff": "read commit by commit against 6c5f2f2; it is a call-site move plus a 99-line test and the evidence fragment.",
+    "done_when": "the done_when names tests/test_the_schedule_is_attached_when_it_is_read.py, the fleet-allocation cost, the base/head no-added-failure comparison, the 50,000-token bound and the ruff delta; the manifest records each with a log under the run directory, and head-focused.log shows 3 passed EXIT=0 for the named file.",
+    "goal": "the node goal is to attach the discovery schedule on each read rather than store it with the result; reckon/serve.py:3299 now attaches it on the /_discover read while reckon/route_results.py:262 returns the schedule-less inventory from the store-time derivation that attached it at base (reckon/route_results.py:263 at 6c5f2f2).",
+    "manifest": "read; it states complete, names three commits, the negative-control log, the 22-vs-57 population delta, the two replayed browser flakes and the attachment costs, each pointing at a log on disk.",
+    "write_paths": "the manifest declares five paths; the diff 6c5f2f2..914c90dc touches exactly four of them and nothing outside them."
+  }
+}
