@@ -2395,31 +2395,39 @@ def test_hold_history_is_exposed_with_count_and_total_duration(home, repo) -> No
     )
 
     summary = ledger.summary(PROJECT, root=repo)
-    records = json.loads(
-        CliRunner()
-        .invoke(
+
+    def _cli_view(name: str) -> dict:
+        result = CliRunner().invoke(
             cli_main,
             [
                 "crew",
-                "ledger",
+                "view",
+                name,
                 "--project",
                 PROJECT,
-                "--view",
-                "records",
                 "--checkout-path",
                 str(repo),
             ],
         )
-        .output
-    )
+        assert result.exit_code == 0, result.output
+        return json.loads(result.output)
+
+    records = _cli_view("records")
+    # The committed rows are the records view's document; the hold history is
+    # the ledger view's, so the count and the total duration are read from it.
     from reckon import mcp
 
+    held_cli = _cli_view("ledger")
     committed = mcp._crew(PROJECT, view="ledger", checkout_path=str(repo))
     assert summary["holds"] == 1
     assert summary["open_holds"] == 0
     assert summary["total_held_seconds"] == 135
-    assert records["holds"][0]["held_seconds"] == 135
-    assert committed["holds"][0]["hold_id"] == records["holds"][0]["hold_id"]
+    assert (
+        records["runs"]
+        == mcp._crew(PROJECT, view="records", checkout_path=str(repo))["runs"]
+    )
+    assert held_cli["holds"][0]["held_seconds"] == 135
+    assert committed["holds"][0]["hold_id"] == held_cli["holds"][0]["hold_id"]
 
 
 def _worktree(repo: Path, name: str) -> Path:
