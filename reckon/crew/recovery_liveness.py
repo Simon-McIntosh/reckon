@@ -1105,7 +1105,10 @@ def _env_scan_run_pid(record: Mapping[str, Any]) -> int | None:
     this user's process table costs a read per process, so it is asked only
     after the cheaper reads have failed, and only for a run whose own record
     shows a worker existed. A foreign run is never read here: a number is
-    meaningful only on the machine that issued it.
+    meaningful only on the machine that issued it. The walk itself is served by
+    a shared index of the environment each process was last read with, so a
+    second run scanned in the same beat, or a process unchanged since an
+    earlier beat, is answered without opening an environment.
     """
     run_id = str(record.get("run_id") or "")
     if not run_id or _record_is_known_foreign(record):

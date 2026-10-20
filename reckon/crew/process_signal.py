@@ -16,6 +16,7 @@ from reckon.crew.routing import (
 )
 from reckon.crew.runs import (
     _process_start_time,
+    _process_stat_fields,
 )
 
 # The run directory's own record of who signalled it. One line per signal,
@@ -148,6 +149,107 @@ def _start_tick(pid: Any) -> int | None:
         return None
 
 
+# One reading of the process table, shared by every run answered in a beat.
+#
+# A process's environment changes only when it execs, and an exec keeps the pid
+# and the kernel start tick while replacing the program. So a reading is keyed
+# by the pid, its start tick and its executable identity, and a scan reuses
+# every reading whose key still holds. That is what lets one beat answer every
+# run from one walk of the table rather than one walk per run: the first run
+# reads each process's environment, and every other run in the beat — and every
+# later beat, while the process has neither execd nor been replaced — is
+# answered from the index without opening an environment at all.
+#
+# The executable identity is the program's path AND the base of its stack. The
+# path alone is unchanged when a process re-execs the same binary with a new
+# environment, which the in-place re-execs in this repository do (a service
+# re-execs its own interpreter to pick up the code on disk); the kernel places
+# the stack base afresh on every exec, so such a re-exec is read afresh rather
+# than answered from its pre-exec reading. That last part holds only while
+# address randomisation is in force — see ``_process_identity``.
+_ENVIRON_INDEX: dict[
+    int, tuple[tuple[str | None, str | None, str | None], dict[str, str] | None]
+] = {}
+
+
+def _process_executable(pid: int) -> str | None:
+    """The program a process is running, or None when it cannot be read."""
+    try:
+        return os.readlink(Path("/proc") / str(pid) / "exe")
+    except OSError:
+        return None
+
+
+def _process_identity(pid: int) -> tuple[str | None, str | None, str | None]:
+    """What a cached environment cannot survive: a reused pid or an exec.
+
+    Three reads, all cheaper than the environment they guard, and none changes
+    for any reason but recycling the pid or replacing the image. The start tick
+    (stat field 22, index 19 after the parenthesised command) moves when the
+    kernel recycles a pid. The executable path moves when the process execs a
+    different program. The stack base (field 28, index 25) is placed by the
+    kernel at exec and left alone for the process's life, so it moves on every
+    exec — including a re-exec of the same binary with the same arguments, which
+    a path alone cannot see. A kernel that does not report it leaves it None,
+    and the two fields before it still detect every other change.
+
+    That last field rests on address randomisation being in force, which it is
+    on this fleet (``kernel.randomize_va_space`` is 2): it is randomisation that
+    gives the stack a new base. Under ``setarch -R``, or with an
+    ``ADDR_NO_RANDOMIZE`` personality, every exec places the stack at the same
+    address, so a same-binary re-exec keeps this field and is answered from its
+    pre-exec reading — the one case the third field cannot see, and not a case
+    the in-place re-execs here present, since none of them disables
+    randomisation.
+    """
+    fields = _process_stat_fields(pid)
+    start = fields[19] if len(fields) > 19 else None
+    stack = fields[25] if len(fields) > 25 else None
+    return (start, _process_executable(pid), stack)
+
+
+def _process_owner(pid: int) -> int | None:
+    """The uid owning a process's ``/proc`` entry, or None when unreadable."""
+    try:
+        return os.stat(Path("/proc") / str(pid)).st_uid
+    except OSError:
+        return None
+
+
+def _indexed_environment(pid: int) -> dict[str, str] | None:
+    """``pid``'s environment from the index, read afresh only when it changed.
+
+    The owner of the ``/proc`` entry is read first: another user's process — or
+    a root process — cannot be read at all, so it is skipped without opening an
+    environment, which is where most of a full scan's opens used to go. A
+    reading already taken is returned while the index's whole key still
+    describes the process: the same start tick, the same executable path and the
+    same stack base; a pid the kernel recycled, or a process that execd, is read
+    afresh and re-indexed. None is "could not read", never "carries no mark".
+    """
+    if _process_owner(pid) != os.geteuid():
+        _ENVIRON_INDEX.pop(pid, None)
+        return None
+    identity = _process_identity(pid)
+    indexed = _ENVIRON_INDEX.get(pid)
+    if indexed is not None and indexed[0] == identity:
+        return indexed[1]
+    environment = _process_environment(pid)
+    _ENVIRON_INDEX[pid] = (identity, environment)
+    return environment
+
+
+def _forget_absent_pids(present: set[int]) -> None:
+    """Drop readings for pids that have left the process table.
+
+    A reading kept past its process's exit is a claim about a pid the kernel
+    may hand to something else; the index is trimmed on every walk so it holds
+    only pids the table still shows.
+    """
+    for pid in [pid for pid in _ENVIRON_INDEX if pid not in present]:
+        del _ENVIRON_INDEX[pid]
+
+
 def _crew_home_of(environment: Mapping[str, str]) -> Path:
     """The crew home a process's own environment places it in.
 
@@ -184,6 +286,10 @@ def _processes_owning_run(
     whose environment cannot be read is never named, because the absence of a
     mark must not read as ownership. Read-only; the caller decides what to
     signal.
+
+    Each process's environment is taken from the shared index rather than read
+    directly, so a run answered in the same beat as another — or one answered
+    after a beat in which the process has not execd — costs no environment open.
     """
     if not run_id:
         return []
@@ -193,13 +299,15 @@ def _processes_owning_run(
     wanted_home = Path(run_home)
     own_pid = os.getpid()
     named: list[int] = []
+    present: set[int] = set()
     for entry in proc.iterdir():
         if not entry.name.isdigit():
             continue
         pid = int(entry.name)
+        present.add(pid)
         if pid == own_pid:
             continue
-        environment = _process_environment(pid)
+        environment = _indexed_environment(pid)
         if environment is None or environment.get(RUN_ID_ENV) != run_id:
             continue
         if _crew_home_of(environment) != wanted_home:
@@ -209,6 +317,7 @@ def _processes_owning_run(
             if start is None or start < started_no_earlier_than:
                 continue
         named.append(pid)
+    _forget_absent_pids(present)
     return named
 
 
