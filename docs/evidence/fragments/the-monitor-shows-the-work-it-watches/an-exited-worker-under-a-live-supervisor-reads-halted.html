@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s69">
+  <title>An exited worker under a live supervisor reads halted</title>
+</head>
+<body>
+<article id="an-exited-worker-under-a-live-supervisor-reads-halted-landing" data-node="an-exited-worker-under-a-live-supervisor-reads-halted" data-reckon="landed">
+  <p><code>local_liveness</code> in <code>reckon/crew/recovery_liveness.py</code> narrows one answer: where this host's process table says the pointer's pid is alive, the run's own exit record is read against the attempt now running and the worker that attempt stood up. The pid a pointer records is the supervisor's for a supervised launch, and the supervisor outlives the worker it spawned, so "alive" for that pid can be an answer about the launcher. Where the record names the current attempt and the worker it names is one this host no longer holds, the run reads as ended; where it names another attempt, names no worker, or names a worker that still runs, the live reading stands untouched.</p>
+  <p>Reproduced in a temporary crew home: a run whose pointer pid is a live process, whose worker has exited with <code>exit.json</code> recording <code>ended_during working</code> and whose manifest still reads <code>status: in-progress</code>. At base the classifier read <code>running</code> with <code>exit_record_on_disk: true</code> but <code>exit_record_read: false</code> and <code>process_alive: true</code> — the live supervisor pid suppressed the exit record. At head the same fixture reads <code>exited-unfinished</code> with <code>process_alive: false</code>. The narrowing is what the earlier, wider reading cost: an exit record that outranked any live process broke eleven tests that encode the rules it would have replaced — a live process outranking its record, an early record never licensing a resume while the worker lives, a foreign pid never reading dead, and an unchanged run costing one stat.</p>
+  <p>The node's test finds the run classified <code>exited-unfinished</code> with its obligation present (state <code>exited-unfinished</code>, in the needs-action vocabulary, counted in the blocked bucket); a run whose worker is still alive keeps its <code>running</code> reading; a record whose worker pid still runs does not end the attempt; and a resumed run whose predecessor recorded an exit is not ended by it. The fifth is the one that separates the two records on the run directory: the exit record names a worker this host has reaped while the worker record names a process still running, and the reading must follow the exit record's own <code>worker_pid</code> — a module that reads the worker record's pid instead fails that case and passes the other four. All five cases pass at head. The negative control — the exit-record check removed, which is the reading the module carried before it — leaves two of the five failing and three passing: the first case, whose fixture has an exit recorded under a live supervisor pid, and the fifth, whose reading needs the record read at all.</p>
+</article>
+</body>
+</html>

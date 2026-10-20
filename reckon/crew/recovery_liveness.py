@@ -998,6 +998,32 @@ def _record_is_known_foreign(record: Mapping[str, Any]) -> bool:
     return host is not None and str(host) != _reading_host()
 
 
+def _recorded_end_of_the_current_attempt(record: Mapping[str, Any]) -> bool:
+    """Whether the run's exit record ends the attempt whose worker it names.
+
+    The exit record is written by the run's supervisor when the worker it held
+    exits, so it is the account of the work's end rather than a missing pid. It
+    answers for the attempt it names, and it ends the run only where the worker
+    the record itself names is one the process table no longer holds. A record
+    naming no attempt is not this attempt's end, and a record whose worker is
+    still held describes a process that has not left. A resumed run's
+    predecessor record names the attempt before this one and is not this
+    attempt's end either — the live reading outranks all three shapes.
+    """
+    attempt = _current_attempt_number(record)
+    if attempt is None:
+        return False
+    exit_record = _run_exit_record(record)
+    if exit_record is None:
+        return False
+    if _int_or_none(exit_record.get("attempt")) != attempt:
+        return False
+    worker_pid = _int_or_none(exit_record.get("worker_pid"))
+    if worker_pid is None:
+        return False
+    return not runs.process_alive(worker_pid)
+
+
 def local_liveness(record: Mapping[str, Any]) -> tuple[bool | None, bool]:
     """The liveness this host can stand behind for one live pointer.
 
@@ -1019,10 +1045,16 @@ def local_liveness(record: Mapping[str, Any]) -> tuple[bool | None, bool]:
     next, on the same terms: it carries no host of its own and numbers are
     reused across machines, so only a run launched here is read alive from it.
 
-    The recorded end is not folded in here. A caller that emits an exit record
-    reads it anyway, the reading above is what says whether the record applies,
-    and a resumed attempt reuses the run directory, so an earlier attempt's
-    record must not call the new worker dead.
+    An answer of "alive" is narrowed once more, and only there. The pid the
+    pointer carries is the supervisor's, and the supervisor outlives the worker
+    it spawned: it stays alive after the worker exits, so a process table
+    answering "alive" for that pid can be answering about the launcher rather
+    than about the work. The run's own exit record is the account of the end,
+    written by the process that held the worker's wait, and it is read against
+    the attempt now running and the worker that attempt stood up. Where the
+    record names neither, or names a worker this host still holds, it describes
+    an end that is not this attempt's and the live process outranks it, exactly
+    as before the record was read at all.
     """
     launched_here = _launched_on_this_host(record)
     if launched_here and record.get("pid"):
@@ -1054,6 +1086,12 @@ def local_liveness(record: Mapping[str, Any]) -> tuple[bool | None, bool]:
         # as ended and is classified from its manifest as complete or scoring.
         alive = True
         proven = True
+    if alive is True and proven and _recorded_end_of_the_current_attempt(record):
+        # The pid this host answered alive for is the supervisor's, and the
+        # record says the worker it held has left. Both halves are observed
+        # here — the worker the record names was asked of this host's process
+        # table and nothing holds it — so the run reads as a proven death.
+        return False, True
     return alive, proven
 
 
