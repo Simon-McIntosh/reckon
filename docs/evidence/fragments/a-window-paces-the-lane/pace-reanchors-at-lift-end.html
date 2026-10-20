@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-window-paces-the-lane">
+  <meta name="plan-title" content="A lift that ends re-anchors the default pace hold">
+  <meta name="plan-summary" content="A lift that ends inside its window is stamped with the group's utilisation there (u_end, beside the instant t_end), once, by the budget read that resolves it or by the clear itself. The default pace hold then compares utilisation against the line that spreads the remaining budget evenly from t_end to the reset, so a group that stood at 75% with 4% of its week gone is no longer held until the reset. Nothing is granted: no lift record is written by the re-anchor.">
+  <meta name="plan-evidence-for" content="reckon:a-window-paces-the-lane">
+  <meta name="plan-node" content="pace-reanchors-at-lift-end">
+  <meta name="plan-recorded-at" content="2026-10-20">
+  <meta name="plan-environment" content="Linux node; Python; pytest; head and base measured in one pass, one fresh process per file">
+  <title>A lift that ends re-anchors the default pace hold &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1 id="pace-reanchors-at-lift-end-title">A lift that ends re-anchors the default pace hold</h1>
+    <p class="plan-summary">A lift lets a group spend ahead of pace. When it stops before the reset of the window
+    it was anchored to, the utilisation spent stays in <code>burn = utilisation / elapsed_fraction</code>, and the
+    default hold <code>burn &gt; multiple</code> keeps holding although the group is back on the ordinary pace.
+    The fix re-anchors the hold at the lift's end rather than granting a successor lift:
+    <code>allowance(t) = u_end + multiple &times; (1 &minus; u_end) &times; (t &minus; t_end) / (reset &minus; t_end)</code>.</p>
+  </header>
+
+  <section data-reckon="record" data-status="done">
+    <h2 id="pace-reanchors-at-lift-end-what-landed">What landed</h2>
+    <p><code>reckon/crew/budget_lift.py</code> stamps a lift's end with the group's utilisation at that moment.
+    <code>clear()</code> records it beside <code>cleared_at</code> from the published readings, and a lift that lapses
+    by its stated end (<code>END_AT</code>) or its hard ceiling (<code>END_CEILING</code>) inside its window is stamped
+    once, by the first budget read that resolves the group. The stamp is <code>u_end</code> beside the instant
+    <code>t_end</code>, and <code>re_anchor_origin(group=...)</code> hands the pace path the latest such point.
+    <strong>Nothing is granted</strong> &mdash; no record is created by the re-anchor, and the lift document is
+    written only to carry the stamp on the lift that already exists.</p>
+
+    <p><code>reckon/budget.py</code> gives <code>group_pace</code>'s no-lift branch a <code>re_anchor</code> block in the
+    allowance when a lift on the group ended inside the current window, and <code>pace_hold</code> then compares
+    utilisation against the re-anchored line rather than against the plain burn. The reason names
+    <code>u_end</code>, <code>t_end</code> and the allowance at the read, and <code>releases_at</code> is solved on the
+    re-anchored line rather than on the plain burn.</p>
+
+    <p>Two cases are deliberately outside the re-anchor. A group with no lift ended in the current window
+    keeps today's comparison exactly. A lift that ended because its window reset is not a lift that ended
+    <em>inside</em> its window, so it leaves no re-anchor behind.</p>
+  </section>
+
+  <section data-reckon="record" data-status="done">
+    <h2 id="pace-reanchors-at-lift-end-reason">Why the burn floor does not close the window</h2>
+    <p>At 4% elapsed the elapsed-fraction burn is unmeasurable &mdash; <code>BURN_ELAPSED_FRACTION_FLOOR</code> is
+    <code>0.05</code> &mdash; so the plain path returns an allowance carrying no <code>burn_multiple</code> and
+    <code>pace_hold</code> admits at that floor path. That is the shape the brief records: a group at 75% with 4%
+    of its week gone is held by the burn ratio <em>elsewhere</em> in the week, and admitted where the ratio is
+    unmeasurable. The re-anchor decides on its own line wherever the burn is measurable or not, because a
+    window too young to project a burn can still have spent past what the lift left it. The measurement gate
+    is therefore <code>if not measured and not re_anchored</code>, and a re-anchored verdict reports
+    <code>allowance</code> and <code>burn_multiple</code> as <code>None</code> rather than inventing a burn, while the
+    reason names the line that did decide.</p>
+  </section>
+
+  <section data-reckon="record" data-status="done">
+    <h2 id="pace-reanchors-at-lift-end-measure">Measurement</h2>
+    <p>The fixture is the brief's shape: a seven-day window resetting 2026-10-27T06:32Z, a lift stopped at 4% of
+    the week elapsed with the group at 75% used, and the configured multiple 1.1&times;. A cleared lift is stamped
+    with <code>u_end = 0.75</code> at the end instant, so the allowance at the end is 0.75 and the line rises toward
+    1.0 at the reset. Asserted:</p>
+    <ul>
+      <li>75% (the lift's own end figure) admits, 70% admits, and 76% &mdash; one point above the line &mdash; holds,
+      with the reason naming <code>75%</code> and the end instant;</li>
+      <li>the line stands above <code>u_end</code> at the window's halfway point and the same group admits there;</li>
+      <li>a lapse by a stated end is stamped once: the second budget read leaves the record byte-identical;</li>
+      <li>a window that has reset since the lift ended reverts to the plain comparison (0.60 over half the week
+      is 1.2&times; burn, above 1.1&times;, so it holds) and carries no <code>re_anchor</code> block;</li>
+      <li>a group that never carried a lift is unchanged (21% spent after 22.0 h holds at 1.6&times; burn).</li>
+    </ul>
+    <p>Every test points <code>RECKON_HOME</code> at a temporary directory and asserts the workstation's own
+    <code>~/.config/reckon/budget-lifts.json</code> is byte-identical before and after, because a test that
+    writes the live lift record is a monitor for the machine rather than a test of the code. All figures are
+    derived from the fixture at assertion time.</p>
+  </section>
+
+  <section data-reckon="record" data-status="done">
+    <h2 id="pace-reanchors-at-lift-end-negative-control">Negative control</h2>
+    <p>Removing the re-anchor branch from <code>pace_hold</code> (forcing <code>re_anchored = False</code>) fails the
+    node's own gate: <code>test_a_cleared_lift_re_anchors_the_hold_at_its_end_utilisation</code> fails because the
+    75% read at 4% elapsed then admits through the unmeasured floor path and the 76% read admits with it, so
+    the hold the re-anchor exists to impose is gone. 2 failed, 3 passed, exit 1. Restoring the branch returns
+    the file to green.</p>
+  </section>
+
+  <section data-reckon="record" data-status="done">
+    <h2 id="pace-reanchors-at-lift-end-delta">Delta against base</h2>
+    <p>The lift and budget test files were run at head and at the node's base revision
+    (<code>2f5c6e4d655fb34b33562585497bd7d4d7d4cbde</code>), each file in its own fresh pytest process, over every
+    file matching the lift test globs and every file importing <code>reckon.budget</code> &mdash; 41 files. Five
+    files are red at head, and the same five are red at base with identical failure ids and counts: no
+    head-only id, no base-only id. The causes are unrelated pre-existing breakages &mdash; retired CLI verbs
+    (<code>preflight</code>, <code>budget-lift</code>) and a <code>KeyError: 'codex'</code> in a fixture &mdash; and none of them
+    touches the pace path. Added failures: zero.</p>
+  </section>
+</main>
+</body>
+</html>

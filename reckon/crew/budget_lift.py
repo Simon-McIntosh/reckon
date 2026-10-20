@@ -48,6 +48,16 @@ standing record is cleared as :func:`clear` clears one, ``cleared_by`` naming
 the granting user and ``replaced_by`` naming the new lift, and the new lift's
 ``replaces`` names the record it cleared. The two links are separate fields so
 ``cleared_by`` always holds a name, and a lift on another scope is untouched.
+
+**An end inside the window is stamped with the group's utilisation there.**
+When a lift stops before the window it was anchored to resets — cleared, or
+lapsed at its stated end or its hard ceiling — the group's utilisation at that
+moment is recorded on the record as ``u_end`` beside the instant as ``t_end``.
+A clear stamps it where it clears; a lapse is stamped once by the next budget
+read that resolves the group, since nothing runs at the moment a lift ends.
+Nothing is granted: the record is the whole of it, and :func:`re_anchor_origin`
+hands the pace path the point from which the group's remaining budget is to be
+spread to the reset.
 """
 
 from __future__ import annotations
@@ -123,6 +133,7 @@ __all__ = [
     "lifts_path",
     "list_lifts",
     "published_readings",
+    "re_anchor_origin",
     "under_pace_hold",
 ]
 
@@ -438,6 +449,11 @@ def clear(
         return None
     governing["cleared_by"] = str(cleared_by or environment.get("USER") or "unknown")
     governing["cleared_at"] = _iso(moment)
+    _stamp_end(
+        governing,
+        readings=published_readings(config, group=str(group), now=moment),
+        lapse=moment,
+    )
     _write_document(document, path=path)
     return governing
 
@@ -535,6 +551,15 @@ def effective_budget(
     block = (config or {}).get("budget") or {}
     moment = _aware(now)
     document = read_document(path)
+    if _stamp_lapsed_ends(
+        document,
+        config=config,
+        group=str(group),
+        readings=readings,
+        now=moment,
+        bound=ceilings(config),
+    ):
+        _write_document(document, path=path)
     lift = _governing_lift(
         document["lifts"],
         group=str(group),
@@ -597,6 +622,103 @@ def drain_line(lift: Mapping[str, Any], *, now: datetime) -> float:
     fraction = (moment - t0).total_seconds() / (target - t0).total_seconds()
     fraction = min(max(fraction, 0.0), 1.0)
     return u0 + (1.0 - u0) * fraction
+
+
+def re_anchor_origin(
+    *,
+    group: str,
+    path: str | Path | None = None,
+) -> tuple[float, datetime, str] | None:
+    """Where a group's most recently ended lift left its utilisation.
+
+    A lift that stopped inside its window records the utilisation it stopped at
+    as ``u_end`` and the instant as ``t_end``. The pace path reads the newest
+    such point — the largest ``t_end`` on the group — because the group's
+    remaining budget is spread from the last time a lift let it go. A group
+    whose lifts all ended on a window reset, or that never carried one, has no
+    stamped end and reports ``None``, which is an absence rather than a point at
+    zero. The lift id rides back with the point so a reader can name the record.
+    """
+    best: tuple[float, datetime, str] | None = None
+    for lift in read_document(path)["lifts"]:
+        if lift.get("group") != str(group):
+            continue
+        end = _parse_stamp(lift.get("t_end"))
+        utilisation = lift.get("u_end")
+        if end is None or not _is_number(utilisation):
+            continue
+        if best is None or end > best[1]:
+            best = (float(utilisation), end, str(lift.get("id") or ""))
+    return best
+
+
+def _stamp_end(
+    lift: dict[str, Any],
+    *,
+    readings: Sequence[Mapping[str, Any]] | None,
+    lapse: datetime,
+) -> None:
+    """Record the group's utilisation at ``lapse`` and the instant, once."""
+    lift["u_end"] = _clock_utilisation(_newest_reading(readings), _lift_clock(lift))
+    lift["t_end"] = _iso(lapse)
+
+
+def _stamp_lapsed_ends(
+    document: dict[str, Any],
+    *,
+    config: Mapping[str, Any] | None,
+    group: str,
+    readings: Sequence[Mapping[str, Any]] | None,
+    now: datetime,
+    bound: LiftCeilings,
+) -> bool:
+    """Stamp each lift that lapsed inside its window, once, from its readings.
+
+    A lift that reaches its stated end or its hard ceiling before the window it
+    was anchored to resets has stopped by its own record, and nothing runs at
+    that moment. The first budget read that resolves the group after the lapse
+    records the group's utilisation then as ``u_end`` and the lapse instant as
+    ``t_end``, so the pace path reads one point rather than one per read. A lift
+    a clear already stamped, one already stamped, and one the window's reset
+    ended are all left alone, and a read carrying no reading stamps nothing so
+    the next read that has one can. ``True`` when the document changed.
+    """
+    newest = _newest_reading(readings)
+    if newest is None:
+        return False
+    changed = False
+    for lift in document["lifts"]:
+        if lift.get("group") != str(group):
+            continue
+        if lift.get("t_end") is not None or lift.get("cleared_at"):
+            continue
+        cause = end_cause(lift, readings=readings, now=now, bound=bound)
+        if cause not in (END_AT, END_CEILING):
+            continue
+        lapse = _lapse_moment(lift, cause=cause, bound=bound)
+        if lapse is None:
+            continue
+        reset = _parse_stamp((lift.get("ends") or {}).get("resets_at"))
+        if reset is None:
+            reset = _clock_reset(newest, _lift_clock(lift))
+        if reset is not None and not lapse < _aware(reset):
+            continue
+        _stamp_end(lift, readings=readings, lapse=lapse)
+        changed = True
+    return changed
+
+
+def _lapse_moment(
+    lift: Mapping[str, Any],
+    *,
+    cause: str,
+    bound: LiftCeilings,
+) -> datetime | None:
+    """The instant a lift stopped by its own record, or ``None``."""
+    if cause == END_CEILING:
+        granted = _parse_stamp(lift.get("granted_at"))
+        return granted + timedelta(hours=bound.max_hours) if granted else None
+    return _parse_stamp((lift.get("ends") or {}).get("at"))
 
 
 def _hold_marker(
