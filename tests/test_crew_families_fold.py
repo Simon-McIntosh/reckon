@@ -560,7 +560,9 @@ def test_repair_and_check_tombstones_name_their_successors() -> None:
         assert retired not in crew.commands
 
 
-def test_repair_and_check_successors_preserve_recorded_answers(tmp_path: Path) -> None:
+def test_repair_and_check_successors_preserve_recorded_answers(
+    tmp_path: Path, isolated_reckon_home: Path
+) -> None:
     """The four old verbs' base answers are replayed through their replacements."""
     record_path = tmp_path / "review.json"
     record_path.write_text(
@@ -672,11 +674,12 @@ def test_check_review_resolves_a_run_record(isolated_reckon_home: Path) -> None:
     }
 
 
-def test_repair_and_check_reduce_the_visible_leaf_count() -> None:
+def test_repair_and_check_replace_four_visible_leaves_with_two() -> None:
     leaves = _leaf_commands(crew)
-    assert {("repair",), ("check",)} <= leaves.keys()
-    assert not {(name,) for name in REPAIR_AND_CHECK_NAMES} & leaves.keys()
-    assert len(leaves) <= 42
+    family = {("repair",), ("check",)} | {(name,) for name in REPAIR_AND_CHECK_NAMES}
+    visible_family = family & leaves.keys()
+    assert visible_family == {("repair",), ("check",)}
+    assert len(visible_family) == len(REPAIR_AND_CHECK_NAMES) - 2
 
 
 def test_watch_stop_replaces_one_visible_leaf() -> None:
