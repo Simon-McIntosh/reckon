@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T23:09:22.123Z",
+  "dispatched_at": "2026-10-20T22:53:01Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-worker-cannot-write-your-home.html:1574",
+      "id": "reasoning-1",
+      "reason": "as written the plan sends the node at shape 1 (add the created path to `node_tmp_runtime_paths()`), which patches the symptom one path at a time and leaves codex still told a root the fence seals; the plan's first fix shape and its reproduction should instead be the `fence_writable_roots` disagreement, which is visible in the composed argv with no codex CLI at all rather than only in a live launch.",
+      "text": "\u00a718 says codex's inner sandbox \"creates `/tmp/.git` on a `/tmp` the fence seals read-only\" and points the fix at the carve-out set (`node_tmp_runtime_paths()`), but the composition itself hands codex `/tmp` as a writable root: `reckon/_backends.py:171` puts the ambient `tempfile.gettempdir()` into `delivery_write_roots`, `fence_writable_roots` subtracts only `shared_store_seal_roots()` (`reckon/_worker_fence.py:1300`) and so keeps `/tmp`, and the codex dialect then emits `--add-dir /tmp` for a read-only-tier review; the fence's grant loop skips `/tmp` (it emits `--ro-bind /tmp /tmp` and no `--bind /tmp /tmp`), so codex prepares a root the fence holds read-only \u2014 the defect \u00a716's own done-when forbids (\"every `--add-dir` the argv carries is a path the fence binds writable, or lies outside every sealed path\") and the docstring of `fence_writable_roots` exists to remove. Measured on the delivered tree with `launch_plan` for a fenced codex read-only review whose writable set is the run directory, the run's own scratch and `/tmp`: `--add-dir` = `[..., '/tmp']`, `'/tmp' told writable to codex: True`, `'/tmp' bound writable by fence: False`, `'/tmp' sealed read-only by fence: True`",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-worker-cannot-write-your-home.html:1573",
+      "id": "done_when-1",
+      "reason": "the identification is what decides the plan's own fork (\"if the cause lies in the codex CLI's own sandbox, stop blocked and name it\"), so a node can satisfy every bullet without it and either chase a fence commit that is innocent or silently take the other branch.",
+      "text": "\u00a718's deliverable requires \"find which change introduced it, by reverting each candidate in turn in a scratch tree\", but no done-when bullet measures that identification: bullet 1 shows only that the fault reproduces at the dispatched base and is gone at head, and the fault appearing after the evening's two fence commits is equally consistent with a cause none of the three candidates names \u2014 the handed writable set (the ambient temp root above) or the codex client's own preparation of the roots it is told",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c8d0853d955efe2d4eef96309d8e22fe0df279b1fd157b44b7da6a2fe8337af1",
+  "plan_slug": "a-worker-cannot-write-your-home",
+  "plan_version": 210,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T225205559945-plan-review-of-a-worker-cannot-write-your-home",
+  "reviewed_blob_sha": "feed7c2000420a59a645d795c45ffb9cdff27276",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `node_tmp_runtime_paths()` is at `reckon/_worker_fence.py:1168`, `CODEX_SANDBOX_MARKER_DIRNAME` at `:1165`, the `NODE_TMP_ROOT / CODEX_SANDBOX_MARKER_DIRNAME` entry at `:1203`, and its list holds exactly `runtime_directory()` and that one codex entry; `create_node_tmp_runtime_paths()` is called at `:1450`, before the argv; commits `d5c886763` (pid namespace, which added `tests/test_fence_pid_namespace.py`) and `06b1d3358` resolve with the content \u00a718 describes; the cited test files exist.",
+    "done_when": "a finding \u2014 \u00a718's deliverable requires identifying which change introduced the fault, and its done-when measures only the reproduction, the new test, the pytest delta and ruff, so that requirement can be closed unmeasured.",
+    "evidence_paths": "pass \u2014 every arm (reproduction at base and head, both pytest arms, ruff) writes under the run directory, which is a durable path, and the write paths name `reckon/_worker_fence.py`, `reckon/_backends.py`, the new test and the node's evidence fragment.",
+    "naming": "pass \u2014 the new symbols and the new test file name the mechanism (`node_tmp_runtime_paths`, `create_node_tmp_runtime_paths`, `tests/test_a_read_only_codex_worker_runs_inside_the_fence.py`); no plan label, ticket number or version tag enters code, and the section ids and commit shas stay in the plan's own prose.",
+    "reasoning": "a finding \u2014 \u00a718 locates the seam in the node-tmp carve-out set, but the composed argv already shows codex is *told* `/tmp` is writable while the fence keeps it read-only, which is \u00a716's rule left un-extended to \u00a715's node-tmp seal.",
+    "single_goal": "pass \u2014 one goal (\"a codex worker at the read-only tier runs its shell commands inside the fence\"); the two fix shapes and the stop-blocked fork are alternatives within it, not two deliverables.",
+    "wiring": "pass \u2014 `plan-section-depends-on` now declares `s18 -> s15, s16` (`docs/plans/a-worker-cannot-write-your-home.html:31`), which are the module owner (`reckon/_worker_fence.py`) and the rule \u00a718 must keep (\u00a716's `fence_writable_roots`), and both are already done so no ordering hazard remains."
+  },
+  "section_digests": {
+    "_document": "fab9b215a8b402b313f036d576ff38f7aba7b254016464b2507c477fd8b222a5",
+    "s1": "20aea2196f748a0a26dcd8c4f13a51e89056dc090927dcbf7c88e3384e3a5ab4",
+    "s10": "c5c7fe720643fd4e73b5f1c9fff30c26f8357f46808e3b91eb33b5271d3a19bc",
+    "s11": "f2f305292dacd47d88930479053d919c6bce05b3f863e60a502ce40a2b1c1239",
+    "s12": "bcbf84b314096bf944f58481d98177c11ed6732c763472dc6bc259bc0ad8f54e",
+    "s13": "274d2cd914af10830f75d7ac253c9a1833d25cf9ac0e37e28c0c48ba60b77628",
+    "s14": "fcefb6cd20b26029bf0d8c785373a493532289cca9f2b4b01a93bf7b4ef7c19a",
+    "s15": "2d4c8c79a854bdbb21757053e30b9cf1366a1b627dc8c8ef6e7760cb15af06a2",
+    "s16": "f2c003eb41a15d4a475407c4f28b7405bf87620a7ee1c9732c823c0bd535923c",
+    "s17": "2d2d08c8567a83cca3bdd3a30b5cca94fa8e377c6e1552aed6dfb8e1d15db707",
+    "s18": "975e152a0138249820d67d6c8830ed8c8e7678a83a4709dc245d1bc0d18cce62",
+    "s2": "dfbb662d3da9aa4d3d153e8d2cd5e2c614534034829ebd298f56063c2150b8b6",
+    "s3": "8a798e91551442bdcf324bf0e8f2801e9ced17b35f45f3867f8314e98619dde9",
+    "s4": "b249a7c0cf7296d1b03a7dcdc45216481b546ee13550784bcaabea3f34abe51d",
+    "s5": "b591d224f29bac0f9b5918e6ee3a87b55260f3424887d057e5a8bec79aec03b1",
+    "s6": "a2ea9ae61376b301400c70bae6a0060a2a2abf072b89cbf83a102cea2ab5f3b4",
+    "s7": "b363364b7464f2f7c7af654833037ddd56f6af79fd55aa44a6d3327083f626a5",
+    "s8": "af9d785f0f9f36ee58ec7010366aec4f06efdf850c84cf4ce0619311174d54dd",
+    "s9": "131001034a4d533c7f8c0beb295eb3570f2b7e1fc7853a1a09da023955ff5c4d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T23:13:43.492861+00:00"
+}
