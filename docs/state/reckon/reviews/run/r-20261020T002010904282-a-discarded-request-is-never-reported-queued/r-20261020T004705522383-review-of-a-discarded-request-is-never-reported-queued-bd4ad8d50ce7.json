@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "test_a_discarded_request_is_reported_nowhere (tests/test_a_discarded_request_stays_discarded.py:148) asserts _stream_rows(run_id) == []; it reddens exactly when _report_queued_failure appends a stream row for a run whose discard is recorded, which is the regression the node guards. It is independently sourced (rows written by production code on one side, the empty expectation on the other) and the node's own negative-control.log shows it failing with the discard check removed from _report_queued_failure (FAILED ...::test_a_discarded_request_is_reported_nowhere, EXIT=1, against 4 passed), so the assertion is falsifiable and not a self-comparison.",
+      "lines": "tests/test_a_discarded_request_stays_discarded.py:148"
+    },
+    {
+      "failure_condition": "test_a_kept_request_is_reported_once_as_queued (tests/test_a_discarded_request_stays_discarded.py:168-171) asserts len(rows) == 1, rows[0]['to_state'] == 'queued' and pointer.get('failure_reported_at'); it reddens if the report stops appending (len 0), appends twice (len 2) or the marker is not stamped. It also serves as the positive control for the sibling empty assertion: the same _stream_rows helper sees the one row that is known to be present, so the helper's filter is shown to work before the empty result is reported.",
+      "lines": "tests/test_a_discarded_request_stays_discarded.py:168-171"
+    }
+  ],
+  "call_sites": [
+    "reckon/crew/queue_admission.py:977 _report_queued_failure called inside admit_once",
+    "reckon/crew/queue_admission.py:1061 admit_until_stopped calls admit_once",
+    "reckon/crew_run_commands.py:3383 queue_admission.admit_until_stopped is the production admit entry"
+  ],
+  "completed_at": "2026-10-20T00:56:00.795Z",
+  "dispatched_at": "2026-10-20T00:48:17Z",
+  "findings": [
+    {
+      "file": "tests/test_a_discarded_request_stays_discarded.py",
+      "line": "29",
+      "severity": "follow-on",
+      "text": "follow-on: the added _stream_rows(run_id) duplicates a capability the suite already owns. tests/test_a_held_request_stays_queued.py:74 defines _stream_file_rows(project, run_id) \u2014 \"The rows the project's watch stream carries for one run id\" \u2014 reading runs.watch_stream_path(project), returning [] when the file is absent, and filtering rows by run_id; the new helper does the same over PROJECT. The owning file is in the same gate command and the node's test file already imports from a sibling test module (tests/test_a_queued_run_is_admitted), so _stream_file_rows could have been imported rather than forked. It duplicates rather than extends the owner. The name _stream_rows also collides with the differently-shaped _stream_rows(before, after) in tests/test_a_held_request_stays_queued.py:58. Does not hold the node: the guard it supports is real and green."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "The changed code is reached at runtime through queue_admission.admit_once (reckon/crew/queue_admission.py:977 calls _report_queued_failure), which admit_until_stopped (reckon/crew/queue_admission.py:1061) drives, and which the CLI admits through reckon/crew_run_commands.py:3383; the node's own tests are not counted.",
+    "diff": "Read commit by commit against the base: bd4ad8d50 is the single commit; it adds 6 lines to reckon/crew/queue_admission.py (the `if _discarded_since(pointer): return` short-circuit at line 628), 56 lines to tests/test_a_discarded_request_stays_discarded.py (the _stream_rows helper, the PROJECT import, and two new cases), and a 7-line landing fragment; 69 insertions, 0 deletions, and every path is inside the declared write paths.",
+    "done_when": "The source brief/tests gate (prompt.txt:98) names pytest -rA over the granted file plus seven queued-request files adding no failure against a base arm run at the dispatched base, both arms logged, the negative control failing as declared, and ruff adding no finding on the staged paths. The manifest records both arms with identical single failure ids (tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window at base and head) and the negative-control log (1 failed, 4 passed, EXIT=1); ruff was not recorded in the manifest, but ruff check and ruff format --check over the two staged source paths return clean in this review.",
+    "goal": "The goal (prompt.txt:30) is that the admit service's first-failure report append no stream row for a request whose discard is recorded; reckon/crew/queue_admission.py:628 returns early from _report_queued_failure when _discarded_since(pointer) holds, and line 977 still reports a request nobody discarded.",
+    "manifest": "Read; it records status complete, the single commit bd4ad8d50, the pytest gate command, base-arm and head-arm failure ids, the negative-control log, and evidence_inputs naming the pre-existing window-guard offenders.",
+    "write_paths": "The declared scope is reckon/crew/queue_admission.py, tests/test_a_discarded_request_stays_discarded.py, the landing fragment and a docs/figures directory; `git diff --stat 86650a11 bd4ad8d50` names exactly the first three and no fourth path, and the figure directory is unused."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261020T004705522383-review-of-a-discarded-request-is-never-reported-queued-bd4ad8d50ce7",
+  "reviewed_base_sha": "86650a114f70a099423e871a6f8f8b19af73b106",
+  "reviewed_head_sha": "bd4ad8d50ce72bd97890a8806d0a125e809b342f",
+  "reviewed_run_id": "r-20261020T002010904282-a-discarded-request-is-never-reported-queued",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T00:57:38.207667+00:00",
+  "total": 99
+}
