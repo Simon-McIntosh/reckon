@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 9,
+  "added_failure_ids": [
+    "tests/test_a_crashed_producer_is_restarted.py::test_a_steady_run_resets_the_delay_and_crash_count",
+    "tests/test_a_crashed_producer_is_restarted.py::test_crashed_producer_reoccupies_the_seat[crash]",
+    "tests/test_a_crashed_producer_is_restarted.py::test_crashed_producer_reoccupies_the_seat[kill]",
+    "tests/test_a_crashed_producer_is_restarted.py::test_deliberate_stop_is_not_restarted[lease]",
+    "tests/test_a_crashed_producer_is_restarted.py::test_deliberate_stop_is_not_restarted[producer-term]",
+    "tests/test_a_crashed_producer_is_restarted.py::test_deliberate_stop_is_not_restarted[supervisor-term]",
+    "tests/test_a_crashed_producer_is_restarted.py::test_repeated_crashes_reach_a_reported_limit",
+    "tests/test_closure_fence_agreement.py::test_dispatch_accepts_a_handed_off_pointer",
+    "tests/test_crew_dispatch_arming.py::test_dispatch_refuses_a_session_whose_runs_would_finish_unheard"
+  ],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T053155605869-an-exited-worker-under-a-live-supervisor-reads-halted/logs/population_head.log",
+  "base_log_revision": "2998d0bd5968b57d4a28510e9f67fe815777ff4e",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T063445008608-population-mon69/base.log",
+  "completed_at": "2026-10-20T09:08:17.298Z",
+  "dispatched_at": "2026-10-20T08:46:49Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T053155605869-an-exited-worker-under-a-live-supervisor-reads-halted/logs/negative_control.log",
+      "line": "1",
+      "severity": "blocking",
+      "text": "the log negative_control_log names attests revision 0a5766aa plus the node's previous head change and runs a three-case copy of the test file, so it does not attest the promoted commit; the negative-control run for 77ef0c137390 (1 failed, 3 passed, reddening tests/test_an_exited_worker_under_a_live_supervisor_reads_halted.py:181) was piped through `tail -8` and stored nowhere, so the record cites a red log produced from other code than the code it lands."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T053155605869-an-exited-worker-under-a-live-supervisor-reads-halted/manifest.md",
+      "line": "21",
+      "severity": "blocking",
+      "text": "the artifacts line states the added set is zero and the fixed set is empty, while the baseline_suite and after_suite receipts the same record carries give 9 added and 2 fixed ids (16 failed at head against 9 failed at base, set difference computed from logs/population_head.log and the mon69 base.log), so a reader taking the artifact figure concludes the population arm added nothing."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T053155605869-an-exited-worker-under-a-live-supervisor-reads-halted/logs/base.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "the base arm runs at revision 2998d0bd59, 67 commits ahead of the node's own base 0a5766aa on the merge lineage and containing no node commit, so the nine head-only ids may come from the head tree lacking those 67 commits rather than from this node's change; settling the added set needs the arm at 0a5766aa, which the manifest's checkpoint already names as remaining work."
+    },
+    {
+      "file": "tests/test_an_exited_worker_under_a_live_supervisor_reads_halted.py",
+      "line": "238",
+      "severity": "follow-on",
+      "text": "the new case sets the worker record's pid and the similar exit record's worker_pid to the same live process, so a reading of the worker record's pid in place of the exit record's own worker_pid survives all four cases and the guard does not pin which source it names."
+    }
+  ],
+  "head_log_revision": "77ef0c137390e84306ccdd17ae06dd0a1933e763",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to make a run whose worker exited while the pointer's recorded supervisor pid answers alive classify exited-unfinished; reckon/crew/recovery_liveness.py:1089 folds the exit record into the reading on the alive-and-proven branch and reckon/crew/recovery_liveness.py:1021-1024 requires the record to name a worker pid this host no longer holds, the shape a real exit.json carries (worker_pid 2377158 / 2994064 in this run's own attempt-1-exit.json and exit.json).\nVERDICT done_when: The done_when names the node's own test failing at base and passing at head, a negative control, and no added failure against base over the liveness importers; the recorded head arm logs/population_head.log runs at 77ef0c137390 and I re-ran the named test at that revision (4 passed), but the recorded base arm runs a different lineage (2998d0bd59, not the node's 0a5766aa) and the negative_control_log named is a log of the previous revision.\nVERDICT write_paths: The declared grant is reckon/crew/recovery_liveness.py, tests/test_an_exited_worker_under_a_live_supervisor_reads_halted.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/an-exited-worker-under-a-live-supervisor-reads-halted.html and a figures path; git diff 319d9c1453b2..77ef0c137390 changes exactly the first three (66 insertions, 29 deletions).\nVERDICT manifest: Read; it names commit 77ef0c137390e84306ccdd17ae06dd0a1933e763, the three changed paths, readable baseline_suite and after_suite receipts, nine log paths and a checkpoint admitting nine added ids, while its own artifacts line (manifest.md:21) states the added set is zero and the fixed set is empty.\nVERDICT diff: Read commit by commit against 319d9c1453b2 \u2014 the one gained commit narrows _recorded_end_of_the_current_attempt to the attempt the run records and the worker pid the exit record itself names (recovery_liveness.py:1013-1024), gates its invocation on the alive-and-proven branch (recovery_liveness.py:1089), rewrites the evidence fragment and adds a fourth case to the test file.\nCALL_SITES: reckon/crew/recovery_classification.py:266, reckon/crew/recovery_watch.py:1061, reckon/crew/resumption.py:1012, reckon/sprint_liveness.py:147, reckon/crew/runs.py:1624\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_liveness.py:1024 returns ended only where the record's own worker pid is one this host no longer holds, which is the shape this run's own exit.json (worker_pid 2994064, attempt 2 matching attempt.json) carries, and the fixture at tests/test_an_exited_worker_under_a_live_supervisor_reads_halted.py:170-178 now supplies the attempt record production writes.\nSCORE evidence: 10\nJUSTIFICATION evidence: logs/population_head.log records the head arm at 77ef0c137390 (16 failed, 1855 passed), but its cited base arm logs/base.log for 2998d0bd59 is not the node's base 0a5766aa, so the nine added ids are not attributable to this node's change and the done_when's no-added-failure clause is unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 319d9c1453b2..77ef0c137390 touches only reckon/crew/recovery_liveness.py, tests/test_an_exited_worker_under_a_live_supervisor_reads_halted.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/an-exited-worker-under-a-live-supervisor-reads-halted.html, every one inside the four granted write paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_an_exited_worker_under_a_live_supervisor_reads_halted.py:244-249 asserts literals that redden when the fold is removed (shown at 09:38 local on the reviewed tree, 1 failed / 3 passed), but the on-disk negative-control log attests the previous revision and no case separates the exit record's worker_pid from the worker record's pid.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/recovery_liveness.py:1001 follows the private-helper-with-docstring idiom of its neighbour _exit_record_names_attempt at recovery_liveness.py:505 and no symbol, comment or fragment id carries a plan, sprint or ticket identifier.\nSCORE reuse: 14\nJUSTIFICATION reuse: reckon/crew/recovery_liveness.py:1019 re-writes the attempt comparison that _exit_record_names_attempt at recovery_liveness.py:505 owns and is still live at line 545, so the owner's concept is duplicated inline rather than delegated to.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T053155605869-an-exited-worker-under-a-live-supervisor-reads-halted/logs/negative_control.log:1 blocking: the log negative_control_log names attests revision 0a5766aa plus the node's previous head change and runs a three-case copy of the test file, so it does not attest the promoted commit; the negative-control run for 77ef0c137390 (1 failed, 3 passed, reddening test_an_exited_worker_under_a_live_supervisor_reads_halted.py:181) was piped through `tail -8` and stored nowhere, so the record cites a red log produced from other code than the code it lands.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T053155605869-an-exited-worker-under-a-live-supervisor-reads-halted/manifest.md:21 blocking: the artifacts line states the added set is zero and the fixed set is empty, while the baseline_suite and after_suite receipts the same record carries give 9 added and 2 fixed ids (16 failed at head against 9 failed at base, set difference computed from logs/population_head.log and the mon69 base.log), so a reader taking the artifact figure concludes the population arm added nothing.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T053155605869-an-exited-worker-under-a-live-supervisor-reads-halted/logs/base.log:1 follow-on: the base arm runs at revision 2998d0bd59, which is 67 commits ahead of the node's own base 0a5766aa on the merge lineage and contains no node commit, so the nine head-only ids may come from the head tree lacking those 67 commits rather than from this node's change; the base arm for this node is 0a5766aa and settling the added set needs that arm, which the manifest's checkpoint already names as remaining work.\nFINDING tests/test_an_exited_worker_under_a_live_supervisor_reads_halted.py:238 follow-on: the new case sets the worker record's pid and the exit record's worker_pid to the same live process, so a reading of the worker record's pid in place of the exit record's own worker_pid survives all four cases and the guard does not pin which source it names.\n",
+  "review_run_id": "r-20261020T084530834538-review-of-an-exited-worker-under-a-live-supervisor-reads-halted-77ef0c137390",
+  "reviewed_base_sha": "319d9c1453b22d8913a88d035bfefec8ef275ae8",
+  "reviewed_commits": [
+    "77ef0c137390e84306ccdd17ae06dd0a1933e763"
+  ],
+  "reviewed_head_sha": "77ef0c137390e84306ccdd17ae06dd0a1933e763",
+  "reviewed_run_id": "r-20261020T053155605869-an-exited-worker-under-a-live-supervisor-reads-halted",
+  "scores": {
+    "durability": 16,
+    "evidence": 10,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T09:09:25.039299+00:00",
+  "total": 96
+}
