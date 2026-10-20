@@ -1,0 +1,24 @@
+<section id="the-schedule-is-attached-when-it-is-read" class="r-evidence">
+  <h3 id="the-schedule-is-attached-when-it-is-read-title">Discovery schedules use the read instant</h3>
+  <p>The refresh child now stores inventory without a schedule. The discovery route attaches one when it answers, using that stored inventory and the current crew rows. The same route attaches it after an inline cold miss. Commit <code>dedcde927249b9aa98372629d59415b98a3f1df3</code> carries the change and the tests.</p>
+  <table id="the-schedule-is-attached-when-it-is-read-verification">
+    <thead><tr><th>Check</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Base reproduction</td><td>The stored result still contained a schedule, and a run that became live after the store stayed <code>predicted</code>: two failing tests, EXIT=1.</td></tr>
+      <tr><td>Stored and inline reads at the changed head</td><td>Three tests passed, EXIT=0. The stored payload had no schedule; reads at 06:08 and 06:35 UTC carried their own references, and the second read put the newly live plan <code>alpha</code> in flight.</td></tr>
+      <tr><td>Negative control</td><td>Restoring store-time attachment and passing the stored schedule through the read made the in-flight assertion fail: one failing test, EXIT=1.</td></tr>
+      <tr><td>Scoped discovery, schedule and SPA flow gate</td><td>51 passed, one failed, EXIT=1. The failure was the repository-wide module-size check: <code>reckon/crew/review.py</code> and <code>reckon/ledger.py</code> exceeded 50,000 estimated tokens on both the base and this head. The changed <code>reckon/serve.py</code> measured 45,573.</td></tr>
+      <tr><td>Ruff delta and formatting</td><td><code>route_results.py</code> stayed at zero findings; <code>serve.py</code> stayed at 17 existing findings; the new test had zero. All three changed Python files passed <code>ruff format --check</code>.</td></tr>
+    </tbody>
+  </table>
+  <p>The complete 126-file import and SPA population at this head recorded 1,074 passed, one skipped and 22 failed. The base extraction ran the same 125 shared files and recorded 1,043 passed, one skipped, 43 failed and 14 errors; some base failures require files or repository metadata that the extraction did not carry. Twenty failure IDs overlapped. The two head-only IDs both reached the browser harness's navigation timeout boundary and passed when replayed individually on both the base and this head. The crew response timing case took 1.239 s in an earlier broad run, then passed in 75 ms in the scoped gate; the base arm passed it too. No added failure reproduced in an isolated check. The coordinator's merged-head gate remains the complete integration check.</p>
+  <table id="the-schedule-is-attached-when-it-is-read-cost">
+    <thead><tr><th>Stored inventory</th><th>Rows</th><th>Schedule bars</th><th>Five-read median</th><th>First read</th></tr></thead>
+    <tbody>
+      <tr><td>nova</td><td>1,676</td><td>31</td><td>42.7 ms</td><td>472.0 ms</td></tr>
+      <tr><td>reckon</td><td>962</td><td>64</td><td>26.5 ms</td><td>8,956.6 ms</td></tr>
+      <tr><td>power_convertor</td><td>431</td><td>11</td><td>201.5 ms</td><td>303.2 ms</td></tr>
+    </tbody>
+  </table>
+  <p>The cost was measured on the fleet allocation after removing the old schedule from each saved discovery result. A separate three-read breakdown found schedule derivation at 0.4–2.2 ms; reading live crew rows accounted for the rest. The 8,956.6 ms first read was an outlier: a later first read of reckon crew rows took 945.1 ms and subsequent reads took 22.5–32.5 ms. The full sample and breakdown remain in the run logs.</p>
+</section>
