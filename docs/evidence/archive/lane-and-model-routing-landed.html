@@ -522,6 +522,11 @@ base revision rather than against the head with the change reverted.</p>
     <p>A lane-model candidate whose own model id has fewer recorded outcomes than <code>routing.prior_outcome_threshold</code> (default 5) now carries a prior block: the tallies of runs recorded under the same lane and model key with earlier model ids, naming each id. Runs are matched by the recorded lane and key, never by today's lane default, and at or above the threshold no block is rendered. Commits <code>063b691af</code> and <code>4ba2dd021</code>, merged at <code>dccd5e509</code>. Gate: 129 passed at base and 135 at head, with the same pre-existing window-guard failure. Negative controls: matching by today's lane default fails the recorded-key case, and always rendering the block fails the threshold cases. A replay of 20 live picks kept every route; none carries a prior block today. The review scored scope 20, goal 19, durability 19, reuse 19, evidence 17, fit 16, with no added failures and one follow-on exempted.</p>
   </section>
 
+  <section id="s49">
+    <h2>§49 — A spent codex window is open on purchased credits up to a capped lift</h2>
+    <p>Built by power-convertor-02 and recorded here at its request. Commit <code>6ebe65ba4</code> (<em>admit a spent window on purchased credits up to a capped lift</em>), merged at <code>3dcfc77c0</code>, with <code>tests/test_a_credit_lift_spends_past_a_spent_window.py</code>: ten tests, four of which fail without the credit branch, and 24 failures at both base and head across the 84 importing test files, none added. Lift <code>codex-sub-1792529492-26f087</code> was granted at 20:51Z for 10,000 credits from a balance of 60,559.94.</p>
+  </section>
+
 </main>
 </body>
 </html>
