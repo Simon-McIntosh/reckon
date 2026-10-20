@@ -66,6 +66,13 @@
 <p><strong>Repairs.</strong> The first round added 12 failures in <code>tests/test_crew_budget_lift_cli.py</code>, which still invoked the retired names and sat outside the fence. The fence was widened and the callers repointed. The review at <code>0274b1227</code> then found three evidence-record gaps, plus a dropped <code>crew_pick</code> re-export, a tautological assertion and a frozen leaf count; all six were repaired. The review at <code>84409ad3b</code> scored 108/120 with nothing blocking. Its one follow-on, a leaf-count identity, is exempted because the help-state test pins the exact leaf set.</p>
   </section>
 
+  <section id="s10">
+    <h2>§10 — a review run&#x27;s refusal names the delivery condition that failed</h2>
+    <p>Run <code>r-20261020T015009269364-cso-a-review-refusal-names-its-failed-condition</code>, head <code>b49a1da35</code>. <code>_review_delivery_verdict</code> in <code>reckon/crew/recovery_review_delivery.py</code> reports which delivery condition a review record failed. There are six, including a record that cannot be read. <code>_resolve_promotion_outcome</code> in <code>reckon/crew/promotion_checks.py</code> names that condition with its path and remedy. <code>_review_is_complete</code> becomes the negation of a new <code>_review_missing_measures</code>, so a record with six scored dimensions and no <code>total</code> is refused naming the missing total, not as unreadable. The old <code>_read_complete_review</code> had no reader left and is deleted.</p>
+<p><strong>Gate.</strong> At <code>b49a1da35</code>, 25 passed and 1 failed. The failure is <code>test_every_module_fits_a_worker_window</code>, the same two offenders as the base arm, so zero failures are added. The negative control collapses every reason into one generic message, and all five per-condition cases then fail (<code>~/.config/reckon/crew/runs/r-20261020T015009269364-cso-a-review-refusal-names-its-failed-condition/gate/negative-control.log</code>).</p>
+<p><strong>Review.</strong> At <code>b520f7339</code> the review scored 105/120 and raised five follow-ons. They covered a crash on a truthy, non-list <code>absent</code>, the dead <code>_read_complete_review</code>, a mixed-type <code>path</code>, a missing test for an unreadable record, and a docstring miscount. All were repaired at <code>b49a1da35</code>, with the fence widened to <code>reckon/crew/recovery.py</code> for the re-export. The re-review scored 114/120. Its one follow-on, a test docstring still counting five conditions, is exempted as prose only.</p>
+  </section>
+
 </main>
 </body>
 </html>
