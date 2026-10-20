@@ -1,0 +1,70 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The reviewed run records no baseline_suite or after_suite arms in its manifest (it was not an armed node; no base arm was dispatched), so no failures can be attributed between arms and both the count and the id list are zero. The manifest's gate-figure-text.log (25 passed EXIT=0) and importer-population.log (33 passed EXIT=0) carry no failing test ids; the negative-control-no-rubric.log is an intentional mutation arm and is excluded.",
+  "assertion_analysis": [
+    {
+      "failure_condition": "fails if a later figure review supersedes an earlier text review of the same run: with the rubric dropped from _run_subject the text record reads SUPERSEDED instead of ANSWERED. Demonstrated red by negative-control-no-rubric.log.",
+      "lines": "tests/test_a_figure_review_keeps_the_text_review.py:99-100"
+    },
+    {
+      "failure_condition": "fails if _run_subject stops keying the family on the rubric, if the figure rubric constant changes name, or if a non-figure rubric is grouped with the figure family; the 'figure' literal at :182 is independent of review_module.FIGURE_REVIEW_RUBRIC, so it pins the contract rather than echoing it.",
+      "lines": "tests/test_a_figure_review_keeps_the_text_review.py:183-185"
+    },
+    {
+      "failure_condition": "fails if dispatch order stops deciding within one rubric, or if the family comparison starts grouping different rubrics together; both records are stored through the store's writer with explicit dispatched_at, so the ordering is a fixture fact, not wall clock.",
+      "lines": "tests/test_a_figure_review_keeps_the_text_review.py:122-123 and :147-148"
+    },
+    {
+      "failure_condition": "a text-only run must be unchanged: without a figure record, the later text review supersedes the earlier, and the blocking finding reads OPEN; it fails if the new subject grouping also splits text reviews.",
+      "lines": "tests/test_a_figure_review_keeps_the_text_review.py:173-174"
+    }
+  ],
+  "call_sites": [
+    "reckon/crew/routing.py:2583 and :2589 (is_hot, the hot-set reader)",
+    "reckon/crew/obligations.py:1107 (is_hot, the obligations view)"
+  ],
+  "completed_at": "2026-10-20T16:41:02.270Z",
+  "dispatched_at": "2026-10-20T16:33:28Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review_lifecycle.py",
+      "line": 235,
+      "severity": "follow-on",
+      "text": "_is_figure_review normalises the rubric field itself (str(record.get('rubric') or '').strip().lower()) rather than calling the owner of that read, reckon/crew/review.py:2193 _review_record_rubric (whose sibling _review_rubric_matches at :2200 computes the same figure-or-not predicate); the constant is shared so the value cannot drift, but the normalisation now exists in two places."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read 89d8059c8 (source and tests) and d6ae8d579 (evidence fragment) against base 93d61013e; the source change is confined to _is_figure_review, _run_subject and _later_run_exists in reckon/crew/review_lifecycle.py.",
+    "done_when": "prompt.txt:97 names tests/test_a_figure_review_keeps_the_text_review.py with five named behaviours; the manifest tests line and gate-figure-text.log record 25 passed EXIT=0, and the cases at :75, :103, :126, :151 and :177 cover each named behaviour.",
+    "goal": "prompt.txt:30 asks that run-review supersession compare reviews under the same rubric only so a figure review never supersedes the run's text review; reckon/crew/review_lifecycle.py:239-241 _run_subject adds the rubric family to the subject and :247-262 compares it, which is the goal.",
+    "manifest": "read; manifest.md:1-18 names both commits (89d8059c8, d6ae8d579), the three changed paths, gate-figure-text.log at 25 passed EXIT=0, importer-population.log at 33 passed EXIT=0 and negative-control-no-rubric.log at 2 failed EXIT=1.",
+    "write_paths": "prompt.txt:70-74 declares reckon/crew/review_lifecycle.py, tests/test_a_figure_review_keeps_the_text_review.py, one evidence fragment and one figure directory; git diff --name-only 93d61013e..d6ae8d579 contains only the first, the second and the fragment."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261020T163234258476-review-of-a-figure-review-keeps-the-text-review-d6ae8d5790c9",
+  "review_text": "VERDICT goal: prompt.txt:30 asks that run-review supersession compare reviews under the same rubric only so a figure review never supersedes the run's text review; reckon/crew/review_lifecycle.py:239-241 _run_subject adds the rubric family to the subject and :247-262 compares it, which is the goal.\nVERDICT done_when: prompt.txt:97 names tests/test_a_figure_review_keeps_the_text_review.py with five named behaviours; the manifest tests line and gate-figure-text.log record 25 passed EXIT=0, and the cases at :75, :103, :126, :151 and :177 cover each named behaviour.\nVERDICT write_paths: prompt.txt:70-74 declares reckon/crew/review_lifecycle.py, tests/test_a_figure_review_keeps_the_text_review.py, one evidence fragment and one figure directory; git diff --name-only 93d61013e..d6ae8d579 contains only the first, the second and the fragment.\nVERDICT manifest: read; manifest.md:1-18 names both commits (89d8059c8, d6ae8d579), the three changed paths, gate-figure-text.log at 25 passed EXIT=0, importer-population.log at 33 passed EXIT=0 and negative-control-no-rubric.log at 2 failed EXIT=1.\nVERDICT diff: read 89d8059c8 (source and tests) and d6ae8d579 (evidence fragment) against base 93d61013e; the source change is confined to _is_figure_review, _run_subject and _later_run_exists in reckon/crew/review_lifecycle.py.\nCALL_SITES: reckon/crew/routing.py:2583 and :2589 (is_hot), reckon/crew/obligations.py:1107 (is_hot)\nSCORE goal_fidelity: 20\nSCORE evidence: 19\nSCORE scope_discipline: 20\nSCORE durability: 19\nSCORE fit: 19\nSCORE reuse: 10\nJUSTIFICATION goal_fidelity: reckon/crew/review_lifecycle.py:239-241 makes the subject the reviewed run together with its rubric family and :260 compares it, so a figure review at the text review's head leaves the text review ANSWERED.\nJUSTIFICATION evidence: the manifest records the gate command, both gate logs and the red negative-control log (gate-figure-text.log 25 passed EXIT=0; negative-control-no-rubric.log 2 failed EXIT=1), so the done_when's named behaviours are measured rather than claimed.\nJUSTIFICATION scope_discipline: git diff --name-only 93d61013e..d6ae8d579 lists only reckon/crew/review_lifecycle.py, tests/test_a_figure_review_keeps_the_text_review.py and the landing fragment, all inside prompt.txt:70-74.\nJUSTIFICATION durability: tests/test_a_figure_review_keeps_the_text_review.py:99-100 fails if the rubric leaves the supersede order, and negative-control-no-rubric.log shows exactly that failure at 2 failed EXIT=1.\nJUSTIFICATION fit: reckon/crew/review_lifecycle.py:227 and :239 follow the module's _-prefixed predicate idiom beside _is_run_review:82 and _later_plan_exists:215, and both commits carry a conventional subject with a body.\nJUSTIFICATION reuse: reckon/crew/review_lifecycle.py:235 re-implements the rubric read already owned by reckon/crew/review.py:2193 _review_record_rubric instead of calling it, though the FIGURE_REVIEW_RUBRIC constant itself is reused.\nFINDING reckon/crew/review_lifecycle.py:235 follow-on: _is_figure_review normalises the rubric field itself (str(record.get('rubric') or '').strip().lower()) rather than calling the owner of that read, reckon/crew/review.py:2193 _review_record_rubric (whose sibling _review_rubric_matches at :2200 computes the same figure-or-not predicate); the constant is shared so the value cannot drift, but the normalisation now exists in two places.",
+  "reviewed_base_sha": "93d61013edb7e2d74f26d30e991536aae16d02b8",
+  "reviewed_head_sha": "d6ae8d5790c9d025a4d4a2c1dd8e321cc4ba6857",
+  "reviewed_run_id": "r-20261020T162019236766-a-figure-review-keeps-the-text-review",
+  "score_justifications": {
+    "durability": "tests/test_a_figure_review_keeps_the_text_review.py:99-100 fails if the rubric leaves the supersede order, and negative-control-no-rubric.log shows exactly that failure at 2 failed EXIT=1.",
+    "evidence": "the manifest records the gate command, both gate logs and the red negative-control log (gate-figure-text.log 25 passed EXIT=0; negative-control-no-rubric.log 2 failed EXIT=1), so the done_when's named behaviours are measured rather than claimed.",
+    "fit": "reckon/crew/review_lifecycle.py:227 and :239 follow the module's _-prefixed predicate idiom beside _is_run_review:82 and _later_plan_exists:215, and both commits carry a conventional subject with a body.",
+    "goal_fidelity": "reckon/crew/review_lifecycle.py:239-241 makes the subject the reviewed run together with its rubric family and :260 compares it, so a figure review at the text review's head leaves the text review ANSWERED.",
+    "reuse": "reckon/crew/review_lifecycle.py:235 re-implements the rubric read already owned by reckon/crew/review.py:2193 _review_record_rubric instead of calling it, though the FIGURE_REVIEW_RUBRIC constant itself is reused.",
+    "scope_discipline": "git diff --name-only 93d61013e..d6ae8d579 lists only reckon/crew/review_lifecycle.py, tests/test_a_figure_review_keeps_the_text_review.py and the landing fragment, all inside prompt.txt:70-74."
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 10,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T16:47:05.803960+00:00",
+  "total": 107
+}
