@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="The review reflex dispatches a figure review">
+  <meta name="plan-summary" content="Run review now adds a separate read-only figure rubric when a run adds or changes a supported image under a figures directory. It routes through an image-capable figure profile, attaches an SVG-rendered PNG, stores a rubric-keyed record beside the run and head, and leaves figure records out of text-review selection.">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-10-20">
+  <meta name="plan-verdict" content="passed">
+  <title>The review reflex dispatches a figure review | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The review reflex dispatches a figure review</h1>
+
+    <section id="the-review-reflex-dispatches-a-figure-review-change">
+      <h2>What changed</h2>
+      <p><code>dispatch_review_for_run</code> detects committed additions or
+        changes to supported images below a <code>figures</code> directory and
+        dispatches a second review with the <code>figure</code> rubric. Lane
+        selection requires the image modality. The composed brief includes the
+        visual rubric and says the reviewer writes only its review record;
+        changed SVGs are rendered to PNG attachments.</p>
+      <p><code>review.py</code> parses the figure verdicts and stores them at a
+        path keyed by rubric, run and reviewed head. Text review reads continue
+        to select text records, and <code>select_review_for_head</code> skips a
+        figure-only record. The generated figure review's completion condition
+        names all six rubric items as a measurable deliverable.</p>
+    </section>
+
+    <section id="the-review-reflex-dispatches-a-figure-review-measure">
+      <h2>Measure</h2>
+      <p><code>tests/test_figure_review.py</code>: <strong>6 passed, 0 failed</strong>
+        (<code>EXIT=0</code>). The image-lane case verified the dispatch and a
+        PNG attachment rendered from the SVG; the text-only lane case remained
+        held with an image-modality reason; the source-only case dispatched only
+        text review. The rubric prompt and parser covered every declared visual
+        rule, and text and figure records read back from separate paths.</p>
+      <p>Removing the figure trigger made the positive dispatch test fail with
+        no <code>figure_review</code> report (<code>EXIT=1</code>). Removing the
+        rubric skips made the figure-only record selected as a text review and
+        failed <code>test_text_selection_skips_a_figure_only_record</code>
+        (<code>EXIT=1</code>). <code>ruff check</code> reported all checks passed
+        and <code>ruff format --check</code> reported all four changed Python
+        files formatted (<code>EXIT=0</code> for both).</p>
+    </section>
+  </main>
+</body>
+</html>

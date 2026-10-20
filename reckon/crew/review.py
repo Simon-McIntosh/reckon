@@ -270,6 +270,19 @@ CLAIM_VERDICTS: tuple[str, ...] = ("reproduced", "differs", "not-runnable")
 CLAIM_SUMMARY_VERDICTS: tuple[str, ...] = ("agrees", "differs", "not-runnable")
 CLAIMS_REQUIRED = 3
 
+# A figure review judges the rendered artifact as well as its source paths. Its
+# findings are qualitative, so it records rubric verdicts rather than the
+# landed-node score dimensions.
+FIGURE_REVIEW_RUBRIC = "figure"
+FIGURE_REVIEW_ITEMS: tuple[str, ...] = (
+    "legibility",
+    "data_ink",
+    "decoration",
+    "contrast",
+    "table_form",
+    "label_collision",
+)
+
 # ── The revision pair a review read ─────────────────────────────────────────
 # The store already carries these five spellings. Base spellings describe the
 # tree before the reviewed work; head spellings describe the landed work. A
@@ -314,6 +327,10 @@ _CLAIMS_PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "claims_revi
 # change rather than a code change.
 _HEALTH_REVIEW_PROMPT_PATH = (
     Path(__file__).resolve().parent / "prompts" / "health_review.md"
+)
+
+_FIGURE_REVIEW_PROMPT_PATH = (
+    Path(__file__).resolve().parent / "prompts" / "figure_review.md"
 )
 
 
@@ -483,6 +500,11 @@ def load_health_review_prompt() -> str:
     return _HEALTH_REVIEW_PROMPT_PATH.read_text(encoding="utf-8")
 
 
+def load_figure_review_prompt() -> str:
+    """Read the figure-review rubric prompt from disk at call time."""
+    return _FIGURE_REVIEW_PROMPT_PATH.read_text(encoding="utf-8")
+
+
 # ── The parser ──────────────────────────────────────────────────────────────
 # The emitted form the prompt asks for is one line per element:
 #     VERDICT <item>: <one sentence saying what was read and what was found>
@@ -518,6 +540,9 @@ _CLAIM_RE = re.compile(
 )
 _CLAIM_SUMMARY_RE = re.compile(
     r"^CLAIM_SUMMARY\s*:\s*([A-Za-z][A-Za-z-]*)\s*:\s*(.+)$", re.IGNORECASE
+)
+_FIGURE_RUBRIC_LINE_RE = re.compile(
+    r"^RUBRIC\s+([A-Za-z][A-Za-z_-]*)\s*:\s*(.+)$", re.IGNORECASE
 )
 _FIND_RE = re.compile(r"^FINDING\s+(\S+)\s*(.*)$", re.IGNORECASE)
 _REVISION_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$")
@@ -914,6 +939,46 @@ def parse_review(
     if source_record is not None and (not base_sha or not head_sha):
         record["status"] = "incomplete"
     return record
+
+
+def parse_figure_review(text: str) -> dict[str, Any]:
+    """Parse the figure rubric's visual verdicts and anchored findings."""
+    rubric_items: dict[str, str] = {}
+    findings: list[dict[str, str]] = []
+    for line in _review_text_lines(text):
+        match = _FIGURE_RUBRIC_LINE_RE.match(line)
+        if match:
+            item, verdict = match.group(1).lower(), match.group(2).strip()
+            if item in FIGURE_REVIEW_ITEMS and verdict:
+                rubric_items[item] = verdict
+            continue
+        match = _FIND_RE.match(line)
+        if match:
+            reference, detail = match.group(1), match.group(2).strip()
+            if ":" not in reference:
+                continue
+            file_path, _, line_number = reference.rpartition(":")
+            finding = {
+                "file": file_path,
+                "line": line_number,
+                "text": detail,
+            }
+            severity = _stated_severity(detail)
+            if severity is not None:
+                finding["severity"] = severity
+            findings.append(finding)
+    absent = [item for item in FIGURE_REVIEW_ITEMS if item not in rubric_items]
+    status = (
+        "unparsed" if not rubric_items else "parsed" if not absent else "incomplete"
+    )
+    return {
+        "rubric": FIGURE_REVIEW_RUBRIC,
+        "status": status,
+        "rubric_items": rubric_items,
+        "absent_items": absent,
+        "findings": findings,
+        "raw_text": text,
+    }
 
 
 # ── The plan-report grammar ─────────────────────────────────────────────────
@@ -2079,6 +2144,7 @@ def review_path(
     base_dir: str | Path | None = None,
     *,
     reviewed_head_sha: str | None = None,
+    rubric: str | None = None,
     committed_root: str | Path | None = None,
     review_run_id: str | None = None,
 ) -> Path:
@@ -2102,32 +2168,61 @@ def review_path(
             raise ValueError(
                 "a committed review path needs the review run id that names it"
             )
+        is_figure = rubric == FIGURE_REVIEW_RUBRIC
+        rubric_prefix = f"{FIGURE_REVIEW_RUBRIC}." if is_figure else ""
+        suffix = (
+            _blob_suffix(reviewed_head_sha)
+            if is_figure and reviewed_head_sha is not None
+            else ""
+        )
         return (
             Path(committed_root)
             / COMMITTED_RUN_DIRNAME
             / reviewed_run_id
-            / f"{name}.json"
+            / f"{rubric_prefix}{name}{suffix}.json"
         )
     suffix = "" if reviewed_head_sha is None else _blob_suffix(reviewed_head_sha)
-    return review_store_root(base_dir) / project / f"{reviewed_run_id}{suffix}.json"
+    rubric_suffix = f".{FIGURE_REVIEW_RUBRIC}" if rubric == FIGURE_REVIEW_RUBRIC else ""
+    return (
+        review_store_root(base_dir)
+        / project
+        / f"{reviewed_run_id}{rubric_suffix}{suffix}.json"
+    )
+
+
+def _review_record_rubric(record: Mapping[str, Any]) -> str:
+    """The rubric name a review record carries, or the legacy empty name."""
+    return str(record.get("rubric") or "").strip().lower()
+
+
+def _review_rubric_matches(record: Any, rubric: str | None) -> bool:
+    """Keep figure records out of the default text-review selection."""
+    if not isinstance(record, Mapping):
+        return False
+    is_figure = _review_record_rubric(record) == FIGURE_REVIEW_RUBRIC
+    return is_figure if rubric == FIGURE_REVIEW_RUBRIC else not is_figure
 
 
 def _complete_review_exists(
     project: str,
     reviewed_run_id: str,
     base_dir: str | Path | None,
+    *,
+    rubric: str | None = None,
 ) -> bool:
     """Return whether any stored record for the run carries a usable pair."""
     directory = review_store_root(base_dir) / project
-    candidates = [review_path(project, reviewed_run_id, base_dir)]
+    candidates = [review_path(project, reviewed_run_id, base_dir, rubric=rubric)]
     if directory.is_dir():
-        candidates.extend(directory.glob(f"{reviewed_run_id}.at-*.json"))
+        candidates.extend(directory.glob(f"{reviewed_run_id}*.at-*.json"))
     for path in candidates:
         if not path.is_file():
             continue
         try:
             stored = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
+            continue
+        if not _review_rubric_matches(stored, rubric):
             continue
         _, base_sha, _, head_sha = carried_revision_pair(stored)
         if base_sha and head_sha:
@@ -2163,10 +2258,12 @@ def _incomplete_review_path(
     """Return a durable path excluded from current-review selection."""
     identity = re.sub(r"[^A-Za-z0-9._-]+", "-", _partial_identity(record))
     identity = identity.strip("-.") or "unknown"
+    rubric = _review_record_rubric(record)
+    rubric_suffix = f".{rubric}" if rubric == FIGURE_REVIEW_RUBRIC else ""
     return (
         review_store_root(base_dir)
         / project
-        / f"{reviewed_run_id}.incomplete-{identity}.json"
+        / (f"{reviewed_run_id}{rubric_suffix}.incomplete-{identity}.json")
     )
 
 
@@ -2194,9 +2291,10 @@ def _partial_review_path(
     path, while a second partial carrying different revision evidence must not
     overwrite it and moves to the identity-keyed path beside it.
     """
-    if _complete_review_exists(project, reviewed_run_id, base_dir):
+    rubric = _review_record_rubric(record)
+    if _complete_review_exists(project, reviewed_run_id, base_dir, rubric=rubric):
         return _incomplete_review_path(project, reviewed_run_id, record, base_dir)
-    legacy = review_path(project, reviewed_run_id, base_dir)
+    legacy = review_path(project, reviewed_run_id, base_dir, rubric=rubric)
     if not legacy.is_file():
         return legacy
     if _stored_partial_identity(legacy) == _partial_identity(record):
@@ -2427,7 +2525,7 @@ def annotate_review_of_run(
     ``added_failure_count`` and an ``added_failures_note`` onto a record whose
     rubric never measured one, which reads as a suite delta the run never had.
     """
-    if record.get("rubric") == CLAIMS_RUBRIC:
+    if record.get("rubric") in (CLAIMS_RUBRIC, FIGURE_REVIEW_RUBRIC):
         return record
     run_directory = _run_directory(reviewed_run_id)
     if run_directory is None:
@@ -2535,6 +2633,7 @@ def store_review(
             reviewed_run_id,
             base_dir,
             reviewed_head_sha=head_sha,
+            rubric=_review_record_rubric(record),
         )
     else:
         path = _partial_review_path(project, reviewed_run_id, record, base_dir)
@@ -2571,6 +2670,7 @@ def run_review_record_paths(
     reviewed_run_id: str,
     *,
     reviewed_head_sha: str = "",
+    rubric: str | None = None,
 ) -> list[str]:
     """The record paths a run review declares, in the order it declares them.
 
@@ -2579,9 +2679,12 @@ def run_review_record_paths(
     the name every store reader parses a subject from wherever it lands.
     """
     directory = run_review_record_directory(run_directory)
-    names = [f"{reviewed_run_id}.json"]
+    rubric_suffix = f".{FIGURE_REVIEW_RUBRIC}" if rubric == FIGURE_REVIEW_RUBRIC else ""
+    names = [f"{reviewed_run_id}{rubric_suffix}.json"]
     if reviewed_head_sha:
-        names.append(f"{reviewed_run_id}{_blob_suffix(reviewed_head_sha)}.json")
+        names.append(
+            f"{reviewed_run_id}{rubric_suffix}{_blob_suffix(reviewed_head_sha)}.json"
+        )
     return [str(directory / name) for name in names]
 
 
@@ -3014,6 +3117,7 @@ def _staging_copies_of_record(
         if (
             isinstance(stored, Mapping)
             and str(stored.get("review_run_id") or "").strip() == review_run_id
+            and _review_record_rubric(stored) == _review_record_rubric(record)
         ):
             copies.append(stored)
     return copies
@@ -3179,6 +3283,8 @@ def store_committed_review(
             reviewed_run_id,
             committed_root=committed_root,
             review_run_id=review_run_id,
+            reviewed_head_sha=str(record.get(REVIEWED_HEAD_KEY) or "") or None,
+            rubric=_review_record_rubric(record),
         )
     else:
         from reckon.crew.plan_review import plan_review_path
@@ -3335,6 +3441,7 @@ def _select_stored_record(
     paths: Iterable[Path],
     reviewed_head_sha: str | None,
     *,
+    rubric: str | None = None,
     skipped: list[dict[str, str]] | None = None,
 ) -> tuple[Path | None, dict[str, Any] | None]:
     """Select one record from candidate files by the store's shared rule.
@@ -3357,6 +3464,8 @@ def _select_stored_record(
             mtime_ns = path.stat().st_mtime_ns
         except (OSError, ValueError) as error:
             _note_skipped_record(path, error, into=skipped)
+            continue
+        if not _review_rubric_matches(record, rubric):
             continue
         records.append((path, record, mtime_ns))
     if not records:
@@ -3418,6 +3527,8 @@ def _record_with_merged_answers(
             review_path(
                 project,
                 reviewed_run_id,
+                reviewed_head_sha=carried_revision_pair(record)[3],
+                rubric=_review_record_rubric(record),
                 committed_root=committed,
                 review_run_id=review_run_id,
             )
@@ -3436,6 +3547,7 @@ def stored_record(
     *,
     base_dir: str | Path | None = None,
     reviewed_head_sha: str | None = None,
+    rubric: str | None = None,
     skipped: list[dict[str, str]] | None = None,
 ) -> tuple[Path | None, dict[str, Any] | None]:
     """Return the file a stored record was read from and the record it holds.
@@ -3505,7 +3617,10 @@ def stored_record(
         )
         if committed_paths:
             committed_selected = _select_stored_record(
-                committed_paths, reviewed_head_sha, skipped=skipped
+                committed_paths,
+                reviewed_head_sha,
+                rubric=rubric,
+                skipped=skipped,
             )
             # A committed record answers unless the committed tree holds records
             # for this run and none at the named head: a review of another head
@@ -3522,16 +3637,19 @@ def stored_record(
                     skipped=skipped,
                 )
     directory = review_store_root(base_dir) / project
-    candidates = [review_path(project, reviewed_run_id, base_dir)]
+    candidates = [review_path(project, reviewed_run_id, base_dir, rubric=rubric)]
     if directory.is_dir():
-        candidates.extend(directory.glob(f"{reviewed_run_id}.at-*.json"))
+        candidates.extend(directory.glob(f"{reviewed_run_id}*.at-*.json"))
     existing = {path.resolve(): path for path in candidates if path.is_file()}
     if existing:
         return _record_with_merged_answers(
             project,
             reviewed_run_id,
             _select_stored_record(
-                list(existing.values()), reviewed_head_sha, skipped=skipped
+                list(existing.values()),
+                reviewed_head_sha,
+                rubric=rubric,
+                skipped=skipped,
             ),
             committed=committed,
             base_dir=base_dir,
@@ -3557,7 +3675,11 @@ def stored_record(
         project,
         reviewed_run_id,
         _record_filed_elsewhere(
-            directory, reviewed_run_id, reviewed_head_sha, skipped=skipped
+            directory,
+            reviewed_run_id,
+            reviewed_head_sha,
+            rubric=rubric,
+            skipped=skipped,
         ),
         committed=committed,
         base_dir=base_dir,
@@ -3624,6 +3746,7 @@ def _record_filed_elsewhere(
     reviewed_run_id: str,
     reviewed_head_sha: str | None,
     *,
+    rubric: str | None = None,
     skipped: list[dict[str, str]] | None = None,
 ) -> tuple[Path | None, dict[str, Any] | None]:
     """Return the run's review sitting at another record's path, flagged.
@@ -3665,6 +3788,8 @@ def _record_filed_elsewhere(
         # selected on: one rewritten since the index was built must not answer a
         # request its content no longer matches.
         if str(record.get("reviewed_run_id") or "") != reviewed_run_id:
+            continue
+        if not _review_rubric_matches(record, rubric):
             continue
         if named is not None:
             _, _, carried_head, stored_head = carried_revision_pair(record)
@@ -3863,6 +3988,7 @@ def read_review(
     *,
     base_dir: str | Path | None = None,
     reviewed_head_sha: str | None = None,
+    rubric: str | None = None,
 ) -> dict[str, Any] | None:
     """Return a stored review, optionally selecting the head it reviewed.
 
@@ -3887,6 +4013,7 @@ def read_review(
         reviewed_run_id,
         base_dir=base_dir,
         reviewed_head_sha=reviewed_head_sha,
+        rubric=rubric,
     )
     if record is None:
         return None

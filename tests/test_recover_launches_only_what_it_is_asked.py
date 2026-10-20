@@ -143,10 +143,10 @@ def test_sweep_review_lane_uses_local_unless_node_declares_one(
         recovery_watch, "classify_pointer", lambda _: {"classification": "scoring"}
     ))
     (monkeypatch.setattr(recovery_review_dispatch, "_stored_review", lambda _: (None, "")), monkeypatch.setattr(recovery_repair_dispatch, "_stored_review", lambda _: (None, "")), monkeypatch.setattr(recovery_classification, "_stored_review", lambda _: (None, "")))
-    monkeypatch.setattr(recovery_review_dispatch, "_review_in_flight", lambda _: "")
+    monkeypatch.setattr(recovery_review_dispatch, "_review_in_flight", lambda _record, **_kwargs: "")
     monkeypatch.setattr(recovery_review_dispatch, "carry_review_forward", lambda *_a, **_k: None)
     (monkeypatch.setattr(recovery_review_subject, "_worktree_reclaimed", lambda _: False), monkeypatch.setattr(recovery_review_dispatch, "_worktree_reclaimed", lambda _: False))
-    (monkeypatch.setattr(recovery_review_subject, "_failed_review_backend", lambda _: ""), monkeypatch.setattr(recovery_review_dispatch, "_failed_review_backend", lambda _: ""))
+    (monkeypatch.setattr(recovery_review_subject, "_failed_review_backend", lambda _record, **_kwargs: ""), monkeypatch.setattr(recovery_review_dispatch, "_failed_review_backend", lambda _record, **_kwargs: ""))
     (monkeypatch.setattr(recovery_review_dispatch, "_record_review_dispatch", lambda *_a, **_k: None), monkeypatch.setattr(recovery_review_acceptance, "_record_review_dispatch", lambda *_a, **_k: None))
     (monkeypatch.setattr(recovery_review_subject, "_resolved_review_config", lambda *_a: config), monkeypatch.setattr(recovery_review_dispatch, "_resolved_review_config", lambda *_a: config), monkeypatch.setattr(recovery_repair_dispatch, "_resolved_review_config", lambda *_a: config), monkeypatch.setattr(recovery_watch, "_resolved_review_config", lambda *_a: config))
     (monkeypatch.setattr(
