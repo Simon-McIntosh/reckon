@@ -23,7 +23,7 @@
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="45">
+<meta name="plan-version" content="46">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -748,7 +748,10 @@
     <div class="r-comment-body"><p>Added from a load reading on clu-2002 at 02:07 on 20 October, after §10 and §11 had landed. The load average was 62, and this time the cause was CPU, not storage: 60% user and 16% idle. The imas-codex producer was at 90% of a CPU, nearly all of it rereading every process's environment several times a second. A second finding comes from the same capture: about one <code>git rev-parse --verify &lt;sha&gt;^{commit}</code> a second, rechecking that the same commit ids exist. It is recorded here as a follow-on rather than folded into this section. The section prose is a hand edit, because no op replaces section prose.</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261020T005537125027-review-of-a-process-table-is-read-once-per-beat-d1a16cd12b26" data-who="reckon-build" data-when="2026-10-20T01:08:02.789Z">
-    <div class="r-comment-body"><p>reviewed run r-20261020T002527311407-a-process-table-is-read-once-per-beat at base fe1cca8a / head d1a16cd12: the environment index lands the goal cleanly and the identity-keyed reuse is shown red by the declared mutation, so the review is parsed at goal_fidelity 19, evidence 17, scope_discipline 15, durability 19, fit 18, reuse 20, with 0 added failures and three follow-on findings (a same-binary re-exec keeps a stale key, three formatter-only hunks in recovery_liveness.py, and placeholder commands in the run&#x27;s paired-suite fields).</p></div>
+    <div class="r-comment-body"><p>reviewed run r-20261020T002527311407-a-process-table-is-read-once-per-beat at base fe1cca8a / head d1a16cd12: the environment index lands the goal cleanly and the identity-keyed reuse is shown red by the declared mutation, so the review is parsed at goal_fidelity 19, evidence 17, scope_discipline 15, durability 19, fit 18, reuse 20, with 0 added failures and three follow-on findings (a same-binary re-exec keeps a stale key, three formatter-only hunks in recovery_liveness.py, and placeholder commands in the run's paired-suite fields).</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261020T013134260025-review-of-a-process-table-is-read-once-per-beat-e36a760d6e79" data-who="reckon-build" data-when="2026-10-20T01:47:52.728Z">
+    <div class="r-comment-body"><p>reviewed the commits r-20261020T002527311407-a-process-table-is-read-once-per-beat gained after d1a16cd12b26 — the exec-detecting identity (715012986), the formatting restore (588f9a18a) and the evidence update (e36a760d6): goal_fidelity 19, evidence 18, scope_discipline 19, durability 18, fit 15, reuse 17; three follow-on findings and no blocking one.</p></div>
 </div>
 </section>
 </main>

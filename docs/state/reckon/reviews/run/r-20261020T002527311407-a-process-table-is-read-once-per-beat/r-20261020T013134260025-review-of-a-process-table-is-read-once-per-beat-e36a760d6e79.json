@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/process_signal.py:300 _indexed_environment (from _processes_owning_run:256)",
+    "reckon/crew/process_signal.py:430 _processes_owning_run (from _run_process_pids:394, the stop path)",
+    "reckon/crew/dispatch_sessions.py:2156 _run_process_pids (the stop settle loop)",
+    "reckon/crew/recovery_liveness.py:1116-1119 _env_scan_run_pid (the liveness read)"
+  ],
+  "completed_at": "2026-10-20T01:47:52.728Z",
+  "dispatched_at": "2026-10-20T01:33:19Z",
+  "findings": [
+    {
+      "file": "reckon/crew/process_signal.py",
+      "line": 197,
+      "text": "follow-on: the per-exec field the identity rests on is the kernel's stack base, which only moves on an exec while address randomisation is in force; a host running under setarch -R or an ADDR_NO_RANDOMIZE personality lays the stack at the same address on every exec, so the identity holds and a same-binary re-exec is answered from its pre-exec reading with the new run mark unseen. The manifest names the kernel that does not report the field (None) but not this one, where the field is present and does not move; the case at tests/test_a_process_table_is_read_once_per_beat.py:296 depends on the same host property and would redden on such a host without any code regression."
+    },
+    {
+      "file": "tests/test_a_process_table_is_read_once_per_beat.py",
+      "line": 306,
+      "text": "follow-on: the new case's docstring says 'the address of the program's text is relocated by the kernel on every exec, and it is what moves here', which is the mechanism the implementation does not use and the evidence page explicitly rejects (docs/evidence/fragments/the-fleet-node-stays-in-service/a-process-table-is-read-once-per-beat.html, the parenthetical on the text segment); a reader is told the identity keys on something the code never reads."
+    },
+    {
+      "file": "reckon/crew/process_signal.py",
+      "line": 216,
+      "text": "follow-on: _indexed_environment still documents the reuse condition as 'the same start tick and executable', the identity that held before this repair; the index's own comment at :159-168 was brought up to the three-field key and this docstring was not, so the module states two different keys for one index."
+    }
+  ],
+  "justification": {
+    "durability": "tests/test_a_process_table_is_read_once_per_beat.py:296 is the case added for this repair: it holds a child read before its exec, execs the same interpreter path with the run mark, and asserts the start tick and the path are unchanged while the identity moves at :345-350, so reinstating a two-field identity reddens it, which negative-control-f18ecdd0deb.log demonstrates at EXIT=1 (reddening the end-to-end assertion at :338, the stronger form).",
+    "evidence": "VERDICT done_when: the done-when (prompt.txt FENCE EVIDENCE) names six behaviours, paired baseline/after suite logs and a 10 s strace arm; measure-environ-opens.log records the re-taken arm after@588f9a18a as 383 environ opens over 383 distinct pids across 108 scans, which is the plan's 'no more than one per process' now measured as opens==distinct pids rather than inferred, after-suite.log records 164 passed 1 skipped EXIT=0 against baseline-suite.log 155 passed 1 skipped EXIT=0 at fe1cca8a4, and I re-ran the two exec cases at head myself (2 passed, 2.46 s).",
+    "fit": "the added helpers stay private, mechanism-named and documented by what they observe (reckon/crew/process_signal.py:186-198), with no plan, phase or version label anywhere in the delta, but two comments now describe the superseded identity: :216 still reads 'the same start tick and executable' and the new case's docstring at tests/test_a_process_table_is_read_once_per_beat.py:306 credits the text-segment address, which the evidence page itself rules out.",
+    "goal_fidelity": "VERDICT goals: the node goal (prompt.txt:30) is one environment index per beat keyed on the pid, start tick and executable identity; reckon/crew/process_signal.py:196-198 now makes that identity pid-start-tick + /proc/<pid>/exe + the kernel's per-exec stack base, so the plan's own rationale (an exec keeps the pid and the start tick but replaces the environment, docs/plans/the-fleet-node-stays-in-service.html s12) is met rather than approximated, and the walk at :256-310 still reuses until that identity moves.",
+    "reuse": "no pre-existing identity-for-invalidation mechanism exists (a search over reckon/ for a stack-base or exec-detection key found none) and the per-stat-field reader it builds on is the repository's own reckon/crew/process_liveness.py:320 _process_stat_fields, imported and extended rather than forked; the two inline field indices at reckon/crew/process_signal.py:196-197 do restate the field arithmetic that process_liveness.py:348 _process_start_time already owns, kept inline because one stat read must serve both fields.",
+    "scope_discipline": "VERDICT write_paths: the source node's declared scope is the four paths at prompt.txt:70-74; git diff --stat d1a16cd12..e36a760d6 touches exactly those four and nothing else, and the formatting restore 588f9a18a leaves reckon/crew/recovery_liveness.py differing from the base revision by the walk's docstring paragraph alone (5 changed lines across git diff fe1cca8a4..e36a760d6)."
+  },
+  "node": "review-of-a-process-table-is-read-once-per-beat-e36a760d6e79",
+  "node:reviewed": "a-process-table-is-read-once-per-beat",
+  "project": "reckon",
+  "review_run_id": "r-20261020T013134260025-review-of-a-process-table-is-read-once-per-beat-e36a760d6e79",
+  "reviewed_base_sha": "d1a16cd12b261d423bbdc9d78ba10283e1bfedfa",
+  "reviewed_head_sha": "e36a760d6e791bfe66c5c3ee86302d64c33f3ee8",
+  "reviewed_run_id": "r-20261020T002527311407-a-process-table-is-read-once-per-beat",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 15,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T01:49:26.028992+00:00",
+  "total": 106
+}
