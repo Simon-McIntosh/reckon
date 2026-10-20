@@ -167,12 +167,14 @@ def test_a_worker_that_exited_under_a_live_supervisor_reads_halted(
     recorded, and the run sat in the working column for ninety minutes.
     """
     run_id = "r-exited-under-live-supervisor"
+    worker_pid = _reaped_pid()
     pointer = _run(
         tmp_path,
         run_id,
         supervisor_pid=os.getpid(),
-        worker_pid=_reaped_pid(),
-        exit_record=_exit_record(run_id, attempt=1, worker_pid=_reaped_pid()),
+        worker_pid=worker_pid,
+        exit_record=_exit_record(run_id, attempt=1, worker_pid=worker_pid),
+        attempt_record=1,
     )
 
     row = recovery.classify_pointer(pointer)
@@ -216,6 +218,35 @@ def test_a_worker_that_still_runs_keeps_its_working_reading(tmp_path: Path) -> N
     assert snapshot["state"] == "working"
     counts = recovery._fleet_counts({run_id: snapshot})
     assert counts.get("working") == 1
+
+
+def test_a_record_naming_a_worker_that_still_runs_does_not_end_the_attempt(
+    tmp_path: Path,
+) -> None:
+    """The record answers for the worker it names, and that worker is here.
+
+    A supervisor that left an exit record beside a worker which went on running
+    — the launcher that ended while the worker it adopted kept going — is the
+    shape a recorded end cannot decide. The record names a live process, so the
+    live reading stands and the run is working.
+    """
+    run_id = "r-record-names-a-live-worker"
+    pointer = _run(
+        tmp_path,
+        run_id,
+        supervisor_pid=os.getpid(),
+        worker_pid=os.getpid(),
+        exit_record=_exit_record(run_id, attempt=1, worker_pid=os.getpid()),
+        attempt_record=1,
+    )
+
+    row = recovery.classify_pointer(pointer)
+    assert row["process_alive"] is True
+    assert row["exit_record"] is None
+    assert row["classification"] == "running", row["detail"]
+
+    snapshot = recovery._watch_snapshot(pointer, moment=time.time(), stall_seconds=900)
+    assert snapshot["state"] == "working"
 
 
 def test_a_predecessor_attempts_exit_does_not_end_the_attempt_now_running(
