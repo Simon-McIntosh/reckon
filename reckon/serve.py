@@ -167,6 +167,8 @@ from reckon.resources import (
     resource_scan_scope,
 )
 from reckon.service import ServiceError, node_executable
+from reckon.shell_assets import IMMUTABLE_CACHE as _IMMUTABLE_CACHE
+from reckon.shell_assets import revision_matches as _revision_matches
 
 HOME = Path.home()
 LOGGER = logging.getLogger(__name__)
@@ -1990,19 +1992,6 @@ def safe_join(root: Path, rel: str) -> Path | None:
     if root not in target.parents and target != root:
         return None
     return target
-
-
-# A response whose URL carried the file's current revision cannot change while
-# that revision holds, so the browser may keep it for a year without asking
-# again. A year is the ceiling most caches accept; ``immutable`` tells them the
-# revalidation a normal ``max-age`` still permits never applies here.
-_IMMUTABLE_CACHE = "max-age=31536000, immutable"
-
-
-def _revision_matches(requested: str | None, identity: str) -> bool:
-    """Whether a URL's revision addresses the file's current bytes."""
-
-    return requested is not None and requested == identity
 
 
 def _thumbnail_cache_path(source: Path, identity: str) -> Path:

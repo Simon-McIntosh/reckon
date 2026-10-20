@@ -66,6 +66,12 @@ def test_shell_assets_are_revisioned_and_revalidated(tmp_path: Path, monkeypatch
         '<script src="/_ui/shell.js"></script></body></html>'
     )
     template_render = serve._render_spa_html("sample", index_path=index)
+    template_scripts, template_styles = _links(template_render)
+    assert len(template_scripts) == 2 and len(template_styles) == 2
+    assert {
+        urlsplit(url).path.split("/")[1] for url in template_scripts + template_styles
+    } == {"_shared", "_ui", "_runtime"}
+    assert all(not urlsplit(url).query for url in template_scripts + template_styles)
     monkeypatch.setattr(serve, "_spa_index_path", lambda: index)
     monkeypatch.setattr(serve, "_ui_root", lambda: ui)
     monkeypatch.setattr(serve, "_SHARED_ROOT", shared)
@@ -85,7 +91,9 @@ def test_shell_assets_are_revisioned_and_revalidated(tmp_path: Path, monkeypatch
         scripts, styles = _links(html)
         assert len(scripts) == 2 and len(styles) == 2
         assert all(parse_qs(urlsplit(url).query).get("rev") for url in scripts + styles)
-        assert serve._render_spa_html("sample", index_path=index) == template_render
+        assert {urlsplit(url).path for url in scripts + styles} == {
+            urlsplit(url).path for url in template_scripts + template_styles
+        }
 
         compiled_url = next(url for url in scripts if url.startswith("/_ui/"))
         expected_revision = file_revision(source.stat())

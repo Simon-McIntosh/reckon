@@ -18,6 +18,11 @@ _LINK = re.compile(
 )
 
 
+def revision_matches(requested: str | None, identity: str) -> bool:
+    """Whether a URL's revision addresses the file's current bytes."""
+    return requested is not None and requested == identity
+
+
 def _revision(
     url: str, shared_root: Path, ui_root: Path, runtimes: Mapping[str, str]
 ) -> str:
@@ -70,7 +75,9 @@ def script_response(
     headers = {
         "ETag": etag,
         "Cache-Control": (
-            IMMUTABLE_CACHE if requested_revision == revision else "no-cache"
+            IMMUTABLE_CACHE
+            if revision_matches(requested_revision, revision)
+            else "no-cache"
         ),
         "Vary": "Accept-Encoding",
     }
