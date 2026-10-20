@@ -549,6 +549,77 @@ def _require_no_png_twin_of_an_svg(run_id: str, record: Mapping[str, Any]) -> No
         raise CrewError(f"run {run_id!r} cannot be promoted: " + "; ".join(findings))
 
 
+def _newest_figure_review(project: str, run_id: str) -> Mapping[str, Any] | None:
+    """The run's newest figure review, or ``None`` when it carries none.
+
+    A figure review is a run review filed under the figure rubric, so the
+    store's own rubric-keyed read is the one selection that reaches it: the
+    text-review readers exclude figure records by design, and reading the text
+    selection here would answer with the wrong subject. A store that cannot be
+    read names no finding to hold a promotion, which is the same standing a run
+    with no figure review has.
+    """
+    from reckon.crew import review as review_module
+
+    try:
+        return review_module.read_review(
+            project, run_id, rubric=review_module.FIGURE_REVIEW_RUBRIC
+        )
+    except (OSError, ValueError):
+        return None
+
+
+def _describe_blocking_findings(findings: Sequence[Mapping[str, Any]]) -> str:
+    """Render each blocking finding as the figure it concerns and its claim."""
+    rendered = []
+    for finding in findings:
+        path = str(finding.get("file") or "").strip()
+        line = str(finding.get("line") or "").strip()
+        where = f"{path}:{line}" if path and line else path or "<figure unnamed>"
+        rendered.append(f"{where} — {str(finding.get('text') or '').strip()}")
+    return "; ".join(rendered)
+
+
+def _require_no_undisposed_blocking_figure_finding(
+    run_id: str, record: Mapping[str, Any]
+) -> None:
+    """Refuse a promotion whose newest figure review leaves a blocking finding open.
+
+    A figure review protects nothing unless promotion reads it: the other review
+    guards key on a stored record's status and reviewed head, so a figure review
+    carrying a blocking finding satisfies them and the defect it names lands
+    unrepaired. The severity is read through the one owner that decides it
+    (:func:`reckon.crew.repair.blocking_findings`), which is also the list that
+    honours a disposition, so an answered finding no longer refuses and the two
+    readers cannot disagree about which findings became work.
+
+    The refusal names the figure path and the finding's own claim, because a
+    figure defect is fixed by opening the figure: an operator told only that a
+    blocking finding exists has to search the review record to learn which
+    drawing is wrong. A run that carries no figure review is left exactly as it
+    is, and text reviews keep their present behaviour — this guard reads the
+    figure rubric alone.
+    """
+    project = str(record.get("project") or "").strip()
+    if not project:
+        return
+    figure = _newest_figure_review(project, run_id)
+    if figure is None:
+        return
+    from reckon.crew import repair as repair_module
+
+    blocking = repair_module.blocking_findings(figure)
+    if not blocking:
+        return
+    raise CrewError(
+        f"run {run_id!r} cannot be promoted: its newest figure review carries "
+        f"{len(blocking)} blocking finding(s) with no disposition: "
+        f"{_describe_blocking_findings(blocking)}. Answer each finding before "
+        "the run lands, so the figure it names is repaired or the reason it is "
+        "not is recorded"
+    )
+
+
 def _require_worker_stopped_before_promotion(
     run_id: str,
     record: Mapping[str, Any],
@@ -1990,6 +2061,7 @@ def _landing_preconditions(
             plan_state=plan_state,
         )
     )
+    attempt(lambda: _require_no_undisposed_blocking_figure_finding(run_id, record))
 
     manifest_path = str(record.get("manifest_path") or "")
     manifest_text: str | None = None
