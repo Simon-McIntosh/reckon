@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite (revision 058515877, 11 failure ids) and after_suite (revision 33dc7ff50, 4 failure ids) arms in its manifest; all four head failures are present in the base set, so the added delta is empty. The matched-population logs final-base-spa.log and final-spa.log confirm 11 failed/32 passed and 4 failed/39 passed over the same 43 collected tests.",
+  "call_site_count": 4,
+  "call_sites": [
+    "docs/ui/shell.jsx:490 <window.ReckonShell.home.FleetHome ...>",
+    "docs/ui/shell.jsx:226-238 refreshFleetIndex + reckon-fleet listener",
+    "docs/ui/state-loader.js:544 revalidateProjectState home-route short-circuit (called at docs/ui/shell.jsx:155)",
+    "docs/ui/crew.jsx:363 <DerivedFlow ...>"
+  ],
+  "completed_at": "2026-10-20T00:11:27.793Z",
+  "dispatched_at": "2026-10-20T00:00:45Z",
+  "findings": [
+    {
+      "file": "docs/ui/home.jsx",
+      "line": "94",
+      "severity": "follow-on",
+      "text": "follow-on: loaded is Boolean(fleetIndex), and docs/ui/shell.jsx:230 sets fleetIndex only on a successful array response, so a 404 or network failure at /_projects/index.json leaves the home on \"Loading fleet summary\u2026\" indefinitely where the previous render fell back to mounted-project counts; the done-when mandates never showing a zero so this is spec-compliant, but a permanently pending home on a failed summary is a UX defect worth recording."
+    },
+    {
+      "file": "docs/ui/home.jsx",
+      "line": "22",
+      "severity": "follow-on",
+      "text": "follow-on: a project whose summary row omits plans_count renders neither as a row (Number(null) > 0 is false at :17) nor as dormant (:22 now requires plans_count === 0), while the eyebrow at :97 still counts it in projects.length, so the header can claim more projects shown than the home renders for a mounted project the summary does not carry."
+    },
+    {
+      "file": "docs/ui/crew.jsx",
+      "line": "49",
+      "severity": "follow-on",
+      "text": "follow-on: .filter(item => item.plan) silently drops any schedule bar whose slug is absent from window.STATE.inventory, so a bar referencing an unloaded or cross-project plan disappears with no signal where it previously rendered from its embedded row; the drop is defensible for a stale inventory but leaves a degraded flow with nothing marking the omission."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "docs/ui/shell.jsx:490 renders FleetHome (the changed component), docs/ui/shell.jsx:226-238 is refreshFleetIndex with the reckon-fleet listener, docs/ui/state-loader.js:544 is the home-route short-circuit in revalidateProjectState called at docs/ui/shell.jsx:155; docs/ui/crew.jsx:363 renders the changed DerivedFlow.",
+    "diff": "read both commits against base 058515877; 33dc7ff50 changes the home, shell, crew and state-loader plus four updated tests and one new test file, and 733b71f4c adds the 52-line evidence fragment, all inside the declared scope.",
+    "done_when": "the done-when asks that the home show a loading state and never a zero until the summary arrives, that /_discover be fetched only on palette open, that a browser test assert both, and that browser cases run rather than skip; tests/test_spa_home_view_loads_a_summary.py:116-135 asserts both, both cases ran (final-spa.log, 313s, no skips) and the negative control reddens the discovery assertion.",
+    "goal": "the node's goal is to render the home view from the fleet summary alone, fetch full inventories only when the command palette first opens, and resolve schedule bars by slug; docs/ui/home.jsx:94-124 does the first, docs/ui/shell.jsx:240 gates discovery on cmdKOpen, and docs/ui/crew.jsx:46-49 resolves the slug.",
+    "manifest": "read; it reports status complete, two commits (33dc7ff50, 733b71f4c), a matched base/head gate (11 failed/32 passed vs 4 failed/39 passed), a loader-regression arm of 19 passed EXIT=0, and the negative control at negative-control-complete.log reading 2 failed EXIT=1.",
+    "write_paths": "the declared scope is docs/ui/{home,shell,shell-palette,crew}.jsx, docs/ui/state-loader.js, eight tests/ files and the fragment; git diff --stat 058515877..733b71f4c touches ten of those paths and every one is declared, with none outside the fence drafted."
+  },
+  "justifications": {
+    "durability": "tests/test_spa_home_view_loads_a_summary.py:118 asserts no /_discover before the palette and :124 exactly one afterward against the recorded fetch log, and negative-control-complete.log shows those assertions redden (EXIT=1) when the declared per-project home fetch is restored, so the guard fails on the regression it was added for; the stale-response race at :112-115 is guarded by the request counter in docs/ui/shell.jsx:228.",
+    "evidence": "the manifest records a matched-population gate over the same nine files at base 058515877 (11 failed, 32 passed, EXIT=1) and head 33dc7ff50 (4 failed, 39 passed, EXIT=1) with the four head failures a subset of the base ones, so added_failure_count is 0, and the negative control at negative-control-complete.log reads 2 failed EXIT=1, but the two new tests rest on the worker's recorded run rather than any independent re-run here.",
+    "fit": "docs/ui/home.jsx:22 swaps Number(project.plans_count) === 0 for project.plans_count === 0 to keep a null count out of the dormant set, follows the surrounding filter idiom, removes the now-dead homeJustLanded/HOME_LANDED_WINDOW_MS cleanly, and introduces no plan label, version or author in any name or comment.",
+    "goal_fidelity": "docs/ui/home.jsx:94 renders a loading state until the summary arrives and :99/104/124 paint counts, progress and activity from the summary fields alone, docs/ui/shell.jsx:240 fetches /_discover only when cmdKOpen, and docs/ui/crew.jsx:46-49 resolves each bar's slug against the inventory, so all four clauses of the goal land.",
+    "reuse": "docs/ui/crew.jsx:46 inlines a slug-keyed inventory Map, the same idiom already used at docs/ui/sprint.jsx:77,115,167, and docs/ui/state-loader.js:228 follows that module's own request-counter pattern; a capability search over docs/ui found no shared owner of a slug-to-row resolver to extend, and the change forks none.",
+    "scope_discipline": "every path in git diff --stat 058515877..733b71f4c touches only docs/ui/{home,shell,crew}.jsx, docs/ui/state-loader.js, five tests/ files and the declared evidence fragment, all inside the manifest's declared write paths, with nothing drafted outside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to render the home view from the fleet summary alone, fetch full inventories only when the command palette first opens, and resolve schedule bars by slug; docs/ui/home.jsx:94-124 does the first, docs/ui/shell.jsx:240 gates discovery on cmdKOpen, and docs/ui/crew.jsx:46-49 resolves the slug.\nVERDICT done_when: the done-when asks that the home show a loading state and never a zero until the summary arrives, that /_discover be fetched only on palette open, that a browser test assert both, and that browser cases run rather than skip; tests/test_spa_home_view_loads_a_summary.py:116-135 asserts both, both cases ran (final-spa.log, 313s, no skips) and the negative control reddens the discovery assertion.\nVERDICT write_paths: the declared scope is docs/ui/{home,shell,shell-palette,crew}.jsx, docs/ui/state-loader.js, eight tests/ files and the fragment; git diff --stat 058515877..733b71f4c touches ten of those paths and every one is declared, with none outside the fence drafted.\nVERDICT manifest: read; it reports status complete, two commits (33dc7ff50, 733b71f4c), a matched base/head gate (11 failed/32 passed vs 4 failed/39 passed), a loader-regression arm of 19 passed EXIT=0, and the negative control at negative-control-complete.log reading 2 failed EXIT=1.\nVERDICT diff: read both commits against base 058515877; 33dc7ff50 changes the home, shell, crew and state-loader plus four updated tests and one new test file, and 733b71f4c adds the 52-line evidence fragment, all inside the declared scope.\nCALL_SITES: docs/ui/shell.jsx:490 <window.ReckonShell.home.FleetHome ...>, docs/ui/shell.jsx:226-238 refreshFleetIndex + reckon-fleet listener, docs/ui/state-loader.js:544 revalidateProjectState home-route short-circuit (called at docs/ui/shell.jsx:155), docs/ui/crew.jsx:363 <DerivedFlow ...>\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: docs/ui/home.jsx:94 renders a loading state until the summary arrives and :99/104/124 paint counts, progress and activity from the summary fields alone, docs/ui/shell.jsx:240 fetches /_discover only when cmdKOpen, and docs/ui/crew.jsx:46-49 resolves each bar's slug against the inventory, so all four clauses of the goal land.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest records a matched-population gate over the same nine files at base 058515877 (11 failed, 32 passed, EXIT=1) and head 33dc7ff50 (4 failed, 39 passed, EXIT=1) with the four head failures a subset of the base ones, so added_failure_count is 0, and the negative control at negative-control-complete.log reads 2 failed EXIT=1, but the two new tests rest on the worker's recorded run rather than any independent re-run here.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --stat 058515877..733b71f4c touches only docs/ui/{home,shell,crew}.jsx, docs/ui/state-loader.js, five tests/ files and the declared evidence fragment, all inside the manifest's declared write paths, with nothing drafted outside them.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_spa_home_view_loads_a_summary.py:118 asserts no /_discover before the palette and :124 exactly one afterward against the recorded fetch log, and negative-control-complete.log shows those assertions redden (EXIT=1) when the declared per-project home fetch is restored, so the guard fails on the regression it was added for; the stale-response race at :112-115 is guarded by the request counter in docs/ui/shell.jsx:228.\nSCORE fit: 18\nJUSTIFICATION fit: docs/ui/home.jsx:22 swaps Number(project.plans_count) === 0 for project.plans_count === 0 to keep a null count out of the dormant set, follows the surrounding filter idiom, removes the now-dead homeJustLanded/HOME_LANDED_WINDOW_MS cleanly, and introduces no plan label, version or author in any name or comment.\nSCORE reuse: 18\nJUSTIFICATION reuse: docs/ui/crew.jsx:46 inlines a slug-keyed inventory Map, the same idiom already used at docs/ui/sprint.jsx:77,115,167, and docs/ui/state-loader.js:228 follows that module's own request-counter pattern; a capability search over docs/ui found no shared owner of a slug-to-row resolver to extend, and the change forks none.\nFINDING docs/ui/home.jsx:94 follow-on: loaded is Boolean(fleetIndex), and docs/ui/shell.jsx:230 sets fleetIndex only on a successful array response, so a 404 or network failure at /_projects/index.json leaves the home on \"Loading fleet summary\u2026\" indefinitely where the previous render fell back to mounted-project counts; the done-when mandates never showing a zero so this is spec-compliant, but a permanently pending home on a failed summary is a UX defect worth recording.\nFINDING docs/ui/home.jsx:22 follow-on: a project whose summary row omits plans_count renders neither as a row (Number(null) > 0 is false at :17) nor as dormant (:22 now requires plans_count === 0), while the eyebrow at :97 still counts it in projects.length, so the header can claim more projects shown than the home renders for a mounted project the summary does not carry.\nFINDING docs/ui/crew.jsx:49 follow-on: .filter(item => item.plan) silently drops any schedule bar whose slug is absent from window.STATE.inventory, so a bar referencing an unloaded or cross-project plan disappears with no signal where it previously rendered from its embedded row; the drop is defensible for a stale inventory but leaves a degraded flow with nothing marking the omission.",
+  "review_run_id": "r-20261019T235943834506-review-of-the-home-view-loads-a-summary-733b71f4c30c",
+  "reviewed_base_sha": "058515877c36ca6d46588d622b1a6be017a714e9",
+  "reviewed_head_sha": "733b71f4c30c2f39b32e26c89033862f64e04417",
+  "reviewed_run_id": "r-20261019T231054012620-the-home-view-loads-a-summary",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T00:20:00Z",
+  "total": 110
+}
