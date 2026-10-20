@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-20T09:04:53.379Z",
+  "dispatched_at": "2026-10-20T08:47:59Z",
+  "findings": [
+    {
+      "file": "tests/spa_parity_harness.py",
+      "line": "323",
+      "severity": "blocking",
+      "text": "blocking: docs/ui/crew.jsx removed flowPackLanes while the parity harness still calls it here and at :515, so tests/test_surface_parity.py fails 11 cases with `flowPackLanes is not defined` (11 failed, EXIT=1, reproduced at 7a83309a5 in this run's log), which the done-when forbids; both harness files are outside this node's fence, so the change cannot land without a scope extension or a served replacement helper."
+    },
+    {
+      "file": "reckon/schedule.py",
+      "line": "125",
+      "severity": "follow-on",
+      "text": "follow-on: the docstring states that a pointer whose phase is complete sets no state at all, while HELD_RUN_PHASES at reckon/schedule.py:41 contains \"complete\", so a lone completed pointer reads held; the prose and the set contradict each other."
+    },
+    {
+      "file": "reckon/schedule.py",
+      "line": "32",
+      "severity": "follow-on",
+      "text": "follow-on: LIVE_RUN_PHASES and HELD_RUN_PHASES re-spell the sets already owned at reckon/sprint_liveness.py:37 and :47 member for member, so the phase vocabulary now lives in two files and the two can drift."
+    },
+    {
+      "file": "tests/test_the_flow_draws_each_plan_where_its_progress_puts_it.py",
+      "line": "284",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion compares item[\"lane\"], stamped by _pack_lanes, against the position of the lane the same packer returned, so both sides move together and a coordinated change leaves the assertion true."
+    },
+    {
+      "file": "tests/test_the_flow_draws_each_plan_where_its_progress_puts_it.py",
+      "line": "241",
+      "severity": "follow-on",
+      "text": "follow-on: the shared-slug case asserts bars[\"shared\"][\"nav_key\"] == \"shared\", which a regression to the bare slug also satisfies because the research row never becomes a bar; the discrimination the plan asks for is carried only by the SPA case at :385."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is \"Serve each flow bar's state, progress-anchored position, typed plan key and lane, and draw them as served\"; reckon/schedule.py:118-146 decides the state, the anchor/split and the typed key per bar and docs/ui/crew.jsx:42-51 draws item.state/item.start/item.split/item.nav_key with no mapping of its own, so all four served fields land at their production readers.\nVERDICT done_when: the done-when's six derivation cases and the two SPA cases are asserted at tests/test_the_flow_draws_each_plan_where_its_progress_puts_it.py:114-382 and the run's own arm records 27 passed EXIT=0 at 7a83309a5 (logs/head_gate.log) against 18 passed EXIT=0 at 11457456d (logs/base_gate.log), but the same done-when also requires tests importing reckon/schedule.py or reckon/roadmap.py and the SPA test files to show no added failure, and the head arm ran five files only, omitting that population where tests/test_surface_parity.py fails 11 cases.\nVERDICT write_paths: read from the source prompt (prompt.txt:69-84); git diff --stat 11457456dd01fa0521ce37ced3430d2113335813..7a83309a5 touches nine paths and every one is inside the declared fence, with docs/figures/the-site-answers-fast-and-agrees/the-flow-draws-each-plan-where-its-progress-puts-it declared and left empty.\nVERDICT manifest: read; it records commits 6c3ca3417 and 7a83309a5, the head arm head_gate.log (27 passed, EXIT=0), the base arm base_gate.log (18 passed, EXIT=0), the declared negative control negative_control.log (5 failed, EXIT=1) and a follow_ons entry naming the parity-harness break it could not repair inside its fence.\nVERDICT diff: read commit by commit against 11457456d; 6c3ca3417 replaces dispatch-time placement with the progress anchor and adds _bar_state/_pack_lanes/_typed_key in reckon/schedule.py:118-167 and the served state/split/lane/nav_key in reckon/roadmap.py:1863-1885, 7a83309a5 adds the nine-case test file, nine files, +873/-164, nothing outside the goal.\nCALL_SITES: reckon/route_results.py:235, reckon/serve.py:1757, reckon/roadmap.py:1906, reckon/roadmap.py:1915, docs/ui/crew.jsx:42\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/schedule.py:118-146 and docs/ui/crew.jsx:42-51 serve and draw the four bar fields the goal names, and the production path reckon/route_results.py:235 -> reckon/serve.py:1757 -> reckon/schedule.py:198 is the one the crew view reads.\nSCORE evidence: 11\nJUSTIFICATION evidence: the gate is recorded and green, but the head arm in the manifest names five files while the done-when's population is every test importing reckon/schedule.py or reckon/roadmap.py, where tests/test_surface_parity.py fails 11 cases (EXIT=1, reproduced in this run's log).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 11457456d..7a83309a5 touches only the nine declared paths, and the node correctly left the out-of-fence tests/spa_parity_harness.py untouched rather than widening its own scope.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_the_flow_draws_each_plan_where_its_progress_puts_it.py:127 asserts a literal -9/+9/0 and the declared negative control reddens it (logs/negative_control.log, 5 failed, EXIT=1), but :241 and :284 are assertions that cannot fail on the regression they name.\nSCORE fit: 16\nJUSTIFICATION fit: the helpers follow reckon/schedule.py:57-80's idiom and no name carries a plan label, but the docstring at reckon/schedule.py:125 contradicts the set it is describing at reckon/schedule.py:41.\nSCORE reuse: 8\nJUSTIFICATION reuse: no capability is forked, but the added LIVE_RUN_PHASES and HELD_RUN_PHASES at reckon/schedule.py:32 and :36 re-spell the vocabulary already owned at reckon/sprint_liveness.py:37 and :47 instead of extending it.\nFINDING tests/spa_parity_harness.py:323 blocking: docs/ui/crew.jsx removed flowPackLanes while the parity harness still calls it here and at :515, so tests/test_surface_parity.py fails 11 cases with `flowPackLanes is not defined` (11 failed, EXIT=1, reproduced at 7a83309a5 in this run's log), which the done-when forbids; both harness files are outside this node's fence, so the change cannot land without a scope extension or a served replacement helper.\nFINDING reckon/schedule.py:125 follow-on: the docstring states that a pointer whose phase is complete sets no state at all, while HELD_RUN_PHASES at reckon/schedule.py:41 contains \"complete\", so a lone completed pointer reads held. The prose and the set contradict each other and a later reader cannot tell which reading is intended.\nFINDING reckon/schedule.py:32 follow-on: LIVE_RUN_PHASES and HELD_RUN_PHASES re-spell the sets already owned at reckon/sprint_liveness.py:37 and :47 member for member, so the phase vocabulary the plan calls the sprint-liveness classification now lives in two files and the two can drift.\nFINDING tests/test_the_flow_draws_each_plan_where_its_progress_puts_it.py:284 follow-on: the assertion compares item[\"lane\"], stamped by _pack_lanes, against the position of the lane _pack_lanes itself returned, so both sides move together and a coordinated change in the packer leaves the assertion true.\nFINDING tests/test_the_flow_draws_each_plan_where_its_progress_puts_it.py:241 follow-on: the shared-slug case asserts bars[\"shared\"][\"nav_key\"] == \"shared\", which a regression to the bare slug also satisfies because the research row never becomes a bar; the discrimination the plan asks for is carried only by the SPA case at :385.",
+  "review_run_id": "r-20261020T084700639340-review-of-the-flow-draws-each-plan-where-its-progress-puts-it-7a83309a5728",
+  "reviewed_base_sha": "11457456dd01fa0521ce37ced3430d2113335813",
+  "reviewed_head_sha": "7a83309a57281ec468b0a36cfb4be602bd0f5d77",
+  "reviewed_run_id": "r-20261020T080016028790-the-flow-draws-each-plan-where-its-progress-puts-it",
+  "scores": {
+    "durability": 15,
+    "evidence": 11,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 8,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T09:09:34.637876+00:00",
+  "total": 87
+}
