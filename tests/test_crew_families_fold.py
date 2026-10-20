@@ -573,17 +573,17 @@ def test_resume_successors_preserve_base_answers(isolated_reckon_home: Path) -> 
 
 def test_resume_family_reduces_the_visible_leaf_count() -> None:
     leaves = _leaf_commands(crew)
+    visible = {path[0] for path in leaves}
     retired = {"resume-ready", "redispatch"}
     assert retired <= TOMBSTONE_BY_NAME.keys()
-    derived_base = len(leaves) + len(retired)
-    assert len(leaves) <= derived_base - len(retired)
     assert ("resume",) in leaves
-    assert not {("resume-ready",), ("redispatch",)} & leaves.keys()
+    assert not retired & visible
     assert {("repair-completion",), ("split-runs",)} <= leaves.keys()
     options = {
         option for parameter in leaves[("resume",)].params for option in parameter.opts
     }
     assert {"--ready", "--backend", "--model", "--reopen", "--write-path"} <= options
+    assert visible == set(crew.commands), sorted(visible ^ set(crew.commands))
 
 
 def test_resume_reopens_a_complete_run_and_grants_its_path(
