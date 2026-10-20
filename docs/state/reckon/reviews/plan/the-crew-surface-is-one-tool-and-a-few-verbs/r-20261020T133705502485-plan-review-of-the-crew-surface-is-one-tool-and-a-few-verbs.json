@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T13:48:17.540Z",
+  "dispatched_at": "2026-10-20T13:38:00Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-surface-is-one-tool-and-a-few-verbs.html:325",
+      "id": "reasoning-1",
+      "reason": "\u00a79:339 makes `tests/test_skill_contracts.py` part of every node's gate, so as written the filter node's own gate is unpassable by the route the plan states, and the node must either stall on a red gate or widen that test's regex \u2014 a change the plan does not name, though its fence does permit it.",
+      "text": "`cso-crew-view-filters-live-runs` is told to \"widen the Literal to the dispatcher's list\" (nineteen views including `plan-review`) and to keep the surface honest by \"updat[ing] the view list in `skills/reckon-build/SKILL.md`, which `test_ship_crew_views_match_the_typed_mcp_surface` checks\", but that test (`tests/test_skill_contracts.py:1165-1170`) builds its documented set with `re.findall(r'crew\\(project, view=\"([a-z]+)\"\\)', ship)` and asserts it equals `set(get_args(CrewArgs.model_fields[\"view\"].annotation))`; the regex requires an immediately following `)` and a `[a-z]+` name, so `crew(project, view=\"plan-review\")` (and any other rendering of the hyphenated view) yields no match, making the equality unsatisfiable once the Literal carries `plan-review` \u2014 verified against the tree at `ad3f92885`: `CREW_VIEWS` is nineteen names and the only one the canonical form still fails to match is `plan-review` (`crew(project, view=\"plan-review\")` \u2192 `[]`)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "08804acae49507de6c011a413d2c2392313eee76ab940a58665f8ffbf9e7002f",
+  "plan_slug": "the-crew-surface-is-one-tool-and-a-few-verbs",
+  "plan_version": 68,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T133705502485-plan-review-of-the-crew-surface-is-one-tool-and-a-few-verbs",
+  "reviewed_blob_sha": "e5fb60907ec42136e1051c60845f18bde3ed7e23",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited path resolves, including `reckon/_mcp_tools.py` (`CrewArgs.view` Literal, ten names), `reckon/mcp_views.py` `CREW_VIEWS` (nineteen names), `reckon/mcp.py` (line 235 `CREW_TOOL_VIEWS = CREW_VIEWS`, `_crew` forwards to `serve_crew_view` at line 2169), `reckon/mcp_deadlines.py:184` (`crew list` refusal answer), `reckon/crew/refusals.py` D20 (`crew ledger`), `reckon/hooks/native_agent_guard.py:3` (docstring names `crew ledger`), `tests/test_crew_surface_parity.py:23` (`CLASSIFICATION_FIELDS`), `tests/test_crew_velocity_cli.py`, `tests/test_findings_read_by_path.py`, and the external guide `/home/ITER/mcintos/Code/imas-ambix/ops/lane-cycle/AGENTS.md:40` (`crew directory --project imas-ambix`).",
+    "done_when": "pass \u2014 each of the four nodes now carries a declared negative control (filter drops `--mine` from `live`; the mover reverts `reckon/mcp_deadlines.py`'s refusal answer; each retiring node points one tombstone at the wrong view), closing the earlier `done_when-1` gap on `cso-list-callers-move-to-crew-view`.",
+    "evidence_paths": "pass \u2014 s9 names no session scratchpad or node-local path; gates run under the run's own log and evidence convention, and the landed record is the project evidence archive.",
+    "naming": "pass \u2014 the node ids and the new test file name (`tests/test_read_verbs_retire_behind_crew_view.py`) are mechanism-named and carry no ticket number, stage label or version tag.",
+    "reasoning": "a finding \u2014 the filter node's stated mechanism (widen the typed `view` Literal to the dispatcher's nineteen names, then \"update the view list in `skills/reckon-build/SKILL.md`, which `test_ship_crew_views_match_the_typed_mcp_surface` checks\") cannot satisfy that test, because the view it must add is hyphenated and the test's extractor regex only matches `[a-z]+`, so the documented set can never equal the widened Literal.",
+    "single_goal": "pass \u2014 each node names one deliverable (retire ledger+velocity; give the live view its filters and make the parity case non-tautological; move `crew list` callers; tombstone `crew list`).",
+    "wiring": "pass \u2014 s9 declares `depends-on` s7 and s8 (meta `plan-section-depends-on`), all four node write-path sets resolve to existing files, and the serial order is justified by shared files (ledger\u2192filter share `reckon/crew_run_commands.py`, `skills/reckon-build/SKILL.md`, `tests/test_skill_contracts.py`; filter\u2192mover share `skills/reckon-build/SKILL.md`; mover\u2192list-retires share `tests/test_read_verbs_retire_behind_crew_view.py`)."
+  },
+  "section_digests": {
+    "_document": "4d4b24f4aec9178fd9d24a7442e96788d260da61249c8afd730e02ffe7cc56f6",
+    "s1": "7964ee282f4a5255288aa84785a54dbc6a5fec9660f4cee9f9c892a0807894ee",
+    "s10": "033277f14414ff9bc6f07d5fabef9354ec643b0bcb31a42018a8bb7153544427",
+    "s2": "be69292dc4744e91b19438c3129be40ac6c6138f02cd12656616dd3906a1d313",
+    "s3": "bfc4b93502cb69a2a5878f9c282da2cbab878f4f49482f263fdfc074dfce4ba8",
+    "s4": "2feb22a10d53f02161e33412c6f491a2718ee9b88ffede06e39b7fc15799f5d1",
+    "s5": "4a0b632aaec0c9b2538edeab874ccd9fd39723e2eef864da9ae65a3f72b6695c",
+    "s6": "e037f188e4e0784a7a39a208f621ec226cacdda5308e5f226d6ba3e104345522",
+    "s7": "7a66876ae7177f3cc833a9fc9c2885beceef03cf567843584a885f144155809b",
+    "s8": "beb6c1568fe326e8af87c393c93ac9e71dec60ad9a9247b47ffbec9d08fc76a6",
+    "s9": "09bbd47dc462731e0678c1881adfee44a401f088f6b7a603f5d65f6cbb37db92"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T13:51:20.425511+00:00"
+}
