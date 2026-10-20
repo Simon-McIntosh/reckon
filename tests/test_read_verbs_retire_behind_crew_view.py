@@ -291,20 +291,35 @@ def test_the_invocation_a_tombstone_prints_runs_as_written(checkout: Path) -> No
     records`` — sends them to a usage error rather than an answer. Each call
     below is answered by the tombstone, the invocation it prints is read back,
     and that invocation is then run: exit 2 is the usage error a flag the
-    successor does not define produces, so it is the code this holds out.
+    successor does not define produces, so it is the code this holds out. The
+    case a caller spelled ``--view summary`` is read here too, because that is
+    the document bare ``crew ledger`` gave, and an arrow sending ``--view
+    summary`` to ``crew view summary`` would hand over the fleet summary
+    instead. Each call also holds the printed invocation against the
+    ``successor`` the payload reports, so one caller is not told two different
+    things.
     """
     runner = CliRunner()
     tail = ["--project", PROJECT, "--checkout-path", str(checkout)]
+    # Each call names the case the caller spelled and the operand the successor
+    # must receive. ``--view summary`` is the rolled-up document bare ``crew
+    # ledger`` gave, so it reaches the same successor; ``crew view summary`` is
+    # the fleet summary, a different document.
     calls = {
-        "ledger": ["crew", "ledger", *tail],
-        "records": ["crew", "ledger", "--view", "records", *tail],
-        "findings": ["crew", "ledger", "--view", "findings", *tail],
+        "ledger": ("ledger", ["crew", "ledger", *tail]),
+        "summary": ("ledger", ["crew", "ledger", "--view", "summary", *tail]),
+        "records": ("records", ["crew", "ledger", "--view", "records", *tail]),
+        "findings": ("findings", ["crew", "ledger", "--view", "findings", *tail]),
     }
-    for view, arguments in calls.items():
+    for spelled, (operand, arguments) in calls.items():
         result = runner.invoke(cli_main, arguments)
+        payload = json.loads(result.output)
         assert result.exit_code == TOMBSTONE_EXIT_CODE, result.output
-        invocation = json.loads(result.output)["invocation"]
-        assert invocation == " ".join(("reckon", "crew", "view", view, *tail))
+        assert payload["successor"] == f"crew view {operand}", payload["successor"]
+        invocation = " ".join(("reckon", "crew", "view", operand, *tail))
+        assert payload["invocation"] == invocation, (
+            f"{spelled}: {payload['invocation']}"
+        )
         followed = runner.invoke(cli_main, shlex.split(invocation)[1:])
         assert followed.exit_code == 0, f"{invocation}: {followed.output}"
 
