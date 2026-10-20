@@ -477,6 +477,10 @@ def test_the_composed_fence_argv_for_a_fixed_root_set_is_literal(
         "--dev-bind",
         "/",
         "/",
+        # The worker's own pid namespace and its procfs.
+        "--unshare-pid",
+        "--proc",
+        "/proc",
         # The one protected path the synthetic home holds on disk, sealed
         # read-only before the node tmp seal.
         "--ro-bind",

@@ -356,8 +356,12 @@ def test_local_census_uses_zellij_and_live_claude_records(tmp_path: Path) -> Non
 
     def invoke(argv, **kwargs):
         calls.append(argv)
+        # A live session is a fleet session whatever its name, so the catch-all
+        # fleet-shell is recorded beside ambix-fleet; an exited one is only a
+        # resurrection cache entry and is left out.
         output = (
-            "ambix-fleet (active)\nother-session (active)\n"
+            "ambix-fleet (active)\nfleet-shell (active)\n"
+            "old-cache [Created 2days ago] (EXITED - attach to resurrect)\n"
             if argv[1] == "list-sessions"
             else source["layouts"]["ambix-fleet"]
         )
@@ -371,9 +375,9 @@ def test_local_census_uses_zellij_and_live_claude_records(tmp_path: Path) -> Non
         process_root=tmp_path / "proc",
         invoke=invoke,
     )
-    assert list(observed["layouts"]) == ["ambix-fleet"]
+    assert list(observed["layouts"]) == ["ambix-fleet", "fleet-shell"]
     assert record["conversation"] in observed["claude"]
-    assert len(calls) == 2
+    assert len(calls) == 3
     assert {
         path: path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()
     } == before

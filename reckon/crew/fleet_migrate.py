@@ -185,12 +185,18 @@ def _local_observation(
     process_root: Path = Path("/proc"),
     invoke: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
 ) -> dict[str, Any]:
-    """Read the old node's zellij and Claude records without changing them."""
+    """Read the old node's zellij and Claude records without changing them.
+
+    Every live session on the fleet's zellij socket is a fleet session, whatever
+    its name: the socket directory belongs to the fleet runtime, and the retire
+    step refuses while any live session remains there, so the census takes the
+    same set the retire step checks. An exited session is a resurrection cache
+    entry, not a running fleet session, and is left out.
+    """
     names = [
         name
         for name, exited in _listed_sessions(invoke=invoke, check=True)
-        if (session is not None and name == session and not exited)
-        or (session is None and name.endswith("-fleet"))
+        if not exited and (session is None or name == session)
     ]
     if not names:
         raise MigrationError(

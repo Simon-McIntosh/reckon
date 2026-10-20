@@ -53,6 +53,16 @@ CLAUDE_CREDENTIAL_FILENAME = ".credentials.json"
 # and the capability a refusal names are the same string.
 FENCE_BINARY = "bwrap"
 
+# Each fenced worker runs in a pid namespace of its own, with a procfs mounted
+# for that namespace over the host's. kill(2) resolves a pid in the caller's
+# namespace, so a worker can signal only the processes it started: a cleanup
+# command that selects more than it meant to, such as `ps -e` combined with
+# `--ppid` (ps unions its selectors), reaches nothing outside the worker's own
+# tree. The fresh /proc keeps os.getpid() and /proc/<pid> in one numbering,
+# which tools that read /proc for their own process rely on. The procfs mount
+# must follow the root bind, which is why these flags sit after it.
+PID_NAMESPACE_ARGS = ("--unshare-pid", "--proc", "/proc")
+
 # The flight-config key a project uses to name the MCP servers its workers may
 # start. Read from the resolved flight configuration at seed time: a project
 # naming no servers seeds the setting that disables every project ``.mcp.json``
@@ -1456,7 +1466,7 @@ def fence_argv(
                 "inside it, so the fence's writable re-bind would re-open the "
                 "checkout it is meant to seal"
             )
-    fenced = [FENCE_BINARY, "--dev-bind", "/", "/"]
+    fenced = [FENCE_BINARY, "--dev-bind", "/", "/", *PID_NAMESPACE_ARGS]
     for source, destination in binds:
         fenced += ["--ro-bind", str(source), str(destination)]
     # The node tmp is emitted as its own overlay rather than folded into the

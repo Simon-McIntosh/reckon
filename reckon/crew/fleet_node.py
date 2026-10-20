@@ -27,7 +27,14 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Any
 
-from reckon.crew.fleet_supervisor import RECORD_NAME, state_directory
+from reckon.crew.fleet_supervisor import (
+    CATCH_ALL_FLEET,
+    FLEET_NAME_ENV,
+    RECORD_NAME,
+    STATE_DIR_ENV,
+    fleet_state_directory,
+    state_directory,
+)
 
 # The size of the allocation, overridable per environment variable. A rigel
 # node has 28 cores and 128,259 MB, the site reserves nothing for the system,
@@ -72,6 +79,28 @@ FLEET_COMMENT = "reckon-fleet"
 # The comment an allocation held before reckon submitted the fleet carries. It
 # is still found by that token until it is replaced by a new submission.
 EARLIER_FLEET_COMMENTS = ("ambix-fleet",)
+
+# A named fleet's allocation carries the fleet comment and its name, so each
+# fleet's allocation is found from the queue apart from every other's.
+FLEET_COMMENT_SEPARATOR = ":"
+
+
+def fleet_comment(fleet: str | None = None) -> str:
+    """The scheduler comment and job name one fleet's allocation carries."""
+    if not fleet or fleet == CATCH_ALL_FLEET:
+        return FLEET_COMMENT
+    return f"{FLEET_COMMENT}{FLEET_COMMENT_SEPARATOR}{fleet}"
+
+
+def fleet_environ(fleet: str | None = None) -> dict[str, str]:
+    """An environment naming one fleet, for the readers that resolve its state."""
+    if not fleet or fleet == CATCH_ALL_FLEET:
+        return {}
+    return {
+        FLEET_NAME_ENV: fleet,
+        STATE_DIR_ENV: str(fleet_state_directory(fleet)),
+    }
+
 
 # Remaining wall clock below which the status warns. Moving sessions off an
 # allocation takes minutes of operator work, so the notice has to arrive while
@@ -132,17 +161,24 @@ def batch_log_path(environ: Mapping[str, str] | None = None) -> Path:
 
 
 def generate_hold_script(
-    size: FleetSize, *, log_path: str | os.PathLike[str], standby: bool = False
+    size: FleetSize,
+    *,
+    log_path: str | os.PathLike[str],
+    standby: bool = False,
+    fleet: str | None = None,
 ) -> str:
     """The whole-node allocation that hosts the interactive sessions.
 
     ``TMPDIR`` is pointed at ``/tmp`` because a compute node cannot write the
     per-user runtime directory, and the batch step runs the installed
-    supervisor when there is one and otherwise only holds the node.
+    supervisor when there is one and otherwise only holds the node. A named
+    fleet's allocation carries its name in its comment and exports it, so its
+    supervisor publishes into that fleet's own state.
     """
+    comment = fleet_comment(fleet)
     headers = [
         "#!/bin/bash",
-        f"#SBATCH --job-name={FLEET_COMMENT}",
+        f"#SBATCH --job-name={comment}",
         f"#SBATCH --partition={size.partition}",
         f"#SBATCH --account={size.account}",
         f"#SBATCH --cpus-per-task={size.cpus}",
@@ -151,7 +187,7 @@ def generate_hold_script(
         f"#SBATCH --output={log_path}",
         "#SBATCH --nodes=1",
         "#SBATCH --exclusive",
-        f"#SBATCH --comment={FLEET_COMMENT}",
+        f"#SBATCH --comment={comment}",
     ]
     thread_caps = "\n".join(
         f'export {name}="${{{name}:-{DEFAULT_THREAD_CAP}}}"'
@@ -164,7 +200,7 @@ def generate_hold_script(
         set -euo pipefail
 
         export TMPDIR=/tmp
-
+        {fleet_exports}
         # Cap each compute-library thread pool at the declared width, keeping a
         # value the submitting environment already set. A heavy process
         # otherwise opens a pool as wide as the node's cores, and the thread
@@ -185,7 +221,14 @@ def generate_hold_script(
         """
         )
         .strip()
-        .format(thread_caps=thread_caps, supervisor_args=supervisor_args)
+        .format(
+            thread_caps=thread_caps,
+            supervisor_args=supervisor_args,
+            fleet_exports="".join(
+                f"export {name}={value}\n"
+                for name, value in fleet_environ(fleet).items()
+            ),
+        )
     )
     return "\n".join([*headers, "", body, ""])
 
@@ -248,10 +291,26 @@ def query_jobs(
     return jobs
 
 
-def find_allocations(jobs: Iterable[Mapping[str, str]]) -> list[Mapping[str, str]]:
-    """Every held fleet allocation among scheduler rows, found by its comment."""
-    tokens = {FLEET_COMMENT, *EARLIER_FLEET_COMMENTS}
+def find_allocations(
+    jobs: Iterable[Mapping[str, str]], *, fleet: str | None = None
+) -> list[Mapping[str, str]]:
+    """One fleet's held allocations among scheduler rows, found by its comment."""
+    if not fleet or fleet == CATCH_ALL_FLEET:
+        tokens = {FLEET_COMMENT, *EARLIER_FLEET_COMMENTS}
+    else:
+        tokens = {fleet_comment(fleet)}
     return [job for job in jobs if job.get("comment", "").strip() in tokens]
+
+
+def fleet_of_allocation(job: Mapping[str, str]) -> str | None:
+    """The fleet an allocation row belongs to, or None when it is no fleet's."""
+    comment = job.get("comment", "").strip()
+    if comment in {FLEET_COMMENT, *EARLIER_FLEET_COMMENTS}:
+        return CATCH_ALL_FLEET
+    prefix = FLEET_COMMENT + FLEET_COMMENT_SEPARATOR
+    if comment.startswith(prefix) and comment[len(prefix) :]:
+        return comment[len(prefix) :]
+    return None
 
 
 def parse_memory_gb(memory: str) -> int | None:
@@ -340,10 +399,13 @@ def recorded_job_id(environ: Mapping[str, str] | None = None) -> str | None:
 
 
 def find_allocation(
-    jobs: Iterable[Mapping[str, str]], *, preferred: str | None = None
+    jobs: Iterable[Mapping[str, str]],
+    *,
+    preferred: str | None = None,
+    fleet: str | None = None,
 ) -> Mapping[str, str] | None:
     """The allocation to act on: the recorded one when held, else the first."""
-    allocations = find_allocations(jobs)
+    allocations = find_allocations(jobs, fleet=fleet)
     for job in allocations:
         if preferred and job.get("jobid", "").strip() == preferred:
             return job

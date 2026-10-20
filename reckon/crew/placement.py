@@ -180,16 +180,21 @@ def _reservation_hold_lock() -> Iterator[None]:
         os.close(handle)
 
 
-def legacy_reservation_path(project: str) -> Path:
-    """Path a pre-sharing release keyed by project; read for migration only.
+def project_reservation_path(project: str) -> Path:
+    """Path of the reservation a project with a fleet node of its own publishes.
 
-    An existing per-project record must not be orphaned by the change to one
-    unkeyed record: a dispatch under the project that holds one still resolves
-    it until the ensure command rewrites it unkeyed.
+    A project whose sessions and workers run on a fleet of their own places its
+    workers into that fleet's allocation, named by this record. A project with
+    no record places into the shared reservation.
     """
     from reckon.crew.runs import crew_home
 
     return crew_home() / "placement" / project / "reservation.json"
+
+
+def legacy_reservation_path(project: str) -> Path:
+    """The per-project record's path under the name earlier readers used."""
+    return project_reservation_path(project)
 
 
 def _read_record(path: Path) -> dict[str, Any] | None:
@@ -207,21 +212,58 @@ def _read_record(path: Path) -> dict[str, Any] | None:
 
 
 def read_reservation(project: str | None = None) -> dict[str, Any] | None:
-    """Read the published reservation, or None when none is held.
+    """Read the reservation a project's workers place into, or None.
 
-    A named project reads the one unkeyed record exactly as any other project
-    does, because there is one shared allocation and a project that did not
-    publish it must still place its workers into it. ``project`` is used only
-    for migration: with no unkeyed record present, a legacy per-project record
-    for that project is read so an existing reservation is not orphaned.
+    A project with a fleet node of its own has a record keyed by its name, and
+    that record wins; every other project reads the one shared record, which
+    is also what a caller naming no project reads.
     """
-    record = _read_record(reservation_path())
-    if record is not None or project is None:
-        return record
-    return _read_record(legacy_reservation_path(project))
+    if project:
+        keyed = _read_record(project_reservation_path(project))
+        if keyed is not None:
+            return keyed
+    return _read_record(reservation_path())
 
 
-def publish_reservation(record: Mapping[str, Any], project: str | None = None) -> Path:
+def withdraw_project_reservation(project: str) -> bool:
+    """Remove a project's own reservation record, so it places into the shared one.
+
+    Returns whether a record was removed.
+    """
+    path = project_reservation_path(project)
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        return False
+    return True
+
+
+def placed_in_reservation(
+    pointers: Iterable[Mapping[str, Any]], reservation: Mapping[str, Any] | None
+) -> list[Mapping[str, Any]]:
+    """The pointers whose workers were placed into this reservation's job.
+
+    Each fleet node has a roster of its own, so a run placed into another
+    allocation holds no seat here. A pointer that records no reservation job is
+    counted, because a seat it might hold is not one to give away.
+    """
+    job = str((reservation or {}).get("job_id") or "").strip()
+    if not job:
+        return list(pointers)
+    kept: list[Mapping[str, Any]] = []
+    for pointer in pointers:
+        held = pointer.get("placement_reservation")
+        recorded = (
+            str(held.get("job_id") or "").strip() if isinstance(held, Mapping) else ""
+        )
+        if not recorded or recorded == job:
+            kept.append(pointer)
+    return kept
+
+
+def publish_reservation(
+    record: Mapping[str, Any], project: str | None = None, *, keyed: bool = False
+) -> Path:
     """Write the reservation to the crew state every project's sessions read.
 
     The published file is the whole point of the design: a job id held in one
@@ -229,9 +271,13 @@ def publish_reservation(record: Mapping[str, Any], project: str | None = None) -
     would hold its own reservation and the fleet would be back to one
     allocation per worker without anyone noticing. ``project`` is accepted so a
     caller can name the project it holds the allocation for; the record is
-    written unkeyed, because the allocation is shared and every project reads it.
+    written unkeyed, because the allocation is shared and every project reads it,
+    unless ``keyed`` names it the project's own fleet allocation.
     """
-    path = reservation_path()
+    path = (
+        project_reservation_path(project) if keyed and project else reservation_path()
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
     write_json_atomically(
         path, dict(record), indent=2, sort_keys=True, fsync=False, mode=None
     )
@@ -819,6 +865,7 @@ def replace_reservation(
     session: str | None = None,
     runner: Callable[..., subprocess.CompletedProcess[str]] | None = None,
     now: float | None = None,
+    keyed: bool = False,
 ) -> dict[str, Any]:
     """Point the reservation record at an explicit, already-running job.
 
@@ -841,7 +888,11 @@ def replace_reservation(
         refusal = _replacement_refusal(job_id, target)
         if refusal is not None:
             raise CrewError(f"cannot replace the placement reservation: {refusal}")
-        previous = read_reservation(project)
+        previous = (
+            _read_record(project_reservation_path(project))
+            if keyed and project
+            else _read_record(reservation_path())
+        )
         previous_job = previous.get("job_id") if previous else None
         # The shape is read through the allocation-shape reader the fleet node
         # already owns, so the published record describes the target's real
@@ -874,7 +925,7 @@ def replace_reservation(
             "held_at": time.time() if now is None else now,
             "replaced": previous_job,
         }
-        publish_reservation(record, project)
+        publish_reservation(record, project, keyed=keyed)
         if previous_job:
             detail = (
                 f"replaced reservation {previous_job} with {job_id} on "
@@ -1050,7 +1101,20 @@ def _ensure_reservation_locked(
     now: float | None,
 ) -> dict[str, Any]:
     """Hold the reservation, called with the cross-process lock already held."""
-    existing = read_reservation(project)
+    if project:
+        keyed = _read_record(project_reservation_path(project))
+        if keyed is not None:
+            answer = _probe_answer(keyed, alive_probe, runner)
+            if answer is None:
+                answer = _await_probe(keyed, alive_probe, runner)
+            if answer is not False:
+                return _held_result(keyed, unknown=answer is None)
+            # The project's own fleet allocation has ended. Its record is
+            # withdrawn so the project places into the shared reservation;
+            # holding a replacement here would mint an allocation nobody runs a
+            # supervisor in.
+            withdraw_project_reservation(project)
+    existing = _read_record(reservation_path())
     if existing:
         answer = _probe_answer(existing, alive_probe, runner)
         if answer is None:

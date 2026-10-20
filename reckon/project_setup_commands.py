@@ -181,7 +181,12 @@ def fleet_node_group():
     is_flag=True,
     help="Submit the allocation instead of printing its SLURM script.",
 )
-def fleet_node_hold(submit):
+@click.option(
+    "--fleet",
+    default=None,
+    help="Hold the named fleet's own node; the catch-all fleet when omitted.",
+)
+def fleet_node_hold(submit, fleet):
     """Print, or explicitly submit, the persistent whole-node allocation.
 
     ``cx`` runs this with --submit when it finds no fleet running; the line it
@@ -189,8 +194,14 @@ def fleet_node_hold(submit):
     """
     from reckon.crew import fleet_node
 
-    log_path = fleet_node.batch_log_path()
-    script = fleet_node.generate_hold_script(fleet_node.fleet_size(), log_path=log_path)
+    try:
+        environ = fleet_node.fleet_environ(fleet)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    log_path = fleet_node.batch_log_path(environ or None)
+    script = fleet_node.generate_hold_script(
+        fleet_node.fleet_size(), log_path=log_path, fleet=fleet
+    )
     if not submit:
         click.echo(script, nl=False)
         return
@@ -204,7 +215,12 @@ def fleet_node_hold(submit):
 
 
 @fleet_node_group.command(name="status")
-def fleet_node_status():
+@click.option(
+    "--fleet",
+    default=None,
+    help="Report the named fleet's node; the catch-all fleet when omitted.",
+)
+def fleet_node_status(fleet):
     """Report the held allocation, its node and its remaining lifetime.
 
     The allocation is found by its comment token under the account it is
@@ -214,17 +230,27 @@ def fleet_node_status():
     from reckon.crew import fleet_node
 
     try:
+        environ = fleet_node.fleet_environ(fleet)
         jobs = fleet_node.query_jobs(fleet_node.fleet_size().account)
-    except fleet_node.FleetNodeError as exc:
+    except (ValueError, fleet_node.FleetNodeError) as exc:
         raise click.ClickException(str(exc)) from exc
-    allocations = fleet_node.find_allocations(jobs)
+    allocations = fleet_node.find_allocations(jobs, fleet=fleet)
+    others = sorted(
+        {
+            name
+            for job in jobs
+            if (name := fleet_node.fleet_of_allocation(job)) and job not in allocations
+        }
+    )
+    if others:
+        click.echo(f"Other fleets held: {', '.join(others)} (--fleet NAME).")
     if not allocations:
         click.echo(
             "No fleet allocation is held; the interactive fleet has no "
             "whole-node allocation in the queue."
         )
         return
-    recorded = fleet_node.recorded_job_id()
+    recorded = fleet_node.recorded_job_id(environ or None)
     for allocation in allocations:
         state = fleet_node.node_state(allocation.get("node", ""))
         for line in fleet_node.describe_allocation(allocation, state_of_node=state):
@@ -240,6 +266,44 @@ def fleet_node_status():
                 else "the fleet record names none of them."
             )
         )
+
+
+
+@fleet_node_group.command(name="reserve")
+@click.option(
+    "--fleet", required=True, help="The named fleet whose projects to reserve."
+)
+def fleet_node_reserve(fleet):
+    """Point each project of a named fleet at that fleet's allocation.
+
+    A named fleet's supervisor does this when it starts; this repeats it by
+    hand, from the fleet's published record and the fleets declared in
+    ``~/.config/fleet/fleets.json``.
+    """
+    from reckon.crew import fleet_node, fleet_supervisor, placement
+
+    try:
+        environ = fleet_node.fleet_environ(fleet)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    if not environ:
+        raise click.ClickException(
+            "the catch-all fleet places into the shared reservation; name a fleet"
+        )
+    job = fleet_node.recorded_job_id(environ)
+    if not job:
+        raise click.ClickException(f"fleet {fleet} has published no record")
+    projects = fleet_supervisor.declared_fleets().get(fleet, [])
+    if not projects:
+        raise click.ClickException(f"fleets.json declares no projects for {fleet}")
+    for project in projects:
+        try:
+            result = placement.replace_reservation(
+                job_id=job, project=project, keyed=True
+            )
+        except placement.CrewError as exc:
+            raise click.ClickException(f"{project}: {exc}") from exc
+        click.echo(f"{project}: {result['detail']}")
 
 
 
