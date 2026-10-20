@@ -93,6 +93,85 @@ def _utc_now() -> datetime:
     return datetime.now(tz=UTC)
 
 
+#: The eight coordinator write verbs the crew MCP tool carries as actions, and
+#: the tool parameter name each verb's own option maps onto. A duty's printed
+#: command is rendered in the tool's action form so a coordinator reading the
+#: obligations view can call the action directly rather than composing a shell
+#: command from the printed tokens.
+_ACTION_OPTION_PARAM: dict[str, str] = {
+    "--run": "run_id",
+    "--run-id": "run_id",
+    "--project": "project",
+    "--gate": "gate",
+    "--commit": "commits",
+    "--outcome": "outcome",
+    "--dimension": "dimension",
+    "--finding": "finding_index",
+    "--kind": "kind",
+    "--node": "node",
+    "--reason": "reason",
+    "--until": "until",
+    "--write-path": "write_paths",
+    "--plan": "plan",
+    "--session": "session",
+    "--acted": "acted",
+    "--declined": "declined",
+    "--finding-id": "finding",
+}
+
+_ACTION_VERBS = frozenset(
+    {"complete", "land", "dispose", "ack", "answer", "widen", "stop", "discard"}
+)
+
+
+def action_form(command: str) -> str | None:
+    """Render a printed crew command in the MCP tool's action form.
+
+    One of the eight coordinator write verbs — ``reckon crew complete --run X
+    --gate <verdict>`` — becomes ``crew(action="complete", run_id="X",
+    gate="<verdict>")``, so the command a duty prints is one the coordinator
+    can call on the tool surface rather than a shell invocation to assemble.
+    A command naming any other verb, or none at all, has no action form and
+    reads as ``None``: the reader keeps the printed command it already had.
+    """
+    tokens = shlex.split(command)
+    if len(tokens) < 3 or tokens[0] != "reckon" or tokens[1] != "crew":
+        return None
+    verb = tokens[2]
+    if verb not in _ACTION_VERBS:
+        return None
+    pairs: list[tuple[str, str]] = [("action", verb)]
+    index = 3
+    while index < len(tokens):
+        token = tokens[index]
+        option, _, inline = token.partition("=")
+        parameter = _ACTION_OPTION_PARAM.get(option)
+        if parameter is None:
+            index += 1
+            continue
+        if inline:
+            pairs.append((parameter, inline))
+        elif index + 1 < len(tokens) and not tokens[index + 1].startswith("-"):
+            pairs.append((parameter, tokens[index + 1]))
+            index += 1
+        index += 1
+    return "crew(" + ", ".join(f'{key}="{value}"' for key, value in pairs) + ")"
+
+
+def _with_action_form(item: Mapping[str, Any]) -> dict[str, Any]:
+    """Return one duty row carrying its command's action form, when it has one.
+
+    The printed ``next_command`` is left as it stands — it is the CLI's own
+    spelling, which some readers still run — and ``next_action`` is added
+    beside it when that command names one of the eight actions.
+    """
+    row = dict(item)
+    rendered = action_form(str(item.get("next_command") or ""))
+    if rendered is not None:
+        row["next_action"] = rendered
+    return row
+
+
 def _seconds_since(value: Any, *, now: datetime) -> int:
     """Return the non-negative age of one timestamp, or zero if unreadable."""
     text = str(value or "").strip()
@@ -192,7 +271,7 @@ def _refused_delivered_review(pointer: Mapping[str, Any]) -> dict[str, str] | No
         try:
             body = json.loads(path.read_text(encoding="utf-8"))
             reasons = (
-                    review_module.store_review_refusals(body)
+                review_module.store_review_refusals(body)
                 if isinstance(body, Mapping)
                 else ["record is not an object"]
             )
@@ -1096,6 +1175,8 @@ def obligations(project: str, session: str) -> dict[str, Any]:
         )
     )
     closure = runs.drain(project, session=session)
+    items = [_with_action_form(item) for item in items]
+    acknowledged = [_with_action_form(item) for item in acknowledged]
     return {
         "project": project,
         "session": session,
