@@ -82,6 +82,7 @@ def test_importing_the_snapshot_module_pulls_in_no_derivation() -> None:
 
 def _commit(repository: Path, name: str, body: str) -> str:
     """Add one file at the repository root and return the new revision."""
+    (repository / name).parent.mkdir(parents=True, exist_ok=True)
     (repository / name).write_text(body, encoding="utf-8")
     _git(repository, "add", name)
     _git(repository, "commit", "-q", "-m", f"test: add {name}")
@@ -106,6 +107,14 @@ def fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Path]:
         ("commit", "-q", "-m", "test: seed the snapshot fixture"),
     ):
         _git(root, *arguments)
+    # A run's tier is read from the diff of the commit it cites against that
+    # commit's own parent, so a cited root commit measures no path at all. The
+    # runtime source lands in a second commit, which is what a run that owes a
+    # review cites.
+    (root / "reckon").mkdir()
+    (root / "reckon" / "fixture_runtime.py").write_text("VALUE = 1\n", encoding="utf-8")
+    _git(root, "add", "reckon/fixture_runtime.py")
+    _git(root, "commit", "-q", "-m", "test: seed a runtime source")
     (config_home / "mounts.json").write_text(
         json.dumps({PROJECT: str(root / "docs")}), encoding="utf-8"
     )
@@ -551,7 +560,7 @@ def test_a_moved_head_names_the_same_two_heads_in_snapshot_and_derivation(
     (monkeypatch.setattr(recovery_stream, "_utc_seconds", fleet["frozen"].timestamp), monkeypatch.setattr(recovery_liveness, "_utc_seconds", fleet["frozen"].timestamp), monkeypatch.setattr(recovery_classification, "_utc_seconds", fleet["frozen"].timestamp), monkeypatch.setattr(recovery_watch, "_utc_seconds", fleet["frozen"].timestamp))
     repository = fleet["repo"]
     reviewed_head = _git(repository, "rev-parse", "HEAD")
-    head = _commit(repository, "repair.txt", "repair\n")
+    head = _commit(repository, "reckon/repair_module.py", "REPAIR = 1\n")
     assert head != reviewed_head
     _write_pointer(fleet, "r-moved", phase="complete", status="complete")
     _store_review(run_id="r-moved", base=reviewed_head, head=reviewed_head)

@@ -25,9 +25,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from reckon import _store, file_memo, flight, ledger
+from reckon import _store, file_memo, flight, ledger, review_tiers
 from reckon._timestamps import parse_utc
-from reckon.crew import recovery, review_dispositions, review_lifecycle, runs
+from reckon.crew import (
+    recovery,
+    recovery_classification,
+    review_dispositions,
+    review_lifecycle,
+    runs,
+)
 from reckon.crew import review as review_module
 from reckon.crew.node import INTERRUPTED_RUN_PHASE, CrewError, parse_duration
 from reckon.crew.routing import (
@@ -389,6 +395,28 @@ def _queued_review_fields(
     }
 
 
+def _review_tier_for_duty(row: Mapping[str, Any], pointer: Mapping[str, Any]) -> str:
+    """The run's review tier, read through the resolver the sweep itself uses.
+
+    The tier rule belongs to promotion, so it is read through
+    :func:`reckon.crew.recovery._sweep_review_tier`, which calls the same
+    resolver promotion's gate calls on the same inputs — changed paths, changed
+    lines, declared spec level and declared capability risk. Re-deriving those
+    inputs here is how a duty and a sweep come to disagree about which run owes
+    a review, so they are never re-derived. A scope the resolver cannot measure
+    already reads there as the fuller tier, so a run whose change is unreadable
+    still owes its review.
+    """
+    try:
+        return str(
+            recovery._sweep_review_tier(
+                pointer, list(row.get("manifest_commits") or [])
+            )
+        )
+    except Exception:  # noqa: BLE001 - an unreadable tier owes the fuller review
+        return review_tiers.FULL
+
+
 def _review_duty_item(
     project: str,
     row: Mapping[str, Any],
@@ -407,6 +435,16 @@ def _review_duty_item(
     head the run now carries — so the reader sees which two disagree rather
     than an absence. With no stored record at all the classifier's own reading
     stands, there being no other head to name.
+
+    A run the tier rule owes no review is the exception the review selection
+    cannot see. The tier is read through the resolver the sweep uses, and a
+    tier-none run reads the kind a reviewed run with a passing review would
+    get, carrying its tier on the duty: the sweep dispatches no review for it
+    and the merged-head gate checks it instead, so a duty left review-missing
+    would name a dispatch nothing will ever run. Its command is the promotion
+    for the same reason: the row's own action is the review dispatch, and a
+    duty that read ready to promote while printing that dispatch would name
+    the very work the tier rule decided against.
 
     A reviewer run owes no review of itself: the record it wrote is its own
     deliverable, so its kind stays the classifier's. A row whose live pointer
@@ -433,6 +471,24 @@ def _review_duty_item(
         # No live tree to ask, or a reviewer whose own record is its
         # deliverable: the classifier's own reading stands.
         return _live_item(row, kind=_classification_kind(), now=now)
+
+    if _review_tier_for_duty(row, pointer) == review_tiers.NONE:
+        item = _live_item(
+            row,
+            kind="promotable-stale" if age > grace else "review-ready",
+            now=now,
+        )
+        item["review_tier"] = review_tiers.NONE
+        item["next_command"] = recovery_classification._promotion_command(
+            str(row.get("run_id") or ""),
+            pointer,
+            list(row.get("manifest_commits") or []),
+        )
+        item["reason"] = (
+            "the run changes no runtime source, so its review tier is none; no "
+            "review is owed and the merged-head gate checks it instead"
+        )
+        return item
     head, tree = recovery._review_head_and_tree(pointer)
     try:
         review, reviewed_head = recovery.select_review_for_head(
