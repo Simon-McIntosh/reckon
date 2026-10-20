@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="unattended-execution">
 <meta name="plan-impl" content="0.8823529411764706">
-<meta name="plan-version" content="263">
+<meta name="plan-version" content="264">
 <meta name="plan-modified" content="2026-10-20">
 <meta name="plan-commits" content="8d517e2a8775813f593e7168f5237bd4bb338fcf,d6bf49adc2ab44b3640182a1d3e8db0074909d62,5a93a1477648d72ea9e15571ed84101dfee33edc,26dc670d410b6f6779dc88c57f3865462f054c37">
 </head>
@@ -452,10 +452,10 @@ It asserts five cases:
 <p>Nothing in reckon reads either source, so a release is noticed only when someone looks by hand. The lead locked <code>model-catalogue-check</code>: check daily, warn, never switch.</p>
 <p><strong>Deliverable.</strong> A model catalogue check compares the declared lane models against both sources and records notices. It never edits the flight.</p>
 <ul>
-<li><strong>Configuration, with no model named in code.</strong> The flight schema gains a top-level <code>model_catalogue</code> block holding the list URL, the id prefixes to watch (such as <code>anthropic/claude-</code> and <code>openai/gpt-</code>) and a refresh age. It gains a per-lane <code>served_models</code> path for a lane whose CLI keeps a served-model list. <code>LaneModelConfig</code> gains an optional <code>catalog_id</code>, the model's id in that list. The host flight sets these, and the schema names no model.</li>
+<li><strong>Configuration, with no model named in code.</strong> The flight schema gains a top-level <code>model_catalogue</code> block holding the list URL, a refresh age, and a <code>watch</code> map that binds each id prefix to the lane it would serve, such as <code>anthropic/claude-: claude</code> and <code>openai/gpt-: codex</code>. It gains a per-lane <code>served_models</code> path for a lane whose CLI keeps a served-model list. <code>LaneModelConfig</code> gains an optional <code>catalog_id</code>, the model's id in that list. The host flight sets these, and the schema names no model.</li>
 <li><strong>The comparison.</strong> A new module reads the list, and each lane's served-model file where one is declared, and writes a dated snapshot under the crew home. Each notice has an id, a kind, its first-seen time and, once acknowledged, its acknowledgement. There are four kinds:
   <ul>
-  <li><code>released</code>: a watched id that no lane declares, created after the newest declared model with the same prefix, and not a variant whose id carries a <code>:</code> suffix such as <code>:batch</code>. It records whether a lane's served-model file lists it.</li>
+  <li><code>released</code>: a watched id that no lane declares, created after the newest declared model with the same prefix, and not a variant whose id carries a <code>:</code> suffix such as <code>:batch</code>. It records the lane its prefix is bound to, and whether that lane's served-model file lists it. Where the lane declares no served-model file, it records the served state as unknown.</li>
   <li><code>subscription-serves</code>: a model a served-model file lists as visible that no lane declares.</li>
   <li><code>declared-unserved</code>: a declared model that its lane's served-model file no longer lists.</li>
   <li><code>expiring</code>: a declared model whose list entry carries an <code>expiration_date</code>.</li>
@@ -468,7 +468,7 @@ A notice is raised once and stays raised until it is acknowledged. A failed fetc
 <ul>
 <li>The new test points the crew home at a temporary directory. It feeds the check a list document and a served-model file written as fixtures, and makes no network call. It asserts six cases:
   <ul>
-  <li>A list carrying <code>openai/gpt-6.1-sol</code>, created after a declared <code>gpt-6-sol</code>, with a served-model file that omits it, raises one <code>released</code> notice recording that no lane serves it. <code>openai/gpt-6.1-sol:batch</code> raises nothing.</li>
+  <li>A list carrying <code>openai/gpt-6.1-sol</code>, created after a declared <code>gpt-6-sol</code>, with a served-model file that omits it, raises one <code>released</code> notice that records lane <code>codex</code> and records that the codex served-model file does not list it. A watched <code>anthropic/claude-</code> id on a lane with no served-model file records its served state as unknown. <code>openai/gpt-6.1-sol:batch</code> raises nothing.</li>
   <li>A served-model file listing a visible slug no lane declares raises <code>subscription-serves</code>, and a hidden one raises nothing.</li>
   <li>A declared model missing from its lane's served-model file raises <code>declared-unserved</code>.</li>
   <li>A declared model whose list entry carries an <code>expiration_date</code> raises <code>expiring</code>.</li>
@@ -488,7 +488,7 @@ The test asserts the real crew home is untouched.</li>
 <ul>
 <li><strong>Daily refresh.</strong> The project producer refreshes the catalogue check when its snapshot is older than <code>model_catalogue</code>'s refresh age, on the clock cadence its other sweeps use (<code>WATCHER_SWEEP_INTERVAL_SECONDS</code>, <code>reckon/crew/recovery_watch.py</code>). The snapshot's age and a lock mean one producer fetches, however many projects are watched. A refresh that raises is printed and never ends the seat.</li>
 <li><strong>One line in the session.</strong> The coordinator obligations hook (<code>reckon/hooks/coordinator_obligations.py</code>) adds one line while any notice is unacknowledged, naming the count and the command <code>reckon crew models</code>. It reads the snapshot only and never fetches.</li>
-<li><strong>A probe, only after a flag.</strong> When a <code>released</code> notice names an id under a lane that declares no served-model file and opts in with <code>probe_new_models: true</code>, the refresh sends one headless request. It goes through that lane's own command, with the notice's model, a one-line prompt and a 60-second bound. The result is recorded on the notice as served or unserved, with the reply's first line. A notice is probed at most once, and nothing probes on a schedule.</li>
+<li><strong>A probe, only after a flag.</strong> When a <code>released</code> notice records a lane that declares no served-model file and opts in with <code>probe_new_models: true</code>, the refresh sends one headless request. It goes through that lane's own command, with the notice's model, a one-line prompt and a 60-second bound. The result is recorded on the notice as served or unserved, with the reply's first line. A notice is probed at most once, and nothing probes on a schedule.</li>
 </ul>
 <p><strong>Write paths:</strong> <code>reckon/crew/model_catalogue.py</code>, <code>reckon/crew/recovery_watch.py</code>, <code>reckon/hooks/coordinator_obligations.py</code>, <code>reckon/schema/flight.yaml</code> and <code>reckon/_flight_schema.py</code> for <code>probe_new_models</code>, the new <code>tests/test_a_model_notice_reaches_the_session.py</code>, and the node's evidence fragment.</p>
 <p><strong>Done when</strong> all of these hold:</p>
