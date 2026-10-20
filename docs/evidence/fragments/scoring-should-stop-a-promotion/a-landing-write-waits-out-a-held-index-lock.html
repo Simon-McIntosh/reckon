@@ -34,17 +34,30 @@
 
     <section id="a-landing-write-waits-out-a-held-index-lock-change">
       <h2>The change</h2>
-      <p>In <code>reckon/crew/promotion_scope.py</code>, staging is now performed by
-        <code>_stage_landing_writes</code>. It calls <code>git add</code> as before, and on a
-        failure whose message names a held <code>index.lock</code>
-        (<code>_staging_names_a_held_index_lock</code>) it retries for a bounded window
-        (<code>_INDEX_LOCK_RETRY_WINDOW_SECONDS = 5.0</code>, spacing
-        <code>_INDEX_LOCK_RETRY_INTERVAL_SECONDS = 0.5</code>), appending a
-        <code>step: "stage_retry"</code> entry with its attempt number and git's message to
-        the run's <code>landing.json</code> before each wait. A staging failure whose message
-        names no lock is returned at once, so a real error — an unreadable file, a bad path —
-        is never hidden behind the window. A lock that outlasts the window returns the failing
-        result to the caller, which refuses exactly as before.</p>
+      <p>One helper owns the wait and both callers use it. In
+        <code>reckon/crew/merge.py</code>,
+        <code>_run_waiting_out_a_held_index_lock</code> runs a caller's git step, retries
+        it while the checkout holds its own <code>.git/index.lock</code> — the lock file's
+        existence, as the merge landing has always read it, never a substring of the
+        failing command's message — and returns the last result together with the number
+        of retries it made. The merge landing's
+        loop calls it with a step that rebuilds the merge commit against the current
+        <code>HEAD</code> before each attempt, so its retry behaviour and its refusal
+        messages are unchanged; the landing staging calls it from
+        <code>_stage_landing_writes</code> with its one <code>git add</code>, and records
+        each retry as a <code>step: "stage_retry"</code> entry with the attempt number and
+        git's message on the run's <code>landing.json</code> through the helper's
+        <code>on_retry</code> hook. The staging's bound is now a number of attempts
+        (<code>_INDEX_LOCK_RETRY_ATTEMPTS = 12</code>, spacing
+        <code>_INDEX_LOCK_RETRY_INTERVAL_SECONDS = 0.5</code>) rather than a wall-clock
+        window, because the shared helper is bounded by attempts; twelve at half a second
+        keeps the wait at about the five seconds the window allowed. A staging failure
+        that leaves no lock behind is returned at once, so a real error — an unreadable
+        file, a bad path — is never hidden behind the retries. A lock that outlasts the
+        attempts returns the failing result to the caller, which refuses exactly as before.</p>
+      <p>Detection is by the lock file rather than by the failing command's text, which is
+        what the merge landing already did: the file is what the next attempt waits for, and
+        a message match would retry on any failure that happened to quote the path.</p>
     </section>
 
     <section id="a-landing-write-waits-out-a-held-index-lock-evidence">
@@ -53,12 +66,42 @@
         <code>_commit_landing_writes</code> against a temporary repository holding a real
         <code>.git/index.lock</code>. Its three cases: a lock released once the first retry is
         recorded commits, with the retries present in <code>landing.json</code>; a lock held
-        past a shrunk window refuses with a message naming the lock and records its retries;
-        and a staging failure naming no lock — an unreadable file — refuses with no retry
-        recorded. The focused gate is 3 passed (log <code>head-gate.log</code>).</p>
-      <p>The negative control reverts the retry around the staging <code>git add</code> to a
-        single direct call; under it the briefly-held-lock case fails (log
+        for every attempt refuses with a message naming the lock and records its retries,
+        numbered from one; and a staging failure that leaves no lock behind — an unreadable
+        file — refuses with no retry recorded.</p>
+      <p>The two-arm gate is the file, the two importing tests whose assertions this change
+        superseded, the files importing <code>reckon/crew/merge.py</code>, and the importing
+        set of <code>reckon/crew/promotion_scope.py</code>, run at <code>-n 8</code> on the
+        fleet allocation. The base arm (log <code>baseline-suite.log</code>) is
+        <code>1 failed, 182 passed</code> and the arm at this change's commit (log
+        <code>final-gate.log</code>) is <code>1 failed, 185 passed</code>. The one failure in
+        both is <code>test_a_paired_dispatch_hides_each_arm.py::test_the_primary_arm_cannot_read_the_shadows_session_directory</code>,
+        which fails because the fence mounts the pytest temporary directory read-only:
+        <strong>no added failure</strong>, and the three extra passes are this file's cases.</p>
+      <p>The negative control removes the wait from the staging entirely — the shared helper
+        call is replaced by one direct <code>git add</code> — and the declared first case
+        <code>test_a_landing_write_waits_out_a_briefly_held_lock</code> then fails, with the
+        lock-held-past-the-attempts case failing beside it because no retry is recorded (log
         <code>negative-control.log</code>, <code>EXIT=1</code>).</p>
+    </section>
+
+    <section id="a-landing-write-waits-out-a-held-index-lock-review">
+      <h2>The review round</h2>
+      <p>The first review scored reuse 8 and named two defects, both fixed here. The staging's
+        own retry loop and its <code>_staging_names_a_held_index_lock</code> message match
+        duplicated the wait <code>reckon/crew/merge.py</code> already owned, so both are
+        deleted and the shared helper above replaces them; the lock is now read from the
+        checkout's own <code>index.lock</code>, as the merge landing reads it.</p>
+      <p>The same review found that the change's first commit had also reformatted six
+        pre-existing unformatted constructs in <code>reckon/crew/promotion_scope.py</code> —
+        around the base file's lines 1217, 1259, 1268, 1679, 2342 and 2363 — which the change
+        did not otherwise touch. They are restored to their base form, so the diff carries
+        only the change. <code>ruff format --check</code> on the changed files reports the
+        same six constructs at this head as at base
+        (<code>baseline-suite.log</code>'s sibling <code>lint.log</code> carries both arms),
+        so no file is newly unformatted, and <code>ruff check</code> reports only the
+        pre-existing <code>PT011</code> at <code>tests/test_rollback_asks_head.py:201</code>
+        in both arms — no added finding.</p>
     </section>
 
     <section id="a-landing-write-waits-out-a-held-index-lock-open">
@@ -90,7 +133,7 @@
         with its one <code>stage</code> refusal and that every earlier entry is a
         <code>stage_retry</code>; the rollback case asserts one or more <code>add</code>
         attempts each failing with 128, followed by the <code>restore</code> with 128. At
-        the updated head the importing set is <code>1 failed, 170 passed</code> (log
+        the head of that round the importing set is <code>1 failed, 170 passed</code> (log
         <code>after-suite.log</code>) — the same single environmental failure the base arm
         carries and no added failure. Ruff adds none: head and base report the identical
         pre-existing <code>PT011</code> at <code>test_rollback_asks_head.py:201</code>, and the
