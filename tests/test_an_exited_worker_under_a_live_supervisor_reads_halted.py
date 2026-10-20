@@ -182,7 +182,12 @@ def test_a_worker_that_exited_under_a_live_supervisor_reads_halted(
     assert row["exit_record"] is not None
     assert row["classification"] == "exited-unfinished", row["detail"]
     assert row["recovery"] == recovery.RECOVERY_VERBS["exited-unfinished"]
-    assert "repair-status" in row["next_action"]
+    # The composed command carries the run it repairs and the status to set —
+    # `reckon crew repair --run <id> --status complete --reason <…>`. The
+    # subcommand's own spelling is not this test's business; the flags are what
+    # the reader is handed either way.
+    assert f"--run {run_id}" in row["next_action"], row["next_action"]
+    assert "--status complete" in row["next_action"], row["next_action"]
 
     snapshot = recovery._watch_snapshot(
         pointer, moment=1_800_000_000.0, stall_seconds=900
