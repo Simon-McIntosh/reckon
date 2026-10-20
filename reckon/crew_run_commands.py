@@ -610,7 +610,7 @@ def crew_dispose(
 
     A finding is a sub-floor review dimension, or an entry in the run's newest
     review record: a dimension below the floor flight configuration declares for
-    it, or a finding §3's rows print by index. Whichever the caller names is an
+    it, or a finding the review rows print by index. Whichever the caller names is an
     obligation row until an entry in the closed set answers it: a fold naming
     the dispatched node the finding went into, or an exemption naming why it is
     not being acted on. This is that entry's writer, so a coordinator retires
