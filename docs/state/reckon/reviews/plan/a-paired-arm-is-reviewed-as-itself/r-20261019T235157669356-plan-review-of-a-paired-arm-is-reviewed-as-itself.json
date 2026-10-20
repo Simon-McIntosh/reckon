@@ -1,0 +1,41 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T00:05:47.933Z",
+  "dispatched_at": "2026-10-19T23:52:41Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-paired-arm-is-reviewed-as-itself.html:96",
+      "id": "reasoning-1",
+      "reason": "the plan states the cross-project reader is wider only because the grant holds no project, so it should say the fallback scopes by project where a project is supplied and reads across projects only when it is None, or the delivery reader can be handed another project's run.",
+      "text": "the remedy has the durable reader select rows by the `node` column across projects and places the fallback inside `_resolved_reviewed_run_id`, whose other four callers (recovery_review_delivery.py:118 and :233, recovery_review_dispatch.py:180, promotion_checks.py:2343) each pass a real project, and whose live path scopes by that project through `list_live(project=...)` (reckon/crew/runs.py:720); as written a project-bearing caller whose source node id finds no live pointer can resolve to a same-named node's run in another project, which the live path would never return",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b4937a7cc77366441ac0494857c1f0079c183e3543281829bfa0492f098d08a7",
+  "plan_slug": "a-paired-arm-is-reviewed-as-itself",
+  "plan_version": 17,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261019T235157669356-plan-review-of-a-paired-arm-is-reviewed-as-itself",
+  "reviewed_blob_sha": "92842616665586bb2c750d95a59118fd2bbb2723",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor resolves: `_resolved_reviewed_run_id` at reckon/crew/recovery_review_delivery.py:220, `round_node_head_suffix` at reckon/crew/repair.py:331, `_run_head_for_review` at reckon/crew/recovery_review_dispatch.py:577, `RunStore` in reckon/run_store.py (with the `node` column already declared and indexed in `QUERY_KEYS`), and every named existing test file; the one missing test file is the new one this node creates.",
+    "done_when": "pass \u2014 \u00a73's five cases are each falsifiable and it declares two negative controls (remove the durable fallback; return the newest durable match rather than the head-suffix match), each run alone under pytest with a failing test id.",
+    "evidence_paths": "pass \u2014 the gate runs in the foreground, both arms' logs land in the run directory, and the manifest's `baseline_suite` names the base log and its failure ids.",
+    "naming": "pass \u2014 the new test path and every symbol named are mechanism-descriptive; no plan label, ticket number or version tag reaches code.",
+    "reasoning": "a finding \u2014 \u00a73 resolves the durable fallback by the `node` column across projects without the project the resolver is already given, so the durable path is wider than the live path it stands behind.",
+    "single_goal": "pass \u2014 \u00a73 carries one deliverable, resolving a promoted run's review over the durable run records; the \"After it lands\" command is a verification step, not a second deliverable.",
+    "wiring": "pass \u2014 the reopened document is coherent: `plan-status` returns to `active` with `s3: implementable`, the one declared `plan-section-depends-on` edge (`s2 \u2192 s1`) resolves, and \u00a73 needs no new edge because the sections it shares a file with (\u00a71, \u00a72) are already `done`."
+  },
+  "section_digests": {
+    "_document": "354b7deed8d7c63b85d193c8ea830fcb93c3ca174e9b6ecdeaf4683302a8c5e4",
+    "s1": "ec5878e59aedf58377564b41c63c798db6e9b8c5c55e13b86b4059f73e20af5f",
+    "s2": "b7025dcf34f30cb0e8238ea008bddc91a71d73968ce771de908ab95b3040767a",
+    "s3": "8f7b053b374635b2c459b2058a535062312afc4d9fc5141094660ff847f63ed3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T00:15:51.045883+00:00"
+}
