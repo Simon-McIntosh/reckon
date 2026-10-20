@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-20T21:23:45.508Z",
+  "dispatched_at": "2026-10-20T21:08:38Z",
+  "findings": [
+    {
+      "file": "tests/test_read_verbs_retire_behind_crew_view.py",
+      "line": "298",
+      "severity": "follow-on",
+      "text": "the new case drives `crew ledger` bare, `--view records` and `--view findings` but not `--view summary`, the retired command's default view (`click.Choice([\"summary\", \"records\", \"findings\"])`, default=\"summary\" on the base crew_ledger), so the one legal value the operand mapping routes to `crew view summary` rather than to the row's `ledger` positional is the one the guard never exercises; a regression scoped to that value would not redden."
+    },
+    {
+      "file": "docs/evidence/fragments/the-crew-surface-is-one-tool-and-a-few-verbs/cso-ledger-and-velocity-retire.html",
+      "line": "142",
+      "severity": "follow-on",
+      "text": "the record still states that the records document is compared against the same read over MCP, the assertion this commit replaced; tests/test_ledger.py:2431 now asserts `records[\"runs\"] == []` against a literal, so the evidence fragment describes a guard the change removed."
+    },
+    {
+      "file": "reckon/crew/tombstones.py",
+      "line": "204",
+      "severity": "follow-on",
+      "text": "with operand_flag set, `crew ledger --view summary` renders as `reckon crew view summary` while bare `crew ledger` renders as `reckon crew view ledger`, and the payload's `successor` field says `crew view ledger` for both; the same retired document reached explicitly and by default is handed to two different views and the successor/invocation fields disagree."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node goal is to move every reckon caller and citation of `crew ledger` and `crew velocity` to `crew view` and tombstone both; the two commits under this review complete it by making the printed successor followable \u2014 reckon/crew/tombstones.py:204 adds `operand_flag=\"--view\"` so `crew ledger --view records` renders as `reckon crew view records` rather than the `--view` form the successor rejects.\nVERDICT done_when: the source done-when names the eleven-file gate adding zero failures against the base arm; manifest baseline_suite records the base arm at 33bb77708db6069b7ce6fc018e2cc47c146fffd2 as 2 failed / 257 passed and after_suite the head arm at d2d934b3a00b3d17a08bb483d4e5f754bb8911bb as 2 failed / 265 passed, logs/gate-base.log and logs/gate-head.log each opening with their revision and closing a bare `EXIT=1` line, and the two failing ids are identical across the arms.\nVERDICT write_paths: read the source dispatch fence (sixteen paths) and the manifest's extended orientation_write_paths (twenty); the four files this increment changes \u2014 reckon/crew/tombstones.py, tests/test_ledger.py, tests/test_read_verbs_retire_behind_crew_view.py and docs/evidence/fragments/the-crew-surface-is-one-tool-and-a-few-verbs/cso-ledger-and-velocity-retire.html \u2014 are all inside them, tests/test_ledger.py by the scope extension the manifest records.\nVERDICT manifest: read at manifest.md; it records the gate command, both arm logs with revision headers and `EXIT=` footers, a red negative control (logs/negative-control.log, 1 failed, EXIT=1), the two controls for this round, and no blocked field.\nVERDICT diff: read the two commits gained since the last review against base f38a69738ec07e7ddd36cd91ec9358ed072a3f0c \u2014 d2d934b3a changes three files (the operand mapping and its two test files), 493cb5f6dd changes only the evidence fragment \u2014 reviewed commit by commit; no path outside the declared scope appears.\nCALL_SITES: reckon/crew_run_commands.py:2719 (crew_ledger = tombstone_command(\"ledger\")), reckon/crew_run_commands.py:2722 (crew_velocity), reckon/crew_dispatch_commands.py:30 (_CrewGroup.get_command), reckon/crew/tombstones.py:320 (tombstone_payload calls successor_invocation)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/tombstones.py:306 now emits `reckon crew view <operand>` for a row carrying operand_flag, so the arrow a caller follows is one the successor accepts.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/gate-head.log closes `2 failed, 265 passed` at d2d934b3a with `EXIT=1`, and logs/control-forwarding.log plus logs/control-hold-fields.log redden the two guards this round added \u2014 the head arm was not rerun at 493cb5f6dd, which changes only the evidence document.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the increment's four changed files each sit inside the source fence or the recorded extension, and nothing the goal does not imply rode along.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_read_verbs_retire_behind_crew_view.py:309 runs the printed invocation and requires exit 0, and logs/control-forwarding.log shows it reddening (1 failed, EXIT=1) when the operand mapping is emptied.\nSCORE fit: 18\nJUSTIFICATION fit: the new helper at reckon/crew/tombstones.py:258 follows the token loop already written in _mcp_arguments at :234, and the comment at tests/test_read_verbs_retire_behind_crew_view.py:57 no longer carries the plan label the last review named.\nSCORE reuse: 18\nJUSTIFICATION reuse: searched reckon/crew/obligations.py:224, reckon/crew/recovery_wait.py:660 and reckon/hooks/worker_git_guard.py:250 for an owner of argv flag consumption; each serves a different rendering, so the helper adds a capability no module owns, beside its sibling _mcp_arguments.\nFINDING tests/test_read_verbs_retire_behind_crew_view.py:298 follow-on: the new case drives `crew ledger` bare, `--view records` and `--view findings` but not `--view summary`, the retired command's default view (`click.Choice([\"summary\", \"records\", \"findings\"])`, default=\"summary\" in the base crew_ledger), so the one legal value the operand mapping routes to a different view than its default is the one the guard never exercises.\nFINDING docs/evidence/fragments/the-crew-surface-is-one-tool-and-a-few-verbs/cso-ledger-and-velocity-retire.html:142 follow-on: the record still states that the records document is compared against the same read over MCP; d2d934b3a replaced that assertion with fixture literals (tests/test_ledger.py:2431 asserts records[\"runs\"] == []), so the evidence fragment describes a guard the change removed.\nFINDING reckon/crew/tombstones.py:204 follow-on: with operand_flag set, `crew ledger --view summary` prints `reckon crew view summary` while bare `crew ledger` prints `reckon crew view ledger`, and the payload's own `successor` field says `crew view ledger` for both, so the same retired document reached explicitly and by default is handed to two different views and the successor/invocation fields disagree.\n",
+  "review_run_id": "r-20261020T210751617947-review-of-cso-ledger-and-velocity-retire-493cb5f6db7c",
+  "reviewed_base_sha": "f38a69738ec07e7ddd36cd91ec9358ed072a3f0c",
+  "reviewed_head_sha": "493cb5f6db7c57ac3ee94397636da8cca484a4e5",
+  "reviewed_run_id": "r-20261020T161011580050-cso-ledger-and-velocity-retire",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T21:30:00+00:00",
+  "total": 109
+}
