@@ -28,7 +28,7 @@
 <meta name="plan-commits" content="505c690b,9701e873,c45e7bac,dd19e201,31509127">
 <meta name="plan-artifacts" content="reckon/review_tiers.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,tests/test_review_tiers.py">
 <meta name="plan-impl" content="0.6666666666666666">
-<meta name="plan-version" content="176">
+<meta name="plan-version" content="177">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -747,6 +747,9 @@
 </div>
 <div class="r-comment" data-section="s12" data-id="c-close-s12" data-who="reckon-build" data-when="2026-10-20T03:50:00Z">
     <div class="r-comment-body"><p>§12 landed: crew widen accepts a stopped complete run whose newest review folds a dimension into its own node (head <code>1a2b9237</code>, merge <code>58d2e7942</code>); review 115/120; importer population adds only a load-only timing miss. <a href="/reckon/evidence/archive/a-review-is-sized-to-its-risk-landed.html#a-folded-finding-widens-its-repair">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261019T235023398874-a-folded-finding-widens-its-repair" data-who="reckon-build" data-when="2026-10-20T02:42:04Z">
+    <div class="r-comment-body"><p>crew widen now admits a stopped run whose manifest reads complete when `_widen_folded_disposition` finds a dimension in the run&#x27;s own review record disposed as `folded` naming the run&#x27;s own node, records the grant under `folded_disposition` in the reply, and leaves the pointer&#x27;s other fields byte-for-byte unchanged; excepted the fold, a complete or failed run and a live worker are refused as before — gate over the ten files importing `reckon/crew_run_commands.py` at `pytest -n 8`: head `1 failed, 308 passed` EXIT=1 against base `4 failed, 305 passed` EXIT=1, no added failure (the single shared failure is pre-existing and outside this node&#x27;s scope)</p></div>
 </div>
 </section>
 </main>
