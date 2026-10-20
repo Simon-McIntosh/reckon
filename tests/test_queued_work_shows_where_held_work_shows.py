@@ -23,9 +23,7 @@ LANE = "clive"
 
 
 def _git(repository, *arguments):
-    result = subprocess.run(["git", *arguments], cwd=repository, capture_output=True)
-    if result.returncode:
-        raise RuntimeError(result.stderr.decode()[:400])
+    subprocess.run(["git", *arguments], cwd=repository, capture_output=True, check=True)
 
 
 def _mounted_project(tmp_path, monkeypatch):
@@ -146,9 +144,8 @@ def _row_for(rows, run_id):
 
 
 def test_one_queued_run_reads_as_queued_on_every_surface(tmp_path, monkeypatch):
-    from reckon.crew import runs
-    from reckon.crew import ticker
-    from reckon.crew.obligations import QUEUED_RUN_DUTY_KIND
+    from reckon.crew import obligations as obligations_module
+    from reckon.crew import runs, ticker
 
     repository = _mounted_project(tmp_path, monkeypatch)
     now = datetime.now(tz=UTC)
@@ -162,7 +159,7 @@ def test_one_queued_run_reads_as_queued_on_every_surface(tmp_path, monkeypatch):
 
     items = _obligation_items()
     item = _row_for(items, "r-queued-one")
-    assert item["kind"] == QUEUED_RUN_DUTY_KIND
+    assert item["kind"] == obligations_module.QUEUED_RUN_DUTY_KIND
     assert (item["position"], item["rank"]) == (1, 1)
 
     row = _row_for(_crew_view_rows(), "r-queued-one")
@@ -198,19 +195,16 @@ def test_crew_list_names_the_queued_runs_place(tmp_path, monkeypatch):
 def test_two_queued_runs_follow_the_admission_order(tmp_path, monkeypatch):
     repository = _mounted_project(tmp_path, monkeypatch)
     joined = datetime.now(tz=UTC)
-    first, _ = _queue(
-        repository, "r-queued-a", queued_at=joined - timedelta(minutes=2)
-    )
-    second, dispatched_position = _queue(
+    _queue(repository, "r-queued-a", queued_at=joined - timedelta(minutes=2))
+    dispatched_position = _queue(
         repository, "r-queued-b", queued_at=joined - timedelta(minutes=1)
-    )
+    )[1]
     # The writer that queued the second request reports the place its own
     # admission ordering gives it: the surfaces must agree with it.
     assert dispatched_position == 2
 
     assert {
-        item["run_id"]: (item["position"], item["rank"])
-        for item in _obligation_items()
+        item["run_id"]: (item["position"], item["rank"]) for item in _obligation_items()
     } == {"r-queued-a": (1, 1), "r-queued-b": (2, 2)}
 
     rows = {row["run_id"]: (row["position"], row["rank"]) for row in _crew_view_rows()}
