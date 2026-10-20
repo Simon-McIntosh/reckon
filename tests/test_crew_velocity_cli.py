@@ -1,6 +1,6 @@
 """The velocity view is served on the command line through the same composition.
 
-``crew velocity`` in ``reckon/cli.py`` and ``crew(view="velocity")`` in
+``crew view velocity`` in ``reckon/cli.py`` and ``crew(view="velocity")`` in
 ``reckon/mcp.py`` both call ``reckon.velocity.view``, so for the same window
 and fields they must answer the same payload. This test drives the CLI with a
 synthesised fleet under ``tmp_path`` and asserts the two surfaces agree — over
@@ -165,7 +165,7 @@ def fleet(tmp_path: Path, isolated_reckon_home: Path) -> dict[str, Path]:
 
 
 def _cli(*arguments: str) -> dict:
-    result = CliRunner().invoke(main, ["crew", "velocity", *arguments])
+    result = CliRunner().invoke(main, ["crew", "view", "velocity", *arguments])
     assert result.exit_code == 0, result.output + (result.stderr or "")
     # The JSON is the whole of stdout: the census's progress goes to stderr, so
     # a caller parses the answer without filtering the library's narration out.
@@ -238,7 +238,9 @@ def test_a_cells_page_agrees_with_the_read_view(fleet):
 
 
 def test_the_cli_refuses_a_missing_since_by_name(fleet):
-    result = CliRunner().invoke(main, ["crew", "velocity", "--project", "alpha"])
+    result = CliRunner().invoke(
+        main, ["crew", "view", "velocity", "--project", "alpha"]
+    )
 
     assert result.exit_code != 0
     assert "since" in (result.output + (result.stderr or ""))

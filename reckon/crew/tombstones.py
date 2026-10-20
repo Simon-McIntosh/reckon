@@ -59,6 +59,12 @@ class Tombstone:
         the arguments alone do not select the case. It is deliberately not part
         of ``argv``: ``argv`` is a token path into the live command tree, and a
         flag is not a command.
+    :param positional: for a CLI successor that names the retired verb's own
+        case with a positional operand rather than a flag, the operand the
+        successor takes, e.g. ``("velocity",)`` for the retired ``velocity``
+        folded into ``crew view velocity``. Like :attr:`flags` it is carried
+        ahead of the caller's arguments and kept out of ``argv``, which stays a
+        token path into the live command tree.
     :param mcp_view: for an MCP successor, the view the crew tool accepts.
     :param mcp_action: for an MCP successor, the action the crew tool accepts.
     :param detail: one line saying what the successor does, so the refusal
@@ -69,6 +75,7 @@ class Tombstone:
     successor: str
     argv: tuple[str, ...] = ()
     flags: tuple[str, ...] = ()
+    positional: tuple[str, ...] = ()
     mcp_view: str | None = None
     mcp_action: str | None = None
     detail: str = ""
@@ -179,6 +186,24 @@ TOMBSTONES: tuple[Tombstone, ...] = (
         argv=("crew", "resume"),
         detail="a run moves backend through `crew resume --backend`",
     ),
+    Tombstone(
+        retired="ledger",
+        successor="crew view ledger",
+        argv=("crew", "view"),
+        positional=("ledger",),
+        detail=(
+            "committed run records are read by `crew view ledger`; the retired "
+            "--view records and --view findings name the `records` and "
+            "`findings` views"
+        ),
+    ),
+    Tombstone(
+        retired="velocity",
+        successor="crew view velocity",
+        argv=("crew", "view"),
+        positional=("velocity",),
+        detail="what the fleet delivered is read by `crew view velocity`",
+    ),
 )
 
 #: Lookup by the retired name a caller types.
@@ -228,7 +253,7 @@ def successor_invocation(row: Tombstone, args: tuple[str, ...]) -> str:
     options that map onto the tool's parameters.
     """
     if row.is_cli:
-        return " ".join(("reckon", *row.argv, *row.flags, *args))
+        return " ".join(("reckon", *row.argv, *row.positional, *row.flags, *args))
     rendered = [f'{key}="{value}"' for key, value in _mcp_arguments(args)]
     view = f'view="{row.mcp_view}"' if row.mcp_view else ""
     action = f'action="{row.mcp_action}"' if row.mcp_action else ""

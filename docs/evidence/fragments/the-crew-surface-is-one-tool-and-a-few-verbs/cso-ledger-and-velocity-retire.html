@@ -1,0 +1,118 @@
+<article class="landed-report" data-node="cso-ledger-and-velocity-retire">
+<h3 id="cso-ledger-and-velocity-retire-summary">The ledger and velocity read verbs retire behind crew view</h3>
+<p id="cso-ledger-and-velocity-retire-change"><strong>Change.</strong>
+<code>crew ledger</code> and <code>crew velocity</code> are gone.
+<code>reckon/crew_run_commands.py</code> loses both command definitions and
+binds the two module-level names the CLI shim re-exports to
+<code>tombstone_command("ledger")</code> and
+<code>tombstone_command("velocity")</code>, so each retired name answers with
+the JSON document that names its successor and exits <code>10</code>.
+<code>reckon/crew/tombstones.py</code> gains the two rows —
+<code>ledger → crew view ledger</code> and
+<code>velocity → crew view velocity</code> — and a <code>positional</code>
+field, because <code>crew view</code> names its case as a positional operand
+(<code>reckon crew view ledger …</code>) rather than a flag, so
+<code>argv</code> alone cannot carry it: <code>argv</code> stays the token path
+into the live command tree, which is what the successor-resolution check walks.
+
+Every reckon-side caller and citation moved with them. The D20 remedy in
+<code>reckon/crew/refusals.py</code> now reads
+<code>reckon crew view records</code>; the module docstring of
+<code>reckon/hooks/native_agent_guard.py</code> no longer names the verb; the
+Ledger row in <code>reckon/crew/AGENTS.md</code> reads
+<code>reckon crew view ledger</code>;
+<code>skills/reckon-build/SKILL.md</code> and
+<code>skills/reckon-build/references/coordinator-reference.md</code> drop the
+verb from their command block — they already name <code>reckon crew view</code>
+— and <code>skills/reckon-review/SKILL.md</code> reads findings back with
+<code>reckon crew view findings --project &lt;project&gt; --path
+&lt;prefix&gt;</code>. <code>tests/test_findings_read_by_path.py</code> and
+<code>tests/test_crew_velocity_cli.py</code> drive the views instead of the
+verbs, and the two contract files lose the retired names'
+rows:
+<code>tests/test_crew_help_names_its_state.py</code> drops
+<code>("ledger",)</code> and <code>("velocity",)</code> from
+<code>STATE_PHRASES</code>, and
+<code>tests/test_skill_contracts.py</code> drops
+<code>("crew", "ledger")</code> from the documented-flag map and
+<code>("crew", "velocity")</code> from
+<code>CREW_VERBS_OUTSIDE_ORCHESTRATION</code>, whose membership is defined over
+<em>registered</em> verbs.</p>
+<p id="cso-ledger-and-velocity-retire-test"><strong>Test.</strong>
+<code>tests/test_read_verbs_retire_behind_crew_view.py</code> holds both ends of
+the arrow. A module-scoped synthesised checkout (a committed ledger, a
+committed review, dated commits in a velocity window) feeds four cases, one per
+retired read: the document the retired verb composed — through the module
+function it called (<code>ledger.summary</code>,
+<code>ledger.read_records</code>, <code>findings.findings_by_path</code>,
+<code>velocity.view</code>) — is compared against the same document driven
+through <code>crew view</code>. Each side is composed by a different builder,
+so only the fields both documents share are compared, and that field set is
+written down in <code>SHARED_FIELDS</code> rather than derived: a successor
+that later drops one of them fails the file. The sets are, in order,
+<code>(path, project, version)</code> for the ledger rollup,
+<code>(project, runs)</code> for records,
+<code>(artefacts, path, paths, project, records, rows)</code> for findings, and
+the full velocity payload key set. The ledger entry is narrow because the
+retired <code>--view summary</code> rollup and the <code>ledger</code> view are
+not one document: both name a <code>runs</code> field and one counts them where
+the other lists them, so what they genuinely share is the ledger they read.
+Two further cases assert each retired name exits <code>10</code> and its
+document names the view in <code>SUCCESSORS</code> — literals written in the
+test, not read from the registry, so a row repointed at another view fails
+rather than agreeing with itself — and that no string under
+<code>reckon/</code> still names either as a <code>reckon crew</code> command.
+The scan is shown to be meaningful by a fourth case asserting both names really
+are registered tombstones.</p>
+<p id="cso-ledger-and-velocity-retire-measure"><strong>Measure.</strong> Gate:
+<code>tests/test_read_verbs_retire_behind_crew_view.py</code> plus
+<code>tests/test_findings_read_by_path.py</code>,
+<code>tests/test_crew_velocity_cli.py</code>,
+<code>tests/test_skill_contracts.py</code>,
+<code>tests/test_crew_help_names_its_state.py</code>,
+<code>tests/test_cited_commands_exist.py</code>,
+<code>tests/test_crew_families_fold.py</code>,
+<code>tests/test_a_retired_verb_names_its_successor.py</code> and
+<code>tests/test_every_module_fits_a_worker_window.py</code>, run with the main
+checkout's <code>.venv/bin/python -m pytest -p no:cacheprovider</code>. Head
+arm: 1 failed, 122 passed, <code>EXIT=1</code>. Base arm at
+<code>33bb77708db6069b7ce6fc018e2cc47c146fffd2</code> over the same eight
+pre-existing files (the new file is absent): 1 failed, 115 passed,
+<code>EXIT=1</code>. Both arms fail the same single id,
+<code>test_every_module_fits_a_worker_window</code> — <code>reckon/budget.py</code>,
+<code>reckon/crew/review.py</code> and <code>reckon/ledger.py</code> exceed the
+bound and none of the three is a path this node touched — so the node adds zero
+failures. <code>ruff check</code> on the changed paths reports one finding at
+head and one at base (the same pre-existing <code>RUF005</code> in
+<code>tests/test_skill_contracts.py</code>); <code>ruff format --check</code>
+reports one unformatted file at head and one at base (the same pre-existing
+<code>_CARDINAL_WORDS</code> block). Logs
+<code>logs/gate-head.log</code>, <code>logs/gate-base.log</code>,
+<code>logs/base-window.log</code> and <code>logs/negative-control.log</code>
+under the run directory, each opening with its revision and closing with a bare
+<code>EXIT=</code> line.</p>
+<p id="cso-ledger-and-velocity-retire-control"><strong>Negative control.</strong>
+Pointing the <code>ledger</code> tombstone at the wrong view
+(<code>successor="crew view velocity"</code>,
+<code>positional=("velocity",)</code>) reddens
+<code>test_each_retired_verb_names_its_view</code> with
+<code>AssertionError: assert 'crew view velocity' == 'crew view ledger'</code> —
+a failure id the head arm does not fail: <code>1 failed</code>,
+<code>EXIT=1</code>. Log <code>logs/negative-control.log</code> under the run
+directory; the mutation was reverted before the commit.</p>
+<p id="cso-ledger-and-velocity-retire-followons"><strong>Follow-ons.</strong>
+Two test files drive <code>crew ledger --view records</code> through the CLI
+and are <em>outside this node's write scope and the plan's census for it</em>.
+They pass at the base revision and fail at this head, six ids between them, so
+the section cannot close without them:
+<code>tests/test_derived_figures_reach_a_reader.py</code> (five ids, in
+<code>_rows("cli", …)</code>) and <code>tests/test_old_names_resolve.py</code>
+(<code>test_ledger_and_cli_report_pair_and_keep_stored_bytes</code>). Each needs
+one mechanical repoint — <code>["crew", "ledger", "--project", P, "--view",
+"records", "--checkout-path", R]</code> becomes <code>["crew", "view",
+"records", "--project", P, "--checkout-path", R]</code>. Evidence:
+<code>logs/out-of-scope-callers-base.log</code> (46 passed,
+<code>EXIT=0</code>) against
+<code>logs/out-of-scope-callers-head.log</code> (6 failed, 40 passed,
+<code>EXIT=1</code>).</p>
+</article>

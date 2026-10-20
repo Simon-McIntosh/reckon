@@ -75,7 +75,7 @@ own, not this skill's mode.
    reckon crew dispose --project <project> --run <run-id> --finding <n> --kind exempted --reason "<why>"
    ```
 
-   Read the rows back with `reckon crew ledger --project <project> --view findings --path <prefix>`.
+   Read the rows back with `reckon crew view findings --project <project> --path <prefix>`.
 
 ## Plan
 

@@ -75,8 +75,7 @@ DISPATCH_REFUSAL_REMEDIES: Mapping[str, str | None] = {
         "`reckon crew dispatch`"
     ),
     "D20": (
-        "`reckon crew ledger --view records`, then `reckon crew shadow` with a "
-        "valid primary run"
+        "`reckon crew view records`, then `reckon crew shadow` with a valid primary run"
     ),
     "D21": (
         "`reckon crew dispatch --pair-backend <candidate>` or `reckon crew shadow "

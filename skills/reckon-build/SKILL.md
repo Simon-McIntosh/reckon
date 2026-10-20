@@ -206,7 +206,7 @@ reckon crew complete --run <id> --gate <verdict> --commit <sha> --outcome <text>
 reckon crew directory --project <project> --run <id> --node <node>
 reckon crew dispatch --project <project> --plan <slug> --section <section> --role <role> --node <node> --goal <goal> --done-when <measure> --write-path <path> --peer <other-node>=<their-paths> --time-budget <duration> --session <session> --set <override> --dry-run --member <member> --manifest <path> --allow-unreconciled-runs --no-watch
 reckon crew discard --run <id>    reckon crew drain --project <project> --leave <id>=<disposition>
-reckon crew follow --project <project>    reckon crew gc    reckon crew ledger --project <project> --view <view>
+reckon crew follow --project <project>    reckon crew gc
 reckon crew gate (--pause <reason> | --open) [--pretty]    # prints the shared gate document before and after the change
 reckon crew list    reckon crew member add    reckon crew member list --project <project>
 reckon crew observe --run <id>    reckon crew budget --check --project <project> --role <role>
