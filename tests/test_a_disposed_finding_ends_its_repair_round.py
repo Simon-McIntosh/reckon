@@ -203,7 +203,7 @@ def test_newer_finding_disposition_wins_when_review_copies_disagree():
 
 @pytest.mark.arms_watch_producer
 def test_folded_first_leaves_only_second_in_brief_and_scope(round_fixture, monkeypatch):
-    record = _store(round_fixture, FINDINGS)
+    _store(round_fixture, FINDINGS)
     _dispose(0, kind="folded", target="other-node")
     _, selected = review.stored_record(PROJECT, RUN_ID)
     assert selected is not None
@@ -219,7 +219,10 @@ def test_folded_first_leaves_only_second_in_brief_and_scope(round_fixture, monke
     assert len(resumed) == 1
     assert FINDINGS[0]["file"] not in resumed[0]
     assert FINDINGS[1]["file"] in resumed[0]
-    assert record["findings"] == FINDINGS
+    _, persisted = review.stored_record(PROJECT, RUN_ID)
+    assert persisted is not None
+    assert persisted["findings"] == FINDINGS
+    assert persisted[review.FINDING_DISPOSITIONS_KEY]["0"]["kind"] == "folded"
 
 
 @pytest.mark.arms_watch_producer

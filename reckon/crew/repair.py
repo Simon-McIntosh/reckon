@@ -234,12 +234,12 @@ def blocking_findings(review: Mapping[str, Any]) -> list[dict[str, Any]]:
     """
     return [
         finding
-        for _, finding, disposition in _blocking_finding_dispositions(review)
+        for _, finding, disposition in blocking_finding_dispositions(review)
         if disposition == "open"
     ]
 
 
-def _blocking_finding_dispositions(
+def blocking_finding_dispositions(
     review: Mapping[str, Any],
 ) -> list[tuple[int, dict[str, Any], str]]:
     """Keep blocking findings paired with their original indexes and answers."""
@@ -274,7 +274,7 @@ def unmarked_findings(review: Mapping[str, Any]) -> list[dict[str, Any]]:
         return []
     return [
         finding
-        for _, finding, disposition in _blocking_finding_dispositions(review)
+        for _, finding, disposition in blocking_finding_dispositions(review)
         if disposition == "open" and review_module.declared_severity(finding) is None
     ]
 

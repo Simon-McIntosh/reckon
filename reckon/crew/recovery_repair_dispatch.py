@@ -767,7 +767,7 @@ def dispatch_repair_for_run(
             unmarked = repair_module.unmarked_findings(review)
             disposed = [
                 (index, kind)
-                for index, _, kind in repair_module._blocking_finding_dispositions(
+                for index, _, kind in repair_module.blocking_finding_dispositions(
                     review
                 )
                 if kind != "open"
