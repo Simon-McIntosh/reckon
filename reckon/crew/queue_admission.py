@@ -46,6 +46,14 @@ LAUNCH_FAILED_PHASE = "launch-failed"
 # launch is still retried eventually rather than parked forever.
 ADMISSION_RETRY_BACKOFF_SECONDS = 30.0
 ADMISSION_RETRY_BACKOFF_CAP_SECONDS = 600.0
+#: One JSON line per admission pass whose lane had a queued pointer, appended
+#: under the crew home beside ``pick-timings.jsonl``. A pass that holds a
+#: request for its session's allowance, its lane's gate, its retry back-off or
+#: an earlier request otherwise records nothing, so the log is what names why a
+#: request waited. The log is trimmed to this many bytes on every append, so a
+#: service that runs for days cannot grow it without limit.
+ADMISSION_VERDICT_LOG = "admission-verdicts.jsonl"
+ADMISSION_VERDICT_LOG_MAX_BYTES = 1_048_576
 
 
 def _now() -> datetime:
@@ -314,32 +322,35 @@ def _await_moved_launch(
         raise
 
 
-def _session_allowance(
+def _session_allowance_read(
     pointer: Mapping[str, Any],
     *,
     config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
-) -> float | None:
+) -> tuple[float | None, str]:
     """The extra-worker allowance the lane grants the queued run's session.
 
-    ``None`` means no lane document is declared, so the lane publishes nothing
-    to hold on and every queued run may be attempted. A published allowance of
-    zero or less holds that session.
+    Returns the allowance and the source it was read from, so a pass can record
+    which published figure it held or launched on. ``None`` means no lane
+    document is declared, so the lane publishes nothing to hold on and every
+    queued run may be attempted. A published allowance of zero or less holds
+    that session.
     """
     config = (
         config_for(pointer) if config_for is not None else _resolve_lane_config(pointer)
     )
     backend = (config.get("backends") or {}).get(str(pointer.get("backend") or ""))
     if not backend:
-        return None
+        return None, "no backend declares the request's lane"
     decision = _dispatch_lane_allowance(backend, session=str(pointer["session"]))
     if decision is None:
-        return None
+        return None, "the lane publishes no allowance"
+    source = str(decision.get("source") or "unknown")
     if decision.get("held"):
-        return 0
+        return 0, source
     allowance = decision.get("allowance")
     if isinstance(allowance, bool) or not isinstance(allowance, (int, float)):
-        return None
-    return float(allowance)
+        return None, source
+    return float(allowance), source
 
 
 def _lane_gate_hold(
@@ -354,8 +365,8 @@ def _lane_gate_hold(
     same question here, before the queued pointer is released, lets a request the
     gate holds stay exactly as it is: no release, no failed launch,
     no re-queue for a request whose state never moved. The companion question —
-    the session's lane allowance — is asked by :func:`_session_allowance`, whose
-    ``0`` holds the session; together they are the two the dispatch path asks.
+    the session's lane allowance — is asked by :func:`_session_allowance_read`,
+    whose ``0`` holds the session; together they are the two the dispatch path asks.
     """
     config = (
         config_for(pointer) if config_for is not None else _resolve_lane_config(pointer)
@@ -840,6 +851,109 @@ def _require_launched_record(candidate: Any) -> Mapping[str, Any]:
     return candidate
 
 
+def _verdict_row(
+    pointer: Mapping[str, Any],
+    *,
+    allowance: float | None,
+    allowance_source: str,
+    verdict: str,
+    detail: str = "",
+    retry_at: str = "",
+    failure: str = "",
+) -> dict[str, Any]:
+    """One queued pointer's verdict for a pass, as the log records it."""
+    row: dict[str, Any] = {
+        "run_id": str(pointer.get("run_id") or ""),
+        "session": str(pointer.get("session") or ""),
+        "allowance": allowance,
+        "allowance_source": allowance_source,
+        "verdict": verdict,
+    }
+    if detail:
+        row["detail"] = detail
+    if retry_at:
+        row["retry_at"] = retry_at
+    if failure:
+        row["failure"] = failure
+    return row
+
+
+def _record_gated_verdicts(
+    result: dict[str, Any],
+    *,
+    gate: Mapping[str, Any],
+    lane: str,
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
+) -> None:
+    """Name every queued request a waiting fleet gate held, and the gate itself.
+
+    The gate is read before the queue is, so a pass that returns here would
+    otherwise record nothing for requests its own gate is holding — the same
+    empty trace as a request held for its session's allowance. The requests are
+    read only to name them: nothing is released, launched or rewritten.
+    """
+    state = str(gate.get("state") or "")
+    for pointer in runs.list_live():
+        if pointer.get("phase") != "queued":
+            continue
+        if lane and str(pointer.get("backend")) != lane:
+            continue
+        allowance, source = _session_allowance_read(pointer, config_for=config_for)
+        result["verdicts"].append(
+            _verdict_row(
+                pointer,
+                allowance=allowance,
+                allowance_source=source,
+                verdict="held-by-gate",
+                detail=state,
+            )
+        )
+
+
+def _record_pass_verdicts(
+    result: Mapping[str, Any], *, lane: str, code_stamp: str
+) -> None:
+    """Write one log line for a pass whose lane had a queued pointer.
+
+    A pass that examined no queued pointer writes nothing: an idle pass is the
+    absence of a line, not a line saying so. The line goes through the shared
+    crew-home log writer, so this log and the picker's timings are written the
+    same way, and the bound that follows is the shared service-log trim.
+
+    The trim keeps the file's inode, so the appender's own descriptor stays
+    valid, but it reads the tail and then rewrites the file in place: a line
+    another lane's service appends in that window is still lost. The window is
+    narrow and accepted, because this log is a best-effort record rather than a
+    decision the service rests on. For the same reason a trim that raises is
+    swallowed: a storage error while bounding the record must not end a service
+    whose admission decision has already been made.
+    """
+    verdicts = result.get("verdicts") or []
+    if not verdicts:
+        return
+    from reckon.crew.fleet_supervisor import trim_service_log
+    from reckon.crew.picker import _append_crew_log_line
+
+    _append_crew_log_line(
+        ADMISSION_VERDICT_LOG,
+        {
+            "at": _utc_now(),
+            "lane": lane,
+            "code_stamp": code_stamp,
+            "gate": result.get("gate"),
+            "pointers": list(verdicts),
+        },
+    )
+    try:
+        trim_service_log(
+            runs.crew_home() / ADMISSION_VERDICT_LOG,
+            limit=ADMISSION_VERDICT_LOG_MAX_BYTES,
+            keep=ADMISSION_VERDICT_LOG_MAX_BYTES,
+        )
+    except OSError:  # a pass never fails on its own record
+        return
+
+
 def admit_once(
     *,
     launcher: Callable[..., int] | None = None,
@@ -864,9 +978,11 @@ def admit_once(
         "held": [],
         "failed": [],
         "requeued": [],
+        "verdicts": [],
     }
     if gate.get("state") in _LANE_GATE_WAITING_STATES:
         result["action"] = "gated"
+        _record_gated_verdicts(result, gate=gate, lane=lane, config_for=config_for)
         return result
     with _admit_lock() if lock else nullcontext():
         result["requeued"] = _requeue_admitted_failures(
@@ -881,6 +997,8 @@ def admit_once(
             ]
         order = queue_order.admission_order(queued, live, now=moment)
         remaining: dict[str, float | None] = {}
+        allowance_sources: dict[str, str] = {}
+        verdicts: list[dict[str, Any]] = result["verdicts"]
         # The pass's own claim resolutions, so every overlap comparison reads a
         # request's resolved claims rather than resolving them again. A fresh
         # cache per pass means a request whose write paths or mounts change is
@@ -889,10 +1007,21 @@ def admit_once(
         for index, pointer in enumerate(order):
             session = str(pointer["session"])
             if session not in remaining:
-                remaining[session] = _session_allowance(pointer, config_for=config_for)
+                read, source = _session_allowance_read(pointer, config_for=config_for)
+                remaining[session] = read
+                allowance_sources[session] = source
             allowance = remaining[session]
+            allowance_source = allowance_sources[session]
             if allowance is not None and allowance <= 0:
                 result["held"].append(str(pointer["run_id"]))
+                verdicts.append(
+                    _verdict_row(
+                        pointer,
+                        allowance=allowance,
+                        allowance_source=allowance_source,
+                        verdict="held-for-allowance",
+                    )
+                )
                 continue
             gate_hold = _lane_gate_hold(pointer, config_for=config_for)
             if gate_hold is not None:
@@ -902,6 +1031,15 @@ def admit_once(
                 # session-allowance hold above is the same question's other half.
                 result["held"].append(str(pointer["run_id"]))
                 result.setdefault("hold_detail", {})[str(pointer["run_id"])] = gate_hold
+                verdicts.append(
+                    _verdict_row(
+                        pointer,
+                        allowance=allowance,
+                        allowance_source=allowance_source,
+                        verdict="held-by-gate",
+                        detail=gate_hold,
+                    )
+                )
                 continue
             backoff_hold = _retry_backoff_hold(
                 pointer, moment=moment, config_for=config_for
@@ -913,6 +1051,16 @@ def admit_once(
                 result["held"].append(str(pointer["run_id"]))
                 result.setdefault("hold_detail", {})[str(pointer["run_id"])] = (
                     backoff_hold
+                )
+                verdicts.append(
+                    _verdict_row(
+                        pointer,
+                        allowance=allowance,
+                        allowance_source=allowance_source,
+                        verdict="held-on-retry-backoff",
+                        detail=backoff_hold,
+                        retry_at=str(pointer.get("retry_at") or ""),
+                    )
                 )
                 continue
             overlap = _earlier_overlapping_request(
@@ -928,6 +1076,15 @@ def admit_once(
                 result.setdefault("hold_detail", {})[str(pointer["run_id"])] = (
                     f"held behind earlier queued request "
                     f"{str(overlap.get('run_id') or 'unknown')!r} over a shared path"
+                )
+                verdicts.append(
+                    _verdict_row(
+                        pointer,
+                        allowance=allowance,
+                        allowance_source=allowance_source,
+                        verdict="held-behind-earlier-request",
+                        detail=str(overlap.get("run_id") or ""),
+                    )
                 )
                 continue
             snapshot = copy.deepcopy(dict(pointer))
@@ -977,6 +1134,26 @@ def admit_once(
                     _report_queued_failure(pointer)
                 key = "held" if isinstance(caught, (LaneHeld, LanePaused)) else "failed"
                 detail_key = "hold_detail" if key == "held" else "failure_detail"
+                if caught is not None and isinstance(caught, (LaneHeld, LanePaused)):
+                    verdicts.append(
+                        _verdict_row(
+                            pointer,
+                            allowance=allowance,
+                            allowance_source=allowance_source,
+                            verdict="held-by-gate",
+                            detail=str(caught),
+                        )
+                    )
+                else:
+                    verdicts.append(
+                        _verdict_row(
+                            pointer,
+                            allowance=allowance,
+                            allowance_source=allowance_source,
+                            verdict="refused",
+                            failure=failure,
+                        )
+                    )
                 result[key].append(reported_id)
                 result.setdefault(detail_key, {})[reported_id] = (
                     str(caught) if caught is not None else failure
@@ -992,6 +1169,14 @@ def admit_once(
                 continue
             _stamp_admission(str(record["run_id"]), snapshot, admitted_at=_utc_now())
             joined = _join_admitted_plan_review(snapshot, str(record["run_id"]))
+            verdicts.append(
+                _verdict_row(
+                    pointer,
+                    allowance=allowance,
+                    allowance_source=allowance_source,
+                    verdict="launched",
+                )
+            )
             result["launched"].append(str(record["run_id"]))
             if joined:
                 joined_reviews = result.setdefault("joined_plan_reviews", {})
@@ -1046,6 +1231,11 @@ def admit_until_stopped(
     loop otherwise catches ``KeyboardInterrupt`` so a stopped service returns
     the count of passes it ran rather than a traceback.
 
+    Every pass whose lane had a queued pointer leaves one JSON line in the
+    verdict log under the crew home, so a request that waited without launching
+    can be read afterwards rather than inferred from a pointer that may since
+    have been discarded. A pass that examined no queued pointer writes nothing.
+
     The code stamp is compared at the head of every pass, before the pass runs.
     A pass must never validate or launch a queued request with code older than
     the checkout it launches from, and the checkout can move during the wait
@@ -1058,14 +1248,19 @@ def admit_until_stopped(
     running service.
     """
     if once:
-        return admit_once(lane=lane)
+        stamp = _admit_code_stamp()
+        result = admit_once(lane=lane)
+        _record_pass_verdicts(result, lane=lane, code_stamp=stamp)
+        return result
     passes = 0
     code_stamp = _admit_code_stamp()
     try:
         while True:
             if _admit_code_stamp() != code_stamp and _checkout_code_is_trusted():
                 _reexec_into_current_code()
-            admit_once(lane=lane)
+            _record_pass_verdicts(
+                admit_once(lane=lane), lane=lane, code_stamp=code_stamp
+            )
             passes += 1
             _pause(interval)
     except KeyboardInterrupt:
