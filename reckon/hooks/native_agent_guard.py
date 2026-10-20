@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Pre-tool-use hook: refuse a harness-native background-agent spawn where the
-crew ledger already owns worker execution.
+crew's committed run ledger already owns worker execution.
 
 Self-contained and stdlib-only on purpose: this single file is distributed
 into every crew-managed repository's harness settings, and most of those

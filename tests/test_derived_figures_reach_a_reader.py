@@ -1,7 +1,7 @@
 """A reader of the committed run ledger receives a node's wall time and width.
 
 Every test enters through a surface a reader actually reaches — the CLI
-``crew ledger --view records`` command and the MCP ``crew(view="records)``
+``crew view records`` command and the MCP ``crew(view="records)``
 read — rather than through the arithmetic underneath them, because the defect
 this covers is that the derivation existed and no surface emitted it. A test
 that called the deriver directly would pass against a build whose readers still
@@ -116,11 +116,10 @@ def _rows(surface: str, repo: Path, **filters) -> dict[str, dict]:
             cli.main,
             [
                 "crew",
-                "ledger",
+                "view",
+                "records",
                 "--project",
                 PROJECT,
-                "--view",
-                "records",
                 "--checkout-path",
                 str(repo),
             ],

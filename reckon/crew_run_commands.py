@@ -2714,113 +2714,12 @@ def crew_member_list(project, checkout_path, pretty):
     _emit_crew_result({"project": project, "members": roster}, pretty)
 
 
-@crew.command(name="ledger")
-@click.option("--project", required=True, help="Project whose ledger is read.")
-@click.option(
-    "--view",
-    type=click.Choice(["summary", "records", "findings"]),
-    default="summary",
-    show_default=True,
-    help="Rolled-up measures, every completed record, or stored review findings.",
-)
-@click.option(
-    "--path",
-    default=None,
-    help="Restrict the findings view to findings naming paths under this prefix.",
-)
-@click.option(
-    "--checkout-path",
-    default=None,
-    type=click.Path(path_type=Path),
-    help="Repo root whose ledger is read (default: the registered checkout).",
-)
-@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_ledger(project, view, path, checkout_path, pretty):
-    """Read committed run records, not live run pointers."""
-    ledger_module = _ledger_module()
-    try:
-        if view == "findings":
-            from reckon.crew import findings as findings_module
-
-            payload = findings_module.findings_by_path(
-                project, path=path, root=checkout_path
-            )
-        elif view == "records":
-            # The committed rows as a reader receives them: each carries its
-            # own wall time and the width of the fleet when it was dispatched.
-            records, _version = ledger_module.read_records(project, checkout_path)
-            payload = {
-                "runs": records,
-                "holds": ledger_module.holds(project, checkout_path),
-                "members": ledger_module.members(project, checkout_path),
-            }
-        else:
-            payload = ledger_module.summary(project, root=checkout_path)
-    except ledger_module.LedgerError as exc:
-        raise click.ClickException(str(exc)) from exc
-    _emit_crew_result({"project": project, **payload}, pretty)
+# Preserve the CLI re-export while the retired names resolve through the crew
+# group's tombstone lookup.
+crew_ledger = tombstone_command("ledger")
 
 
-@crew.command(name="velocity")
-@click.option(
-    "--project",
-    required=True,
-    help="Project measured, or * for every mounted checkout.",
-)
-@click.option(
-    "--since",
-    default=None,
-    help="Window start, ISO-8601. Refused when absent or unparseable.",
-)
-@click.option(
-    "--until",
-    default=None,
-    help="Window close, ISO-8601 (default: now).",
-)
-@click.option(
-    "--fields",
-    multiple=True,
-    help=(
-        "An optional block to include. Repeatable and comma-separated; the "
-        "aggregate tables are served by default."
-    ),
-)
-@click.option("--limit", type=int, default=None, help="Cells per page.")
-@click.option(
-    "--cursor",
-    default=None,
-    help="Resume the project-lane-day cells at a cursor from a previous page.",
-)
-@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_velocity(project, since, until, fields, limit, cursor, pretty):
-    """Report what the fleet delivered over a caller-named window.
-
-    The per-project, per-lane and per-day tables are the default answer; the
-    project-lane-day cells and every other block are served only when named in
-    --fields, and the cells are paged by --limit and --cursor. This is the same
-    payload the crew read view answers with for the same window, because both
-    call one composition.
-    """
-    from reckon import velocity as velocity_module
-
-    requested = [
-        name
-        for value in fields
-        for name in (part.strip() for part in value.split(","))
-        if name
-    ]
-    payload = velocity_module.view(
-        project,
-        since=since,
-        until=until,
-        fields=requested or None,
-        limit=limit,
-        cursor=cursor,
-    )
-    if not payload.get("ok"):
-        detail = payload.get("detail") or payload.get("message") or str(payload)
-        raise click.ClickException(str(detail))
-    _emit_crew_result(payload, pretty)
+crew_velocity = tombstone_command("velocity")
 
 
 def _budget_reset_payload(group, mark_available, mark_used, by):

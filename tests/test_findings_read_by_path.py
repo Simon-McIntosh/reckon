@@ -189,11 +189,10 @@ def test_the_cli_prints_the_same_rows_as_json(checkout: Path) -> None:
         cli_main,
         [
             "crew",
-            "ledger",
+            "view",
+            "findings",
             "--project",
             PROJECT,
-            "--view",
-            "findings",
             "--path",
             "reckon/",
             "--checkout-path",
@@ -279,7 +278,7 @@ def test_the_cli_defaults_to_the_mounted_checkout(checkout: Path) -> None:
 
     result = CliRunner().invoke(
         cli_main,
-        ["crew", "ledger", "--project", PROJECT, "--view", "findings"],
+        ["crew", "view", "findings", "--project", PROJECT],
     )
     assert result.exit_code == 0, result.output
     payload = json.loads(result.output)

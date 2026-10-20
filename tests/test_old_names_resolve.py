@@ -149,11 +149,10 @@ def test_ledger_and_cli_report_pair_and_keep_stored_bytes(tmp_path):
         main,
         [
             "crew",
-            "ledger",
+            "view",
+            "records",
             "--project",
             "sample",
-            "--view",
-            "records",
             "--checkout-path",
             str(tmp_path),
         ],
