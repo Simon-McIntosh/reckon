@@ -270,7 +270,17 @@ def read_only_region() -> Iterator[None]:
 def file_signature(path: Path | str) -> _Signature:
     """Return the stat identity that any write to ``path`` changes."""
 
-    stat = os.stat(path)
+    return signature_from_stat(os.stat(path))
+
+
+def signature_from_stat(stat: os.stat_result) -> _Signature:
+    """Return the stat identity that any write to the observed file changes.
+
+    The one place the identity's fields and their order are written. A caller
+    that has already observed the file — a shared walk that must not stat it
+    again — builds the same identity here rather than naming the fields itself.
+    """
+
     return (
         stat.st_dev,
         stat.st_ino,

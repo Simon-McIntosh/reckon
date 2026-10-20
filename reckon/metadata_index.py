@@ -41,7 +41,12 @@ from pathlib import Path, PurePosixPath
 
 from reckon import _plan_html, figures, resources
 from reckon._store import _config_home, write_json_atomically
-from reckon.file_memo import file_revision, file_signature, memoized
+from reckon.file_memo import (
+    file_revision,
+    file_signature,
+    memoized,
+    signature_from_stat,
+)
 
 #: A row's stamp source: a file and its stat identity in, ``(created, edited)``
 #: out. The default derives both from the stat identity; a caller that can
@@ -145,14 +150,15 @@ def covered_stat(
 
 
 def _stat_signature(observed: os.stat_result) -> list[int]:
-    """Persist a content identity stable across hosts with differing device ids."""
+    """Persist a content identity stable across hosts with differing device ids.
 
-    return [
-        observed.st_ino,
-        observed.st_size,
-        observed.st_mtime_ns,
-        observed.st_ctime_ns,
-    ]
+    The fields and their order are :func:`file_memo.signature_from_stat`'s. The
+    leading device id is dropped, because a shared filesystem reports a
+    different one for the same file on each host, so a persisted entry carrying
+    it would be invalidated for a reader on any other host.
+    """
+
+    return list(signature_from_stat(observed))[1:]
 
 
 #: The types discovery keeps in an inventory, so the index answers with the

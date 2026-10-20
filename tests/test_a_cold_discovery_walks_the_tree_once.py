@@ -118,6 +118,34 @@ def test_discovery_reuses_one_covered_file_observation(
     monkeypatch.setattr(os, "stat", stat)
     monkeypatch.setattr(os, "lstat", lstat)
     monkeypatch.setattr(os, "scandir", scandir)
+
+    # The covered set is the only path source figure_rows may use. Walking
+    # figures/ again — the revert this guards against — is a few extra calls in
+    # a fixture with three figures, too few to cross the ceiling above, so the
+    # walk itself is made to fail: the row set must still come back.
+    figures_root = os.fspath(docs / "figures")
+    real_rglob = Path.rglob
+    real_glob = Path.glob
+
+    def refuse_walk(self: Path, pattern: str, *args: object, **kwargs: object):
+        name = os.fspath(self)
+        if name == figures_root or name.startswith(figures_root + os.sep):
+            raise AssertionError(
+                "figure_rows walked figures/ instead of using the covered set"
+            )
+        return real_rglob(self, pattern, *args, **kwargs)
+
+    def refuse_glob(self: Path, pattern: str, *args: object, **kwargs: object):
+        name = os.fspath(self)
+        if name == figures_root or name.startswith(figures_root + os.sep):
+            raise AssertionError(
+                "figure_rows walked figures/ instead of using the covered set"
+            )
+        return real_glob(self, pattern, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "rglob", refuse_walk)
+    monkeypatch.setattr(Path, "glob", refuse_glob)
+
     result = serve.discover_plans(docs, _PROJECT, None)
     inventory = result["inventory"]
     assert sorted(row["slug"] for row in inventory if row["type"] == "plan") == [
