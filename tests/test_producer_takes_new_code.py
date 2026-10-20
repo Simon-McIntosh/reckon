@@ -66,10 +66,12 @@ RELOAD_WITHIN_SECONDS = 15.0
 
 @pytest.fixture()
 def isolated_home(tmp_path, monkeypatch) -> Path:
-    """Keep registrations, pointers, and streams in temporary state."""
+    """Keep watcher state and source identity inside the test copy."""
     home = tmp_path / "config"
     home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(home))
+    monkeypatch.delenv("RECKON_FOLLOWER_SOURCE_ROOT", raising=False)
+    monkeypatch.delenv("RECKON_FOLLOWER_IMAGE_COMMIT", raising=False)
     return home
 
 
