@@ -20,7 +20,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;}">
   <meta name="plan-blocks" content="a-small-change-is-a-small-node">
   <title>A Review Is Sized To Its Risk | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -28,9 +28,9 @@
 <meta name="plan-commits" content="505c690b,9701e873,c45e7bac,dd19e201,31509127">
 <meta name="plan-artifacts" content="reckon/review_tiers.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,tests/test_review_tiers.py">
 <meta name="plan-impl" content="0.6666666666666666">
-<meta name="plan-version" content="189">
+<meta name="plan-version" content="194">
 <meta name="plan-modified" content="2026-10-20">
-<meta name="plan-section-depends-on" content="{&quot;s14&quot;:[&quot;a-review-is-sized-to-its-risk#s13&quot;]}">
+<meta name="plan-section-depends-on" content="{&quot;s14&quot;:[&quot;a-review-is-sized-to-its-risk#s13&quot;],&quot;s7&quot;:[&quot;a-review-is-sized-to-its-risk#s3&quot;,&quot;a-review-is-sized-to-its-risk#s6&quot;]}">
 </head>
 <body>
   <main class="plan-doc">
@@ -137,13 +137,8 @@
     </div>
 
     <h2 id="s3">§3 — One repair per review round</h2>
-    <p><strong>Deliverable.</strong> When a review carries findings, the reflex (and any coordinator acting on it)
-      composes exactly one repair node for that review round, whose brief lists every finding and whose write scope is
-      the union of the paths the findings name — declared at dispatch, so a finding outside the reviewed run's fence
-      is granted rather than refused. The repair's own manifest answers each finding it declines, with a reason. A
-      repair that fails or blocks may be redispatched as another attempt of the same round; that is not a second
-      round.</p>
-    <p><strong>Done when</strong> a test drives a stored review with three findings through the reflex and observes one repair dispatch naming all three, with a write scope that is the union of the paths they cite. A second case fails that repair, redispatches it, and finds the redispatch recorded as another attempt of the same round, not a second round. The negative control makes the reflex compose one repair per finding, and the first case then observes three dispatches. The repair reflex's behaviour landed on 2026-10-02, so the node first checks whether such a test exists at main and adds only what is missing. The test files importing <code>reckon/crew/recovery_repair_dispatch.py</code> show no added failure against base, each log starting with its revision and the literal command and ending in <code>EXIT=</code>.</p>
+    <p><strong>Deliverable.</strong> When a review carries a blocking finding, the reflex opens exactly one repair round for that review round. It delivers the round by resuming the reviewed run, with every finding of the review composed into the advice, rather than by dispatching a separate repair node. A finding citing a path outside the reviewed run's fence is granted through <code>reckon crew widen</code> when the coordinator folds it into the run's own node (§12), not by a dispatch-time scope. The resumed run's manifest answers each finding it declines, with a reason. A round whose resume fails may be retried as another attempt of the same round, and that is not a second round.</p>
+    <p><strong>Done when</strong> a test drives a stored review with three findings, one of them blocking, through the reflex for an unpromoted run whose worker has exited. It observes one repair round opened and the reviewed run resumed once, with advice naming all three findings. A second case retries a failed resume and finds the retry recorded as another attempt of the same round, not a second round. The negative control makes the reflex open one round per finding, and the first case then observes three. The repair reflex landed on 2026-10-02, so the node first checks whether such a test exists at main and adds only what is missing. The test files importing <code>reckon/crew/recovery_repair_dispatch.py</code> or <code>reckon.crew.recovery</code> show no added failure against base, each log starting with its revision and the literal command and ending in <code>EXIT=</code>. Write paths: <code>tests/test_one_repair_round_per_review_round.py</code>, and <code>reckon/crew/recovery_repair_dispatch.py</code> only if the test exposes a defect.</p>
 
     <section class="section-landed">
   <header><span class="badge badge-shipped">&#10003; landed 2026-10-02</span>
@@ -167,7 +162,7 @@
       errored counts on the sprint's evidence; and while the last recorded run failed to collect or exceeded its
       budget, promotions at tier <code>none</code> and <code>light</code> are held with the reason named, until a
       passing run is recorded or the lead waives it.</p>
-    <p><strong>Done when</strong> reckon and nova each declare a suite command and budget in their flight configuration's <code>review.suite</code>; a synthetic project whose suite fails at collection holds a tier-none promotion in a test; and reckon records at least one standing-suite run with its collected, passed and failed counts under its <code>suite-runs</code> directory. Nova's first recorded run is a run of nova's own three-hour suite and belongs to nova's coordinator, not to this reckon plan.</p>
+    <p><strong>Done when</strong> reckon and nova each declare a suite command and budget in their flight configuration's <code>review.suite</code>; a synthetic project whose suite fails at collection holds a tier-none promotion in a test; and reckon records at least one standing-suite run with its collected, passed and failed counts under its <code>suite-runs</code> directory. The negative control is the release: the same synthetic project's hold lifts after a later passing run is recorded, and again after a recorded waiver, so a hold that never releases fails the measure. Nova's first recorded run is a run of nova's own three-hour suite and belongs to nova's coordinator, not to this reckon plan.</p>
 
     <h2 id="s7">§7 — Build the review tiers</h2>
 <section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
@@ -637,6 +632,9 @@ The test asserts that the real crew home is untouched afterwards.</li>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-20260929T103000-first-wave-close" data-who="s25-coord" data-when="2026-09-29T10:30:00Z">
     <div class="r-comment-body"><p>Section 6 on main:</p><ul><li><strong>Declaration.</strong> The suite command and a 1200 s budget are in <code>docs/state/reckon/flight.yaml</code> under <code>review.suite</code> (142cdf05). The runner, record and waiver live in <code>reckon/crew/standing_suite.py</code>.</li><li><strong>Hold.</strong> Promotion consults <code>hold_reason</code> for tiers none and light, and <code>reckon crew suite run|waive</code> is in the CLI (75fdee2a). A synthetic project whose suite fails at collection holds a tier-none promotion in a test.</li><li><strong>First real wave close in reckon</strong>, at main 8e5df9da: 8715 collected, 8566 passed, 77 failed, in 730 s of 1200 s, with collection intact. The record is committed at 135d1168 as <code>docs/state/reckon/suite-runs/20260929T102119.421963Z-8e5df9da882b.json</code>. <code>hold_reason(…, "none", "reckon")</code> reads it and returns no hold. The 77 failures are the population s21's the-suite-is-green-at-head is working down.</li><li><strong>Remaining for section 6:</strong> nova's declaration and one real nova wave close. Both are edits in the nova repository.</li></ul><p>Sections 2 and 3 are merged. Sections 4 and 5 remain, and both extend <code>reckon/crew/recovery.py</code>, which a peer's run currently claims.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-close-s6" data-who="reckon-build" data-when="2026-10-20T07:45:00Z">
+    <div class="r-comment-body"><p>§6 closed on evidence already in the tree: the standing-suite hold and its release tests, <code>review.suite</code> declared for reckon and nova, and reckon's recorded runs; no node was needed. Nova's first recorded run is nova's to make. <a href="/reckon/evidence/archive/a-review-is-sized-to-its-risk-landed.html#the-projects-own-suite-is-a-standing-gate">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-arist-repairs-e1d68a8c" data-who="s25-coord" data-when="2026-09-30">
     <div class="r-comment-body"><p>Two of f-arist-006's three items were closed by the reflex's own repair rounds, merged at e1d68a8c. A record naming no head now falls back to the repository head rather than accepting the newest stored review (review 92). A malformed standing review.suite now refuses the repair by name (review 94). Still open: reflex launches die with the coordinator's follower. Two review findings remain on the no-head edge: the fallback changes _review_dispatch_fields and _failed_review_backend untested, and a malformed suite re-records its refusal on every sweep.</p></div>
