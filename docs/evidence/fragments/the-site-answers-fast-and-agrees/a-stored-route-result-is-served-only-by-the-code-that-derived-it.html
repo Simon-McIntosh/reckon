@@ -1,0 +1,17 @@
+<section id="a-stored-route-result-is-served-only-by-the-code-that-derived-it" class="r-evidence">
+  <h3 id="a-stored-route-result-is-served-only-by-the-code-that-derived-it-title">Stored route results carry their requesting server's revision</h3>
+  <p>The served process reads the revision from its startup source snapshot when it asks for a refresh. It passes that revision to the refresh child, which stores it beside the result. A read under another revision follows the existing miss path and starts a refresh for the key. A record from before this field existed is also a miss when the served process has a revision.</p>
+  <p id="a-stored-route-result-is-served-only-by-the-code-that-derived-it-child">The child stores the command-line revision exactly, including an absent value. The store's fallback to the running server snapshot applies only when an in-process caller omits the argument. The child test clears the server snapshot while invoking the child's entry point, so it cannot recover a revision that its parent failed to pass.</p>
+  <table id="a-stored-route-result-is-served-only-by-the-code-that-derived-it-measure">
+    <thead><tr><th>Check</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Regression test against the earlier store: read a stored discovery result under another revision and inspect the refresh child's record</td><td>2 failed, EXIT=1: the old payload was served and the child record had no revision</td></tr>
+      <tr><td>Regression test at the committed head</td><td>2 passed, EXIT=0: same revision serves the result; another revision and an old record miss; the child stores its parent's revision</td></tr>
+      <tr><td>Declared negative control: remove the revision comparison</td><td>1 failed, 1 passed, EXIT=1: the different-revision read served the old payload</td></tr>
+      <tr><td>Review reproduction: remove the child argument while the original test still carries its parent's snapshot</td><td>1 passed, EXIT=0: the child test missed the broken propagation</td></tr>
+      <tr><td>Child argument negative control after isolating the child snapshot: remove the argument again</td><td>1 failed, EXIT=1: the stored revision was null instead of the parent's revision</td></tr>
+      <tr><td>All six test files importing the route-result module</td><td>Earlier head: 64 passed in 69.08 s; repaired head: 64 passed in 179.59 s, EXIT=0; zero added failures</td></tr>
+      <tr><td>Ruff check and format check on both changed Python files</td><td>0 findings; both formatted</td></tr>
+    </tbody>
+  </table>
+</section>
