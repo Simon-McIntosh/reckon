@@ -6,9 +6,11 @@ process on the node, and it is reached once per beat for every run whose
 recorded pid has gone, so the same environments were re-read several times a
 second. A process's environment changes only when it execs, which keeps the pid
 and the kernel start tick and replaces the program, so a reading is reused until
-the pid, its start tick or its executable changes — and another user's process,
-whose environment cannot be read at all, is skipped by the owner of its ``/proc``
-entry without ever being opened.
+the pid, its start tick or its executable identity changes — and another user's
+process, whose environment cannot be read at all, is skipped by the owner of its
+``/proc`` entry without ever being opened. The identity carries the program's
+path and the address of its text, because a process that re-execs the same
+binary is a different program in the same path.
 
 Every case starts a real, live child carrying a run id so the instrument is
 shown to see a process known to be present before any absence is believed. The
@@ -211,15 +213,15 @@ def test_a_pid_whose_start_tick_changed_is_read_afresh(tmp_path: Path) -> None:
     child = _start_child(run_id, str(home))
     try:
         assert child.pid in _wait_for_mark(run_id, home, child.pid)
-        tick, exe = ps._process_identity(child.pid)
+        tick, exe, stack = ps._process_identity(child.pid)
         assert tick is not None
         ps._ENVIRON_INDEX[child.pid] = (
-            (f"{tick}-elsewhere", exe),
+            (f"{tick}-elsewhere", exe, stack),
             {RUN_ID_ENV: "someone-elses-run"},
         )
 
         assert child.pid in _named_for(run_id, home)
-        assert ps._ENVIRON_INDEX[child.pid][0] == (tick, exe)
+        assert ps._ENVIRON_INDEX[child.pid][0] == (tick, exe, stack)
     finally:
         _reap(child)
 
@@ -289,6 +291,61 @@ def test_a_process_read_before_its_exec_is_read_afresh_after_it_execs(
     finally:
         child.kill()
         child.wait(timeout=10)
+
+
+def test_a_process_that_reexecs_the_same_binary_is_read_afresh(
+    tmp_path: Path, environ_opens: list[int]
+) -> None:
+    """A same-binary re-exec carrying the run mark is not answered from before it.
+
+    The child starts on the interpreter with its launcher's environment — no
+    mark for this run — and blocks until the walk has read it. It then execs the
+    *same interpreter path* with the run mark in its environment. The pid, the
+    start tick and the executable path are all unchanged, so a key holding the
+    path alone answers from the pre-exec reading and never sees the mark. The
+    address of the program's text is relocated by the kernel on every exec, and
+    it is what moves here: the case asserts the start tick and the path are
+    unchanged and that the two identities still differ.
+    """
+    home = tmp_path / "home"
+    home.mkdir()
+    run_id = _unique_run_id()
+    script = (
+        "import os, sys\n"
+        "sys.stdin.read(1)\n"
+        "environment = dict(os.environ)\n"
+        f"environment['RECKON_RUN_ID'] = {run_id!r}\n"
+        f"environment['RECKON_HOME'] = {str(home)!r}\n"
+        f"os.execve({sys.executable!r}, [{sys.executable!r}, '-c', "
+        f"'import time; time.sleep({_CHILD_SLEEP_SECONDS})'], environment)\n"
+    )
+    child = subprocess.Popen(
+        [sys.executable, "-c", script],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    try:
+        # Read the child's environment before it execs: no mark for this run.
+        _wait_for_read(run_id, home, child.pid, environ_opens)
+        before = ps._process_identity(child.pid)
+        assert _named_for(run_id, home) == []
+        assert (ps._ENVIRON_INDEX[child.pid][1] or {}).get(RUN_ID_ENV) != run_id
+
+        assert child.stdin is not None
+        child.stdin.write(b"x")
+        child.stdin.flush()
+        assert child.pid in _wait_for_mark(run_id, home, child.pid)
+        after = ps._process_identity(child.pid)
+    finally:
+        child.kill()
+        child.wait(timeout=10)
+
+    assert before[0] == after[0], "the start tick is unchanged by an exec"
+    assert before[1] == after[1], (
+        "the executable path is unchanged by a same-binary re-exec"
+    )
+    assert before != after, "a re-exec moves the identity even when the path does not"
 
 
 def _wait_for_read(run_id: str, home: Path, pid: int, opened: list[int]) -> None:

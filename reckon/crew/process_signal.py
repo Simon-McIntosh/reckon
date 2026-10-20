@@ -16,6 +16,7 @@ from reckon.crew.routing import (
 )
 from reckon.crew.runs import (
     _process_start_time,
+    _process_stat_fields,
 )
 
 # The run directory's own record of who signalled it. One line per signal,
@@ -158,8 +159,15 @@ def _start_tick(pid: Any) -> int | None:
 # reads each process's environment, and every other run in the beat — and every
 # later beat, while the process has neither execd nor been replaced — is
 # answered from the index without opening an environment at all.
+#
+# The executable identity is the program's path AND the base of its stack. The
+# path alone is unchanged when a process re-execs the same binary with a new
+# environment, which the in-place re-execs in this repository do (a service
+# re-execs its own interpreter to pick up the code on disk); the kernel
+# establishes the stack base afresh on every exec, so such a re-exec is read
+# afresh rather than answered from its pre-exec reading.
 _ENVIRON_INDEX: dict[
-    int, tuple[tuple[str | None, str | None], dict[str, str] | None]
+    int, tuple[tuple[str | None, str | None, str | None], dict[str, str] | None]
 ] = {}
 
 
@@ -171,14 +179,23 @@ def _process_executable(pid: int) -> str | None:
         return None
 
 
-def _process_identity(pid: int) -> tuple[str | None, str | None]:
+def _process_identity(pid: int) -> tuple[str | None, str | None, str | None]:
     """What a cached environment cannot survive: a reused pid or an exec.
 
-    The start tick moves when the kernel recycles a pid, and the executable
-    moves when the process execs. Both are cheap reads, unlike the environment
-    they guard, and neither is changed by anything else a process does.
+    Three reads, all cheaper than the environment they guard, and none changes
+    for any reason but recycling the pid or replacing the image. The start tick
+    (stat field 22, index 19 after the parenthesised command) moves when the
+    kernel recycles a pid. The executable path moves when the process execs a
+    different program. The stack base (field 28, index 25) is established by the
+    kernel at exec and left alone for the process's life, so it moves on every
+    exec — including a re-exec of the same binary with the same arguments, which
+    a path alone cannot see. A kernel that does not report it leaves it None,
+    and the two fields before it still detect every other change.
     """
-    return (_process_start_time(pid), _process_executable(pid))
+    fields = _process_stat_fields(pid)
+    start = fields[19] if len(fields) > 19 else None
+    stack = fields[25] if len(fields) > 25 else None
+    return (start, _process_executable(pid), stack)
 
 
 def _process_owner(pid: int) -> int | None:
