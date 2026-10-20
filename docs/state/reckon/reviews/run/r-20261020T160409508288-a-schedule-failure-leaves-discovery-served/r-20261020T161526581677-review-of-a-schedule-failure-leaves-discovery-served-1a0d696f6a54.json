@@ -1,0 +1,63 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "Line 79 asserts status == 200: reinstating the regression (the attach back inside the handler's error path) makes the read answer 500, so it reddens \u2014 shown in repro-before-fix.log and negative-control.log. Line 82 asserts body['schedule'] is None and line 83 that CREW_FAILURE, the message the test's own _crew_rows stub raises, appears in body['schedule_error']: the message crosses the code under test's exception catch and its f\"{type(exc).__name__}: {exc}\" formatting, and on the reverted path schedule_error is absent entirely, so the assertion raises KeyError rather than holding \u2014 it is not a comparison of a value against the same variable the test passed in. Line 84 asserts exactly one serve-logger record carrying the helper's marker, so a helper that logged zero or several times reddens.",
+      "lines": "tests/test_a_schedule_failure_leaves_discovery_served.py:79-85"
+    },
+    {
+      "failure_condition": "After the crew-row failure the first read must carry schedule None; then _crew_rows is replaced with a stub returning [] and the second read must carry a non-null schedule with schedule_error absent. A helper that degraded permanently \u2014 caching the failure or nulling the schedule on later reads \u2014 reddens the second half, so the assertion is independent of the first read's outcome.",
+      "lines": "tests/test_a_schedule_failure_leaves_discovery_served.py:95-102"
+    },
+    {
+      "failure_condition": "route_results._served_result is made to raise, and the read must still answer 500 with body['error'] == 'distributed_project_state_invalid'. Widening the new helper's catch to cover the stored-result read (or wrapping that read in the same degradation) makes the status 200 and reddens both assertions, so this case guards the catch's blast radius rather than echoing it.",
+      "lines": "tests/test_a_schedule_failure_leaves_discovery_served.py:110-113"
+    }
+  ],
+  "call_sites": [
+    "reckon/serve.py:3332",
+    "reckon/serve.py:1792"
+  ],
+  "completed_at": "2026-10-20T16:24:04.740Z",
+  "dispatched_at": "2026-10-20T16:16:12Z",
+  "findings": [
+    {
+      "file": ".config/reckon/crew/runs/r-20261020T160409508288-a-schedule-failure-leaves-discovery-served/logs/ruff.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the recorded ruff command chains `ruff check ... && ruff format --check ...`, and ruff check exits non-zero on the repository's pre-existing backlog, so the format check never ran and the log shows only check's output. Its last line reads 'Found 17 errors.', while the manifest's evidence_inputs states 'ruff on reckon/serve.py: 19 findings at base and 19 after (no addition)' \u2014 a figure no log on disk supports, so the no-addition claim rests on an unrecorded comparison. I re-ran both read-only on the two changed paths: ruff check reports 'Found 17 errors.' (all inside reckon/serve.py; the new test file is clean) and ruff format --check reports '2 files already formatted', exit 0. The done-when's format clause therefore holds, but the record does not show it, and the two counts disagree."
+    },
+    {
+      "file": ".config/reckon/crew/runs/r-20261020T160409508288-a-schedule-failure-leaves-discovery-served/logs/population-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the population log's header names the base revision \u2014 '# revision: 54c22f415ec859a1b557fa15805dde8f83f7a6ec (dirty: serve.py + new test)' \u2014 not the head 1a0d696f6a54ca1a701c42e631f0819b4804d933 whose code it measured; gate-head.log:1 carries the same header. The run is sound (the change was present in the tree, and head.log:2 does name 1a0d696f), but a reader comparing these headers against the manifest's head claim sees a contradiction and cannot tell from the log alone which revision the 65-test population measured."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Production runtime code that can reach the change: reckon/serve.py:3332, the /_discover/<project> branch of Handler do_GET, is the sole caller of _attach_schedule_for_read; reckon/serve.py:1792 is the helper's own delegation to _attach_schedule, whose only other callers are tests. _attach_schedule drives schedule_report over the stored inventory and _crew_rows(mounts, project), so a failure listing the live crew rows is the reachable failure the goal names. The node's own test files are excluded.",
+    "diff": "Read commit by commit against the base: a single commit, 1a0d696f, touching three files. reckon/serve.py adds the 31-line _attach_schedule_for_read helper between _attach_schedule and _docs_relative, and changes the one line in the /_discover/ handler from _attach_schedule to _attach_schedule_for_read; the helper delegates to _attach_schedule so the existing signature and behaviour are unchanged on the success path. tests/test_a_schedule_failure_leaves_discovery_served.py is a new three-case file reusing the served fixture from tests/test_the_slow_routes_answer_from_stored_results.py. The fragment records the before/after measure. Nothing else changed.",
+    "done_when": "The done_when names tests/test_a_schedule_failure_leaves_discovery_served.py. The manifest records head.log (3 passed, EXIT=0), negative-control.log (2 failed 1 passed, EXIT=1), repro-before-fix.log (2 failed 1 passed, EXIT=1) and population-head.log (65 passed, EXIT=0), and I read each: the three cases cover a crew-row failure answering 200 with a null schedule and a schedule_error, exactly one serve-logger line, a restored listing carrying the schedule again, and a stored-result read failure still answering 500 with distributed_project_state_invalid. The done_when's clause that every importer of reckon/serve.py shows no added failure is a focused 65-test population here and is delegated to the coordinator's merge run by the done-when itself; its ruff clause is met but not shown by its own log (see finding).",
+    "goal": "The goal is to serve discovery with a null schedule and a named schedule error when attaching the schedule fails. reckon/serve.py:1777-1804 adds _attach_schedule_for_read, which wraps _attach_schedule in a try, and on failure returns a copy of the payload with schedule set to None and schedule_error set to the exception's type and message, logging the failure once; reckon/serve.py:3332 is the only production caller and passes the result straight to _send_json, so the read answers 200 with the stored inventory intact. The helper is wired in exactly where the goal names.",
+    "manifest": "Read; status complete, one commit 1a0d696f, the landing line written in place of a plan edit, the gate command recorded literally, and five logs named. Its baseline_suite and after_suite keys are empty, so I derived the delta from the gate logs the manifest does name: no failing id appears in the node's own arms (head.log 3 passed EXIT=0, population-head.log 65 passed EXIT=0); module-window.log fails only on reckon/budget.py, reckon/crew/review.py and reckon/ledger.py, all pre-existing and outside the node's write scope, and it does not name reckon/serve.py. added_failure_count is therefore 0. Its stated ruff figure does not match the log it cites (see finding).",
+    "write_paths": "The source prompt fences reckon/serve.py, tests/test_a_schedule_failure_leaves_discovery_served.py, docs/evidence/fragments/the-site-answers-fast-and-agrees/a-schedule-failure-leaves-discovery-served.html and an unused docs/figures/ tree. git diff --stat 54c22f41..1a0d696f names exactly the first three: serve.py +31/-1, the new test file +117, and the fragment +14. No path outside the declared scope was touched and no plan file was edited."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261020T161526581677-review-of-a-schedule-failure-leaves-discovery-served-1a0d696f6a54",
+  "reviewed_base_sha": "54c22f415ec859a1b557fa15805dde8f83f7a6ec",
+  "reviewed_head_sha": "1a0d696f6a54ca1a701c42e631f0819b4804d933",
+  "reviewed_run_id": "r-20261020T160409508288-a-schedule-failure-leaves-discovery-served",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T16:25:33.347576+00:00",
+  "total": 114
+}
