@@ -99,6 +99,13 @@ each driven through <code>edit_plan</code> on a temporary project in <code>tests
 <p><strong>In effect.</strong> A server started before this landing still runs the old guard, so each MCP session needs one more reconnect to pick it up.</p>
   </section>
 
+  <section id="s12">
+    <h2>§12 — a current-code child that keeps dying is backed off</h2>
+    <p>Run <code>r-20261019T234011292854-epw-a-dying-child-is-backed-off</code>, head <code>835347afd</code>. <code>CurrentCodeServer</code> in <code>reckon/served_code.py</code> counts consecutive child deaths within one code stamp. At its bound it stops respawning and leaves every call to the running image until the stamp moves. The child's stderr goes to a bounded file, so the cause of the last death can be read.</p>
+<p><strong>Gate.</strong> At <code>835347afd</code>, 14 passed and 1 failed. The failure is <code>test_every_module_fits_a_worker_window</code>, the same two offenders as the base arm, so zero failures are added. <code>tests/test_a_dying_child_is_backed_off.py</code> covers the spawn bound, the image answering every call, the stderr file holding the dying child's marker, and the reset on a stamp move. The negative control removes the bound and fails the spawn-count case (<code>~/.config/reckon/crew/runs/r-20261019T234011292854-epw-a-dying-child-is-backed-off/negative-control.log</code>).</p>
+<p><strong>Review.</strong> At <code>835347afd</code> the independent review scored 113/120 with nothing blocking. Its one follow-on is exempted: <code>stop()</code> leaving the backoff state set is unreachable in production, because <code>reckon/mcp.py</code> holds one server per process and never calls it.</p>
+  </section>
+
 </main>
 </body>
 </html>
