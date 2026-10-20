@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T14:13:35.230Z",
+  "dispatched_at": "2026-10-20T14:05:24Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-site-answers-fast-and-agrees.html:368",
+      "id": "done_when-1",
+      "reason": "the node's gate would accept the wrong (over-broad) fix, so the done-when needs a case where the stored-result read fails and the read still answers 500.",
+      "text": "\u00a724's done-when never exercises the deliverable's own clause \"A failure reading the stored result itself still answers as today\": it forces only `_crew_rows` to raise and reverts the attach to the handler's error path, so a fix that wraps the whole read-and-attach body in one catch answers 200 with a null schedule and passes the test while violating the deliverable and hiding genuine stored-result read failures",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-site-answers-fast-and-agrees.html:367",
+      "id": "done_when-2",
+      "reason": "adding a log assertion would not change any node's mechanism or gate outcome; it is a stated requirement left unverified, not a wrong mechanism.",
+      "text": "the deliverable requires the server to log the attach failure \"once per read\", but no clause of the done-when reads that log, so the requirement is unmeasured",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "7d6e4e60c4e52cbde32940de77ea89d8284267842323a2b1c934495d73d2bdf9",
+  "plan_slug": "the-site-answers-fast-and-agrees",
+  "plan_version": 124,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T140347790827-plan-review-of-the-site-answers-fast-and-agrees",
+  "reviewed_blob_sha": "7587d0ec06ed4ae57efbd2a7fac6343b94161ded",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/serve.py`, `distributed_project_state_invalid`, run `r-20261020T122855187753` and the crew view's null-schedule state all resolve (source and review record checked).",
+    "done_when": "a finding \u2014 \u00a724's done-when asserts only the attach-failure arm and its negative control, so it cannot distinguish the narrow guard the deliverable requires from a catch that also swallows the stored-result read failure.",
+    "evidence_paths": "pass \u2014 \u00a724's test and logs sit under the run directory and end in EXIT=, with no node-local or scratchpad path named.",
+    "naming": "pass \u2014 `schedule_error` and `tests/test_a_schedule_failure_leaves_discovery_served.py` name the mechanism, with no plan label, stage name or ticket number.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited review record and `reckon/serve.py:3295-3309`, the mechanism (guard the attach, keep the stored inventory) produces the done-when, and the caller is the real `/`_discover/` handler at `reckon/serve.py:3299`.",
+    "single_goal": "pass \u2014 \u00a724 has one deliverable: keep discovery served when the per-read schedule attach fails.",
+    "wiring": "pass \u2014 the `_document` change adds s24 to `plan-section-depends-on` as `[\"the-site-answers-fast-and-agrees#s23\"]`, which resolves and whose own chain (s23\u2192s22) reaches \u00a722, the section whose discovery handler \u00a724 repairs."
+  },
+  "section_digests": {
+    "_document": "b01bba2832a518c29743f9390c31adae206e904ca4fc203ec0ddaf635f3e0c3a",
+    "s1": "119fda14843398660e67ce4dbc6d52b2466804be618c0bc58fe57d48c4364db4",
+    "s10": "aedffe9563719b3b93e2b36282e17d4d2aeabecf2938ffcbf516cfacc5887281",
+    "s11": "b9aa035553d395057dad26d5353e7b79c6bdec033a1ab82eb1042718d03592cd",
+    "s12": "3086e0ba68e51ca085e7178c914c92d64248be41088440dfa18abf077d5819ee",
+    "s13": "fa208e7c5f148ec329458a9824c867762bc66c986ccb7bc85745b08640484173",
+    "s14": "7f21ec58ce9adf4ba663f205fe60555a585a263354e7954c7dd99543a0d56139",
+    "s15": "884c8ab0e973894007385f537b51e29ef55bf2de18ef2cf6a25966e656f62bf2",
+    "s16": "68b4e68d648fe76ecff74c05d2cdfb995f2e13890befafc25046869d469abcac",
+    "s17": "ac2da828cc6e329bb2d7e56d6983c2cb58531dd49711fa439cc540251e215680",
+    "s18": "24d67d89b37511179c52ceeab7171c15ecf50ae262fe437e8b1c7e85b39f013a",
+    "s19": "148ad5763a772b476be3d3476ef6369a24fae8df34da8415bcbfb333c5b505e9",
+    "s2": "f4d544c85c1a75bc7938448339d0239290de9ffaef0434766aa4baa2571d7436",
+    "s20": "d5e6bc8b957a0aeb45664f4545b683e775e752e5ff3775707ac74b8637d7a39c",
+    "s21": "4725f8eefd9bf3062ff168272099f7a5efaf7e853b36c73f9d2124800c732c94",
+    "s22": "6cc294e4991b5ff22f99c962c3b563f8c825d102848621f9d94bcffdf006a5de",
+    "s23": "24c3bf5fc25ac079c1a58a29bcc5dcacb94ffe1d6547f939c33aa3102c508538",
+    "s24": "637001bdd222bf231ddc140967307cc0e3d6e6fdb75309656431a8850994b3e1",
+    "s3": "50f2ca1f3b1277d5f4b2d70a240688387a89a3136ad2d6aee26f0b3f324b1afc",
+    "s4": "a1ad15bdafaed28134c2565ad8374bc91928064852c10da6661f2499ca286149",
+    "s5": "ccf5b231d2e5d7e02747b8419b3e95dae4622acb080e6eb52c536f2ea9539903",
+    "s6": "fdb08d5e7b8272372c8ced83ee14c031730239025c2a13ccb211329d7951673e",
+    "s7": "90073ced7051cfae8f66fd6b78f99e6ace90b008ffc6c9e5559d87a2e5c31704",
+    "s8": "46535efa968faf1a9d457821c0b182e1f73fbc67570e478aa63cc7eb29d08e37",
+    "s9": "3df747cffcffa70e17ef701d032c7d4a87e78cd03759393f0efa74f96e5fde92"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T14:23:00.549911+00:00"
+}
