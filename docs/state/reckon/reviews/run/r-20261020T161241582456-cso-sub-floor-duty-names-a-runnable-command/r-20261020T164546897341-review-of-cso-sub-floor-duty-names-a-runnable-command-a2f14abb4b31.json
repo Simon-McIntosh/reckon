@@ -1,0 +1,85 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assessment": {
+    "assertion_analysis": [
+      {
+        "failure_condition": "Every added assertion names the condition that reddens it, and the run's own negative control demonstrates it rather than asserting it: restoring the prose next_command in a scratch copy of af2fb34e gives 4 failed, EXIT=1, reddening test_the_command_splits_and_names_a_crew_dispose (shlex.split raises No closing quotation), test_the_command_carries_the_findings_project_run_and_dimension (tokens.index('--project') raises), test_the_command_renders_an_action_form (action_form returns None) and test_the_exempt_alternative_is_prose_beside_the_command (no exempt_alternative field). Dropping any single option in isolation likewise raises in tokens.index at line 152 rather than passing silently, so the assertion is not satisfied by a command that merely starts correctly. The one line that does not discriminate is 174, recorded as a finding: it compares the reader's stored form against a fresh call to the same function on the same input.",
+        "lines": "tests/test_a_sub_floor_duty_names_a_runnable_command.py:139-140, 154-157, 168-172, 173-174, 183-186"
+      }
+    ],
+    "verification": [
+      "git diff --stat 33bb77708db6069b7ce6fc018e2cc47c146fffd2 a2f14abb4b31cf97f554b45261fed9b4f680e6d4 -> 5 files: the fragment (+9), obligations.py (18 changed lines), the new test (+186), test_an_unsplittable_command_has_no_action_form.py (49 changed), test_sub_floor_dimension_is_an_obligation.py (2 changed).",
+      "CLI option check: sed -n '564,608p' reckon/crew_run_commands.py declares @crew.command(name='dispose') with --project, --run (dest reviewed_run_id), --dimension, --finding, --kind, --node (dest node_id), --reason, --pretty, so every option the composer emits exists; reckon/mcp_crew_actions.py:33 lists 'dispose' among the crew write actions.",
+      "Reuse search: grep -rn 'crew dispose' reckon/ returned only the two added lines at reckon/crew/obligations.py:1175 and :1185; the neighbouring composers build their command strings inline the same way (reckon/crew/obligations.py:404-406 for the repair duty, :1008-1023 for the held-worktree duty), and no shared composer owns the capability.",
+      "The worktree for the reviewed node is clean (git status --porcelain empty), so the diff read is the committed state.",
+      "Negative control read from logs/negative-control.log: header names revision af2fb34e with the prose restored, tail '4 failed in 1.53s' then EXIT=1."
+    ]
+  },
+  "call_sites": [
+    "reckon/mcp_views.py:3824",
+    "reckon/hooks/coordinator_obligations.py:642",
+    "reckon/hooks/coordinator_obligations.py:664",
+    "reckon/crew/obligations.py:279"
+  ],
+  "changed_paths": [
+    "reckon/crew/obligations.py",
+    "tests/test_a_sub_floor_duty_names_a_runnable_command.py",
+    "tests/test_an_unsplittable_command_has_no_action_form.py",
+    "tests/test_sub_floor_dimension_is_an_obligation.py",
+    "docs/evidence/fragments/the-crew-surface-is-one-tool-and-a-few-verbs/cso-sub-floor-duty-names-a-runnable-command.html"
+  ],
+  "commit_list": [
+    "af2fb34e07bb034fca68c47aa69eee9527f0fb24",
+    "0f493f3f9",
+    "ada57bed6",
+    "3b34f6afa7051aafacd4c876a1fe394d325f6d82",
+    "a2f14abb4"
+  ],
+  "completed_at": "2026-10-20T16:54:14.601Z",
+  "dispatched_at": "2026-10-20T16:46:32Z",
+  "findings": [
+    {
+      "file": "tests/test_sub_floor_dimension_is_an_obligation.py",
+      "line": "259",
+      "severity": "follow-on",
+      "text": "follow-on: the diff edits a file outside the node's declared write paths. The dispatch fenced reckon/crew/obligations.py, tests/test_a_sub_floor_duty_names_a_runnable_command.py, tests/test_an_unsplittable_command_has_no_action_form.py, the evidence fragment and an unused figures tree; tests/test_sub_floor_dimension_is_an_obligation.py is not among them, yet its assertion that the exemption word appears in row['next_command'] was repointed at row['exempt_alternative']. The edit is one line, is required for the head gate to stay green (the contract change makes the old assertion false), is disclosed in the run manifest's changed_paths and in the fragment, and no concurrent node's declared scope names the file, so nothing collided and the landed state is correct. It should still be covered by a recorded scope extension, because the fence is exclusive and this is the shape the stop rule names as a blocker to report rather than absorb."
+    },
+    {
+      "file": "reckon/hooks/coordinator_obligations.py",
+      "line": "664",
+      "severity": "follow-on",
+      "text": "follow-on: the newly added exempt_alternative field is produced on the sub-floor duty row (reckon/crew/obligations.py:1184) but read by no production surface. The coordinator checklist renders only next_command, so the exemption shape that the old prose carried inline ('or exempted with the recorded reason') no longer appears on the line a coordinator reads; it survives only in the crew(view='obligations') JSON payload, which spreads the rows verbatim at reckon/mcp_views.py:3824. The placement is what the brief directed, so this is a consequence rather than a deviation, but the human-facing surface lost an option it used to show."
+    },
+    {
+      "file": "tests/test_a_sub_floor_duty_names_a_runnable_command.py",
+      "line": "174",
+      "severity": "follow-on",
+      "text": "follow-on: assert row['next_action_form'] == rendered compares the reader's stored form against a fresh call to the same function on the same input, so the two sides move together and the line cannot fail once the rendering assertions at lines 168-172 hold. It is redundant rather than load-bearing: durability does not rest on it, because the negative control shows lines 140, 154 and 168 redden when the prose command is restored (4 failed, EXIT=1 at af2fb34e), and the assertion at line 173 is the one that pins the reader's own storage."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against base 33bb77708: af2fb34e0 replaces the prose next_command in reckon/crew/obligations.py:1174-1189 and adds exempt_alternative; 0f493f3f9/ada57bed6/a2f14abb4 write and correct the evidence fragment; 3b34f6afa repoints one assertion in tests/test_sub_floor_dimension_is_an_obligation.py:259 and rewrites the unsplittable-command test's fixture to its own literal. Five files, 241 insertions, 23 deletions, all of it in service of the goal except the out-of-scope assertion move.",
+    "done_when": "The done_when names a seven-file gate, zero added failures at head against a base arm, each log opening with its revision and closing with EXIT=, the sub-floor command splitting with shlex and naming the finding's project, run and dimension and rendering an action form, and ruff findings on every changed path not exceeding base. The first three are recorded and hold (see evidence); the ruff clause is asserted in the manifest and the fragment but no ruff log was recorded for either arm, so that clause is a claim rather than a receipt.",
+    "goal": "The goal is to make the sub-floor duty carry a runnable crew dispose command in next_command in place of prose, as the brief names. The landed composer builds 'reckon crew dispose --project <project> --run <run_id> --dimension <dimension> --kind folded --node \\'<the node the finding went into>\\'' with every value shlex.quote'd, and the exemption shape rides beside it in a new exempt_alternative field. Every option it emits exists on the CLI it names: --project, --run (reviewed_run_id), --dimension, --kind, --node and --reason are all declared on crew dispose in reckon/crew_run_commands.py:564-608, and the dispose action is a declared crew write action in reckon/mcp_crew_actions.py:33. The goal is met.",
+    "manifest": "Read the run manifest. It records the base and head gate arms as JSON with revision, command, exit_status, log_path, completed, failure_count and failure_ids; both reconcile with the logs on disk (head-gate.log 70 passed EXIT=0 at the worktree, base-gate.log 65 passed EXIT=0 in the scratch tree), and it records the negative control, the measurement provenance, the commit list and a landing line. Its statement that the head gate ran at 3b34f6afa while the head is a2f14abb4 is accurate: a2f14abb4 is a fragment-only docs commit.",
+    "write_paths": "The dispatch fenced five paths: reckon/crew/obligations.py, tests/test_a_sub_floor_duty_names_a_runnable_command.py, tests/test_an_unsplittable_command_has_no_action_form.py, docs/evidence/fragments/the-crew-surface-is-one-tool-and-a-few-verbs/cso-sub-floor-duty-names-a-runnable-command.html and docs/figures/the-crew-surface-is-one-tool-and-a-few-verbs/cso-sub-floor-duty-names-a-runnable-command (unused). The diff also touches tests/test_sub_floor_dimension_is_an_obligation.py, which is outside the declared set; see the finding."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261020T164546897341-review-of-cso-sub-floor-duty-names-a-runnable-command-a2f14abb4b31",
+  "reviewed_base_sha": "33bb77708db6069b7ce6fc018e2cc47c146fffd2",
+  "reviewed_head_sha": "a2f14abb4b31cf97f554b45261fed9b4f680e6d4",
+  "reviewed_run_id": "r-20261020T161241582456-cso-sub-floor-duty-names-a-runnable-command",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T16:54:17.744424+00:00",
+  "total": 105
+}
