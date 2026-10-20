@@ -1,0 +1,75 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The reviewed run's manifest carries no baseline_suite arm: its done_when and the plan section both assign the importer-population base arm to the coordinator at merge, and the node was told not to run one, so only the after arm exists. The head arm is logs/gate-test_figure_review.log, whose summary line reads '7 passed in 33.58s' with EXIT=0 - zero failing test ids, so no id can be absent from the base and added by the head. The count is therefore a measured zero from the head arm, not an assumed one; no base log was read because none was run.",
+  "assertion_analysis": [
+    {
+      "failure_condition": "No assertion is added by this diff; three are removed (the parser assertions at old lines 307-314). The retained assertion 'assert item in prompt' is independent of anything the test passes in: FIGURE_REVIEW_ITEMS is read from the module under test and the prompt text is loaded from reckon/crew/prompts/figure_review.md, so reinstating the regression - removing one FIGURE_REVIEW_ITEMS entry from the prompt - reddens it. Observed in logs/negative-control.log: removing the data_ink bullet made it fail with \"assert 'data_ink' in ...\" (1 failed, EXIT=1), and the prompt was restored, which I verified by diffing 93d61013e..df3946ee5 for reckon/crew/prompts/ (no change) and by the clean worktree at df3946ee5. The brief assertions at tests/test_figure_review.py:296-306 compare composed brief text against literal phrases, so they too are independent of the code under test.",
+      "lines": "tests/test_figure_review.py:288"
+    },
+    {
+      "failure_condition": "No assertion guards the deletion itself: nothing in tests/ fails if parse_figure_review or _FIGURE_RUBRIC_LINE_RE is reintroduced. Re-adding either symbol leaves the suite green, so the removal is held by review only. That is the durability gap recorded against this node; it is not a defect in the landed behaviour, since the deleted parser had no production caller.",
+      "lines": "reckon/crew/review.py:970"
+    }
+  ],
+  "call_sites": [
+    "reckon/crew/recovery_review_subject.py:412",
+    "reckon/crew/recovery_review_subject.py:806",
+    "reckon/crew/recovery_review_dispatch.py:62",
+    "reckon/crew/recovery_review_dispatch.py:1982",
+    "reckon/crew/review.py:2485"
+  ],
+  "changed_paths": [
+    "reckon/crew/review.py",
+    "tests/test_figure_review.py",
+    "docs/evidence/fragments/scoring-should-stop-a-promotion/the-figure-rubrics-unreached-parser-is-removed.html"
+  ],
+  "commit_list": [
+    "df3946ee5eb681ef4c3b9f8e7018a0a53a1dd39e"
+  ],
+  "completed_at": "2026-10-20T16:39:43.553Z",
+  "dispatched_at": "2026-10-20T16:31:30Z",
+  "findings": [
+    {
+      "file": "reckon/crew/prompts/figure_review.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the node's declared negative control mutates a path outside its four declared write paths. The source prompt declares 'remove one FIGURE_REVIEW_ITEMS entry from reckon/crew/prompts/figure_review.md', and the control log proves the mutation was applied - its captured prompt text is missing the data_ink bullet - so the red log that admits this node was produced by a write the node's write grant (reckon/crew/review.py, tests/test_figure_review.py, the fragment, figures dir) does not cover. I verified the file was restored: the reviewed worktree is clean at df3946ee5 and git diff 93d61013e..df3946ee5 shows no change under reckon/crew/prompts/, so no stray edit landed. It matters because a control whose mutation file is outside the grant makes the fence unenforceable as written, and a reader can only tell a restored control from a stray edit by diffing the tree rather than by reading the record."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against 93d61013e; the single commit df3946ee5 changes three files, 74 insertions and 52 deletions, of which the 73 insertions are the landing fragment: reckon/crew/review.py loses _FIGURE_RUBRIC_LINE_RE (old lines 543-545) and parse_figure_review (old lines 944-983), tests/test_figure_review.py loses the three parser assertions at old lines 307-314 and renames the test, and nothing else in either file moves.",
+    "done_when": "The done_when's gate is tests/test_figure_review.py; the source manifest names that command and run, and logs/gate-test_figure_review.log records '7 passed in 33.58s' EXIT=0 with the prompt, brief and store/read assertions in it - tests/test_figure_review.py:288 asserts every FIGURE_REVIEW_ITEMS entry is in the prompt and :309 exercises store_review/read_review under rubric 'figure'. The clause that importer-population test files show no added failure is the coordinator's at merge, which the same done_when states, so the node's gate asserts the measure it was given and not that one.",
+    "goal": "The node goal (prompt.txt GOAL) is to delete parse_figure_review and _FIGURE_RUBRIC_LINE_RE from reckon/crew/review.py while keeping the figure prompt and brief assertions in tests/test_figure_review.py; at the reviewed head neither symbol occurs anywhere in reckon/ or tests/ (git grep over df3946ee5 returns nothing), and tests/test_figure_review.py:285-306 keeps the prompt and brief assertions under the renamed test, so the goal is met.",
+    "manifest": "Read; status complete, one commit (df3946ee5), and its figures reconcile with the logs on disk: 7 passed EXIT=0 for the gate, 1 failed EXIT=1 for the negative control, ruff check and format clean; the manifest's own claim that the negative-control mutation was restored is true - the reviewed worktree is clean at df3946ee5 and reckon/crew/prompts/figure_review.md is absent from the 93d61013e..df3946ee5 diff.",
+    "write_paths": "The manifest declares four write paths (reckon/crew/review.py, tests/test_figure_review.py, the landing fragment, the figures directory); the diff of df3946ee5 against 93d61013e changes three of them - reckon/crew/review.py, tests/test_figure_review.py and docs/evidence/fragments/scoring-should-stop-a-promotion/the-figure-rubrics-unreached-parser-is-removed.html - all inside the declared set, and the declared figures directory was not written."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261020T163035395741-review-of-the-figure-rubrics-unreached-parser-is-removed-df3946ee5eb6",
+  "reviewed_base_sha": "93d61013edb7e2d74f26d30e991536aae16d02b8",
+  "reviewed_commits": [
+    "df3946ee5eb681ef4c3b9f8e7018a0a53a1dd39e"
+  ],
+  "reviewed_head_sha": "df3946ee5eb681ef4c3b9f8e7018a0a53a1dd39e",
+  "reviewed_run_id": "r-20261020T162222764520-the-figure-rubrics-unreached-parser-is-removed",
+  "scope_note": "This review covers the single commit the run landed (df3946ee5) read against its recorded base 93d61013e, the nine-line direction the source worktree's HEAD is at. The reviewed head is not an ancestor of this review worktree, so every read was taken from the reviewed revision.",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T16:41:28.269247+00:00",
+  "total": 111,
+  "verification": [
+    "git -C <reviewed worktree> rev-parse HEAD -> df3946ee5eb681ef4c3b9f8e7018a0a53a1dd39e, and git status --porcelain is empty, so the reviewed tree at the delivered head is clean.",
+    "git -C <reviewed worktree> grep -n 'parse_figure_review\\|_FIGURE_RUBRIC_LINE_RE' df3946ee5 -- reckon tests -> no matches, confirming the done_when's absence clause.",
+    "git -C <reviewed worktree> show --stat df3946ee5 -> 3 files, 74 insertions, 52 deletions; git diff 93d61013e..df3946ee5 --stat -> the same 3 files, so the commit carries the whole delta from the recorded base.",
+    "Surviving grammar owners checked as used rather than orphaned: _PLAN_RUBRIC_LINE_RE at reckon/crew/review.py:970 (readers at :1046, :1164, :1306 and reckon/crew/plan_review.py:2063), _FIND_RE at reckon/crew/review.py:544 (reader at :878), _review_text_lines at reckon/crew/review.py:573 (readers at :800, :1045, :1191).",
+    "Logs read from disk at the reviewed run directory: logs/gate-test_figure_review.log (7 passed, EXIT=0), logs/negative-control.log (1 failed, EXIT=1), logs/ruff.log (check clean, format clean, EXIT=0); each starts with a revision and the literal command and ends in a bare EXIT= line. Their header revision is the base 93d61013e rather than the delivered head df3946ee5, which is expected for a gate run before the commit; that the gated content equals the committed content is established by the clean worktree at df3946ee5, not by the log header."
+  ]
+}
