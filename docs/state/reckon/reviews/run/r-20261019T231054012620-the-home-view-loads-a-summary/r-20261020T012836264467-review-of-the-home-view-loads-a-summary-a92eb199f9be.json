@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms in its manifest: baseline_suite (revision 058515877c36ca6d46588d622b1a6be017a714e9, log final-base-spa.log, 11 failure ids, completed) and after_suite (revision 5d403138bee0a5dab2e1936874533d6d2a91ccdc, log landed-combined-gate-retry.log, 4 failure ids, completed). All four after ids (three test_spa_project_visibility topbar widths and test_first_visit_renders_live_runs_from_every_mounted_project) are present in the baseline set, so the added delta is empty; both logs' last lines are EXIT=1 and their summaries read 11 failed/32 passed and 4 failed/83 passed.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/serve.py:880 compute_project_row -> /_projects/index.json",
+    "docs/ui/shell.jsx:288 recent_landed passthrough into the project list",
+    "docs/ui/shell.jsx:502 <...home.FleetHome ... error={fleetIndexError} onRetry={refreshFleetIndex}>",
+    "docs/ui/home.jsx:144 landed row render and :107 error panel"
+  ],
+  "completed_at": "2026-10-20T01:47:33.395Z",
+  "dispatched_at": "2026-10-20T01:30:10Z",
+  "findings": [
+    {
+      "file": "reckon/fleet_index.py",
+      "line": "146",
+      "severity": "blocking",
+      "text": "blocking: _recent_landed parses the edited stamp with datetime.fromisoformat at reckon/fleet_index.py:146 rather than the shared parser in reckon/_timestamps.py, so tests/test_structural_invariants.py::test_only_the_shared_parser_calls_fromisoformat now reports two offenders \u2014 ['crew/recovery_review_delivery.py:_review_dispatch_instant', 'fleet_index.py:_recent_landed'] at a92eb199 against ['crew/recovery_review_delivery.py:_review_dispatch_instant'] at 733b71f4c, both EXIT=1 \u2014 and the newly added name hides behind the pre-existing base failure, so the guard that exists to stop a second parser appearing silently is exactly the one this change defeats; the run's own next commit b50073358 ('fix(fleet): parse delivery stamps with shared helper') repairs it and lies outside the reviewed range, so whatever is promoted must include that commit or the reviewed head must not be promoted alone."
+    },
+    {
+      "file": "reckon/fleet_index.py",
+      "line": "152",
+      "severity": "follow-on",
+      "text": "follow-on: the nav_key composition at reckon/fleet_index.py:152-155 re-spells a rule the repository already owns at reckon/reader_pdf.py:47-60 (reader_hash: 'f\"{artifact_type}:{'archive:' if archived else ''}{slug}\"') and at docs/ui/state-loader.js:98, inline rather than extending or wrapping either owner, so the archive-key grammar now lives in three places and can drift the moment one of them is edited."
+    },
+    {
+      "file": "docs/ui/home.jsx",
+      "line": "107",
+      "severity": "follow-on",
+      "text": "follow-on: the error panel at docs/ui/home.jsx:107 and the pending row at :121 introduce r-home-error and r-home-project-pending, and docs/ui/home.css defines neither class (it styles .r-home-landed and .r-home-kind only), so both new affordances render unstyled; docs/ui/home.css is outside this node's fence so the rules belong to its owner, but the gap is worth recording because the retry button and the pending row are the whole visible result of two of the three repairs."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit over 733b71f4c; ac55c2a settles failed summaries, 110a8c4 and bf0d6c3 are its evidence fragments, 23bb308 restores the typed landed panel from summary rows, 5d40313 adds the fleet_index producer, a92eb19 is the closing fragment; nine files, all inside the declared scope.",
+    "done_when": "the round's quantitative measure is the fourteen-file gate recorded in the manifest; it asserts the added behaviour (typed recent_landed through the served summary, the error/retry case, the pending row) but omits tests/test_structural_invariants.py, which is why the new shared-parser offender below went unseen.",
+    "goal": "the commits gained since the prior review carry four goals set by the coordinator's resume advice \u2014 settle a failed summary into a visible error with retry, give a project whose summary row omits plans_count its own row, restore the landed artifact type from the fleet summary, and emit typed recent_landed rows from reckon/fleet_index.py; docs/ui/shell.jsx:217-231 settles the failure, docs/ui/home.jsx:121 renders the pending row, docs/ui/home.jsx:144 shows the type, and reckon/fleet_index.py:249 emits the rows.",
+    "manifest": "read; it records the commits through a92eb199, a baseline arm at 058515877 (11 failed, 32 passed, EXIT=1) and an after arm at 5d403138b (4 failed, 83 passed, EXIT=1) with all four after failures present in the baseline set, plus four negative-control logs that each end EXIT=1.",
+    "write_paths": "the manifest's declared write paths cover all nine reviewed files \u2014 the last expansion (resume-3 advice, quoted in the run's resume-3-advice.txt) adds reckon/fleet_index.py, tests/test_fleet_index.py, tests/test_provenance.py and tests/test_the_fleet_summary_carries_each_projects_figures.py \u2014 and every path the diff touches is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_fleet_index.py:104-142 reddens if the 72-hour window opens or closes at the wrong edge, if effective_status is ignored, or if the archive marker is dropped, and tests/test_the_fleet_summary_carries_each_projects_figures.py:268-336 reddens if the producer stops emitting the type or the seven-row bound (landed-negative-type.log, 1 failed, EXIT=1); no added assertion compares a value against the same expression the test passed in.",
+    "evidence": "the manifest records a matched-population run at base 058515877 (11 failed, 32 passed, final-base-spa.log) and head 5d403138b (4 failed, 83 passed, landed-combined-gate-retry.log), both ending EXIT=1 with the four head failures a subset of the base set, so added_failure_count is 0; the after arm sits one commit behind the reviewed head (a92eb199 adds only the evidence fragment) and the repository's own invariant suite is not in the population.",
+    "fit": "every ruff check and ruff format --check run over the six touched Python files in an extraction of a92eb199 reports clean, but reckon/fleet_index.py:146 bypasses the repository's one-timestamp-parser idiom, which the package states in tests/test_structural_invariants.py:71-113.",
+    "goal_fidelity": "reckon/fleet_index.py:249 emits recent_landed per project row, docs/ui/shell.jsx:217 turns a rejected summary fetch into an error state with retry, docs/ui/home.jsx:121 renders the pending row and :144 keeps the artifact type, so all four resumed clauses land.",
+    "reuse": "no owner exists for a recent-deliveries aggregation, and a capability search over reckon/ and docs/ui/ for one found none, but the nav_key composition at reckon/fleet_index.py:152-155 re-spells a rule the repository already owns at reckon/reader_pdf.py:47-60 and docs/ui/state-loader.js:98 rather than extending either.",
+    "scope_discipline": "every path in git diff --stat 733b71f4c..a92eb199f touches only docs/ui/home.jsx, docs/ui/shell.jsx, reckon/fleet_index.py, four tests/ files and the declared evidence fragment, all inside the manifest's declared write paths, with no out-of-scope edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the commits gained since the prior review carry four goals set by the coordinator's resume advice \u2014 settle a failed summary into a visible error with retry, give a project whose summary row omits plans_count its own row, restore the landed artifact type from the fleet summary, and emit typed recent_landed rows from reckon/fleet_index.py; docs/ui/shell.jsx:217-231 settles the failure, docs/ui/home.jsx:121 renders the pending row, docs/ui/home.jsx:144 shows the type, and reckon/fleet_index.py:249 emits the rows.\nVERDICT done_when: the round's measure is the fourteen-file gate recorded in the manifest, which asserts the added behaviour (typed recent_landed through the served summary at tests/test_the_fleet_summary_carries_each_projects_figures.py:268, the error/retry browser case, the pending row) but omits tests/test_structural_invariants.py, which is why the new shared-parser offender went unseen.\nVERDICT write_paths: the manifest's declared write paths cover all nine reviewed files, the last expansion being the resume-3 advice quoted in resume-3-advice.txt, and every path git diff --stat 733b71f4c..a92eb199f touches is inside them.\nVERDICT manifest: read; it records commits through a92eb199, a baseline arm at 058515877 (11 failed, 32 passed, EXIT=1) and an after arm at 5d403138b (4 failed, 83 passed, EXIT=1) whose four failure ids are a subset of the baseline's, plus four negative-control logs ending EXIT=1.\nVERDICT diff: read commit by commit over 733b71f4c; ac55c2a settles failed summaries, 110a8c4 and bf0d6c3 are its evidence fragments, 23bb308 restores the typed landed panel, 5d40313 adds the fleet_index producer, a92eb19 closes with the fragment; nine files, all inside the declared scope.\nCALL_SITES: reckon/serve.py:880 compute_project_row -> /_projects/index.json, docs/ui/shell.jsx:288 recent_landed passthrough, docs/ui/shell.jsx:502 <...home.FleetHome ... error={fleetIndexError} onRetry={refreshFleetIndex}>, docs/ui/home.jsx:107 and :144 the error panel and landed rows\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/fleet_index.py:249 emits recent_landed per project row, docs/ui/shell.jsx:217 turns a rejected summary fetch into an error state with retry, docs/ui/home.jsx:121 renders the pending row and :144 keeps the artifact type, so all four resumed clauses land.\nSCORE evidence: 16\nJUSTIFICATION evidence: the manifest records a matched-population pair (11 failed/32 passed at 058515877, 4 failed/83 passed at 5d403138b, both EXIT=1 with the head's four a subset of the base's, so added_failure_count is 0), but the after arm sits one commit behind the reviewed head (a92eb199 adds only the evidence fragment) and the repository's own invariant suite is not in the population.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --stat 733b71f4c..a92eb199f touches only docs/ui/home.jsx, docs/ui/shell.jsx, reckon/fleet_index.py, four tests/ files and the declared evidence fragment, all inside the manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_fleet_index.py:104-142 reddens if the 72-hour window moves at either edge, if effective_status is ignored or if the archive marker is dropped, and tests/test_the_fleet_summary_carries_each_projects_figures.py:268-336 reddens when the emitted type is removed (landed-negative-type.log, 1 failed, EXIT=1); no added assertion compares a value against the same expression the test itself passed in.\nSCORE fit: 13\nJUSTIFICATION fit: ruff check and ruff format --check over the six touched Python files in an extraction of a92eb199 report clean and no name carries a plan label, but reckon/fleet_index.py:146 bypasses the one-timestamp-parser idiom the package states at tests/test_structural_invariants.py:71-113.\nSCORE reuse: 15\nJUSTIFICATION reuse: no owner exists for a recent-deliveries aggregation and a capability search over reckon/ and docs/ui/ found none, but reckon/fleet_index.py:152-155 re-spells the nav_key rule already owned at reckon/reader_pdf.py:47-60 and docs/ui/state-loader.js:98 rather than extending either.\nFINDING reckon/fleet_index.py:146 blocking: _recent_landed calls datetime.fromisoformat instead of the shared parser in reckon/_timestamps.py, so tests/test_structural_invariants.py::test_only_the_shared_parser_calls_fromisoformat reports a second offender ['crew/recovery_review_delivery.py:_review_dispatch_instant', 'fleet_index.py:_recent_landed'] where base 733b71f4c reports one, hiding the new name behind the pre-existing failure; the run's own next commit b50073358 repairs it outside the reviewed range, so promotion must include that commit.\nFINDING reckon/fleet_index.py:152 follow-on: the nav_key composition re-spells the rule owned at reckon/reader_pdf.py:47-60 and docs/ui/state-loader.js:98 inline, so the archive-key grammar lives in three places and can drift.\nFINDING docs/ui/home.jsx:107 follow-on: r-home-error and r-home-project-pending have no rule in docs/ui/home.css, so the new retry panel and pending row render unstyled; home.css is outside this node's fence, so its owner must add them.\n",
+  "review_run_id": "r-20261020T012836264467-review-of-the-home-view-loads-a-summary-a92eb199f9be",
+  "reviewed_base_sha": "733b71f4c30c2f39b32e26c89033862f64e04417",
+  "reviewed_head_sha": "a92eb199f9be7dbbe03f97cb2fb206e33efe5a2a",
+  "reviewed_run_id": "r-20261019T231054012620-the-home-view-loads-a-summary",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 13,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T02:50:00Z",
+  "total": 101
+}
