@@ -2,17 +2,17 @@
 
 A duty row carries the command that answers it as printed text, and the row
 also carries an action form — the same command spelled as a tool call — when
-that text can be turned into one. The sub-floor duty's printed command names
-the disposition in prose ("folded with the dispatched node's id, or exempted
-with the recorded reason"), and the apostrophe in that prose is a quotation
-mark to ``shlex``: splitting the line raises ``ValueError`` on an unbalanced
-quote. The form builder must treat that command as one it cannot carry and
-leave the row without a form, so the whole obligations read still completes and
-the row keeps its printed command — rather than the parse error propagating out
-of the reader.
+that text can be turned into one. A command carrying an apostrophe is a
+quotation mark to ``shlex``: splitting the line raises ``ValueError`` on an
+unbalanced quote. The form builder must treat such a command as one it cannot
+carry and leave the row without a form, so the whole obligations read still
+completes and the row keeps its printed command — rather than the parse error
+propagating out of the reader.
 
-The fixture stands the run up inside a temporary configuration home, so the
-operator's review store is neither read nor written.
+The unsplittable text is this file's own literal, so the guard is exercised
+whatever any composer happens to emit. The fixture stands the run up inside a
+temporary configuration home, so the operator's review store is neither read
+nor written.
 """
 
 from __future__ import annotations
@@ -124,8 +124,8 @@ def real_config_home_untouched():
     assert not reviews.exists(), f"fixture review store leaked to {reviews}"
 
 
-def _stored_command(run_id: str) -> str:
-    """The composer's own printed command for one sub-floor dimension."""
+def _unsplittable_command(run_id: str) -> str:
+    """This file's own unsplittable literal: an unbalanced apostrophe."""
     return (
         f"dispose durability scored {SCORES['durability']} against a floor of "
         f"{FLOORS['durability']} on run {run_id}: folded with the dispatched "
@@ -135,7 +135,7 @@ def _stored_command(run_id: str) -> str:
 
 def test_an_unsplittable_command_has_no_action_form() -> None:
     """The builder returns no form, and the tokeniser is shown to refuse it."""
-    command = _stored_command(RUN)
+    command = _unsplittable_command(RUN)
     with pytest.raises(ValueError, match="No closing quotation"):
         obligations_module.shlex.split(command)
     assert obligations_module.action_form(command) is None
@@ -149,10 +149,23 @@ def test_a_splittable_command_still_has_an_action_form() -> None:
     assert rendered == 'crew(action="complete", run_id="r-x", gate="pass")'
 
 
-def test_the_obligations_read_completes_over_the_stored_command(
+def test_a_row_carrying_an_unsplittable_command_keeps_it() -> None:
+    """A row's own unsplittable command survives the reader with no form."""
+    row = obligations_module._with_action_form(
+        {
+            "kind": obligations_module.SUB_FLOOR_DUTY_KIND,
+            "run_id": RUN,
+            "next_command": _unsplittable_command(RUN),
+        }
+    )
+    assert row["next_command"] == _unsplittable_command(RUN)
+    assert "next_action_form" not in row
+
+
+def test_the_obligations_read_completes_over_a_duty_row(
     fleets: Callable[[], _Fleet],
 ) -> None:
-    """The row survives with its printed command and no form."""
+    """The read completes and the duty row carries a runnable dispose command."""
     fleet = fleets()
     fleet.store_review("a" * 40, "b" * 40)
 
@@ -167,5 +180,5 @@ def test_the_obligations_read_completes_over_the_stored_command(
     row = rows[0]
     assert row["run_id"] == RUN
     assert row["dimension"] == "durability"
-    assert row["next_command"] == _stored_command(RUN)
-    assert "next_action_form" not in row
+    assert row["next_command"].startswith("reckon crew dispose")
+    assert "next_action_form" in row
