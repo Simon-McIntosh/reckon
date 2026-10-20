@@ -136,6 +136,25 @@
 </ul>
   </section>
 
+  <section id="s8">
+    <h2>§8 — every run verb takes one identity grammar</h2>
+    <p>Run <code>r-20261020T133428134004-cso-run-verbs-share-one-identity-grammar</code>, head <code>7d8f72271</code>, on the local clive lane. Landed at merge <code>ce5232f9e</code>.</p>
+<ul>
+<li>All 18 single-run crew verbs accept <code>--project</code> beside <code>--run</code>, and refuse a <code>--project</code> that disagrees with the run, naming both. <code>crew follow</code> is the one named exclusion, because its <code>--run</code> is a repeatable delivery filter.</li>
+<li><code>dispose</code> no longer requires <code>--project</code>.</li>
+<li><code>crew review</code> answers with one run id to complete, and names the reviewed run only as provenance.</li>
+<li><code>crew review --answer</code> takes <code>--review-run</code>. Without it, a finding that two covering reviews carry is refused, naming both.</li>
+</ul>
+<p><strong>Gate.</strong> At head, 207 passed and 16 failed. Every one of the 16 is also in the base arm: 15 obligations tests that the action-form repair clears, and the width test with its two usual offenders. Zero failures are added.</p>
+<p><strong>Negative controls.</strong></p>
+<ul>
+<li>Dropping <code>--project</code> from <code>crew stop</code> makes the sweep fail, naming <code>stop</code>.</li>
+<li>Answering the covering review that <code>--review-run</code> did not name fails the selection case.</li>
+<li>Refusing a matching <code>--project</code> fails the matching arm.</li>
+</ul>
+<p><strong>Review.</strong> The first round scored 15 to 19. It found two assertions that could not fail, and one resume tightened both. The re-review at the landed head scored 112/120 with nothing blocking.</p>
+  </section>
+
 </main>
 </body>
 </html>
