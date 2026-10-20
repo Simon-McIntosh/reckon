@@ -23,7 +23,7 @@
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="46">
+<meta name="plan-version" content="47">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -752,6 +752,9 @@
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261020T013134260025-review-of-a-process-table-is-read-once-per-beat-e36a760d6e79" data-who="reckon-build" data-when="2026-10-20T01:47:52.728Z">
     <div class="r-comment-body"><p>reviewed the commits r-20261020T002527311407-a-process-table-is-read-once-per-beat gained after d1a16cd12b26 — the exec-detecting identity (715012986), the formatting restore (588f9a18a) and the evidence update (e36a760d6): goal_fidelity 19, evidence 18, scope_discipline 19, durability 18, fit 15, reuse 17; three follow-on findings and no blocking one.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261020T002527311407-a-process-table-is-read-once-per-beat" data-who="reckon-build" data-when="2026-10-20T01:54:59Z">
+    <div class="r-comment-body"><p>read each process&#x27;s environment once per beat through a shared index keyed by pid, start tick and executable identity, the identity carrying the kernel&#x27;s per-exec stack base so a process that re-execs the same binary is read afresh; 10 s strace of a three-run harness against a base arm shows 146,969 environ opens at 803 per scan at the base against 598 at 6 per scan at the change, with 1 skipped and 0 added failures across the paired suite (155-&gt;164 passed over the same 16 existing files plus the new one)</p></div>
 </div>
 </section>
 </main>
