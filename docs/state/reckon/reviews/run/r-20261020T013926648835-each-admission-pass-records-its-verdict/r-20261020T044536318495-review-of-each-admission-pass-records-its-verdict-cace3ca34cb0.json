@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-20T05:02:20.396Z",
+  "dispatched_at": "2026-10-20T04:49:05Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": 923,
+      "severity": "follow-on",
+      "severity_note": "narrow: it needs two lanes' services appending to the shared admission-verdicts.jsonl inside the read-to-truncate window, the loss is one best-effort verdict line, and no admission decision reads this log, so it does not hold the node; the in-place edit is nonetheless worth keeping, since it does remove the fixed .tmp name collision and the inode orphaning the previous helper caused.",
+      "text": "the docstring of _record_pass_verdicts asserts a line appended while the pass is trimming is not lost, but trim_service_log (reckon/crew/fleet_supervisor.py:610) reads the tail in trim_file_ends (:566, a separate open/read that can read the whole 1 MiB bound) and only afterwards opens the path rb+, writes the tail at offset 0 and truncates. A verdict line appended by another lane's admission service inside that read-to-truncate window is written past the truncate offset and discarded, exactly as the replaced os.replace helper discarded one; the stated reason - that the appender's own descriptor stays valid - does not hold either, because _append_crew_log_line (reckon/crew/picker/__init__.py:76) opens an O_APPEND descriptor per line and closes it in the same call, so no descriptor outlives a single write."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": 941,
+      "severity": "follow-on",
+      "severity_note": "follow-on rather than blocking: reaching it needs the log to be over the 1 MiB bound and an open/read on a file the service owns to fail, and the fleet supervisor's own call site (fleet_supervisor.py:1183) is equally unguarded, so this matches the owner's existing contract rather than establishing a new failure mode.",
+      "text": "trim_service_log can raise OSError (from the stat/read in fleet_supervisor.py:585-599 and from the open(path, rb+) at :624) and _record_pass_verdicts does not guard the call, so on the head the trim can propagate out of the pass; the replaced _trim_log_to_bound swallowed every OSError and returned, and _append_crew_log_line states the write 'may not fail or stall because its record could not be written'. admit_until_stopped (reckon/crew/queue_admission.py:1248-1257) catches only KeyboardInterrupt, so such an error ends the admit service instead of costing one log line."
+    },
+    {
+      "file": "docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/each-admission-pass-records-its-verdict.html",
+      "line": 2,
+      "severity": "follow-on",
+      "severity_note": "the fragment is the evidence a later reader trusts, so the overclaim is worth correcting in the same breath as the docstring; it does not affect the node's measured result.",
+      "text": "the landing paragraph carries the same unestablished claim into the durable record: 'keeps the inode, so the appender's own descriptor stays valid and a line written while the trim runs is not lost.' It names a concurrency guarantee that this node's gate does not test and that the mechanism does not provide for a write landing between the tail read and the truncate, so the record asserts more than its own measure shows."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is one bounded JSON line per admission pass whose lane has a queued pointer, carrying each queued pointer's allowance read with its published source and the pass's verdict; the gained commits keep that goal and change only how the log is bounded, at reckon/crew/queue_admission.py:941 where trim_service_log replaces the deleted local helper.\nVERDICT done_when: the gate the done_when names is tests/test_each_admission_pass_records_its_verdict.py, whose case test_the_log_is_trimmed_within_its_size_bound (tests/test_each_admission_pass_records_its_verdict.py:374) lowers the bound to 700 bytes, drives six held passes and asserts path.stat().st_size <= bound, a non-empty log, len(lines) < passes and the newest line's verdict; logs/focused-head.log records 5 passed in 63.06s at 1374d4631 with a bare EXIT=0, and logs/negative-control.log records 4 failed, 1 passed, EXIT=1 at 1374d4631 with the per-pass append removed.\nVERDICT write_paths: the node's declared write paths are reckon/crew/queue_admission.py, tests/test_each_admission_pass_records_its_verdict.py, docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/each-admission-pass-records-its-verdict.html and docs/figures/a-held-dispatch-waits-its-fair-turn/each-admission-pass-records-its-verdict; the gained diff (fc3462af..cace3ca34) touches only reckon/crew/queue_admission.py and the fragment html, both inside the declared scope.\nVERDICT manifest: read; it records status complete, the focused gate 5 passed EXIT=0, the negative control 4 failed 1 passed EXIT=1, and the importer arms 77 passed/1 failed at head 1374d4631 against 72 passed/the same 1 failed at base 3b7793ab3, i.e. 0 added failure ids.\nVERDICT diff: read commit by commit across the two gained commits; 1374d4631 deletes _trim_log_to_bound from reckon/crew/queue_admission.py and calls reckon/crew/fleet_supervisor.py:610 trim_service_log with limit=keep=ADMISSION_VERDICT_LOG_MAX_BYTES, and cace3ca34 rewrites the fragment's landing, measure, control and population paragraphs to name head 1374d4631 instead of the superseded 388b92530; 2 files changed, 11 insertions, 35 deletions.\nCALL_SITES: reckon/crew_run_commands.py:3478, reckon/crew/queue_admission.py:1244\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:913-944 still writes one bounded JSON line per pass and now bounds it through the owner at fleet_supervisor.py:610, which is what the goal asks for.\nSCORE evidence: 17\nJUSTIFICATION evidence: the trim case at tests/test_each_admission_pass_records_its_verdict.py:374 is the done_when's size-bound case and its EXIT=0 is recorded in logs/focused-head.log, but the concurrency property the commit message and docstring claim has no gate at all.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained diff touches only reckon/crew/queue_admission.py and docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/each-admission-pass-records-its-verdict.html, both named in the node's declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_each_admission_pass_records_its_verdict.py:393-398 reddens if the bound stops being enforced (logs/negative-control.log shows the append removal turning 4 cases red), but no assertion counterfeits a concurrent append during a trim, so the race the commit claims to close is untested.\nSCORE fit: 16\nJUSTIFICATION fit: the refactor removes a forked helper in favour of the shared owner at reckon/crew/fleet_supervisor.py:610, matching the file's lazy-import idiom at reckon/crew/queue_admission.py:933, but the docstring at :922-923 states a guarantee the mechanism does not provide.\nSCORE reuse: 20\nJUSTIFICATION reuse: the one definition the diff removes, _trim_log_to_bound, duplicated the owner trim_service_log/trim_file_ends in reckon/crew/fleet_supervisor.py:566-628, and this commit deletes it and calls that owner, so no capability is forked.\nFINDING reckon/crew/queue_admission.py:923 follow-on: the docstring claims a line appended while the pass is trimming is not lost, but trim_service_log reads the tail and then truncates in a second open, so an append landing between the tail read (fleet_supervisor.py:594-599) and the truncate (fleet_supervisor.py:627) is still discarded, and the appender holds no descriptor across that window because picker/__init__.py:76 opens one per line.\nFINDING reckon/crew/queue_admission.py:941 follow-on: the trim can now raise OSError out of _record_pass_verdicts where the replaced helper swallowed it, and admit_until_stopped at reckon/crew/queue_admission.py:1248-1257 catches only KeyboardInterrupt, so a log-read failure ends the admit service rather than costing one line.\nFINDING docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/each-admission-pass-records-its-verdict.html:2 follow-on: the landing paragraph asserts the same untested concurrency guarantee ('a line written while the trim runs is not lost'), so the durable record claims more than this node's gate measures.",
+  "review_run_id": "r-20261020T044536318495-review-of-each-admission-pass-records-its-verdict-cace3ca34cb0",
+  "reviewed_base_sha": "fc3462af8ae20865c955317ee18b198b34d6037e",
+  "reviewed_head_sha": "cace3ca34cb03a3bb23a24fbfeff2ee7bd9f5e3f",
+  "reviewed_run_id": "r-20261020T013926648835-each-admission-pass-records-its-verdict",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T05:04:07.430595+00:00",
+  "total": 108
+}
