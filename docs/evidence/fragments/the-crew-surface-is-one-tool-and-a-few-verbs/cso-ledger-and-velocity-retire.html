@@ -14,6 +14,13 @@ field, because <code>crew view</code> names its case as a positional operand
 (<code>reckon crew view ledger …</code>) rather than a flag, so
 <code>argv</code> alone cannot carry it: <code>argv</code> stays the token path
 into the live command tree, which is what the successor-resolution check walks.
+The row also names the flag the retired verb selected its case with
+(<code>operand_flag="--view"</code>), so a caller's <code>--view records</code>
+renders as the successor's operand and the flag is consumed rather than
+forwarded: forwarded verbatim it printed
+<code>reckon crew view ledger --view records</code>, which exits <code>2</code>
+with <code>No such option '--view'</code>, and an arrow a caller cannot follow
+is not a successor.
 
 Every reckon-side caller and citation moved with them. The D20 remedy in
 <code>reckon/crew/refusals.py</code> now reads
@@ -78,7 +85,7 @@ are registered tombstones.</p>
 <code>tests/test_old_names_resolve.py</code> and
 <code>tests/test_ledger.py</code>, run with the main checkout's
 <code>.venv/bin/python -m pytest -p no:cacheprovider -q -n 6</code>. Head arm
-at <code>a50b336e962d9b81bac8a5323391b479bfccb3fe</code>: 2 failed, 264 passed,
+at <code>d2d934b3a00b3d17a08bb483d4e5f754bb8911bb</code>: 2 failed, 265 passed,
 <code>EXIT=1</code>. Base arm at
 <code>33bb77708db6069b7ce6fc018e2cc47c146fffd2</code> over the same set minus
 the file this node added (it does not exist there): 2 failed, 257 passed,
@@ -109,7 +116,15 @@ Pointing the <code>ledger</code> tombstone at the wrong view
 <code>AssertionError: assert 'crew view velocity' == 'crew view ledger'</code> —
 a failure id the head arm does not fail: <code>1 failed</code>,
 <code>EXIT=1</code>. Log <code>logs/negative-control.log</code> under the run
-directory; the mutation was reverted before the commit.</p>
+directory; the mutation was reverted before the commit. Two further controls
+hold the review round: emptying the ledger row's operand mapping reddens
+<code>test_the_invocation_a_tombstone_prints_runs_as_written</code>
+(<code>1 failed</code>, <code>EXIT=1</code>) and makes the printed invocation
+exit <code>2</code> (<code>logs/control-forwarding.log</code>), and corrupting
+one hold field the fixture records reddens the tightened content assertion on
+the reason text and the id assertion on the backend
+(<code>1 failed</code>, <code>EXIT=1</code> each, with the count and duration
+assertions still green: <code>logs/control-hold-fields.log</code>).</p>
 <p id="cso-ledger-and-velocity-retire-followons"><strong>Follow-ons.</strong>
 Three test files drove <code>crew ledger --view records</code> through the CLI
 and sat outside this node's first write scope. The scope was extended and all
