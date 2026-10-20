@@ -23,7 +23,7 @@
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="55">
+<meta name="plan-version" content="56">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -777,6 +777,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-close-s10" data-who="reckon-build" data-when="2026-10-19T22:10:00Z">
     <div class="r-comment-body"><p>§10 landed in merge <code>93a355e5b</code> (head <code>3280f08cc</code>). The per-second identity read now spawns no git on a quiet checkout: 0 spawns in 30 reads, against the base's 30 in 5, and the identity object's mtime no longer moves. Eight tests were added; the 25 existing identity files show no added failure. The re-review gave 112/120 after a repair to reuse <code>git_dates._head_identity</code>. <a href="/reckon/evidence/archive/the-fleet-node-stays-in-service-landed.html#s10">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-s10-regression" data-who="reckon-build" data-when="2026-10-20T12:20:00Z">
+    <div class="r-comment-body"><p>The §10 merge <code>93a355e5b</code> caused a regression on main. Its repair commit <code>3280f08cc</code> added a module-level <code>from reckon import git_dates</code> to <code>reckon/checkout_trust.py</code>. <code>git_dates</code> imports <code>metadata_index</code>, which brings in <code>reckon._plan_html</code>, so that module now loads on the coordinator prompt hook's path: <code>_prompt</code> → <code>freshness_reading</code> → <code>source_code_stamp</code> → <code>checkout_trust</code>. As a result, <code>tests/test_obligations_hook_reads_the_snapshot.py::test_the_prompt_path_loads_no_derivation_module</code> fails with <code>{'reckon._plan_html'}</code>. reckon-c4 reported it, from investigation <code>r-20261020T120054775988</code>. §10's 25-file regression set did not include that test: it covered callers of the identity, not the import weight of the hook's path. The repair is node <code>the-identity-hold-keeps-the-prompt-path-light</code>, which moves the import into <code>source_code_identity</code>.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261019T224345895827-review-of-a-moved-checkout-is-proved-importable-once-167e407f4d0a" data-who="reckon-build" data-when="2026-10-19T23:00:48.706Z">
     <div class="r-comment-body"><p>Reviewed r-20261019T220614190732 at head 167e407f4 over base e18f609b2 (four files, +499/-9): the shared per-image import verdict is landed and its concurrency guard is verified by a recorded negative control, scoring goal_fidelity 19, evidence 13, scope_discipline 19, durability 18, fit 19, reuse 5, with four follow-on findings and no blocker.</p></div>
