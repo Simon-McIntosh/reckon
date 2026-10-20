@@ -19,11 +19,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-fleet-moves-to-a-new-node">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="43">
+<meta name="plan-version" content="44">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -530,6 +530,57 @@
       so it dispatches after §10 lands.
     </p>
 
+    <h2 id="s12">&sect;12 &mdash; A process table is read once per beat</h2>
+    <section data-reckon="section" data-id="s12" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      At 02:07 on 20 October the imas-codex watch producer was using 90% of a CPU on
+      clu-2002. Over 10 s it made 24,581 <code>openat</code> calls, 14,520 of which
+      failed. A 5 s capture showed that 14,568 of its 15,019 opens were
+      <code>/proc/&lt;pid&gt;/environ</code>, across 850 distinct processes. That is
+      about 3.4 full reads of the node's process table a second, and 8,706 of the
+      opens failed because the process belongs to root or another user. The reader is
+      <code>_processes_owning_run</code> (<code>reckon/crew/process_signal.py</code>),
+      reached from <code>_env_scan_run_pid</code>
+      (<code>reckon/crew/recovery_liveness.py</code>). It runs once per beat for every
+      run whose recorded pid has gone, and reads every process's environment each
+      time. A process's environment changes only when it execs, so almost every
+      re-read returns what the last one did.
+    </p>
+    <p>
+      The liveness read builds one index of the run marks it can see on each beat,
+      and every run is answered from that index. An environment already read is
+      reused until the process could have changed it. The key is the pid, the start
+      tick and the executable identity, because an exec keeps the pid and the start
+      tick but replaces the environment. The memo drops pids that have left the
+      table. A process owned by another user is skipped by the owner of its
+      <code>/proc</code> entry, without opening its environment. The stop path keeps
+      its own check at signal time, the start-tick floor and the crew home, so a
+      memoised reading never by itself selects a process to signal.
+    </p>
+    <p>
+      Done when the following tests pass:
+    </p>
+    <ul>
+      <li>A second beat over an unchanged process table opens no environment.</li>
+      <li>A new process is read once.</li>
+      <li>A pid reused by a new process is read afresh.</li>
+      <li>Another user's process is skipped without an <code>environ</code>
+      open.</li>
+      <li>A reparented worker carrying the run mark is still found, both by the
+      liveness read and by the stop path.</li>
+      <li>The existing tests for both modules have no added failures against the
+      base, with paired logs.</li>
+    </ul>
+    <p>
+      The negative control is a process whose environment is read between its fork
+      and its exec, and which then execs with the run mark. It must be found on the
+      next beat, which a memo keyed on pid and start tick alone would miss. The
+      measurement runs on the fleet allocation: a 10 s strace of a producer harness in
+      which several runs need the scan. At the base revision, the positive control,
+      each beat opens one environment per process for each such run. At the change,
+      it opens no more than one per process started during the window.
+    </p>
+
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
 <div class="r-gate" data-id="g-tfnsis-stop-path" data-section="s2" data-gated-sections="s3" data-status="closed" data-verdict="passed">
@@ -692,6 +743,9 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-10-20T00:10:00Z">
     <div class="r-comment-body"><p>§11 landed in merge <code>782f69ac7</code> (head <code>9e346b0d1</code>). A moved code identity is now proved importable once per published image and interpreter: sixteen concurrent askers start 1 probe instead of 16. The lock wait is bounded by the 30 s probe timeout, and retries carry jitter. Twelve tests were added; the reload and follower suite shows no added failure. The final review gave 112/120. <a href="/reckon/evidence/archive/the-fleet-node-stays-in-service-landed.html#s11">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-s12-origin" data-who="reckon-build" data-when="2026-10-20T00:20:00Z">
+    <div class="r-comment-body"><p>Added from a load reading on clu-2002 at 02:07 on 20 October, after §10 and §11 had landed. The load average was 62, and this time the cause was CPU, not storage: 60% user and 16% idle. The imas-codex producer was at 90% of a CPU, nearly all of it rereading every process's environment several times a second. A second finding comes from the same capture: about one <code>git rev-parse --verify &lt;sha&gt;^{commit}</code> a second, rechecking that the same commit ids exist. It is recorded here as a follow-on rather than folded into this section. The section prose is a hand edit, because no op replaces section prose.</p></div>
 </div>
 </section>
 </main>
