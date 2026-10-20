@@ -1,0 +1,53 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_mcp_response_budget.py::test_every_other_read_tool_uses_the_same_ceiling[audit]"
+  ],
+  "added_failures_note": "derived as the set difference of the reviewed manifest's baseline_suite and after_suite failure_ids; the response-budget parameter set differs only by which of its four variants the parallel run happened to fail, and the manifest's own serial control (mcp_base.log, mcp_head.log) fails all four variants at both revisions, so the node adds no real failure.",
+  "completed_at": "",
+  "dispatched_at": "2026-10-20T22:38:05Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": 1029,
+      "severity": "blocking",
+      "text": "the change teaches only one of the obligations view's two producers about queued rows. reckon/crew/obligations.py:1264 lists a queued row under run-queued, but the slice the sweep publishes, obligation_snapshot.payload_for, resolves a row's kind through _duty_kind (obligation_snapshot.py:1029) against CLASSIFICATION_DUTY_KINDS (obligations.py:48), which carries no 'queued' entry, so a queued row resolves to '' and is skipped. The snapshot the stop hook and prompt path read therefore omits the queued run while the direct derivation lists it, breaching the equality payload_for's own docstring states ('a slice and a derivation over the same files are equal field for field') and leaving the obligations view disagreeing with itself on the very pointer this node was dispatched to make consistent."
+    },
+    {
+      "file": "reckon/hooks/coordinator_obligations.py",
+      "line": 239,
+      "severity": "blocking",
+      "text": "_NON_BLOCKING_KINDS mirrors obligations.py's vocabulary as {review-queued, unreadable-review-record} and does not carry 'run-queued', so _blocking_items (coordinator_obligations.py:1223) classifies the new duty as blocking. On the inline path (_stop -> _obligations_view()(project, session)) a coordinator holding a queued run is now held from stopping until the lane admits it, which is the wait the change's own comment at obligations.py:97-100 says the coordinator cannot shorten; at base the queued row was absent and blocked nothing, so this is a regression the change introduces."
+    },
+    {
+      "file": "tests/test_queued_work_shows_where_held_work_shows.py",
+      "line": 178,
+      "severity": "blocking",
+      "text": "the done_when requires the queued run be shown with its position and rank by crew(view=live) and reckon crew list; the only crew-list case is marked xfail (strict=False), so reckon crew list is unverified and reckon/crew_run_commands.py carries no position or rank. Three of the done_when's four surfaces are gated; the fourth is asserted only as expected-to-fail, so the node's done_when is not met as written."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": 978,
+      "severity": "follow-on",
+      "text": "the queued_placements docstring states 'position is its place among every queued request on the lane', but the lane parameter defaults to '' and both callers (obligations.py:1264, query.py:208) take the default, so the ordering spans every backend rather than one lane; the figure is consistent with the position runs.queue_dispatch reports (runs.py:619, also unnarrowed), so the behaviour is right and only the wording is wrong."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that one queued run reads the same on the obligations view, the follower's q column, and crew(view=live) and reckon crew list with its position and rank; read at head 86bc24eeb, the direct obligations derivation (reckon/crew/obligations.py:1264) and the live projection (reckon/crew/query.py:208) now carry position and rank, but the snapshot slice the sweep publishes (reckon/crew/obligation_snapshot.py:1029) still omits queued rows and reckon/crew_run_commands.py carries no place, so the surfaces do not all agree.\nVERDICT done_when: the done_when names tests/test_queued_work_shows_where_held_work_shows.py; node_test.log records the head gate at 95f8ea40b as 6 passed, 1 xfailed, EXIT=0 and baseline_case1.log reds the first case against the base revision's own obligations/query/queue_admission, so the gate does measure the obligations, follower and crew(view=live) surfaces; the done_when's crew list surface is xfail and its 'all three reading the same pointer' is not asserted against the snapshot producer, so the measure is partly unasserted.\nVERDICT write_paths: the manifest declares seven paths (tests/test_queued_work_shows_where_held_work_shows.py, docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/queued-work-shows-where-held-work-shows.html, docs/figures/a-held-dispatch-waits-its-fair-turn/queued-work-shows-where-held-work-shows, reckon/crew/obligations.py, reckon/crew/query.py, reckon/crew/queue_admission.py, tests/test_a_session_side_refusal_reaches_the_session.py); git diff 51a251ce6e..86bc24eeb touches six files, every one inside that set, and the figure path is untouched.\nVERDICT manifest: read at head; status complete; it records the head gate and the declared mutation with their logs, names the run list's place a follow-on under a concurrent claim, and its baseline_suite/after_suite carry the same five failures with only the response-budget variant differing, which its failure_attribution attributes to parallel nondeterminism and its own serial control confirms.\nVERDICT diff: read commit by commit against 51a251ce6; six commits over six files, +380/-11, all inside the declared write paths, with the code commit 227efb7cc (queued_placements and the queued branch), the test 9fbc6ff74, the lint pass ae9fd948f, the two evidence-fragment commits afd496d40 and 86bc24eeb, and the two updated expectations 95f8ea40b.\nCALL_SITES: reckon/mcp_views.py:3824 (obligations_module.obligations -> crew view obligations), reckon/mcp_views.py:3974 (project_live_rows -> crew view live), reckon/crew/obligation_snapshot.py:1147 (payload_for -> the sweep that publishes each session's snapshot), reckon/hooks/coordinator_obligations.py:214/_stop (the inline obligations view the stop hook reads)\nSCORE goal_fidelity: 9\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:1264 and reckon/crew/query.py:208 carry the queued reading, but the obligations view's second producer, reckon/crew/obligation_snapshot.py:1029, omits the queued row, so the goal's consistency across surfaces is not met.\nSCORE evidence: 10\nJUSTIFICATION evidence: the head gate (node_test.log, 6 passed/1 xfailed, EXIT=0) and the base control (baseline_case1.log, the base modules failing at the obligations reading, EXIT=1) are recorded, but the gate exercises only obligations.obligations and not the snapshot slice of obligation_snapshot.py:1147, and it xfails the done_when's crew list surface at tests/test_queued_work_shows_where_held_work_shows.py:188.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 51a251ce6e5c61fdb221f456c14354c602923231..86bc24eeb0704c930fa04ac4be9d7505037d1165 changes six files, all inside the seven declared write paths, and carries nothing the goal does not imply.\nSCORE durability: 9\nJUSTIFICATION durability: the two-queued case anchors the advertised position against the production writer's returned place (tests/test_queued_work_shows_where_held_work_shows.py:204) and the base-modules control reddens, but the crew-list guard is xfail at :178, the snapshot divergence has no guard, and the assertion at :158 reads a static constant (ticker.STAT_LETTER) that no change here can falsify.\nSCORE fit: 12\nJUSTIFICATION fit: the new names (run-queued at obligations.py:95, queued_placements at queue_admission.py:961, LIVE_PLACEMENT_FIELDS at query.py:79) carry no plan label or version, but the change moved one view's vocabulary (obligations.py:100) without its mirror at coordinator_obligations.py:239 and implemented the queued branch on one of the view's two producers (obligations.py vs obligation_snapshot.py:1029).\nSCORE reuse: 18\nJUSTIFICATION reuse: queued_placements (queue_admission.py:961) wraps queue_order.admission_order, the ordering the admission pass and runs.queue_dispatch already rank by (queue_admission.py:1001, runs.py:619), rather than forking a second ordering, so a searched-for owner exists and the addition extends it.\nFINDING reckon/crew/obligation_snapshot.py:1029 blocking: _duty_kind resolves a queued row to '' because CLASSIFICATION_DUTY_KINDS (obligations.py:48) has no 'queued' entry, so payload_for skips the queued row the direct derivation now lists (obligations.py:1264) and the obligations view disagrees with itself, breaching the field-for-field equality obligation_snapshot.py's own docstring states.\nFINDING reckon/hooks/coordinator_obligations.py:239 blocking: _NON_BLOCKING_KINDS omits 'run-queued', so _blocking_items (coordinator_obligations.py:1223) holds the coordinator's stop open for a queued run on the inline path, the wait the change's comment at obligations.py:97-100 says the coordinator cannot shorten.\nFINDING tests/test_queued_work_shows_where_held_work_shows.py:178 blocking: the only crew-list case is xfail (strict=False), so the done_when's reckon crew list surface is asserted only as expected-to-fail and reckon/crew_run_commands.py carries no position or rank.\nFINDING reckon/crew/queue_admission.py:978 follow-on: the docstring's 'every queued request on the lane' does not match the default lane='' both callers pass, which orders across every backend; the figure agrees with runs.queue_dispatch (runs.py:619), so only the wording is wrong.\n",
+  "review_run_id": "r-20261020T223703714166-review-of-queued-work-shows-where-held-work-shows-86bc24eeb070",
+  "reviewed_base_sha": "51a251ce6e5c61fdb221f456c14354c602923231",
+  "reviewed_head_sha": "86bc24eeb0704c930fa04ac4be9d7505037d1165",
+  "reviewed_run_id": "r-20261020T204307767158-queued-work-shows-where-held-work-shows",
+  "scores": {
+    "durability": 9,
+    "evidence": 10,
+    "fit": 12,
+    "goal_fidelity": 9,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T23:02:56.413651+00:00",
+  "total": 77
+}

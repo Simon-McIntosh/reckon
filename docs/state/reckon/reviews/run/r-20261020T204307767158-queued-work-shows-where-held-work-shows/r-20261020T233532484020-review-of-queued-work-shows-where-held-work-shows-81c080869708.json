@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 8,
+  "added_failure_ids": [
+    "tests/test_a_queued_request_arranges_its_follower.py::test_queued_request_attaches_before_dispatch_returns",
+    "tests/test_a_running_review_finishes_across_a_resume.py::test_a_launched_review_over_a_source_move_earns_a_light_re_review",
+    "tests/test_obligations_snapshot_is_published.py::test_a_file_change_and_the_floor_tick_each_republish",
+    "tests/test_obligations_snapshot_is_published.py::test_a_pointer_transition_is_in_the_snapshot_by_the_next_sweep",
+    "tests/test_obligations_snapshot_is_published.py::test_a_writer_stopped_before_the_rename_leaves_the_previous_snapshot",
+    "tests/test_obligations_snapshot_is_published.py::test_only_a_live_registration_gets_a_snapshot",
+    "tests/test_obligations_snapshot_is_published.py::test_the_snapshot_carries_the_derivation_over_unmodified_files",
+    "tests/test_review_carries_forward.py::test_a_runtime_source_commit_dispatches_a_light_scoped_review"
+  ],
+  "added_failures_note": "derived as the set difference of the reviewed manifest's baseline_suite (revision 51a251ce6, log baseline_suite2.log) and after_suite (revision 2a0e55137, log after_suite3.log) failure_ids; all eight added ids fail identically at both revisions in the run's own focus arms (focus_head.log, focus_base.log: 8 failed, 18 passed each, the same eight ids), so they are cases needing a live follower process in this sandbox and none is a regression the node added.",
+  "completed_at": "2026-10-20T23:56:31.309Z",
+  "dispatched_at": "2026-10-20T23:36:13Z",
+  "findings": [
+    {
+      "file": "tests/test_queued_work_shows_where_held_work_shows.py",
+      "line": 213,
+      "severity": "follow-on",
+      "text": "the done_when's reckon crew list surface is asserted only by an xfail(strict=False) case, so the surface is neither carried nor gated and an eventual xpass would be silent; the repair round's grant excluded reckon/crew_run_commands.py and the change needed there travels in the manifest's follow_ons."
+    },
+    {
+      "file": "docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/queued-work-shows-where-held-work-shows.html",
+      "line": 25,
+      "severity": "follow-on",
+      "text": "the gate paragraph still reports '6 passed and 1 expected-to-fail' for the head gate, while the same command at the final head 81c080869 reports 8 passed and 1 xfailed (node_test.log), so the landing record understates the gate it cites by the two cases the repair added."
+    },
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": 1021,
+      "severity": "follow-on",
+      "text": "the new field-for-field parity assertion at tests/test_queued_work_shows_where_held_work_shows.py:240 asserts an equality the two producers do not hold in every state, because the slice's scoring skip has no _refused_delivered_review carve-out where the derivation's has one (reckon/crew/obligations.py:1299)."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the repair round's goal is to answer each of the three findings on run r-20261020T204307767158-queued-work-shows-where-held-work-shows@86bc24eeb; commits 4b3c82f5a (reckon/crew/obligations.py:522 _queued_item, reckon/crew/obligation_snapshot.py:1033) and 2a0e55137 (reckon/hooks/coordinator_obligations.py:240) answer two of them, and 2dac9d3d3 records the third as a decline, so the run-list surface the original goal names is still not carried.\nVERDICT done_when: the done_when is the repair round's \u2014 every finding answered by id in the manifest \u2014 and the manifest carries 'acted f09a48dcd8b: 4b3c82f5a', 'acted f52739105d5: 2a0e55137' and 'declined f6582c78f65' with a reason, beside node_test.log (8 passed, 1 xfailed, EXIT=0 at 81c080869) and the two revert controls (EXIT=1 each); the original node's done_when, which also names reckon crew list, remains unmet on that surface.\nVERDICT write_paths: the repair round's grant in the run's resume-3-advice.txt names nine paths and includes reckon/crew/obligation_snapshot.py and reckon/hooks/coordinator_obligations.py; every file the increments touch is inside that grant.\nVERDICT manifest: read at head 81c080869; status complete; it carries the acted/declined answer for each finding id, the head gate log with its result, two negative-control logs with their failing ids, and the suite delta with per-arm failure attribution.\nVERDICT diff: read commit by commit against 86bc24eeb; four commits over five files (+129/-10), the two repairs, the evidence-fragment edit that records them, and the format pass.\nCALL_SITES: reckon/mcp_views.py:3824 (obligations view calls obligations.obligations), reckon/crew/obligation_snapshot.py:1173 (payload_for inside sweep, reached from reckon/crew/runs.py:2429 and reckon/crew_follow_commands.py:113/_2149), reckon/hooks/coordinator_obligations.py:1309 and :1322 (_stop calls _blocking_items), reckon/crew/query.py:208 (the live view's queued row carries the same place)\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/obligation_snapshot.py:1033 and reckon/hooks/obligations.py note the two repaired surfaces, but tests/test_queued_work_shows_where_held_work_shows.py:213 keeps the run-list surface xfail, so the node's own goal is not fully carried.\nSCORE evidence: 16\nJUSTIFICATION evidence: node_test.log records the head gate at 81c080869 as 8 passed and 1 xfailed with EXIT=0, and the two revert logs record EXIT=1 with the failing case named.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff 86bc24eeb..81c080869, including reckon/hooks/coordinator_obligations.py:240, sits inside the repair round's grant recorded in the run's resume-3-advice.txt.\nSCORE durability: 18\nJUSTIFICATION durability: revert_snapshot_parity.log reddens tests/test_queued_work_shows_where_held_work_shows.py:220 with the snapshot row absent and revert_stop_open.log reddens :243 with the duty returned as blocking, so both repairs are guarded by a case that fails on their reverting.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/obligations.py:522 follows the neighbouring _live_item idiom and adds no plan-labelled or versioned name, though the payload_for local at obligation_snapshot.py:1014 names itself after the queue_admission.queued_placements function it calls.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/obligations.py:522 _queued_item is the one helper both producers now build a queued row through, extending the existing _live_item owner rather than forking a second row shape.\nFINDING tests/test_queued_work_shows_where_held_work_shows.py:213 follow-on: the done_when's reckon crew list surface is asserted only by an xfail(strict=False) case, so the surface is neither carried nor gated and an eventual xpass would be silent; the repair round's grant excluded reckon/crew_run_commands.py and the change needed there travels in the manifest's follow_ons.\nFINDING docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/queued-work-shows-where-held-work-shows.html:25 follow-on: the gate paragraph still reports '6 passed and 1 expected-to-fail' for the head gate, while the same command at the final head 81c080869 reports 8 passed and 1 xfailed (node_test.log), so the landing record understates the gate it cites by the two cases the repair added.\nFINDING reckon/crew/obligation_snapshot.py:1021 follow-on: the new field-for-field parity assertion at tests/test_queued_work_shows_where_held_work_shows.py:240 asserts an equality the two producers do not hold in every state, because the slice's scoring skip has no _refused_delivered_review carve-out where the derivation's has one (reckon/crew/obligations.py:1299); a case reaching that state fails the parity case for a reason unrelated to the queued row.",
+  "review_run_id": "r-20261020T233532484020-review-of-queued-work-shows-where-held-work-shows-81c080869708",
+  "reviewed_base_sha": "86bc24eeb0704c930fa04ac4be9d7505037d1165",
+  "reviewed_head_sha": "81c0808697082bf4fbf44c52862b70b4d3e5fdcf",
+  "reviewed_run_id": "r-20261020T204307767158-queued-work-shows-where-held-work-shows",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 14,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T23:57:32.576100+00:00",
+  "total": 104
+}
