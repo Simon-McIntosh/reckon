@@ -1,13 +1,16 @@
 <section id="a-stored-route-result-follows-the-code-that-derived-it" class="r-evidence">
   <h3 id="a-stored-route-result-follows-the-code-that-derived-it-title">Stored results follow the definitions their refresh child ran</h3>
-  <p>The child records executed package functions, expands the definitions they read, and stores syntax fingerprints with each result. A read compares those definitions only when their source file revision moves. The comparison is memoized by file revision; a source change to an unrelated function keeps the result available. The persisted store namespace moved so records without fingerprints are retired.</p>
+  <p>The child records executed package functions, expands the definitions they read, and stores syntax fingerprints with each result. A read compares those definitions only when their source file revision moves. The comparison is memoized by file revision; a source change to an unrelated function keeps the result available. Empty or malformed fingerprint records miss, and the child refuses to store a result when it recorded no definitions. The persisted store namespace moved so older records without fingerprints are retired.</p>
   <table id="a-stored-route-result-follows-the-code-that-derived-it-measure">
     <thead><tr><th>Check</th><th>Observed result</th></tr></thead>
     <tbody>
       <tr><td>Base reproduction after rewriting the derivation with the process revision fixed</td><td>The old marker was served; EXIT=0 for the reproduction.</td></tr>
       <tr><td>Refresh-child test at the committed head</td><td>A new process revision served the unchanged result; an unused function in the same file and one in another file left it available; rewriting the executed definition made the next read miss and request one refresh. The changed same-file source was read once across two checks.</td></tr>
       <tr><td>Declared negative control, removing the fingerprint comparison</td><td>The rewritten-definition assertion failed: one failing test, EXIT=1.</td></tr>
-      <tr><td>All tests importing either changed module</td><td>126 passed, one failed, EXIT=1. The sole failure, <code>test_only_the_shared_parser_calls_fromisoformat</code>, also failed on the base tree with the same two unrelated parser sites. Added failure IDs: zero.</td></tr>
+      <tr><td>Empty fingerprint map on the previous head</td><td>The stored marker was served, and the child wrote a result when fingerprint collection returned empty: two failing tests, EXIT=1.</td></tr>
+      <tr><td>Negative control restoring the old <code>is not None</code> branch</td><td>The empty-map read served the unverifiable marker: one failing test, EXIT=1.</td></tr>
+      <tr><td>Focused gate after the repair</td><td>Seven passed, EXIT=0. An empty or malformed record misses; a child with no fingerprints writes no result.</td></tr>
+      <tr><td>All 17 test files referencing either changed module</td><td>131 passed, one failed, EXIT=1. The sole failure, <code>test_only_the_shared_parser_calls_fromisoformat</code>, also failed on the base tree with the same two unrelated parser sites. Added failure IDs: zero.</td></tr>
       <tr><td>Ruff on all changed Python paths</td><td>Check: zero findings, EXIT=0. Format check: three files formatted, EXIT=0.</td></tr>
     </tbody>
   </table>
