@@ -94,6 +94,23 @@
 <p><strong>Effect on sessions.</strong> This adds parameters to the <code>crew</code> tool. A server running from before this landing refuses a failed <code>crew</code> call with <code>stale_server_code</code> until it reconnects. every-plan-write-goes-through-edit-plan §13 ends that for added parameters.</p>
   </section>
 
+  <section id="s7-repair-check">
+    <h2>§7 — the repair and check families fold</h2>
+    <p>Run <code>r-20261020T055723778677-cso-repair-and-check-families-fold</code>, head <code>21a0e57be</code>, on the codex lane. Its fence came to about 274,000 input tokens.</p>
+<ul>
+<li><code>repair-status</code> and <code>repair-review</code> fold into <code>crew repair --status|--review</code>.</li>
+<li><code>check-manifest</code> and <code>check-review</code> fold into <code>crew check --manifest|--review</code>, and <code>--review</code> accepts <code>--run</code>.</li>
+<li>The four old names are tombstones. Every emitter, skill citation and test caller now uses the folded form, including the worker prompt contract in <code>reckon/crew/prompts.py</code>.</li>
+</ul>
+<p><strong>Gate.</strong> 261 passed and 1 failed at <code>e6787e7f3</code>. The failure is <code>test_every_module_fits_a_worker_window</code>, the same two offenders as the base arm, so zero failures are added.</p>
+<p><strong>Reviews.</strong></p>
+<ul>
+<li>At <code>1e46d492d</code>: two test cases still invoked <code>repair-status</code> and were red at head, which was blocking. Two tautological count assertions and stale <code>check-manifest</code> prose came with it. The fence was widened to the test and to <code>reports.py</code> and <code>promotion_scope.py</code>.</li>
+<li>At <code>e6787e7f3</code>: the leaf bound came out to exactly today's census, a total that any unrelated new verb would have turned red. It was removed in favour of membership assertions.</li>
+<li>At <code>21a0e57be</code>: 111/120 with nothing blocking.</li>
+</ul>
+  </section>
+
 </main>
 </body>
 </html>
