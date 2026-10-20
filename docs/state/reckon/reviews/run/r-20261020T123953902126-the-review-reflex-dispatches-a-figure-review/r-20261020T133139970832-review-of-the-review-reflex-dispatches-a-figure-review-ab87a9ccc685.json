@@ -1,0 +1,81 @@
+{
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_recover_launches_only_what_it_is_asked.py::test_sweep_review_lane_uses_local_unless_node_declares_one[None-local]",
+    "tests/test_recover_launches_only_what_it_is_asked.py::test_sweep_review_lane_uses_local_unless_node_declares_one[codex-codex]"
+  ],
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:2964",
+    "reckon/crew_dispatch_commands.py:2485",
+    "reckon/crew_dispatch_commands.py:2492",
+    "reckon/crew/recovery_review_acceptance.py:498",
+    "reckon/crew/promotion_release.py:944",
+    "reckon/crew/obligations.py:673",
+    "reckon/crew/crew_run_commands.py:685"
+  ],
+  "completed_at": "2026-10-20T13:45:39.187Z",
+  "dispatched_at": "2026-10-20T13:32:43Z",
+  "findings": [
+    {
+      "evidence": "reproduced at the reviewed head with `PYTHONPATH=<worktree> /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_recover_launches_only_what_it_is_asked.py::test_sweep_recover_review_lane_uses_local_unless_node_declares_one` naming 2 failed; the merge-time importer population logs at the reviewed run directory record 30 failed at the base and 32 at the head, the two extra being exactly these ids.",
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "2229",
+      "severity": "blocking",
+      "text": "The shared dispatch path now calls _failed_review_backend(record, rubric=rubric or None) and _review_in_flight(record, rubric=rubric) with a new keyword argument, which turns tests/test_recover_launches_only_what_it_is_asked.py:146,149 red: those tests monkeypatch both helpers with a single-positional lambda, so both parametrizations of test_sweep_review_lane_uses_local_unless_node_declares_one fail at the reviewed head with TypeError: got an unexpected keyword argument 'rubric'. Neither failed at the base revision."
+    },
+    {
+      "evidence": "read tests/test_figure_review.py:326-343 against reckon/crew/recovery_review_subject.py:139, which calls read_review with no base_dir.",
+      "file": "tests/test_figure_review.py",
+      "line": "340",
+      "severity": "follow-on",
+      "text": "The first assertion of test_text_selection_skips_a_figure_only_record is vacuous: the figure-only record is written under project['tmp_path'] / 'figure-only-store', but select_review_for_head reads the default store root, so actual is None whether or not the skip exists and the assertion does not exercise the guard it was added for. The monkeypatched second half (:353) does exercise it, and the declared negative control reddens on that half, so the guard is still covered."
+    },
+    {
+      "evidence": "read reckon/crew/recovery_review_dispatch.py:331-334 against the node id shape minted at reckon/crew/repair.py:314-328.",
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "331",
+      "severity": "follow-on",
+      "text": "_review_in_flight distinguishes a figure review from a text review by testing whether the live pointer's node id ends with '-figure' rather than reading the review's stored rubric. A run whose id (with no head suffix) ends in '-figure' would mint a text-review node id with the same suffix and be misclassified; the discriminator is a name heuristic where the pointer already carries the rubric through the record."
+    },
+    {
+      "evidence": "read reckon/crew_dispatch_commands.py:2485-2492; the file is not among the node's declared write paths.",
+      "file": "reckon/crew_dispatch_commands.py",
+      "line": "2492",
+      "severity": "follow-on",
+      "text": "The printed review-missing command previews only the text brief (recovery._review_dispatch_fields(subject, write=False)['brief_text']), so for a run whose commits change a figure the printed command does not name the figure review, its rubric, or its own record paths, even though a real dispatch now composes all three. The node could not touch this file (outside its declared write paths), so it is recorded rather than repaired."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read both commits against a5b7f077 (b11687d2 the feature, ab87a9cc the evidence fragment); six files changed, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_figure_review.py; its six cases are recorded as passing in the manifest's figure-review-committed.log (6 passed in 44.45s, EXIT=0).",
+    "goal": "the node goal is to dispatch a read-only figure review of a changed figures image on an image-capable lane; reckon/crew/recovery_review_dispatch.py:1941 _dispatch_figure_review_for_run composes it and dispatches on a lane selected with profile='figure'.",
+    "manifest": "read; it records the committed-head gate, both negative-control logs, the ruff runs and the manifest audit, each with its log path.",
+    "write_paths": "read the manifest's declared paths; every path in the diff against a5b7f077 is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_figure_review.py:188 fails if the figure trigger is removed and :343/:357 fail if the figure-rubric skip is removed, matching the declared negative controls, though the :340 assertion does not exercise the skip.",
+    "evidence": "tests/test_figure_review.py exercises each done-when clause and its result is logged in figure-review-committed.log, but the merge-time importer population the done-when also names records 2 failures the node's own gate did not surface.",
+    "fit": "the added symbols and comments name the mechanism (FIGURE_REVIEW_RUBRIC, parse_figure_review, _changed_figure_paths) and a naming scan of the changed Python finds no plan or ticket label.",
+    "goal_fidelity": "reckon/crew/recovery_review_dispatch.py:2047 dispatches the figure review last with images=list(fields.get('images') or ()), and the test shows the lane is image-lane and the attachment a rendered PNG.",
+    "reuse": "reckon/crew/review.py:276 adds the figure rubric beside CLAIMS_RUBRIC and HEALTH_REVIEW_RUBRIC on the existing rubric machinery, reusing TaskNode.images (reckon/crew/node.py:754) and the existing profile-aware _review_lane_candidates, adding no new public module.",
+    "scope_discipline": "every changed path (reckon/crew/review.py, reckon/crew/recovery_review_dispatch.py, reckon/crew/recovery_review_subject.py, reckon/crew/prompts/figure_review.md, tests/test_figure_review.py, the evidence fragment) is inside the declared write paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261020T133139970832-review-of-the-review-reflex-dispatches-a-figure-review-ab87a9ccc685",
+  "reviewed_base_sha": "a5b7f077711de024ecdc7416318ab8f57c30fdb6",
+  "reviewed_head_sha": "ab87a9ccc685d70ad45bac1b53e3e6df1ae6f245",
+  "reviewed_run_id": "r-20261020T123953902126-the-review-reflex-dispatches-a-figure-review",
+  "rubric": "code",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T13:48:59.842137+00:00",
+  "total": 110
+}
