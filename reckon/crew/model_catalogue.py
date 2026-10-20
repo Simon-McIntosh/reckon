@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import fcntl
 import hashlib
 import json
-from collections.abc import Callable, Mapping
+import subprocess
+from collections.abc import Callable, Iterator, Mapping
+from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -13,6 +16,12 @@ from urllib.request import urlopen
 from reckon import flight
 from reckon._store import write_json_atomically
 from reckon.crew.runs import crew_home
+
+# The probe is one headless request through the lane's own command. Its prompt
+# is one line, and its bound is short because a refused model name fails fast
+# and a lane that hangs must not hold the refresh.
+PROBE_PROMPT = "Reply with the single word ok."
+PROBE_TIMEOUT_SECONDS = 60.0
 
 
 def _root() -> Path:
@@ -192,54 +201,162 @@ def check_model_catalogue(
     fetch: Callable[[str], dict[str, Any]] | None = None,
     force: bool = False,
     now: datetime | None = None,
+    probe_run: Callable[[list[str]], tuple[int, str]] | None = None,
 ) -> dict[str, Any]:
-    """Refresh the snapshot when due and raise each newly observed notice once."""
+    """Refresh the snapshot when due and raise each newly observed notice once.
+
+    One producer fetches however many projects are watched: the snapshot's own
+    age is re-read under an exclusive lock, so a second producer sweeping at the
+    same instant finds the refresh already done and returns the snapshot it
+    reads rather than fetching again. A fetch that raises preserves the previous
+    snapshot and records the error beside it. A released notice on a lane that
+    opts in and declares no served-model file is probed once, through the lane's
+    own command, and the result is recorded on the notice.
+    """
     now = now or datetime.now(UTC)
     config = config or flight.resolve(project, checkout_path=checkout_path).config
     settings = config.get("model_catalogue") or {}
-    previous = _read_snapshot()
     if not settings.get("list_url"):
-        return previous
-    checked = _created(previous.get("list_checked_at"))
-    age = settings.get("refresh_age", 86400)
-    due = force or checked is None or now.timestamp() - checked >= age
-    try:
-        document = (
-            (fetch or _fetch_list)(settings["list_url"])
-            if due
-            else {"data": previous["models"]}
-        )
-        entries = _list_entries(document)
-        notices = {item["id"]: item for item in previous.get("notices", [])}
-        for candidate in _compare(config, entries):
-            notices.setdefault(
-                candidate["id"],
-                {**candidate, "first_seen": now.isoformat(), "acknowledgement": None},
+        return _read_snapshot()
+    with _refresh_lock() as acquired:
+        if not acquired:
+            # Another producer holds the lock and is fetching. Its result lands
+            # on disk for the next read; this pass fetches nothing.
+            return _read_snapshot()
+        previous = _read_snapshot()
+        checked = _created(previous.get("list_checked_at"))
+        age = settings.get("refresh_age", 86400)
+        due = force or checked is None or now.timestamp() - checked >= age
+        if not due:
+            return previous
+        try:
+            entries = _list_entries((fetch or _fetch_list)(settings["list_url"]))
+            notices = {item["id"]: item for item in previous.get("notices", [])}
+            for candidate in _compare(config, entries):
+                notices.setdefault(
+                    candidate["id"],
+                    {
+                        **candidate,
+                        "first_seen": now.isoformat(),
+                        "acknowledgement": None,
+                    },
+                )
+            _probe_notices(config, notices, now=now, probe_run=probe_run)
+            snapshot = {
+                "checked_at": now.isoformat(),
+                "list_checked_at": now.isoformat(),
+                "models": entries,
+                "notices": sorted(
+                    notices.values(), key=lambda item: (item["first_seen"], item["id"])
+                ),
+            }
+            write_json_atomically(snapshot_path(), snapshot, indent=2, sort_keys=True)
+            write_json_atomically(
+                _root() / "error.json",
+                {"at": now.isoformat(), "error": None},
+                indent=2,
+                sort_keys=True,
             )
-        snapshot = {
-            "checked_at": now.isoformat(),
-            "list_checked_at": now.isoformat() if due else previous["list_checked_at"],
-            "models": entries,
-            "notices": sorted(
-                notices.values(), key=lambda item: (item["first_seen"], item["id"])
-            ),
+            return snapshot
+        except Exception as exc:  # noqa: BLE001 - a failed fetch preserves the snapshot
+            write_json_atomically(
+                _root() / "error.json",
+                {"at": now.isoformat(), "error": str(exc)},
+                indent=2,
+                sort_keys=True,
+            )
+            return previous
+
+
+@contextmanager
+def _refresh_lock() -> Iterator[bool]:
+    """Hold the catalogue refresh lock, yielding whether a fetch may proceed.
+
+    The lock makes the refresh one fetch however many projects are watched: a
+    producer that cannot take it is another's fetch already in flight, so it
+    reads the snapshot on disk instead of fetching. The lock is released when
+    the handle closes, including after a fetch that raised.
+    """
+    root = _root()
+    root.mkdir(parents=True, exist_ok=True)
+    handle = (root / "refresh.lock").open("a+")
+    try:
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            yield False
+            return
+        try:
+            yield True
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+    finally:
+        handle.close()
+
+
+def _probe_model_name(catalog_id: str) -> str:
+    """The model spelled the way a lane's own command accepts it.
+
+    The provider segment -- everything up to and including the first ``/`` --
+    is dropped, and each ``.`` becomes a ``-``, which is how every declared
+    Claude model on this host is spelled.
+    """
+    _, _, tail = catalog_id.partition("/")
+    return (tail or catalog_id).replace(".", "-")
+
+
+def _default_probe_run(argv: list[str]) -> tuple[int, str]:
+    """Run one headless request, returning its exit status and its reply."""
+    completed = subprocess.run(
+        argv,
+        capture_output=True,
+        text=True,
+        timeout=PROBE_TIMEOUT_SECONDS,
+        check=False,
+    )
+    return completed.returncode, (completed.stdout or "") + (completed.stderr or "")
+
+
+def _probe_notices(
+    config: Mapping[str, Any],
+    notices: dict[str, dict[str, Any]],
+    *,
+    now: datetime,
+    probe_run: Callable[[list[str]], tuple[int, str]] | None,
+) -> None:
+    """Probe each eligible released notice once and record its result.
+
+    A notice is eligible when it is ``released``, its lane opts in with
+    ``probe_new_models`` and declares no served-model file -- such a file
+    already answers whether the lane serves the model -- and nothing has probed
+    it yet. The result is recorded on the notice as ``served`` or ``unserved``
+    with the reply's first line, and a notice carrying a result is never probed
+    again.
+    """
+    lanes = config.get("lanes") or {}
+    run = probe_run or _default_probe_run
+    for notice in notices.values():
+        if notice.get("kind") != "released" or notice.get("probe"):
+            continue
+        declaration = lanes.get(notice.get("lane")) or {}
+        if not declaration.get("probe_new_models") or declaration.get("served_models"):
+            continue
+        command = declaration.get("command")
+        if not command:
+            continue
+        model_name = _probe_model_name(str(notice.get("model_id") or ""))
+        argv = [str(command), "-p", "--model", model_name, PROBE_PROMPT]
+        try:
+            status, output = run(argv)
+        except Exception as exc:  # noqa: BLE001 - a failed probe is recorded as unserved
+            status, output = 1, str(exc)
+        first_line = next((line for line in output.splitlines() if line.strip()), "")
+        notice["probe"] = {
+            "result": "served" if status == 0 else "unserved",
+            "reply": first_line,
+            "model_name": model_name,
+            "at": now.isoformat(),
         }
-        write_json_atomically(snapshot_path(), snapshot, indent=2, sort_keys=True)
-        write_json_atomically(
-            _root() / "error.json",
-            {"at": now.isoformat(), "error": None},
-            indent=2,
-            sort_keys=True,
-        )
-        return snapshot
-    except Exception as exc:  # noqa: BLE001 - a failed fetch preserves the snapshot
-        write_json_atomically(
-            _root() / "error.json",
-            {"at": now.isoformat(), "error": str(exc)},
-            indent=2,
-            sort_keys=True,
-        )
-        return previous
 
 
 def _list_entries(document: Mapping[str, Any]) -> list[dict[str, Any]]:

@@ -1492,6 +1492,13 @@
                     ],
                     "description": "Optional scheduler placement for this backend's workers. A declared placement wraps the launch in the scheduler invocation rather than replacing it, so the resolved command, its environment and its stream paths are the ones that run. Absent means the login-node launch, which is what keeps every backend that declares none behaving exactly as before."
                 },
+                "probe_new_models": {
+                    "description": "Whether the model catalogue may send this lane one headless request to confirm a released model it declares no served-model file for. Absent means the lane is never probed.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
                 "sandbox": {
                     "$ref": "#/$defs/SandboxMode",
                     "description": "Filesystem blast radius granted to workers of this backend."
@@ -1791,6 +1798,13 @@
                         }
                     ],
                     "description": "Optional scheduler placement for this backend's workers. A declared placement wraps the launch in the scheduler invocation rather than replacing it, so the resolved command, its environment and its stream paths are the ones that run. Absent means the login-node launch, which is what keeps every backend that declares none behaving exactly as before."
+                },
+                "probe_new_models": {
+                    "description": "Whether the model catalogue may send this lane one headless request to confirm a released model it declares no served-model file for. Absent means the lane is never probed.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
                 },
                 "sandbox": {
                     "$ref": "#/$defs/SandboxMode",

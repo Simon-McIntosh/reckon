@@ -494,13 +494,20 @@ def digest_path(project: str, session: str) -> Path:
     return lock.with_suffix(_DIGEST_SUFFIX)
 
 
-def duty_digest(items: Sequence[Mapping[str, Any]], *, reloading: bool = False) -> str:
-    """A digest over the ``(kind, run_id)`` pairs, tagged with the reload state.
+def duty_digest(
+    items: Sequence[Mapping[str, Any]],
+    *,
+    reloading: bool = False,
+    model_notices: int = 0,
+) -> str:
+    """A digest over the ``(kind, run_id)`` pairs, tagged with reload and notices.
 
     The pairs alone would silence a reloading producer's list, because it is
     the same list the session was already shown. The tag makes entering a
     reload and coming back from one each read as the change they are, while
-    two turns inside one reload, and two ordinary turns, stay equal.
+    two turns inside one reload, and two ordinary turns, stay equal. The
+    unacknowledged-notice count is carried too, so a notice appearing or being
+    acknowledged while the duty set stands still is still spoken once.
     """
     pairs = sorted(
         (str(item.get("kind") or ""), str(item.get("run_id") or "")) for item in items
@@ -508,6 +515,8 @@ def duty_digest(items: Sequence[Mapping[str, Any]], *, reloading: bool = False) 
     body = "\n".join(f"{kind}\t{run_id}" for kind, run_id in pairs)
     if reloading:
         body = f"reloading\n{body}"
+    if model_notices:
+        body = f"{body}\nmodels\t{model_notices}"
     return hashlib.sha256(body.encode()).hexdigest()
 
 
@@ -594,6 +603,41 @@ def follow_local_lane(command: str, *, project: str) -> str:
 _COLLAPSIBLE_KINDS = frozenset({"worktree-held"})
 
 
+def pending_model_notices() -> int:
+    """How many model notices await acknowledgement, from the snapshot alone.
+
+    The hook reads the catalogue's published snapshot and never fetches: it
+    counts the notices the producer already recorded and left unacknowledged.
+    An absent or unreadable snapshot counts nothing.
+    """
+    try:
+        path = (
+            snapshot_module().crew_home().joinpath("model-catalogue", "snapshot.json")
+        )
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return 0
+    if not isinstance(document, Mapping):
+        return 0
+    notices = document.get("notices")
+    if not isinstance(notices, list):
+        return 0
+    return sum(
+        1
+        for item in notices
+        if isinstance(item, Mapping) and not item.get("acknowledgement")
+    )
+
+
+def model_notice_line(count: int) -> str:
+    """One line naming the unacknowledged notices and the view that lists them."""
+    plural = "" if count == 1 else "s"
+    return (
+        f"- [model-notice] {count} unacknowledged model notice{plural}: "
+        'run `crew(view="models")`'
+    )
+
+
 def _work_lines(items: Sequence[Mapping[str, Any]]) -> list[str]:
     """One counted line per shared remedy, and one line per run for the rest.
 
@@ -658,6 +702,9 @@ def format_checklist(payload: dict[str, Any], *, note: str = "") -> str:
         header += f", oldest {_format_age(int(summary.get('oldest_age_seconds') or 0))}"
     lines = [header]
     lines.extend(_work_lines(items))
+    pending = pending_model_notices()
+    if pending:
+        lines.append(model_notice_line(pending))
     unreconciled = f"unreconciled runs: {summary.get('unreconciled_runs', 0)}"
     lines.append(unreconciled + "; work the list to empty before ending the turn.")
     lines.append(AUTHORITY_LINE)
@@ -917,7 +964,8 @@ def _inject_list(
             )
     items = obligations.get("obligations") or ()
     digest_file = digest_path(project, session)
-    if not items and not reloading:
+    notices = pending_model_notices()
+    if not items and not reloading and not notices:
         if _read_digest(digest_file):
             try:
                 from reckon._store import write_atomically
@@ -929,7 +977,7 @@ def _inject_list(
             except OSError:
                 pass
         return
-    digest = duty_digest(items, reloading=reloading)
+    digest = duty_digest(items, reloading=reloading, model_notices=notices)
     if _read_digest(digest_file) == digest:
         return
     inject(payload, format_checklist(obligations, note=note))

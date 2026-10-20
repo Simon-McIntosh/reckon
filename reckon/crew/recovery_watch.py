@@ -2688,6 +2688,18 @@ def watch_ticker(
                     _stop_delivered_reviews(pointers, signal_run=signal_run)
                 except Exception as exc:  # noqa: BLE001 - one bad pass ends nothing
                     print(f"review-stop-failure: {project}: {exc}", flush=True)
+                # The model catalogue check rides the same cadence. It refreshes
+                # only when its snapshot is older than the configured refresh
+                # age, so a sweep inside the age fetches nothing; a refresh that
+                # raises is printed and never ends the seat.
+                try:
+                    from reckon.crew import model_catalogue
+
+                    model_catalogue.check_model_catalogue(project)
+                except Exception as exc:  # noqa: BLE001 - one bad pass ends nothing
+                    print(
+                        f"model-catalogue-refresh-failure: {project}: {exc}", flush=True
+                    )
             moment = _utc_seconds()
             if sweep:
                 current = {

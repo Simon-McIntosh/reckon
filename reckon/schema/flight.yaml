@@ -487,6 +487,13 @@ slots:
   served_models:
     description: Path to this lane's CLI-published served-model JSON file.
 
+  probe_new_models:
+    description: >-
+      Whether the model catalogue may send this lane one headless request to
+      confirm a released model it declares no served-model file for. Absent
+      means the lane is never probed.
+    range: boolean
+
   input_modalities:
     description: >-
       Input modalities this backend's model actually receives. Absent means
@@ -1235,6 +1242,7 @@ classes:
       - default_model
       - models
       - served_models
+      - probe_new_models
 
   ModelCatalogueConfig:
     description: Public source and watch rules for model notices.
