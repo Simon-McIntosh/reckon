@@ -262,6 +262,81 @@ def _repairable_scope(
     return scope
 
 
+def _sub_floor_dimensions_named(
+    review: Mapping[str, Any], project: str, config: Mapping[str, Any] | None
+) -> list[str]:
+    """The review's dimensions under their declared floor, as ``name score/floor``.
+
+    The floors live in the resolved flight config's ``gates.dimension_floors``,
+    so a dimension is named only where the project declared a standard for it and
+    the review scored below that standard. A config that cannot be resolved names
+    no floor rather than failing the decline, because the decline is a
+    bookkeeping outcome and a missing config is not a reason to withhold it.
+    """
+    from reckon.crew import review_dispositions
+
+    try:
+        resolved = _resolved_review_config(project, config) if project else config
+        floors = review_dispositions.declared_dimension_floors(resolved)
+    except Exception:  # noqa: BLE001 - an unresolved config names no floor
+        return []
+    return [
+        f"{row['dimension']} {row['score']}/{row['floor']}"
+        for row in review_dispositions.sub_floor_dimensions(review, floors)
+    ]
+
+
+def _follow_on_repository_paths(
+    review: Mapping[str, Any], fence: Sequence[str] | None
+) -> list[str]:
+    """The repository paths the round's follow-on findings cite.
+
+    A follow-on is recorded rather than repaired, so it carries no round on its
+    own; but a follow-on citing a repository path is work a coordinator may
+    dispose by hand, and the decline-only reason names it so the coordinator
+    sees what the blocking-only decision left on the table. Run records are
+    dropped by the same path rule the scope is composed from, so the reason never
+    names a manifest or a gate log as work.
+    """
+    return _repairable_scope(
+        (str(finding.get("file") or "") for finding in repair_module.follow_on_findings(review)),
+        fence=fence,
+    )
+
+
+def _decline_only_reason(
+    review: Mapping[str, Any],
+    blocking: Sequence[Mapping[str, Any]],
+    *,
+    fence: Sequence[str] | None,
+    project: str,
+    config: Mapping[str, Any] | None,
+) -> str:
+    """The reason a round whose blocking findings cite no repairable path declines.
+
+    The decision is taken from the blocking findings alone — a follow-on citing
+    source cannot carry a round — so the reason states that decision and names
+    the population it was taken from, rather than the wider claim that no finding
+    at all cited a repository path, which reads as false whenever a follow-on
+    did. What the decision left un-acted is then named: each dimension the
+    review scored under its declared floor, and each repository path a follow-on
+    finding cites, so a coordinator reading the round record knows what to
+    dispose by hand.
+    """
+    count = len(blocking)
+    parts = [
+        "no blocking finding cites a repairable path, so the round is decline-only",
+        f"no finding cites a repository path among the {count} blocking finding(s)",
+    ]
+    sub_floor = _sub_floor_dimensions_named(review, project, config)
+    if sub_floor:
+        parts.append("sub-floor dimension(s): " + ", ".join(sub_floor))
+    follow_on = _follow_on_repository_paths(review, fence)
+    if follow_on:
+        parts.append("follow-on finding(s) cite repository path(s): " + ", ".join(follow_on))
+    return "; ".join(parts)
+
+
 def _review_carried_head(review: Mapping[str, Any]) -> str:
     """The head a stored review read, as its own record carries it.
 
@@ -732,7 +807,9 @@ def dispatch_repair_for_run(
     if not _repairable_scope(
         (str(finding.get("file") or "") for finding in blocking), fence=run_fence
     ):
-        reason = "no finding cites a repository path, so the round is decline-only"
+        reason = _decline_only_reason(
+            review, blocking, fence=run_fence, project=project, config=config
+        )
         _record_repair_dispatch(
             run_id,
             status="decline-only",
