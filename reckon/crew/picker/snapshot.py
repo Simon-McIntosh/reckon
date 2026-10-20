@@ -15,6 +15,7 @@ from typing import Any
 from reckon import budget, capabilities, capability, flight, ledger
 from reckon._timestamps import parse_utc
 from reckon.crew import (
+    budget_group,
     budget_lift,
     budget_reset,
     dispatch_picker,
@@ -1267,6 +1268,27 @@ def _reserved_five_hour_utilisation(
     return float(used) * 100.0
 
 
+def _group_name(group: Any, config: Mapping[str, Any] | None) -> str | None:
+    """A view group row's declared name.
+
+    A group row names itself where the composer resolved one. A row that does
+    not is matched to the declaration by its members, so a row carrying only
+    members and an allowance still reaches the burn block derived for the
+    wallet those members share.
+    """
+
+    if not isinstance(group, Mapping):
+        return None
+    declared_name = group.get("group")
+    if declared_name:
+        return str(declared_name)
+    members = tuple(str(member) for member in (group.get("members") or ()))
+    for name, declared_members in budget_group.declared_groups(config).items():
+        if tuple(declared_members) == members:
+            return str(name)
+    return None
+
+
 def candidates(
     request: PickRequest,
     config: dict[str, Any],
@@ -1419,7 +1441,11 @@ def candidates(
     burn_by_group = budget.burn_blocks(
         request.project,
         config=config,
-        groups=[group["group"] for group in view["groups"]],
+        groups=[
+            name
+            for name in (_group_name(group, config) for group in view["groups"])
+            if name
+        ],
         now=now,
     )
     # A review never runs on a backend the flight configuration withdraws from
@@ -1679,7 +1705,7 @@ def candidates(
                 burn=(
                     None
                     if local or group is None
-                    else burn_by_group.get(str(group.get("group") or ""))
+                    else burn_by_group.get(_group_name(group, config) or "")
                 ),
             )
         )

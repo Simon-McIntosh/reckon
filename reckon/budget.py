@@ -572,6 +572,7 @@ def _readings(
     root: str | Path | None = None,
     config: Mapping[str, Any] | None = None,
     records: Iterable[Mapping[str, Any]] | None = None,
+    history: bool = True,
 ) -> list[_Reading]:
     """Collect every recorded budget block for a project, from both homes.
 
@@ -643,6 +644,13 @@ def _readings(
                 covered_backends=_declared_coverage(budget),
             )
         )
+    if not history:
+        # A caller reading a lane's current spending rate wants the readings
+        # that are still moving, and the live pointers already carry them. The
+        # ledger holds only completed runs, whose stamps are hours behind the
+        # trailing window, and reading it here would cost the picker a second
+        # decode of a store it has already read once for the same pick.
+        return found
     try:
         data, _version = (
             ledger.load(project, root)
@@ -912,6 +920,42 @@ def _trailing_rate(
     return (-change if falling else change) / span_hours
 
 
+def _published_point(
+    config: Mapping[str, Any] | None, group: str, *, now: datetime
+) -> _BurnPoint | None:
+    """The group's freshest published window reading, as one burn point.
+
+    The headroom document carries only the newest observation of each window, so
+    it can add the current point to the series but never the series itself: a
+    lane that has not run since the document was published would otherwise have
+    no reading for now, and a lane whose readings all predate the trailing span
+    would report no rate at all. Its utilisation is a fraction, where a recorded
+    block's is a percentage.
+    """
+    from reckon.crew import budget_lift as budget_lift_module
+
+    payloads = budget_lift_module.published_readings(config, group=str(group), now=now)
+    if not payloads:
+        return None
+    payload = payloads[0]
+    when = _parse_stamp(payload.get("observed_at"))
+    if when is None:
+        return None
+    for value in payload.values():
+        if not isinstance(value, Mapping):
+            continue
+        utilisation = _numeric(value.get("utilisation"))
+        if utilisation is None:
+            continue
+        resets_at = value.get("resets_at")
+        return _BurnPoint(
+            when=when,
+            utilisation_pct=utilisation * 100.0,
+            resets_at=(_parse_stamp(resets_at) if isinstance(resets_at, str) else None),
+        )
+    return None
+
+
 def _even_share(
     remaining: float | None, hours: float | None, period_hours: float
 ) -> float | None:
@@ -977,8 +1021,18 @@ def burn_block(
     members = _declared_group_members(config, group)
     collected = _readings(project, config=config) if readings is None else readings
     points = _group_points(collected, members)
+    # The published headroom document supplies the current point where no run
+    # recorded. It is added only when it carries an observation no recorded
+    # reading already places at that moment, so one moment is never counted
+    # twice and two points never share a timestamp.
+    published = _published_point(config, group, now=moment)
+    if (
+        published is not None
+        and published.utilisation_pct is not None
+        and all(point.when != published.when for point in points)
+    ):
+        points = sorted([*points, published], key=lambda point: point.when)
 
-    window_rate = _trailing_rate(points, "utilisation_pct", now=moment)
     newest = next(
         (point for point in reversed(points) if point.utilisation_pct is not None),
         None,
@@ -991,6 +1045,7 @@ def burn_block(
     remaining_pct = (
         max(0.0, 100.0 - newest.utilisation_pct) if newest is not None else None
     )
+    window_rate = _trailing_rate(points, "utilisation_pct", now=moment)
 
     block: dict[str, Any] = {
         "window_rate_pct_per_hour": _round_or_none(window_rate),
@@ -1053,11 +1108,15 @@ def burn_blocks(
 
     One collection serves every group because the readings are the project's
     recorded series and reading them per group would re-scan the same stores for
-    each lane on the same account.
+    each lane on the same account. The collection is the live pointers only: a
+    pick already read the ledger once for the same scan, and this derivation
+    must not read it again.
     """
     moment = _now(now)
     collected = (
-        list(_readings(project, config=config)) if readings is None else list(readings)
+        list(_readings(project, config=config, history=False))
+        if readings is None
+        else list(readings)
     )
     return {
         str(group): burn_block(

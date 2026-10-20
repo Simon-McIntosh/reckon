@@ -131,6 +131,29 @@ def _lift_block() -> dict[str, Any]:
     }
 
 
+def _publish(
+    home: Path, *, when: datetime, utilisation: float, resets_in: float
+) -> None:
+    """The headroom document one lane member publishes, under the crew home."""
+
+    document = {
+        "version": 1,
+        "accounts": {
+            LANE: {
+                "windows": {
+                    "seven_day": {
+                        "state": "observed",
+                        "utilisation": utilisation,
+                        "observed_at": when.isoformat(),
+                        "resets_at": (when + timedelta(hours=resets_in)).isoformat(),
+                    }
+                }
+            }
+        },
+    }
+    (home / "paid-lanes.json").write_text(json.dumps(document), encoding="utf-8")
+
+
 def _burn(config: dict | None = None) -> dict[str, Any]:
     return budget.burn_block(
         PROJECT, GROUP, config=_config() if config is None else config, now=NOW
@@ -198,6 +221,27 @@ def test_the_window_even_share_is_the_remainder_over_the_hours_to_reset(
     burn = _burn()
     assert burn["window_even_share_pct"] == pytest.approx(0.15, abs=0.01)
     assert burn["window_rate_pct_per_hour"] is None
+
+
+def test_the_published_headroom_document_supplies_the_current_point(
+    tmp_path: Path,
+):
+    """A recorded 4% two hours ago and a published 20% now is 8 points an hour."""
+
+    _record(
+        tmp_path,
+        run_id="published-a",
+        when=NOW - timedelta(hours=2),
+        utilisation_pct=4.0,
+        hours_to_reset=6.5 * 24 + 2,
+    )
+    _publish(tmp_path, when=NOW, utilisation=0.20, resets_in=6.5 * 24)
+
+    burn = _burn()
+    assert burn["window_rate_pct_per_hour"] == pytest.approx(8.0, rel=0.001)
+    # The published point's own remainder, 80 points over 156 hours, quoted for
+    # the six-hour period.
+    assert burn["window_even_share_pct"] == pytest.approx(3.08, abs=0.01)
 
 
 # --- the credits lift --------------------------------------------------------
@@ -352,7 +396,6 @@ def _view(observed_at: str) -> dict[str, Any]:
     return {
         "groups": [
             {
-                "group": GROUP,
                 "members": [LANE],
                 "allowance": {
                     "state": budget.OBSERVED,
