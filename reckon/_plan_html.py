@@ -850,6 +850,48 @@ def derive_impl_imputing_effort(sections, declarations=None) -> float | None:
     return done / total
 
 
+def derive_fleet_impl_imputing_effort(plans) -> float | None:
+    """The fleet's progress: effort-weighted mean of the member plans' figures.
+
+    Each plan weighs the effort hours it authors, so a long plan moves the
+    figure more than a short one. A plan carrying no hours takes the mean of
+    the hours the others state, which is the same imputation
+    :func:`derive_impl_imputing_effort` applies to a section whose record omits
+    its hours — a fleet with no hours anywhere therefore weighs every plan the
+    same and reports their plain mean. No member plans derives nothing, so a
+    reader states the absence rather than a fabricated zero.
+    """
+    rows = list(plans or [])
+    if not rows:
+        return None
+    figures: list[float] = []
+    weights: list[float | None] = []
+    for plan in rows:
+        try:
+            figure = float(_record_field(plan, "impl"))
+        except (TypeError, ValueError):
+            figure = 0.0
+        figures.append(max(0.0, min(1.0, figure)))
+        try:
+            effort = float(_record_field(plan, "effort_hours"))
+        except (TypeError, ValueError):
+            effort = 0.0
+        weights.append(effort if effort > 0 else None)
+    present = [weight for weight in weights if weight is not None]
+    mean = sum(present) / len(present) if present else None
+    weighted = 0.0
+    total = 0.0
+    for figure, weight in zip(figures, weights, strict=True):
+        effective = (
+            weight if weight is not None else (mean if mean is not None else 1.0)
+        )
+        total += effective
+        weighted += effective * figure
+    if total <= 0:
+        return None
+    return weighted / total
+
+
 def derive_impl_from_sections(sections, declarations=None) -> float | None:
     """impl weight by the records themselves, over the declared sections.
 

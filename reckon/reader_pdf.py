@@ -21,6 +21,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from urllib.parse import quote, urlsplit
 
+from reckon.resources import nav_key
+
 # The reader's text column on screen: its 820px measure less 26px padding on
 # each side. The PDF scale maps the printable page width onto this column, so
 # a line wraps where it wraps on screen.
@@ -49,15 +51,9 @@ class ReaderPdfError(RuntimeError):
 def reader_hash(artifact_type: str, slug: str, *, archived: bool = False) -> str:
     """Return the SPA route fragment that opens one document in the reader.
 
-    The key is the inventory row's ``nav_key`` as the state loader derives it:
-    a live plan is keyed by its slug, and every other document by its type,
-    an ``archive:`` marker when archived, and its slug.
+    The key is the inventory row's ``nav_key`` from the shared resource rule.
     """
-    if artifact_type == "plan" and not archived:
-        key = slug
-    else:
-        key = f"{artifact_type}:{'archive:' if archived else ''}{slug}"
-    return f"{artifact_type}/{quote(key, safe='')}"
+    return f"{artifact_type}/{quote(nav_key(artifact_type, slug, archived=archived), safe='')}"
 
 
 def page_scale() -> float:

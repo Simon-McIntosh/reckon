@@ -147,6 +147,7 @@ def test_rendered_flow_precedes_cards_and_dims_other_sprints_to_point_two_eight(
 ):
     plans, runs = _fixture()
     served = schedule_report("reckon", plans, runs, reference=REFERENCE)
+    assert all(isinstance(bar["plan"], str) for bar in served["bars"])
     result = _run_probe(
         plans=plans,
         runs=runs,

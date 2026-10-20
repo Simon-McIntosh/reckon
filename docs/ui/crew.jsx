@@ -43,7 +43,10 @@ function flowPlanLiveRun(plan, runs, project) {
 function DerivedFlow({ runs, project }) {
   const [selectedSprint, setSelectedSprint] = useState(null);
   const payload = window.STATE?.schedule || null;
-  const items = Array.isArray(payload?.bars) ? payload.bars : [];
+  const inventory = new Map((window.STATE?.inventory || []).map(plan => [plan.slug, plan]));
+  const items = (Array.isArray(payload?.bars) ? payload.bars : [])
+    .map(item => ({ ...item, plan: inventory.get(item.plan) }))
+    .filter(item => item.plan);
   const low = Number.isFinite(Number(payload?.low)) ? Number(payload.low) : -24;
   const high = Number.isFinite(Number(payload?.high)) ? Number(payload.high) : 24;
   const schedule = payload

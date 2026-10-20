@@ -55,7 +55,7 @@ def _authored_spa_source_text(root: Path) -> str:
 
 
 def _assert_spa_typed_facets_and_provenance(
-    authored: str, plan: str, graph: str, home: str
+    authored: str, plan: str, graph: str, home: str, fleet: str
 ) -> None:
     facet_labels = {
         "plan": "Plans",
@@ -76,11 +76,11 @@ def _assert_spa_typed_facets_and_provenance(
     assert '{ archive: "Archive" }' in authored
     assert "evidence_for" in plan and "verifies" in plan
     assert "research → plan → evidence" in graph
-    # The home surface keeps the artifact type on every landed row: the panel
-    # that carries a delivery names what kind of artifact it is, defaulting to a
-    # plan when none is recorded. The project card that used to carry this badge
-    # was rewritten into the shell, so the badge is read where the delivery is.
-    assert 'item.type || "plan"' in home
+    # The summary supplies the default and the landed panel displays its type.
+    assert 'kind = item.get("type") or "plan"' in fleet
+    assert '"type": kind' in fleet
+    assert "className={`r-home-kind ${item.type}`}" in home
+    assert ">{item.type}</span>" in home
 
 
 @pytest.fixture()
@@ -331,9 +331,10 @@ def test_spa_sources_keep_typed_facets_and_provenance_direction():
     plan = (root / "docs/ui/plan.jsx").read_text(encoding="utf-8")
     graph = (root / "docs/ui/graph.jsx").read_text(encoding="utf-8")
     home = (root / "docs/ui/home.jsx").read_text(encoding="utf-8")
-    _assert_spa_typed_facets_and_provenance(authored, plan, graph, home)
+    fleet = (root / "reckon/fleet_index.py").read_text(encoding="utf-8")
+    _assert_spa_typed_facets_and_provenance(authored, plan, graph, home, fleet)
 
     muted_facets = authored.replace('label: "Research"', 'label: ""', 1)
     assert muted_facets != authored
     with pytest.raises(AssertionError):
-        _assert_spa_typed_facets_and_provenance(muted_facets, plan, graph, home)
+        _assert_spa_typed_facets_and_provenance(muted_facets, plan, graph, home, fleet)

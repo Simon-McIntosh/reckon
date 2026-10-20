@@ -1,0 +1,21 @@
+<section class="evidence-record" id="the-fleet-summary-carries-each-projects-figures">
+  <h2 id="the-fleet-summary-carries-each-projects-figures-heading">The fleet summary carries each project's figures; the schedule bars name plans by slug</h2>
+
+  <p id="the-fleet-summary-carries-each-projects-figures-what">One roll-up function, <code>derive_fleet_impl_imputing_effort</code>, sits beside the per-plan figure in <code>reckon/_plan_html.py</code>: each member plan weighs the effort hours it authors, and a plan authoring none weighs the mean of the hours the others state — the same imputation the section figure applies to a record that omits its hours. <code>reckon/fleet_index.py</code> now carries each project row's <code>progress</code> from that roll-up, beside the counts by status, the 30-day activity series and the active sprint it already carried, so the summary served at <code>/_projects/index.json</code> answers the home view without downloading an inventory. <code>reckon/roadmap.py</code>'s schedule bars each named their whole inventory row; a bar now names its plan by slug and leaves the row to the inventory the same payload already carries.</p>
+
+  <h3 id="the-fleet-summary-carries-each-projects-figures-measure">Measure</h3>
+  <ul id="the-fleet-summary-carries-each-projects-figures-measure-list">
+    <li>A temporary two-project fleet, with one plan authoring no hours: the served summary's plan counts by status, <code>progress</code> (1/15 for the project whose authored hours are 1 and 9, the third plan imputing 5), <code>activity30</code> and <code>active_sprint</code> are each asserted, plus a project whose progress is the plain 0.5.</li>
+    <li>On one fixture the served schedule payload is 756 bytes against 6,493 bytes for the same five bars each carrying the row they referenced — 11.6 % of the former, inside the half the section asks for. Measured on the reckon project's own 197 plans the ratio is 30,243 bytes against 2,268,224, 1.3 %.</li>
+    <li>The negative control replaces the roll-up with an unweighted mean: the project reads 0.333333 against the expected 0.066667, and the two-project progress assertion fails (<code>test_each_project_row_carries_counts_progress_activity_and_sprint</code>).</li>
+    <li>Focused gate: 40 passed, <code>EXIT=0</code>, at <code>71d3da6fa</code>, on the fleet allocation (job 1281970), log <code>…/runs/r-20261019T222615045241-the-fleet-summary-carries-each-projects-figures/logs/gate.log</code>; red control log <code>logs/negative_control.log</code>.</li>
+    <li><code>ruff check</code> reports no finding in the file this node added and none in <code>reckon/fleet_index.py</code>; the remaining findings in the shared modules sit on pre-existing lines this node did not touch. <code>ruff format --check</code> is clean on all six changed Python files.</li>
+  </ul>
+
+  <h3 id="the-fleet-summary-carries-each-projects-figures-commits-heading">Commits</h3>
+  <ul id="the-fleet-summary-carries-each-projects-figures-commits-list">
+    <li><code>492b420de</code>, <code>93afd8c25</code>, <code>1efe633b9</code>, <code>bc1428335</code>, <code>71d3da6fa</code> — roll-up, summary field, slug-referencing bars, the updated test contracts, and the formatting pass.</li>
+  </ul>
+
+  <p id="the-fleet-summary-carries-each-projects-figures-scope">The SPA (<code>docs/ui/*.jsx</code>) is a later node on this section and is not changed here; <code>docs/ui/crew.jsx</code> still reads <code>item.plan.slug</code> from a bar, which the SPA node resolves against the inventory.</p>
+</section>

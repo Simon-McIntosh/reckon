@@ -6,7 +6,8 @@
 // so it is the first request and window.STATE_READY resolves on it, with every
 // plan's progress bar already drawn rather than waiting for discovery.
 //
-// Derived state follows in the background. /_discover/<project> carries the
+// Outside the fleet home, derived state follows in the background.
+// /_discover/<project> carries the
 // same rows plus the remaining derived fields (effective status, blockers,
 // readiness) and the ready set; when it arrives it is merged into the rows
 // already on screen, in place and in the order the reader is looking at, and
@@ -24,9 +25,8 @@
 // carries only a digest, as a server that does not push rows sends, is
 // patched by nothing and answered by that same shared refetch.
 //
-// An index that is unavailable — a 404, or a request that fails at the
-// network — costs the page nothing: the loader falls back to the sources that
-// stood in for it before, in this order:
+// Outside the fleet home, an index that is unavailable — a 404, or a request
+// that fails at the network — falls back to these sources in order:
 //   1. /_discover/<project>            — served discovery (live server)
 //   2. state/<project>/projection.json — distributed static view (static build)
 //   3. state/<project>/index.json      — legacy central index
@@ -95,6 +95,7 @@ const mapInventoryRow = (inv) => {
     effective_status: inv.effective_status || workflowStatus,
     status: workflowStatus,
     type,
+    // Client spelling of reckon.resources.nav_key; the browser cannot import Python.
     nav_key: type === "plan" && !archived
       ? inv.slug
       : `${type}:${archived ? "archive:" : ""}${inv.slug}`,
@@ -542,6 +543,15 @@ window.revalidateProjectState = async function () {
     }
   } catch (cause) {
     indexRows = null; // an unreachable index is the fallback's cue
+  }
+
+  const route = window.location.hash;
+  if (route === "" || route === "#home" || route === "#cockpit") {
+    const state = assemble({ rows: indexRows || [] });
+    window.STATE = state;
+    window.STATE_ERROR = null;
+    window.STATE_DERIVED_READY = Promise.resolve(state);
+    return state;
   }
 
   if (indexRows !== null) {

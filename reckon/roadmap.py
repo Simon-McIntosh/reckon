@@ -1859,6 +1859,28 @@ def _schedule_horizon(project_manifest: dict[str, Any] | None) -> int | None:
     return value
 
 
+def _schedule_bars(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The bar list, each bar naming its plan by slug rather than carrying it.
+
+    The schedule travels inside every discovery payload and every fleet read,
+    so an embedded plan row — sections, decisions, follow-ups and gates — is
+    downloaded again for each bar that references it. The reader already holds
+    the inventory the slug resolves against, so a reference is what the bar
+    owes it; embedding the row multiplies the payload by the row's size.
+    """
+
+    return [
+        {
+            "slug": item["slug"],
+            "plan": item["slug"],
+            "start": item["start"],
+            "end": item["end"],
+            "wall_hours": item["wall_hours"],
+        }
+        for item in items
+    ]
+
+
 def schedule_report(
     project: str,
     inventory: list[dict[str, Any]],
@@ -1884,7 +1906,7 @@ def schedule_report(
         "item_count": len(schedule["items"]),
         "low": schedule["low"],
         "high": schedule["high"],
-        "bars": schedule["items"],
+        "bars": _schedule_bars(schedule["items"]),
     }
 
 

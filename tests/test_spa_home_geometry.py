@@ -156,33 +156,18 @@ def _fleet_preload() -> str:
             },
         ]
     }
-    inventories = {
-        "alpha": {
-            "inventory": [
-                {
-                    "slug": "landed",
-                    "title": "Fresh evidence",
-                    "type": "evidence",
-                    "edited": (now - timedelta(hours=2)).isoformat(),
-                }
-            ]
-        },
-        "beta": {"inventory": []},
-        "quiet": {"inventory": []},
-        "hidden": {"inventory": []},
-    }
     return rf"""
       localStorage.setItem('reckon:hidden-projects', JSON.stringify(['hidden']));
+      window.__homeDiscoveryRequests = [];
       const homeNativeFetch = window.fetch.bind(window);
       const homeProjects = {json.dumps(projects)};
       const homeRuns = {json.dumps(runs)};
-      const homeInventories = {json.dumps(inventories)};
       window.fetch = (resource, options) => {{
         const url = String(resource);
         if (url.endsWith('/_projects/index.json')) return Promise.resolve(new Response(JSON.stringify(homeProjects), {{status:200,headers:{{'Content-Type':'application/json'}}}}));
         if (url.endsWith('/crew')) return Promise.resolve(new Response(JSON.stringify(homeRuns), {{status:200,headers:{{'Content-Type':'application/json'}}}}));
         const match = url.match(/\/_discover\/(alpha|beta|quiet|hidden)$/);
-        if (match) return Promise.resolve(new Response(JSON.stringify(homeInventories[match[1]]), {{status:200,headers:{{'Content-Type':'application/json'}}}}));
+        if (match) {{ window.__homeDiscoveryRequests.push(match[1]); return Promise.resolve(new Response(JSON.stringify({{inventory:[]}}), {{status:200,headers:{{'Content-Type':'application/json'}}}})); }}
         return homeNativeFetch(resource, options);
       }};
     """
@@ -208,6 +193,7 @@ def test_home_has_no_horizontal_scroll_and_lower_panels_share_a_row(
         polylines: document.querySelectorAll('.r-home-streak polyline').length,
         dormant: document.querySelector('.r-home-dormant > button')?.textContent.trim(),
         runs: document.querySelectorAll('.r-home-flight article').length,
+        discoveries: window.__homeDiscoveryRequests,
       };
     })()"""
     with _file_home(tmp_path, rendered_browser) as spa:
@@ -228,6 +214,7 @@ def test_home_has_no_horizontal_scroll_and_lower_panels_share_a_row(
     assert geometry["polylines"] == 1
     assert geometry["dormant"].startswith("1 visible projects with no recorded work")
     assert geometry["runs"] == 1
+    assert geometry["discoveries"] == []
 
 
 def test_dormant_strip_is_not_authored_for_zero_dormant_projects() -> None:

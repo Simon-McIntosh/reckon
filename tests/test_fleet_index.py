@@ -5,13 +5,14 @@ from __future__ import annotations
 import json
 import os
 import subprocess
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
 
 from reckon import crew as crew_module
-from reckon.fleet_index import compute_project_row
+from reckon import fleet_index as fleet_index_module
+from reckon.fleet_index import _recent_landed, compute_project_row
 
 _NOW = datetime(2026, 3, 15, 12, 0, 0)  # noqa: DTZ001 — naive, matches GIT_AUTHOR_DATE below
 
@@ -99,6 +100,100 @@ def test_status_counts_use_the_spa_effective_status_rule(repo):
         row["active"] + row["blocked"] + row["pending"] + row["shipped"]
         == (row["plans_count"])
     )
+
+
+def test_recent_deliveries_use_effective_status_and_the_compute_time_window(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    def stamp(delta: timedelta) -> str:
+        return (_NOW + delta).isoformat(timespec="seconds")
+
+    zoned_edited = (_NOW - timedelta(hours=4)).astimezone(UTC).isoformat()
+    inventory = [
+        {"slug": "untagged", "status": "done", "edited": stamp(-timedelta(hours=1))},
+        {
+            "slug": "effective",
+            "type": "plan",
+            "status": "active",
+            "effective_status": "shipped",
+            "edited": stamp(-timedelta(hours=2)),
+        },
+        {
+            "slug": "archived-proof",
+            "type": "evidence",
+            "archived": "1",
+            "edited": stamp(-timedelta(hours=3)),
+        },
+        {
+            "slug": "zoned-proof",
+            "type": "evidence",
+            "edited": zoned_edited,
+        },
+        {"slug": "boundary", "type": "evidence", "edited": stamp(-timedelta(hours=72))},
+        {
+            "slug": "old",
+            "type": "evidence",
+            "edited": stamp(-timedelta(hours=72, seconds=1)),
+        },
+        {"slug": "future", "type": "evidence", "edited": stamp(timedelta(seconds=1))},
+    ]
+
+    observed = []
+    shared_parser = fleet_index_module.parse_iso
+
+    def observe_parse(value):
+        observed.append(value)
+        return shared_parser(value)
+
+    monkeypatch.setattr(fleet_index_module, "parse_iso", observe_parse)
+    parsed = fleet_index_module._local_naive_stamp(zoned_edited)
+    assert observed == [zoned_edited]
+    assert parsed == _NOW - timedelta(hours=4)
+    assert parsed.tzinfo is None
+
+    rows = _recent_landed(inventory, "sample", _NOW)
+    assert observed.count(zoned_edited) == 2
+
+    assert [row["slug"] for row in rows] == [
+        "untagged",
+        "effective",
+        "archived-proof",
+        "zoned-proof",
+        "boundary",
+    ]
+    assert rows[0]["type"] == "plan"
+    assert rows[0]["nav_key"] == "untagged"
+    assert rows[2]["nav_key"] == "evidence:archive:archived-proof"
+
+
+def test_progress_is_the_roll_up_over_the_projects_plans(repo):
+    repo_dir, docs_dir = repo
+    calibrated = (
+        '<meta name="docs-project" content="sample">'
+        '<meta name="reckon-type" content="plan">'
+        '<meta name="plan-slug" content="calibrated">'
+        '<meta name="plan-title" content="calibrated">'
+        '<meta name="plan-status" content="active">'
+        '<meta name="plan-impl" content="1.0">'
+        '<meta name="plan-effort-hours" content="2">'
+    )
+    uncalibrated = (
+        '<meta name="docs-project" content="sample">'
+        '<meta name="reckon-type" content="plan">'
+        '<meta name="plan-slug" content="uncalibrated">'
+        '<meta name="plan-title" content="uncalibrated">'
+        '<meta name="plan-status" content="active">'
+        '<meta name="plan-impl" content="0.0">'
+    )
+    (docs_dir / "plans" / "calibrated.html").write_text(calibrated)
+    (docs_dir / "plans" / "uncalibrated.html").write_text(uncalibrated)
+    _commit_all(repo_dir, "seed", _NOW)
+
+    row = compute_project_row(docs_dir, "sample", now=_NOW)
+
+    # One plan is complete and the other has not started, and the plan that
+    # authors no hours weighs the hours the first one states: (2*1 + 2*0) / 4.
+    assert row["progress"] == pytest.approx(0.5)
 
 
 def test_live_counts_this_projects_run_pointers_only(repo, monkeypatch):

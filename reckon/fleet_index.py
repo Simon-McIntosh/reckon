@@ -13,10 +13,15 @@ from collections.abc import Mapping
 from datetime import datetime, timedelta
 from pathlib import Path
 
+from reckon._plan_html import derive_fleet_impl_imputing_effort
+from reckon._timestamps import parse_iso
 from reckon.lifecycle import COMPLETED_STATUSES
+from reckon.resources import nav_key
 
 _ACTIVITY_WINDOW_DAYS = 30
 _ACTIVITY_SUBPATHS = ("plans", "research", "evidence")
+_LANDED_WINDOW_HOURS = 72
+_LANDED_LIMIT = 7
 
 # A full-history ``git log`` costs seconds per repository on a shared
 # filesystem, and the fleet index asks for every mounted project on each page
@@ -107,9 +112,72 @@ def _status_counts(inventory: list[dict]) -> dict[str, int]:
     return counts
 
 
+def _progress(inventory: list[dict]) -> float | None:
+    """The project's progress, from the fleet roll-up over its plans."""
+
+    return derive_fleet_impl_imputing_effort(
+        item for item in inventory if _is_actionable_plan(item)
+    )
+
+
 def _last_edited(inventory: list[dict]) -> str:
     stamps = [str(item["edited"]) for item in inventory if item.get("edited")]
     return max(stamps) if stamps else ""
+
+
+def _local_naive_stamp(value: object) -> datetime | None:
+    """Read an edited stamp on the local clock used by the fleet row."""
+    parsed = parse_iso(value)
+    if parsed is not None and parsed.tzinfo is not None:
+        return parsed.astimezone().replace(tzinfo=None)
+    return parsed
+
+
+def _recent_landed(
+    inventory: list[dict], project: str, reference: datetime
+) -> list[dict]:
+    """Return compact delivered artifacts edited in the preceding 72 hours."""
+
+    end = reference.timestamp()
+    start = end - timedelta(hours=_LANDED_WINDOW_HOURS).total_seconds()
+    candidates = []
+    for item in inventory:
+        kind = item.get("type") or "plan"
+        status = item.get("effective_status") or item.get("status")
+        if kind != "evidence" and not (
+            kind == "plan" and status in {"done", "shipped"}
+        ):
+            continue
+        slug = item.get("slug")
+        edited = item.get("edited") or item.get("last")
+        if not slug or not edited:
+            continue
+        parsed = _local_naive_stamp(edited)
+        if parsed is None:
+            continue
+        try:
+            stamp = parsed.timestamp()
+        except (ValueError, OverflowError, OSError):
+            continue
+        if not start <= stamp <= end:
+            continue
+        archived = item.get("archived") in {True, "1", "true"}
+        key = nav_key(kind, slug, archived=archived)
+        candidates.append(
+            (
+                stamp,
+                {
+                    "type": kind,
+                    "slug": slug,
+                    "nav_key": key,
+                    "title": item.get("title") or slug,
+                    "edited": edited,
+                    "project": project,
+                },
+            )
+        )
+    candidates.sort(key=lambda entry: entry[0], reverse=True)
+    return [row for _, row in candidates[:_LANDED_LIMIT]]
 
 
 def _active_sprint(discovered: dict) -> dict | None:
@@ -168,6 +236,8 @@ def compute_project_row(
     from reckon.serve import discover_plans
 
     reference = now or datetime.now()  # noqa: DTZ005 — naive local, matches serve._row_times
+    if reference.tzinfo is not None:
+        reference = reference.astimezone().replace(tzinfo=None)
     discovered = discover_plans(docs_dir, project, state_root)
     inventory = discovered.get("inventory", [])
     counts = _status_counts(inventory)
@@ -179,6 +249,7 @@ def compute_project_row(
         "project": project,
         "path": str(docs_dir),
         "plans_count": plans_count,
+        "progress": _progress(inventory),
         "active": counts["active"],
         "blocked": counts["blocked"],
         "pending": counts["pending"],
@@ -186,6 +257,7 @@ def compute_project_row(
         "live": len(live_pointers),
         "last_edited": last_edited,
         "last_modified": last_edited,
+        "recent_landed": _recent_landed(inventory, project, reference),
         "active_sprint": _active_sprint(discovered),
         "activity30": _activity30(docs_dir.parent, docs_dir, reference),
     }

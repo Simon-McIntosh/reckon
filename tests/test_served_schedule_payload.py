@@ -216,8 +216,10 @@ def test_discovery_serves_the_derived_schedule(
     assert by_slug["pending-second"]["end"] == pytest.approx(34, abs=0.02)
     for bar in served["bars"]:
         assert {"slug", "plan", "start", "end", "wall_hours"} <= set(bar)
-        assert bar["plan"]["slug"]
-        assert bar["plan"]["title"]
+        # The bar names its plan by slug; the reader resolves it against the
+        # inventory the same payload carries, so no bar repeats a whole row.
+        assert bar["plan"] == bar["slug"]
+    assert "decisions" not in json.dumps(served["bars"])
     assert served["low"] <= 0 <= served["high"]
     assert served["high"] == max(24.0, served["latest_end_hours"])
 
@@ -320,7 +322,7 @@ def test_state_loader_carries_the_served_schedule_to_window_state() -> None:
         "bars": [
             {
                 "slug": "pending-second",
-                "plan": {"slug": "pending-second", "title": "Pending second"},
+                "plan": "pending-second",
                 "start": 18.0,
                 "end": 30.0,
                 "wall_hours": 12.0,
@@ -339,3 +341,53 @@ def test_state_loader_carries_the_served_schedule_to_window_state() -> None:
     )
     assert state["schedule"] == served
     assert state["schedule"]["bars"][0]["slug"] == "pending-second"
+    assert state["schedule"]["bars"][0]["plan"] == "pending-second"
+
+
+def test_the_schedule_payload_references_plans_by_slug_and_halves_its_size(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A bar names its plan instead of carrying the row it repeats.
+
+    Measured on one fixture: the payload the bars used to form — each bar
+    embedding the inventory row it referenced — against the payload the
+    derivation now serves. The reference resolves against the inventory the
+    same payload carries, so the reader loses nothing and pays for the rows
+    once instead of once per bar.
+    """
+
+    repo = tmp_path / "repo"
+    _write_schedule_fixture(repo)
+    monkeypatch.setattr(serve, "_STATE_ROOT", tmp_path / "state")
+    monkeypatch.setattr(serve.crew, "list_live", lambda **_kwargs: [])
+    serve._DISC_CACHE.clear()
+
+    payload = serve._attach_schedule(
+        serve.discover_plans(repo / "docs", "sample", None),
+        "sample",
+        {"sample": tmp_path / "unused"},
+        reference=REFERENCE,
+    )
+    served = payload["schedule"]
+    by_slug = {row["slug"]: row for row in payload["inventory"] if row.get("slug")}
+
+    # The shape the bars carried before this change: the whole row, per bar.
+    embedded = {
+        **{key: value for key, value in served.items() if key != "bars"},
+        "bars": [
+            {
+                "slug": bar["slug"],
+                "plan": by_slug[bar["slug"]],
+                "start": bar["start"],
+                "end": bar["end"],
+                "wall_hours": bar["wall_hours"],
+            }
+            for bar in served["bars"]
+        ],
+    }
+
+    assert served["bars"]
+    for bar in served["bars"]:
+        assert bar["plan"] == bar["slug"]
+    assert "decisions" not in json.dumps(served)
+    assert len(json.dumps(served)) <= len(json.dumps(embedded)) / 2

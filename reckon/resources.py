@@ -187,6 +187,13 @@ def canonical_type(value: str | None) -> str:
     return artifact_type
 
 
+def nav_key(artifact_type: str, slug: str, *, archived: bool = False) -> str:
+    """Return the inventory key for a live plan or another typed document."""
+    if artifact_type == "plan" and not archived:
+        return slug
+    return f"{artifact_type}:{'archive:' if archived else ''}{slug}"
+
+
 def canonical_relative_path(
     artifact_type: str, slug: str, *, archived: bool = False
 ) -> PurePosixPath:
