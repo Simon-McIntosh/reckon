@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run's baseline_suite records failure_count 0 and failure_ids [] (logs/base-reuse-round.log, EXIT=0, 152+261+249=662 passed) and its after_suite records failure_count 0 and failure_ids [] (logs/after-dead-copy-round.log, settled arm 316+135+211=662 passed, EXIT=0) over the same 90-file population, so the delta is 0 added failures; the same log's superseded attempts record 4 failures in two scheduling-sensitive tests that do not reach obligations.py, recorded under follow_ons.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/obligations.py:482",
+    "reckon/crew/recovery_classification.py:766",
+    "reckon/crew/obligation_snapshot.py:824",
+    "reckon/crew/runs.py:2402"
+  ],
+  "completed_at": "2026-10-20T01:05:25.227Z",
+  "dispatched_at": "2026-10-20T00:56:20Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T201233968744-a-tier-none-run-owes-no-review/manifest.md",
+      "line": "19",
+      "text": "follow-on: the after_suite command field is a template carrying an unsubstituted <chunk list> placeholder rather than the literal command that ran, so promotion cannot re-run it from the record; baseline_suite:18 has the sibling shape, mixing a command with the prose 'and the same for arm-base-01.txt and arm-base-02.txt'."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T201233968744-a-tier-none-run-owes-no-review/manifest.md",
+      "line": "19",
+      "text": "follow-on: after_suite records failure_count 0 and names logs/after-dead-copy-round.log, but that log records 4 failures across superseded attempts (test_a_producer_sweeps_only_on_change.py::test_quiet_cycles_list_nothing_and_spawn_no_git and test_a_running_review_finishes_across_a_resume.py::test_a_launched_review_over_a_source_move_earns_a_light_re_review); a reader opening the named log sees failures the field reports as zero, and only the final 135+211+316 split is clean."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_tier_none_run_owes_no_review.py:192-200 and :235 assert the tier-none kind and the composed command against literals, so removing the tier read or re-pointing the command reddens them; the increment is a dead-code deletion with nothing behavioural to guard, so it adds no assertion and needs none.",
+    "evidence": "logs/gate-dead-copy-round.log records '11 passed' EXIT=0 at 568604deb, but the manifest's after_suite names after-dead-copy-round.log as its log while that file records 4 failures in superseded chunk attempts, and its command field carries a <chunk list> placeholder (manifest.md:19).",
+    "fit": "the deletion at reckon/crew/obligations.py:417 removes a private helper cleanly, commit 568604deb carries a body stating the drift it ends, and neither the diff nor its message carries a plan, phase or version label.",
+    "goal_fidelity": "reckon/crew/obligations.py:476 reads the tier through _review_tier_for_duty and, at line 482, names the promotion command via recovery_classification._promotion_command, so a tier-none run reads promotable rather than review-missing and the node's goal holds at the head.",
+    "reuse": "the one composer of the completion command now lives at reckon/crew/recovery_classification.py:1631 and is called by both surfaces (reckon/crew/recovery_classification.py:766 and reckon/crew/obligations.py:482); git grep for _promotion_command at the head finds no second definition, so the duplicate the prior review blocked on is gone.",
+    "scope_discipline": "the increment cc68ec4ee..568604deb changes only reckon/crew/obligations.py (28 deletions), a path inside the node's declared write paths, and touches nothing else."
+  },
+  "node": "review-of-a-tier-none-run-owes-no-review-568604deb04d",
+  "node:reviewed": "a-tier-none-run-owes-no-review",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a run whose review tier is none owes no review duty; at the head reckon/crew/obligations.py:476 reads the tier and line 482 composes the promotion command through the classifier's helper, labelling the run promotable rather than review-missing.\nVERDICT done_when: the node's measure is the gate tests/test_a_tier_none_run_owes_no_review.py plus tests/test_crew_obligations.py at EXIT=0; logs/gate-dead-copy-round.log records '11 passed' EXIT=0 at 568604deb.\nVERDICT write_paths: the node declared reckon/crew/obligations.py, reckon/crew/recovery_classification.py, tests/test_a_tier_none_run_owes_no_review.py plus granted test files and the evidence fragment; the increment cc68ec4ee..568604deb touches only reckon/crew/obligations.py, inside that scope.\nVERDICT manifest: read; it records the gate at 11 passed EXIT=0, base and after arms at 662 passed 0 failed each, and the dead-copy deletion, while its after_suite command carries an unsubstituted <chunk list> placeholder (manifest.md:19).\nVERDICT diff: read commit by commit against base cc68ec4ee; the range is the single commit 568604deb deleting the duty's unreachable _promotion_command (28 lines) from reckon/crew/obligations.py and changing nothing else.\nCALL_SITES: reckon/crew/obligations.py:482, reckon/crew/recovery_classification.py:766, reckon/crew/obligation_snapshot.py:824, reckon/crew/runs.py:2402\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:476-482 reads the tier and composes the promotion command, so a tier-none run reads promotable at the head.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/gate-dead-copy-round.log records 11 passed EXIT=0 at 568604deb, but after_suite names a log (after-dead-copy-round.log) that records 4 failures in superseded attempts and its command field carries a <chunk list> placeholder (manifest.md:19).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the increment cc68ec4ee..568604deb changes only reckon/crew/obligations.py, a declared write path, and nothing else.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_tier_none_run_owes_no_review.py:192-200 and :235 assert the tier-none kind and command against literals, so reverting the tier read or the composer reddens them; the dead-code deletion has nothing behavioural to guard.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/obligations.py:417 removes a private helper cleanly and commit 568604deb carries a mechanism body with no plan or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the one composer lives at reckon/crew/recovery_classification.py:1631 and both surfaces call it (obligations.py:482, recovery_classification.py:766); git grep at the head finds no second definition, so the duplicate the prior review blocked on is gone.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T201233968744-a-tier-none-run-owes-no-review/manifest.md:19 follow-on: after_suite's command field carries an unsubstituted <chunk list> placeholder (baseline_suite:18 mixes a command with prose), so neither names the literal command that ran.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261019T201233968744-a-tier-none-run-owes-no-review/manifest.md:19 follow-on: after_suite records failure_count 0 but names logs/after-dead-copy-round.log, which records 4 failures across superseded attempts, so a reader opening it sees failures the field reports as zero.\n",
+  "review_run_id": "r-20261020T005515843066-review-of-a-tier-none-run-owes-no-review-568604deb04d",
+  "reviewed_base_sha": "cc68ec4eede02f02cc89d6ac069c158406f7cc74",
+  "reviewed_head_sha": "568604deb04df25d28a0570f3855b2d5680edaa1",
+  "reviewed_run_id": "r-20261019T201233968744-a-tier-none-run-owes-no-review",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T01:10:00+00:00",
+  "total": 110
+}
