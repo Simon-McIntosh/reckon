@@ -26,7 +26,7 @@
   <title>Every Plan Write Goes Through edit_plan | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="60">
+<meta name="plan-version" content="61">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -307,7 +307,7 @@
     <p><strong>Deliverable.</strong></p>
     <ul>
       <li>The readiness probe reports each tool's parameters with whether each one is required.</li>
-      <li>The current code makes the compatibility decision. The parent sends its registered parameters, each with whether it was required, along with the probe. The child answers compatible or not, so a later change to the rule reaches running servers without a reconnect.</li>
+      <li>The current code makes the compatibility decision. The parent sends its registered parameters, each with whether it was required, along with the probe. The child answers compatible or not. The rule is a function in a module the child imports from the checkout. The probe handler in <code>SERVED_CHILD_PROGRAM</code> only calls it, because that program string is a constant of the parent's own image, handed to the child at spawn: a rule written there would be the parent's frozen copy. So a later change to the rule reaches running servers without a reconnect.</li>
       <li>A change is compatible when every registered parameter is still accepted, no registered optional parameter has become required, and no new parameter is required. The routing stays §11's. A call the image answers successfully is returned untouched, and needs nothing. A call that reaches the current code — a failed call re-run there, or a call of a tool already routed there — is served when the verdict is compatible, with no refusal, and its answer carries a <code>schema_note</code> naming the parameters the client cannot send until it reconnects.</li>
       <li><code>stale_server_code</code> remains for an incompatible change: a registered parameter removed or renamed, a registered optional parameter made required, or a new required one.</li>
     </ul>
@@ -319,12 +319,13 @@
       <li>New required: a new required parameter returns <code>stale_server_code</code>.</li>
       <li>Made required: a registered optional parameter that becomes required returns <code>stale_server_code</code>.</li>
       <li>Old parent: a probe request with no registered parameters gets <code>params</code> as each tool's list of names, with no verdict. The pre-§13 comparison, run on that answer for a tool with an added parameter, still reports the signature changed.</li>
+      <li>Checkout's rule: a real child spawned from a temporary checkout whose rule function answers compatible for a removed parameter makes the parent serve that call. A parent whose own image holds the shipped rule cannot change that outcome.</li>
       <li>Child's verdict: a child whose rule answers compatible makes the parent serve, even when the parent's own lists differ.</li>
     </ul>
     <p>Three negative controls, each logged:</p>
     <ul>
       <li>Restoring the equality comparison fails the added-optional case.</li>
-      <li>Deciding in the parent fails the child's-verdict case.</li>
+      <li>Deciding in the parent fails the child's-verdict case, and writing the rule into <code>SERVED_CHILD_PROGRAM</code> fails the checkout's-rule case.</li>
       <li>Nesting requiredness inside <code>params</code> fails the old-parent case.</li>
     </ul>
     <p><code>tests/test_a_slow_child_never_forces_a_reconnect.py</code> and <code>tests/test_mcp_server_serves_current_code.py</code> each have a changed-signature case built on an added optional parameter. In both, that case becomes a removal, so it still asks for the refusal §13 keeps. Both files, and <code>tests/test_every_module_fits_a_worker_window.py</code>, add no failure. Write paths: <code>reckon/mcp.py</code>, <code>reckon/served_code.py</code>, <code>tests/test_an_added_parameter_needs_no_reconnect.py</code>, <code>tests/test_a_slow_child_never_forces_a_reconnect.py</code>, <code>tests/test_mcp_server_serves_current_code.py</code>. crew-surface §5 holds <code>reckon/mcp.py</code> until it lands, so this section dispatches after it.</p>
