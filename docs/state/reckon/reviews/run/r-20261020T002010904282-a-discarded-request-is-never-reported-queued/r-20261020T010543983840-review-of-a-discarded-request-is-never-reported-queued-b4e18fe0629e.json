@@ -1,0 +1,49 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "test_a_discarded_request_is_reported_nowhere asserts _stream_file_rows(PROJECT, run_id) == []. It reddens exactly when _report_queued_failure appends a watch-stream row for a run whose discard is recorded, which is the regression the node guards. It is independently sourced \u2014 rows written by production code on one side, an empty expectation on the other \u2014 and the node's own negative-control.log shows it failing with the discard check removed from _report_queued_failure (FAILED ...::test_a_discarded_request_is_reported_nowhere, EXIT=1, against 4 passed). Not a self-comparison.",
+      "lines": "tests/test_a_discarded_request_stays_discarded.py:137"
+    },
+    {
+      "failure_condition": "test_a_kept_request_is_reported_once_as_queued asserts len(rows) == 1, rows[0]['to_state'] == 'queued' and pointer.get('failure_reported_at'). It reddens if the report stops appending (len 0), appends twice (len 2), lands at the wrong state, or the marker is not stamped \u2014 so it guards the over-broad-fix direction the discarded case cannot. It also serves as the positive control for the sibling empty assertion: the same helper sees the one row that is known to be present before the empty result is reported.",
+      "lines": "tests/test_a_discarded_request_stays_discarded.py:158-162"
+    }
+  ],
+  "completed_at": "2026-10-20T01:18:53.072Z",
+  "dispatched_at": "2026-10-20T01:07:52Z",
+  "findings": [
+    {
+      "file": "tests/test_a_discarded_request_stays_discarded.py",
+      "line": "137",
+      "severity": "follow-on",
+      "text": "follow-on: the declared negative control that admits this node was run before the reviewed head's assertion existed. negative-control.log calls _stream_rows(run_id) at its line 148 and its header revision is 86650a11 (working tree, check removed), a helper commit b4e18fe06 deleted; the head asserts through _stream_file_rows(PROJECT, run_id) at tests/test_a_discarded_request_stays_discarded.py:137. The mutation is on production code unchanged since bd4ad8d50 and the same test id reddens, so the guard holds; but the red log is not reproducible from the reviewed revision, and the eight-file arm likewise records no run at b4e18fe06. Does not hold the node."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/queue_admission.py:977 calls _report_queued_failure from admit_once; admit_until_stopped (reckon/crew/queue_admission.py:1037, calling admit_once at :1061) drives it, and the admit entry point reckon/crew_run_commands.py:3383 invokes queue_admission.admit_until_stopped. The node's own tests are not counted.",
+    "diff": "Read commit by commit against base 86650a11: bd4ad8d50 adds the 6-line discard short-circuit to reckon/crew/queue_admission.py, the two new cases and a 7-line landing fragment; b4e18fe06 deletes the node's own _stream_rows helper and imports the shared _stream_file_rows from tests/test_a_held_request_stays_queued.py:20. 60 insertions, 10 deletions; every path is a declared write path and no pre-existing assertion was removed or weakened.",
+    "done_when": "The done_when names two new cases in tests/test_a_discarded_request_stays_discarded.py for a request with no failure_reported_at plus pytest -rA over eight files adding no failure against a base arm; both cases are present (discarded-nowhere at tests/test_a_discarded_request_stays_discarded.py:121, kept-reported-once at :146) and the manifest records both arms' failure ids as the same single pre-existing id.",
+    "goal": "The goal is that the admit service's first-failure report append no stream row for a request whose discard is recorded; reckon/crew/queue_admission.py:628 returns early from _report_queued_failure when _discarded_since(pointer) holds, and reckon/crew/queue_admission.py:977 still reaches the report unchanged for a request nobody discarded.",
+    "manifest": "Read; it records status complete, both commits (bd4ad8d50, b4e18fe06), the eight-file pytest command, both arm failure ids, the negative-control log path, and evidence_inputs naming the pre-existing window-guard offenders. Its after_suite revision is prose (\"86650a11... plus the committed fix bd4ad8d50\") rather than a sha, and the head-arm.log header names the base revision with the fix uncommitted, so no arm log names the reviewed commit b4e18fe06; the production content those arms exercised is unchanged in the reviewed head.",
+    "write_paths": "The declared write paths are reckon/crew/queue_admission.py, tests/test_a_discarded_request_stays_discarded.py, the landing fragment and a docs/figures directory; `git diff --stat 86650a11 b4e18fe0` names only the first three, no fourth path, and the figure directory is unused."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261020T010543983840-review-of-a-discarded-request-is-never-reported-queued-b4e18fe0629e",
+  "reviewed_base_sha": "86650a114f70a099423e871a6f8f8b19af73b106",
+  "reviewed_head_sha": "b4e18fe0629ed0e2c6130f002e2ec61cf61644dc",
+  "reviewed_run_id": "r-20261020T002010904282-a-discarded-request-is-never-reported-queued",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T01:20:46.634045+00:00",
+  "total": 117
+}
