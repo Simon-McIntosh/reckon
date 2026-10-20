@@ -1,0 +1,68 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "docs/ui/shell.jsx:504",
+    "docs/ui/graph.jsx:489",
+    "docs/ui/graph.jsx:490",
+    "docs/ui/crew.jsx:140"
+  ],
+  "completed_at": "2026-10-20T05:18:23.923Z",
+  "dispatched_at": "2026-10-20T05:08:17Z",
+  "findings": [
+    {
+      "file": "docs/figures/the-site-answers-fast-and-agrees/every-surface-shows-the-one-progress-figure",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the declared figure path is still unwritten; commit 394f3f505 extends the fragment's prose only, so the doc-producing node argues the empty-slot change in text with no figure, against the standing mandate to illustrate planning and research documents with a figure. The node's own follow_ons records it."
+    },
+    {
+      "file": "tests/test_every_surface_shows_the_one_progress_figure.py",
+      "line": "284",
+      "severity": "follow-on",
+      "text": "follow-on: the round-2 additions to the primary-path guard are source substrings ('shippedPercent: null' present, 'Number(endpoint.impl' absent) at tests/test_every_surface_shows_the_one_progress_figure.py:284-285, so they assert over the JSX text rather than over a rendered value; a source that still carried the substrings while rendering a different figure would satisfy them. The new real browser case at tests/test_spa_graph_authority.py:462 covers the fallback path only, so the primary _roadmapEndpointRows render (docs/ui/graph.jsx:204) has no rendered-value guard."
+    }
+  ],
+  "gate_evidence": {
+    "base_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T033509554637-every-surface-shows-the-one-progress-figure/base-focused.log",
+    "head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T033509554637-every-surface-shows-the-one-progress-figure/gate-round2-final.log",
+    "negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T033509554637-every-surface-shows-the-one-progress-figure/negative-control-round2.log",
+    "negative_control_log_secondary": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T033509554637-every-surface-shows-the-one-progress-figure/negative-control-fallback-round2.log"
+  },
+  "item_verdicts": {
+    "diff": "read commit 394f3f505 against d9d9c3a69; five files changed \u2014 the graph fallback's shippedPercent becomes null with the render's null branch, the crew.css rule for .r-derived-flow-progress is added, the parity file gains two source assertions, and tests/test_spa_graph_authority.py gains the browser empty-slot case plus an impl authoring in the ordering case.",
+    "done_when": "read the reviewed manifest and its logs; the gate names the nine affected files, gate-round2-final.log records 58 passed EXIT=0 against base-focused.log 55 passed EXIT=0, and two negative controls redden the exact cases they target (negative-control-round2.log 1 failed EXIT=1 reading 'assert 0.5 == 0.1 \u00b1 1.0e-07' at endpoint['progress']; negative-control-fallback-round2.log 1 failed EXIT=1 reading \"At index 0 diff: '40%' != '\u2014'\"), so the gate asserts the measure it names.",
+    "goal": "read the node goal (show the one progress figure on every surface, a graph endpoint carrying the shared roll-up and crew flow items their plan's figure) against commit 394f3f505; docs/ui/graph.jsx:124 now sets shippedPercent: null on the inventory-only path and docs/ui/graph.jsx:587-592 render an em dash and an unfilled bar, so a row states one figure or none rather than a member's number standing in the closure's slot.",
+    "manifest": "read the manifest at 394f3f505; status complete, checkpoint names round-2 committed with both controls green, commits [d0ff39beb, d9d9c3a69, 394f3f505], and its test_logs, negative_control_log and landing lines resolve on disk.",
+    "write_paths": "read commit 394f3f505 against the declared fence; the five changed paths (docs/evidence/fragments/the-site-answers-fast-and-agrees/every-surface-shows-the-one-progress-figure.html, docs/ui/crew.css, docs/ui/graph.jsx, tests/test_every_surface_shows_the_one_progress_figure.py, tests/test_spa_graph_authority.py) are all inside the fence, docs/ui/crew.css having been granted by the resume advice ('Your scope now also includes docs/ui/crew.css') and recorded in the manifest's orientation_write_paths."
+  },
+  "justifications": {
+    "durability": "tests/test_spa_graph_authority.py:462 fails if the fallback reads the endpoint plan's own impl (negative-control-fallback-round2.log:39 reads '40%' != '\u2014'), and tests/test_spa_graph_authority.py:634 asserts shippedPercent is None while the two lines above it author impl 0.4, both independent of the value under test; the primary render path remains guarded only by the source substrings at tests/test_every_surface_shows_the_one_progress_figure.py:284-285.",
+    "evidence": "gate-round2-final.log:5 records 58 passed EXIT=0 against base-focused.log:5 55 passed EXIT=0, and negative-control-fallback-round2.log:39 records the empty-slot case reddening on '40%' != '\u2014'.",
+    "fit": "docs/ui/crew.css:274 gives .r-derived-flow-progress flex, opacity and tabular figures beside its siblings at :258 and :280, and docs/ui/graph.jsx:117-123 explains the empty slot by mechanism with no plan label.",
+    "goal_fidelity": "docs/ui/graph.jsx:124 sets shippedPercent: null so the inventory-only row shows no figure, and docs/ui/graph.jsx:587 renders the bar only when the value is non-null, keeping the one-served-figure rule on both graph paths.",
+    "reuse": "the change adds no new capability: it removes a second figure source rather than forking one, and derive_fleet_impl_imputing_effort remains the single roll-up owner in reckon/_plan_html.py that reckon/roadmap.py:2459 consumes.",
+    "scope_discipline": "every path in the diff d9d9c3a69..394f3f505 is inside the declared write paths, docs/ui/crew.css granted by the resume advice at resume-advice and listed in the manifest's orientation_write_paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal (show the one progress figure on every surface, a graph endpoint carrying the shared roll-up and crew flow items their plan's figure) against commit 394f3f505; docs/ui/graph.jsx:124 now sets shippedPercent: null on the inventory-only path and docs/ui/graph.jsx:587-592 render an em dash and an unfilled bar, so a row states one figure or none rather than a member's number standing in the closure's slot.\nVERDICT done_when: read the reviewed manifest and its logs; the gate names the nine affected files, gate-round2-final.log records 58 passed EXIT=0 against base-focused.log 55 passed EXIT=0, and two negative controls redden the exact cases they target (negative-control-round2.log 1 failed EXIT=1 reading 'assert 0.5 == 0.1 \u00b1 1.0e-07' at endpoint['progress']; negative-control-fallback-round2.log 1 failed EXIT=1 reading \"At index 0 diff: '40%' != '\u2014'\"), so the gate asserts the measure it names.\nVERDICT write_paths: read commit 394f3f505 against the declared fence; the five changed paths (docs/evidence/fragments/the-site-answers-fast-and-agrees/every-surface-shows-the-one-progress-figure.html, docs/ui/crew.css, docs/ui/graph.jsx, tests/test_every_surface_shows_the_one_progress_figure.py, tests/test_spa_graph_authority.py) are all inside the fence, docs/ui/crew.css having been granted by the resume advice and recorded in the manifest's orientation_write_paths.\nVERDICT manifest: read the manifest at 394f3f505; status complete, checkpoint names round-2 committed with both controls green, commits [d0ff39beb, d9d9c3a69, 394f3f505], and its test_logs, negative_control_log and landing lines resolve on disk.\nVERDICT diff: read commit 394f3f505 against d9d9c3a69; five files changed \u2014 the graph fallback's shippedPercent becomes null with the render's null branch, the crew.css rule for .r-derived-flow-progress is added, the parity file gains two source assertions, and tests/test_spa_graph_authority.py gains the browser empty-slot case plus an impl authoring in the ordering case.\nCALL_SITES: docs/ui/shell.jsx:504, docs/ui/graph.jsx:489, docs/ui/graph.jsx:490, docs/ui/crew.jsx:140\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: docs/ui/graph.jsx:124 sets shippedPercent: null so the inventory-only row shows no figure, and docs/ui/graph.jsx:587 renders the bar only when the value is non-null, keeping the one-served-figure rule on both graph paths.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-round2-final.log:5 records 58 passed EXIT=0 against base-focused.log:5 55 passed EXIT=0, and negative-control-fallback-round2.log:39 records the empty-slot case reddening on '40%' != '\u2014'.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff d9d9c3a69..394f3f505 is inside the declared write paths, docs/ui/crew.css granted by the resume advice and listed in the manifest's orientation_write_paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_spa_graph_authority.py:462 fails if the fallback reads the endpoint plan's own impl (negative-control-fallback-round2.log:39 reads '40%' != '\u2014'), and tests/test_spa_graph_authority.py:634 asserts shippedPercent is None while the fixture authors impl 0.4, both independent of the value under test; the primary render path remains guarded only by the source substrings at tests/test_every_surface_shows_the_one_progress_figure.py:284-285.\nSCORE fit: 19\nJUSTIFICATION fit: docs/ui/crew.css:274 gives .r-derived-flow-progress flex, opacity and tabular figures beside its siblings at :258 and :280, and docs/ui/graph.jsx:117-123 explains the empty slot by mechanism with no plan label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no new capability: it removes a second figure source rather than forking one, and derive_fleet_impl_imputing_effort remains the single roll-up owner in reckon/_plan_html.py that reckon/roadmap.py:2459 consumes.\nFINDING docs/figures/the-site-answers-fast-and-agrees/every-surface-shows-the-one-progress-figure:1 follow-on: the declared figure path is still unwritten; commit 394f3f505 extends the fragment's prose only, so the doc-producing node argues the empty-slot change in text with no figure, against the standing mandate to illustrate planning and research documents with a figure.\nFINDING tests/test_every_surface_shows_the_one_progress_figure.py:284 follow-on: the round-2 additions to the primary-path guard are source substrings ('shippedPercent: null' present, 'Number(endpoint.impl' absent), so they assert over the JSX text rather than over a rendered value; a source that still carried the substrings while rendering a different figure would satisfy them, and the new real browser case at tests/test_spa_graph_authority.py:462 covers the fallback path only.\n",
+  "review_run_id": "r-20261020T050725374277-review-of-every-surface-shows-the-one-progress-figure-394f3f505e9e",
+  "reviewed_base_sha": "d9d9c3a69ba5a25378a20d6b0ede20ca15201944",
+  "reviewed_commit": "394f3f505e9ecf57a2bd4a1ff811fb288fca4718",
+  "reviewed_head_sha": "394f3f505e9ecf57a2bd4a1ff811fb288fca4718",
+  "reviewed_run_id": "r-20261020T033509554637-every-surface-shows-the-one-progress-figure",
+  "reviewer_run_id": "r-20261020T050725374277-review-of-every-surface-shows-the-one-progress-figure-394f3f505e9e",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T05:25:58.059713+00:00",
+  "total": 114
+}
