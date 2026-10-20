@@ -123,12 +123,14 @@ def _refresh_result(key: tuple[str, ...]) -> tuple[object, float, str] | None:
     ):
         return None
     fingerprints = raw.get("source_fingerprints")
-    if fingerprints is not None:
-        if not isinstance(fingerprints, dict) or not served_code.definitions_unchanged(
+    if isinstance(fingerprints, dict) and fingerprints:
+        if not served_code.definitions_unchanged(
             served_code.package_root(), fingerprints
         ):
             return None
-    elif raw.get("source_revision") != _source_revision():
+    elif (
+        "source_fingerprints" in raw or raw.get("source_revision") != _source_revision()
+    ):
         return None
     age = max(0.0, time.time() - stat.st_mtime)
     return raw.get("result"), age, str(raw.get("version", ""))
@@ -528,6 +530,8 @@ def _refresh_main(argv: list[str]) -> int:
     finally:
         executed.stop()
     fingerprints = served_code.definition_fingerprints(snapshot, executed.definitions())
+    if not fingerprints:
+        raise RuntimeError("refresh recorded no package definitions")
     _store_refresh_result(
         key,
         result,

@@ -11,6 +11,8 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 from reckon import route_results, serve, served_code
 from tests.test_the_slow_routes_answer_from_stored_results import _project
 
@@ -98,3 +100,51 @@ def test_refresh_result_tracks_only_executed_definitions(tmp_path, monkeypatch):
     _rewrite_function(source, "_compute_refresh")
     assert route_results._stored_discovery("sample", docs) is None
     assert spawned == [key]
+
+
+def test_empty_fingerprints_are_a_miss(tmp_path, monkeypatch):
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    monkeypatch.setattr(serve, "_MOUNTS_FILE", tmp_path / "mounts.json")
+    monkeypatch.setattr(serve, "_SOURCE_SNAPSHOT", SimpleNamespace(revision="same"))
+    monkeypatch.setattr(route_results, "_REFRESH_ENABLED", True)
+    key = ("discover", "sample")
+    route_results._store_refresh_result(
+        key, {"marker": "unverifiable"}, source_fingerprints={}
+    )
+    started = []
+    monkeypatch.setattr(
+        route_results, "_start_refresh", lambda target: started.append(target) or True
+    )
+    with monkeypatch.context() as bypass:
+        bypass.setattr(served_code, "definitions_unchanged", lambda *_: True)
+        assert route_results._stored_discovery("sample", tmp_path) is None
+    assert started == [key]
+    assert not served_code.definitions_unchanged(tmp_path, {})
+
+
+@pytest.mark.parametrize(
+    "fingerprints",
+    ["invalid", {"route_results.py": {"revision": [0] * 5, "definitions": {}}}],
+)
+def test_malformed_fingerprints_are_a_miss(tmp_path, monkeypatch, fingerprints):
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    monkeypatch.setattr(serve, "_MOUNTS_FILE", tmp_path / "mounts.json")
+    monkeypatch.setattr(serve, "_SOURCE_SNAPSHOT", SimpleNamespace(revision="same"))
+    key = ("discover", "sample")
+    route_results._store_refresh_result(
+        key, {"marker": "unverifiable"}, source_fingerprints=fingerprints
+    )
+    assert route_results._refresh_result(key) is None
+
+
+def test_refresh_child_skips_unverifiable_result(tmp_path, monkeypatch):
+    mounts = tmp_path / "mounts.json"
+    mounts.write_text("{}", encoding="utf-8")
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    monkeypatch.setattr(route_results, "_compute_refresh", lambda _key: {"ok": True})
+    monkeypatch.setattr(served_code, "definition_fingerprints", lambda *_: {})
+    with pytest.raises(RuntimeError, match="no package definitions"):
+        route_results._refresh_main(
+            ["--key", "discover:sample", "--mounts", str(mounts)]
+        )
+    assert not route_results._refresh_store_path(("discover", "sample")).exists()

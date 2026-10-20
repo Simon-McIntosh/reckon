@@ -525,12 +525,32 @@ def definition_fingerprints(
 def definitions_unchanged(root: Path, recorded: Mapping[str, object]) -> bool:
     """Check only reached definitions in files whose revision has moved."""
 
+    if not recorded:
+        return False
     for relative, entry in recorded.items():
-        if not isinstance(relative, str) or not isinstance(entry, dict):
+        if (
+            not isinstance(relative, str)
+            or Path(relative).is_absolute()
+            or ".." in Path(relative).parts
+            or not relative.endswith(".py")
+            or not isinstance(entry, dict)
+        ):
             return False
         expected = entry.get("definitions")
         revision = entry.get("revision")
-        if not isinstance(expected, dict) or not isinstance(revision, list):
+        if (
+            not isinstance(expected, dict)
+            or not expected
+            or any(
+                not isinstance(key, str)
+                or not isinstance(digest, str)
+                or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+                for key, digest in expected.items()
+            )
+            or not isinstance(revision, list)
+            or len(revision) != 5
+            or any(not isinstance(part, int) for part in revision)
+        ):
             return False
         path = root / relative
         try:
