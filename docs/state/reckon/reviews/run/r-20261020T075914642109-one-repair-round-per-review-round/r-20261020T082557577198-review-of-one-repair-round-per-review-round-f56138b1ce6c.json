@@ -1,0 +1,86 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "Reddens if the resume advice omits any blocking finding's id, file or text, or names the follow-on's; the expected ids are re-derived from each finding's own file/line/text in _expected_id, so the oracle is independent of the module's mint, and the declared mutation (advice composing every finding) would redden the absent-direction asserts.",
+      "lines": "302-313"
+    },
+    {
+      "failure_condition": "Fails when more than one repair round is opened for the review round; shown red at 'assert 3 == 1' under the declared mutation that opens one round per finding.",
+      "lines": "316"
+    },
+    {
+      "failure_condition": "Cannot fail on a round-id regression: both sides are set from the same round_id by one _record_repair_delta write, so the assertion is true for whatever id the composer mints.",
+      "lines": "317"
+    },
+    {
+      "failure_condition": "Reddens if a retry starts a new round rather than incrementing the attempt of the round in hand; line 351 (second vs first round_id) is a same-write comparison, while lines 349-350 (attempt 2, count still 1) carry the guard.",
+      "lines": "351-353"
+    }
+  ],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-20T08:36:00.510Z",
+  "dispatched_at": "2026-10-20T08:26:42Z",
+  "findings": [
+    {
+      "file": "logs/importing-tests-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the done-when's population arm (every test file importing reckon/crew/recovery_repair_dispatch.py or reckon.crew.recovery, run at head with pytest -n 8, no added failure against base) was run at revision ae127e3bb \u2014 the base \u2014 at logs/importing-tests-head.log:1, before the added file existed; the new tests/test_one_repair_round_per_review_round.py imports reckon.crew.recovery and so belongs to that population but was never measured within it, so the no-added-failure claim covers the pre-existing population only; the conclusion still holds because no tracked file changed (the change is one new untracked test), so no existing test can be affected."
+    },
+    {
+      "file": "tests/test_one_repair_round_per_review_round.py",
+      "line": "317",
+      "severity": "follow-on",
+      "text": "follow-on: assert rounds[\"round_id\"] == pointer[\"repair_dispatch\"][\"round_id\"] compares two fields that the same _record_repair_dispatch write (reckon/crew/recovery_repair_dispatch.py:400-414) sets from one round_id argument, so the two sides move together and the assertion holds for any round id the composer mints, whatever its value; it cannot redden on a regression in the round identity. The dimension's durability rests instead on line 316 assert rounds[\"count\"] == 1, which the declared negative control shows reddens (assert 3 == 1), and on the advice assertions at lines 302-313, whose expected ids are re-derived from each finding rather than read from the module."
+    },
+    {
+      "file": "tests/test_one_repair_round_per_review_round.py",
+      "line": "322",
+      "severity": "follow-on",
+      "text": "follow-on: the second case test_a_retried_resume_is_another_attempt_of_the_same_round duplicates the retry-is-attempt-2-of-the-same-round behaviour already covered by tests/test_the_reflex_resumes_an_unpromoted_run.py:305 test_a_finished_resumed_turn_is_retried_once, adding only the round_id-stability assertions; it is not wrong, but it is a second copy of an existing guard rather than an extension of it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none \u2014 the change is a test file, so no production code reaches it; the production path it exercises is reckon/crew/resumption.py:1651 sweep \u2192 reckon/crew/recovery_repair_dispatch.py:591 dispatch_repair_for_run.",
+    "diff": "Read the single commit f56138b1c3 against base ae127e3bb: it adds tests/test_one_repair_round_per_review_round.py (353 lines, two cases) and the 7-line fragment docs/evidence/fragments/a-review-is-sized-to-its-risk/one-repair-round-per-review-round.html; no product source changed.",
+    "done_when": "The source prompt's done-when names tests/test_one_repair_round_per_review_round.py with the one-round/one-resume/advice-naming assertions, a second retry case, a population arm over the test files importing recovery_repair_dispatch or recovery, and the declared negative control; the run records the head gate 2 passed EXIT=0 (logs/head-gate.log), the negative control red at assert 3 == 1 EXIT=1 (logs/negative-control.log), the population arm 9 failed/594 passed (logs/importing-tests-head.log) with its base reproduction (logs/importing-tests-base-failing-ids.log), and ruff green (logs/ruff.log).",
+    "goal": "The source prompt's GOAL asks for a test proving a review with three blocking findings and one follow-on opens one repair round that resumes the reviewed run once with advice naming the three blocking findings; tests/test_one_repair_round_per_review_round.py:284-317 drives exactly that \u2014 len(resumed) == 1, every blocking id/file/text in the advice, the follow-on absent in all three forms, dispatched == [], and repair_rounds.count == 1 with status resumed at attempt 1.",
+    "manifest": "The source manifest.md records status complete, one commit f56138b1ce6c, the head gate '2 passed' EXIT=0, the negative control red at 'assert 3 == 1', empty baseline_suite and after_suite fields, and follow_ons naming four pre-existing sweep-only failures.",
+    "write_paths": "The source prompt's scope grants tests/test_one_repair_round_per_review_round.py, docs/evidence/fragments/a-review-is-sized-to-its-risk/one-repair-round-per-review-round.html and docs/figures/a-review-is-sized-to-its-risk/one-repair-round-per-review-round; the ae127e3bb..f56138b1c diff changes only the first two (360 insertions, 0 deletions), and no product source is touched."
+  },
+  "justifications": {
+    "durability": "The declared negative control \u2014 one repair round per finding in a scratch copy \u2014 reddens line 316 'assert rounds[\"count\"] == 1' with 'assert 3 == 1' (logs/negative-control.log), so the round-level guard fails if the reflex regresses, but lines 317 and 351 compare round ids the code writes from one argument and cannot themselves fail.",
+    "evidence": "The head gate tests/test_one_repair_round_per_review_round.py is recorded '2 passed ... EXIT=0' at logs/head-gate.log:5 and the negative control reddens at 'assert 3 == 1' EXIT=1 at logs/negative-control.log, but the population arm at logs/importing-tests-head.log:1 ran at base ae127e3bb before the added file existed and the manifest's baseline_suite/after_suite fields are blank, so the added-failure figure is derived from the named arm logs (head 9 failed, base reproduces the same ids) rather than a structured suite receipt.",
+    "fit": "The new file follows the repository's per-file harness idiom (tests/test_the_reflex_resumes_an_unpromoted_run.py and 16 peers each define their own _completed_pointer/_stub_resume/_stub_dispatch) and its names carry no version or plan label.",
+    "goal_fidelity": "tests/test_one_repair_round_per_review_round.py:284-317 asserts one resume, one opened round (repair_rounds.count == 1) and advice naming all three blocking findings' ids/files/texts while the follow-on is absent in all three forms, exactly the node goal.",
+    "reuse": "No test previously asserted repair_rounds.count or drove multiple blocking findings (grep over tests/ found the count assertion only in the new file), so the round-level coverage is new; the reflex's capability owner reckon/crew/recovery_repair_dispatch.py is exercised rather than forked, but the harness is copied from tests/test_the_reflex_resumes_an_unpromoted_run.py:218-231 with no shared owner module found under tests/.",
+    "scope_discipline": "The ae127e3bb..f56138b1c diff changes only tests/test_one_repair_round_per_review_round.py and docs/evidence/fragments/a-review-is-sized-to-its-risk/one-repair-round-per-review-round.html, both inside the declared write scope, and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source prompt's GOAL asks for a test proving a review with three blocking findings and one follow-on opens one repair round that resumes the reviewed run once with advice naming the three blocking findings; tests/test_one_repair_round_per_review_round.py:284-317 drives it \u2014 len(resumed) == 1, every blocking id/file/text in the advice, the follow-on absent, dispatched == [], repair_rounds.count == 1.\nVERDICT done_when: the source done-when names the head test, a retry case, the importing-test population arm and the negative control; logs/head-gate.log records '2 passed ... EXIT=0' and logs/negative-control.log records the red 'assert 3 == 1' at EXIT=1, but the population arm at logs/importing-tests-head.log:1 ran at base ae127e3bb before the added file existed.\nVERDICT write_paths: the source scope grants tests/test_one_repair_round_per_review_round.py, docs/evidence/fragments/a-review-is-sized-to-its-risk/one-repair-round-per-review-round.html and docs/figures/a-review-is-sized-to-its-risk/one-repair-round-per-review-round; the ae127e3bb..f56138b1c diff changes only the first two.\nVERDICT manifest: the source manifest.md records status complete, commit f56138b1ce6c, the head gate 2 passed EXIT=0, the negative control red at assert 3 == 1, empty baseline_suite/after_suite fields, and four named follow-ons.\nVERDICT diff: read commit by commit from ae127e3bb to f56138b1c \u2014 it adds the 353-line tests/test_one_repair_round_per_review_round.py and the 7-line fragment, 360 insertions, no deletions, no product source.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_one_repair_round_per_review_round.py:284-317 asserts one resume, repair_rounds.count == 1, and advice naming all three blocking findings while the follow-on is absent.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/head-gate.log:5 records the head gate '2 passed' EXIT=0 and logs/negative-control.log records the red 'assert 3 == 1' EXIT=1, but the population arm at logs/importing-tests-head.log:1 ran at base ae127e3bb and the manifest's baseline_suite/after_suite fields are blank.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the ae127e3bb..f56138b1c diff changes only tests/test_one_repair_round_per_review_round.py and docs/evidence/fragments/a-review-is-sized-to-its-risk/one-repair-round-per-review-round.html, both inside the declared scope.\nSCORE durability: 18\nJUSTIFICATION durability: the declared negative control reddens tests/test_one_repair_round_per_review_round.py:316 'assert rounds[\"count\"] == 1' with 'assert 3 == 1', but line 317 compares two fields one write derives from one round_id.\nSCORE fit: 19\nJUSTIFICATION fit: the new file follows the repository's per-file harness idiom shared by tests/test_the_reflex_resumes_an_unpromoted_run.py and 16 peers, and its names carry no version or plan label.\nSCORE reuse: 17\nJUSTIFICATION reuse: no test previously asserted repair_rounds.count or drove multiple blocking findings, so the coverage is new and the reflex owner reckon/crew/recovery_repair_dispatch.py is exercised not forked, but the harness is copied from tests/test_the_reflex_resumes_an_unpromoted_run.py:218-231 with no shared owner module.\nFINDING logs/importing-tests-head.log:1 follow-on: the population arm ran at base revision ae127e3bb before the added file existed, so the new file \u2014 which imports reckon.crew.recovery and belongs to the population the done-when names \u2014 was never measured within it; the conclusion holds because no tracked file changed.\nFINDING tests/test_one_repair_round_per_review_round.py:317 follow-on: assert rounds[\"round_id\"] == pointer[\"repair_dispatch\"][\"round_id\"] compares two fields set from one round_id by the same _record_repair_dispatch write, so it cannot fail on a round-id regression.\nFINDING tests/test_one_repair_round_per_review_round.py:322 follow-on: the second case duplicates tests/test_the_reflex_resumes_an_unpromoted_run.py:305 and adds only the round_id-stability assertions.\n",
+  "review_run_id": "r-20261020T082557577198-review-of-one-repair-round-per-review-round-f56138b1ce6c",
+  "reviewed_base_sha": "ae127e3bb45779781ef30dc330a115c989fb3752",
+  "reviewed_commits": [
+    "f56138b1ce6c39d74ac9b2746dc5235f3dd101e8"
+  ],
+  "reviewed_head_sha": "f56138b1ce6c39d74ac9b2746dc5235f3dd101e8",
+  "reviewed_run_id": "r-20261020T075914642109-one-repair-round-per-review-round",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T08:38:43.223311+00:00",
+  "total": 108
+}
