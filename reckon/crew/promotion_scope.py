@@ -1798,6 +1798,12 @@ def _path_has_a_staged_change(checkout: Path, path: Path) -> bool:
 
 LANDING_RECORD_NAME = "landing.json"
 _LANDING_SUBJECT_PREFIXES = ("promote(", "release(")
+# A staging ``git add`` that fails while another process holds the index lock is
+# retried this many times, at this spacing, before the landing refuses. Both are
+# bounded so a lock that is never released ends in the same refusal as a staging
+# failure that left no lock, a few seconds later.
+_INDEX_LOCK_RETRY_ATTEMPTS = 12
+_INDEX_LOCK_RETRY_INTERVAL_SECONDS = 0.5
 
 
 def _landing_record_path(run_id: str) -> Path:
@@ -2187,6 +2193,44 @@ def _report_landing_check(landing: Mapping[str, Any]) -> dict[str, Any]:
     return dict(check)
 
 
+def _stage_landing_writes(
+    run_id: str, checkout: Path, targets: Sequence[Path]
+) -> subprocess.CompletedProcess:
+    """Stage the landing writes, waiting out a briefly held index lock.
+
+    The single ``git add`` a landing makes is the step a peer's transient
+    ``index.lock`` turns into a refused landing, so it runs through
+    :func:`reckon.crew.merge._run_waiting_out_a_held_index_lock`: the add is
+    retried while the checkout holds its ``index.lock``, for a bounded number of
+    attempts, and every retry is appended to the run's landing record so a
+    landing that waited says how often. A failure that left no lock behind, and
+    a lock that outlasts the attempts, return the failing result unchanged for
+    the caller to refuse on.
+    """
+
+    def record_retry(attempt: int, result: subprocess.CompletedProcess) -> None:
+        _append_landing_record(
+            run_id,
+            {
+                "time": _utc_now(),
+                "step": "stage_retry",
+                "attempt": attempt,
+                "message": result.stderr.strip() or result.stdout.strip(),
+            },
+        )
+
+    staged, _retries = _run_waiting_out_a_held_index_lock(
+        checkout,
+        lambda _attempt: _git(
+            checkout, "add", "--", *(str(p) for p in targets), check=False
+        ),
+        attempts=_INDEX_LOCK_RETRY_ATTEMPTS,
+        retry_seconds=_INDEX_LOCK_RETRY_INTERVAL_SECONDS,
+        on_retry=record_retry,
+    )
+    return staged
+
+
 def _commit_landing_writes(
     *,
     run_id: str,
@@ -2218,6 +2262,11 @@ def _commit_landing_writes(
     the integrated revision, a release outcome) passes its own subject naming
     what it did.
 
+    Staging waits out a briefly held index lock: a ``git add`` that fails while
+    the checkout holds its ``index.lock`` is retried for a bounded number of
+    attempts and each retry is recorded, so a lock a peer releases in seconds no
+    longer turns a completed promotion into a failed verb.
+
     Two checks bracket the commit. Before staging, the shared index is read for
     paths already staged in reverse of an earlier landing; they are reported
     and never repaired, because restoring them would write to an index other
@@ -2234,7 +2283,7 @@ def _commit_landing_writes(
     if not targets:
         return {"committed": False, "reason": "no_write"}
     reversals = _staged_reversals(checkout)
-    staged = _git(checkout, "add", "--", *(str(p) for p in targets), check=False)
+    staged = _stage_landing_writes(run_id, checkout, targets)
     if staged.returncode != 0:
         head = _head_revision(checkout)
         rollback = _restore_landing_writes(checkout, targets)
@@ -2361,6 +2410,7 @@ def _revision_is_ancestor(checkout: Path, revision: str, target: str) -> bool:
 
 
 
+from reckon.crew.merge import _run_waiting_out_a_held_index_lock
 from reckon.crew.promotion_evidence import (
     _COMMITLESS_ROLES,
     _commit_canonical_id,
