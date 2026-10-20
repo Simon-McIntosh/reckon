@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-title" content="The unattached-session dispatch test passes at head">
+  <meta name="plan-summary" content="The refusal test failed in its own teardown: it released the watch seat while the producer was rewriting the registration in place, and unwatch refused a record that named no project. Every teardown in the file now waits for the settled record.">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s27">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-20">
+  <meta name="plan-tags" content="crew,watch,seat,test-teardown,compute">
+  <title>The unattached-session dispatch test passes at head | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-unattached-session-dispatch-test-passes"
+         data-reckon="landed" data-when="2026-10-20">
+  <h2>The unattached-session dispatch test passes at head</h2>
+
+  <p id="the-unattached-session-dispatch-test-passes-cause"><strong>Cause.</strong> The test
+  passed its own assertions and then failed in its <code>finally</code>. A dispatch arms the
+  project's watch producer before the delivery admission refuses a session that cannot hear
+  the run, so the refusal leaves a live producer behind. The teardown stopped it with
+  <code>recovery.unwatch</code>. The producer rewrites its seat registration in place
+  (<code>truncate</code> then write), and <code>unwatch</code> refuses to signal a seat whose
+  record names no project — so a release landing in that window raised
+  <code>CrewError: refusing to stop watcher for project 'sample': the locked registration
+  names ''</code>. The refusal under test — a dispatch refused where a manual one is — was
+  correct throughout.</p>
+
+  <p id="the-unattached-session-dispatch-test-passes-host"><strong>Why it is host-dependent.</strong>
+  Arming differs by host. On the fleet node the producer is spawned by the allocation's batch
+  step; on a plain compute node a supervisor is spawned first (<code>subprocess.Popen</code>)
+  and writes the producer's seat later, widening the window the teardown read into. Measured:
+  with the cause present the test fails 5 of 5 alone in an exclusive <code>all_debug</code>
+  job (job <code>1291645</code>, host <code>98dci4-clu-3141</code>), and passes 5 of 5 alone
+  on the fleet node.</p>
+
+  <p id="the-unattached-session-dispatch-test-passes-shape"><strong>The same teardown, three
+  times.</strong> All three tests in the file that release the watch seat did it the moment
+  <code>watch_state</code> reported a live producer, so each was exposed to that window. The
+  exposure is real rather than theoretical for the two dispatch tests: an instrumented run
+  that restores the immediate release records a live seat at teardown for both, i.e. both do
+  reach <code>unwatch</code> (<code>fleet-negprobe.log</code>). Neither reproduced the failure
+  in 5 runs on an exclusive <code>all_debug</code> node with the cause restored (job
+  <code>1291667</code>), and the reason is visible in the ordering: those two carry a long test
+  body between the arming and the teardown, so the registration has settled by the time they
+  release, while the refusal returns from arming in one step and the teardown follows it
+  immediately.</p>
+
+  <p id="the-unattached-session-dispatch-test-passes-fix"><strong>Repair.</strong> One shared
+  helper serves all three teardowns. It waits, bounded, for the seat registration to settle to
+  name its project before calling <code>unwatch</code>, then waits for the producer to release
+  the seat. No product code changed.</p>
+
+  <table id="the-unattached-session-dispatch-test-passes-measure">
+    <caption>Gate at rev <code>24129f62d</code>, the head of this node, versus the interim rev
+    <code>62a89ee7</code>. Checkouts from <code>git archive</code> under the run's scratch
+    directory.</caption>
+    <thead><tr><th>Arm</th><th>Where</th><th>Command</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>target test, alone &times;5</td><td>exclusive <code>all_debug</code> job
+          <code>1291652</code></td><td><code>compute-solo-1..5.log</code></td>
+          <td>5 &times; <code>1 passed</code>, EXIT=0</td></tr>
+      <tr><td>target test, alone &times;5</td><td>fleet node</td>
+          <td><code>fleet-solo-1..5.log</code></td><td>5 &times; <code>1 passed</code>, EXIT=0</td></tr>
+      <tr><td>whole file &times;5</td><td>fleet node, rev <code>24129f62d</code></td>
+          <td><code>fleet-file-1..5.log</code> (aggregate <code>fleet-file-5x.log</code>)</td>
+          <td>5 &times; <code>4 passed</code>, EXIT=0</td></tr>
+      <tr><td>whole file</td><td>exclusive <code>all_debug</code>, rev <code>62a89ee7</code></td>
+          <td><code>compute-file.log</code></td><td><code>4 passed</code>, EXIT=0</td></tr>
+      <tr><td>negative control: target test, cause restored</td>
+          <td>exclusive <code>all_debug</code> job <code>1291645</code></td>
+          <td><code>compute-negative-control.log</code></td>
+          <td><code>1 failed</code>, EXIT=1</td></tr>
+      <tr><td>negative control: two dispatch tests, cause restored &times;5</td>
+          <td>exclusive <code>all_debug</code> job <code>1291667</code></td>
+          <td><code>compute-negative-control-two-1..5.log</code></td>
+          <td>5 &times; <code>2 passed</code>, EXIT=0 — did not reproduce</td></tr>
+      <tr><td>exposure probe: two dispatch tests, cause restored</td><td>fleet node</td>
+          <td><code>fleet-negprobe.log</code></td>
+          <td>2 markers: live seat at teardown for both</td></tr>
+      <tr><tr><td><code>ruff check</code></td><td>worktree</td>
+          <td><code>ruff-check.log</code></td><td><code>All checks passed!</code>, EXIT=0</td></tr>
+      <tr><td><code>ruff format --check</code></td><td>worktree</td>
+          <td><code>ruff-fmt.log</code> vs <code>ruff-fmt-base.log</code></td>
+          <td>unchanged: both report the file would be reformatted (pre-existing, delta 0)</td></tr>
+    </tbody>
+  </table>
+
+  <p id="the-unattached-session-dispatch-test-passes-scope"><strong>Scope.</strong> Only
+  <code>tests/test_scoring_dispatches_its_review.py</code> changed. The product-side race in
+  <code>recovery.unwatch</code> — it refuses a seat read during the producer's truncate-to-write
+  window instead of retrying the registration read the way its sibling reader does — is
+  unchanged and filed separately. Sibling files carry the same teardown shape and were green
+  here.</p>
+</article>
+</body>
+</html>
