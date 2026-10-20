@@ -1,0 +1,46 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "The diff adds no test assertions. Its only added artifact is a docs evidence fragment, and section 33's negative-result branch (no arm failed at base) directs that no test or product file change. The reproduction's discriminating power lives in the harness script (harness/repro/arms_logged.py:59-71), which reads live pointers with phase == 'queued' from the scratch crew home and prints EXIT=2 when the list is empty; the recorded logs show one queued pointer each, so no self-comparing assertion exists for a durability score to rest on.",
+      "lines": "docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/a-held-code-review-queues-with-its-brief.html:1-34"
+    }
+  ],
+  "call_sites": [],
+  "completed_at": "2026-10-20T01:28:08.661Z",
+  "dispatched_at": "2026-10-20T01:17:04Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "11",
+      "severity": "follow-on",
+      "text": "follow-on: the gate command recorded in the manifest's tests: line (and repeated verbatim in each arm log's `# command:` header, logs/arm1-base.log:3 and logs/arm2-base.log:3) names a scratch entry point under /tmp/reckon-crew-scratch/r-20261020T005157770643-.../ahcr-repro/arms_logged.py, which no longer exists. The durable copy is harness/repro/arms_logged.py, and it still carries an `import drive` guarded by a sys.path insert of that same vanished /tmp path (harness/repro/arms_logged.py:15-18). The named command therefore cannot be re-run from the record without editing the path, so the manifest's gate receipt points at an entry point a reader cannot open."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "No production call site reaches the landed change, because the only landed artifact is a static evidence fragment under docs/. The runtime code the node exercised (reckon.crew.plan_review.dispatch_code_review, reckon.crew.dispatch.dispatch and the crew review --around verb) is pre-existing and unchanged by this diff.",
+    "diff": "Read commit by commit against base 9f7f2ac1d: 5506070d4 adds one file, a new evidence fragment at docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/a-held-code-review-queues-with-its-brief.html (34 insertions, 0 deletions), which states the negative result, the two arms' table, the refutation of the leading candidate and the commit window; no other file in the range changes.",
+    "done_when": "The source done_when (live pointer node.done_when) asks the report under the run directory to record both arms with the resolved backend, whether is_local held and the frame that raised the hold, and to check whether _config_without_lane after commit 74f38b880 still carries local_backend, each log ending in EXIT=; report.md:51-78 tabulates backend clive, is_local held and frame reckon/crew/dispatch.py:1690 for each arm, report.md:88-97 records the _config_without_lane check, and all three logs under logs/ end in EXIT=0.",
+    "goal": "The source node's goal is to reproduce at base whether a router-held composed code review on the local lane queues, through plan_review.dispatch_code_review and through the crew review --around verb, and to make any arm that fails to queue queue; report.md:43-78 records both arms driven in a scratch crew home with local_backend clive, a lane document granting session f653840f zero worker slots at verdict full and an unpaused gate, and both arms queue, so the defect does not reproduce and no product change was made, which is the branch section 33 defines for that result.",
+    "manifest": "The source manifest.md:5-13 records status complete, the negative-result checkpoint, commits 5506070d4, changed_paths with the single fragment, the landing line naming the queued pointer with backend clive and the hold at reckon/crew/dispatch.py:1690, tests naming the arm script and test_logs naming the three logs; it carries no baseline_suite/after_suite keys, consistent with a docs-only node, and its artifacts line records the arm pointers and the _config_without_lane result.",
+    "write_paths": "The source prompt.txt:135-139 fences reckon/crew/dispatch.py, reckon/crew/plan_review.py, tests/test_a_held_code_review_queues_with_its_brief.py, docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/a-held-code-review-queues-with-its-brief.html and docs/figures/a-held-dispatch-waits-its-fair-turn/a-held-code-review-queues-with-its-brief; git diff 9f7f2ac1d..5506070d4 names exactly one path, the evidence fragment, and no product or test file, so the diff is inside the declared scope."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261020T011551349471-review-of-a-held-code-review-queues-with-its-brief-5506070d4464",
+  "reviewed_base_sha": "9f7f2ac1de88067065c4c4f900768211004a4c7b",
+  "reviewed_head_sha": "5506070d44646121f65e0e9aaa8f84fd088d0e7f",
+  "reviewed_run_id": "r-20261020T005157770643-a-held-code-review-queues-with-its-brief",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T01:29:25.167132+00:00",
+  "total": 113
+}
