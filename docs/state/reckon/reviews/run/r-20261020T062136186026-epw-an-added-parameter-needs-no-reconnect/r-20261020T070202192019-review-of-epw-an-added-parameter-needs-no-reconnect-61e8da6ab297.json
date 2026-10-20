@@ -1,0 +1,63 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "Case 1 asserts result.get('served_by') == 'current code' and that 'added_parameter' appears in schema_note. Both sides are independently sourced: 'current code' is the fake child's answer literal, supplied outside the guard, and 'added_parameter' is a name the child's probed params carry that the parent's registered tuple does not. The guard's routing decides whether the child's answer surfaces at all, so a regression to the equality comparison returns stale_server_code and reddens it \u2014 shown red in logs/negative-control-equal-lists.log:31-33. Not a self-comparison.",
+      "lines": "tests/test_an_added_parameter_needs_no_reconnect.py:305-309"
+    },
+    {
+      "failure_condition": "Case 2 asserts stale_server_code and image == [], where image is appended by the image arm the guard either reaches or does not; a guard that served the call would leave image non-empty and drop the stale error, so it reddens on the regression it guards. Independent of the value under test.",
+      "lines": "tests/test_an_added_parameter_needs_no_reconnect.py:322-327"
+    },
+    {
+      "failure_condition": "Case 5 asserts probe['params']['edit_plan'] equals the plain name list and that _probe_signature_changed reports the added parameter. The expected list is the child's config-supplied params, independent of probe_reply; nesting requiredness inside params (the declared third control) reddens it, shown in logs/negative-control-nest-requiredness.log:30-36. Independent.",
+      "lines": "tests/test_an_added_parameter_needs_no_reconnect.py:403-414"
+    },
+    {
+      "failure_condition": "Case 6 asserts the parent serves when the child's verdict says compatible even though the parent's own lists differ. The verdict is the child's (config-forced compatible=True), the differing lists are the child's params; the parent's re-decision is the defect under test and reddens it \u2014 shown red in logs/negative-control-decide-in-parent.log:32-34. Independent, but it forces the verdict through the fake child's config rather than through a checkout whose imported rule differs, which is the gap named in the findings.",
+      "lines": "tests/test_an_added_parameter_needs_no_reconnect.py:441"
+    }
+  ],
+  "completed_at": "2026-10-20T07:20:08.521Z",
+  "dispatched_at": "2026-10-20T07:02:52Z",
+  "findings": [
+    {
+      "file": "tests/test_an_added_parameter_needs_no_reconnect.py",
+      "line": "433",
+      "severity": "follow-on",
+      "text": "follow-on: the plan \u00a713 done-when's sixth bullet ('Checkout's rule') \u2014 a real child spawned from a temporary checkout whose rule function answers compatible for a removed parameter, with a parent whose own image holds the shipped rule unable to change the outcome \u2014 has no dedicated case. Case 6 (line 433) forces the verdict through the fake child's own config knob (compatible=True) instead of altering the rule the spawned child imports, so no test discriminates the child's imported rule from the parent's frozen image rule. The plan's paired control 'writing the rule into SERVED_CHILD_PROGRAM fails the checkout's-rule case' is likewise unexercised; logs/negative-control-decide-in-parent.log covers only the child's-verdict case. The property is partly guarded \u2014 cases 1-4 rely on the tree's signature_compatible through a spawned child \u2014 but a change that moved the decision into the parent's constant program string would not redden the new file."
+    },
+    {
+      "file": "reckon/served_code.py",
+      "line": "1506",
+      "severity": "follow-on",
+      "text": "follow-on: the compatible outcome is never driven through the real SERVED_CHILD_PROGRAM. The only end-to-end server test of a signature change, tests/test_mcp_server_serves_current_code.py:399, exercises the removal (incompatible) path; the added-optional served path and its schema_note are covered only by the fake child in the new test file, which re-implements the program's probe branch. A defect confined to reckon/served_code.py:1499-1509 (or to the message.get('registered') plumbing there) that only affects the compatible branch would leave every test green."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "The production paths that reach the landed change are the five tool registrations that wrap _refuse_when_stale (reckon/mcp.py:3093 read_plan, :3104 edit_plan, :3110 roadmap, :3116 audit, :3127 crew), the guarded probe send at reckon/mcp.py:617, the schema_note composition at reckon/mcp.py:588 via _answer_from_child, and the current-code child's own probe branch at reckon/served_code.py:1506 (SERVED_CHILD_PROGRAM calling probe_reply).",
+    "diff": "Read commit by commit against 5277a76cf: ef537078f adds the registered payload, _probe_incompatible, _schema_note and the schema_note-carrying _served_on_current_code in reckon/mcp.py, and signature_compatible, probe_reply and the child's tool_required in reckon/served_code.py; f762578ab turns the two existing changed-signature cases into removals and adds the six-case file; 61e8da6ab adds only the evidence fragment. Every file is inside the declared scope.",
+    "done_when": "The node's done_when names the four-file pytest command; the manifest records logs/head-arm.log at f762578ab (1 failed, 23 passed) against logs/base-arm.log at 5277a76c (1 failed, 17 passed), the single failure being test_every_module_fits_a_worker_window, which names two modules this node neither touches nor changes; the six named cases are the new file's six tests, green in logs/head-new-file.log (6 passed). The gate covers six of the plan \u00a713 done-when's seven cases; the plan's 'Checkout's rule' bullet has no case (see finding).",
+    "goal": "The node's goal is to have the current-code child judge whether a tool's changed parameters are compatible, serving an added optional parameter with a schema_note rather than a reconnect, while keeping the probe readable by servers started before this lands; the landed change does that \u2014 reckon/served_code.py:1346 states the rule, reckon/mcp.py:332 builds the registered payload the parent sends at reckon/mcp.py:617, the child answers compatible per tool at reckon/served_code.py:1506, and reckon/served_code.py:1379 keeps params as a name list for a pre-verdict parent.",
+    "manifest": "Read; it records the three commits, head and base arms with full revisions and their EXIT= lines, three negative-control logs (one per declared mutation), the single pre-existing failure with its attribution under follow_ons, and a landing line stating the mechanism and the arm figures.",
+    "write_paths": "The manifest declares seven paths (reckon/mcp.py, reckon/served_code.py, three test files, the evidence fragment, and a figures dir); git diff --stat 5277a76cf..61e8da6ab names exactly those six files changed and no other, every one inside the declaration, and no figure was written."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261020T070202192019-review-of-epw-an-added-parameter-needs-no-reconnect-61e8da6ab297",
+  "reviewed_base_sha": "5277a76cf391bef450c35a162a16056eb37f506a",
+  "reviewed_head_sha": "61e8da6ab297b9508de96a495e1f85b74e3866b0",
+  "reviewed_run_id": "r-20261020T062136186026-epw-an-added-parameter-needs-no-reconnect",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T07:20:11.045082+00:00",
+  "total": 111
+}
