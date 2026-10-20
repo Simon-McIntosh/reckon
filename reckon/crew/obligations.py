@@ -191,6 +191,9 @@ def action_form(command: str) -> str | None:
     can call on the tool surface rather than a shell invocation to assemble.
     A command naming any other verb, or none at all, has no action form and
     reads as ``None``: the reader keeps the printed command it already had.
+    A command the tokeniser cannot split — one carrying an unbalanced
+    quotation mark — likewise has no form, so a stored command that cannot be
+    parsed leaves the read it belongs to intact rather than failing it.
 
     Every option on the command is rendered, and an option this form cannot
     carry — one with no tool parameter, one whose value is missing — makes the
@@ -202,7 +205,14 @@ def action_form(command: str) -> str | None:
     wrapped in quotes, so a reason carrying a quotation mark or a path carrying
     a backslash renders a form the caller can still run.
     """
-    tokens = shlex.split(command)
+    try:
+        tokens = shlex.split(command)
+    except ValueError:
+        # A stored command carrying an unbalanced quotation mark cannot be
+        # tokenised, so this form cannot carry it: leaving the whole command
+        # without a form keeps the row's printed command readable rather than
+        # letting the parse error take down the read that produced it.
+        return None
     if len(tokens) < 3 or tokens[0] != "reckon" or tokens[1] != "crew":
         return None
     verb = tokens[2]
