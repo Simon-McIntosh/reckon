@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_liveness.py:1116-1119 _env_scan_run_pid (the liveness read)",
+    "reckon/crew/process_signal.py:310 _indexed_environment (from _processes_owning_run)",
+    "reckon/crew/routing.py:3737-3741 re-exports _processes_owning_run and _run_process_pids",
+    "reckon/crew/dispatch_sessions.py:2156 _run_process_pids (the stop settle loop)"
+  ],
+  "completed_at": "2026-10-20T02:07:24.525Z",
+  "dispatched_at": "2026-10-20T01:57:56Z",
+  "findings": [
+    {
+      "file": "tests/test_a_process_table_is_read_once_per_beat.py",
+      "line": 306,
+      "text": "follow-on: the case's docstring was rewritten to name the stack base, but it states without qualification that the base 'is placed afresh by the kernel on every exec, and it is what moves here' \u2014 the caveat the code docstring now carries (reckon/crew/process_signal.py:196-202) is absent from the test, so on a host running under setarch -R or an ADDR_NO_RANDOMIZE personality this case reddens with no code regression while its own text says the movement is unconditional."
+    }
+  ],
+  "justification": {
+    "durability": "the delta adds no assertion, so durability rests on the case at tests/test_a_process_table_is_read_once_per_beat.py:347 ('a re-exec moves the identity even when the path does not'), which reddens if the stack-base field is dropped from _process_identity; negative-control-f18ecdd0deb.log records that reverting the field fails the same-binary re-exec case at EXIT=1.",
+    "evidence": "the gate result is recorded, not claimed: test-a-process-table-is-read-once-per-beat.log names revision f34c4cfb72113bb9bfe1c986508878565253b024 and ends '9 passed' / EXIT=0, matching the manifest's tests line, and I re-ran tests/test_a_process_table_is_read_once_per_beat.py at head (9 passed, 2.92 s).",
+    "fit": "the added prose stays in the surrounding module's idiom (private helpers documented by what they observe, reckon/crew/process_signal.py:186-202) and introduces no plan, phase or version label.",
+    "goal_fidelity": "the delta brings the three docstrings to the key the walk at reckon/crew/process_signal.py:245-249 compares (start tick, executable path, stack base) and states the stack-base field's limit at :196-202, which is the goal's own subject documented rather than a new mechanism.",
+    "reuse": "the delta adds no definition; the mechanism it documents was already found to have no pre-existing owner in the repository (a search over reckon/ for stack-base or exec-detection keying returned none), and the field reader it uses is reckon/crew/process_liveness.py:320 _process_stat_fields.",
+    "scope_discipline": "git diff --stat e36a760d6..f34c4cfb7 lists only reckon/crew/process_signal.py and tests/test_a_process_table_is_read_once_per_beat.py, both declared, and the commit carries no code change beyond comment text."
+  },
+  "node": "review-of-a-process-table-is-read-once-per-beat-f34c4cfb7211",
+  "node:reviewed": "a-process-table-is-read-once-per-beat",
+  "notes": "incremental review: the base is the head of the prior review (e36a760d6e791bfe66c5c3ee86302d64c33f3ee8, recorded in review-records/...at-e36a760d6e791bfe66c5c3ee86302d64c33f3ee8.json) and the head is f34c4cfb72113bb9bfe1c986508878565253b024. The delta answers all three follow-on findings that review left in each of the two files it scoped.",
+  "project": "reckon",
+  "review_run_id": "r-20261020T015625929449-review-of-a-process-table-is-read-once-per-beat-f34c4cfb7211",
+  "reviewed_base_sha": "e36a760d6e791bfe66c5c3ee86302d64c33f3ee8",
+  "reviewed_head_sha": "f34c4cfb72113bb9bfe1c986508878565253b024",
+  "reviewed_run_id": "r-20261020T002527311407-a-process-table-is-read-once-per-beat",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T02:07:26.945673+00:00",
+  "total": 113,
+  "verdicts": {
+    "diff": "VERDICT diff: read commit by commit against e36a760d6; one commit (f34c4cfb7) changes 26 lines in reckon/crew/process_signal.py and 4 in tests/test_a_process_table_is_read_once_per_beat.py, all docstring and comment text with no statement altered.",
+    "done_when": "VERDICT done_when: the done-when (prompt.txt FENCE EVIDENCE) names six behaviours plus paired suite logs and a 10 s strace arm; the delta adds no behaviour, and test-a-process-table-is-read-once-per-beat.log header line 1 names revision f34c4cfb7211 with '9 passed' and EXIT=0, while baseline-suite.log ('155 passed, 1 skipped') and after-suite.log ('164 passed, 1 skipped') both end EXIT=0.",
+    "goal": "VERDICT goal: the node goal (prompt.txt:30) is one environment index per beat keyed on pid, start tick and executable identity, with other users' processes skipped by owner; this delta is the documentation half of that goal and now states the key the code actually holds.",
+    "manifest": "VERDICT manifest: read; status complete, the three prior findings recorded as acted, commits list ending f34c4cfb72113bb9bfe1c986508878565253b024, tests line carrying the literal pytest command, and checkpoint naming the docstring fixes at that head.",
+    "write_paths": "VERDICT write_paths: the declared scope (prompt.txt:70-74) is five paths; git diff --stat e36a760d6..f34c4cfb7 touches exactly reckon/crew/process_signal.py and tests/test_a_process_table_is_read_once_per_beat.py, both inside it."
+  }
+}
