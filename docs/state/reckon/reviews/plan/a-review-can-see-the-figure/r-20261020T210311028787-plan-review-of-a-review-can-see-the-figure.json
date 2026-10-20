@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-20T21:44:53.940Z",
+  "dispatched_at": "2026-10-20T21:30:12Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:255",
+      "id": "reasoning-1",
+      "reason": "the node's measure has no reachable mechanism, so a worker dispatched to it either returns blocked or edits `reckon/_backends.py` outside its declared scope; the section must either take the dialect change into its scope and say whether the clive harness can carry an image at all, or state the refusal as the answer and measure the model by another route.",
+      "text": "\u00a713 sends the probe and the control \"through \u00a76's `--image` path\" on the local lane, but the clive dialect raises on any attached image \u2014 `class _CliveDialect(_ClaudeDialect)` at `reckon/_backends.py:2006` inherits `_ClaudeDialect.argv`, whose first statement is `self._refuse_images(command, images)` at `reckon/_backends.py:1594`; reproduced: `dialect_for({\"command\": \"clive\"}).argv(command=\"clive\", backend={}, worktree=\"/tmp\", working_directory=\"/tmp\", final_message_path=None, resume_session=None, images=[\"/tmp/x.png\"])` returns `BackendError: the 'clive' dialect cannot carry attached images, so 1 figure(s) would be dropped from the command line`, and \u00a76's own landed done-when (line 215) asserts exactly this refusal \u2014 so the probe cannot be launched, and \u00a713's write paths (`docs/state/reckon/flight.yaml`, `tests/test_codex_declares_image_input.py`) exclude the dialect file that would have to change for it to be",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:257",
+      "id": "done_when-1",
+      "reason": "the gate's failing branch is the branch this node will actually take, and it would be closed on evidence that does not support the conclusion recorded, which is the same \"review that reports a judgement it could not have formed\" defect the plan exists to remove; the done-when needs an arm that shows the image reached the model (or an explicit statement that it cannot on this lane).",
+      "text": "the declared negative control is the image-withheld run, which discriminates an answer derived from the prompt and nothing else, so a `NO IMAGE RECEIVED` from the probe cannot be attributed between a lane that ignores the figure and a pipeline that never delivered it; \u00a713's \"If not, nothing is declared, and the result is recorded with what the lane answered\" (line 255) then records a delivery failure as a statement about the model",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "53ec53e5d232f95880307f53e9234da4f64394d4621cb1cae7670b01b42eedfa",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 74,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261020T210311028787-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "95e14a20832e07ea56dbb075967daef891954659",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every path \u00a713 cites resolves in the worktree: `docs/figures/unreviewed-promotion-exposure/exposure_counts.png` and `exposure_counts.py` exist, `docs/state/reckon/flight.yaml` exists and declares `input_modalities: [text, image]` under `codex` only, `tests/test_codex_declares_image_input.py` exists, and the quoted API-400 text it attributes to `artifact-feeds-and-reader` is at `docs/plans/artifact-feeds-and-reader.html:281`; the document's archive anchors `s1`\u2013`s12` all resolve in `docs/evidence/archive/a-review-can-see-the-figure-landed.html`.",
+    "done_when": "a finding \u2014 \u00a713's only control is the image-withheld run, which controls the prompt path alone, so the fail-closed branch (\"If not, nothing is declared\", line 255) closes green on a `NO IMAGE RECEIVED` that \u00a76's own landed done-when (line 215, \"The same node on a clive backend is refused with the lane named\") shows can be produced by the harness rather than by the lane, because the clive dialect raises before launch on any attached image.",
+    "evidence_paths": "pass \u2014 \u00a713 writes logs under the run directory and names `docs/state/reckon/flight.yaml` and `tests/test_codex_declares_image_input.py` as its write paths; none of these is a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 neither the \u00a713 heading nor its body carries a plan label, stage name, ticket number or version tag into a symbol or comment, and the meta edit is a version bump (`73`\u2192`74`) with a matching `s13: implementable` declaration.",
+    "reasoning": "a finding \u2014 \u00a713's mechanism does not run on the real code path: it routes the probe \"through \u00a76's `--image` path\" on the local lane (line 255), but the clive dialect refuses any non-empty image list, so the probe raises before the model is reached and the verbatim answers the done-when requires cannot be produced by any caller within the section's write paths.",
+    "single_goal": "pass \u2014 \u00a713 carries one deliverable, a measured verdict on whether the local lane receives an image plus the declaration that verdict licenses.",
+    "wiring": "pass \u2014 the plan declares `plan-informs scoring-should-stop-a-promotion` (line 21), which resolves to `docs/plans/scoring-should-stop-a-promotion.html`, and \u00a713's need for \u00a76's `--image` path is an intra-plan dependency stated in its own text, so no cross-plan edge is missing."
+  },
+  "section_digests": {
+    "_document": "b2ac12e22a62f1a04b381606e910962e4836edc1958594c258fdf7587d8d0380",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s10": "aee314dbe26192cd678dc467a9b229b8cb46873cacefcd4ce369fcbe469a1e37",
+    "s11": "22d519df0a82a0edfb23ceef10d63c14a08f3d8d656ce95a4cd03e5049d4e228",
+    "s12": "234f9999257c9e64bf69518cdf0b98e319850465374deeac091e90b1ed118647",
+    "s13": "fb73530b88c97d65ba9e8d09641c55f21cf97cc380da2a1562b3520590280517",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "ce9705dbaad70ab2b3a9425eead9900cc284deb7f1d5ecacb553d3745679b3d7",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a",
+    "s8": "2c200fdd964f328342811e9362e4cd14da60f3c8352368899ccf87797d9e7f5b",
+    "s9": "b62ffeb55dd71d5f62b49f372e069f227a57c7caec9c6c3b45f81a945d284e11"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T21:47:16.766434+00:00"
+}
