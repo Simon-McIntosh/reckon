@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_derivation": "added_failure_count is the after arm minus the base arm from the reviewed run's own gate logs: baseline-suite.log (e18f609b2, 87 passed, 0 failed, EXIT=0, completed true) against after-suite.log (325a5df12, 99 passed, 0 failed, EXIT=0, completed true). Both arms ran to their summary line, so the delta is zero added failures and the increase of twelve tests is exactly the node's own new checks, as new-tests-head.log records (12 passed, EXIT=0). The reviewed head 9e346b0d1 is one comment-only commit past the after arm; the node re-ran its own test file at that head (node-tests-style-fix.log, 12 passed, EXIT=0).",
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_follow_commands.py:329",
+    "reckon/crew_follow_commands.py:511",
+    "reckon/crew/queue_admission.py:525",
+    "reckon/served_code.py:742"
+  ],
+  "completed_at": "2026-10-19T23:57:39.417Z",
+  "dispatched_at": "2026-10-19T23:48:42Z",
+  "findings": [
+    {
+      "file": "reckon/checkout_trust.py",
+      "line": 83,
+      "severity": "follow-on",
+      "text": "This closes the prior review's fit finding at reckon/checkout_trust.py:83 (the plan-document reference) without a guard: the ban on plan references in source comments is enforced by the review check (the banned-prose grep returns no hit in any added line) rather than by a test, so a future edit could reintroduce the reference and no stored gate would redden. Worth recording because the remediation is a convention, not a mechanism."
+    },
+    {
+      "file": "manifest.md",
+      "line": 10,
+      "severity": "follow-on",
+      "text": "The reviewed run's after_suite arm was run at 325a5df12, one comment-only commit before the reviewed head 9e346b0d1; the full 13-file suite was not re-run at the head. The gap is benign here because 9e346b0d1 changes only comment text and the node re-ran its own test file at the head (node-tests-style-fix.log, 12 passed, EXIT=0), so the comment-only claim is verified; the recording is noted so a reader does not read the after arm as taken at the head."
+    }
+  ],
+  "justifications": {
+    "durability": "The gained commit is comment-only and adds no assertions, so nothing can regress behaviourally; no stored gate asserts the plan reference is absent (that ban is enforced by review discipline, not by tests/test_a_moved_checkout_is_proved_importable_once.py), so the remediation is not itself guarded.",
+    "evidence": "The head-arm result is recorded in node-tests-style-fix.log (rev=9e346b0d1, 12 passed, EXIT=0) and the node's own arm delta is in baseline-suite.log (87 passed) against after-suite.log (99 passed, EXIT=0), so the numbers are logged rather than claimed.",
+    "fit": "reckon/checkout_trust.py:83-87 follows the module's existing comment idiom, cites :func:`_images_ranked_for_pruning` which exists at reckon/checkout_trust.py:240, and the banned-prose check returns no hit in any added line (no plan/\u00a7/phase/stage/sprint token); ruff check on the file passes.",
+    "goal_fidelity": "reckon/checkout_trust.py:83-87 now reads 'Filing these two files outside the image instead would strand them: removing the image directory is what removes its verdict and its lock...', giving the mechanism with no plan reference, which is exactly what the gained commit states.",
+    "reuse": "The gained commit adds no definition, so it forks no capability; the earlier duplication of the published-image predicate is already resolved by published_reload_image at reckon/checkout_trust.py:783 being the single owner that :499, :512 and reckon/crew_follow_commands.py:297 call.",
+    "scope_discipline": "The 9e346b0d1 diff touches one file, reckon/checkout_trust.py, which is a declared write path (manifest.md:3) and carries nothing the gained commit's goal does not imply."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261019T234759174107-review-of-a-moved-checkout-is-proved-importable-once-9e346b0d13ce",
+  "reviewed_base_sha": "f0b7cc9940d659bcad71d3b9aeac78d618b2ac06",
+  "reviewed_head_sha": "9e346b0d13ced2fda3e2f60829dc491232665bf8",
+  "reviewed_run_id": "r-20261019T220614190732-a-moved-checkout-is-proved-importable-once",
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-19T23:57:39.933660+00:00",
+  "total": 112,
+  "verdicts": {
+    "diff": "Read commit by commit against f0b7cc994: 9e346b0d1 rewrites the comment block at reckon/checkout_trust.py:78-87 only, +5/-4, removing the plan-document reference and stating the stranding mechanism; nothing else changed.",
+    "done_when": "The done_when is \u00a711's five test bullets plus the sixteen-asker measurement and the broken-import negative control; the gained commit changes none of them (comment-only), and each is recorded: new-tests-head.log (12 passed, EXIT=0), sixteen-base.log (16 probes) against sixteen-change.log (1 probe), and negative-control-sixteen.log (16 refusals, 1 probe, 0 re-executions).",
+    "goal": "Read plan \u00a711 (docs/plans/the-fleet-node-stays-in-service.html:477) and the source node's manifest; the gained commit's goal is to state the stranding reason without naming the plan document, and reckon/checkout_trust.py:83-87 now gives the mechanism instead.",
+    "manifest": "Read; it records commits 785509df4, 167e407f4, 325a5df12, f0b7cc994 and 9e346b0d1, the paired arms (87/0 and 99/0), and names node-tests-style-fix.log for the head-arm rerun at 9e346b0d1.",
+    "write_paths": "The source node declared five paths (manifest.md:3); the gained diff changes only reckon/checkout_trust.py, inside that list."
+  }
+}
