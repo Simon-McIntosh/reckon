@@ -182,6 +182,20 @@
       only artifacts are this record and the figure.</p>
   </section>
 
+  <section id="s18">
+    <h2>§18 — A browser test copies only the state the page reads</h2>
+    <p><code>served_spa</code> in <code>tests/spa_browser_harness.py</code> copies the six index files the served page reads (<code>project.json</code>, <code>index.json</code>, <code>timeline.html</code>, <code>review.html</code>, <code>flight.yaml</code>, <code>model-catalogue.yaml</code>) into each test server's home. A test whose route reads another state file names it through <code>state_files</code>, and the harness raises when a named file is missing. Run <code>r-20261020T071210796009</code>, commits <code>66cba8d62</code>, <code>e72167676</code> and <code>34299339b</code>, merged at <code>322962f4e</code>.</p>
+<table>
+<thead><tr><th>Measure</th><th>Base</th><th>Head</th></tr></thead>
+<tbody>
+<tr><td>State copied per <code>served_spa</code> call (reckon)</td><td>438,673,931 B</td><td>162,311 B, seven files with one named extra</td></tr>
+<tr><td>Browser gate, six caller files</td><td>25 failed, 49 passed</td><td>24 failed, 51 passed; none added</td></tr>
+<tr><td>Wall time of that gate</td><td>241 s</td><td>295 s</td></tr>
+</tbody>
+</table>
+<p>The negative control restores the whole-tree copy, and the under-1-MB assertion fails at 438,673,931 B. The two wall times were taken concurrently on <code>98dci4-clu-2002</code> at a load average near 80, so they show no gain either way. What the change removes is the copying itself, about 4.4 GB across one run of the six files. The independent review scored 16 to 20 and raised two follow-ons, both exempted: a fixture missing one of the six default files is skipped, and the readiness probe retries on a socket timeout.</p>
+  </section>
+
 </main>
 </body>
 </html>
