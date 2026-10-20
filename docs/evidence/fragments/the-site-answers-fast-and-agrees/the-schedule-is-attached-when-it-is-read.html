@@ -11,7 +11,7 @@
       <tr><td>Ruff delta and formatting</td><td><code>route_results.py</code> stayed at zero findings; <code>serve.py</code> stayed at 17 existing findings; the new test had zero. All three changed Python files passed <code>ruff format --check</code>.</td></tr>
     </tbody>
   </table>
-  <p>The broader import and SPA gate stopped after 117 cases to expose failures early: 111 passed, one skipped, five failed. Four browser readiness failures reproduced with the same IDs on the base extraction. Its crew response timing case took 1.239 s under the broad run, then passed in 75 ms in the isolated scoped gate; the base arm also passed it. The coordinator's merged-head gate remains the complete population check.</p>
+  <p>The complete 126-file import and SPA population at this head recorded 1,074 passed, one skipped and 22 failed. The base extraction ran the same 125 shared files and recorded 1,043 passed, one skipped, 43 failed and 14 errors; some base failures require files or repository metadata that the extraction did not carry. Twenty failure IDs overlapped. The two head-only IDs both reached the browser harness's navigation timeout boundary and passed when replayed individually on both the base and this head. The crew response timing case took 1.239 s in an earlier broad run, then passed in 75 ms in the scoped gate; the base arm passed it too. No added failure reproduced in an isolated check. The coordinator's merged-head gate remains the complete integration check.</p>
   <table id="the-schedule-is-attached-when-it-is-read-cost">
     <thead><tr><th>Stored inventory</th><th>Rows</th><th>Schedule bars</th><th>Five-read median</th><th>First read</th></tr></thead>
     <tbody>
