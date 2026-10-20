@@ -350,6 +350,42 @@ def _index_lock_held(repo: Path) -> bool:
     return (_git_dir(repo) / "index.lock").exists()
 
 
+def _run_waiting_out_a_held_index_lock(
+    repo: Path,
+    step: Callable[[int], subprocess.CompletedProcess[str]],
+    *,
+    attempts: int = DEFAULT_ATTEMPTS,
+    retry_seconds: float = DEFAULT_RETRY_SECONDS,
+    sleep: Callable[[float], None] = time.sleep,
+    on_retry: Callable[[int, subprocess.CompletedProcess[str]], None] | None = None,
+) -> tuple[subprocess.CompletedProcess[str], int]:
+    """Run ``step`` until it succeeds, a lock is not what refused it, or it runs out.
+
+    ``step`` is called with the number of the attempt, counting from one, and
+    returns the result of one git invocation. A failed result that left ``repo``
+    holding an ``index.lock`` is retried after ``retry_seconds``, up to
+    ``attempts`` calls in total, so a lock that is never released ends in the
+    caller's refusal rather than a wait that never ends. ``on_retry`` is called
+    with the number of retries made so far and the result that failed, before
+    each wait, which is where a caller records the retry.
+
+    Returns the last result with the number of retries made, so a caller that
+    reports a lock that outlasted the attempts and a caller that records its
+    retries both read one count from one place. The lock is read from the
+    checkout's own ``index.lock`` rather than from the failing command's text,
+    because that file is what the next attempt waits for.
+    """
+    retries = 0
+    result = step(1)
+    while result.returncode != 0 and retries + 1 < attempts and _index_lock_held(repo):
+        retries += 1
+        if on_retry is not None:
+            on_retry(retries, result)
+        sleep(retry_seconds)
+        result = step(retries + 1)
+    return result, retries
+
+
 def _current_branch(repo: Path) -> str:
     result = _run(repo, "symbolic-ref", "--quiet", "--short", "HEAD")
     branch = result.stdout.strip()
@@ -485,7 +521,10 @@ def land_merge(
         if candidate is None:
             _compose_message(message, body)
         base = commit = ""
-        for attempt in range(1, attempts + 1):
+
+        def step(_attempt: int) -> subprocess.CompletedProcess[str]:
+            """Rebuild the merge, run a caller's check on it, and try to land it."""
+            nonlocal base, commit
             base = _rev_parse(repo, "HEAD")
             if candidate is not None:
                 commit = _rev_parse(repo, candidate)
@@ -500,31 +539,39 @@ def land_merge(
 
             # The seam runs before the branch moves, so what a caller refuses
             # here has touched neither the branch nor the remote. It is inside
-            # the loop because a retry rebuilds the commit against a fresh HEAD
+            # the step because a retry rebuilds the commit against a fresh HEAD
             # and the new commit is what must be judged.
             if verify is not None:
                 verify(repo, base, head_sha, commit)
 
-            result = _run(repo, "merge", "--ff-only", commit)
+            return _run(repo, "merge", "--ff-only", commit)
+
+        remaining = attempts
+        while remaining > 0:
+            result, retries = _run_waiting_out_a_held_index_lock(
+                repo,
+                step,
+                attempts=remaining,
+                retry_seconds=retry_seconds,
+                sleep=sleep,
+            )
+            remaining -= retries + 1
             if result.returncode == 0:
                 break
             if _index_lock_held(repo):
-                if attempt == attempts:
-                    raise MergeError(
-                        "the checkout's index.lock stayed held for "
-                        f"{attempts} attempts; nothing was written"
-                    )
-                sleep(retry_seconds)
-                continue
+                raise MergeError(
+                    "the checkout's index.lock stayed held for "
+                    f"{attempts} attempts; nothing was written"
+                )
             if _rev_parse(repo, "HEAD") != base:
-                if attempt == attempts:
+                if remaining <= 0:
                     raise MergeError("HEAD moved on each attempt; nothing was written")
                 continue
             raise MergeError(
                 "could not fast-forward: "
                 + (result.stderr.strip() or result.stdout.strip())
             )
-        else:  # pragma: no cover - the loop raises or breaks
+        else:  # pragma: no cover - every path above raises or breaks
             raise MergeError(f"could not land after {attempts} attempts")
 
         landed = _rev_parse(repo, commit)

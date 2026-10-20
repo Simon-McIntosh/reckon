@@ -4,9 +4,9 @@ The landing staging makes one ``git add`` and refuses on any failure, so a
 transient ``index.lock`` a peer's git command holds for a moment turns an
 already-committed promotion into a failed verb. These cases hold a real
 ``.git/index.lock`` and drive the landing commit itself, so the wait and the
-refusal are the ones a coordinator reads. The short-hold case releases the
-lock from a timer so the retry a real peer would need is exercised; the
-long-hold case keeps it for the whole call.
+refusal are the ones a coordinator reads. The short-hold case releases the lock
+once the first retry is recorded, so the retry a real peer would need is
+exercised; the long-hold case keeps it for the whole call.
 """
 
 from __future__ import annotations
@@ -89,38 +89,18 @@ def _release_lock_after_first_retry(run_id: str, lock: Path) -> threading.Thread
     return thread
 
 
-class _AdvancingClock:
-    """A stand-in for the staging's ``time``, handing out fixed readings.
-
-    The retry window is wall-clock, so a case that proves the window expires
-    would have to wait for it and would race a slow ``git add``. Handing the
-    loop a start, a reading inside the window and then one past it exercises
-    the same deadline logic with no wait and no dependence on load.
-    """
-
-    def __init__(self, readings: list[float]) -> None:
-        self._readings = iter(readings)
-
-    def monotonic(self) -> float:
-        return next(self._readings, 1_000.0)
-
-    def sleep(self, _seconds: float) -> None:
-        return None
-
-
 def test_a_landing_write_waits_out_a_briefly_held_lock(repository, monkeypatch):
-    """A lock released within the window is waited out and the write commits.
+    """A lock released while the retries last is waited out and the write commits.
 
     The lock refuses the first staging attempt. It is released once that retry
-    has been recorded, while the retry window is still open, so the next
-    attempt stages and the landing commits. Each retry is recorded on the run's
-    landing record, and the commit itself is recorded as committed.
+    has been recorded, so the next attempt stages and the landing commits. Each
+    retry is recorded on the run's landing record, and the commit itself is
+    recorded as committed.
     """
     root, plan = repository
-    # The window is widened so a slow git call under load cannot end the wait
-    # before the lock is released; what bounds this case is the release, not
-    # the clock.
-    monkeypatch.setattr(promotion_scope, "_INDEX_LOCK_RETRY_WINDOW_SECONDS", 600.0)
+    # The attempt budget is widened so a slow git call under load cannot use it
+    # up before the lock is released; what bounds this case is the release.
+    monkeypatch.setattr(promotion_scope, "_INDEX_LOCK_RETRY_ATTEMPTS", 600)
     monkeypatch.setattr(promotion_scope, "_INDEX_LOCK_RETRY_INTERVAL_SECONDS", 0.02)
     plan.write_text("landing narrative the promotion writes\n", encoding="utf-8")
     lock = _hold_index_lock(root)
@@ -138,7 +118,7 @@ def test_a_landing_write_waits_out_a_briefly_held_lock(repository, monkeypatch):
             lock.unlink()
 
     assert result["committed"] is True, (
-        "a lock released within the retry window must not refuse the landing"
+        "a lock released while the retries last must not refuse the landing"
     )
     assert (
         _git(root, "log", "-1", "--format=%s").stdout.strip()
@@ -152,17 +132,17 @@ def test_a_landing_write_waits_out_a_briefly_held_lock(repository, monkeypatch):
     ), "the landing record must carry the commit this wait produced"
 
 
-def test_a_lock_held_past_the_window_refuses_naming_the_lock(repository, monkeypatch):
-    """A lock held for the whole window refuses, and the refusal names it.
+def test_a_lock_held_past_the_attempts_refuses_naming_the_lock(repository, monkeypatch):
+    """A lock held for every attempt refuses, and the refusal names it.
 
-    The clock hands out a start, a reading inside the window and then one past
-    it, so the staging retries once and returns the failing result on the next
-    attempt. The lock never clears, so the landing refuses; the refusal names
-    the lock, the retry is recorded, and the final refusal is recorded at step
-    ``stage``.
+    The lock is never released, so the staging uses up its attempts and returns
+    the failing result. The landing refuses; the refusal names the lock, the
+    retries are recorded, and the final refusal is recorded at step ``stage``.
+    The attempt count is shrunk so the case spends seconds at most.
     """
     root, plan = repository
-    monkeypatch.setattr(promotion_scope, "time", _AdvancingClock([0.0, 1.0, 100.0]))
+    monkeypatch.setattr(promotion_scope, "_INDEX_LOCK_RETRY_ATTEMPTS", 3)
+    monkeypatch.setattr(promotion_scope, "_INDEX_LOCK_RETRY_INTERVAL_SECONDS", 0.02)
     plan.write_text("landing narrative the promotion writes\n", encoding="utf-8")
     lock = _hold_index_lock(root)
     try:
@@ -180,17 +160,19 @@ def test_a_lock_held_past_the_window_refuses_naming_the_lock(repository, monkeyp
         "the refusal must name the lock the landing waited on"
     )
     entries = _landing_entries(RUN)
-    assert any(entry.get("step") == "stage_retry" for entry in entries), (
-        "a lock held past the window still records its retries"
-    )
+    retries = [entry for entry in entries if entry.get("step") == "stage_retry"]
+    assert retries, "a lock held past the attempts still records its retries"
+    assert [entry["attempt"] for entry in retries] == list(range(1, len(retries) + 1))
     assert entries[-1]["step"] == "stage", "the final refusal is recorded at step stage"
 
 
-def test_a_staging_failure_naming_no_lock_refuses_on_its_first_attempt(repository):
-    """A staging failure that names no lock is not retried.
+def test_a_staging_failure_that_leaves_no_lock_refuses_on_its_first_attempt(
+    repository,
+):
+    """A staging failure that leaves no lock behind is not retried.
 
-    An unreadable file makes ``git add`` fail with a message about the file,
-    not a lock. The landing refuses at once: no retry is recorded, and the
+    An unreadable file makes ``git add`` fail with no ``index.lock`` left in
+    the checkout. The landing refuses at once: no retry is recorded, and the
     refusal is recorded at step ``stage``.
     """
     root, plan = repository
@@ -209,6 +191,6 @@ def test_a_staging_failure_naming_no_lock_refuses_on_its_first_attempt(repositor
 
     entries = _landing_entries(RUN)
     assert not [entry for entry in entries if entry.get("step") == "stage_retry"], (
-        "a failure that names no lock must not be retried"
+        "a failure that leaves no lock behind must not be retried"
     )
     assert any(entry.get("step") == "stage" for entry in entries)
