@@ -19,11 +19,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="the-fleet-moves-to-a-new-node">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;}">
   <title>The Fleet Node Stays In Service | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="48">
+<meta name="plan-version" content="49">
 <meta name="plan-modified" content="2026-10-20">
 </head>
 <body>
@@ -531,7 +531,7 @@
     </p>
 
     <h2 id="s12">&sect;12 &mdash; A process table is read once per beat</h2>
-    <section data-reckon="section" data-id="s12" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s12" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="done" data-links=""></section>
     <p>
       At 02:07 on 20 October the imas-codex watch producer was using 90% of a CPU on
       clu-2002. Over 10 s it made 24,581 <code>openat</code> calls, 14,520 of which
@@ -757,7 +757,10 @@
     <div class="r-comment-body"><p>read each process's environment once per beat through a shared index keyed by pid, start tick and executable identity, the identity carrying the kernel's per-exec stack base so a process that re-execs the same binary is read afresh; 10 s strace of a three-run harness against a base arm shows 146,969 environ opens at 803 per scan at the base against 598 at 6 per scan at the change, with 1 skipped and 0 added failures across the paired suite (155-&gt;164 passed over the same 16 existing files plus the new one)</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261020T015625929449-review-of-a-process-table-is-read-once-per-beat-f34c4cfb7211" data-who="reckon-build" data-when="2026-10-20T02:07:24.525Z">
-    <div class="r-comment-body"><p>review of run r-20261020T002527311407-a-process-table-is-read-once-per-beat at head f34c4cfb72113bb9bfe1c986508878565253b024 against base e36a760d6e791bfe66c5c3ee86302d64c33f3ee8: six dimensions scored goal_fidelity 18, evidence 18, scope_discipline 20, durability 18, fit 19, reuse 20, with 0 added failures against the reviewed run&#x27;s own paired suite logs and one follow-on finding on tests/test_a_process_table_is_read_once_per_beat.py:306</p></div>
+    <div class="r-comment-body"><p>review of run r-20261020T002527311407-a-process-table-is-read-once-per-beat at head f34c4cfb72113bb9bfe1c986508878565253b024 against base e36a760d6e791bfe66c5c3ee86302d64c33f3ee8: six dimensions scored goal_fidelity 18, evidence 18, scope_discipline 20, durability 18, fit 19, reuse 20, with 0 added failures against the reviewed run's own paired suite logs and one follow-on finding on tests/test_a_process_table_is_read_once_per_beat.py:306</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-close-s12" data-who="reckon-build" data-when="2026-10-20T02:25:00Z">
+    <div class="r-comment-body"><p>§12 landed in merge <code>ebd179bfe</code> (head <code>f34c4cfb7</code>). The liveness read now answers every run from one per-beat index of process environments, keyed by pid, start tick, executable path and stack base. In a three-run harness on the fleet allocation, environment opens fell from 803 per scan to 6. Nine tests were added, and the paired suite shows no added failure. The final review gave 113/120. Two follow-ons are recorded, not scheduled. The producer still runs about one <code>git rev-parse --verify</code> a second, rechecking commits that cannot stop existing. And a freshly materialised reload image's first import proof compiles cold and can exceed the 30 s bound; at 03:29 the first probe timed out and the next passed in 14 s. <a href="/reckon/evidence/archive/the-fleet-node-stays-in-service-landed.html#s12">evidence</a></p></div>
 </div>
 </section>
 </main>
