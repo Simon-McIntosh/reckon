@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:1272 (crew_widen, whose eligibility reads _widen_folded_disposition at reckon/crew_run_commands.py:1214)",
+    "reckon/cli.py:530 (crew_widen re-exported onto the CLI surface as `reckon crew widen`)"
+  ],
+  "completed_at": "2026-10-20T02:52:42.039Z",
+  "dispatched_at": "2026-10-20T02:44:31Z",
+  "findings": [
+    {
+      "file": "logs/head_gate_new_case.log",
+      "line": 11,
+      "severity": "follow-on",
+      "text": "The log's second header block claims a run at 1a2b9237a over the ten-file gate, but the block is truncated: it stops mid-progress at '[ 92%]' and carries no pytest summary line and no 'EXIT=' line, so that arm reads as aborted and no exit status can be read from it. The manifest's after_suite rests on head_gate.log at f88058dc instead, so no claim is actually unsupported; the truncated block is a stale aborted run left in a declared test_logs path and should be removed or re-run to completion so a later reader is not misled."
+    }
+  ],
+  "justifications": {
+    "durability": "The added assertion at tests/test_a_folded_finding_widens_its_repair.py:381 reddens after deleting the guard at reckon/crew_run_commands.py:1167, as logs/negative_control_node_guard.log:9 records (1 failed, 5 passed, EXIT=1), and it compares the CLI's reply against a fixture-supplied foreign node independent of the code's output.",
+    "evidence": "The gained commit's own arm is complete at logs/head_gate_new_case.log:1-8 (6 passed, EXIT=0) and the mutation control complete at logs/negative_control_node_guard.log:9 (1 failed, 5 passed, EXIT=1), but the log's second block at logs/head_gate_new_case.log:11 is truncated with no summary and no EXIT= line.",
+    "fit": "The new fixture and case at tests/test_a_folded_finding_widens_its_repair.py:277 extend the module's existing _run_pointer/_fold_entry/_widen idiom and carry the module's docstring style, with no plan, ticket or version label.",
+    "goal_fidelity": "tests/test_a_folded_finding_widens_its_repair.py:364 drives crew widen with a review folding a dimension into a foreign node and asserts refusal, which is exactly the node-name half of the goal that the prior review found uncovered.",
+    "reuse": "The gained commit adds no production definition; the new case reuses the module's existing _fold_entry, _run_pointer and _widen helpers rather than forking them, and a search over tests/ and reckon/crew_run_commands.py found no other driver of a fold naming a foreign node.",
+    "scope_discipline": "The gained commit's diff (f88058dc..1a2b9237a) changes only tests/test_a_folded_finding_widens_its_repair.py, inside the declared write paths, and alters no production file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to let crew widen accept a stopped complete run whose newest review record folds a dimension into the run's own node and to record the grant; the gained commit 1a2b9237a covers the goal's own-node half at tests/test_a_folded_finding_widens_its_repair.py:364.\nVERDICT done_when: the source done-when names tests/test_a_folded_finding_widens_its_repair.py with a base arm, ruff and a declared negative control; the gained commit's arm is recorded at logs/head_gate_new_case.log:1-8 (6 passed EXIT=0) and the control at logs/negative_control_node_guard.log:9 (1 failed 5 passed EXIT=1).\nVERDICT write_paths: declared paths are reckon/crew_run_commands.py, tests/test_a_folded_finding_widens_its_repair.py, the landing fragment and the figures directory; the gained diff touches only the test file, inside them.\nVERDICT manifest: read; it records both commits, head 1 failed/308 passed against base 4 failed/305 passed, the negative-control log and note, measurement_module and measurement_cwd, and one shared failure under follow_ons.\nVERDICT diff: read against base f88058dca; the gained commit changes one file, adding ELSEWHERE_RUN_ID/OTHER_NODE_ID (tests/test_a_folded_finding_widens_its_repair.py:55), the folded_finding_naming_another_node fixture (:277) and test_a_fold_naming_another_node_does_not_widen_the_run (:364), and no production source.\nCALL_SITES: reckon/crew_run_commands.py:1272 (crew_widen, eligibility reads _widen_folded_disposition at reckon/crew_run_commands.py:1214), reckon/cli.py:530 (crew_widen on the CLI surface)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_folded_finding_widens_its_repair.py:364 drives crew widen with a fold naming a foreign node and asserts refusal, exactly the node-name half the prior review found uncovered.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gained commit's arm is complete at logs/head_gate_new_case.log:1-8 (6 passed EXIT=0) and the control at logs/negative_control_node_guard.log:9 (1 failed 5 passed EXIT=1), but the log's second block at logs/head_gate_new_case.log:11 is truncated with no EXIT=.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained diff f88058dc..1a2b9237a changes only tests/test_a_folded_finding_widens_its_repair.py, inside the declared write paths, and no production file.\nSCORE durability: 20\nJUSTIFICATION durability: the assertion at tests/test_a_folded_finding_widens_its_repair.py:381 reddens after deleting the guard at reckon/crew_run_commands.py:1167, as logs/negative_control_node_guard.log:9 shows, and compares the reply against a fixture-supplied foreign node independent of the code's output.\nSCORE fit: 20\nJUSTIFICATION fit: the fixture at tests/test_a_folded_finding_widens_its_repair.py:277 extends the module's _run_pointer/_fold_entry/_widen idiom and carries no plan, ticket or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained commit adds no production definition and reuses the module's _fold_entry, _run_pointer and _widen helpers; a search over tests/ and reckon/crew_run_commands.py found no other foreign-node fold driver.\nFINDING logs/head_gate_new_case.log:11 follow-on: the second header block claims a run at 1a2b9237a over the ten-file gate but is truncated mid-progress with no pytest summary and no EXIT= line, so that arm reads as aborted; the manifest rests on head_gate.log at f88058dc instead, leaving the block a stale unterminated run in a declared test_logs path.\n",
+  "review_run_id": "r-20261020T024244122920-review-of-a-folded-finding-widens-its-repair-1a2b9237a940",
+  "reviewed_base_sha": "f88058dca8324ac30ec8838981d2006311b11d57",
+  "reviewed_commit": "1a2b9237a940341ca9638ea8ba9a8d4ee14ff30e",
+  "reviewed_commits": [
+    "1a2b9237a940341ca9638ea8ba9a8d4ee14ff30e"
+  ],
+  "reviewed_head_sha": "1a2b9237a940341ca9638ea8ba9a8d4ee14ff30e",
+  "reviewed_run_id": "r-20261019T235023398874-a-folded-finding-widens-its-repair",
+  "scores": {
+    "durability": 20,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T04:50:00+00:00",
+  "total": 115,
+  "verdicts": {
+    "diff": "Read against base f88058dca; the gained commit 1a2b9237a changes exactly one file, adding ELSEWHERE_RUN_ID/OTHER_NODE_ID (tests/test_a_folded_finding_widens_its_repair.py:55-56), the folded_finding_naming_another_node fixture (:277) and test_a_fold_naming_another_node_does_not_widen_the_run (:364), and no production source.",
+    "done_when": "The source done-when names tests/test_a_folded_finding_widens_its_repair.py with a no-added-failure gate, a base arm, ruff and a declared negative control; the gained commit's own gate is the single-file run recorded at logs/head_gate_new_case.log:1-8 (6 passed, EXIT=0) and the guard-mutation control at logs/negative_control_node_guard.log:1-9 (1 failed, 5 passed, EXIT=1).",
+    "goal": "The source node's goal is to let crew widen accept a stopped, `complete` run whose newest review record folds a dimension into the run's own node and to record the grant against that disposition; the change under review is the commit it gained since its prior review (1a2b9237a), which adds the case covering the goal's \"the run's own node\" half at tests/test_a_folded_finding_widens_its_repair.py:364.",
+    "manifest": "Read; it records both commits (f88058dca and 1a2b9237a), the head gate 1 failed/308 passed against base 4 failed/305 passed, the negative-control log and note, measurement_module and measurement_cwd, and the single shared failure under follow_ons.",
+    "write_paths": "The source node's declared write paths are reckon/crew_run_commands.py, tests/test_a_folded_finding_widens_its_repair.py, docs/evidence/fragments/a-review-is-sized-to-its-risk/a-folded-finding-widens-its-repair.html and the figures directory; the gained commit touches only tests/test_a_folded_finding_widens_its_repair.py, which is inside them."
+  }
+}
