@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-20T17:22:02.082Z",
+  "dispatched_at": "2026-10-20T17:14:16Z",
+  "findings": [
+    {
+      "file": "tests/test_a_blocking_figure_finding_refuses_promotion.py",
+      "line": "134",
+      "severity": "follow-on",
+      "text": "follow-on: _dispose_the_figure_finding answers the finding by writing the disposition through review.store_review directly rather than through crew dispose, which the plan's done-when names. crew dispose cannot reach a figure finding today: its selection excludes figure records by rubric (reckon/crew/recovery_review_subject.py:140-144 nulls a stored record whose rubric is figure, and :150-152 does the same to the newest fallback), and review_dispositions.record_finding_disposition (reckon/crew/review_dispositions.py:438) calls review.stored_record with no rubric, whose rubric=None predicate (reckon/crew/review.py:2159-2160) returns only non-figure records. So the guard's 'a disposed finding no longer refuses' half is asserted against a hand-written disposition, not the production disposal route; the worker recorded this as a follow-on and was fenced out of the peer's recovery_review_subject.py path."
+    },
+    {
+      "file": "reckon/crew/promotion_checks.py",
+      "line": "568",
+      "severity": "follow-on",
+      "text": "follow-on: _newest_figure_review swallows OSError and ValueError and returns None, so an unreadable figure-review record (for example malformed JSON in the store) makes the guard report no finding and the promotion proceeds. The guard exists because a figure review otherwise protects nothing, and a store it cannot read is exactly the case where a blocking finding could sit unreported; returning None makes the new refusal fail open in the class of defect it was added to close. No test covers the unreadable-store branch."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make crew complete refuse a run whose newest figure review carries a blocking finding with no disposition, naming the figure and the finding; reckon/crew/promotion_checks.py:583 (_require_no_undisposed_blocking_figure_finding) reads the figure review through review.read_review(..., rubric=FIGURE_REVIEW_RUBRIC) at :565, takes its open blocking findings from repair.blocking_findings, and raises naming the figure path, its line and the finding's own claim, wired into the landing sweep at reckon/crew/promotion_checks.py:2064.\nVERDICT done_when: the done-when names tests/test_a_blocking_figure_finding_refuses_promotion.py; the manifest records that run and its result (4 passed, EXIT=0 in logs/gate-head.log at revision d8394706e), and its three cases are asserted at tests/test_a_blocking_figure_finding_refuses_promotion.py:155, :170 and :177; the disposal case is exercised by a direct store write rather than through crew dispose, which the plan names.\nVERDICT write_paths: read the manifest's declared paths (reckon/crew/promotion_checks.py, tests/test_a_blocking_figure_finding_refuses_promotion.py, docs/evidence/fragments/scoring-should-stop-a-promotion/a-blocking-figure-finding-refuses-promotion.html, docs/figures/scoring-should-stop-a-promotion/a-blocking-figure-finding-refuses-promotion); every path in the diff d8394706e..b91979eb6 is inside them and no other path is touched.\nVERDICT manifest: read; it states status complete, commits 02a433003 and b91979eb6, the gate as 4 passed EXIT=0 at logs/gate-head.log, and the declared negative control at logs/negative-control.log with 2 failed EXIT=1.\nVERDICT diff: read commit by commit against the base d8394706e; 02a433003 adds the guard and its call in reckon/crew/promotion_checks.py, b91979eb6 adds the test file and the landing fragment, 432 insertions across three files and no deletions.\nCALL_SITES: reckon/crew/promotion.py:475 (promotion.complete._landing_gate calls _landing_preconditions), reckon/crew/promotion.py:1151 (promotion._complete_locked calls _landing_preconditions), reckon/crew/promotion_checks.py:2064 (the guard called from _landing_preconditions)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_checks.py:583-599 raises with the figure path, its line and the finding's text, and a run with no figure review returns before any refusal (:590-592).\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/gate-head.log records 4 passed EXIT=0 for the named test, but its disposal case is answered by a direct store write rather than through crew dispose, the route the done-when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff d8394706e..b91979eb6 touches only reckon/crew/promotion_checks.py, tests/test_a_blocking_figure_finding_refuses_promotion.py and the declared landing fragment.\nSCORE durability: 18\nJUSTIFICATION durability: logs/negative-control.log shows the declared mutation leaving the figure review out of the promotion read reddens tests/test_a_blocking_figure_finding_refuses_promotion.py:162 and :208 with DID NOT RAISE CrewError, 2 failed EXIT=1.\nSCORE fit: 18\nJUSTIFICATION fit: the helper names follow the module's mechanism-named guards and its in-function imports (reckon/crew/promotion_checks.py:565, :596) match the eleven lazy imports the module already uses.\nSCORE reuse: 20\nJUSTIFICATION reuse: the guard extends the owners rather than forking them, reading through reckon/crew/review.py:3942 read_review with FIGURE_REVIEW_RUBRIC and reckon/crew/repair.py:224 blocking_findings, and a search over reckon/ for a promotion-side figure-review or blocking-finding reader found none.\nFINDING tests/test_a_blocking_figure_finding_refuses_promotion.py:134 follow-on: the disposal case is answered by a direct store write rather than through crew dispose, which the plan's done-when names, because crew dispose's selection excludes figure records by rubric (reckon/crew/recovery_review_subject.py:140-144 and reckon/crew/review_dispositions.py:438).\nFINDING reckon/crew/promotion_checks.py:568 follow-on: _newest_figure_review returns None on an OSError or ValueError, so an unreadable figure-review record lets the promotion proceed with a blocking finding unreported.\n",
+  "review_run_id": "r-20261020T171330562881-review-of-a-blocking-figure-finding-refuses-promotion-b91979eb60d2",
+  "reviewed_base_sha": "d8394706ef9d1ccdfc727e0fa6b7a68ad54e901c",
+  "reviewed_head_sha": "b91979eb60d26d58254edb164a94778ec5fc3ee2",
+  "reviewed_run_id": "r-20261020T165831599907-a-blocking-figure-finding-refuses-promotion",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T20:42:28.215546+00:00",
+  "total": 110
+}
