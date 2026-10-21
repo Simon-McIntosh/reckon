@@ -5,11 +5,13 @@
 
   <p id="moved-checkout-serves-every-call-routing">
     <strong>The routing is the fix.</strong> <code>_refuse_when_stale</code> in
-    <code>reckon/mcp.py</code> served a call on the current code only once the
-    call had failed: <code>_SERVE_ON_CURRENT_CODE</code> recorded that, and was
-    read as the gate on every later call. A call that still worked on the
-    running image was therefore answered by the image, and after a landing that
-    answer was behaviour the tree no longer has, with nothing in it to say so.
+    <code>reckon/mcp.py</code> served a call on the current code only once that
+    call had failed: a set of tool names recorded the fallback, and was read as
+    the gate on every later call. A call that still worked on the running image
+    was therefore answered by the image, and after a landing that answer was
+    behaviour the tree no longer has, with nothing in it to say so. That record
+    is gone rather than narrowed — routing is decided per call from the tree's
+    state, not from a tool's history.
     Once the child is warm — its readiness probe has answered — and the tree is
     moved and trusted, every call is now routed to it, writes included and from
     a tool's first call: a successful write answered by the running image is
@@ -25,11 +27,15 @@
   <p id="moved-checkout-serves-every-call-raised">
     <strong>A raised failure while the child is cold.</strong> The guard's
     <code>except</code> re-raised, so a caller saw a crash where a returned
-    failure had carried both stamps and a remedy. A call that raises while the
-    tree is moved and trusted is now answered with
-    <code>stale_server_code</code>, <code>code_stamp_at_start</code>,
-    <code>code_stamp_now</code>, the reconnect remedy, and
-    <code>original_error</code> naming the exception that was raised.
+    failure had carried both stamps and a remedy. A call that raises is now
+    answered with <code>stale_server_code</code>,
+    <code>code_stamp_at_start</code>, <code>code_stamp_now</code>, the
+    reconnect remedy, and <code>original_error</code> naming the exception that
+    was raised. The catch is narrow, and the narrowness is the point: only a
+    raise the running image answers for becomes that refusal, which is a call
+    made while the child is still cold. A warm child's read that falls back to
+    the image and raises keeps its own failure, because the refusal claims the
+    current code was asked and could not answer — and here it was never asked.
   </p>
 
   <p id="moved-checkout-serves-every-call-embedded">
@@ -51,25 +57,30 @@
   </p>
 
   <p id="moved-checkout-serves-every-call-gate">
-    <strong>Gate.</strong> Seven cases in
+    <strong>Gate.</strong> Eight cases in
     <code>tests/test_a_moved_checkout_serves_every_call.py</code> run the guard
     in process against a temporary tree with a controllable child: a successful
     read served by the warm child and carrying its stamp, with the image's tool
     never called; an unmoved checkout serving in process and starting no child;
     a raised failure while the child is cold, answered with both stamps and the
-    remedy; the first write of a tool served by the warm child and carrying its
-    stamp, with the image never called; an embedded schema failure not passed
-    off as the image's successful answer, and carrying both stamps; an embedded
-    error that is not a schema failure left standing; and a schema error the
-    call reports in a field of its own left standing. That file and the five
-    neighbouring stale-code test files run as one gate, judged by failure delta
-    against the assembly base.
+    remedy; a raise from a call the warm child did not answer and the image ran,
+    left standing as the call's own failure; the first write of a tool served by
+    the warm child and carrying its stamp, with the image never called; an
+    embedded schema failure not passed off as the image's successful answer, and
+    carrying both stamps; an embedded error that is not a schema failure left
+    standing; and a schema error the call reports in a field of its own left
+    standing. The stamps those cases assert are read from the server that
+    started the child rather than from a constant the case injected, so an
+    answer carrying the image's stamp fails. That file and the five neighbouring
+    stale-code test files run as one gate, judged by failure delta against the
+    assembly base.
   </p>
 
   <p id="moved-checkout-serves-every-call-delta">
     <strong>The gate's delta, stated plainly.</strong> The gate reports one
-    failure at this head, against five at the base, so no failure is added: the
-    guard's own seven cases pass, and the slow-child case the write routing
+    failure at this head (34 passed), against five at the base (29 passed), so no
+    failure is added: the
+    guard's own eight cases pass, and the slow-child case the write routing
     moved passes with them.
     <code>test_a_slow_child_never_forces_a_reconnect.py::test_an_unanswered_write_says_it_may_have_landed</code>
     is the case the routing changed: it wrote to a child that answers its probe

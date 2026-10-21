@@ -545,7 +545,8 @@ def _unanswered_on_current_code(
     The current code did not run: its child was still cold, or made no answer
     within its bound. The failed call therefore keeps its own error code and
     detail — which is what the caller retries on — and gains the two stamps and
-    a note, rather than the reconnect refusal a non-answer used to become.
+    a note, rather than a reconnect refusal, which is for a call the current
+    code will not take over.
     """
 
     return {

@@ -1,9 +1,8 @@
 """A warm child serves every call on a moved checkout, not only the failed ones.
 
-The guard used to answer on the current code only after a call had failed: a
-call that still worked returned the running image's answer, which after a
-landing is behaviour the tree no longer has, and nothing in the answer said so.
-Once the checkout has moved and can be trusted and the child has answered its
+A call answered by the running image returns behaviour the tree no longer has,
+and nothing in that answer says so. Once the checkout has moved and can be
+trusted and the child has answered its
 readiness probe, every call of every tool is served by the child — writes
 included, from a tool's first call — so the answer carries
 ``served_by_code_stamp``. Two failures escaped the guard entirely and are
