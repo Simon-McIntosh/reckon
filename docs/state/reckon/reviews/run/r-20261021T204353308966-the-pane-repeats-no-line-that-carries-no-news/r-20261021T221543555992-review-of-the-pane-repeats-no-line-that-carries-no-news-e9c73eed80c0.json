@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_removed_flag_migration.py::test_the_delivery_path_itself_carries_no_state_filter"
+  ],
+  "added_failures_note": "derived from the reviewed run's own arm logs: gate-base-6d186434.log ends '3 failed, 387 passed' and gate-head-98616e44.log ends '4 failed, 389 passed', so the head arm adds the one id above, which the node's five-run repeats in each arm (repeat-head2 1/5 failing, repeat-base2 2/5 failing) show is a shared delivery-ordering race rather than this node's.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:3480",
+    "reckon/crew_follow_commands.py:2845",
+    "reckon/crew_follow_commands.py:1146",
+    "reckon/crew_follow_commands.py:2219",
+    "reckon/crew_follow_commands.py:3271"
+  ],
+  "completed_at": "2026-10-21T22:42:03.737Z",
+  "dispatched_at": "2026-10-21T22:16:57Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T204353308966-the-pane-repeats-no-line-that-carries-no-news/manifest.md",
+      "line": "20",
+      "severity": "follow-on",
+      "text": "follow-on: baseline_suite records \"failure_ids\": [] and no failure_count while gate-base-6d186434.log ends \"3 failed, 387 passed\", and after_suite at :21 records the same empty list against gate-head-98616e44.log ending \"4 failed, 389 passed\", so a reader deriving added failures from the manifest's own fields reads zero and misses the one id that differs; this review derives added_failure_count 1 from the logs, the extra id being tests/test_removed_flag_migration.py::test_the_delivery_path_itself_carries_no_state_filter, which the node's five-run repeats in each arm (repeat-head2 1/5 failing, repeat-base2 2/5 failing) show is a shared race and not this node's, matching the manifest's own failure_attribution."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T204353308966-the-pane-repeats-no-line-that-carries-no-news/manifest.md",
+      "line": "15",
+      "severity": "follow-on",
+      "text": "follow-on: the done_when's ruff clause (\"ruff check and ruff format --check add no findings on the changed files, judged against the base blobs\") has no run in test_logs, so a reader following the manifest cannot reach that evidence; this review verified the clause itself over the six changed files read as blobs at e9c73eed8 against the base blobs at 6d1864344 \u2014 reckon/crew_follow_commands.py carries the same two pre-existing findings in both (SIM103, SIM115), and the other five are clean \u2014 but the verification is the reviewer's, not the node's record."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read all three commits against 6d1864344; 7b9401d2 lands the cadence gate, the settle head and the tail in reckon/crew/needs_you.py and reckon/crew_follow_commands.py with five test files, 98616e44 bounds the drain wait at tests/test_follow_drain_line.py:55, and e9c73eed8 adds only the landing fragment.",
+    "done_when": "the done_when's four fake-clock cases are asserted at tests/test_follow_needs_you_line.py:299 and :319, tests/test_follow_drain_line.py:345 and tests/test_a_pane_settles_when_no_work_is_live.py:231, the unchanged non-empty cadence case at tests/test_follow_needs_you_line.py:358, and the arm comparison is recorded in gate-base-6d186434.log (3 failed, 387 passed, EXIT=1) against gate-head-98616e44.log (4 failed, 389 passed, EXIT=1).",
+    "goal": "read the node goal (\"Make the follower print its needs-you and settle summary lines only when they carry news\") against the plan's s76 deliverable at docs/plans/the-monitor-shows-the-work-it-watches.html:619-645; reckon/crew_follow_commands.py:2207-2213 gates the empty line on a set the pane was shown, :1115-1118 drops the pane's own session id from the settle head, :2845 hands the shown signature to the row, and reckon/crew/needs_you.py:244-269 suppresses the tail when it repeats the last standing line, so all four clauses landed.",
+    "manifest": "read; it records status complete, the three commits, the negative control with its red log, the measurement module and cwd, but its baseline_suite and after_suite fields carry \"failure_ids\": [] with no failure_count on lines 20-21, contradicting the two gate logs they name, and no ruff log for the done_when's ruff clause.",
+    "write_paths": "read the fence (reckon/crew/needs_you.py, reckon/crew_follow_commands.py, the five test files and the landing fragment); git diff 6d1864344..e9c73eed8 touches exactly seven paths, every one inside the declaration, leaving the granted tests/test_a_foreign_producer_overrun_is_one_line.py and the granted figures directory untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_follow_drain_line.py:345 reddens if reckon/crew/needs_you.py:268 ignores the shown signature, tests/test_follow_needs_you_line.py:299 is the declared negative control (negative-control-empty-set-cadence.log, EXIT=1), and tests/test_a_pane_settles_when_no_work_is_live.py:231 reddens if the observed-session naming at reckon/crew_follow_commands.py:1116 is dropped.",
+    "evidence": "the gate command on the manifest's tests line ran in both arms with EXIT= recorded, but the manifest's own failure_ids fields are empty against logs reading 3 failed and 4 failed, and the done_when's ruff clause has no run in test_logs.",
+    "fit": "the added names \u2014 shown_needs_signature at reckon/crew_follow_commands.py:2183, the shown and observed keywords at :1123-1127, and drain_tail's shown at reckon/crew/needs_you.py:244 \u2014 each name their mechanism and carry no plan label, ticket or version tag.",
+    "goal_fidelity": "every clause of docs/plans/the-monitor-shows-the-work-it-watches.html:633-637 is realised, the empty line firing once at reckon/crew_follow_commands.py:2209, the bare settle head at :1115-1118, and the tail comparison at reckon/crew/needs_you.py:266-269.",
+    "reuse": "reckon/crew/needs_you.py:266 compares through the existing needs_you_signature owner at :274 rather than a second identity function, and the capability search over reckon/ for set-identity memory found only unrelated populations (reckon/change_streams.py:480, reckon/crew_follow_commands.py:894, the row path's per-run reported map), none of which the addition forks.",
+    "scope_discipline": "every path in git diff 6d1864344..e9c73eed8 lies inside the declared write paths, including the always-permitted landing fragment added by e9c73eed8."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal (\"Make the follower print its needs-you and settle summary lines only when they carry news\") against the plan's s76 deliverable at docs/plans/the-monitor-shows-the-work-it-watches.html:619-645; reckon/crew_follow_commands.py:2207-2213 gates the empty line on a set the pane was shown, :1115-1118 drops the pane's own session id from the settle head, :2845 hands the shown signature to the row, and reckon/crew/needs_you.py:244-269 suppresses the tail when it repeats the last standing line, so all four clauses landed.\nVERDICT done_when: the done_when's four fake-clock cases are asserted at tests/test_follow_needs_you_line.py:299 and :319, tests/test_follow_drain_line.py:345 and tests/test_a_pane_settles_when_no_work_is_live.py:231, the unchanged non-empty cadence case at tests/test_follow_needs_you_line.py:358, and the arm comparison is recorded in gate-base-6d186434.log (3 failed, 387 passed, EXIT=1) against gate-head-98616e44.log (4 failed, 389 passed, EXIT=1).\nVERDICT write_paths: read the fence (reckon/crew/needs_you.py, reckon/crew_follow_commands.py, the five test files and the landing fragment); git diff 6d1864344..e9c73eed8 touches exactly seven paths, every one inside the declaration, leaving the granted tests/test_a_foreign_producer_overrun_is_one_line.py and the granted figures directory untouched.\nVERDICT manifest: read; it records status complete, the three commits, the negative control with its red log, the measurement module and cwd, but its baseline_suite and after_suite fields carry \"failure_ids\": [] with no failure_count on lines 20-21, contradicting the two gate logs they name, and no ruff log for the done_when's ruff clause.\nVERDICT diff: read all three commits against 6d1864344; 7b9401d2 lands the cadence gate, the settle head and the tail in reckon/crew/needs_you.py and reckon/crew_follow_commands.py with five test files, 98616e44 bounds the drain wait at tests/test_follow_drain_line.py:55, and e9c73eed8 adds only the landing fragment.\nCALL_SITES: reckon/crew_follow_commands.py:3480, reckon/crew_follow_commands.py:2845, reckon/crew_follow_commands.py:1146, reckon/crew_follow_commands.py:2219, reckon/crew_follow_commands.py:3271\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: every clause of docs/plans/the-monitor-shows-the-work-it-watches.html:633-637 is realised, the empty line firing once at reckon/crew_follow_commands.py:2209, the bare settle head at :1115-1118, and the tail comparison at reckon/crew/needs_you.py:266-269.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate command on the manifest's tests line ran in both arms with EXIT= recorded, but the manifest's own failure_ids fields are empty against logs reading 3 failed and 4 failed, and the done_when's ruff clause has no run in test_logs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff 6d1864344..e9c73eed8 lies inside the declared write paths, including the always-permitted landing fragment added by e9c73eed8.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_follow_drain_line.py:345 reddens if reckon/crew/needs_you.py:268 ignores the shown signature, tests/test_follow_needs_you_line.py:299 is the declared negative control (negative-control-empty-set-cadence.log, EXIT=1), and tests/test_a_pane_settles_when_no_work_is_live.py:231 reddens if the observed-session naming at reckon/crew_follow_commands.py:1116 is dropped.\nSCORE fit: 18\nJUSTIFICATION fit: the added names \u2014 shown_needs_signature at reckon/crew_follow_commands.py:2183, the shown and observed keywords at :1123-1127, and drain_tail's shown at reckon/crew/needs_you.py:244 \u2014 each name their mechanism and carry no plan label, ticket or version tag.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/needs_you.py:266 compares through the existing needs_you_signature owner at :274 rather than a second identity function, and the capability search over reckon/ for set-identity memory found only unrelated populations (reckon/change_streams.py:480, reckon/crew_follow_commands.py:894, the row path's per-run reported map), none of which the addition forks.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T204353308966-the-pane-repeats-no-line-that-carries-no-news/manifest.md:20 follow-on: baseline_suite records \"failure_ids\": [] and no failure_count while gate-base-6d186434.log ends \"3 failed, 387 passed\", and after_suite at :21 records the same empty list against gate-head-98616e44.log ending \"4 failed, 389 passed\", so a reader deriving added failures from the manifest's own fields reads zero and misses the one id that differs; this review derives added_failure_count 1 from the logs, the extra id being tests/test_removed_flag_migration.py::test_the_delivery_path_itself_carries_no_state_filter, which the node's five-run repeats in each arm (repeat-head2 1/5 failing, repeat-base2 2/5 failing) show is a shared race and not this node's, matching the manifest's own failure_attribution.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T204353308966-the-pane-repeats-no-line-that-carries-no-news/manifest.md:15 follow-on: the done_when's ruff clause (\"ruff check and ruff format --check add no findings on the changed files, judged against the base blobs\") has no run in test_logs, so a reader following the manifest cannot reach that evidence; this review verified the clause itself over the six changed files read as blobs at e9c73eed8 against the base blobs at 6d1864344 \u2014 reckon/crew_follow_commands.py carries the same two pre-existing findings in both (SIM103, SIM115), and the other five are clean \u2014 but the verification is the reviewer's, not the node's record.",
+  "review_run_id": "r-20261021T221543555992-review-of-the-pane-repeats-no-line-that-carries-no-news-e9c73eed80c0",
+  "reviewed_base_sha": "6d186434461c65c776d65017f401f58cb319d68c",
+  "reviewed_head_sha": "e9c73eed80c045b97c6f2e08ee1dae7532aac8cd",
+  "reviewed_run_id": "r-20261021T204353308966-the-pane-repeats-no-line-that-carries-no-news",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T22:46:56.301224+00:00",
+  "total": 109
+}
