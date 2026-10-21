@@ -134,6 +134,11 @@ for n in rank:
     <p>Landed at merge <code>abd5a87bd</code>, skill commit <code>cff57f15f</code>, on 2026-10-21. <code>skills/reckon-review/SKILL.md</code> gains a Tools table mapping each step to its MCP call, a §Links rule for plan and portfolio mode, and a closing rule for plans with no implementable section. <code>skills/reckon-review/references/links.md</code> holds the inventory list, the verdict table (keep, remove, narrow, convert, re-point), the evidence a new link needs, and the exact <code>edit_plan</code> ops, including that <code>after</code> has no op yet (§11).</p><p>Gate: <code>tests/test_skill_contracts.py</code>, 70 passed, on a detached worktree at <code>0791a946a</code> with the change applied. The first draft failed <code>test_review_skill_is_discovered_beside_the_other_reckon_skills</code> at 1,680 body words against the 1,500 bound. Moving the table and ops into the reference brought the body to 1,367 words.</p>
   </section>
 
+  <section id="s11">
+    <h2>§11 — after can be written through edit_plan</h2>
+    <p>Landed from run <code>r-20261021T115132248521-after-is-settable</code> at head <code>db71426be</code>. <code>after</code> joins the store's settable plan fields in <code>reckon/_store.py</code>, so a whole-list <code>set</code> replaces, empties or qualifies a plan's soft sequencing edges, validated by the plan ref grammar; an unparseable ref is refused naming it. <code>skills/reckon-review/references/links.md</code> now names the <code>set</code> rather than an announced hand edit. <code>tests/test_north_star_write.py</code>'s snapshot of the settable paths was widened to include <code>after</code>, a scope extension granted mid-run because the behaviour change supersedes it.</p><p>Gate: five test files, 98 passed, exit 0 (<code>head-arm-2.log</code>). The base arm fails the 4 new cases (<code>base-arm.log</code>), and the negative control, <code>after</code> removed from the settable fields, fails those 4 and the snapshot (<code>negative-control.log</code>). Independent review 110/120 with two follow-ons, both exempted with reasons. One was the fragment's plan-verdict meta reading <code>blocked</code>, corrected after landing.</p>
+  </section>
+
 </main>
 </body>
 </html>
