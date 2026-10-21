@@ -62,13 +62,25 @@
 
   <p id="the-flow-refreshes-from-its-own-route-poll">The crew view owns the fetch.
   <code>docs/ui/state-loader.js</code> holds <code>scheduleRunSignature</code>,
-  <code>scheduleFetchDue</code> and <code>refreshSchedule</code>: the signature is each run's
-  identity, project and phase, sorted; the due test is a moved signature or a minute
-  elapsed since the last fetch, whichever comes first; and the fetch replaces
-  <code>window.STATE.schedule</code>, or — when the route answers a null schedule beside
-  an error and one is already on screen — marks the held schedule stale with that error,
-  which is §10's rule applied to this route. Discovery's null schedule keeps its own
+  <code>scheduleFetchDue</code> and <code>refreshSchedule</code>: the signature is each of
+  this project's own runs' identity and phase, sorted; the due test is a moved signature or
+  a minute elapsed since the last fetch, whichever comes first; and the fetch replaces
+  <code>window.STATE.schedule</code>, or — when the route answers a null schedule beside an
+  error and one is already on screen — keeps that schedule and marks it stale with the
+  error, which is §10's rule applied to this route. Discovery's null schedule keeps its own
   anchor for the merge that cannot build one.</p>
+
+  <p id="the-flow-refreshes-from-its-own-route-own-runs">The signature selects one project's
+  runs because the poll does not. <code>/crew</code> answers every mount's rows, so it
+  carries the runs of every mounted project and their live crews; a signature written over
+  all of them moves when a run anywhere moves, and spends a request on a schedule that has
+  not changed — the waste this route exists to remove, multiplied by every live crew on the
+  workstation. The shell names the project it is fetching for, and the loader keeps only
+  that project's runs. A loader case reads both directions: another project's run moving
+  phase leaves the schedule not due and spends no request, this project's own run moving is
+  due and spends exactly one, and the unscoped signature is shown to have moved on the very
+  input the scoped one did not — so the case does not pass because the two run lists happen
+  to agree.</p>
 
   <p id="the-flow-refreshes-from-its-own-route-loader">A node loader case drives the real
   clock and the real <code>state-loader.js</code> against a recording fetch: the first
@@ -80,6 +92,15 @@
   discovery served. A render case then draws the replaced schedule and reads the newly
   working run's plan's bar as <code>in-flight</code>, with the earlier schedule as the
   control, so the replacement is shown to reach the picture.</p>
+
+  <p id="the-flow-refreshes-from-its-own-route-withheld">The failure branch has its own case.
+  When the route answers 200 with a null schedule and a <code>schedule_error</code>, the
+  schedule on screen is the last that was actually served, so it is kept and marked stale
+  with that error rather than emptied. The case holds a schedule, drives that answer, and
+  reads the kept object back: same object, same bars, same reference, with
+  <code>stale</code> set and the error carried — the reference matters because a schedule
+  that moved for a read that failed would be a different picture rather than the same one
+  aged.</p>
 
   <p id="the-flow-refreshes-from-its-own-route-shell"><code>docs/ui/shell.jsx</code> calls the fetch
   inside the poll it already makes, and only while the crew view is the visible one; the
@@ -117,17 +138,17 @@
   loader loses one call and gains three functions; the shell keeps one poll.</p>
 
   <p id="the-flow-refreshes-from-its-own-route-negative">The declared control is applied as
-  one edit set and kept as a log: restore the derived refetch on fleet events; neuter the
-  poll-driven fetch's due test so no poll asks; remove the shell's call; answer
-  <code>/_checks</code> in the served case; serve the schedule built for the first request
-  to every later one, which anchors both answers at one instant and keeps a run that went
-  live since the first out of the second. The crew-row control is its own mutation too: the
-  helper stops swallowing the failure, so it raises and the route answers 500 where the arm
-  requires 200. Eight cases redden — the seven whose controls they are, and one discovery
-  cache case that reddens only because the helper no longer swallows — and the log ends
-  <code>EXIT=1</code>, non-zero against the head arm's 27 passing. The reverse runs from a
-  trap, so it runs whether the cases pass or fail, and the log's git status line is empty:
-  the tree is identical to the head revision afterwards.</p>
+  one edit set and kept as a log, one mutation for each case the node's done-when names by
+  its control: restore the derived refetch on fleet events; neuter the poll-driven fetch's
+  due test so no poll asks; remove the shell's call; answer <code>/_checks</code> in the
+  served case; serve the schedule built for the first request to every later one, which
+  anchors both answers at one instant and keeps a run that went live since the first out of
+  the second; let the crew-row failure raise, so the route answers 500 where the arm
+  requires 200; keep every mount's runs in the signature; and drop the stale marking of a
+  kept schedule. Nine cases redden, each one its own mutation's, and the log ends
+  <code>EXIT=1</code> against the head arm's passing run. The reverse runs from a trap, so
+  it runs whether the cases pass or fail, and the log's git status line is empty: the tree
+  is identical to the head revision afterwards.</p>
 </article>
 </body>
 </html>
