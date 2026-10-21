@@ -1,0 +1,40 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T04:11:24.558Z",
+  "dispatched_at": "2026-10-21T04:00:41Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/budget-fits-a-worker-window.html:56",
+      "id": "reasoning-1",
+      "reason": "the worker must import back every moved name that staying code calls, not only the public ones, so \u00a72 needs one clause naming `_lift_history` (or keeping it in `budget.py`); otherwise the section's own gate fails for a reason the plan's mechanism, read literally, cannot avoid.",
+      "text": "\u00a72 moves `_lift_history` out of `budget.py` (\u00a72's \u00a7\"The cut\" list, line 44: \"the lift-reading helpers: `_other_session_lift`, `_lift_label`, `_lift_resolved_config`, `_lift_history`, \u2026\") while stating on line 56 that \"`budget.py` imports the moved public names from `reckon/pace_report.py` at module level, so they stay real bindings in `reckon.budget`\"; but at `76946f9a9` `preflight` (`reckon/budget.py:2096`) calls it by bare name inside its own module \u2014 `readings=_lift_history(pace_records, members=set(members), reading=reading, moment=moment)` at `reckon/budget.py:2181` \u2014 and `_lift_history` is private, so on the plan's own wording it is not among the names imported back, leaving the name unresolved in `budget.py`'s namespace and preflight raising `NameError`",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "9d1d7134fa440d726379a1c7874024fa4d519e1dfd7a31eae052f19b4c435592",
+  "plan_slug": "budget-fits-a-worker-window",
+  "plan_version": 5,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T034905691325-plan-review-of-budget-fits-a-worker-window",
+  "reviewed_blob_sha": "cfa7b4f6ca002acd0d6f0ba065a1ade8a4dfb514",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a78 of `every-module-fits-a-worker-window` says textually what \u00a72 now quotes (\"A produced module never imports the original at module level. An unavoidable back-reference uses the function-level import this codebase already uses for cycles.\"); `reckon/crew/budget_lift.py` holds `SESSION_PREFIX` (`:99`), `list_lifts` (`:537`) and `effective_budget` (`:553`) at `76946f9a9` as \u00a72's new attribution claims; `f-lamr-053` exists and is open in `lane-and-model-routing`; the extensionless href `/reckon/every-module-fits-a-worker-window` resolves as `<path>.html`.",
+    "done_when": "pass \u2014 \u00a72's done-when is a token bound measured by the guard it names (`tests/test_every_module_fits_a_worker_window.py` at the node's head, `reckon/budget.py` \u2264 45,000 tokens), and its negative control restores `budget.py`'s base content in a scratch copy and requires the width test to name it again.",
+    "evidence_paths": "pass \u2014 the section writes no evidence into a scratchpad; its gate is a test file run at the node's head and its record lands on the run's own manifest and logs under `~/.config/reckon/crew/runs/`, which survive the run.",
+    "naming": "pass \u2014 \u00a72's new text names mechanisms (`pace_report`, the record owner `crew/budget_lift.py`) and carries no plan label, ticket id or changelog prose.",
+    "reasoning": "a finding \u2014 the flipped import direction keeps preflight's bare-name calls working for the moved *public* names only, while a private moved helper that preflight itself calls by bare name is left with no binding.",
+    "single_goal": "pass \u2014 \u00a72 carries one deliverable: the pace and lift family moves out of `reckon/budget.py` so that module fits the worker window.",
+    "wiring": "pass \u2014 `plan-section-depends-on` gives s2 the edge `lane-and-model-routing#s46`, and the reciprocal edge resolves: `docs/plans/lane-and-model-routing.html` carries `\"s48\":[\"lane-and-model-routing#s46\",\"budget-fits-a-worker-window#s2\"]`, matching \u00a72's Sequence paragraph."
+  },
+  "section_digests": {
+    "_document": "1614740484dbfd4e03e69ff83d11c72be04e1fae29d5472772ec27bb7860cffd",
+    "s1": "91f7e14a7481fa744ec22eb7e159bd794bd7321583546aa5c1a8d090384d75c7",
+    "s2": "9bc4e39d541b07959e8f954385113a88fc09f6857d6cf043807967a3f55842dc"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T04:15:29.252026+00:00"
+}
