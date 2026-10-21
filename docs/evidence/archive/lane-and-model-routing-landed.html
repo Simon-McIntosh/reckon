@@ -547,6 +547,11 @@ base revision rather than against the head with the change reverted.</p>
     <p>The burn test's listing arm could read a peer's in-flight store temporary as a stray pointer. <code>reckon/_store.py</code> now owns the temporary's name through <code>_sibling_temporary_path</code>, used by the atomic write, and <code>is_store_temporary</code>. The listing arm and the two tests that had copied the check, <code>test_runs_pointer_writer_reuses_the_store.py</code> and <code>test_supervisor_write_reuses_the_store.py</code>, use it. The in-flight and stray-pointer cases run against a temporary home and never touch the real crew home. The coordinator ran the 115-file <code>reckon._store</code> importer population at base <code>d29118417</code> and head: 17 failures and 2 errors on both, none added. Review 114 after one repair round raised reuse from 8. Merged at <code>c02d7799b</code>.</p>
   </section>
 
+  <section id="s48">
+    <h2>§48 — a metered lane&#x27;s pace can be advice</h2>
+    <p>A flight can list budget groups in <code>budget.advisory_pace_groups</code>, a new key in the flight schema, empty by default and regenerated into <code>docs/_shared/flight.schema.json</code>. For a listed group, <code>effective_block</code> in <code>reckon/crew/budget_group.py</code> zeroes the resume, coordinator and bookend reserves after the lift and review-exclusion rules, so dispatch, resume prediction and the picker all read the same ceiling. <code>allowance_for_group</code> in <code>reckon/crew/pace.py</code> also marks the group's allowance advisory, and <code>pace_hold</code> in <code>reckon/pace_report.py</code> holds nothing for it. The exhausted-window stop and the credit-cap stop are unchanged, and an unlisted group keeps every hold and reserve. <code>tests/test_a_metered_lanes_pace_can_be_advice.py</code> asserts the five cases, and both negative controls fail as declared. Gate over the importers of <code>reckon.budget</code>, <code>reckon.pace_report</code>, <code>reckon.crew.budget_lift</code>, <code>reckon.crew.budget_group</code> and <code>reckon.crew.pace</code>: 15 failures at base, 11 at head, none added. The promotion record's gate command omits its targets; a git note on the promote commit gives the population file. Review 111 after one repair round. Merged at <code>80c618b0c</code>.</p>
+  </section>
+
 </main>
 </body>
 </html>
