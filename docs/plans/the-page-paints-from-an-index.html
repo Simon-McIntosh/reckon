@@ -23,7 +23,7 @@
   <title>The Page Paints From An Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="49">
+<meta name="plan-version" content="50">
 <meta name="plan-modified" content="2026-10-21">
 <meta name="plan-impl" content="0.86">
 <meta name="plan-section-depends-on" content="{&quot;s11&quot;:[&quot;the-page-paints-from-an-index#s10&quot;]}">
@@ -193,7 +193,7 @@
     pass's UTC window. It also records how long the port takes to accept a connection after the
     restart. The gate is hard: every <code>/_index</code> request answers 200 in under 1 s in both
     passes, and the port accepts a connection within 5 s of the restart. A slower request fails the
-    gate, and the report names it with a <code>py-spy dump</code> frame. The write path is the
+    gate, and the report names it with a <code>py-spy dump</code> frame. The negative control runs the same probe against a temporary <code>reckon serve</code> started with its file watcher armed before the port binds, as §2's control does, and the port gate fails there. The write path is the
     report under the session's reports directory.</p>
 
     <h2 id="s8">&sect;8 &mdash; Agent readers answer from the same index</h2>
@@ -239,7 +239,7 @@
 </ul>
 <p><strong>Done when</strong> each behaviour has its own test and its own negative control:</p>
 <ul>
-<li>A loader case in <code>tests/test_page_paints_from_the_index.py</code> loads a page off the home route whose discovery carries a schedule. It then revalidates with a stubbed fetch, in which <code>/_index</code> answers rows at once and <code>/_discover</code> answers a schedule after a delay. It asserts that every block <code>derivedBlocks</code> returns, together with the milestones and north stars, keeps its value on <code>window.STATE</code> after the index lands and is replaced only by the merge, never emptied in between. The kept key set is <code>window.DERIVED_STATE_KEYS</code>, which <code>state-loader.js</code> exposes once and both the revalidation and the test read, so the list is never written twice. Its control restores the wholesale replacement of <code>window.STATE</code>, and the never-empty assertion fails.</li>
+<li>A loader case in <code>tests/test_page_paints_from_the_index.py</code> loads a page off the home route whose discovery carries a schedule. It then revalidates with a stubbed fetch, in which <code>/_index</code> answers rows at once and <code>/_discover</code> answers a schedule after a delay. It asserts that every block <code>derivedBlocks</code> returns, together with the milestones and north stars, keeps its value on <code>window.STATE</code> after the index lands and is replaced only by the merge, never emptied in between. The test writes the kept keys out as literals: the schedule, the sprints and active-sprint fields, the ready set, endpoints, source format, resource versions, blockers, timeline, milestones and north stars. It asserts that <code>window.DERIVED_STATE_KEYS</code> equals that set, then checks every one of them, so a key the loader drops from its list fails the test. Its control restores the wholesale replacement of <code>window.STATE</code>, and the never-empty assertion fails.</li>
 <li>A second loader case answers discovery with a null schedule and a <code>schedule_error</code>. It asserts that the previous schedule is kept and marked stale with that error. Its control restores the overwrite with null, and the case fails. A case in <code>tests/test_spa_derived_flow.py</code> renders a stale schedule and asserts that both the bars and the stale line are drawn.</li>
 <li>A loader case holds <code>/_checks</code> unanswered and asserts that <code>reckon:derived</code> is dispatched once the merge lands. Its control removes the dispatch, and the case fails. A browser case on a served page delays <code>/_discover</code> and holds <code>/_checks</code> unanswered, and asserts that the derived flow is drawn after the merge.</li>
 </ul>
