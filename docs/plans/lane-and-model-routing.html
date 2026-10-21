@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="unattended-execution">
 <meta name="plan-impl" content="0.8823529411764706">
-<meta name="plan-version" content="328">
+<meta name="plan-version" content="329">
 <meta name="plan-modified" content="2026-10-21">
 <meta name="plan-commits" content="8d517e2a8775813f593e7168f5237bd4bb338fcf,d6bf49adc2ab44b3640182a1d3e8db0074909d62,5a93a1477648d72ea9e15571ed84101dfee33edc,26dc670d410b6f6779dc88c57f3865462f054c37">
 </head>
@@ -707,7 +707,7 @@ The test asserts the real crew home is untouched.</li>
 <p><strong>Write paths:</strong> <code>reckon/crew/dispatch_plan.py</code>, where the default budget is applied, the new <code>tests/test_a_bare_dispatch_names_a_fence_far_below_its_effort.py</code>, and the node's evidence fragment.</p>
 <p><strong>Done when</strong> all of these hold:</p>
 <ul>
-<li>The new test builds a temporary repository with a plan whose section declares six hours of effort, and a temporary crew home whose flight resolves the shipped eight-minute implement default. It asserts four cases. A bare implement dispatch of that section carries one warning naming six hours, 8m, its flight layer and <code>--time-budget</code>, in the dry-run result too. The same dispatch with <code>--time-budget 3h</code> carries none. A section declaring a quarter of an hour carries none. A node with no estimate carries none. The test asserts the real crew home is untouched.</li>
+<li>The new test builds a temporary repository with a plan whose section declares six hours of effort, and a temporary crew home whose flight resolves the shipped eight-minute implement default. It asserts five cases. A bare implement dispatch of that section carries one warning naming six hours, 8m, its flight layer and <code>--time-budget</code>, in the dry-run result too. Through the CLI, that same line is printed to stderr while stdout carries only the JSON document. The same dispatch with <code>--time-budget 1h</code>, a budget still under a quarter of the estimate, carries none, so the exemption for an explicit budget is measured on its own. A section declaring a quarter of an hour carries none. A node with no estimate carries none. The test asserts the real crew home is untouched.</li>
 <li>Run pytest in the foreground with <code>-rA</code> over the new file, every test file under <code>tests/</code> importing <code>reckon.crew.dispatch_plan</code>, and <code>tests/test_every_module_fits_a_worker_window.py</code>. It adds no failure against a base arm run at the dispatched base from a clean extraction. Both arms' logs go in the run directory, and the manifest's <code>baseline_suite</code> names the base log and its failure ids exactly as pytest prints them.</li>
 <li><code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths, judged against the base blobs, with the log in the run directory.</li>
 </ul>
