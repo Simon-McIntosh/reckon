@@ -1285,19 +1285,30 @@ def fence_writable_roots(
 ) -> list[Path]:
     """Return the declared roots that stay writable inside the fence.
 
-    A declared root at or above a shared delivery store is skipped by
-    :func:`fence_argv`'s grant loop rather than re-opening the whole store
-    through the seal; a root *beneath* one is the run's own declared path and
-    stays writable. The backend's own sandbox is composed around this same set
-    before the fence wraps the launch, and codex prepares each root it is told
-    writable — so it has to be handed only what the fence actually keeps
-    writable, or a root the fence holds read-only refuses the whole launch; see
-    :func:`shared_store_seal_roots`.
+    A declared root at or above a sealed root is skipped by
+    :func:`fence_argv`'s grant loop rather than re-opening the node temp root or
+    a shared delivery store through its seal; a root *beneath* a seal is the
+    run's own declared path and stays writable. The backend's own sandbox is
+    composed around this same set before the fence wraps the launch, and codex
+    prepares each root it is told writable — so it has to be handed only what
+    the fence actually keeps writable, or a root the fence holds read-only
+    refuses the whole launch.
+
+    Two kinds of root are sealed and so withheld here. The node's own ``/tmp``
+    is sealed read-only (:func:`node_tmp_seal_root`), so a launch that names it
+    writable — the ambient temp root :func:`reckon._backends.delivery_write_roots`
+    adds — must not be handed it; a root beneath it, such as the run's own
+    scratch or a runtime path the launch writes, is kept. The shared delivery
+    stores are sealed the same way (:func:`shared_store_seal_roots`), and a
+    declared path beneath one is kept.
 
     Each root is resolved the way the grant loop resolves it, so the two agree
-    on which store a root falls under even through a symlinked ancestry.
+    on which seal a root falls under even through a symlinked ancestry.
     """
     sealed = shared_store_seal_roots()
+    node_tmp = node_tmp_seal_root()
+    if node_tmp is not None:
+        sealed = [*sealed, node_tmp]
     roots: list[Path] = []
     for directory in writable_directories:
         target = resolved_destination(directory)

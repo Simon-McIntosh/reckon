@@ -1302,9 +1302,30 @@ class _CodexDialect(Dialect):
             # breaks the test runners and builds a worker's gate depends on.
             return ["--dangerously-bypass-approvals-and-sandbox"]
         if tier == READ_ONLY:
-            return ["--sandbox", WORKSPACE_WRITE, "--skip-git-repo-check"]
+            # Codex's workspace-write policy adds the node temp root to the
+            # writable set by default and protects a .git inside every root it
+            # holds, so it creates /tmp/.git there whatever roots reckon hands
+            # it - and the fence seals that path read-only, which makes every
+            # command in the run fail. The override keeps that root out of the
+            # dialect's writable set. TMPDIR stays a root: it is the run's own
+            # scratch, and the fence keeps it writable.
+            return [
+                "--sandbox",
+                WORKSPACE_WRITE,
+                "-c",
+                "sandbox_workspace_write.exclude_slash_tmp=true",
+                "--skip-git-repo-check",
+            ]
         if tier == WORKSPACE_WRITE:
-            return ["--sandbox", WORKSPACE_WRITE]
+            # Same policy, same contradiction: workspace-write adds the node
+            # temp root to the writable set and protects a .git inside every
+            # root it holds, and the fence seals that path read-only.
+            return [
+                "--sandbox",
+                WORKSPACE_WRITE,
+                "-c",
+                "sandbox_workspace_write.exclude_slash_tmp=true",
+            ]
         return ["--sandbox", READ_ONLY]
 
     def observe(
