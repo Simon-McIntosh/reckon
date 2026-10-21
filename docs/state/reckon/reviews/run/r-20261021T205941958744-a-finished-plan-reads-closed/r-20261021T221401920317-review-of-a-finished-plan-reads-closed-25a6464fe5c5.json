@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-21T22:34:19.159Z",
+  "dispatched_at": "2026-10-21T22:15:27Z",
+  "findings": [
+    {
+      "file": "tests/test_a_finishing_write_offers_its_close.py",
+      "line": "170",
+      "severity": "follow-on",
+      "text": "follow-on: the closed-case test exercises only the status \"shipped\", so a regression that narrows the branch at reckon/mcp_deadlines.py:676 to a single status, or that drops the historical/reference members of TERMINAL_STATUSES, still passes this gate, because no case keys on another terminal status. The membership is read from the owner (reckon/lifecycle.py:9) as intended, but the assertion does not make a narrowed membership redden."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T205941958744-a-finished-plan-reads-closed/gate.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the dispatch's done_when asks the gate log to show the closed case failing on the base commit, but gate.log records only the head arm (31 passed, EXIT=0) and its header names revision c5f72a43bba while the run carries the new tests; the base-behaviour failure is demonstrated by negative-control.log, which is a mutated head (terminal short-circuit disabled) rather than a run at the base revision, so the base arm is inferred from the mutation rather than measured at c5f72a43bba."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to return readiness closed on a declaration write to a plan whose status is already terminal, and the landed change adds _plan_status and a terminal short-circuit at reckon/mcp_deadlines.py:676 returning {\"readiness\": \"closed\", \"closure_blockers\": []}, which is exactly that deliverable.\nVERDICT done_when: the done_when's measure is that a declaration write on a terminal plan reads readiness closed with no readiness_error and a write on a live plan is unchanged, with the closed case failing on the base commit; tests/test_a_finishing_write_offers_its_close.py:162 and :183 assert both, and the manifest records the gate (31 passed, exit 0) and the declared-mutation arm (1 failed, exit 1).\nVERDICT write_paths: the manifest declares reckon/mcp_deadlines.py, tests/test_a_finishing_write_offers_its_close.py, docs/evidence/fragments/a-finished-plan-closes/a-finished-plan-reads-closed.html and a figures directory; git diff c5f72a43bba..25a6464fe touches exactly those three files and nothing else, every one inside the declared set, and writes no figure.\nVERDICT manifest: read; status complete, recording the gate 31 passed exit 0 at gate.log and the declared mutation 1 failed exit 1 in negative-control.log, with baseline_suite and after_suite null so the base arm is the mutated head rather than a run at the base revision.\nVERDICT diff: read commit by commit against base c5f72a43bba; one commit 25a6464fe adds _plan_status at reckon/mcp_deadlines.py:618 and the branch at :676 (+44/-2), adds a status kwarg and two tests to tests/test_a_finishing_write_offers_its_close.py (+42/-2) and a 25-line evidence fragment, 105 insertions and 6 deletions all inside scope.\nCALL_SITES: reckon/mcp_edit_plan.py:1711\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp_deadlines.py:676 returns readiness \"closed\" for a terminal status and leaves the roadmap lookup at :678 for live plans, which is the goal verbatim.\nSCORE evidence: 16\nJUSTIFICATION evidence: the manifest records gate.log 31 passed exit 0 at head and negative-control.log 1 failed exit 1, but baseline_suite and after_suite are null and the base-behaviour failure comes from a mutated head, not a run at c5f72a43bba.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff c5f72a43bba..25a6464fe changes only reckon/mcp_deadlines.py, tests/test_a_finishing_write_offers_its_close.py and docs/evidence/fragments/a-finished-plan-closes/a-finished-plan-reads-closed.html, all inside the declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_finishing_write_offers_its_close.py:178 asserts a fixed literal \"closed\" and the declared mutation at negative-control.log reddens it, but only the status \"shipped\" is exercised among the terminal statuses at :170.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/mcp_deadlines.py:618 follows the module's helper idiom with a documented bare-except and no plan, ticket or version identifier in its name or comments.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/mcp_deadlines.py:632 reads through _plan_html.read_state and _resolve_html_file as reckon/mcp_discovery.py:255 already does, and a search for an existing project/slug status reader found only reckon/_store.py:_status_before_the_patch, which takes a state dict and cannot read a worktree, so the helper wraps the owner rather than duplicating it.\nFINDING tests/test_a_finishing_write_offers_its_close.py:170 follow-on: the closed-case test exercises only the status \"shipped\", so a regression narrowing the branch at reckon/mcp_deadlines.py:676 to one status, or dropping the historical/reference members of TERMINAL_STATUSES, still passes this gate.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T205941958744-a-finished-plan-reads-closed/gate.log:1 follow-on: gate.log records only the head arm and its header names c5f72a43bba while the run carries the new tests, so the closed case's base-commit failure is inferred from the mutated head in negative-control.log rather than measured at c5f72a43bba.\n",
+  "review_run_id": "r-20261021T221401920317-review-of-a-finished-plan-reads-closed-25a6464fe5c5",
+  "reviewed_base_sha": "c5f72a43bba68950596b6a1a0a8ca220df2b7253",
+  "reviewed_head_sha": "25a6464fe5c5f3599a75721becc3fc748a972b57",
+  "reviewed_run_id": "r-20261021T205941958744-a-finished-plan-reads-closed",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T22:35:02.943570+00:00",
+  "total": 107
+}

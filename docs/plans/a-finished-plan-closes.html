@@ -25,8 +25,8 @@
   <title>A Finished Plan Closes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="20">
-<meta name="plan-modified" content="2026-10-21">
+<meta name="plan-version" content="21">
+<meta name="plan-modified" content="2026-10-22">
 </head>
 <body>
   <main class="plan-doc">
@@ -142,7 +142,10 @@
     <div class="r-comment-body"><p>Landed: a finishing write returns readiness closable with its closure_blockers; gate 36 passed; review 113/120. Evidence: <a href="/reckon/evidence/archive/a-finished-plan-closes-landed.html#s5">§5 landing record</a>.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261021T161646186730-a-finishing-write-offers-its-close" data-who="reckon-build" data-when="2026-10-21T17:55:04Z">
-    <div class="r-comment-body"><p>The edit_plan landing write (set section_declarations.&lt;id&gt;) now returns the plan&#x27;s readiness after the write beside its closure_blockers, read from the roadmap&#x27;s own row, so ticking a plan&#x27;s last implementable section answers readiness: closable with the close op in the same reply; gate 36 passed, exit 0, with three of the four cases failing on the base arm (3 failed, 1 passed).</p></div>
+    <div class="r-comment-body"><p>The edit_plan landing write (set section_declarations.&lt;id&gt;) now returns the plan's readiness after the write beside its closure_blockers, read from the roadmap's own row, so ticking a plan's last implementable section answers readiness: closable with the close op in the same reply; gate 36 passed, exit 0, with three of the four cases failing on the base arm (3 failed, 1 passed).</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261021T221401920317-review-of-a-finished-plan-reads-closed-25a6464fe5c5" data-who="reckon-build" data-when="2026-10-21T22:34:19.159Z">
+    <div class="r-comment-body"><p>Independent review of r-20261021T205941958744-a-finished-plan-reads-closed stored at its review-records/ (revision pair c5f72a43bba68950596b6a1a0a8ca220df2b7253 -&gt; 25a6464fe5c5f3599a75721becc3fc748a972b57): status parsed, all six dimensions scored (goal_fidelity 19, evidence 16, scope_discipline 20, durability 16, fit 18, reuse 18), added_failure_count 0 with no added failure ids, two follow-on findings and no blocking defect — the closed-case test at tests/test_a_finishing_write_offers_its_close.py:170 exercises only the status &quot;shipped&quot;, so a narrowed terminal-status membership would survive the gate, and the base-commit failure is demonstrated by a mutated head (negative-control.log) rather than a run at the base revision.</p></div>
 </div>
 </section>
 </main>
