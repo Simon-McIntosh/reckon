@@ -91,13 +91,27 @@ def _epoch(instant: str) -> int:
 
 
 def test_the_stated_command_prints_the_same_seconds_in_two_zones():
+    """The two readings agree within a second, and not merely within a zone.
+
+    Each run of the command reads the clock at its own instant, so two runs
+    that straddle a second boundary print figures one apart; that one second
+    carries no information about the zone. A zone-dependent command instead
+    differs by the offset, 3600 seconds or more, so the comparison tolerates
+    the straddle and still fails on any offset of an hour or more.
+    """
     statement = time_fence_statement(time_budget=BUDGET, launch_instant=LAUNCH)
     command = _stated_command(statement)
 
-    utc = _run(command, "UTC")
-    paris = _run(command, "Europe/Paris")
+    utc = _figures(_run(command, "UTC"))
+    paris = _figures(_run(command, "Europe/Paris"))
 
-    assert utc == paris, (
+    assert len(utc) == len(paris), (
+        "the command prints a different number of figures by zone (UTC "
+        f"{utc!r}, Paris {paris!r})"
+    )
+    assert utc, "the command prints no figure to compare"
+    drift = max(abs(a - b) for a, b in zip(utc, paris, strict=True))
+    assert drift <= 1, (
         "the command reads differently by zone, so a worker comparing one of "
         f"its readings to the deadline is wrong by the offset (UTC {utc!r}, "
         f"Paris {paris!r})"
