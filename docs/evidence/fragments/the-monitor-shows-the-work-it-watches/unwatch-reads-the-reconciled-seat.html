@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s70">
+  <title>Unwatch reads the reconciled seat — landing</title>
+</head>
+<body>
+<article id="unwatch-reads-the-reconciled-seat-landing" data-node="unwatch-reads-the-reconciled-seat" data-reckon="landed">
+  <h3 id="unwatch-reads-the-reconciled-seat-what">What changed</h3>
+  <p>
+    <code>unwatch</code> in <code>reckon/crew/recovery_watch.py</code> decided whether a held seat
+    was this project's from the raw seat record's <code>project</code> field. A producer rewrites
+    that record in place, truncating before it writes, so a reader in that window sees an emptied
+    record and took the absent name for a foreign registration: the refusal
+    <code>refusing to stop watcher for project 'sample': the locked registration names ''</code>.
+    The project, and the identity the stop needs, now come from the reconciled reading
+    <code>watch_state</code> uses — the live holder this project's lease names, with the pid start
+    time taken from the producer's registration beside the seat. A seat that positively names
+    another project, or a foreign host, is still refused, because that refusal is decided before
+    any reconciliation.
+  </p>
+  <h3 id="unwatch-reads-the-reconciled-seat-measure">Measure</h3>
+  <p>
+    <code>tests/test_unwatch_reads_the_reconciled_seat.py</code> holds a real producer in a
+    temporary crew home, empties its seat record, and finds <code>unwatch</code> stops it
+    (<code>stopped: True</code>, the producer exits); a seat naming another project is still
+    refused, and so is a seat naming a foreign host.
+  </p>
+  <p>
+    Head arm (<code>fc78de3e</code>): <strong>1 failed, 426 passed</strong> over the 50 test files
+    importing <code>test_unwatch_reads_the_reconciled_seat.py</code>'s module, <code>-n 8</code>.
+    The one failure, <code>test_a_producer_sweeps_only_on_change.py::test_quiet_cycles_list_nothing_and_spawn_no_git</code>,
+    is a load-sensitive git-spawn test that passes in isolation at head and whose sibling set fails
+    differently on every arm: the base arm (<code>f5e88d284</code>) fails four different ids of the
+    same family, including one the head arm passes.
+  </p>
+  <p>
+    Negative control: restoring the raw-registration check (<code>if registered_project != project</code>)
+    turns the first case red with exactly the message above — <code>EXIT=1</code>,
+    <code>1 failed, 2 passed</code>.
+  </p>
+</article>
+</body>
+</html>
