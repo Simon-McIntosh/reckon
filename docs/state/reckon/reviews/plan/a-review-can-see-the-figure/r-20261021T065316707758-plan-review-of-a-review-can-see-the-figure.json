@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T07:11:29.389Z",
+  "dispatched_at": "2026-10-21T06:57:58Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:271",
+      "id": "reasoning-1",
+      "reason": "a worker reading the sentence literally writes `plan.stdin_text` on a path where `plan` does not exist, breaking a live launch kind the section's done-when never exercises; the fix is to scope the sentence to the cli path (or name the guard).",
+      "text": "\u00a715's Change states that \"a fresh dispatch and a lane change write the run's prompt file from it\" (`plan.stdin_text`), but `reckon/crew/dispatch.py:2126` writes `prompt.txt` for every launch kind while the plan is composed only inside the `launch_kind == \"cli\"` branch at `:2079`/`:2423`, so on an `in-harness` launch \u2014 a launch kind `reckon/crew/dispatch_plan.py:451` accepts and `reckon/crew/dispatch_sessions.py:177` reads \u2014 there is no composed plan and no `stdin_text` to write from",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "6e123182cf0bf375d53ed1e1744353f814337ad14065b95eb57bc35906298942",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 93,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T065316707758-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "76885548666e8739e3550a12c695a41249564abc",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `Dialect.stdin_prompt` (`reckon/_backends.py:1056`), `plan.stdin_text` (`:2349`), `_prompt_naming_images` (`:2156`), `declares_image_input` (`:2141`), `_restate_time_fence` (`reckon/crew/dispatch_sessions.py:1617`), `_write_resume_prompt` (`reckon/crew/resumption.py:1205`), `IMAGE_MODALITY` (`reckon/_backends.py:143`) and `declared_input_modalities` (`reckon/flight.py:1953`) all resolve to what \u00a715 says of them.",
+    "done_when": "pass \u2014 \u00a715 declares a negative control that can fail (\"with the fresh dispatch writing the uncomposed prompt again, the fresh-dispatch naming test fails\") and every naming clause names a file a reader can open (`prompt.txt`, `lane-change-<n>-prompt.txt`).",
+    "evidence_paths": "pass \u2014 every log lands under the run directory, and \u00a715 requires each to name its revision and literal command and to end in `EXIT=`.",
+    "naming": "pass \u2014 the section names mechanisms (`_prompt_naming_images`, `declares_image_input`, `declared_input_modalities`) and carries no plan label, ticket number or version tag into code.",
+    "reasoning": "a finding \u2014 \u00a715's changed sentence sends the prompt-file write through `plan.stdin_text` on \"a fresh dispatch\", but the in-harness launch kind reaches that same write with no composed plan.",
+    "single_goal": "pass \u2014 the section's clauses all serve its one measure (the prompt file a worker reads carries its named figures), and it keeps the prompt-file composition, the replace-not-append listing and the declaration-read unification in one node working the same two files.",
+    "wiring": "pass \u2014 \u00a715's `depends-on` names \u00a714 and \u00a714's names \u00a713, both declared correctly in `plan-section-depends-on`, and `plan-informs` names `scoring-should-stop-a-promotion`, which resolves."
+  },
+  "section_digests": {
+    "_document": "db99e7e8ba0bdba6f31cede33de833186ac9f1f17051db2e5965a4c044ec104d",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s10": "aee314dbe26192cd678dc467a9b229b8cb46873cacefcd4ce369fcbe469a1e37",
+    "s11": "22d519df0a82a0edfb23ceef10d63c14a08f3d8d656ce95a4cd03e5049d4e228",
+    "s12": "234f9999257c9e64bf69518cdf0b98e319850465374deeac091e90b1ed118647",
+    "s13": "d2f0977c2749f5e1d4e28f3962e8b01a182615a0a75edb530e5e4fde18d9a123",
+    "s14": "f06507899a512533562b6d0b348e9b18bec6d1667d6e619d05352d7ce535eb7c",
+    "s15": "17ede42e4a135c2856a528db6f586b83c205a8e8a84039413dc50b199f2ab0dd",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "ce9705dbaad70ab2b3a9425eead9900cc284deb7f1d5ecacb553d3745679b3d7",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a",
+    "s8": "2c200fdd964f328342811e9362e4cd14da60f3c8352368899ccf87797d9e7f5b",
+    "s9": "b62ffeb55dd71d5f62b49f372e069f227a57c7caec9c6c3b45f81a945d284e11"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T07:14:06.339831+00:00"
+}
