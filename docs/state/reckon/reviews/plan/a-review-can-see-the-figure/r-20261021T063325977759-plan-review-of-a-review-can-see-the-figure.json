@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T06:48:50.048Z",
+  "dispatched_at": "2026-10-21T06:34:11Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:271",
+      "id": "reasoning-1",
+      "reason": "the worker is instructed to write the prompt file \"never from `stdin_text`\" on a premise the code contradicts, and a worker that follows the codex clause literally (making `stdin_text` empty for codex) would break the resume path, where `_write_resume_prompt` reads `plan.stdin_text` (`reckon/crew/resumption.py:1220`).",
+      "text": "\u00a715's Change states \"`stdin_text` stays empty for a dialect that does not take its prompt on stdin, and codex is one such dialect\", but `_CodexDialect` inherits `stdin_prompt = True` from `Dialect` (`reckon/_backends.py:1056`), so `launch_plan` sets `stdin_text=prompt` for codex (`reckon/_backends.py:2349`) and a direct codex launch returns the composed prompt in `stdin_text`; the field the plan tells the worker to avoid is the very carrier that already holds the composed prompt",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "0f7932be4e411fd78a88eac339ec043fa125e9d6fb1669b986ffdef477cdf4c0",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 92,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T063325977759-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "12be2054fa5f141c1268acc508d3e0f8a50cf54f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor resolves at the reviewed revision: `prompt_path.write_text(prompt)` at `reckon/crew/dispatch.py:2126`, `prompt_path.write_text(_restate_time_fence(...))` at `reckon/crew/dispatch_sessions.py:1920`, `_write_resume_prompt` at `reckon/crew/resumption.py:1205`, `IMAGE_MODALITY` at `reckon/_backends.py:143`, `_prompt_naming_images` at `:2156`, `declares_image_input` at `:2141`, `declared_input_modalities` at `reckon/flight.py:1953`, and all three cited test files exist.",
+    "done_when": "pass \u2014 each clause is measurable and the node names a negative control (\"with the fresh dispatch writing the uncomposed prompt again, the fresh-dispatch naming test fails\"); the codex no-listing clause is now paired with a clive\u2192codex lane-change clause whose listing is genuinely absent from the input, so it can fail.",
+    "evidence_paths": "pass \u2014 the section requires every log \"under the run directory\", a durable path under `--config/reckon/crew/runs/`, not a scratch or node-local temporary directory.",
+    "naming": "pass \u2014 the symbols the section touches (`declares_image_input`, `declared_input_modalities`, `_prompt_naming_images`, `IMAGE_MODALITY`) carry no plan labels, stage names or ticket numbers, and the section adds no changelog prose.",
+    "reasoning": "a finding \u2014 the section's premise that `plan.stdin_text` \"stays empty for a dialect that does not take its prompt on stdin, and codex is one such dialect\" is contradicted by the code: every dialect, codex included, inherits `stdin_prompt = True`, so the composed prompt is already on `plan.stdin_text` for codex.",
+    "single_goal": "pass \u2014 the section still bundles the prompt-file fix with the `IMAGE_MODALITY` comment correction and the declaration-reader unification, which an earlier review raised and the author declined; the plan's shape here is unchanged, so it is not re-raised.",
+    "wiring": "pass \u2014 \u00a715 declares its depends-on on \u00a714 in `plan-section-depends-on` (s14 landed), and every relationship it names (`reckon/crew/dispatch.py`, `reckon/crew/dispatch_sessions.py`, `reckon/_backends.py`, `reckon/flight.py`) resolves to a file that exists."
+  },
+  "section_digests": {
+    "_document": "db99e7e8ba0bdba6f31cede33de833186ac9f1f17051db2e5965a4c044ec104d",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s10": "aee314dbe26192cd678dc467a9b229b8cb46873cacefcd4ce369fcbe469a1e37",
+    "s11": "22d519df0a82a0edfb23ceef10d63c14a08f3d8d656ce95a4cd03e5049d4e228",
+    "s12": "234f9999257c9e64bf69518cdf0b98e319850465374deeac091e90b1ed118647",
+    "s13": "d2f0977c2749f5e1d4e28f3962e8b01a182615a0a75edb530e5e4fde18d9a123",
+    "s14": "f06507899a512533562b6d0b348e9b18bec6d1667d6e619d05352d7ce535eb7c",
+    "s15": "b72e7994de464e7e3b4a7319afe165b3d1580fc05af248149ff7cfff97813956",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "ce9705dbaad70ab2b3a9425eead9900cc284deb7f1d5ecacb553d3745679b3d7",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a",
+    "s8": "2c200fdd964f328342811e9362e4cd14da60f3c8352368899ccf87797d9e7f5b",
+    "s9": "b62ffeb55dd71d5f62b49f372e069f227a57c7caec9c6c3b45f81a945d284e11"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T06:51:12.582427+00:00"
+}
