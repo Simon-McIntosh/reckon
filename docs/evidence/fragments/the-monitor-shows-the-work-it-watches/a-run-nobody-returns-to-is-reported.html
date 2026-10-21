@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-title" content="A run nobody will come back to is reported, never capped">
+  <meta name="plan-summary" content="A terminal, unpromoted pointer whose owning session has had no follower and no dispatch for the threshold older than six hours is reported as a crew read view, derived in reckon/crew/forgotten_runs.py from the classifier and the follower-liveness and unattended-age readings the watcher's sweep already stands on. The list reports and never limits, and no dispatch module consults it.">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s10">
+  <meta name="plan-recorded-at" content="2026-10-21">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,forgotten,runs,read-view,follower-liveness">
+  <meta name="plan-node" content="a-run-nobody-returns-to-is-reported">
+  <title>A run nobody will come back to is reported — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-run-nobody-returns-to-is-reported" data-reckon="landed" data-when="2026-10-21">
+  <h2 id="a-run-nobody-returns-to-is-reported-heading">A run nobody will come back to is reported</h2>
+  <p id="a-run-nobody-returns-to-is-reported-what">A live pointer is <em>forgotten</em> when both hold: its classification is terminal and unpromoted — the classifier's <code>promotable</code>, <code>scoring</code>, <code>blocked</code> or <code>failed</code>, or the fleet verdict's <code>complete</code> or <code>abandoned</code> — and its owning session has had no live follower registration and no dispatch for a threshold defaulting to six hours. The derivation lives in <code>reckon/crew/forgotten_runs.py</code> and joins <code>classify_pointer</code> with <code>_follower_liveness</code> and <code>_unattended_seconds</code>, the two readings that until now drove only the watcher's sweep. It deliberately does not reuse <code>overdue_unreconciled_runs</code>: that list feeds the dispatch fence and refuses, while this one only reports. The threshold is a parameter of the derivation, and a pointer naming no session is judged by its own terminal age, because absence is not ownership.</p>
+  <p id="a-run-nobody-returns-to-is-reported-view">The list is served as a crew read view rather than a new verb — <code>crew(view="forgotten")</code> and <code>reckon crew view forgotten --project P</code> call the one function both surfaces share — and each row names the run, its node, its session, its classification, its unattended and terminal ages and the recovery the classifier already offers it.</p>
+  <p id="a-run-nobody-returns-to-is-reported-measure">Three pointers are built in a temporary <code>RECKON_HOME</code>: a complete run whose session holds a live follower registration, a complete run whose session has had neither follower nor dispatch for seven hours, and a running run under that same second session. <code>pytest tests/test_forgotten_runs_are_reported.py</code> — 4 cases — lists exactly the second, with its age and its recover action, and the derivation called at an eight-hour threshold lists nothing. The no-dispatch guard reads every <code>reckon/crew/dispatch*.py</code> module and finds neither the new module nor its function, and its positive control finds the name in <code>reckon/crew/forgotten_runs.py</code> by the same instrument, so the absence is a reading rather than a failed search.</p>
+  <p id="a-run-nobody-returns-to-is-reported-negative-control">The declared mutation — the follower-liveness condition removed from the derivation — lists the followed run too: <code>AssertionError: … it named ['run-attended-complete', 'run-forgotten-complete']</code>, <code>EXIT=1</code>, 1 failed id the head arm does not fail. Log: <code>logs/negative-control.log</code> in this run's directory.</p>
+  <p id="a-run-nobody-returns-to-is-reported-gate">The gate ran in place on the fleet node with <code>pytest -n 8</code> over the four suites this node's done-when names plus its own: 112 passed, 1 failed — <code>tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window</code>, which reports <code>reckon/ledger.py: 51666 estimated tokens exceeds the 50000 bound</code>. That module is untouched by this node and belongs to a concurrent node's scope; the same case fails in the base arm, so this node adds no failure. Two files outside the granted write scope were required to keep the view parity case green — <code>reckon/_mcp_tools.py</code> (the crew tool's hand-written view <code>Literal</code>) and <code>skills/reckon-build/SKILL.md</code> (which documents exactly the views that Literal admits) — and they are landed as their own commit for the coordinator to keep or drop.</p>
+</article>
+</body>
+</html>
