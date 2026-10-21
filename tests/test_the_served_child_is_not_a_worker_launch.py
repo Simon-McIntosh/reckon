@@ -48,7 +48,15 @@ def _capture_spawn(monkeypatch: pytest.MonkeyPatch) -> list[str]:
 
 
 def _worker_commands() -> set[str]:
-    """The executable basenames a crew launch plan builds for a worker."""
+    """The programs a crew launch plan builds for a worker.
+
+    Two per plan: the executable the vector starts at, and the command after the
+    ``--`` separator. A fenced launch is wrapped in a sandbox, so the vector
+    starts at the wrapper and the harness command itself sits past the
+    separator; reading only the first would name the wrapper and miss the
+    harness. Flags and bind paths are not read — they are neither programs, and
+    reading them would match tokens that merely appear in a path.
+    """
     commands = set()
     for backend in WORKER_BACKENDS:
         plan = _backends.launch_plan(
@@ -57,7 +65,11 @@ def _worker_commands() -> set[str]:
             prompt="unused",  # only the compiled argv is read
             worktree="/wt",
         )
-        commands.add(Path(plan.argv[0]).name)
+        argv = plan.argv
+        commands.add(Path(argv[0]).name)
+        if "--" in argv:
+            commands.add(Path(argv[argv.index("--") + 1]).name)
+    commands.discard("")
     return commands
 
 
