@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T02:11:43.477Z",
+  "dispatched_at": "2026-10-21T02:04:11Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-review-can-see-the-figure.html:264",
+      "id": "reasoning-1",
+      "reason": "the node cannot satisfy the section as written; the mechanism has to be keyed on the lane (a declared modality, which is \u00a71's and \u00a77's own principle that a declaration claims a measured delivery) rather than on \"a dialect with no attach flag\", and saying so changes both the Change paragraph and the test it names.",
+      "text": "\u00a714 says \"for a dialect with no attach flag, it appends to the prompt each attached image's path \u2026 and the dialect's `argv` stops refusing the images\", but the claude lane and the clive lane are the same dialect: `_CliveDialect(_ClaudeDialect)` at `reckon/_backends.py:2006` overrides only `subscription_login`, it carries no `name` of its own (so `_CliveDialect().name == 'claude'`, inherited from `reckon/_backends.py:1577`), and `_refuse_images` has exactly one call site, in the shared `_ClaudeDialect.argv` at `reckon/_backends.py:1594`; there is also no per-backend marker anywhere that reports whether a dialect has an attach flag. So a change keyed on the dialect stops the `claude` parametrisation of `test_a_lane_that_cannot_carry_the_figure_refuses_by_name` (`tests/test_launch_plan_attaches_images.py:105`) refusing too, which is exactly what the done-when at line 266 forbids (\"that test's other lanes still refuse\").",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-review-can-see-the-figure.html:263",
+      "id": "anchors_resolve-1",
+      "reason": "the claim motivates where figure reviews should run, not how the section's mechanism works; \u00a714's change, measure and control all stand without it, so removing or citing it alters no deliverable.",
+      "text": "\u00a714 rests its reason for moving figure reviews off codex on \"On 2026-10-20 a peer reported that codex read-only reviews fail on this fleet node on `bwrap: Can't mkdir /tmp/.git`\" and \"the lead's codex lift is for high-level work only\", neither of which resolves to any file, plan, section or commit in the repository, so a later reader cannot confirm the routing rationale this section states.",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "b73999c262cde37534847cd07ae878da011bcdd00650a0913c6773fee89497c0",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 81,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T020308106093-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "f2661bab5dba8ea9de3a85fe964cd14d64cd51fe",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a714 grounds its routing rationale on an anchor no reader can open.",
+    "done_when": "pass \u2014 \u00a714's done-when is measurable (a `launch_plan` on clive given one image carries a prompt naming the path and no longer raises; the project layer with an empty host layer declares image on clive as well as codex) and it declares a negative control whose failure is stated in terms of the guard (\"with the image naming removed from `launch_plan`, the launch prompt names no image and the test fails\").",
+    "evidence_paths": "pass \u2014 \u00a714 keeps every log under the run directory with a revision header, a literal command and a trailing `EXIT=`, which survives the run and is the same convention \u00a76 and \u00a710 through \u00a713 already use.",
+    "naming": "pass \u2014 \u00a714 introduces no plan label, stage name, ticket number or version tag: the names it adds (`_refuse_images`, `launch_plan`, `stdin_text`, `input_modalities`) are mechanism names, and its prose describes what changes rather than a changelog of what changed.",
+    "reasoning": "a finding \u2014 \u00a714's stated mechanism is written at dialect granularity while its own done-when requires lane granularity, and claude and clive are one dialect object, so the mechanism as written cannot produce the measure.",
+    "single_goal": "pass \u2014 the change and the declaration are one goal, a local lane that can be handed a figure it can see, and the plan's own \u00a77 bundles a measured delivery with the declaration it earns.",
+    "wiring": "pass \u2014 `plan-section-depends-on` carries `s14 -> a-review-can-see-the-figure#s13`, which is the section \u00a714 measures from, and the sections \u00a714 also leans on (\u00a710's run-local PNGs, \u00a712's lane selection) are already declared `done`."
+  },
+  "section_digests": {
+    "_document": "de2379117993ebb60cc7c918670f6820f1f513433b043f571605b56b8447a70e",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s10": "aee314dbe26192cd678dc467a9b229b8cb46873cacefcd4ce369fcbe469a1e37",
+    "s11": "22d519df0a82a0edfb23ceef10d63c14a08f3d8d656ce95a4cd03e5049d4e228",
+    "s12": "234f9999257c9e64bf69518cdf0b98e319850465374deeac091e90b1ed118647",
+    "s13": "d2f0977c2749f5e1d4e28f3962e8b01a182615a0a75edb530e5e4fde18d9a123",
+    "s14": "d567c3330ace796a3e26c4fac7fa70a9dedc80ed9087e7e005bd69eabfa49648",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "ce9705dbaad70ab2b3a9425eead9900cc284deb7f1d5ecacb553d3745679b3d7",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a",
+    "s8": "2c200fdd964f328342811e9362e4cd14da60f3c8352368899ccf87797d9e7f5b",
+    "s9": "b62ffeb55dd71d5f62b49f372e069f227a57c7caec9c6c3b45f81a945d284e11"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T02:15:13.577167+00:00"
+}
