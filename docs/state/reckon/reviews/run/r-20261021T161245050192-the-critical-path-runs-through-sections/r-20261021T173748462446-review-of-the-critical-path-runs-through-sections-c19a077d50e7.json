@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/roadmap.py:build_roadmap",
+    "reckon/mcp_views.py:3516",
+    "reckon/flight.py:_portfolio_row",
+    "reckon/project_maintenance_commands.py:1495"
+  ],
+  "completed_at": "2026-10-21T17:56:59.106Z",
+  "dispatched_at": "2026-10-21T17:39:09Z",
+  "findings": [
+    {
+      "file": "reckon/roadmap.py",
+      "line": 1432,
+      "severity": "follow-on",
+      "text": "follow-on: the same-plan section wait is kept out of dependents[target_slug] by an untested guard \u2014 reverting it to add every waiting_slug reddens no case, because every fixture in the change and in tests/test_section_edge_stays_off_plan_blocking.py wires sections across plans, so the self-unlock regression observed on power_convertor can return unremarked."
+    },
+    {
+      "file": "tests/test_the_critical_path_runs_through_sections.py",
+      "line": 161,
+      "severity": "follow-on",
+      "text": "follow-on: the assertion compares result[\"open_paths\"][0][\"sections\"] with result[\"critical_path\"][\"sections\"], and critical_path is built at reckon/roadmap.py:3783 as a copy of open_paths[0], so the two sides are the same list object and the assertion holds whatever the code does \u2014 the node's own mutation arm confirms it, reporting this test as one of the two survivors."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T161245050192-the-critical-path-runs-through-sections/manifest.md",
+      "line": 22,
+      "severity": "follow-on",
+      "text": "follow-on: the after_suite command reads \".../python -q tests/...\" with no -m pytest -p no:cacheprovider and carries no failure_count, so the field cannot be re-run or read as the arm it claims to record, so the suite-delta reader must fall back to logs/gate.log."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to run the critical path and the unlock set through the cross-plan plan-section-depends-on edges the roadmap already resolves rather than stopping at the plan level; reckon/roadmap.py:1383 lifts a resolved, unsatisfied wait into an edge between section nodes named <plan>#<section> and reckon/roadmap.py:3772 carries the sections list beside the plans, which is \u00a72's surface.\nVERDICT done_when: the done_when asks for a three-plan fixture whose only cross-plan wiring is plan-b#s3 waiting on plan-a#s2 and plan-c#s1 waiting on plan-b#s3, reporting those sections in order with their summed effort and plan-c among plan-b's unlocks, plus a power_convertor path spanning at least two plans naming iter-switched-terminal-transients#s6; tests/test_the_critical_path_runs_through_sections.py:134 asserts the ordered chain, :148 the summed 10.0, :164 plan-c in plan-b's unlocks, and the mutation arm reddens three of the five.\nVERDICT write_paths: the fence in prompt.txt declares reckon/roadmap.py, reckon/roadmap_paths.py, four test modules and the evidence fragment; every path in the bab5944999..c19a077d diff (reckon/roadmap.py, the new test module, tests/test_roadmap.py, tests/test_roadmap_reports_section_edges.py, docs/evidence/fragments/a-project-reads-as-one-picture/the-critical-path-runs-through-sections.html) is inside that set, with roadmap_paths.py and tests/roadmap_fixtures.py declared but untouched.\nVERDICT manifest: read; status complete at c19a077d with commits 344f623d..c19a077d, both gate arms reading 117 passed EXIT=0 and the mutation 3 failed 2 passed EXIT=1 in logs/gate.log and logs/negative-control-head.log, but the after_suite field's command is malformed and its failure_count absent.\nVERDICT diff: read commit by commit from bab5944999 to c19a077d: 344f623d adds _path_plan_slugs, _section_node, _section_effort_hours and _lift_section_edges plus the node_hours/node_effort/sectioned_plans walk changes, 88183db96 conforms the new test module, 9ec05d868 guards the same-plan self-unlock, daf10d25 adds the landing fragment, c19a077d makes the sections key unconditional on critical_path and every open_paths entry.\nCALL_SITES: reckon/roadmap.py:build_roadmap, reckon/mcp_views.py:3516, reckon/flight.py:_portfolio_row, reckon/project_maintenance_commands.py:1495\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/roadmap.py:1383 _lift_section_edges names a resolved, unsatisfied wait's two ends as section nodes in local_graph and dependents, and reckon/roadmap.py:3702 node_hours prices each node by the section's own authored effort, which is the goal exactly.\nSCORE evidence: 18\nJUSTIFICATION evidence: the done_when's measure is asserted at tests/test_the_critical_path_runs_through_sections.py:134,148,164 and the result is recorded, not claimed \u2014 logs/gate.log (117 passed EXIT=0 at c19a077d) and logs/negative-control-head.log (3 failed 2 passed EXIT=1, the three failures naming the section chain, its summed figure and the unlocks) \u2014 but the true-base arm in logs/base-gate.log runs the twelve pre-existing modules only, so the new module is proven against a mutation of the lift rather than against bab5944999 itself.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared fence and the change carries only \u00a72's surface \u2014 the sections list and the section-priced walk \u2014 the one addition beyond it being the anywhere-guard at reckon/roadmap.py:1432 that keeps a plan out of its own unlocks.\nSCORE durability: 15\nJUSTIFICATION durability: reinstating the regression \u2014 removing the three lift lines from _lift_section_edges \u2014 reddens three of the five cases in tests/test_the_critical_path_runs_through_sections.py at the ordered chain, the summed figure and the unlocks, so those name their failure condition, but the self-unlock guard at reckon/roadmap.py:1432 has no case that reddens when it is reverted, and the assertion at tests/test_the_critical_path_runs_through_sections.py:161 survives the mutation (it is one of the two passing survivors in logs/negative-control-head.log).\nSCORE fit: 16\nJUSTIFICATION fit: the new helpers at reckon/roadmap.py:1334,1352,1363 are named by what they compute and the <plan>#<section> spelling matches the existing inline spelling at reckon/roadmap.py:270, but the module already carries parse_plan_ref and the new code splits its own node ids with a bare partition(\"#\") rather than through it.\nSCORE reuse: 17\nJUSTIFICATION reuse: the lift extends the owner of the capability \u2014 _section_scoped_edges keeps resolving and _lift_section_edges only names its ends, so no second resolver is written as \u00a72 requires.\nFINDING reckon/roadmap.py:1432 follow-on: the same-plan section wait is kept out of dependents[target_slug] by an untested guard \u2014 reverting it to add every waiting_slug reddens no case, because every fixture in the change and in tests/test_section_edge_stays_off_plan_blocking.py wires sections across plans, so the self-unlock regression observed on power_convertor can return unremarked.\nFINDING tests/test_the_critical_path_runs_through_sections.py:161 follow-on: the assertion compares result[\"open_paths\"][0][\"sections\"] with result[\"critical_path\"][\"sections\"], and critical_path is built at reckon/roadmap.py:3783 as a copy of open_paths[0], so the two sides are the same list object and the assertion holds whatever the code does \u2014 the node's own mutation arm confirms it, reporting this test as one of the two survivors.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T161245050192-the-critical-path-runs-through-sections/manifest.md:22 follow-on: the after_suite command reads \".../python -q tests/...\" with no -m pytest -p no:cacheprovider and carries no failure_count, so the field cannot be re-run or read as the arm it claims to record, so the suite-delta reader must fall back to logs/gate.log.",
+  "review_run_id": "r-20261021T173748462446-review-of-the-critical-path-runs-through-sections-c19a077d50e7",
+  "reviewed_base_sha": "bab5944999df49e880a1de9758dc6441270f8c48",
+  "reviewed_head_sha": "c19a077d50e7285cb13a83707478ea2d3fd88974",
+  "reviewed_run_id": "r-20261021T161245050192-the-critical-path-runs-through-sections",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "review",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T17:53:43.660487+00:00",
+  "total": 103
+}
