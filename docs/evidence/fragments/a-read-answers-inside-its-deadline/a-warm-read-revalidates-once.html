@@ -1,0 +1,70 @@
+<section id="a-warm-read-revalidates-once" class="evidence-fragment">
+  <h2>§46 — A warm read revalidates the covered tree once</h2>
+  <p>
+    The section named one region, <code>discovery_file_scope()</code>, and one
+    defect in it: it <em>replaced</em> the region a nested reader had already
+    opened, because it set <code>_DISCOVERY_FILES</code> to a fresh
+    <code>{}</code> on every entry. <code>serve.discover_plans</code> enters it
+    twice inside one roadmap call, so each entry started from nothing and every
+    reader revalidated the covered tree on its own. The region now joins an
+    already-open one and starts a fresh region only when none is open, so the
+    outermost entry opens it and the outermost exit closes it.
+  </p>
+  <p id="a-warm-read-revalidates-once-region">
+    Joining the region alone shares the covered-file listing and the per-file
+    stats <code>serve._walk_discovery_signature</code> takes through
+    <code>covered_stat</code>. It did <strong>not</strong> share the directory
+    identity checks: <code>_reuse_covered</code> and <code>build_index</code>
+    both called <code>_dir_identity</code> directly, each stat'ing every
+    recorded directory. A counting wrapper on <code>_dir_identity</code> over
+    one warm roadmap call, on a synthetic tree of four covered directories,
+    settled which side of the section's test this fell on:
+  </p>
+  <table id="a-warm-read-revalidates-once-counts">
+    <thead>
+      <tr><th>configuration</th><th>directory identity checks</th><th>per covered directory</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>region replaced per entry (base behaviour)</td><td>12</td><td>3</td></tr>
+      <tr><td>region joined, identity checks direct</td><td>8</td><td>2</td></tr>
+      <tr><td>region joined, identity checks shared</td><td>4</td><td>1</td></tr>
+    </tbody>
+  </table>
+  <p>
+    The join alone left two checks per directory — more than one — so the
+    directory identities share the region too, through
+    <code>covered_dir_identity</code>, and the count lands at one. The roadmap
+    enters the region at the top of its call, so project discovery, the shared
+    listing and both sets of stats observe the covered tree once between them.
+  </p>
+  <p id="a-warm-read-revalidates-once-measure">
+    Measure: <code>tests/test_a_warm_read_revalidates_once.py</code> runs one
+    warm roadmap call over a synthetic covered tree and holds that each covered
+    directory's identity is checked at most once per call, and that a directory
+    changed between two calls is picked up by the second. The gate
+    <code>python -m pytest -p no:cacheprovider</code> over the eleven test files
+    the section names passes <strong>49</strong> at head against
+    <strong>47</strong> at base, with the head's one failure
+    (<code>test_every_module_fits_a_worker_window</code>, naming
+    <code>reckon/crew/review.py</code> and <code>reckon/ledger.py</code>) the
+    same id the base fails — no added failures. Both files are outside this
+    node's scope.
+  </p>
+  <p id="a-warm-read-revalidates-once-negative">
+    Negative control: the declared mutation restores the replacing scope, so no
+    region is shared. The per-directory count then rises to three and the
+    at-most-once test fails.
+  </p>
+  <p id="a-warm-read-revalidates-once-timing">
+    The warm-roadmap timing this section also asks for did not complete on the
+    fleet node inside the node's window. The reader was the project
+    <code>reckon</code>, whose mounted docs dir is the shared main checkout, and
+    each call spent its time in repeated <code>Git history lookup timed out
+    after 10 seconds</code> and <code>Git last-modified lookup timed out after
+    10 seconds</code> reads against that checkout: a base arm of one warm call
+    plus one profiled call plus the two crew runs had not returned after nine
+    and a half minutes and was ended, its log closing <code>EXIT=143</code>.
+    The covered-tree counts above are the measure this section's test rests on;
+    the timing belongs to a node that can give the corpus a quiet window.
+  </p>
+</section>
