@@ -224,15 +224,47 @@ def test_rendered_state_matches_the_base_revision_bytes(tmp_path, monkeypatch):
     assert rendered == GOLDEN_STATE, (
         "the rendered picker state changed from the base revision's bytes"
     )
-    # ``return_times`` is keyed by each option's own key, so the clive block is
-    # read through the same helper the questions use rather than by backend name.
+    # The clive block's key is spelled out rather than derived: the frozen bytes
+    # and this render come from the same code, so a lookup that re-derived the
+    # key through the helper that builds the table could not fail on a wrong
+    # keying. The literal is the fixture's own lane, model and backend.
     payload = json.loads(rendered)
-    block = payload["return_times"][lane_context.option_key(_candidate("clive"))]
+    clive_key = lane_context.option_key(_candidate("clive"))
+    assert clive_key == "f:m:clive", clive_key
+    block = payload["return_times"][clive_key]
     # The figures the base rendered as integers stay integers.
     assert block["p50_s"] == 300 and isinstance(block["p50_s"], int)
     assert block["p90_s"] == 500 and isinstance(block["p90_s"], int)
     assert block["runs"] == 3
     assert block["size_bucket"] == "30m_to_60m"
+
+
+def test_the_figures_the_re_freeze_accepted_are_pinned_by_the_fixture(
+    tmp_path, monkeypatch
+):
+    """The re-frozen figures are asserted from the fixture, not from the render.
+
+    The frozen bytes and the render they are compared against are produced by
+    the same code, so that comparison cannot fail on a figure the re-freeze was
+    meant to accept -- it witnesses only that nothing else moved. Each figure
+    the four landed changes moved is therefore asserted here against what the
+    fixture and those changes say it must be, written out rather than read back:
+    the node's urgency block (the fixture node declares no deadline), the local
+    lane's next estimated queue position (the frozen waiting count of zero plus
+    one), and the candidate and return-time tables keyed by lane, model and
+    backend. A wrong keying, a dropped urgency block or a shifted queue position
+    fails here even though the bytes still match themselves.
+    """
+
+    payload = json.loads(_render(tmp_path, monkeypatch))
+    assert payload["node"]["urgency"] == {
+        "due": None,
+        "seconds_to_due": None,
+        "reason": None,
+    }
+    assert payload["local_lane"]["queue_position"] == 1
+    assert set(payload["candidates"]) == {"f:m:clive", "f:m:amine"}
+    assert set(payload["return_times"]) == {"f:m:clive", "f:m:amine"}
 
 
 def test_an_unsafe_project_name_never_forms_a_cache_path(tmp_path, monkeypatch):
