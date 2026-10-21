@@ -1,0 +1,32 @@
+{
+  "absent_items": [
+    "anchors_resolve"
+  ],
+  "completed_at": "2026-10-21T01:05:09.128Z",
+  "dispatched_at": "2026-10-21T00:54:57Z",
+  "findings": [],
+  "plan_fingerprint": "8dcd3ed249ba50135a22504a77eb86d707e766faecb3491f24cfbfa2e2eaa735",
+  "plan_slug": "budget-fits-a-worker-window",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T004350639605-plan-review-of-budget-fits-a-worker-window",
+  "reviewed_blob_sha": "a8e2346314cfec91dfd5136c4bedc47c05593d0a",
+  "rubric": "content",
+  "rubric_items": {
+    "done_when": "pass \u2014 the head measure is numeric and two-sided (`budget.py` \u2264 45,000 tokens, neither new module over 40,000, the width test no longer naming `budget.py`), the base arm is named as a delta (\"the test's remaining offenders are exactly the base arm's, less `budget.py`\", which I confirmed are `review.py` and `ledger.py`), and the negative control is a real mutation \u2014 restore `budget.py`'s base content in a scratch copy and the width test names it again, which is true because base `budget.py` is 51,533 tokens against `BOUND = 50_000`.",
+    "evidence_paths": "pass \u2014 the deliverable writes no evidence to a session scratchpad or a node-local path; the one scratch artifact named (\"put `budget.py` back to its base content in a scratch copy\") is a reproduction tree that dies with the run, and the gate logs and the width-test arm land on the run's own durable record.",
+    "naming": "pass \u2014 the new module `reckon/budget_pace.py` is named for the concern it holds and carries no version, part number or stage label, and the symbols \u00a72 introduces (`budget_pace`, the re-exported family names) name mechanisms; the only `\u00a746`/`\u00a748` tokens in the section are prose pointers at another plan's sections, not code names.",
+    "reasoning": "pass \u2014 root cause matches the cited evidence (51,533 tokens at `f5e88d284`, up from 50,293 before `6ebe65ba4`, i.e. accumulated growth, confirmed by both commit and measurement); the mechanism produces the done-when (a 9,922-token family removed against a 45,000 bound, and the two destinations land near 9,300 and 15,140 tokens against the 40,000 bound); and it runs on the real code path with the callers named \u2014 `decide()` for the moved verdict, and `reckon/crew/dispatch.py:1784` (`budget_module.pace_row`) plus `reckon/crew/budget_group.py` for names kept importable from `reckon.budget`, which is why the re-export obligation is load-bearing and correctly stated.",
+    "single_goal": "pass \u2014 \u00a72 carries one deliverable (the pure move of the pace and lift family out of `budget.py`), with the gate, the fence and the negative control all serving that one verdict.",
+    "wiring": "pass \u2014 \u00a72's `plan-section-depends-on` edge `lane-and-model-routing#s46` resolves (that section exists at `lane-and-model-routing.html:553`) and lane-and-model-routing \u00a748 now declares the reverse edge onto `budget-fits-a-worker-window#s2`; note \u00a71's \"\u00a746 \u2026 is already built\" is stale against that plan's `plan-section-declarations` (`s46: implementable`), but \u00a72's own sequence and f-bfw-001 both gate dispatch on \u00a746 merging, so the dispatch order is unaffected."
+  },
+  "section_digests": {
+    "_document": "1614740484dbfd4e03e69ff83d11c72be04e1fae29d5472772ec27bb7860cffd",
+    "s1": "c792e528897c4ad54382c35cf018f19ed137d3bb82a22d8c5ff4c6a5e3cafb32",
+    "s2": "cbbb41f5c7c05e77f02fd48bc7671c36686b3fb32606af8485ffc9eef258d2b6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T01:08:30.421566+00:00"
+}
