@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T02:54:05.222Z",
+  "dispatched_at": "2026-10-21T02:41:01Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-review-can-see-the-figure.html:266",
+      "id": "done_when-1",
+      "reason": "the node should keep a dispatch-level refusal case on a lane that stays undeclared (the claude lane) beside the new naming case, otherwise \u00a714 retires a landed section's evidence and its own sentence \"a backend that declares no image input still refuses \u2026 by name, as today\" goes unmeasured on the caller it is about.",
+      "text": "\u00a714's done-when requires that \"the tests that asserted the clive refusal (in tests/test_dispatch_attaches_the_figures.py \u2026) now give that backend a declaration and assert the named path\", but `test_a_clive_lane_refuses_the_figures_and_names_the_lane` (tests/test_dispatch_attaches_the_figures.py:342, dispatched with `backend_override=\"clive\"` against the file's fixture config) is the dispatch-level evidence \u00a76 names for its own landed done-when (\"the same node on a clive backend is refused with the lane named\"), and it is one of the five tests c-close-s6 cites; converting it to a naming assertion leaves the dispatch path with no refusal case at all, so a change that made an undeclared lane name its images instead of refusing would be caught only at the `launch_plan` layer",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b4f7221441ea77156ea0dfde120a09c265ce3c491697ba39a621ccc110e59872",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 83,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T023955648978-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "5666e6c5f74d1b48eac38482c9618c28e128a77e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 resolved in the tree: `_refuse_images` (reckon/_backends.py:1071) reached from `_ClaudeDialect.argv` (:1594), `_CliveDialect(_ClaudeDialect)` (:2006), `stdin_prompt = True` on the prompt contract (:1044) with `stdin_text=prompt` (:2267), `_backend_settings` (reckon/crew/dispatch_sessions.py:910) called in `resume_plan` (:1255) with the run's figures at the launch (:1353), all four named test files and `test_a_lane_that_cannot_carry_the_figure_refuses_by_name` (tests/test_launch_plan_attaches_images.py:105), and the cited evidence anchor `#s13-the-local-lane-receives-an-opened-image` in docs/evidence/archive/a-review-can-see-the-figure-landed.html:120.",
+    "done_when": "a finding \u2014 \u00a714's done-when directs the conversion of the only dispatch-level refusal test, so the undeclared-lane refusal loses its dispatch-path coverage while \u00a76 stays declared `done`.",
+    "evidence_paths": "pass \u2014 every log in \u00a714 sits under the run directory, the declaration lands in the committed `docs/state/reckon/flight.yaml`, and no evidence path is a scratchpad or node-local temp.",
+    "naming": "pass \u2014 the new file `tests/test_a_local_worker_is_named_its_images.py` is named by mechanism, and \u00a714 carries no plan label, ticket number or version tag into a symbol or comment.",
+    "reasoning": "pass \u2014 the three checks hold on the real code path: the fresh path hands `launch_plan` the resolved lane mapping that carries `input_modalities` (reckon/crew/dispatch.py:2432) and the resume path rebuilds that mapping through `_backend_settings`, which as written merges only `usable_input_window`, `model` and `effort` from the configured lane (dispatch_sessions.py:965-975) and so does drop `input_modalities` \u2014 the stated defect reproduces and the named fix is the one the function's own `setdefault` merge already uses; the layer merge is `deep_merge`, so a project-layer `input_modalities` on clive is not shadowed by the host layer's clive block (which declares none), and the declaration therefore reaches production rather than only the empty-host-layer test; and keying on the lane's declaration rather than the dialect is what keeps the claude lane refusing, since `_ClaudeDialect.argv` still calls `_refuse_images` for any backend that declares nothing.",
+    "single_goal": "pass \u2014 one capability (the local lane is handed a figure on each launch path and declares it); the launch_plan branch is the mechanism and the `_backend_settings` carry is its resume half.",
+    "wiring": "pass \u2014 `plan-section-depends-on` records s14 \u2192 a-review-can-see-the-figure#s13, which is `done`, and the siblings \u00a714 relies on (\u00a76 dispatch path, \u00a710 render, \u00a712 lane selection) are landed and unchanged, with the cross-plan relationship carried by `plan-informs`."
+  },
+  "section_digests": {
+    "_document": "de2379117993ebb60cc7c918670f6820f1f513433b043f571605b56b8447a70e",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s10": "aee314dbe26192cd678dc467a9b229b8cb46873cacefcd4ce369fcbe469a1e37",
+    "s11": "22d519df0a82a0edfb23ceef10d63c14a08f3d8d656ce95a4cd03e5049d4e228",
+    "s12": "234f9999257c9e64bf69518cdf0b98e319850465374deeac091e90b1ed118647",
+    "s13": "d2f0977c2749f5e1d4e28f3962e8b01a182615a0a75edb530e5e4fde18d9a123",
+    "s14": "a2bfccc1b3cb2546a7a792a5697c84557eb9e4deb85bab52e30a33caf4bd8b0f",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "ce9705dbaad70ab2b3a9425eead9900cc284deb7f1d5ecacb553d3745679b3d7",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a",
+    "s8": "2c200fdd964f328342811e9362e4cd14da60f3c8352368899ccf87797d9e7f5b",
+    "s9": "b62ffeb55dd71d5f62b49f372e069f227a57c7caec9c6c3b45f81a945d284e11"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T02:57:46.814668+00:00"
+}
