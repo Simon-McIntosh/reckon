@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T07:50:42.285Z",
+  "dispatched_at": "2026-10-21T07:34:35Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plan/the-page-paints-from-an-index.html:257",
+      "id": "done_when-1",
+      "reason": "a mechanism with no asserted caller is the plan's own third reasoning check failing at the gate, so the section needs a case (or a named assertion) that the shell's poll invokes the refresh and replaces `window.STATE.schedule`.",
+      "text": "the deliverable's mechanism is \"the shell calls [the refresh functions] on its poll\", but every \u00a711 case for it is \"a loader case\" under `node`, which runs `docs/ui/state-loader.js` alone and cannot execute `docs/ui/shell.jsx`; nothing in the section asserts the shell calls the new functions, so a node can land the loader functions with no production caller, pass the whole \u00a711 gate, and still leave the schedule stale between document changes on a quiet view \u2014 exactly the failure the section exists to prevent",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plan/the-page-paints-from-an-index.html:257",
+      "id": "done_when-2",
+      "reason": "the section's threshold can be met by a build that multiplies the schedule traffic it was written to cut, so the acceptance must count `/_schedule` requests (or the done-when must assert the route is fetched only while the crew view is open).",
+      "text": "the only acceptance number is \"the coordinator counts `/_index/power_convertor` requests \u2026 less those page loads\", which measures the removal of the fleet-driven refetch and nothing about the churn the new route adds; the deliverable bounds that churn (\"at least once a minute while the crew view is open\", not on every 3 s poll and not off the crew route), yet the shell's poll at `docs/ui/shell.jsx:298` is mounted at the shell root and runs on every route, so a node that fetches `/_schedule` unconditionally from that poll passes every \u00a711 case and the acceptance clause while issuing ~600 requests in the 30 minutes counted",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b1f5fbea23d0113056bfb64d7a3819ff841311a282f11c29e991b05cd575e51d",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 47,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T073345010779-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "b194554d2cd4fa3f2aaa00bd2cd537b69a15ef5b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_attach_schedule_for_read` resolves at `reckon/serve.py:1777` and is called with `reference=datetime.now(UTC)` at the discovery read (`reckon/serve.py:3332`), the shell's 3 s `/crew` poll resolves at `docs/ui/shell.jsx:298`, `docs/ui/crew.jsx:44` does read `window.STATE.schedule`, `BOUND = 50_000` resolves in `tests/test_every_module_fits_a_worker_window.py` (measured serve.py 45,882 estimated tokens, ~4,100 under the bound), and `tests/test_page_paints_from_the_index.py` / `tests/test_spa_derived_flow.py` exist with harnesses that can host the cases named.",
+    "done_when": "a finding \u2014 \u00a711's new loader cases drive state-loader.js functions directly, so nothing in the section shows the shell's `/crew` poll ever calls them, and the section's only acceptance count reads `/_index`, which the new `/_schedule` route never touches, so the churn the route introduces is unmeasured.",
+    "evidence_paths": "pass \u2014 every log sits under the run directory and ends in `EXIT=`, and the acceptance count is read from the served request log rather than a scratch path.",
+    "naming": "pass \u2014 `/_schedule/<project>`, the stale rule and the loader's refresh functions name the mechanism, and no plan label, stage name, ticket number or version tag enters a symbol, filename or comment \u00a711 will write.",
+    "reasoning": "pass \u2014 all three checks hold. The root cause matches the cited code (`docs/ui/state-loader.js:747-759` dispatches `reckon-fleet` and then calls the same `refetchDerived()` a `change` event calls, and `_attach_schedule_for_read` \u2192 `_crew_rows` rebuilds the schedule per read), each bullet's mechanism can produce its measure (the `/crew` rows carry `project`, `plan` and `phase`, so the crew view can see a run-set or phase change and drive an `/_index`-free `/_schedule` fetch), and the caller is real and named \u2014 the shell's single `/crew` poll at `docs/ui/shell.jsx:298-315`; the schedule has no consumer outside `docs/ui/crew.jsx` (grep for `.schedule` across `docs/ui/*.jsx` returns only crew.jsx and state-loader.js), so decoupling it from fleet events is safe.",
+    "single_goal": "pass \u2014 \u00a711's three bullets are one behaviour (a project-scoped schedule route, its two consumers, and removal of the fleet-driven derived refetch), each carrying its own control.",
+    "wiring": "pass \u2014 \u00a711 declares `depends-on the-page-paints-from-an-index#s10` in `plan-section-depends-on`, which matches its own closing sentence \"Build it after \u00a710, which writes the same files\", and no dependency it needs points at a wrong or missing node."
+  },
+  "section_digests": {
+    "_document": "5bedd7f41d8b5b370882135e798f35d56d6e6348c4003130ade8574bbf365128",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "a087a6a31d13a36855df8324fb8b7f11c311397453714adca011bd4ce7869312",
+    "s11": "b210916a99e61af1bb7bcbe5f14a6442799108405c33e5e6b29e27b1261b637a",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "768d4a5e4156b059d51137b95683149be313a7d4ce026b0836f872b4f4056507",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T08:00:26.445005+00:00"
+}
