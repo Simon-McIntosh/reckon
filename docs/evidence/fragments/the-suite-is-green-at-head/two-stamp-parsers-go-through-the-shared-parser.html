@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-title" content="Two stamp parsers go through the shared parser">
+  <meta name="plan-summary" content="The ISO-string branch of model_catalogue._created and the whole of recovery_review_delivery._review_dispatch_instant now read through reckon._timestamps.parse_utc, so the only-shared-parser structural invariant passes at head. A new test holds an input table asserting _created(s) equals parse_utc(s).timestamp() or None; three of its rows fail at the base revision.">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s34">
+  <meta name="plan-recorded-at" content="2026-10-21">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="tests,timestamps,shared-parser">
+  <title>Two stamp parsers go through the shared parser — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="two-stamp-parsers-go-through-the-shared-parser" data-reckon="landed" data-when="2026-10-21">
+  <h2 id="two-stamp-parsers-go-through-the-shared-parser-landing">Two stamp parsers go through the shared parser</h2>
+  <p id="two-stamp-parsers-go-through-the-shared-parser-statement">The structural invariant <code>test_only_the_shared_parser_calls_fromisoformat</code> named two modules that parsed an ISO stamp with a direct <code>datetime.fromisoformat</code>: <code>reckon/crew/model_catalogue.py:_created</code> and <code>reckon/crew/recovery_review_delivery.py:_review_dispatch_instant</code>. Both now route through <code>reckon._timestamps.parse_utc</code>. <code>_created</code> keeps its numeric branch as a plain <code>float</code> and sends only its string branch through the parser; a zoneless stamp is now read as UTC rather than in the host's zone (so its result no longer depends on <code>TZ</code>), and a whitespace-padded stamp and a lowercase <code>z</code> suffix, both previously <code>None</code>, become readable. <code>_review_dispatch_instant</code> already read a zoneless stamp as UTC, so its results are unchanged.</p>
+  <p id="two-stamp-parsers-go-through-the-shared-parser-gate">The head gate <code>tests/test_catalogue_stamps_read_through_the_shared_parser.py</code> plus the invariant reports <strong>9 passed</strong> (<code>EXIT=0</code>). The new test's input table asserts <code>_created(s) == parse_utc(s).timestamp()</code>, or <code>None</code> wherever <code>parse_utc</code> gives <code>None</code>, across seven rows: a zoned stamp, a zoneless stamp under <code>TZ=UTC</code> and under <code>TZ=Europe/Paris</code>, a padded stamp, a lowercase <code>z</code> suffix, an empty string and a malformed string. At the base revision the table fails on exactly the three intended rows — <code>zoneless_paris</code> (<code>1790636523.0</code> vs <code>1790643723.0</code>), <code>padded</code> and <code>lowercase_z</code> (both <code>None</code> vs <code>1790643723.0</code>) — with 4 passed.</p>
+  <p id="two-stamp-parsers-go-through-the-shared-parser-importers">Every test file under <code>tests/</code> importing either module (21 files, <code>pytest -n 8</code>, the four follower variables cleared, both arms from <code>git archive</code> trees under the run's scratch) adds no failure: the base arm is 3 failed / 236 passed and the head arm is 239 passed / 0 failed, so head adds none and removes the three.</p>
+  <p id="two-stamp-parsers-go-through-the-shared-parser-negative-control">The negative control restores one direct <code>datetime.fromisoformat</code> call in <code>model_catalogue._created</code>; the invariant then names <code>crew/model_catalogue.py:_created</code> and exits 1 (<code>1 failed</code>). <code>ruff check</code> and <code>ruff format --check</code> report no findings on the three changed files, and the base blobs of the two source files are also clean, so the change adds none.</p>
+  <p id="two-stamp-parsers-go-through-the-shared-parser-logs">Logs (under the run directory): <code>logs/head-catalogue-stamps.log</code>, <code>logs/base-arm-catalogue-stamps.log</code>, <code>logs/head-arm-importers.log</code>, <code>logs/base-arm-importers.log</code>, <code>logs/negative-control.log</code>, <code>logs/ruff.log</code>, <code>logs/ruff-base-blobs.log</code>. Commits: <code>ef138f825</code> (routing and test), <code>f73ec22ad</code> (trailing newline).</p>
+</article>
+</body>
+</html>
