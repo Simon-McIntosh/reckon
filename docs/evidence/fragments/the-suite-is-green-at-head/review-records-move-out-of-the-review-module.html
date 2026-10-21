@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s31">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-21">
+  <meta name="plan-tags" content="review,store,module-split,worker-window">
+  <title>The review-record store family leaves the review module | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="review-records-move-out-of-the-review-module" data-reckon="landed" data-when="2026-10-21">
+  <h2>The review-record store family leaves the review module</h2>
+
+  <p><strong>Cause.</strong> <code>tests/test_every_module_fits_a_worker_window.py</code>
+  failed at main on <code>reckon/crew/review.py</code>, which had grown back over the
+  50,000-token bound after an earlier split: 185,459 bytes, 52,989 estimated tokens by
+  <code>reckon.crew.routing._tokens_for_bytes</code> at base <code>c66a1ced9</code>. A
+  module that fills most of a window makes any node that must write it unfittable.</p>
+
+  <p><strong>Deliverable.</strong> The committed review-record store family moved to
+  <code>reckon/crew/review_records.py</code>: reading a run's record committed-first then
+  from staging, selecting the copy a named head names, unioning the disposition and answer
+  fields every copy of one review run carries, writing a record and committing that write,
+  and the per-directory store index behind the misfiled and delivered-plan-review lookups.
+  <code>reckon/crew/review.py</code> keeps <code>read_review</code> and re-exports the
+  names callers resolve through it, so no importer changed.</p>
+
+  <p><strong>Measure.</strong> At head, <code>reckon/crew/review.py</code> is 144,747 bytes
+  — <strong>41,357</strong> estimated tokens — and <code>reckon/crew/review_records.py</code>
+  is 43,789 bytes — <strong>12,512</strong> estimated tokens, against bounds of 45,000 and
+  40,000. The width test names neither at head; only <code>reckon/ledger.py</code> (52,989
+  tokens) is still over, which is the sibling §32 node's module and not this one's.</p>
+
+  <p><strong>Patch semantics.</strong> The store resolved its shared schema constants, path builders and
+  revision helpers as module locals, which silently broke every caller that patches one of
+  them on <code>reckon.crew.review</code> — <code>test_a_review_with_no_base_is_not_carried.py</code>
+  patches <code>review_store_root</code>, and a head arm showed 18 added failures across six
+  files before this was corrected. The family now looks those names up through the review
+  module at call time, which restores the patch semantics the split must preserve; the
+  names the family defines itself stay module locals, so a patch on a moved name is applied
+  where the moved code reads it.</p>
+
+  <p><strong>Negative control.</strong> Restoring <code>reckon/crew/review.py</code> to its
+  base content in a scratch copy of the head tree turns the width test red again, naming
+  <code>reckon/crew/review.py: 52989 estimated tokens exceeds the 50000 bound and is not
+  allowlisted</code> (exit 1). The log is <code>negative-control.log</code> under the run
+  directory.</p>
+</article>
+</body>
+</html>

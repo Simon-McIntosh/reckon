@@ -27,6 +27,7 @@ from typing import Any
 import pytest
 
 from reckon.crew import review as review_module
+from reckon.crew import review_records as records_module
 
 PROJECT = "proj"
 STORE_SIZE = 3000
@@ -118,7 +119,7 @@ def test_a_record_at_its_expected_path_never_reaches_the_scan(
     run_id = f"r-stored-{KEYED_INDEX:05d}"
     keyed_head = _stored_head(KEYED_INDEX)
     scanned: list[str] = []
-    original = review_module._record_filed_elsewhere
+    original = records_module._record_filed_elsewhere
 
     def spy(
         directory: Path, reviewed_run_id: str, reviewed_head_sha: str | None
@@ -126,7 +127,7 @@ def test_a_record_at_its_expected_path_never_reaches_the_scan(
         scanned.append(reviewed_run_id)
         return original(directory, reviewed_run_id, reviewed_head_sha)
 
-    monkeypatch.setattr(review_module, "_record_filed_elsewhere", spy)
+    monkeypatch.setattr(records_module, "_record_filed_elsewhere", spy)
 
     path, record = review_module.stored_record(
         PROJECT, run_id, reviewed_head_sha=keyed_head
