@@ -23,57 +23,18 @@ import os
 from pathlib import Path
 
 import pytest
-from click.testing import CliRunner
 
-from reckon import _plan_html
-from reckon import cli as cli_module
 from reckon.crew import merge
 from reckon.crew.runs import _write_json, pointer_path
 from tests.helpers.git import git as _git
+from tests.helpers.landing_repository import (
+    PLAN,
+    PROJECT,
+    _complete_land,
+    _write_origin_and_checkout,
+)
 
-PROJECT = "proj"
-PLAN = "plan-a"
 MARKER = "the reviewed change survives the merge\n"
-
-
-def _write_origin_and_checkout(tmp_path: Path) -> tuple[Path, Path]:
-    origin = tmp_path / "origin.git"
-    repository = tmp_path / "repository"
-    repository.mkdir()
-    _git(tmp_path, "init", "-q", "--bare", str(origin))
-    _git(repository, "init", "-q", "-b", "main")
-    _git(repository, "config", "user.name", "Test User")
-    _git(repository, "config", "user.email", "test@example.invalid")
-    _git(repository, "config", "commit.gpgsign", "false")
-    bare = (
-        "<!doctype html><html><head>"
-        f'<meta name="docs-project" content="{PROJECT}">'
-        f"<title>{PLAN}</title>"
-        '</head><body><main class="plan-doc"></main></body></html>\n'
-    )
-    plan = repository / "docs" / "plans" / f"{PLAN}.html"
-    plan.parent.mkdir(parents=True, exist_ok=True)
-    plan.write_text(
-        _plan_html.write_state(
-            bare,
-            {
-                "type": "plan",
-                "slug": PLAN,
-                "title": "One call lands a run",
-                "status": "active",
-                "version": 0,
-                "comments": {},
-            },
-        ),
-        encoding="utf-8",
-    )
-    (repository / "docs" / "state" / PROJECT).mkdir(parents=True)
-    (repository / "seed.txt").write_text("seed\n", encoding="utf-8")
-    _git(repository, "add", "docs", "seed.txt")
-    _git(repository, "commit", "-q", "-m", "test: seed repository")
-    _git(repository, "remote", "add", "origin", str(origin))
-    _git(repository, "push", "-q", "-u", "origin", "main")
-    return origin, repository
 
 
 @pytest.fixture()
@@ -132,36 +93,6 @@ def landed_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
         "head": head,
         "gate_log": gate_log,
     }
-
-
-def _complete_land(run: dict, *extra: str):
-    return CliRunner().invoke(
-        cli_module.main,
-        [
-            "crew",
-            "complete",
-            "--run",
-            run["run_id"],
-            "--gate",
-            "passed",
-            "--commit",
-            run["head"],
-            "--outcome",
-            "one call promoted, merged, pushed and released the run",
-            "--checkout-path",
-            str(run["repository"]),
-            "--no-impl-change",
-            "the fixture lands one file and moves no plan",
-            "--gate-command",
-            "true",
-            "--gate-exit-status",
-            "0",
-            "--gate-log-path",
-            str(run["gate_log"]),
-            "--land",
-            *extra,
-        ],
-    )
 
 
 def _drop_the_change_if_declared(monkeypatch: pytest.MonkeyPatch) -> None:
