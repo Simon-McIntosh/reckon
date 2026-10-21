@@ -11,13 +11,15 @@
     running image was therefore answered by the image, and after a landing that
     answer was behaviour the tree no longer has, with nothing in it to say so.
     Once the child is warm — its readiness probe has answered — and the tree is
-    moved and trusted, every call is now routed to it. The record survives for
-    one purpose: a write is routed only once the child has answered a call of
-    that tool, because a write the child does not answer is never re-run on the
-    image and the image has not run it yet, so routing it there would answer a
-    write that never ran with <code>write_may_have_landed</code> instead of its
-    own result. Reads, which are what the section's defect is about, are routed
-    on the first warm call.
+    moved and trusted, every call is now routed to it, writes included and from
+    a tool's first call: a successful write answered by the running image is
+    the same defect as a successful read answered by it. A write the child does
+    not answer is never re-run on the image, because it may have landed there;
+    the caller gets <code>write_may_have_landed</code> naming the read that
+    settles it, which is the honest answer for a write whose fate is unknown.
+    A read the child does not answer falls back to the image, and if the image
+    then fails, the failure stands and carries both stamps with
+    <code>current_code_note</code>.
   </p>
 
   <p id="moved-checkout-serves-every-call-raised">
@@ -35,23 +37,48 @@
     <code>edit_plan</code> write can succeed and report why its review predicate
     could not answer in <code>review_owed_error</code>; when the running image's
     classes cannot validate config the tree has moved past, that failure is this
-    guard's own case. <code>_embedded_schema_failure</code> reads an
-    <code>*_error</code> field naming a validation or config error as a failure,
-    and the call is re-run on the current code like a returned one. An error of
-    any other kind in such a field is the call's own result and stands, which is
-    the case the neighbouring test holds.
+    guard's own case. <code>_embedded_schema_failure</code> reads it only where
+    it can be the guard's: the field must be one of
+    <code>_EMBEDDED_FAILURE_FIELDS</code> — the fields that carry a
+    sub-computation's exception rather than the call's outcome, which today is
+    <code>review_owed_error</code> alone — and the value must lead with one of
+    <code>_SCHEMA_ERROR_NAMES</code>. A match on any <code>*_error</code> field
+    whose text merely contained pydantic's message was wide enough to read an
+    unrelated failure as this guard's case and replace the call's own result on
+    it, so the read is a leading exception type in a named field and nothing
+    else. An error of any other kind in one of those fields, or a schema error
+    the call reports in a field of its own, is the caller's answer and stands.
   </p>
 
   <p id="moved-checkout-serves-every-call-gate">
-    <strong>Gate.</strong> Five cases in
+    <strong>Gate.</strong> Seven cases in
     <code>tests/test_a_moved_checkout_serves_every_call.py</code> run the guard
     in process against a temporary tree with a controllable child: a successful
-    call served by the warm child and carrying its stamp, with the image's tool
+    read served by the warm child and carrying its stamp, with the image's tool
     never called; an unmoved checkout serving in process and starting no child;
     a raised failure while the child is cold, answered with both stamps and the
-    remedy; an embedded schema failure re-run on the current code; and an
-    embedded error that is not a schema failure left standing. That file and the
-    five neighbouring stale-code test files run as one gate, judged by failure
-    delta against the assembly base.
+    remedy; the first write of a tool served by the warm child and carrying its
+    stamp, with the image never called; an embedded schema failure not passed
+    off as the image's successful answer, and carrying both stamps; an embedded
+    error that is not a schema failure left standing; and a schema error the
+    call reports in a field of its own left standing. That file and the five
+    neighbouring stale-code test files run as one gate, judged by failure delta
+    against the assembly base.
+  </p>
+
+  <p id="moved-checkout-serves-every-call-delta">
+    <strong>The gate's delta, stated plainly.</strong> The gate reports two
+    failures at this head against one at the base, and the difference is one
+    case rather than the new file's seven: the guard's own cases all pass. The
+    added failure is
+    <code>test_a_slow_child_never_forces_a_reconnect.py::test_a_version_conflict_survives_an_unanswered_child</code>,
+    a file outside this node's write scope, and it passes at the base (measured
+    against the base tree: 8 passed). That case writes to a child which answers
+    its probe and then never answers the call, and it expects the running
+    image's <code>version_conflict</code>; routing a write on its first call is
+    exactly what removes that expectation, and the answer a write gets when the
+    child did not answer it is <code>write_may_have_landed</code> with the read
+    that settles it. Which of the two the caller should get is the case's owner
+    to decide, so the failure is reported rather than repaired here.
   </p>
 </section>
