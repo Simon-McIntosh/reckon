@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="unattended-execution">
 <meta name="plan-impl" content="0.8823529411764706">
-<meta name="plan-version" content="300">
+<meta name="plan-version" content="301">
 <meta name="plan-modified" content="2026-10-21">
 <meta name="plan-commits" content="8d517e2a8775813f593e7168f5237bd4bb338fcf,d6bf49adc2ab44b3640182a1d3e8db0074909d62,5a93a1477648d72ea9e15571ed84101dfee33edc,26dc670d410b6f6779dc88c57f3865462f054c37">
 </head>
@@ -674,7 +674,7 @@ The test asserts the real crew home is untouched.</li>
 <p><strong>Done when</strong> all of these hold:</p>
 <ul>
 <li>A base-arm log at the dispatched base, from a clean extraction, shows each of the ten failure ids, and the manifest names the commit that introduced each group.</li>
-<li>Run pytest in the foreground with <code>-rA</code> over every test file under <code>tests/</code> importing <code>reckon.crew.picker.snapshot</code> or <code>reckon.crew.picker.prompts</code>, plus <code>tests/test_every_module_fits_a_worker_window.py</code>. At head the only failure is <code>tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window</code>. Both arms' logs go in the run directory, and the manifest's <code>baseline_suite</code> names the base log and its failure ids exactly as pytest prints them.</li>
+<li>Run pytest in the foreground with <code>-rA</code> over every test file under <code>tests/</code> importing <code>reckon.crew.picker.snapshot</code> or <code>reckon.crew.picker.prompts</code>, plus <code>tests/test_every_module_fits_a_worker_window.py</code>. At head the only failure is <code>tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window</code>, and each of the ten failure ids the base arm shows appears in the head log as <code>PASSED</code> under the same id, so no repair is a deletion or a skip. Both arms' logs go in the run directory, and the manifest's <code>baseline_suite</code> names the base log and its failure ids exactly as pytest prints them.</li>
 <li><code>ruff check</code> and <code>ruff format --check</code> add no finding on the staged paths, judged against the base blobs, with the log in the run directory.</li>
 </ul>
 <p><strong>Negative control.</strong> Revert the repair in <code>snapshot.py</code>, and <code>test_candidates_iterates_the_records_once</code> must fail. Run it under pytest with the default short summary.</p>
