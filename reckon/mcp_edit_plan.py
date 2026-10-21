@@ -40,6 +40,7 @@ from reckon._store import (
     set_nested,
     write_plan,
 )
+from reckon._store_section_ops import DECLARATIONS_PATH_HEAD
 from reckon.capability import (
     from_legacy_tier,
     validate_capability,
@@ -65,6 +66,7 @@ from reckon.mcp_deadlines import (
     _conflict_response,
     _edit_success_response,
     _op_error_response,
+    _plan_readiness_fields,
     _review_owed_fields,
     _run_scoped_checkout,
     _run_scoped_write_guard,
@@ -1006,6 +1008,27 @@ def _attach_changed_targets(
     return response
 
 
+def _changes_section_declarations(ops: list[dict[str, Any]] | None) -> bool:
+    """Whether a state-mode write moves a section's declaration.
+
+    ``DECLARATIONS_PATH_HEAD.<id>`` is the landing beat a section moves to done
+    through, and the bare head alone replaces the whole map; either is the write
+    that can leave a plan newly finished. Any other target — a section's typed
+    fields, a decision, a status — cannot, so the readiness the roadmap derives
+    is not attached to it. The head is the store's own head constant, so a
+    rename there moves this predicate with the dispatch it keys on rather than
+    detaching the readiness fields in silence.
+    """
+    head = DECLARATIONS_PATH_HEAD
+    for op in ops or []:
+        if not isinstance(op, dict):
+            continue
+        path = op.get("path")
+        if isinstance(path, str) and (path == head or path.startswith(f"{head}.")):
+            return True
+    return False
+
+
 def _ops_digest(
     mode: str,
     ops: list[dict[str, Any]] | None,
@@ -1681,4 +1704,9 @@ def _edit_plan_tool(
     # do not, so the note is attached only to a plan.
     if result.get("ok") and result.get("resource", {}).get("type") == "plan":
         result.update(_review_owed_fields(project, slug, result.get("path")))
+        # A write that moves a section declaration can be the one that leaves
+        # the plan finished, so that write also answers with the plan's
+        # readiness and what still stands before its close.
+        if mode == "state" and _changes_section_declarations(ops):
+            result.update(_plan_readiness_fields(project, slug, checkout_path))
     return result
