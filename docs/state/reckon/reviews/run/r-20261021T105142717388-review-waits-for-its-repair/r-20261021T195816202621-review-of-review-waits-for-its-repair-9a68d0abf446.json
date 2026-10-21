@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:498",
+    "reckon/crew_dispatch_commands.py:2652",
+    "reckon/crew/recovery_watch.py:3016"
+  ],
+  "completed_at": "2026-10-21T20:18:01.345Z",
+  "dispatched_at": "2026-10-21T19:59:37Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "2154",
+      "severity": "follow-on",
+      "text": "follow-on: the delegated repair_module._finding_location returns f\":{line}\" whenever a finding carries a line but no file, because its guard is on line alone (reckon/crew/repair.py:445), and that string is truthy so the 'or \"the review's findings\"' fallback at line 2154 no longer covers the shape. The deleted _finding_place corrected that same input, so a refusal now prints a bare ':12 \u2014 dispose it with ...' where it previously named the fallback; review.py:881 reaches it for any reviewer anchor that begins with a colon, since it guards only that ':' appears in the anchor."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against 860563698f545e2646653d8ac68fe66703afe785; one commit (9a68d0ab refactor(crew): render a finding's place through the repair composer) touching one file, 10 insertions and 15 deletions, which deletes _finding_place, adds no new definition, imports repair lazily and folds the two _finding_dispose_commands lookups into one; the commit message has a body and no AI trailer.",
+    "done_when": "The done-when names tests/test_a_review_waits_for_its_repair.py plus tests/test_review_lifecycle.py and five neighbours, judged by failure delta against the base revision; the manifest's after_suite records logs/gate-base-r5.log and logs/gate-head-r5.log over a 27-file superset, and I read both logs directly: head carries revision 9a68d0abf446 with '2 failed, 186 passed' and EXIT=1, base carries ac17ed130 with '4 failed, 184 passed' and EXIT=1, and both head failure ids appear in the base's four.",
+    "goal": "The source node goal is to refuse a review dispatch while the run's newest review holds an undisposed blocking finding read through review_lifecycle; this incremental commit leaves that refusal in place and rewrites how it names a finding's place \u2014 reckon/crew/recovery_review_dispatch.py:2154 now calls repair_module._finding_location, replacing the deleted _finding_place at the old line 2079 \u2014 so the build is exactly the reuse repair the prior review (at-860563698f54) filed as its one follow-on.",
+    "manifest": "Read the reviewed manifest.md: status complete, commits ending 9a68d0abf4463666fbaffa90bcbebc4e45775d98, baseline_suite and after_suite at the two revisions with their log paths, test_logs naming gate-base-r5.log and gate-head-r5.log, negative_control_log naming logs/negative-control-round4.log, and one landing line; its recorded failure delta reconciles with the two logs I opened.",
+    "write_paths": "The dispatch fence names reckon/crew/recovery_review_dispatch.py, tests/test_a_review_waits_for_its_repair.py, docs/evidence/fragments/work-is-checked-against-its-domain/review-waits-for-its-repair.html and the matching figures directory, extended by the resume-1 advice with three further source modules; the single path in the 860563698..9a68d0ab diff is the first of them."
+  },
+  "justifications": {
+    "durability": "The rendering this commit delegates to is guarded by an independent literal at tests/test_a_review_waits_for_its_repair.py:281 (assert 'pkg/mod.py:1' in reason), which reddens if the place rendering regresses, but nothing in the diff fails if the duplicate rendering is reintroduced, so the single-rendering property the commit exists for is unguarded.",
+    "evidence": "The gate is recorded, not claimed: gate-head-r5.log carries 'revision: 9a68d0abf4463666fbaffa90bcbebc4e45775d98' on its header and '2 failed, 186 passed in 490.32s' with a bare 'EXIT=1, and its two FAILED ids are a subset of gate-base-r5.log's four, so added_failure_count is 0 read off the logs themselves.",
+    "fit": "The file keeps the surrounding style, ruff check --no-cache reports All checks passed! and ruff format --check --no-cache reports 1 file already formatted on reckon/crew/recovery_review_dispatch.py, and the lazy import at line 2122 matches the in-function import idiom at line 2067; the one departure is reaching into another module's private name (repair_module._finding_location).",
+    "goal_fidelity": "The node goal's refusal is intact and this incremental commit improves it: reckon/crew/recovery_review_dispatch.py:2154 renders every undisposed finding's place through repair_module._finding_location, and dispatch_review_for_run at line 2175 still returns before anything is composed, so the land does what the goal states.",
+    "reuse": "The diff deletes reckon/crew/recovery_review_dispatch.py's _finding_place and calls the owner reckon/crew/repair.py:441 _finding_location, so the capability has one implementation instead of two; the capability search over reckon/crew for a finding-place renderer found no other owner.",
+    "scope_discipline": "git diff --name-only 860563698f545e2646653d8ac68fe66703afe785 9a68d0abf4463666fbaffa90bcbebc4e45775d98 returns exactly reckon/crew/recovery_review_dispatch.py, inside the declared write paths, with no test, figure or evidence prose the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node goal is to refuse a review dispatch while the run's newest review carries an undisposed blocking finding read through review_lifecycle; this incremental commit leaves that refusal intact and rewrites only how it names a finding's place \u2014 reckon/crew/recovery_review_dispatch.py:2154 calls repair_module._finding_location where the deleted _finding_place was \u2014 so it lands the reuse repair the prior review filed.\nVERDICT done_when: the done-when names tests/test_a_review_waits_for_its_repair.py plus six neighbours judged by failure delta against the base revision; I read logs/gate-head-r5.log myself \u2014 'revision: 9a68d0abf4463666fbaffa90bcbebc4e45775d98', '2 failed, 186 passed in 490.32s' \u2014 and logs/gate-base-r5.log \u2014 'revision: ac17ed130e1aa4f9b8c12643dfb41404fd4c2869', '4 failed, 184 passed' \u2014 and both head FAILED ids are in the base's four, so head adds none.\nVERDICT write_paths: the declared fence is reckon/crew/recovery_review_dispatch.py, tests/test_a_review_waits_for_its_repair.py, the landing fragment and its figures directory, extended by the resume-1 advice with three source modules; git diff --name-only across the reviewed range returns exactly the first of them.\nVERDICT manifest: read; it reads status complete with its commits ending at 9a68d0abf446, flat baseline_suite and after_suite records at the two revisions with their log paths and literal commands, negative_control_log logs/negative-control-round4.log, and a landing line whose failure delta matches the two gate logs.\nVERDICT diff: read commit by commit against 860563698f545e2646653d8ac68fe66703afe785; one commit, one file, 10 insertions and 15 deletions in reckon/crew/recovery_review_dispatch.py \u2014 _finding_place deleted and its caller delegating to repair._finding_location, with the two dispose-command lookups merged into one.\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:498, reckon/crew_dispatch_commands.py:2652, reckon/crew/recovery_watch.py:3016\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_dispatch.py:2154 renders the finding's place through the repair composer while dispatch_review_for_run at line 2175 still returns before any review is composed.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/gate-head-r5.log names revision 9a68d0abf446 on its header and ends '2 failed, 186 passed' with EXIT=1, and its FAILED ids are a subset of logs/gate-base-r5.log's, so the recorded delta is read off the logs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the reviewed range's only changed path is reckon/crew/recovery_review_dispatch.py, inside the declared write paths, and no other file, test or figure moves with it.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_review_waits_for_its_repair.py:281 pins the rendering with the independent literal 'pkg/mod.py:1', but no test fails if a duplicate place renderer is reintroduced beside repair.py:441.\nSCORE fit: 17\nJUSTIFICATION fit: ruff check --no-cache and ruff format --check --no-cache are clean on reckon/crew/recovery_review_dispatch.py and the lazy import at line 2122 follows the module's own idiom, with the sole departure being a cross-module call to the private repair_module._finding_location.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff removes the duplicate at reckon/crew/recovery_review_dispatch.py and calls the owner reckon/crew/repair.py:441 _finding_location, and a capability search over reckon/crew found no other renderer of a finding's place.\nFINDING reckon/crew/recovery_review_dispatch.py:2154 follow-on: repair_module._finding_location returns ':line' for a finding that carries a line but no file, a truthy string the 'or \"the review's findings\"' fallback at this line no longer replaces, so a refusal can print ':<n> \u2014 dispose it with ...' where the deleted _finding_place named the fallback; reckon/crew/review.py:881 admits such a finding for any reviewer anchor opening with a colon.",
+  "review_run_id": "r-20261021T195816202621-review-of-review-waits-for-its-repair-9a68d0abf446",
+  "reviewed_base_sha": "860563698f545e2646653d8ac68fe66703afe785",
+  "reviewed_head_sha": "9a68d0abf4463666fbaffa90bcbebc4e45775d98",
+  "reviewed_run_id": "r-20261021T105142717388-review-waits-for-its-repair",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "review",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T20:18:29.397917+00:00",
+  "total": 110
+}
