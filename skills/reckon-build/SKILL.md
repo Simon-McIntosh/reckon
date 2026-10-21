@@ -63,7 +63,8 @@ Detail: `crew(project, view="live")`, `crew(project, view="scopes")`,
 `crew(project, view="records")`, `crew(project, view="budget")`,
 `crew(project, view="lanes")`, `crew(project, view="models")`,
 `crew(project, view="runs")`, `crew(project, view="scores")`,
-`crew(project, view="routing")`, `crew(project, view="findings")` and
+`crew(project, view="forgotten")`, `crew(project, view="routing")`,
+`crew(project, view="findings")` and
 `crew(project, view="velocity")`; also `crew(view="directory")`,
 `crew(view="fleet")` and `crew(view="obligations", session=<session>)`.
 On `live`, `phase` keeps pointers in one phase and `mine` keeps only the rows
