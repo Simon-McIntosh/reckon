@@ -1,0 +1,81 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The reviewed manifest names neither baseline_suite nor after_suite (both null; it is not an armed node, its done_when assigns the importer population to the coordinator at merge), so the count could not be taken from the reviewed run's own arms. It was measured here over the single test the gate names: base arm 6671f12d1b3b with the head test file (1 failed, 2 passed, 3 errors, EXIT=1, review-base-arm.log) and head arm 2d42055f79c2 (6 passed, EXIT=0, review-head-arm.log); the head adds no failing test to the head test file's base set, so the count is a measured zero.",
+  "after_suite": {
+    "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/67139f13-acc5-4116-8e4d-ecb63acaac2c/a-figure-review-node-names-its-reviewed-run /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_figure_review_node_names_its_reviewed_run.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T124015529620-review-of-a-figure-review-node-names-its-reviewed-run-2d42055f79c2/review-head-arm.log",
+    "revision": "2d42055f79c2557a0ae1713609b039a6d50e6ffc"
+  },
+  "baseline_suite": {
+    "command": "PYTHONPATH=/tmp/reckon-crew-scratch/r-20261021T124015529620-review-of-a-figure-review-node-names-its-reviewed-run-2d42055f79c2/base-arm /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/reckon-crew-scratch/r-20261021T124015529620-review-of-a-figure-review-node-names-its-reviewed-run-2d42055f79c2/base-arm/tests/test_a_figure_review_node_names_its_reviewed_run.py",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 4,
+    "failure_ids": [
+      "tests/test_a_figure_review_node_names_its_reviewed_run.py::test_a_figure_node_id_resolves_to_its_source_and_head",
+      "tests/test_a_figure_review_node_names_its_reviewed_run.py::test_admission_resolves_a_minted_figure_id_to_its_reviewed_run",
+      "tests/test_a_figure_review_node_names_its_reviewed_run.py::test_the_dry_run_figure_dispatch_composes_without_a_scoped_refusal",
+      "tests/test_a_figure_review_node_names_its_reviewed_run.py::test_the_mint_routes_the_figure_rubric_through_the_round_rule"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T124015529620-review-of-a-figure-review-node-names-its-reviewed-run-2d42055f79c2/review-base-arm.log",
+    "revision": "6671f12d1b3b55176730a377815e6bfbd780ae7e"
+  },
+  "call_sites": [
+    "reckon/crew/recovery_review_subject.py:_review_dispatch_fields",
+    "reckon/crew/dispatch_admission.py:_reviewed_run_id_for_node",
+    "reckon/crew/dispatch_sessions.py:_task_identity",
+    "reckon/crew/recovery_review_delivery.py:_is_run_review_node",
+    "reckon/crew/recovery_review_delivery.py:_resolved_reviewed_run_id",
+    "reckon/crew/recovery_review_delivery.py:_durable_reviewed_run_id",
+    "reckon/crew_run_commands.py:_dispatched_head_for_row",
+    "reckon/crew/repair.py:repair_node_id"
+  ],
+  "completed_at": "2026-10-21T13:03:33.488Z",
+  "dispatched_at": "2026-10-21T12:42:02Z",
+  "findings": [
+    {
+      "file": "tests/test_a_figure_review_node_names_its_reviewed_run.py",
+      "line": 142,
+      "severity": "follow-on",
+      "text": "assert fields[\"node_id\"] == _figure_node_id(SOURCE_NODE, fields[\"head\"]) compares the mint's output against a call to the code under test, since _figure_node_id() itself calls round_node_id(..., rubric=...); both sides move with round_node_id, and under the pre-change spelling (round_node_id(...) plus an appended -figure) the two sides are still equal, so the assertion does not guard the mint routing it appears to. The guard is the adjacent spy assertion at tests/test_a_figure_review_node_names_its_reviewed_run.py:141."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T120141235782-a-figure-review-node-names-its-reviewed-run/manifest.md",
+      "line": 16,
+      "severity": "follow-on",
+      "text": "The done_when requires that ruff check and ruff format --check add no findings; the manifest asserts they are clean under artifacts but names no ruff log among test_logs, and no ruff log exists under the run directory, so that clause rests on a claim rather than a recorded result, unlike the gate and negative-control logs."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Verified 8 production call sites of the changed readers.",
+    "diff": "Read commit by commit against base 6671f12d1b3b: one commit 2d42055f79c2 changes reckon/crew/repair.py and reckon/crew/recovery_review_subject.py:761 and adds the test file and an 8-line fragment; nothing else moves.",
+    "done_when": "The done_when names tests/test_a_figure_review_node_names_its_reviewed_run.py and lists six clauses; the gate log (gate-a-figure-review-node-names-its-reviewed-run.log) records 6 passed EXIT=0 at 2d42055f79c2 and I reproduced that run, and each clause is asserted by a named case in the file.",
+    "goal": "The node goal is to make round_node_id and its inverses in reckon/crew/repair.py carry a figure review's rubric suffix so a minted figure review node id resolves to the run it reviews; reckon/crew/repair.py:351 round_node_id now takes a keyword-only rubric written after the head suffix, and reckon/crew/repair.py:376 round_node_source and reckon/crew/repair.py:401 round_node_head_suffix strip it only behind a 12-hex head, which is the goal.",
+    "manifest": "Read; it records status complete, commit 2d42055f79c2, the gate command with 6 passed EXIT=0, the negative_control_log path and its changed paths, with baseline_suite and after_suite null.",
+    "write_paths": "The manifest declares reckon/crew/repair.py, reckon/crew/recovery_review_subject.py, tests/test_a_figure_review_node_names_its_reviewed_run.py, the section fragment and an unused figures directory; git show --stat for 2d42055f79c2 lists exactly those four changed files, all inside the declared scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is for round_node_id and its inverses in reckon/crew/repair.py to carry a figure review's rubric suffix so a minted figure review node id resolves to the run it reviews; reckon/crew/repair.py:351 writes the rubric after the head suffix and reckon/crew/repair.py:376 and :401 strip it only behind a 12-hex head, which is the goal.\nVERDICT done_when: the done_when names tests/test_a_figure_review_node_names_its_reviewed_run.py and lists six clauses; the gate log records 6 passed EXIT=0 at 2d42055f79c2 and I reproduced that run, and every clause is asserted by a named case in the file.\nVERDICT write_paths: the manifest declares reckon/crew/repair.py, reckon/crew/recovery_review_subject.py, tests/test_a_figure_review_node_names_its_reviewed_run.py, the section fragment and an unused figures directory, and git show --stat for 2d42055f79c2 lists exactly the first four, all inside the declared scope.\nVERDICT manifest: read; it records status complete, commit 2d42055f79c2, the gate command with 6 passed EXIT=0, the negative_control_log path, and its changed paths, with baseline_suite and after_suite null.\nVERDICT diff: read commit by commit against base 6671f12d1b3b; one commit 2d42055f79c2 changes reckon/crew/repair.py and reckon/crew/recovery_review_subject.py:761 and adds the test file and an 8-line fragment; nothing else moves.\nCALL_SITES: reckon/crew/recovery_review_subject.py:_review_dispatch_fields, reckon/crew/dispatch_admission.py:_reviewed_run_id_for_node, reckon/crew/dispatch_sessions.py:_task_identity, reckon/crew/recovery_review_delivery.py:_is_run_review_node, reckon/crew/recovery_review_delivery.py:_resolved_reviewed_run_id, reckon/crew/recovery_review_delivery.py:_durable_reviewed_run_id, reckon/crew_run_commands.py:_dispatched_head_for_row, reckon/crew/repair.py:repair_node_id\n",
+  "review_run_id": "r-20261021T124015529620-review-of-a-figure-review-node-names-its-reviewed-run-2d42055f79c2",
+  "reviewed_base_sha": "6671f12d1b3b55176730a377815e6bfbd780ae7e",
+  "reviewed_head_sha": "2d42055f79c2557a0ae1713609b039a6d50e6ffc",
+  "reviewed_run_id": "r-20261021T120141235782-a-figure-review-node-names-its-reviewed-run",
+  "rubric": "node",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T13:04:39.338654+00:00",
+  "total": 114
+}
