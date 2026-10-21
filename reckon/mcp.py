@@ -245,17 +245,19 @@ _LOGGER = logging.getLogger("reckon.mcp")
 # config shape that changed after the server started — is invisible to the
 # loaded classes, so a call that reads the new config from disk validates it
 # against the old classes and fails with a schema error that names nothing
-# about the restart owed. The guard answers on failure rather than before the
-# call: a call that returns normally is returned untouched and computes no
-# stamp, because most commits move the code without breaking a running image
-# and refusing them all would stop every session's server many times an hour.
+# about the restart owed.
 #
-# When a call does fail and the checkout has moved and can be trusted, the
-# server answers it on the current code rather than refusing: the client holds
-# the session it initialised, so the process cannot be replaced the way the
-# HTTP server is, and the call is run against the checkout in a child
-# interpreter whose answer stands in for the stale image's. That answer is
-# returned whether it succeeded or failed, because a failure the current code
+# Once the checkout has moved and can be trusted, the guard answers every call
+# on the current code rather than only the calls that failed: an image that
+# still runs returns the behaviour it was built with, and after a landing that
+# is behaviour the tree no longer has, with nothing in the answer to say so.
+# The child is warmed by its readiness probe rather than by a call, so a call
+# made while it is still cold is served by the image and never waits on it.
+#
+# The client holds the session it initialised, so the process cannot be
+# replaced the way the HTTP server is; the call is run against the checkout in
+# a child interpreter whose answer stands in for the stale image's. That answer
+# is returned whether it succeeded or failed, because a failure the current code
 # gives is the caller's real answer and a reconnect would deliver the same one
 # a turn later. The child runs the tool, not this guard, so the decision is
 # made once, in the server the client is talking to. A changed tool signature
@@ -309,6 +311,51 @@ def _failed_result(result: Any) -> Mapping[str, Any] | None:
 
     if isinstance(result, Mapping) and result.get("ok") is False:
         return result
+    return None
+
+
+#: The error types a running image raises when a configuration or a schema has
+#: moved past the classes it loaded at start. Only a value led by one of these
+#: is the defect this guard answers on the current code; a failure of the
+#: call's own, whatever its text happens to contain, is the caller's answer.
+_SCHEMA_ERROR_NAMES = ("ValidationError", "FlightConfigError", "SchemaError")
+
+#: The answer fields that carry a sub-computation's exception beside a
+#: successful result rather than the call's own outcome. An error in a field
+#: outside this list is part of the caller's answer and is never re-run, so an
+#: unrelated failure reaching here is not re-read as this guard's case.
+_EMBEDDED_FAILURE_FIELDS = ("review_owed_error",)
+
+
+def _embedded_schema_failure(result: Any) -> Mapping[str, Any] | None:
+    """The schema failure a successful answer carries in a field beside it.
+
+    A write can succeed and still report an answer it could not compute: an
+    ``edit_plan`` answer names in ``review_owed_error`` why the review
+    predicate could not answer it, and a config the running image's classes
+    cannot validate lands there rather than escaping after the write. Such an
+    answer is read as a failure, because it is one — the current code would
+    give the answer the image could not. The field must be one of
+    ``_EMBEDDED_FAILURE_FIELDS`` and its value must lead with a schema error
+    type, so an error of any other kind, or an error in any other field, is the
+    call's own result and stands rather than being re-run.
+    """
+
+    if not isinstance(result, Mapping):
+        return None
+    for key in _EMBEDDED_FAILURE_FIELDS:
+        value = result.get(key)
+        if not isinstance(value, str) or not value:
+            continue
+        leading = value.split(":", 1)[0].rsplit(".", 1)[-1].strip()
+        if leading not in _SCHEMA_ERROR_NAMES:
+            continue
+        return {
+            "ok": False,
+            "error": leading,
+            "detail": value,
+            "field": key,
+        }
     return None
 
 
@@ -498,7 +545,8 @@ def _unanswered_on_current_code(
     The current code did not run: its child was still cold, or made no answer
     within its bound. The failed call therefore keeps its own error code and
     detail — which is what the caller retries on — and gains the two stamps and
-    a note, rather than the reconnect refusal a non-answer used to become.
+    a note, rather than a reconnect refusal, which is for a call the current
+    code will not take over.
     """
 
     return {
@@ -510,6 +558,26 @@ def _unanswered_on_current_code(
             "call's own result stands."
         ),
     }
+
+
+def _raised_under_the_current_code(exc: BaseException) -> dict[str, Any] | None:
+    """The refusal a call gets when it raised before the current code ran it.
+
+    A raised failure carries no error code and no stamps of its own, so a
+    caller sees a crash where a returned failure would have told it the code
+    had moved and what to do about it. The answer is the refusal the guard
+    already builds for a failure the current code did not take over, with the
+    exception that was raised added as ``original_error``.
+
+    ``None`` means there is no such refusal to give: the tree's state is read
+    again inside that refusal, and a tree that no longer loads — moved between
+    this guard's own read and this one, or untrusted — leaves the raise as the
+    call's own failure. An answer built from a refusal that was not made would
+    be a caller's failure replaced by nothing at all.
+    """
+
+    reason = f"{type(exc).__name__}: {exc}"
+    return _stale_code_response(reason)
 
 
 def _write_may_have_landed(
@@ -547,11 +615,6 @@ def _served_on_current_code(
     return marked
 
 
-#: Tools whose calls this session has started answering on the current code. A
-#: session whose image went stale keeps serving from the tree behind it, rather
-#: than falling back to the image every later call.
-_SERVE_ON_CURRENT_CODE: set[str] = set()
-
 #: The one persistent child per code stamp behind this guard. It is started when
 #: the guard first sees the stamp move and reused for every routed call until
 #: the stamp moves again, so a session pays one import per commit rather than
@@ -586,7 +649,6 @@ def _answer_from_child(
     answer = _current_code_answer(routed) if routed is not None else None
     if answer is None:
         return None
-    _SERVE_ON_CURRENT_CODE.add(name)
     return _served_on_current_code(
         answer, state.disk_stamp, schema_note=_schema_note(name, probe)
     )
@@ -595,20 +657,26 @@ def _answer_from_child(
 def _refuse_when_stale(tool: Callable[..., Any], *, name: str) -> Callable[..., Any]:
     """Wrap one registered tool so it answers on the current code once it moves.
 
-    A call that returns normally is returned untouched, so a commit that moves
-    the code without breaking the running image costs nothing. The stamp is
-    computed per call, and on a moved, trusted tree the guard starts its one
-    persistent child and asks it for a readiness probe. Until that probe answers
-    the child is cold and the running image serves every call, so a cold child
-    never makes a caller wait; a call that fails while it is cold keeps its own
-    result, marked with the two stamps, rather than becoming a reconnect. Once
-    the child is warm, a call of a tool that has fallen back runs in the child
-    instead of the image, so it runs once. A routed read the child does not
-    answer falls back to the image; a routed write never does, because it may
-    have landed, and its timeout names the re-read to make first. The child's
-    verdict decides whether a changed signature is compatible — an added
-    optional parameter is served with a ``schema_note``, and only a change the
-    client's calls cannot survive is refused, with a reconnect as its remedy.
+    The stamp is computed per call, and on a moved, trusted tree the guard
+    starts its one persistent child and asks it for a readiness probe. Until
+    that probe answers the child is cold and the running image serves every
+    call, so a cold child never makes a caller wait; a call that fails while
+    it is cold keeps its own result, marked with the two stamps, rather than
+    becoming a reconnect, and one that raises while the child is cold carries
+    the same stamps with the reconnect remedy rather than a raw error. Only a
+    raise the image answers for is that refusal: once the child is warm it
+    answers every call of every tool, writes included, so a call that would
+    have succeeded on the stale image runs on the current code like one that
+    failed, and a warm-child read that fell back to the image and raised keeps
+    that failure as its own. A read the child does not answer falls back to the
+    image; a write never does, because it may have landed, and its timeout
+    names the re-read to make first. A failure embedded in an otherwise
+    successful answer is answered on the current code like a failed one where
+    the field is one of ``_EMBEDDED_FAILURE_FIELDS`` and its value leads with a
+    name in ``_SCHEMA_ERROR_NAMES``. The child's verdict decides whether a
+    changed signature is compatible — an added optional parameter is served
+    with a ``schema_note``, and only a change the client's calls cannot survive
+    is refused, with a reconnect as its remedy.
     """
     signature = getattr(tool, "__signature__", None)
 
@@ -620,15 +688,12 @@ def _refuse_when_stale(tool: Callable[..., Any], *, name: str) -> Callable[..., 
             if server is not None
             else None
         )
-        routed = False
-
         if probe is not None:
             if _probe_incompatible(name, probe):
                 refusal = _stale_code_response(None, tool=name)
                 if refusal is not None:
                     return refusal
-            elif name in _SERVE_ON_CURRENT_CODE:
-                routed = True
+            else:
                 answer = _answer_from_child(state, server, probe, name, kwargs)
                 if answer is not None:
                     return answer
@@ -637,18 +702,19 @@ def _refuse_when_stale(tool: Callable[..., Any], *, name: str) -> Callable[..., 
 
         try:
             result = await tool(**kwargs)
-        except Exception:
-            if not routed:
-                answer = _answer_from_child(state, server, probe, name, kwargs)
-                if answer is not None:
-                    return answer
-            raise
+        except Exception as exc:
+            refusal = (
+                _raised_under_the_current_code(exc)
+                if probe is None and server is not None
+                else None
+            )
+            if refusal is None:
+                raise
+            return refusal
         failure = _failed_result(result)
+        if failure is None:
+            failure = _embedded_schema_failure(result)
         if failure is not None and state.may_load:
-            if not routed:
-                answer = _answer_from_child(state, server, probe, name, kwargs)
-                if answer is not None:
-                    return answer
             return _unanswered_on_current_code(failure, state)
         return result
 
