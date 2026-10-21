@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="unattended-execution">
 <meta name="plan-impl" content="0.8823529411764706">
-<meta name="plan-version" content="316">
+<meta name="plan-version" content="317">
 <meta name="plan-modified" content="2026-10-21">
 <meta name="plan-commits" content="8d517e2a8775813f593e7168f5237bd4bb338fcf,d6bf49adc2ab44b3640182a1d3e8db0074909d62,5a93a1477648d72ea9e15571ed84101dfee33edc,26dc670d410b6f6779dc88c57f3865462f054c37">
 </head>
@@ -1515,6 +1515,9 @@ The test asserts the real crew home is untouched.</li>
 </div>
 <div class="r-comment" data-section="s51" data-id="c-run-r-20261021T043707689022-review-of-the-burn-tests-home-guard-ignores-in-flight-writes-ae9df9f060ff" data-who="reckon-build" data-when="2026-10-21T04:52:04.919Z">
     <div class="r-comment-body"><p>§51 — independent review of r-20261021T032952017329-the-burn-tests-home-guard-ignores-in-flight-writes at head ae9df9f060ff (base d29118417): goal_fidelity 20, evidence 18, scope_discipline 19, durability 19, fit 18, reuse 20; added_failure_count 0, added_failure_ids []; one follow-on finding (the store-temporary predicate at reckon/_store.py:504 checks only a leading dot and a .tmp suffix while its docstring describes the writer's whole form, so `.&lt;anything&gt;.tmp` is exempted from the listing arm — the accepted cost the fragment records); no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s51" data-id="c-run-r-20261021T032952017329-the-burn-tests-home-guard-ignores-in-flight-writes" data-who="reckon-build" data-when="2026-10-21T04:36:06Z">
+    <div class="r-comment-body"><p>§51 — the listing arm of `_writes_into_the_live_home` skips an entry the store names as its own temporary, so a peer&#x27;s in-flight pointer write is not reported as a stray pointer; the temporary&#x27;s name now has one owner, `reckon/_store.py`&#x27;s `_sibling_temporary_path` (used by the atomic write) with the `is_store_temporary` predicate beside it, replacing the copied expression in all three test files. Gate over the four files at head `1 failed, 29 passed` (EXIT=1) against base `1 failed, 26 passed` (EXIT=1), the same single pre-existing failure id `test_every_module_fits_a_worker_window`, so zero added; ruff delta zero; the declared negative control turns the in-flight case red.</p></div>
 </div>
 </section>
 </main>
