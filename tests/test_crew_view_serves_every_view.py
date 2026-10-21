@@ -30,7 +30,7 @@ from typing import get_args
 import pytest
 from click.testing import CliRunner
 
-from reckon import mcp, mcp_views, velocity
+from reckon import budget, mcp, mcp_views, velocity
 from reckon._mcp_tools import CrewArgs
 from reckon.cli import main
 
@@ -321,30 +321,74 @@ _VOLATILE_KEYS = frozenset(
     }
 )
 
+#: The field a view stamps at its own top level from the instant it composed its
+#: answer. The budget view sets ``checked_at`` from the moment
+#: :func:`reckon.budget.preflight` runs, so two compositions a moment apart
+#: differ there whatever the fixture holds, and the driven clock below makes
+#: that difference happen every run rather than only under load.
+#:
+#: It is dropped by view and at the top level rather than added to
+#: :data:`_VOLATILE_KEYS`, which drops by key name at every depth of every view:
+#: the review views carry a ``checked_at`` copied from a stored review record at
+#: a nested position, and that one records what was written rather than when the
+#: answer was composed, so the two surfaces must still agree on it.
+_TOP_LEVEL_COMPOSITION_STAMPS = {"budget": frozenset({"checked_at"})}
 
-def _without_the_composition_instant(value):
+
+def _without_the_named_keys(value):
     if isinstance(value, dict):
         return {
-            key: _without_the_composition_instant(item)
+            key: _without_the_named_keys(item)
             for key, item in value.items()
             if key not in _VOLATILE_KEYS
         }
     if isinstance(value, list):
-        return [_without_the_composition_instant(item) for item in value]
+        return [_without_the_named_keys(item) for item in value]
     return value
 
 
+def _without_the_composition_instant(value, *, view: str) -> object:
+    """Drop what each surface derived from the instant it happened to run.
+
+    ``view`` selects the stamps dropped at the document's own top level, so a
+    stored field that happens to share a name with a composition stamp survives
+    at every position below it.
+    """
+    stamps = _TOP_LEVEL_COMPOSITION_STAMPS.get(view, frozenset())
+    if isinstance(value, dict) and stamps:
+        value = {key: item for key, item in value.items() if key not in stamps}
+    return _without_the_named_keys(value)
+
+
+#: The instant the budget view is told it is composing at, and how far the
+#: second call of each pair is advanced past the first. The two surfaces are
+#: invoked seconds apart in reality; driving the clock makes the parity case
+#: measure the divergence it guards against instead of waiting for load to
+#: produce one.
+_PARITY_INSTANT = dt.datetime(2026, 9, 10, 12, 0, tzinfo=dt.UTC)
+_PARITY_CLOCK_ADVANCE = dt.timedelta(seconds=30)
+
+
+def _hold_the_budget_clock_at(monkeypatch, moment: dt.datetime) -> None:
+    """Pin ``budget._now`` to ``moment`` for the call that follows."""
+    monkeypatch.setattr(budget, "_now", lambda now=None: now or moment)
+
+
 def test_every_declared_view_answers_the_same_document_on_both_surfaces(
-    live_fleet: Path,
+    live_fleet: Path, monkeypatch
 ) -> None:
     disagreements = []
     for name in _view_names():
         for label, arguments in _ARGUMENT_VECTORS:
+            _hold_the_budget_clock_at(monkeypatch, _PARITY_INSTANT)
             served = _without_the_composition_instant(
-                _served_by_the_tool(name, arguments)
+                _served_by_the_tool(name, arguments), view=name
+            )
+            _hold_the_budget_clock_at(
+                monkeypatch, _PARITY_INSTANT + _PARITY_CLOCK_ADVANCE
             )
             emitted = _without_the_composition_instant(
-                _served_by_the_cli(name, arguments)
+                _served_by_the_cli(name, arguments), view=name
             )
             if emitted != served:
                 disagreements.append(f"{name} with {label}")
@@ -353,6 +397,25 @@ def test_every_declared_view_answers_the_same_document_on_both_surfaces(
         "these view/argument pairs answer differently on the command line and "
         f"on the crew tool: {sorted(disagreements)}"
     )
+
+
+def test_only_the_budget_views_own_stamp_is_dropped() -> None:
+    """The budget view's top-level stamp goes; a stored one is still compared.
+
+    The parity case's filter is the subject, driven here with a document of each
+    shape. A view other than budget carrying a nested ``checked_at`` — the review
+    views' stored stamp — must keep it, and so must the budget view's own nested
+    fields: the drop is confined to one view and to its top level.
+    """
+    stored = {"composed_at": "t0", "review": {"checked_at": "stored"}}
+    kept = _without_the_composition_instant(stored, view="reviews")
+    assert kept["review"]["checked_at"] == "stored"
+    assert "composed_at" not in kept
+
+    composed = {"checked_at": "t0", "backends": [{"checked_at": "stored"}]}
+    dropped = _without_the_composition_instant(composed, view="budget")
+    assert "checked_at" not in dropped
+    assert dropped["backends"][0]["checked_at"] == "stored"
 
 
 def test_a_view_the_dispatcher_serves_alone_is_named() -> None:
