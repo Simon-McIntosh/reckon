@@ -1,0 +1,39 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-21T18:49:50.629Z",
+  "dispatched_at": "2026-10-21T18:35:52Z",
+  "findings": [
+    {
+      "line": 265,
+      "path": "tests/test_a_moved_checkout_serves_every_call.py",
+      "severity": "follow-on",
+      "text": "the assertion compares the answer against rig.child_stamp(), which reads the child-reported-stamp file the child wrote from <root>/code-stamp, and the rig seeds that file with the same self.stamp it hands the guard as disk_stamp in _state() (tests/test_a_moved_checkout_serves_every_call.py:182 and :197). The child's own read removes the prior defect, where the value came from the server accessor; what remains is that both sides still resolve to one constant, so an implementation that stamped the answer from state.disk_stamp rather than from the child's answer would pass this line. The case still fails an image-produced answer (which carries no stamp), so the guard is real but weaker than the fragment's wording claims. Writing a third value into the tree's code-stamp, distinct from disk_stamp, would separate a child's read from a disk_stamp echo."
+    },
+    {
+      "line": 563,
+      "path": "reckon/mcp.py",
+      "severity": "follow-on",
+      "text": "the raise path now delegates to _stale_code_response with tool=None, whose detail clause for that branch reads 'This call failed on the current code too' (reckon/mcp.py:531); on this path the current code never ran the call, so only the stamps and the remedy are apt. The wording predates these commits and is unchanged by them."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261021T183401749042-review-of-moved-checkout-serves-every-call-564b134aa12c",
+  "reviewed_base_sha": "4802fd981383cf45c5a57509ac0a7b28773eb694",
+  "reviewed_head_sha": "564b134aa12c94b180b9bd5538f0fc8294ca9987",
+  "reviewed_run_id": "r-20261021T105241619584-moved-checkout-serves-every-call",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "subject": "run",
+  "text": "VERDICT goal: the node goal is to serve every MCP call on the current code once the checkout has moved and is trusted, not only calls that failed; the gained commits land the correction the prior review asked for at reckon/mcp.py:698-712, where a raise now reaches the caller when no refusal can be composed, and the test work at tests/test_a_moved_checkout_serves_every_call.py:233-243 makes the stamp assertion read the child's own report. The goal's core routing was landed before this window and is unchanged here.\nVERDICT done_when: the done_when names four behaviours, the unmoved-checkout control, and the six-file gate judged by failure delta; the manifest's tests line is that literal six-file pytest command, gate.log records 1 failed and 35 passed at revision 3428daac2 with EXIT=1, and base-gate.log records 7 failed and 29 passed over the same 36 cases with EXIT=1, so the added failure delta is zero.\nVERDICT write_paths: the three targets this review was scoped to are docs/evidence/fragments/the-mcp-answers-the-question-asked/moved-checkout-serves-every-call.html, reckon/mcp.py and tests/test_a_moved_checkout_serves_every_call.py; git diff --stat 4802fd981 564b134aa lists exactly those three files and nothing else, so every path in the diff is inside the declared scope.\nVERDICT manifest: read; it records status complete, thirteen commits ending 564b134aa, the six-file gate read at head 3428daac2, negative_control_log base-gate.log, and follow_ons naming the pre-existing test_one_check_trusts_a_moved_checkout failure; its baseline_suite and after_suite keys are empty, so the failure delta is read from gate.log and base-gate.log themselves, and the reviewed worktree is clean at 564b134aa.\nVERDICT diff: read commit by commit against 4802fd981383cf45c5a57509ac0a7b28773eb694: 83a167caf changes _raised_under_the_current_code to return None and the guard to re-raise (reckon/mcp.py:563-581 and :703-712), 3428daac2 gives the fake child a tree-stamp read and adds the second-read case, and 564b134aa rewrites the fragment; 115 insertions, 24 deletions across the three files, and 564b134aa touches the fragment alone, so the gate's revision 3428daac2 carries the code under review.\nCALL_SITES: reckon/mcp.py:3187 (_refuse_when_stale wrapping read_plan), reckon/mcp.py:3198 (edit_plan), reckon/mcp.py:3204 (roadmap), reckon/mcp.py:3210 (audit), reckon/mcp.py:3221 (crew)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp.py:707-712 re-raises the original exception when _raised_under_the_current_code returns None, so a failure is no longer replaced by an empty answer, which is the goal's route to keeping a caller's own failure intact.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate.log (revision 3428daac2, EXIT=1, 1 failed / 35 passed) and base-gate.log (the same 36 cases, EXIT=1, 7 failed / 29 passed) record the added case test_a_raise_stands_when_the_tree_stops_loading_before_the_refusal failing on the base arm, but base-gate.log's header names the copied test files 'at head 4802fd981' when it in fact ran 3428daac2's, and the gate ran at 3428daac2 rather than at the reviewed head 564b134aa.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 4802fd981 564b134aa lists only reckon/mcp.py, tests/test_a_moved_checkout_serves_every_call.py and the evidence fragment, all three inside the declared write paths, with the docs change isolated in its own commit 564b134aa.\nSCORE durability: 17\nJUSTIFICATION durability: the new case at tests/test_a_moved_checkout_serves_every_call.py:316-353 fails on the base arm in base-gate.log, so reinstating the empty-dict return reddens it, but the assertion at tests/test_a_moved_checkout_serves_every_call.py:265 still resolves both of its sides to the single constant the rig handed in.\nSCORE fit: 19\nJUSTIFICATION fit: the narrowed return type and the re-raise at reckon/mcp.py:563-581 and :703-712 follow the module's private-helper idiom with a docstring stating the mechanism, and no plan label, version token or forbidden name is introduced.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change makes _raised_under_the_current_code at reckon/mcp.py:576 delegate to the owner _stale_code_response at reckon/mcp.py:498 rather than re-derive its answer, and the search over reckon/ for other refusal builders found _unanswered_on_current_code (reckon/mcp.py:539) and _write_may_have_landed (reckon/mcp.py:580), both distinct answers.\nFINDING tests/test_a_moved_checkout_serves_every_call.py:265 follow-on: the assertion compares the answer against rig.child_stamp(), which reads a file the rig seeded with the same self.stamp it hands the guard as disk_stamp at :182 and :197, so an answer stamped from state.disk_stamp rather than from the child's own answer would still pass; a third constant written to the tree's code-stamp would separate the two.\nFINDING reckon/mcp.py:563 follow-on: the delegated refusal still says 'This call failed on the current code too' on the raise path, where the current code never ran the call; the wording predates these commits.\n",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T18:59:09.523947+00:00",
+  "total": 111
+}
