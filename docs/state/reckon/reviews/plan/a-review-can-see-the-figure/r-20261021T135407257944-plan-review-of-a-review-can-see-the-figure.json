@@ -1,0 +1,72 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T14:11:02.366Z",
+  "dispatched_at": "2026-10-21T13:55:53Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:291",
+      "id": "reasoning-1",
+      "reason": "the implementer either breaks the docstring's stated invariant or the node must also rewrite that docstring, so the section's change-set and its stated justification both have to be corrected before it is built.",
+      "text": "\u00a718's Change justifies the new `ledger_block` behaviour with \"which is what the ledger block's docstring already says a record that never produced scores looks like\", but `ledger_block`'s own docstring at `reckon/crew/review.py:3067` says such a record \"keeps a status other than parsed with empty scores\" \u2014 the opposite of the shape \u00a718's done-when requires, status `parsed` with empty scores \u2014 so the section emits a block whose documented contract it has just falsified",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:46",
+      "id": "anchors_resolve-1",
+      "reason": "a reader who opens the cited line to confirm the `-i` claim, on which the plan's whole capability statement rests, lands in unrelated code and cannot verify it.",
+      "text": "the intro cites `reckon/_backends.py:1220` as where the codex dialect composes `codex exec`, but at the reviewed revision that line closes the `unifiedWindows` candidate list in a rate-limit budget helper while the composition is at `reckon/_backends.py:1258`",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:50",
+      "id": "reasoning-2",
+      "reason": "this sentence is the plan's central premise and is now false against the repository, so a reader cannot tell whether the premise still holds or whether the plan has drifted from the code it describes.",
+      "text": "the intro states in the present tense that `BackendConfig` \"carries 27 slots and not one expresses modality\", but at the reviewed revision `BackendConfig` declares 31 fields including `input_modalities`, which this plan's own \u00a71 landed, so the plan's opening risk claim is contradicted by the code its own landed section produced",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "7e29f28bf38ae2e70d40922987cbd9dea87a3c7b32ade5cbeec6cc60e015bc1e",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 110,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T135407257944-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "1ec5ab32cd30d1dd3da006c3c8126605a37d67b8",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the intro cites `reckon/_backends.py:1220` as where the codex dialect composes `codex exec`, and that line now names a rate-limit budget helper.",
+    "done_when": "pass \u2014 \u00a718's done-when is measurable and names a discriminating negative control: with `ledger_block` calling `int()` on every score value again, the null-score case raises `TypeError` and the promotion case fails, which is the exact failure the section repairs.",
+    "evidence_paths": "pass \u2014 \u00a718 writes every log under the run directory and its new test lives at a repository path, so nothing lands in a scratchpad or a node-local temporary directory.",
+    "naming": "pass \u2014 \u00a718's symbols (`review_record_refusals`, `ledger_block`) and its new test filename are named by behaviour, with no plan label, stage name, ticket number or version tag.",
+    "reasoning": "findings \u2014 \u00a718's Change rests a claim on a docstring that states the opposite, and the intro states a pre-plan fact in the present tense that \u00a71's landed code now contradicts.",
+    "single_goal": "pass \u2014 \u00a718 carries one deliverable, promoting a figure-rubric record without text scores, and its two edits in `reckon/crew/review.py` both serve that one measure.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares s14\u2192s13, s15\u2192s14 and s16\u2192s14, each matching what its done-when requires, and `plan-informs` resolves to `docs/plans/scoring-should-stop-a-promotion.html`; \u00a718 declares none, correctly, because its harness builds its own figure record."
+  },
+  "section_digests": {
+    "_document": "993048d6c6b251ca555804cb3f4ba0a6f17421a8a50a881b236ee2e8f229e24c",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s10": "aee314dbe26192cd678dc467a9b229b8cb46873cacefcd4ce369fcbe469a1e37",
+    "s11": "22d519df0a82a0edfb23ceef10d63c14a08f3d8d656ce95a4cd03e5049d4e228",
+    "s12": "234f9999257c9e64bf69518cdf0b98e319850465374deeac091e90b1ed118647",
+    "s13": "d2f0977c2749f5e1d4e28f3962e8b01a182615a0a75edb530e5e4fde18d9a123",
+    "s14": "f06507899a512533562b6d0b348e9b18bec6d1667d6e619d05352d7ce535eb7c",
+    "s15": "18683ff3a4d13534aa9e29ac4a495e86d07a452b032538d3ae4b7a47d2a9966b",
+    "s16": "a1648c89c8b99c37facb6da9eb6deca43ba8418449557c78627654670ea39fa1",
+    "s17": "c856114a206af086b77fc4d7b867a4cf4dbafd15fdce96f7d52c4a2a36c1e544",
+    "s18": "114ca51b54a9278fc34b5f811c83f054895ac8bef270c1aed2116717d6d82429",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "ce9705dbaad70ab2b3a9425eead9900cc284deb7f1d5ecacb553d3745679b3d7",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a",
+    "s8": "2c200fdd964f328342811e9362e4cd14da60f3c8352368899ccf87797d9e7f5b",
+    "s9": "b62ffeb55dd71d5f62b49f372e069f227a57c7caec9c6c3b45f81a945d284e11"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T14:14:30.708493+00:00"
+}
