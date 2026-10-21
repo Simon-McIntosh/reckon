@@ -1118,6 +1118,40 @@ WIDEN_RULE = (
     "would move"
 )
 
+#: Where a reopen records what it granted, beside the run's other records.
+REOPEN_RECORD_NAME = "reopened.json"
+
+
+def _record_reopening(
+    run_id: str,
+    *,
+    granted_paths: list[str],
+    reason: str,
+    delivered: Path | None,
+) -> dict[str, Any]:
+    """Record that a run was reopened, and what the reopen granted.
+
+    A reopen is not a verdict, so it is not written as one: the run is still
+    working towards a status of its own, and a status word here would be an
+    outcome no attempt reached — exactly what left a resumed worker classified
+    from its predecessor's delivery. What a reopen does owe a reader is the
+    fact itself, its reason, the paths it granted and the delivered text it set
+    aside, and those are recorded in the run's own directory where the attempt
+    records live.
+    """
+    from reckon.crew import runs as runs_module
+
+    record = {
+        "run_id": run_id,
+        "reason": reason,
+        "granted_paths": list(granted_paths),
+        "reopened_at": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+    }
+    if delivered is not None:
+        record["delivered"] = str(delivered)
+    runs_module._write_json(runs_module.run_dir(run_id) / REOPEN_RECORD_NAME, record)
+    return record
+
 
 def _manifest_reported_status(record: Mapping[str, Any]) -> str:
     """The status a run's own manifest reports, or "" when none can be read.
@@ -1717,14 +1751,28 @@ def crew_resume(
         record = crew_module.read_pointer(run_id)
         if reopen:
             from reckon.crew.claims import widen_claim
+            from reckon.crew.resumption import _reset_delivered_manifest_status
 
             if str(record.get("phase") or "") != "complete" and (
                 _manifest_reported_status(record) != "complete"
             ):
                 raise click.ClickException("--reopen requires a completed run")
             widen_claim(run_id, write_paths)
-            runs_module.repair_manifest_status(
-                run_id, "blocked", reason or "reopening the completed run"
+            # Reopening continues the run, so the delivered verdict has to go
+            # before the resumed worker writes anything, exactly as a resume
+            # clears it: left as it is, a live attempt is classified from the
+            # delivery it is continuing and the run reads delivered while its
+            # worker streams. The clearing is the resume path's own step, and it
+            # is done here through that same owner rather than by writing a
+            # status word of the reopen's own, which would be a verdict no
+            # attempt reached. The delivered text is kept beside the manifest
+            # under an attempt-named copy by that call.
+            delivered = _reset_delivered_manifest_status(run_id, record)
+            _record_reopening(
+                run_id,
+                granted_paths=list(write_paths),
+                reason=reason or "reopening the completed run",
+                delivered=delivered,
             )
             record = crew_module.read_pointer(run_id)
         project = str(record.get("project") or "")

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-crew-surface-is-one-tool-and-a-few-verbs">
+  <meta name="plan-evidence-for" content="the-crew-surface-is-one-tool-and-a-few-verbs">
+  <title>A reopened run reads as working | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A reopened run reads as working, not blocked</h1>
+      <p class="lead"><code>crew resume --reopen --write-path P</code> widened a completed run's claim and then healed its delivery by writing a status the reopen chose &mdash; <code>blocked</code>. The resumed worker ran its whole attempt under a word no attempt had reached: the run classified as blocked and the obligations read raised a blocked duty for a run that was working, which coordinators acknowledged by hand.</p>
+    </header>
+
+    <section id="cso-a-reopened-run-reads-as-working-reproduced">
+      <h2>The defect, reproduced</h2>
+      <p>Run <code>r-20261021T023811534757-cold-test-discharge-replay</code> delivered <code>status: complete</code>; its <code>status-repair.json</code> recorded <code>previous_status: complete</code>, <code>status: blocked</code>, <code>reason: reopening the completed run</code> at 04:39:51Z; its worker was alive and its manifest read <code>blocked</code>. Reproduced before repair against the base source with the head's tests: <code>4 failed, 57 passed</code>, <code>EXIT=1</code> &mdash; the reopened manifest asserts as <code>blocked</code>; and the run classifies <code>blocked</code>, so the obligations read carries a blocked duty for the live run.</p>
+    </section>
+
+    <section id="cso-a-reopened-run-reads-as-working-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/crew_run_commands.py</code>: the <code>--reopen</code> branch no longer calls <code>repair_manifest_status(run_id, "blocked", ...)</code>. It widens the claim, then clears the delivered verdict through <code>resumption._reset_delivered_manifest_status</code> &mdash; the existing owner of &ldquo;clear a delivered verdict before a new attempt&rdquo; &mdash; so the manifest is non-terminal before the worker spawns and the delivered text is kept beside it under an attempt-named copy. No second owner is added.</li>
+        <li>The reopen's durable record is <code>reopened.json</code> in the run directory, written by the new <code>_record_reopening</code>: the fact, the reason, the paths granted and the delivered copy path. The record is not a status word, so a reader separates the reopen from the run's own course.</li>
+        <li>The run classifies from its non-terminal manifest as <code>running</code>, so the obligations read raises no blocked item while it works.</li>
+      </ul>
+    </section>
+
+    <section id="cso-a-reopened-run-reads-as-working-gate">
+      <h2>The gate</h2>
+      <p><code>tests/test_a_reopened_run_reads_as_working.py</code> reopens a completed run through the CLI, with the launch stubbed the way the fold test stubs it, and asserts the manifest is <code>in-progress</code> and not a terminal word, that the delivered text survives as an attempt-named copy, that <code>classify_pointer</code> reads <code>running</code>, and that the obligations read for the run's session carries no item for it. A live worker still refuses the reopen before anything is granted or cleared.</p>
+      <p id="cso-a-reopened-run-reads-as-working-measure"><strong>Measure.</strong> Gate: <code>tests/test_a_reopened_run_reads_as_working.py</code>, <code>tests/test_crew_families_fold.py</code>, <code>tests/test_widen_reaches_a_blocked_run.py</code>, <code>tests/test_fence_widening.py</code> and <code>tests/test_crew_recover.py</code>, run with the main checkout's <code>.venv/bin/python -m pytest -p no:cacheprovider</code>. Base arm at <code>a42462b31</code> in a scratch tree (base source, head tests): <code>4 failed, 57 passed</code>, <code>EXIT=1</code>. Head arm at <code>5d91075e2</code>: <code>61 passed</code>, <code>EXIT=0</code>.</p>
+      <p><strong>Negative control.</strong> Restoring the reopen path's <code>blocked</code> write fails three of the new test's cases &mdash; <code>3 failed, 1 passed</code>, <code>EXIT=1</code>. <code>ruff check</code> and <code>ruff format --check</code> add no finding on any changed path.</p>
+    </section>
+  </main>
+</body>
+</html>
