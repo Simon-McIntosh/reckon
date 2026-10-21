@@ -45,10 +45,16 @@
   (<code>base.log</code>). Head arm at the node head: <code>68 passed</code>,
   <code>EXIT=0</code> (<code>head.log</code>) — the same command, the four failures cleared
   and no failure added, so the delta is four and the added-failure count is zero. Negative
-  control, the declared mutation (the <code>complete</code> parameter map entry removed), run
-  in the worktree: the four crew-tool tests fail again with the missing-argument error while
-  the rest of the file passes (<code>negative-control.log</code>). <code>ruff check</code> and
-  <code>ruff format --check</code> add no findings on the changed paths
+  control, run in the worktree: the declared mutation — the <code>complete</code> parameter
+  map entry removed — does <em>not</em> bite, because the argument mapper also walks the
+  defaults and forwards an unmapped name under itself, so the file stays green
+  (<code>18 passed</code>, <code>EXIT=0</code>, <code>negative-control-arm-a.log</code>).
+  Removing the empty-string default as well reddens exactly the four named tests with the
+  missing-argument error and leaves the rest passing (<code>4 failed, 14 passed</code>,
+  <code>EXIT=1</code>, <code>negative-control.log</code>), which is the arm that shows the
+  new wiring is what carries the argument. <code>ruff check</code> and
+  <code>ruff format --check</code> add no findings on the changed paths — 12 baseline
+  findings against 12 changed, and <code>2 files already formatted</code>
   (<code>ruff.log</code>). No figure: the done-when names none, and the change is a parameter
   threaded through four call sites rather than a spatial or plotted relationship.</p>
   <p id="the-crew-tool-passes-the-domain-waiver-scope"><strong>Scope note.</strong>
