@@ -1,0 +1,69 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T06:09:25.160Z",
+  "dispatched_at": "2026-10-21T05:58:39Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:273",
+      "id": "done_when-1",
+      "reason": "the unification the clause is meant to measure is satisfied by the unfixed code, so the node can land its reader change without the two ever having to agree on the only inputs where they disagree.",
+      "text": "\u00a715 requires \"for a lane that declares `[text, image]`, one that declares `[text]`, one with an empty declaration and one with none, `declares_image_input` and `declared_input_modalities` agree on whether the lane admits an image\", but all four cases already agree at the reviewed revision and the two readers diverge on exactly the forms the list omits \u2014 measured `declared_input_modalities` sees `\"text,image\"`, `\"IMAGE\"` and `\" image \"` as no image while `declares_image_input` sees all three as an image, because `reckon/flight.py:1964` returns `tuple(str(m) for m in declared)` with no split, strip or case fold while `reckon/_backends.py:2153` splits on comma and lowercases",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:271",
+      "id": "reasoning-1",
+      "reason": "a worker implementing the section exactly as written produces a doubled listing and a red lane-change case, and the fix \u2014 strip an existing listing, make the helper idempotent, or write the lane-change file from the record's restated prompt rather than from plan.stdin_text \u2014 is a design the plan does not choose.",
+      "text": "\u00a715's Change writes both the fresh and the lane-change prompt file \"from the prompt `launch_plan` composed\" (plan.stdin_text) and asserts \"the composition lists each figure once rather than appending a second listing\", but a lane change builds its input from the record's own prompt file (`_lane_prompt` reads `record[\"prompt_path\"]`, `reckon/crew/dispatch_sessions.py:1598-1604`, when `continued=False`) which \u00a715's fresh-dispatch half has just written with its figure listing, and `_prompt_naming_images` appends unconditionally (`reckon/_backends.py:2160`, applied at `:2304`, carried out as `stdin_text=prompt` at `:2349`) \u2014 so the composed text and a prompt file written from it name each path twice, and the done-when's \"exactly once\" cannot hold; no mechanism for avoiding the second listing is named",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:271",
+      "id": "single_goal-1",
+      "reason": "all three land in the same two files in one commit and the comment is one line, so splitting would add bookkeeping without changing what is built or how it is reviewed.",
+      "text": "the section also carries \"the comment above `IMAGE_MODALITY` \u2026 names its one real reader\" and \"both read the declaration through one function in `reckon/flight.py`\", two deliverables unrelated to its title or its \"prompt file carries its named figures\" measure",
+      "type": "single_goal",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "84197231d8a1a225530c30a6780901960195e90120fe00e5c6f6cfe8203eb7bf",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 90,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T055621520372-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "1a8f0f2303b8e09706792281cc30f22589b8ec48",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `IMAGE_MODALITY` (`reckon/_backends.py:143`), its single reader `declares_image_input` (`:2141`, called at `:2304`), `declared_input_modalities` (`reckon/flight.py:1953`), `_prompt_naming_images` (`reckon/_backends.py:2160`), `prompt_path.write_text(prompt)` (`reckon/crew/dispatch.py:2126`), `_restate_time_fence` and the `lane-change-<n>-prompt.txt` write (`reckon/crew/dispatch_sessions.py:1617`, `:1785`, `:1920`), `_write_resume_prompt` (`reckon/crew/resumption.py:1205`) and all four named test files resolve.",
+    "done_when": "a finding \u2014 the \"the two readers agree whether the lane admits an image\" clause of \u00a715's done-when names four declarations (`[text, image]`, `[text]`, empty, none) that already agree at the reviewed revision, so the clause cannot fail.",
+    "evidence_paths": "pass \u2014 \u00a715 requires every log under the run directory with its revision, literal command and an `EXIT=` last line, which is durable, not a scratchpad.",
+    "naming": "pass \u2014 the symbols \u00a715 names (`declares_image_input`, `declared_input_modalities`, `IMAGE_MODALITY`) describe their mechanism; no plan label, stage name or ticket number reaches code or comment.",
+    "reasoning": "a finding \u2014 \u00a715's mechanism for the lane-change file cannot produce the \"exactly once\" its done-when asserts, because the composition it describes appends the listing to a prompt that already carries one.",
+    "single_goal": "a finding, non-blocking \u2014 \u00a715 carries the prompt-file write fix together with a `IMAGE_MODALITY` comment correction and a cross-module modality-reader unification; the node's title and measure name only the first.",
+    "wiring": "pass \u2014 \u00a715 declares `depends-on: a-review-can-see-the-figure#s14` (`plan-section-depends-on`), the section it builds on, and the landed sections it consumes (\u00a710's run-local PNGs, \u00a712's figure-review selection) need no new edge."
+  },
+  "section_digests": {
+    "_document": "db99e7e8ba0bdba6f31cede33de833186ac9f1f17051db2e5965a4c044ec104d",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s10": "aee314dbe26192cd678dc467a9b229b8cb46873cacefcd4ce369fcbe469a1e37",
+    "s11": "22d519df0a82a0edfb23ceef10d63c14a08f3d8d656ce95a4cd03e5049d4e228",
+    "s12": "234f9999257c9e64bf69518cdf0b98e319850465374deeac091e90b1ed118647",
+    "s13": "d2f0977c2749f5e1d4e28f3962e8b01a182615a0a75edb530e5e4fde18d9a123",
+    "s14": "f06507899a512533562b6d0b348e9b18bec6d1667d6e619d05352d7ce535eb7c",
+    "s15": "e2d20c9bd71fe119ece45e26324ee8ad2df70d4cf630f16d47dcdd8d3273394e",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "ce9705dbaad70ab2b3a9425eead9900cc284deb7f1d5ecacb553d3745679b3d7",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a",
+    "s8": "2c200fdd964f328342811e9362e4cd14da60f3c8352368899ccf87797d9e7f5b",
+    "s9": "b62ffeb55dd71d5f62b49f372e069f227a57c7caec9c6c3b45f81a945d284e11"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T06:11:38.521479+00:00"
+}
