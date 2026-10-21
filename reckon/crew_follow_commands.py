@@ -1092,15 +1092,20 @@ def _follower_end_event(
 
 
 
-def _follower_settle_line(session: str | None, *, since: float) -> str:
+def _follower_settle_line(session: str | None, *, since: float, tail: str) -> str:
     """The one line the pane shows when a session has no work left to watch.
 
     The stamp is the wall clock the reader's own tools print, taken at the
     moment the session's last live run was seen, so ``since`` names when the
     fleet actually drained rather than when this poll happened to notice.
+
+    The tail says what the drain means for a reader: the session's own fleet is
+    drained, or how many runs it still owes the coordinator. It is composed by
+    :func:`reckon.crew.needs_you.drain_tail`, the same derivation the standing
+    needs-you line reads, so the closing row cannot disagree with the line.
     """
     stamp = time.strftime("%H:%M", time.localtime(since))
-    return f"no live work in {session} since {stamp}"
+    return f"no live work in {session} since {stamp} · {tail}"
 
 
 def _follower_settle_event(
@@ -1112,12 +1117,18 @@ def _follower_settle_event(
     so it carries the line to print verbatim; it is the last thing the child
     emits before it leaves.
     """
+    from reckon.crew import needs_you as needs_you_module
+
     return {
         "event": FOLLOWER_SETTLE_EVENT,
         "project": project,
         "session": session or "",
         "run_id": None,
-        "line": _follower_settle_line(session, since=since),
+        "line": _follower_settle_line(
+            session,
+            since=since,
+            tail=needs_you_module.drain_tail(project, session=session),
+        ),
     }
 
 
