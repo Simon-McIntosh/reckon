@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/budget.py:75 from reckon.pace_report import ... pace_hold",
+    "reckon/budget.py:2281 pace_hold(entry, pacing_roles[0]) inside budget.preflight"
+  ],
+  "completed_at": "2026-10-21T09:24:04.571Z",
+  "dispatched_at": "2026-10-21T09:02:31Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T073111664041-a-metered-lanes-pace-can-be-advice/manifest.md",
+      "line": "16",
+      "severity": "follow-on",
+      "text": "follow-on: after_suite records revision c0eb31713 while the reviewed head is 98906d4a8, so the head-vs-base gate the done_when rests on does not cover the gained commit; the delta is docstring-only and AST-identical, and node-test.log covers it at 98906d4a8, so the record is adequate for this node but a reader comparing the promoted commit against the gate revision sees a mismatch."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T073111664041-a-metered-lanes-pace-can-be-advice/head-arm.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T073111664041-a-metered-lanes-pace-can-be-advice/base-arm.log"
+  },
+  "item_verdicts": {
+    "call_sites": "reckon/budget.py:75 imports pace_hold from reckon.pace_report and reckon/budget.py:2281 calls it inside budget.preflight; no other production module imports reckon.pace_report.",
+    "diff": "Read commit by commit from efce287af to 98906d4a8; the one gained commit is a 6/6 docstring reflow in reckon/pace_report.py:1269-1285 that completes the bookend sentence and drops the duplicated bookend paragraph, leaving the module AST unchanged.",
+    "done_when": "The done_when names the five cases in tests/test_a_metered_lanes_pace_can_be_advice.py plus a head-vs-base delta over the imported-files population; the manifest records head-arm.log 11 failed/534 passed and base-arm.log 15 failed/523 passed with every head failure id also a base failure id, so the gate asserts the measure.",
+    "goal": "The source node's goal is to let a flight list groups in budget.advisory_pace_groups so their pace hold never holds them and their dispatch ceiling carries none of the resume, coordinator or bookend reserves while the exhausted-window and credit-cap stops stay; the gained commit 98906d4a8 documents that rule in reckon/pace_report.py:1271 and changes no code, which I confirmed by comparing the module AST at efce287af and 98906d4a8 with docstrings stripped (equal).",
+    "manifest": "Read; it states status complete with commits c0eb31713, efce287af and 98906d4a8, records both negative controls failing exactly the case each declares and the ruff delta -10/-1, and names node-test.log as the run at the reviewed head; its after_suite arm records revision c0eb31713 rather than 98906d4a8.",
+    "write_paths": "The declared fence names reckon/budget.py, reckon/pace_report.py, reckon/crew/budget_lift.py, reckon/crew/budget_group.py, reckon/crew/pace.py, reckon/schema/flight.yaml, reckon/_flight_schema.py, docs/_shared/flight.schema.json, tests/test_a_metered_lanes_pace_can_be_advice.py, the evidence fragment and the figures dir; the gained commit touches only reckon/pace_report.py."
+  },
+  "justifications": {
+    "durability": "the gained commit adds no assertion, so the only check bearing on it is node-test.log's collect-and-pass at 98906d4a8, which reddens if the docstring edit leaves the module unimportable.",
+    "evidence": "the gained commit's only recorded evidence is node-test.log at 98906d4a8 (7 passed, EXIT=0) at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T073111664041-a-metered-lanes-pace-can-be-advice/manifest.md line 16, since the head-vs-base gate ran at c0eb31713 rather than at the reviewed head.",
+    "fit": "reckon/pace_report.py:1271-1281 now reads as successive complete paragraphs with the duplicate removed, and the gained lines carry no plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/pace_report.py:1271 carries the advisory rule as its own paragraph in the pace_hold docstring the commit gains, so the gained commit serves the node's goal without altering the behaviour it documents.",
+    "reuse": "the gained diff adds no function, class or module; a search over reckon/ for a docstring or hold-rule owner found reckon/pace_report.py itself, and nothing was duplicated.",
+    "scope_discipline": "git diff --numstat efce287af 98906d4a8 reports 6/6 on reckon/pace_report.py alone, inside the declared fence, and the module AST is identical ignoring docstrings."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to let a flight list groups in budget.advisory_pace_groups so their pace hold never holds them and their dispatch ceiling carries none of the resume, coordinator or bookend reserves while the exhausted-window and credit-cap stops stay; the gained commit 98906d4a8 documents that rule in reckon/pace_report.py:1271 and changes no code, which I confirmed by comparing the module's AST at efce287af and at 98906d4a8 with docstrings stripped (equal).\nVERDICT done_when: the done_when names the five cases in tests/test_a_metered_lanes_pace_can_be_advice.py plus a head-vs-base delta over the imported-files population; the manifest records head-arm.log 11 failed/534 passed and base-arm.log 15 failed/523 passed with every head failure id also a base failure id, so the gate asserts the measure.\nVERDICT write_paths: the declared fence names reckon/budget.py, reckon/pace_report.py, reckon/crew/budget_lift.py, reckon/crew/budget_group.py, reckon/crew/pace.py, reckon/schema/flight.yaml, reckon/_flight_schema.py, docs/_shared/flight.schema.json, tests/test_a_metered_lanes_pace_can_be_advice.py, the evidence fragment and the figures dir; the gained commit touches only reckon/pace_report.py, inside that fence.\nVERDICT manifest: read; it states status complete, commits c0eb31713, efce287af and 98906d4a8, records both negative controls failing exactly the case each declares, the ruff delta -10/-1, and the node's own test file re-run at 98906d4a8; its after_suite arm records revision c0eb31713 rather than the reviewed head 98906d4a8.\nVERDICT diff: read commit by commit from efce287af73c8b8c2a1a6f7583d8a6f58fe8a527 to 98906d4a85594b4effccee6b286caaa3b15e50a3; the one gained commit changes 6 insertions and 6 deletions in the pace_hold docstring at reckon/pace_report.py:1269-1285, completing the bookend sentence where the advisory paragraph had been spliced into it and dropping the duplicated bookend paragraph (one occurrence of 'bookend roles are never held by pace' remains, down from two).\nCALL_SITES: reckon/budget.py:75 (from reckon.pace_report import ... pace_hold), reckon/budget.py:2281 (pace_hold(entry, pacing_roles[0]) inside budget.preflight)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/pace_report.py:1271 carries the advisory rule as its own paragraph in the pace_hold docstring the commit gains, so the gained commit serves the node's goal without altering the behaviour it documents.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gained commit's only recorded evidence is node-test.log at 98906d4a8 (7 passed, EXIT=0) at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T073111664041-a-metered-lanes-pace-can-be-advice/manifest.md line 16, since the head-vs-base gate ran at c0eb31713 rather than at the reviewed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat efce287af 98906d4a8 reports 6/6 on reckon/pace_report.py alone, inside the declared fence, and the module AST is identical ignoring docstrings.\nSCORE durability: 16\nJUSTIFICATION durability: the gained commit adds no assertion, so the only check bearing on it is node-test.log's collect-and-pass at 98906d4a8, which reddens if the docstring edit leaves the module unimportable, and the behaviour the docstring documents is guarded by tests/test_a_metered_lanes_pace_can_be_advice.py, which passes at head; the gained lines themselves carry no assertion, so no test fails if the reflow is reverted.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/pace_report.py:1271-1281 now reads as successive complete paragraphs with the duplicate removed, and the gained lines carry no plan, sprint or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained diff adds no function, class or module; a search over reckon/ for a docstring or hold-rule owner found reckon/pace_report.py itself, and nothing was duplicated.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T073111664041-a-metered-lanes-pace-can-be-advice/manifest.md:16 follow-on: after_suite records revision c0eb31713 while the reviewed head is 98906d4a8, so the head-vs-base gate the done_when rests on does not cover the gained commit; the delta is docstring-only and AST-identical, and node-test.log covers it at 98906d4a8, so the record is adequate for this node but a reader comparing the promoted commit against the gate revision sees a mismatch.\n",
+  "review_run_id": "r-20261021T090126383921-review-of-a-metered-lanes-pace-can-be-advice-98906d4a8559",
+  "reviewed_base_sha": "efce287af73c8b8c2a1a6f7583d8a6f58fe8a527",
+  "reviewed_head_sha": "98906d4a85594b4effccee6b286caaa3b15e50a3",
+  "reviewed_run_id": "r-20261021T073111664041-a-metered-lanes-pace-can-be-advice",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T11:12:00Z",
+  "total": 111
+}
