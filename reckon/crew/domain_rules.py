@@ -2,12 +2,14 @@
 
 A repository declares its domain rules once, in the resolved flight config's
 ``domain`` block (``docs/state/<project>/flight.yaml``). This module is the one
-place that answers which of those rules a node touches, so the feed of a brief,
-the review a node receives and the checks run at promotion all read the same
-match rather than composing their own.
+place that answers which of those rules a node touches, so the brief a node is
+dispatched with, the review it receives and the checks run at promotion all
+read the same match rather than composing their own.
 
-An absent block changes nothing: a project that declares no ``domain`` gets an
-empty result and keeps today's behaviour.
+The block is read through the generated model, so a renamed field is a loud
+failure here rather than a silent empty match. An absent block changes nothing:
+a project that declares no ``domain`` gets an empty result and keeps today's
+behaviour.
 """
 
 from __future__ import annotations
@@ -19,27 +21,9 @@ from pathlib import PurePosixPath
 from typing import Any
 
 from reckon import flight
+from reckon._flight_schema import DomainConfig, DomainInvariant, DomainReviewCheck
 
-__all__ = ["DomainRules", "Invariant", "ReviewCheck", "rules_for"]
-
-
-@dataclass(frozen=True)
-class Invariant:
-    """One rule a result must satisfy, as the caller reads it."""
-
-    id: str
-    rule: str
-    applies_to: tuple[str, ...]
-    check: str = ""
-
-
-@dataclass(frozen=True)
-class ReviewCheck:
-    """One question a review of a node must answer, as the caller reads it."""
-
-    id: str
-    question: str
-    applies_to: tuple[str, ...]
+__all__ = ["DomainRules", "rules_for"]
 
 
 @dataclass(frozen=True)
@@ -52,8 +36,8 @@ class DomainRules:
     can tell a node that touches the modelling surface.
     """
 
-    invariants: tuple[Invariant, ...] = ()
-    review_checks: tuple[ReviewCheck, ...] = ()
+    invariants: tuple[DomainInvariant, ...] = ()
+    review_checks: tuple[DomainReviewCheck, ...] = ()
     model_paths: tuple[str, ...] = ()
 
     @property
@@ -116,28 +100,6 @@ def _write_paths(node: Any) -> tuple[str, ...]:
     return tuple(str(path) for path in raw if str(path).strip())
 
 
-def _strings(value: Any) -> tuple[str, ...]:
-    """Read a declared string list, tolerating an absent entry."""
-    return tuple(str(item) for item in value or ())
-
-
-def _invariant(entry: Mapping[str, Any]) -> Invariant:
-    return Invariant(
-        id=str(entry.get("id") or ""),
-        rule=str(entry.get("rule") or ""),
-        applies_to=_strings(entry.get("applies_to")),
-        check=str(entry.get("check") or ""),
-    )
-
-
-def _review_check(entry: Mapping[str, Any]) -> ReviewCheck:
-    return ReviewCheck(
-        id=str(entry.get("id") or ""),
-        question=str(entry.get("question") or ""),
-        applies_to=_strings(entry.get("applies_to")),
-    )
-
-
 def rules_for(
     project: str,
     node: Any,
@@ -149,13 +111,12 @@ def rules_for(
 ) -> DomainRules:
     """Return the domain rules that apply to ``node`` in ``project``.
 
-    The block is read from the resolved flight config, which the resolver has
-    already validated against the schema, so this maps what it finds rather
-    than re-checking its shape. The node is matched by its declared write
-    paths. A project that declares no ``domain`` block, or a node that matches
-    none of its globs, yields an empty result. ``project_path`` and
-    ``host_path`` select the flight layers, so a caller reading a fixture
-    config does not have to install one.
+    The block is read through the generated model, so a field the schema renames
+    fails here rather than silently matching nothing. The node is matched by its
+    declared write paths. A project that declares no ``domain`` block, or a node
+    that matches none of its globs, yields an empty result. ``project_path`` and
+    ``host_path`` select the flight layers, so a caller reading a fixture config
+    does not have to install one.
     """
     resolved = flight.resolve(
         project=project,
@@ -167,28 +128,23 @@ def rules_for(
     block = resolved.config.get("domain")
     if not isinstance(block, Mapping):
         return DomainRules()
+    config = DomainConfig.model_validate(dict(block))
     write_paths = _write_paths(node)
-    invariants: list[Invariant] = []
-    for entry in block.get("invariants") or ():
-        if not isinstance(entry, Mapping):
-            continue
-        invariant = _invariant(entry)
-        if _matches(invariant.applies_to, write_paths):
-            invariants.append(invariant)
-    review_checks: list[ReviewCheck] = []
-    for entry in block.get("review_checks") or ():
-        if not isinstance(entry, Mapping):
-            continue
-        check = _review_check(entry)
-        if _matches(check.applies_to, write_paths):
-            review_checks.append(check)
+    invariants = tuple(
+        invariant
+        for invariant in (config.invariants or ())
+        if _matches(invariant.applies_to, write_paths)
+    )
+    checks = tuple(
+        check
+        for check in (config.review_checks or ())
+        if _matches(check.applies_to, write_paths)
+    )
     model_paths = tuple(
-        str(glob)
-        for glob in block.get("model_paths") or ()
-        if _matches([str(glob)], write_paths)
+        glob for glob in (config.model_paths or ()) if _matches([glob], write_paths)
     )
     return DomainRules(
-        invariants=tuple(invariants),
-        review_checks=tuple(review_checks),
+        invariants=invariants,
+        review_checks=checks,
         model_paths=model_paths,
     )
