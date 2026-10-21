@@ -74,12 +74,18 @@ def layers(tmp_path):
     }
 
 
-def resolve_files(layers, *, overrides=None):
-    """Resolve using explicit layer paths, isolated from the real host config."""
+def resolve_files(layers, *, overrides=None, strict=False):
+    """Resolve using explicit layer paths, isolated from the real host config.
+
+    ``strict`` is the authoring read — the one ``reckon flight --check`` makes
+    — under which a key the running schema does not declare is refused rather
+    than ignored and reported. A resolution a reader makes is not strict.
+    """
     return resolve(
         overrides=overrides,
         host_path=layers["host"],
         project_path=layers["project"],
+        strict=strict,
     )
 
 
@@ -395,6 +401,13 @@ def test_schema_accepts_routing_by_specification_level(layers):
 
 
 def test_schema_rejects_an_unknown_specification_level(layers):
+    """A level the schema does not declare is caught by the strict authoring read.
+
+    The read a running caller makes ignores it and reports the path
+    (``tests/test_flight_reads_forward.py``), because one config file is shared
+    by readers of several ages; ``--check`` is where authoring is held to the
+    declared levels.
+    """
     write(
         layers["host"],
         "roles:\n"
@@ -405,7 +418,7 @@ def test_schema_rejects_an_unknown_specification_level(layers):
     )
 
     with pytest.raises(FlightConfigError) as excinfo:
-        resolve_files(layers)
+        resolve_files(layers, strict=True)
 
     assert excinfo.value.key_path == "roles.implement.by_spec_level.partial"
 
@@ -811,8 +824,9 @@ def test_an_identical_reset_time_never_groups_without_a_declared_group(
     assert _members() == []
     # `shared_reset` also drives the attempt below that the schema refuses.
 
-    # A reset time is not a key the schema accepts on a backend, so it can
-    # never reach the grouping through a validated config.
+    # A reset time is not a key the schema declares on a backend, so it can
+    # never arrive as a declaration: the strict check, which is the read a
+    # config is authored against, refuses it by path.
     with_group_key = write(
         tmp_path / "shipped-with-key" / "flight.yaml",
         "backends:\n"
@@ -822,7 +836,11 @@ def test_an_identical_reset_time_never_groups_without_a_declared_group(
         f"    resets_at: {shared_reset}\n",
     )
     with pytest.raises(FlightConfigError) as excinfo:
-        resolve(shipped_path=with_group_key, host_path=tmp_path / "absent.yaml")
+        resolve(
+            shipped_path=with_group_key,
+            host_path=tmp_path / "absent.yaml",
+            strict=True,
+        )
     assert excinfo.value.key_path == "backends.alpha.resets_at"
     assert "not permitted" in excinfo.value.constraint
 
@@ -927,15 +945,21 @@ def test_invalid_enum_names_file_key_and_constraint(layers):
     assert "strict" in error.constraint
 
 
-def test_unknown_key_names_file_key_and_constraint(layers):
-    """A typo'd key is an error, not a silently ignored setting."""
-    write(layers["host"], "gates:\n  enfoce: strict\n")
-    with pytest.raises(FlightConfigError) as excinfo:
-        resolve_files(layers)
-    error = excinfo.value
-    assert str(layers["host"]) == error.source
-    assert error.key_path == "gates.enfoce"
-    assert "not permitted" in error.constraint
+def test_unknown_key_names_file_key_and_constraint(monkeypatch, tmp_path):
+    """A typo'd key is an error under the strict check, not a silent setting.
+
+    The load path is deliberately not this test's subject: a key the running
+    schema does not know is ignored
+    (``tests/test_flight_reads_forward.py``), because one config file is read
+    by servers, producers and workers of several ages. ``--check`` is the read
+    a config is authored against, and it is where a typo is caught.
+    """
+    host = write(tmp_path / "host" / "flight.yaml", "gates:\n  enfoce: strict\n")
+    monkeypatch.setenv("RECKON_FLIGHT_CONFIG", str(host))
+    result = run_cli("--check")
+    assert result.exit_code != 0
+    assert "gates.enfoce" in result.output
+    assert "Extra inputs are not permitted" in result.output
 
 
 def test_malformed_layer_never_falls_back_to_defaults(layers):
@@ -1359,6 +1383,7 @@ def test_default_stdout_parses_as_json_and_exits_zero():
     assert set(payload) == {
         "availability",
         "config",
+        "flight_unknown_keys",
         "layers",
         "project",
         "provenance",

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-mcp-answers-the-question-asked">
+  <meta name="plan-title" content="The MCP answers the question asked">
+  <meta name="plan-evidence-for" content="reckon:the-mcp-answers-the-question-asked">
+  <meta name="plan-verifies" content="reckon:the-mcp-answers-the-question-asked#s9">
+  <meta name="plan-recorded-at" content="2026-10-21">
+  <meta name="plan-verdict" content="passed">
+  <title>A newer flight key is ignored at load — landing record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-newer-flight-key-is-ignored-at-load" data-reckon="landed" data-when="2026-10-21">
+  <h2 id="a-newer-flight-key-is-ignored-at-load-heading">A newer key in a shared flight config no longer stops an older reader</h2>
+  <p id="a-newer-flight-key-is-ignored-at-load-summary">The generator now produces the flight models with
+  <code>extra = "ignore"</code>, so a key the running schema does not declare is ignored at load instead of
+  raising <code>Extra inputs are not permitted</code>. The reader is told rather than stopped: <code>resolve()</code>
+  walks each contributing layer against the model's own field declarations and returns every unrecognised key path on
+  <code>ResolvedFlight.unknown_keys</code>, which <code>flight_report()</code> publishes as
+  <code>flight_unknown_keys</code> — the field <code>crew(view="flight")</code> already spreads through. <em>Ignoring alone
+  would have been a silent typo, so the warning is the half that keeps a mistake visible.</em></p>
+  <p id="a-newer-flight-key-is-ignored-at-load-strict">Authoring stays strict. <code>reckon flight --check</code> resolves with
+  <code>strict=True</code> and refuses the first undeclared key by path with the same
+  <code>Extra inputs are not permitted</code> constraint the loader used to raise, so a typo is caught where the config is
+  written. A type error on a declared key is still refused on the ordinary read, which is what keeps this forward
+  compatibility for <em>keys</em> rather than for shapes.</p>
+  <p id="a-newer-flight-key-is-ignored-at-load-measure">Measured over a fixture host layer carrying
+  <code>a_key_from_newer_code</code> at the top level and <code>budget.a_key_from_newer_code</code> nested: the load succeeds
+  and reports both paths; <code>--check</code> on the same file exits non-zero naming the key; the shipped defaults and this
+  workstation's real <code>~/.config/reckon/flight.yaml</code> both report an empty list, so the walk finds keys the config
+  carries rather than finding something in every config. Against the base revision the same load test fails with
+  <code>Extra inputs are not permitted</code>; the negative-control log restoring <code>extra="forbid"</code> is cited in the
+  manifest.</p>
+  <p id="a-newer-flight-key-is-ignored-at-load-outofscope">Two pre-existing tests assert the old strictness through a path this
+  node may not write, and are recorded as follow-ons rather than edited:
+  <code>tests/test_budget_lift.py</code> asserts the generated <code>BudgetConfig</code> itself refuses an undeclared key, and
+  <code>tests/test_one_check_trusts_a_moved_checkout.py</code> forces a <code>crew(view="flight")</code> failure by adding an
+  unknown key to the copy's shipped defaults. Both need their vehicle changed — the first to the strict read, the second to a
+  fault that still faults — and neither is a regression in the loader.</p>
+</article>
+</body>
+</html>

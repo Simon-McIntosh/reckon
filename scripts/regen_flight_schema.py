@@ -70,13 +70,22 @@ def _without_optional(text: str) -> str:
     return text.replace("    Optional,\n", "")
 
 
+# How the generated models treat a key the schema does not declare. A flight
+# config is read by long-running servers, producers and workers of several
+# ages, all sharing one file on the operator's host, so a key added by the
+# newest writer must not stop an older reader: it is ignored at load and
+# reported as an unknown key path, and the strict check that catches a typo
+# lives in ``reckon flight --check`` rather than in every read.
+EXTRA_FIELDS = "ignore"
+
+
 def generate_pydantic() -> str:
     """Return the Pydantic module text for the flight schema."""
     body = _run(
         [
             "gen-pydantic",
             "--extra-fields",
-            "forbid",
+            EXTRA_FIELDS,
             "--meta",
             "None",
             str(SOURCE),
