@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: baseline_suite (logs/base-arm.log, revision eca5c58dc8) fails 3 ids and after_suite (logs/repair-arm.log, revision aefb04b7e) fails the same 3 ids, so the set difference is empty. I read both logs' summary lines directly: 3 failed, 694 passed and 3 failed, 701 passed.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:1077",
+    "reckon/crew_follow_commands.py:2162",
+    "reckon/crew_follow_commands.py:2179",
+    "reckon/crew_follow_commands.py:3161"
+  ],
+  "completed_at": "2026-10-21T10:09:12.110Z",
+  "dispatched_at": "2026-10-21T09:44:40Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the regression this case guards is caught by the age assertion on the next line, which the reviewer measured failing with the fix reverted (assert 0.0 >= 7140); the ordering assertion is a description of the expected output rather than the guard, so no further repair round is spent on it",
+      "recorded_at": "2026-10-21T10:10:33.036573+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_follow_needs_you_line.py",
+      "line": 409,
+      "severity": "follow-on",
+      "text": "assert [row['node'] for row in rows] == ['own-old', 'own-recent'] does not redden on the regression the case is written to catch, so the ordering clause its docstring claims ('lead by that age', :382) is carried only by the age assertion below it. I measured this rather than inferred it: with the fix reverted the added case alone fails at :410 (assert 0.0 >= (7200 - 60)), not at :409, because when both rows fall back to a zero age the sort key at reckon/crew/needs_you.py:193 ties and the node-name tiebreak ('own-old' < 'own-recent') reproduces the expected order anyway. The regression is still caught by :410 and by the own-old 2h00m token at :414, so this is not blocking; the assertion should compare the order only after asserting a non-zero age gap, or the docstring should claim only the age. The landing fragment's claim that the case asserts the elder 'leads the row order' (fragments/the-monitor-shows-the-work-it-watches/the-follower-lists-your-runs-that-need-you.html:4) inherits the same overstatement."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 05d51990f; aefb04b7e returns the pointers beside the snapshots from _snapshots and hands the pointer to _created_seconds on the empty-state-age path, and c2437333e rewrites the landing fragment's measure, control and population paragraphs to the repaired head.",
+    "done_when": "the done_when names tests/test_follow_needs_you_line.py and tests/test_every_module_fits_a_worker_window.py; logs/repair-gate.log records 7 passed at aefb04b7e with a bare EXIT=0 over the focused file, the population arms record 3 failed / 694 passed at base against 3 failed / 701 passed at the repaired head with the same three ids, and the pre-existing module-window failure on three over-bound modules is unchanged.",
+    "goal": "the node goal is the plan section 7 standing needs-you line; this delta is the repair of the prior review's blocking finding on that line, and reckon/crew/needs_you.py:174-180 now ages an undated run from the run's own pointer rather than the watch snapshot.",
+    "manifest": "read; it states the repair at aefb04b7e, names its focused gate at 7 passed and the population arms, records the repair control at EXIT=1, and its tests line is the logs' own '# command:' header rather than a template.",
+    "write_paths": "read the manifest's declared five paths; the delta's changed files are reckon/crew/needs_you.py, tests/test_follow_needs_you_line.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/the-follower-lists-your-runs-that-need-you.html, every one inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_follow_needs_you_line.py:410 fails if the fix regresses: reverting reckon/crew/needs_you.py to 05d51990f and running the added case alone reddens it at assert 0.0 >= (7200 - 60), which I reproduced myself, though the ordering assertion at :409 does not redden on that regression.",
+    "evidence": "logs/repair-gate.log ends in a bare EXIT=0 over 7 passed, logs/repair-arm.log ends EXIT=1 at 3 failed / 701 passed against logs/base-arm.log's 3 failed / 694 passed with the same three ids, and I re-ran the focused gate at c2437333e in a scratch extraction of that revision (7 passed, EXIT=0), so the figure the done_when names is a receipt rather than a claim.",
+    "fit": "reckon/crew/needs_you.py:101-129 keeps the module's private-helper delegation idiom and its docstring states the mechanism (the snapshot carries no creation instant); the diff adds no symbol and no plan, sprint or version label.",
+    "goal_fidelity": "reckon/crew/needs_you.py:174-180 now ages a run whose stream recorded no transition to its current state from that run's own pointer (which carries created_at) rather than from the snapshot (which carries no such key), which is the repair the prior blocking finding named and it makes the oldest-first sort at :193 trustworthy again.",
+    "reuse": "the delta adds no definition: it widens _snapshots' return and reuses the module's existing _created_seconds (reckon/crew/needs_you.py:93), so no capability is forked; a search over reckon/crew for an existing pointer-age owner found recovery_watch._quiet_clock_latest (:996), which reads the created_at branch this fallback needs but also a stream mtime the module deliberately excludes, and the pre-existing _snapshots / _live_project_session_counts overlap the earlier review already recorded.",
+    "scope_discipline": "the delta touches exactly the three files the goal names, all inside the manifest's declared write paths, and carries no dependency, figure or unrelated edit."
+  },
+  "node": "review-of-the-follower-lists-your-runs-that-need-you-c2437333e782",
+  "node:reviewed": "the-follower-lists-your-runs-that-need-you",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is the plan section 7 standing needs-you line; the reviewed delta is the repair of the prior review's blocking finding on it, and reckon/crew/needs_you.py:174-180 now ages an undated run from its own pointer rather than the watch snapshot.\nVERDICT done_when: the done_when names tests/test_follow_needs_you_line.py and tests/test_every_module_fits_a_worker_window.py; logs/repair-gate.log records 7 passed at aefb04b7e with a bare EXIT=0, and the population arms record 3 failed / 694 passed at base against 3 failed / 701 passed at the repaired head with the same three ids.\nVERDICT write_paths: read the manifest's declared five paths; the delta's three changed files are reckon/crew/needs_you.py, tests/test_follow_needs_you_line.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/the-follower-lists-your-runs-that-need-you.html, all inside them.\nVERDICT manifest: read; it states the repair at aefb04b7e, names logs/repair-gate.log and logs/repair-arm.log, records the repair control at EXIT=1, and its tests line is the logs' own '# command:' header rather than a template.\nVERDICT diff: read commit by commit against 05d51990f; aefb04b7e returns the pointers beside the snapshots and hands the pointer's created_at to the age fallback, and c2437333e rewrites the landing fragment's measure, control and population paragraphs to the repaired head.\nCALL_SITES: reckon/crew_follow_commands.py:1077, reckon/crew_follow_commands.py:2162, reckon/crew_follow_commands.py:2179, reckon/crew_follow_commands.py:3161\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/needs_you.py:174-180 now ages a run whose stream recorded no transition to its current state from that run's own pointer (which carries created_at) rather than from the snapshot (which carries no such key), which is the repair the prior blocking finding named and it makes the oldest-first sort at :193 trustworthy again.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/repair-gate.log ends in a bare EXIT=0 over 7 passed, logs/repair-arm.log ends EXIT=1 at 3 failed / 701 passed against logs/base-arm.log's 3 failed / 694 passed with the same three ids, and I re-ran the focused gate at c2437333e in a scratch extraction of that revision (7 passed, EXIT=0), so the figure the done_when names is a receipt rather than a claim.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the delta touches exactly the three files the goal names, all inside the manifest's declared write paths, and carries no dependency, figure or unrelated edit.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_follow_needs_you_line.py:410 fails if the fix regresses: reverting reckon/crew/needs_you.py to 05d51990f and running the added case alone reddens it at assert 0.0 >= (7200 - 60), which I reproduced myself, though the ordering assertion at :409 does not redden on that regression.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/needs_you.py:101-129 keeps the module's private-helper delegation idiom and its docstring states the mechanism (the snapshot carries no creation instant); the diff adds no symbol and no plan, sprint or version label.\nSCORE reuse: 18\nJUSTIFICATION reuse: the delta adds no definition: it widens _snapshots' return and reuses the module's existing _created_seconds (reckon/crew/needs_you.py:93), so no capability is forked; a search over reckon/crew for an existing pointer-age owner found recovery_watch._quiet_clock_latest (:996), which reads the created_at branch this fallback needs but also a stream mtime the module deliberately excludes, and the pre-existing _snapshots / _live_project_session_counts overlap the earlier review already recorded.\nFINDING tests/test_follow_needs_you_line.py:409 follow-on: assert [row['node'] for row in rows] == ['own-old', 'own-recent'] does not redden on the regression the case is written to catch, so the ordering clause its docstring claims ('lead by that age', :382) is carried only by the age assertion below it. I measured this rather than inferred it: with the fix reverted the added case alone fails at :410 (assert 0.0 >= (7200 - 60)), not at :409, because when both rows fall back to a zero age the sort key at reckon/crew/needs_you.py:193 ties and the node-name tiebreak ('own-old' < 'own-recent') reproduces the expected order anyway. The regression is still caught by :410 and by the own-old 2h00m token at :414, so this is not blocking; the assertion should compare the order only after asserting a non-zero age gap, or the docstring should claim only the age. The landing fragment's claim that the case asserts the elder 'leads the row order' (fragments/the-monitor-shows-the-work-it-watches/the-follower-lists-your-runs-that-need-you.html:4) inherits the same overstatement.\n",
+  "review_run_id": "r-20261021T094312706692-review-of-the-follower-lists-your-runs-that-need-you-c2437333e782",
+  "reviewed_base_sha": "05d51990f9414bb035c8a64b9342d2f8bea6cf4f",
+  "reviewed_head_sha": "c2437333e782d1c87bc2754a982c6a87c72c8707",
+  "reviewed_run_id": "r-20261021T052723246432-the-follower-lists-your-runs-that-need-you",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T10:05:00+00:00",
+  "total": 113
+}
