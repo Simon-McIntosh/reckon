@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/mcp_views.py:3976 crew(view=\"flight\") spreads flight_report, which now carries flight_unknown_keys",
+    "reckon/project_setup_commands.py:440 reckon flight CLI, the new --check caller",
+    "reckon/flight.py:2011 resolve() validates every contributing layer with validate_layer(strict=strict)",
+    "reckon/_store.py:3229",
+    "reckon/crew/routing.py:1991",
+    "reckon/crew/paid_lanes.py:1063",
+    "reckon/crew/promotion_checks.py:939",
+    "reckon/crew/plan_review.py:829",
+    "reckon/crew/staleness.py:83",
+    "reckon/crew/fleet_supervisor.py:1112",
+    "reckon/crew/model_catalogue.py:225",
+    "reckon/crew/domain_rules.py:121",
+    "reckon/roadmap.py:1881",
+    "reckon/run_record.py:251",
+    "reckon/hooks/coordinator_obligations.py:539"
+  ],
+  "completed_at": "2026-10-21T18:30:30.772Z",
+  "dispatched_at": "2026-10-21T18:03:46Z",
+  "findings": [
+    {
+      "file": "reckon/flight.py",
+      "line": 1418,
+      "severity": "follow-on",
+      "text": "unknown_key_paths() feeds its walk through _schema_view() (reckon/flight.py:382), which strips harness_home_files, harness_home_adjacent_files, sprint_recent_days and picker_reserved_lanes before the walk starts. An undeclared key inside one of those blocks is therefore neither refused at load nor reported, so a typo inside them is silently accepted and the function's own claim of every key path the running schema does not declare is false for those fields. Measured at head: a host layer carrying harness_home_files.codex[0].bogus_entry resolves with unknown_keys == [] and raises nothing, because _validate_harness_home_entries (reckon/flight.py:420) checks only path and keys. The top-level block names are deliberately excluded and documented; an entry-level key inside them is not."
+    },
+    {
+      "file": "reckon/project_setup_commands.py",
+      "line": 420,
+      "severity": "follow-on",
+      "text": "The done-when asks for ruff format --check clean on the changed hand-written paths, and this file is not: at head ruff format --check reports 17 hunks and '1 file would be reformatted'. It is not this node's defect and it does not hold the node: the same file at the base revision carries the identical 33 complaint lines, and the node's own hunks (project_setup_commands.py:415, :427, :445) fall outside every format hunk, so the delta is zero. Recorded because the manifest reports the ruff half of the gate as a delta reading rather than as the literal clean state the done-when names; under the repository's own add-no-findings rule the delta reading is the correct one."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make flight config loading ignore and report keys the running code does not know while reckon flight --check stays strict; reckon/_flight_schema.py:43 now carries extra = \"ignore\", reckon/flight.py:1418 walks each layer against its own field declarations to report undeclared key paths, and reckon/project_setup_commands.py:416 adds the --check flag that resolves with strict=True, so all three clauses are landed.\nVERDICT done_when: the done-when names the load/report/strict triple, the fixture key paths, the base-commit failure and the exact gate command; the manifest records logs/base-gate.log (1 failed, 138 passed, EXIT=1), logs/head-gate.log (1 failed, 144 passed, EXIT=1) and logs/negative-control.log (2 failed, 4 passed, EXIT=1), and I read all three: the head failure id is identical to the base failure id (tests/test_one_check_trusts_a_moved_checkout.py::test_a_clean_moved_checkout_answers_on_the_current_code), so the gate does assert the done-when's zero-added-failure delta, and the negative-control log shows the two load tests red under extra=forbid.\nVERDICT write_paths: the manifest declares the dispatch fence plus the two test files granted by the scope extension recorded in the run directory's reopened.json (granted_paths: tests/test_budget_lift.py, tests/test_one_check_trusts_a_moved_checkout.py); every path in the diff of da1a110ab..8f435107b is inside that set, and the declared docs/_shared/flight.schema.json is byte-unchanged and the figure directory untouched.\nVERDICT manifest: read; it states the gate command, three log paths, the base and head suite results with failure ids, the negative control with its mutation, and a landing line, and its after_suite names logs/head-gate.log with one failure id, which the log itself confirms.\nVERDICT diff: read commit by commit against da1a110ab; 78bad3aec is the feature (the EXTRA_FIELDS constant, the extra=ignore regeneration, unknown_key_paths with its four annotation helpers, strict threaded through validate_layer and resolve, the flight_unknown_keys field and the --check option) and 8f435107b moves two tests that pinned load-time strictness onto the strict read, three files changed in each commit, all inside the declared scope.\nCALL_SITES: reckon/mcp_views.py:3976 crew(view=flight), reckon/project_setup_commands.py:440 reckon flight --check, reckon/flight.py:2011 resolve() per-layer validate_layer, reckon/_store.py:3229, reckon/crew/routing.py:1991, reckon/crew/paid_lanes.py:1063, reckon/crew/promotion_checks.py:939, reckon/crew/plan_review.py:829, reckon/crew/staleness.py:83, reckon/crew/fleet_supervisor.py:1112, reckon/crew/model_catalogue.py:225, reckon/crew/domain_rules.py:121, reckon/roadmap.py:1881, reckon/run_record.py:251, reckon/hooks/coordinator_obligations.py:539\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/flight.py:1418 returns the undeclared paths and reckon/flight.py:2568 publishes them as flight_unknown_keys while reckon/project_setup_commands.py:445 passes strict=check, so the load reports and --check refuses as the goal states; the strict refusal at reckon/flight.py:1258 names the alphabetically first unknown path rather than the first in file order, a small deviation.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/head-gate.log ends 1 failed, 144 passed and logs/base-gate.log 1 failed, 138 passed with the same single failure id, so the delta is recorded rather than claimed, and logs/negative-control.log shows the two load tests red under extra=forbid; the ruff half of the done-when is asserted in the manifest with no log on disk, and the head log's first line names the command while the revision and worktree come on the lines after it.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in git diff da1a110ab..8f435107b is inside the dispatch fence, and the only two paths beyond it, tests/test_budget_lift.py and tests/test_one_check_trusts_a_moved_checkout.py, are named in reopened.json's granted_paths, with no file outside that scope carried. \nSCORE durability: 18\nJUSTIFICATION durability: tests/test_flight_reads_forward.py:43 and :57 redden on reinstating the regression, shown by the negative-control log's two failures when extra=forbid is regenerated, and tests/test_flight.py:1386 pins flight_unknown_keys into the reported key set; the load assertions compare reported paths against the key names the test also wrote into its own fixture, which holds only because the walk must produce both the sorted order and the nested budget. prefix, and tests/test_flight_reads_forward.py:86 does not assert the nested path in the CLI output, so the strict arm guards only the top-level key.\nSCORE fit: 18\nJUSTIFICATION fit: the added names at reckon/flight.py:1374-1418 (_unknown_key_paths, unknown_key_paths, _schema_model, _mapping_value_annotation, _sequence_item_annotation) describe the mechanism and carry no plan, ticket or version label, and the module-constant-with-reason idiom at reckon/flight.py:156 matches the surrounding code; the wrinkle is reckon/flight.py:162, which copies pydantic's own Extra inputs are not permitted wording into a new literal, leaving the loader's refusal text and the library's as two independent strings that could drift while the tests asserting the literal still pass.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner exists for a schema-driven undeclared-key-path reporter; a capability search over reckon/ for unknown-key handling found only the flat plan-section field diff at reckon/_store.py:1703, a literal six-name set for one op rather than a schema walk, and the change extends the existing owners instead of forking them by adding a strict flag to validate_layer (reckon/flight.py:1232) and reusing _schema_view/_inject_map_keys (reckon/flight.py:382, :661) rather than writing a second validation path.\nFINDING reckon/flight.py:1418 follow-on: unknown_key_paths walks _schema_view's output, so keys inside harness_home_files, sprint_recent_days, picker_reserved_lanes and the review-owned block are neither refused nor reported while the docstring claims every undeclared key path is returned; measured at head, harness_home_files.codex[0].bogus_entry resolves with unknown_keys == [] and no refusal.\nFINDING reckon/project_setup_commands.py:420 follow-on: the done-when's ruff format --check clean on the changed hand-written paths is not met for this file (17 hunks, 1 file would be reformatted at head), though the delta is zero, base carrying the same 33 complaint lines and the node's hunks falling outside every format hunk.\n",
+  "review_run_id": "r-20261021T180147626901-review-of-a-newer-flight-key-is-ignored-at-load-8f435107bbad",
+  "reviewed_base_sha": "da1a110ab13de2c3f5b38a38fb807c35cbad06ae",
+  "reviewed_head_sha": "8f435107bbadf5d5bf83be2c3ff0479786ebf7da",
+  "reviewed_run_id": "r-20261021T160220332694-a-newer-flight-key-is-ignored-at-load",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T18:45:00+00:00",
+  "total": 109
+}
