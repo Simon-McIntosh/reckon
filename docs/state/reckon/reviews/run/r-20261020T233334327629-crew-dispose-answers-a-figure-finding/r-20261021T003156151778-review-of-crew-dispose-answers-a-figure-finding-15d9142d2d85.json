@@ -1,0 +1,45 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run's manifest records no baseline_suite/after_suite keys; its own gate logs pair a base arm at d3101132693470e7b23e8a11015353e0022efb89 (logs/importers.log: 2 failed, 49 passed, EXIT=1, failing tests/test_a_folded_finding_widens_its_repair.py::test_an_exempted_finding_does_not_widen_a_complete_run and ::test_a_fold_naming_another_node_does_not_widen_the_run) against the head arm at 4afe480601bbf3ee30009806e349d8cd10b7df10 (logs/repair-head.log: 34 passed, EXIT=0, no failure ids). The head arm carries zero failures, so the head arm minus the base arm is empty whatever the base arm holds and the node adds no failure; logs/base-arm-two-failures.log re-runs those same two ids against a git-archive extraction of the base tree and reproduces both at EXIT=1, confirming they are pre-existing and outside this node's declared scope.",
+  "completed_at": "2026-10-21T00:51:26.425Z",
+  "dispatched_at": "2026-10-21T00:32:48Z",
+  "findings": [
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": 694,
+      "severity": "follow-on",
+      "text": "the two refusal branches the diff adds - the unknown-rubric ClickException at :694-699 and the --dimension-beside---rubric refusal at :700-704 - are reached by no test in the repository (a grep over tests/ finds --rubric only in the new file, which names a valid rubric and never a dimension beside it), so a later change that drops either refusal leaves the suite green."
+    },
+    {
+      "file": "reckon/mcp_crew_actions.py",
+      "line": 101,
+      "severity": "follow-on",
+      "text": "the crew MCP dispose action's argument map carries project, run_id, dimension, finding_index, kind, node and reason but no rubric key, so an agent reaching the verb through the MCP tool cannot answer a figure finding and is silently routed to the text record; the node records this in its manifest follow_ons rather than in the landed diff."
+    },
+    {
+      "file": "logs/repair-ruff.log",
+      "line": 2,
+      "severity": "follow-on",
+      "text": "the ruff receipt at logs/repair-ruff.log:2 names only reckon/crew_run_commands.py, while the done_when asks for ruff check and ruff format --check to add no findings on changed files, and the node's own changes to reckon/crew/review_dispositions.py and tests/test_crew_dispose_answers_a_figure_finding.py carry no format or lint receipt at all."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make crew dispose take --rubric figure, writing the disposition onto the run's figure-review record and composing its receipt from that record; reckon/crew_run_commands.py:606-612 adds the option, :718-733 resolves the figure record the writer and the receipt both use, and :802-819 threads the same rubric into record_finding_disposition and stored_record_for_disposition, so the goal is carried.\nVERDICT done_when: the done_when names tests/test_crew_dispose_answers_a_figure_finding.py; the manifest records the four-file gate at the repair head as 34 passed, EXIT=0 (logs/repair-head.log at 4afe480601bbf3ee30009806e349d8cd10b7df10), and an independent re-run of that file at the same revision printed 5 passed.\nVERDICT write_paths: read the node prompt's FENCE - SCOPE and the manifest's changed_paths; the diff of d3101132693470e7b23e8a11015353e0022efb89..4afe480601bbf3ee30009806e349d8cd10b7df10 touches four files (reckon/crew/review_dispositions.py, reckon/crew_run_commands.py, tests/test_crew_dispose_answers_a_figure_finding.py, docs/evidence/fragments/scoring-should-stop-a-promotion/crew-dispose-answers-a-figure-finding.html), every one inside the declared five paths.\nVERDICT manifest: read; status complete; it states the repair-head gate as 34 passed EXIT=0, the declared mutation reddening test_the_figure_finding_is_disposed_onto_the_figure_record, and attributes the two base-arm widen failures to a pre-existing defect outside its write scope.\nVERDICT diff: read commit by commit against d3101132693470e7b23e8a11015353e0022efb89; three commits over four files (+507/-2) - 6731422c2 the rubric option and the threading through the disposition writer and reader, 15d9142d2 the evidence fragment, 4afe48060 the repair that makes the callback's rubric parameter last and defaulted.\nCALL_SITES: reckon/crew_run_commands.py:crew_dispose (the CLI verb the option lands on), reckon/mcp_crew_actions.py:226 (_verb_callback into crew_dispose for the crew MCP dispose action), reckon/crew_run_commands.py:1281 (the other stored_record_for_disposition caller), reckon/crew/repair.py:224 (blocking_findings, which reads the FINDING_DISPOSITIONS_KEY the writer sets on the figure record)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:718-733 reads the figure record through review_module.stored_record(rubric=figure) and :814-819 reads the receipt back through the same rubric, so the disposition and the receipt are the figure record's; the crew MCP dispose action at reckon/mcp_crew_actions.py:101-108 carries no rubric key, so the same verb is figure-capable only through the CLI.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/repair-head.log records the named gate at 4afe48060 as 34 passed with EXIT=0 and logs/negative-control.log records EXIT=1 with the failing id.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff d3101132693470e7b23e8a11015353e0022efb89..4afe480601bbf3ee30009806e349d8cd10b7df10 is one of the node's declared write paths, and the fourth file is the landing fragment the landing contract always permits.\nSCORE durability: 15\nJUSTIFICATION durability: logs/negative-control.log shows the rubric dropped before stored_record makes _blocking_ids(fixture) == [] at tests/test_crew_dispose_answers_a_figure_finding.py:251 fail (1 failed EXIT=1), so the central guard is falsifiable, but the two refusals the diff adds at reckon/crew_run_commands.py:694-704 are exercised by no test.\nSCORE fit: 18\nJUSTIFICATION fit: the new option at reckon/crew_run_commands.py:606-612 follows the neighbouring click.option idiom and introduces no plan label, version suffix or author attribution in the names or comments it adds.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no new function or module - it threads rubric through the existing owners reckon/crew/review_dispositions.py:327 stored_record_for_disposition and :406 record_finding_disposition and reuses reckon/crew/review.py stored_record, whose rubric= already owns rubric-keyed record selection, so no figure-record disposition writer is forked.\nFINDING reckon/crew_run_commands.py:694 follow-on: the two refusal branches the diff adds - the unknown-rubric ClickException at :694-699 and the --dimension-beside---rubric refusal at :700-704 - are reached by no test in the repository (a grep over tests/ finds --rubric only in the new file, which names a valid rubric and never a dimension beside it), so a later change that drops either refusal leaves the suite green.\nFINDING reckon/mcp_crew_actions.py:101 follow-on: the crew MCP dispose action's argument map carries project, run_id, dimension, finding_index, kind, node and reason but no rubric key, so an agent reaching the verb through the MCP tool cannot answer a figure finding and is silently routed to the text record; the current repair clears it because the callback's rubric defaults, but the option is unreachable from that surface.\nFINDING logs/repair-ruff.log:2 follow-on: the ruff receipt at logs/repair-ruff.log:2 names only reckon/crew_run_commands.py, while the done_when asks for ruff check and ruff format --check to add no findings on changed files, and the node's own changes to reckon/crew/review_dispositions.py and tests/test_crew_dispose_answers_a_figure_finding.py carry no format or lint receipt at all.",
+  "review_run_id": "r-20261021T003156151778-review-of-crew-dispose-answers-a-figure-finding-15d9142d2d85",
+  "reviewed_base_sha": "d3101132693470e7b23e8a11015353e0022efb89",
+  "reviewed_head_sha": "4afe480601bbf3ee30009806e349d8cd10b7df10",
+  "reviewed_run_id": "r-20261020T233334327629-crew-dispose-answers-a-figure-finding",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T00:56:22.001844+00:00",
+  "total": 109
+}
