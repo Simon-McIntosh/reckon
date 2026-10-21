@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T19:26:00.039Z",
+  "dispatched_at": "2026-10-21T19:08:43Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-page-paints-from-an-index.html:29",
+      "id": "wiring-1",
+      "reason": "two concurrent workers on `reckon/serve.py` is the collision the plan's own ordering sentences exist to prevent, and the edge is one entry in the declarations.",
+      "text": "\u00a712 is declared implementable and edits `reckon/serve.py`, but the plan's scheduling edge for it is absent: `plan-section-depends-on` lists only `s11` and `s7`, and \u00a712's prose omits the \"runs after \u2026 which shares `reckon/serve.py`\" sentence that \u00a73, \u00a76, \u00a77 and \u00a711 each carry, so the scheduler can dispatch \u00a711 and \u00a712 in the same wave against one file.",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-page-paints-from-an-index.html:260",
+      "id": "done_when-1",
+      "reason": "without a case for the bound check the node can close on a half-fix, and the section already argues the rotation is part of the harm.",
+      "text": "\u00a712's deliverable asserts two consumers share the bound path (\"Every access line and bound check of that server uses that path\") and names one control that reverts the per-line resolution of the access line only, so an implementation that binds the line path while `_bound_server_log` (reckon/serve.py:285,297) keeps resolving per call passes the gate with the rotation harm \u00a712's own Why names still live.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-page-paints-from-an-index.html:260",
+      "id": "reasoning-1",
+      "reason": "the binding site is the whole mechanism, and the plan's own done-when test only passes if it is attached somewhere every server object passes through, which the plan does not say.",
+      "text": "the deliverable says a served process \"resolves its log path once, when the server starts serving\" and names no construction the binding attaches to, while the defect it measured was produced by a `serve.Handler` under a bare `ThreadingHTTPServer` a test builds itself (`tests/test_cross_node_writes_refresh_the_index.py:206`), which never passes through the served entry point (`reckon/serve.py:4064`) where the only existing `_bound_server_log()` call sits (reckon/serve.py:4084); a worker taking the natural reading \u2014 bind in the entry point \u2014 gets a test that cannot reach the binding and a fix that leaves every test-built server leaking.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "fb4e3f84435bdcc7eecfe5cabd91a95e1e0c9462c961d7b52669648b6c683f79",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 63,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T190743204978-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "eee3b5503b11b69c86b21f9abd55d2f158247077",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `tests/test_cross_node_writes_refresh_the_index.py::test_an_open_stream_receives_the_added_row_and_stays_open` resolves at line 398 of that file, and `Handler.log_message` (reckon/serve.py:2230), `_write_access_line` (255/263), `_server_log_path` (255), `_bound_server_log` (285) and `_config_home` (reckon/_store.py:128) all resolve, with `_server_log_path` \u2192 `reckon.service.log_path` \u2192 `_config_home()/logs/server.log` producing the cited `~/.config/reckon/logs/server.log`.",
+    "done_when": "a finding \u2014 \u00a712's one case falsifies only the access-line half of its deliverable; the deliverable's second clause (\"Every access line and bound check of that server uses that path\") has no case, so a fix to the line path alone passes the gate while a test process still rotates the operator's log.",
+    "evidence_paths": "pass \u2014 \u00a712 puts every log under the run directory with a revision header and a bare `EXIT=` line, the durable convention \u00a710 and \u00a711 use; the measured probe's counts are stated inline (85 `/_changes/sample` lines in the live log at review time, matching the plan's \"after\" figure).",
+    "naming": "pass \u2014 \u00a712 introduces no plan label, stage name, ticket or version into the two names it touches, and its prose describes the mechanism (a path resolved once per served process) rather than a tracker entry.",
+    "reasoning": "a finding \u2014 the deliverable binds the path \"when the server starts serving\" but names no construction it attaches to, while the harm \u00a712 measured is produced by a server the served entry point never constructs, so the fix as specified can leave the measured case in place.",
+    "single_goal": "pass \u2014 \u00a712 carries one deliverable (one resolution point for the served log path) plus the coordinator's confirmation of the same mechanism, the shape \u00a710 and \u00a711 already use.",
+    "wiring": "a finding \u2014 \u00a712 writes `reckon/serve.py` and declares no ordering edge to \u00a711, which is declared implementable and writes the same file; `plan-section-depends-on` (docs/plans/the-page-paints-from-an-index.html:29) carries only `s11` and `s7`."
+  },
+  "section_digests": {
+    "_document": "cbb39222f06376afb0c7588333fe9bb4bea3e3016d1797a9617e1366a1167036",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "17515cc4d212280b53e77d7279aa81e37c7d58f877ada031f77705b31e53d437",
+    "s11": "bb32b98b9a0a5070d5ec6b5387862bef5af3ba37b5956ac7c9d734723c2ac9fa",
+    "s12": "71405409cb96c000d0ffbad9107f424c56f31c5641829a898900a3eefb4a8253",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "f22e8b2353f1a35ab1f08b2ffac2d1f0cb4909e18b10d3b7119fc3e4f46fc607",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T19:32:10.479037+00:00"
+}
