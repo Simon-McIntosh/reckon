@@ -19,11 +19,11 @@
   <meta name="plan-tags" content="spa,reckon-tooling">
   <meta name="plan-sprint" content="S26">
   <meta name="plan-standalone" content="Builds on the landed discovery repair of a-page-load-reads-each-file-once; no live plan waits on it and it consumes no plan&#x27;s pending evidence.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
   <title>The Page Paints From An Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="58">
+<meta name="plan-version" content="59">
 <meta name="plan-modified" content="2026-10-21">
 <meta name="plan-impl" content="0.86">
 <meta name="plan-section-depends-on" content="{&quot;s11&quot;:[&quot;the-page-paints-from-an-index#s10&quot;],&quot;s7&quot;:[&quot;the-page-paints-from-an-index#s2&quot;,&quot;the-page-paints-from-an-index#s3&quot;,&quot;the-page-paints-from-an-index#s4&quot;,&quot;the-page-paints-from-an-index#s5&quot;,&quot;the-page-paints-from-an-index#s6&quot;]}">
@@ -221,7 +221,7 @@
 <p>§2 comes first because it keeps the site reachable across a restart. §3, §5 and §6 run in that order on <code>reckon/serve.py</code>. §4 follows §3, and §5 follows §4 on <code>docs/ui/state-loader.js</code>. §7 waits on the others and on a restart.</p><p><strong>Done when</strong> a refresh is never needed for a state change.</p><p>Moved from followup f-tppfai-001 on the-page-paints-from-an-index by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.86; §2 keeps the site reachable across restarts; §3/§5/§6 in order on <code>serve.py</code>; §4 after §3; §7 waits on a restart</p>
 
     <h2 id="s10">§10 — A revalidation keeps the derived blocks until better ones replace them</h2>
-<section data-reckon="section" data-id="s10" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s10" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> On 2026-10-21 around 07:30 the lead saw power_convertor's crew view flicker: the derived flow vanished and came back, and everything below it jumped. The cause sits in this plan's revalidation path:</p>
 <ul>
 <li><code>watchProjectStateChanges</code> in <code>docs/ui/state-loader.js</code> calls the page's refresh after a settle window, on every <code>change</code> event and every <code>fleet</code> event.</li>
@@ -363,6 +363,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261021T111749695633-a-revalidation-keeps-the-derived-blocks" data-who="reckon-build" data-when="2026-10-21T13:45:40Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/the-page-paints-from-an-index/a-revalidation-keeps-the-derived-blocks.html</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-close-s10" data-who="reckon-build" data-when="2026-10-21T14:15:00Z">
+    <div class="r-comment-body"><p>§10 landed at <code>c5dbc77a2</code>: a revalidation keeps the derived blocks until the merge replaces them, a failed schedule rebuild keeps the served schedule marked stale, and the merge's <code>reckon:derived</code> event repaints the flow. Gate 15 passed; population adds no failure; final review has no blocking finding. <a href="/reckon/evidence/archive/the-page-paints-from-an-index-landed.html#s10">evidence</a></p></div>
 </div>
 </section>
 </main>
