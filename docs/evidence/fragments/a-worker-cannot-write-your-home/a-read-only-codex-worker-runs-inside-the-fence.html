@@ -7,10 +7,10 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="a-worker-cannot-write-your-home">
   <meta name="plan-title" content="A read-only codex worker is handed only roots the fence keeps writable">
-  <meta name="plan-summary" content="Two changes let a read-only codex worker run its shell commands inside the fence: fence_writable_roots drops a declared root at or above the node-tmp seal, and the read-only tier excludes the node temp root from codex's own workspace-write sandbox, which otherwise adds it back and protects a .git inside it.">
+  <meta name="plan-summary" content="Three changes let a codex worker run its shell commands inside the fence: fence_writable_roots drops a declared root at or above the node-tmp seal, and both codex sandbox tiers exclude the node temp root from codex's own workspace-write policy, which otherwise adds it back and protects a .git inside it.">
   <meta name="plan-evidence-for" content="reckon:a-worker-cannot-write-your-home">
   <meta name="plan-verifies" content="reckon:a-worker-cannot-write-your-home#s18">
-  <meta name="plan-commits" content="6388c9278,ce4f91be8">
+  <meta name="plan-commits" content="6388c9278,ce4f91be8,fd1ee166f">
   <meta name="plan-recorded-at" content="2026-10-21">
   <title>A read-only codex worker is handed only roots the fence keeps writable — evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -20,58 +20,66 @@
 <article class="r-note" data-node="a-read-only-codex-worker-runs-inside-the-fence" data-reckon="landed" data-when="2026-10-21">
   <h2 id="a-read-only-codex-worker-runs-inside-the-fence-title">A read-only codex worker is handed only roots the fence keeps writable</h2>
   <p id="a-read-only-codex-worker-runs-inside-the-fence-change">
-    Two changes, because the trigger has two halves. <code>reckon/_worker_fence.py</code>:
-    <code>fence_writable_roots</code> appends the node-tmp seal — <code>node_tmp_seal_root()</code>, the
-    node's own <code>/tmp</code> — to the sealed set it filters against, so a declared root at or above
-    that seal is dropped exactly as one at or above a shared delivery store already was, while a root
-    <em>beneath</em> it (a run's own scratch) survives. <code>reckon/_backends.py</code>: the read-only
-    tier's <code>_sandbox_flags</code> passes <code>-c
+    The trigger has three parts, and each is addressed on its own.
+    <code>reckon/_worker_fence.py</code>: <code>fence_writable_roots</code> appends the node-tmp seal
+    (<code>node_tmp_seal_root()</code>, the node's own <code>/tmp</code>) to the sealed set it filters
+    against, so a declared root at or above that seal is dropped exactly as one at or above a shared
+    delivery store already was, while a root <em>beneath</em> it — a run's own scratch — survives.
+    <code>reckon/_backends.py</code>: both codex sandbox tiers now pass <code>-c
     sandbox_workspace_write.exclude_slash_tmp=true</code>, because codex's own <code>workspace-write</code>
     policy adds the node temp root to its writable set by default and protects a <code>.git</code> inside
-    every root it holds — so it creates <code>/tmp/.git</code> whatever roots reckon hands it.
-    <code>TMPDIR</code> is deliberately left a writable root: it is the run's own scratch, and the two
-    changes together are what the launch needs.
+    every root it holds, so it creates <code>/tmp/.git</code> whatever roots reckon hands it. The
+    read-only tier uses that policy, and so does the <code>workspace-write</code> tier, where the same
+    contradiction holds. <code>TMPDIR</code> is deliberately left a writable root: it is the run's own
+    scratch, and the fence keeps it writable.
   </p>
   <p id="a-read-only-codex-worker-runs-inside-the-fence-argv">
     The composed-argv listing at the dispatched base <code>fccdd3136</code> carries
-    <code>--add-dir /tmp</code> with <code>bound-writable=False</code> and <code>sealed=True</code>; at
-    head the same listing carries only the run's scratch root beneath the seal, bound writable. The
-    fence's <code>--ro-bind</code> destinations are unchanged between the two arms.
+    <code>--add-dir</code>-free witness only: it names <code>--add-dir /tmp</code> with
+    <code>bound-writable=False</code> and <code>sealed=True</code>; head's same listing carries only the
+    run's scratch root beneath the seal, bound writable. The fence's <code>--ro-bind</code>
+    destinations are unchanged between the two arms.
   </p>
   <p id="a-read-only-codex-worker-runs-inside-the-fence-live">
-    The live launch now runs. At the base extraction the run fails every command with
+    The live launch runs at head. At the base extraction it fails every command with
     <code>bwrap: Can't mkdir /tmp/.git: Read-only file system</code> and writes no manifest. With the
     config override added by hand <em>alone</em> it still fails, because the base launch also hands codex
     the sealed <code>/tmp</code> as a root; with the override added <em>and</em> the sealed root withheld
     by hand it runs — <code>pwd</code> prints the run directory and <code>fence-probe.txt</code> is
-    written, <code>probe file present: True</code>. At head, with both changes composed, the same launch
-    runs and writes its file on the first attempt. The earlier head attempt's provider refusal
-    (<code>429 Too Many Requests</code>) did not recur; every attempt is logged in the run directory.
+    written (<code>probe file present: True</code>). At head, with the changes composed, the same launch
+    runs and writes its file on the first attempt; the earlier attempt's provider refusal
+    (<code>429 Too Many Requests</code>) did not recur. Every attempt is logged in the run directory.
   </p>
-  <p id="a-read-only-codex-worker-runs-inside-the-fence-test">
-    <code>tests/test_a_read_only_codex_worker_runs_inside_the_fence.py</code> is new and passes 4/4: no
-    <code>--add-dir</code> names a path at or above the node-tmp seal; the run scratch beneath the seal is
-    still handed <em>and</em> bound writable; every <code>--add-dir</code> the argv carries is bound
-    writable by the fence or outside every sealed path; and the read-only argv carries the config
-    override. The declared negative control reverts both halves — the sealed-store-only root rule and the
-    read-only sandbox flags — and reddens the run at <code>3 failed, 1 passed, EXIT=1</code>, the three
-    being the sealed-root case, the override case, and the case that follows from the first.
+  <p id="a-read-only-codex-worker-runs-inside-the-fence-tests">
+    <code>tests/test_a_read_only_codex_worker_runs_inside_the_fence.py</code> carries the cases genuinely
+    new to this node: the ambient node temp root is not handed, the declared scratch beneath it is handed
+    <em>and</em> bound writable, and both codex tiers carry the config override. The
+    <code>--add-dir</code>-is-bound-writable case lives only in the file that already owns it, which
+    reads the sealed set from both <code>--ro-bind</code> and <code>--tmpfs</code> — its weak copy here
+    is deleted, and the owner's file gains the node-temp-root case beside the rule it states. Four
+    assertions in <code>tests/test_backends.py</code> and
+    <code>tests/test_backend_sandbox_delivery.py</code> pinned the read-only and workspace-write argv
+    exactly and moved with the composed flags rather than being weakened. The declared negative control
+    reverts both halves — the sealed-store-only root rule and both tiers' flags — and reddens at
+    <code>3 failed, 1 passed, EXIT=1</code>: the sealed-root case, the read-only override case and the
+    workspace-write override case.
   </p>
   <p id="a-read-only-codex-worker-runs-inside-the-fence-gate">
     The named gate — every test file under <code>tests/</code> importing <code>reckon._worker_fence</code>,
     plus <code>tests/test_every_module_fits_a_worker_window.py</code> — adds no failure against the base:
     base arm from a clean extraction at <code>fccdd3136</code> <code>1 failed, 118 passed in 120.26s</code>;
-    head arm at <code>ce4f91be8</code> <code>1 failed, 122 passed in 181.59s</code>. The single failing id is
-    <code>tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window</code>,
-    pre-existing at the base. <code>ruff check</code> reports the same two pre-existing findings
-    (<code>UP017</code>, <code>RET504</code>) on the staged paths and their base blobs, and <code>ruff
-    format --check</code> reaches <code>3 files already formatted</code>: no finding is added.
+    head arm at <code>ce4f91be8</code> <code>1 failed, 122 passed in 181.59s</code>. The single failing id
+    is <code>tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window</code>,
+    pre-existing at the base. <code>ruff check</code> reports the same findings on the staged paths and
+    their base blobs (<code>UP017</code>, <code>RET504</code>, three <code>SIM300</code>,
+    <code>RUF005</code>) and <code>ruff format --check</code> reaches <code>6 files already
+    formatted</code>: no finding is added.
   </p>
   <p id="a-read-only-codex-worker-runs-inside-the-fence-wide-arm">
-    One arm asked for is <em>not</em> measured: the widened population — every test file under
-    <code>tests/</code> importing <code>reckon._backends</code> and mentioning codex, 116 files — ran at
-    4% after ten minutes on a node that has not declared a per-test bound, so it was stopped and the
-    named fence population was run instead. The widened arm is unmeasured rather than green.
+    The supervisor's widened population — 115 files, base <code>fccdd3136</code> against head
+    <code>b82a93f51</code> — reported three added failures and no cleared one, all three pinning the
+    read-only codex argv exactly. Those three are the assertions this node's follow-up moved with the
+    composed flags, and its own arm over the same rule is logged at the head this fragment records.
   </p>
 </article>
 </body>
