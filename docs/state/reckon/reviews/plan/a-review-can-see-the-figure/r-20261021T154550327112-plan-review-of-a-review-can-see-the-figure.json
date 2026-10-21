@@ -1,0 +1,95 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T16:00:52.024Z",
+  "dispatched_at": "2026-10-21T15:47:24Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:298",
+      "id": "wiring-1",
+      "reason": "dispatched before \u00a718, \u00a719's prompt produces a parsed figure record with no `scores` mapping, which `review_record_refusals` refuses (\"missing scores\"), so the two sections must be ordered or \u00a719 must carry the edge.",
+      "text": "\u00a719's Change says the prompt omits `scores`, \"which a figure record does not carry once \u00a718 lands\", so \u00a719 needs \u00a718's rubric-aware `review_record_refusals`, yet the plan declares depends-on edges for s14/s15/s16 only and none for s19",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:298",
+      "id": "reasoning-1",
+      "reason": "a worker whose brief demands `scores` will keep writing them, so the node's stated effect (a figure record with no text scores) is not produced unless the composer is added to the write paths or the sentence is dropped.",
+      "text": "\u00a719 justifies the prompt's \"omit `scores`\" sentence on \"a figure record does not carry them once \u00a718 lands\", but the brief a figure reviewer actually reads carries \"Required: \u2026 scores (\u2026)\" unconditionally (`_review_brief_text` in `reckon/crew/recovery_review_subject.py`), and neither \u00a718's nor \u00a719's write paths include that composer, so the prompt and the contract line the same worker reads contradict each other",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "66d0176ed2508701c392064231e2ea2e3b55853a546fe16bc4d222c59bb40056",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 113,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "67139f13-acc5-4116-8e4d-ecb63acaac2c",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-21T16:06:06.695080+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "67139f13-acc5-4116-8e4d-ecb63acaac2c",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-21T16:06:31.777393+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "67139f13-acc5-4116-8e4d-ecb63acaac2c",
+      "reason": "",
+      "when": "2026-10-21T16:06:31.777393+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "67139f13-acc5-4116-8e4d-ecb63acaac2c",
+      "reason": "",
+      "when": "2026-10-21T16:06:06.695080+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-review-can-see-the-figure.v113.json",
+  "review_run_id": "r-20261021T154550327112-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "e31e82e3178806f3d7b8ee144e9db08278528ac2",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_CodexDialect.argv` (reckon/_backends.py:1246, composes `exec`, emits `-i` at :1280), `BackendConfig.input_modalities`, `FINDING_SEVERITIES` (review.py:122), `declared_severity` (:126), `load_figure_review_prompt()` (review.py:501) and `reckon/crew/prompts/figure_review.md` all resolve; the extensionless evidence hrefs sit in units outside this review's scope.",
+    "done_when": "pass \u2014 \u00a719's done-when is measurable (the prompt text names the four finding fields, both `FINDING_SEVERITIES` words read from the constant, the three reader-stopping defects, and the scores omission) and names a negative control (remove the severity paragraph, the prompt-text test fails).",
+    "evidence_paths": "pass \u2014 \u00a719 writes its logs under the run directory and its deliverables to repository paths; the intro cites no scratch or node-local paths.",
+    "naming": "pass \u2014 the in-scope changes carry no plan labels, stage names or ticket numbers into code or prompt text.",
+    "reasoning": "a finding \u2014 \u00a719's claim that telling `figure_review.md` to omit `scores` is sufficient ignores the composed brief, whose contract line still lists `scores` as required, so the two instructions the worker reads disagree.",
+    "single_goal": "pass \u2014 the in-scope units each carry one deliverable: `_document` is the motivation intro, \u00a719 ships the figure prompt's finding shape.",
+    "wiring": "a finding \u2014 \u00a719's instruction to omit `scores` needs \u00a718's rubric-aware `review_record_refusals`, but the plan declares no \u00a719 depends-on \u00a718."
+  },
+  "section_digests": {
+    "_document": "1238bfe35e08a9ab650214076acbc5dfa6c1204ba42f51de9829271930c09f68",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s10": "aee314dbe26192cd678dc467a9b229b8cb46873cacefcd4ce369fcbe469a1e37",
+    "s11": "22d519df0a82a0edfb23ceef10d63c14a08f3d8d656ce95a4cd03e5049d4e228",
+    "s12": "234f9999257c9e64bf69518cdf0b98e319850465374deeac091e90b1ed118647",
+    "s13": "d2f0977c2749f5e1d4e28f3962e8b01a182615a0a75edb530e5e4fde18d9a123",
+    "s14": "f06507899a512533562b6d0b348e9b18bec6d1667d6e619d05352d7ce535eb7c",
+    "s15": "18683ff3a4d13534aa9e29ac4a495e86d07a452b032538d3ae4b7a47d2a9966b",
+    "s16": "a1648c89c8b99c37facb6da9eb6deca43ba8418449557c78627654670ea39fa1",
+    "s17": "c856114a206af086b77fc4d7b867a4cf4dbafd15fdce96f7d52c4a2a36c1e544",
+    "s18": "d6fb6505577d6af2a722c58e82e85d9efd01bb5ce9b4d5fa6408d237ab731651",
+    "s19": "b7a7310ab71fae35845c5dd9837b27cb884314147d5eafc4a8e634d699664166",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "ce9705dbaad70ab2b3a9425eead9900cc284deb7f1d5ecacb553d3745679b3d7",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a",
+    "s8": "2c200fdd964f328342811e9362e4cd14da60f3c8352368899ccf87797d9e7f5b",
+    "s9": "b62ffeb55dd71d5f62b49f372e069f227a57c7caec9c6c3b45f81a945d284e11"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T16:04:53.686093+00:00"
+}
