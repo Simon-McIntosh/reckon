@@ -69,6 +69,14 @@ def _plans() -> list[dict]:
             gates=[_open_gate("g-s1")],
             followups=[],
         ),
+        # Nothing implementable is left, but a deferred section and the default
+        # open followup still stand between the plan and its close.
+        plan_row(
+            "deferred-and-followup",
+            effort="S",
+            effort_hours=1.0,
+            section_declarations={"s1": "done", "s2": "deferred"},
+        ),
     ]
 
 
@@ -132,3 +140,21 @@ def test_a_finished_plan_with_an_open_gate_reads_closable_naming_the_gate() -> N
     assert [gate["id"] for gate in row["closure_blockers"][:-1]] == ["g-s1"]
     assert row["closure_blockers"][0]["ops"] == ["pass", "fail"]
     assert _last_op(row) == ["close"]
+
+
+def test_a_closable_plan_names_every_obstacle_with_the_ops_that_clear_it() -> None:
+    row = _rows()["deferred-and-followup"]
+
+    assert row["readiness"] == "closable"
+    # A deferred section and an open followup are obstacles of different kinds,
+    # each carrying only the ops that clear it, ahead of the close op that ends
+    # the list. Dropping either entry, or reporting the wrong op for it, leaves
+    # the plan's closure list describing less than it must.
+    assert [
+        (entry["kind"], entry.get("id", ""), entry["ops"])
+        for entry in row["closure_blockers"]
+    ] == [
+        ("section", "s2", ["descope"]),
+        ("followup", "next", ["resolve"]),
+        ("op", "", ["close"]),
+    ]
