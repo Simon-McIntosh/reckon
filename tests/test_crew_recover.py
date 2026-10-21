@@ -513,17 +513,28 @@ def _surface_answers(run_id: str, now) -> dict[str, dict]:
         ).output
     )
     commanded = (command["resumed"] or command["skipped"])[0]
-    listed = json.loads(
-        runner.invoke(cli_module.main, ["crew", "list", "--project", PROJECT]).output
+    live = json.loads(
+        runner.invoke(
+            cli_module.main, ["crew", "view", "live", "--project", PROJECT]
+        ).output
     )
-    row = next(item for item in listed["runs"] if item["run_id"] == run_id)
+    row = next(item for item in live["runs"] if item["run_id"] == run_id)
+    # The live row nests the session it resolved under ``session_resolution``
+    # rather than carrying it at its top level, and that nested document is
+    # where a reader of the view finds it. The three names below are the ones
+    # this comparison is written in, read from the row's own document.
+    resolution = row.get("session_resolution") or {}
     observed = json.loads(
         runner.invoke(cli_module.main, ["crew", "observe", "--run", run_id]).output
     )
     return {
         "sweep": judged,
         "command": commanded,
-        "list": row,
+        "live": {
+            "session_id": resolution.get("session_id"),
+            "session_source": resolution.get("source"),
+            "session_resolution": resolution,
+        },
         "observe": observed,
     }
 
@@ -606,13 +617,13 @@ def test_every_surface_answers_the_same_session_from_the_same_source(
     assert {name: answer.get("session_id") for name, answer in answers.items()} == {
         "sweep": expected,
         "command": expected,
-        "list": expected,
+        "live": expected,
         "observe": expected,
     }
     assert {name: answer.get("session_source") for name, answer in answers.items()} == {
         "sweep": "stream",
         "command": "stream",
-        "list": "stream",
+        "live": "stream",
         "observe": "stream",
     }
     assert not (_real_crew_home(monkeypatch) / "live" / f"{run_id}.json").exists()
@@ -629,7 +640,7 @@ def test_every_surface_states_the_same_absence(
 
     answers = _surface_answers(run_id, after)
 
-    for name in ("list", "observe"):
+    for name in ("live", "observe"):
         assert answers[name]["session_id"] is None, name
         assert answers[name]["session_source"] is None, name
         resolution = answers[name]["session_resolution"]

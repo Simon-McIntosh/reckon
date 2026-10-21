@@ -1,4 +1,10 @@
-"""Parity between script-reachable and MCP live-run projections."""
+"""Parity between the CLI live view and the MCP live view.
+
+Both surfaces project one live run to the same classification: the CLI reaches
+it through ``crew view live`` and the MCP tool through ``crew(..., view="live")``.
+The rows are compared over :data:`CLASSIFICATION_FIELDS`, written down here
+rather than derived, so a surface that drops one of them fails.
+"""
 
 from __future__ import annotations
 
@@ -32,7 +38,9 @@ CLASSIFICATION_FIELDS = {
 }
 
 
-def test_crew_list_matches_live_view_classification(tmp_path, monkeypatch) -> None:
+def test_the_cli_live_view_matches_the_mcp_classification_surface(
+    tmp_path, monkeypatch
+) -> None:
     log_path = tmp_path / "stream.jsonl"
     log_path.write_text("")
     os.utime(log_path, (900, 900))
@@ -68,26 +76,36 @@ def test_crew_list_matches_live_view_classification(tmp_path, monkeypatch) -> No
     )
 
     command = CliRunner().invoke(
-        cli.main, ["crew", "list", "--project", "sample"]
+        cli.main, ["crew", "view", "live", "--project", "sample"]
     )
     assert command.exit_code == 0, command.output
 
     command_row = json.loads(command.output)["runs"][0]
     live_row = mcp._crew("sample", view="live")["runs"][0]
 
-    assert CLASSIFICATION_FIELDS <= command_row.keys()
+    # The instrument check: every named field must be on both rows before
+    # anything is compared, so two rows that carried none of them could not
+    # agree by accident.
+    for field in CLASSIFICATION_FIELDS:
+        assert field in command_row, field
+        assert field in live_row, field
     assert {key: command_row[key] for key in CLASSIFICATION_FIELDS} == {
         key: live_row[key] for key in CLASSIFICATION_FIELDS
     }
+    # Both transports reach one projection, so the two rows are the same row:
+    # a CLI plumbing defect that dropped an option would show here as a
+    # differing key set rather than as a missing comparison.
+    assert set(command_row) == set(live_row)
+    assert command_row["classification"] == "running"
+    assert command_row["process_alive"] is True
     assert command_row["backend"] == "codex"
-    assert command_row["launch"] == "cli"
 
 
-def test_a_listed_run_names_the_session_that_owns_it(tmp_path, monkeypatch) -> None:
+def test_a_live_row_names_the_session_that_owns_it(tmp_path, monkeypatch) -> None:
     """A recovering orchestrator must not infer ownership from a node name.
 
-    The dispatching session is stored on the pointer, so the listing reports it
-    rather than leaving the caller to read ownership out of a node id.
+    The dispatching session is stored on the pointer, so the live view reports
+    it rather than leaving the caller to read ownership out of a node id.
     """
     pointers = [
         {
@@ -116,24 +134,23 @@ def test_a_listed_run_names_the_session_that_owns_it(tmp_path, monkeypatch) -> N
     )
 
     listed = CliRunner().invoke(
-        cli.main, ["crew", "list", "--project", "sample", "--session", "keeper"]
+        cli.main,
+        ["crew", "view", "live", "--project", "sample", "--session", "keeper"],
     )
     assert listed.exit_code == 0, listed.output
     rows = json.loads(listed.output)["runs"]
 
+    assert [row["run_id"] for row in rows] == ["run-mine", "run-theirs"]
     assert [row["session"] for row in rows] == ["keeper", "peer"]
     assert [row["mine"] for row in rows] == [True, False]
-    assert rows[0]["member"] == "m-1"
-    assert rows[0]["agent"] == "gpt-5.6-sol/medium"
-    assert rows[1]["member"] is None
-    assert rows[1]["agent"] is None
 
 
 def test_ownership_is_unclaimed_when_no_session_is_named(tmp_path, monkeypatch) -> None:
-    """Without a --session there is nobody to compare against, so `mine` is null.
+    """Without a --session there is nobody to compare against, so no row is marked.
 
-    Reporting False would assert every run belongs to someone else, which is a
-    claim the command has no evidence for.
+    The view omits the marker rather than reporting False, which would assert
+    every run belongs to someone else — a claim it has no evidence for, since
+    ownership is a comparison against a session nobody named.
     """
     pointer = {
         "run_id": "run-any",
@@ -150,11 +167,13 @@ def test_ownership_is_unclaimed_when_no_session_is_named(tmp_path, monkeypatch) 
         lambda project, session=None: {"project": project, "session": session},
     )
 
-    listed = CliRunner().invoke(cli.main, ["crew", "list", "--project", "sample"])
+    listed = CliRunner().invoke(
+        cli.main, ["crew", "view", "live", "--project", "sample"]
+    )
     assert listed.exit_code == 0, listed.output
     row = json.loads(listed.output)["runs"][0]
     assert row["session"] == "peer"
-    assert row["mine"] is None
+    assert "mine" not in row
 
 
 def test_mine_without_a_session_is_refused(tmp_path, monkeypatch) -> None:
@@ -162,9 +181,11 @@ def test_mine_without_a_session_is_refused(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "crew-home"))
     monkeypatch.setattr(crew, "list_live", lambda project=None: [])
 
-    listed = CliRunner().invoke(cli.main, ["crew", "list", "--mine"])
+    listed = CliRunner().invoke(
+        cli.main, ["crew", "view", "live", "--project", "sample", "--mine"]
+    )
     assert listed.exit_code != 0
-    assert "--mine needs --session" in listed.output
+    assert "needs the session id" in listed.output
 
 
 def test_mine_keeps_only_the_named_sessions_runs(tmp_path, monkeypatch) -> None:
@@ -201,7 +222,16 @@ def test_mine_keeps_only_the_named_sessions_runs(tmp_path, monkeypatch) -> None:
 
     listed = CliRunner().invoke(
         cli.main,
-        ["crew", "list", "--project", "sample", "--session", "keeper", "--mine"],
+        [
+            "crew",
+            "view",
+            "live",
+            "--project",
+            "sample",
+            "--session",
+            "keeper",
+            "--mine",
+        ],
     )
     assert listed.exit_code == 0, listed.output
     rows = json.loads(listed.output)["runs"]

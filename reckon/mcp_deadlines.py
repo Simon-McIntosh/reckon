@@ -181,7 +181,7 @@ def _cause_of_timeout(
 _CLI_ANSWER_COMMANDS = {
     "roadmap": "reckon roadmap --project <project>",
     "audit": "reckon audit --project <project>",
-    "crew": "reckon crew list --project <project>",
+    "crew": "reckon crew view live --project <project>",
 }
 
 

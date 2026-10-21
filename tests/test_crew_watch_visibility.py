@@ -35,7 +35,9 @@ CONFIG = {
 
 
 def _read_cli(project: str) -> dict:
-    result = CliRunner().invoke(cli_module.main, ["crew", "list", "--project", project])
+    result = CliRunner().invoke(
+        cli_module.main, ["crew", "view", "live", "--project", project]
+    )
     assert result.exit_code == 0, result.output
     return json.loads(result.output)["watcher"]
 

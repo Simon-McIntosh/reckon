@@ -1277,14 +1277,15 @@ def test_live_run_listing_combines_project_and_phase_filters(home) -> None:
         crew._write_json(crew.pointer_path(record["run_id"]), record)
 
     project_only = CliRunner().invoke(
-        cli_module.main, ["crew", "list", "--project", "alpha"]
+        cli_module.main, ["crew", "view", "live", "--project", "alpha"]
     )
     phase_only = CliRunner().invoke(
-        cli_module.main, ["crew", "list", "--phase", "running"]
+        cli_module.main,
+        ["crew", "view", "live", "--project", "beta", "--phase", "running"],
     )
     combined = CliRunner().invoke(
         cli_module.main,
-        ["crew", "list", "--project", "alpha", "--phase", "running"],
+        ["crew", "view", "live", "--project", "alpha", "--phase", "running"],
     )
 
     assert project_only.exit_code == phase_only.exit_code == combined.exit_code == 0
@@ -1293,7 +1294,6 @@ def test_live_run_listing_combines_project_and_phase_filters(home) -> None:
         "run-alpha-stopped",
     }
     assert {run["run_id"] for run in json.loads(phase_only.output)["runs"]} == {
-        "run-alpha-running",
         "run-beta-running",
     }
     assert [run["run_id"] for run in json.loads(combined.output)["runs"]] == [
