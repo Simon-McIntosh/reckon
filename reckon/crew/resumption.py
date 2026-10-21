@@ -794,7 +794,7 @@ def _ledger_session(
     *,
     project: str,
     root: Any,
-    row: Mapping[str, Any] | None = None,
+    row: Mapping[str, Any] | Callable[[], Mapping[str, Any] | None] | None = None,
 ) -> str:
     """The session the promoted row recorded, or empty.
 
@@ -806,7 +806,15 @@ def _ledger_session(
     ledger is not loaded again to find the row it just read. A caller holding
     only a run id still pays that load, which is what every other ledger source
     caller does.
+
+    A caller that can find the row but would rather not unless it is needed
+    hands in a nullary callable returning it or ``None``; it is called only
+    here, so a run whose session the pointer or the stream already answered
+    never triggers the lookup. A lookup that finds nothing answers the same
+    absence the ledger load did, without paying it.
     """
+    if callable(row):
+        row = row()
     if row is not None:
         return str(row.get("session_id") or "").strip()
     if not project:
@@ -825,7 +833,9 @@ def resolve_session(
     run_id: str,
     *,
     record: Mapping[str, Any] | None = None,
-    ledger_row: Mapping[str, Any] | None = None,
+    ledger_row: Mapping[str, Any]
+    | Callable[[], Mapping[str, Any] | None]
+    | None = None,
     project: str = "",
     root: Any = None,
 ) -> dict[str, Any]:
@@ -840,7 +850,9 @@ def resolve_session(
     which the ledger source answers from directly instead of loading the ledger
     to find it again. A caller holding no row states only the run id and the
     ledger source loads the ledger, so a view compacting every row of a project
-    does not make one load per row.
+    does not make one load per row. A caller holding a nullary callable has the
+    ledger source call it, so a run whose session the pointer or the stream
+    answered never pays a ledger read it did not need.
 
     Where none has an id the answer is a stated absence naming all three as
     consulted, because *not yet observed* and *genuinely absent* are different
