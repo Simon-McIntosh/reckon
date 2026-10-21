@@ -27,6 +27,7 @@ import pytest
 import reckon.mcp as mcp_module
 from reckon import _plan_html
 from reckon._store_section_ops import DECLARATIONS_PATH_HEAD
+from reckon.lifecycle import TERMINAL_STATUSES
 from tests.mcp_family_reload import reload_mcp_family
 
 PROJECT = "proj"
@@ -159,15 +160,19 @@ def test_working_write_still_reads_ready(setup):
     assert result["readiness"] == "ready", result
 
 
-def test_a_write_on_a_closed_plan_reads_closed(setup):
+@pytest.mark.parametrize("terminal_status", sorted(TERMINAL_STATUSES))
+def test_a_write_on_a_closed_plan_reads_closed(setup, terminal_status):
     """A declaration write on a terminal plan reads closed, not a roadmap error.
 
     The roadmap's pending_work carries open plans only, so a terminal plan has
     no row there and the roadmap lookup answers with an error naming a roadmap
-    defect where the roadmap is behaving correctly.
+    defect where the roadmap is behaving correctly. The cases are the terminal
+    statuses the lifecycle module owns rather than a list written here, so the
+    branch in the helper is exercised against every spelling that can reach it:
+    narrowing it to some of them, or dropping one, turns a case red.
     """
     docs_dir = setup
-    _make_plan(docs_dir, {"s1": "done", "s2": "done"}, status="shipped")
+    _make_plan(docs_dir, {"s1": "done", "s2": "done"}, status=terminal_status)
 
     result = _edit(
         docs_dir,
