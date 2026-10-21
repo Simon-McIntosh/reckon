@@ -32,9 +32,8 @@ import pytest
 
 from reckon import crew
 from reckon import crew_follow_commands as follow_commands
-from reckon.crew import follow_checkpoint
+from reckon.crew import follow_checkpoint, runs
 from reckon.crew import needs_you as needs_you_module
-from reckon.crew import runs
 
 PROJECT = "drain-proj"
 SESSION = "drain-owner"
