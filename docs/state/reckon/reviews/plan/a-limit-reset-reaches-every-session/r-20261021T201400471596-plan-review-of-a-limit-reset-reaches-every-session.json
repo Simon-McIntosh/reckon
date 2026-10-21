@@ -1,0 +1,51 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T20:36:35.826Z",
+  "dispatched_at": "2026-10-21T20:25:14Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/ticker.py:2342",
+      "id": "reuse_search-1",
+      "reason": "",
+      "text": "\u2014 \u00a72 (docs/plans/a-limit-reset-reaches-every-session.html:86) says `limit-reset` joins `LIFT_STATES` (`reckon/crew/ticker.py:271`) and accounts only for the routing it enables (`reckon/crew/ticker.py:1680`, where `to_state in LIFT_STATES` reaches `_feed_lift`) and for the `PANE_STATES`/`_display_state` table (`reckon/crew/ticker.py:276`, `reckon/crew/ticker.py:744`); but the same frozenset is read a third time in the renderer, where `raw_to_state in LIFT_STATES` sets the stage cell to `LIFT_STAGE` = \"lift\", so a reset row would render its stage as \"lift\" \u2014 a semantics decision \u00a72 never makes (accept the shared stage word, or give the reset its own). The census of that set's readers is: `reckon/crew/ticker.py:1680` (routing), `reckon/crew/ticker.py:2342` (stage cell), `tests/test_a_standing_lift_survives_a_follower_reload.py:316`, `tests/test_a_released_run_row_is_never_blank.py:41` and `tests/test_follower_names_a_lift.py:195` (which asserts `LIFT_STAGE` renders for lift rows). WOULD_CHANGE_THE_PLAN: yes \u2014 REASON: the plan must say whether a reset row's stage reads \"lift\" or its own word, and if it must differ then `limit-reset` cannot simply join `LIFT_STATES`; the three test files show the set is a wider contract than \u00a72 describes.",
+      "type": "reuse_search",
+      "would_change": null
+    },
+    {
+      "anchor": "docs/plans/a-limit-reset-reaches-every-session.html:77",
+      "id": "interface_budget-1",
+      "reason": "",
+      "text": "\u2014 \u00a72 adds public surface: the new entry point `sweep_resets(...)` in `reckon/crew/lift_watch.py` and the new state constant `limit-reset` with a new pane word `reset`, and the section neither names anything it retires or merges nor states why nothing can be, against the supplied counts (public_definitions 1979, cli_options 397, mcp_views 19, refusal_families 23). WOULD_CHANGE_THE_PLAN: yes \u2014 REASON: the section must account for the interface surface it adds, even if the account is a one-line statement that a new row family cannot retire the lift family it parallels.",
+      "type": "interface_budget",
+      "would_change": null
+    }
+  ],
+  "plan_fingerprint": "41edf89ef6dcd0a5b36080884980877389d2ee4f2fa7c78abdcbf6442cc1b30a",
+  "plan_slug": "a-limit-reset-reaches-every-session",
+  "plan_version": 26,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T201400471596-plan-review-of-a-limit-reset-reaches-every-session",
+  "reviewed_blob_sha": "d76c2be691b1e07596a3a193e48084d24c12ca26",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a72 extends the one module that already owns the producer row fold (`reckon/crew/lift_watch.py`) with a second entry point sharing `_append_rows` and the `recovery_watch._watch_transition` row form, rather than adding a parallel broadcast module.",
+    "duplicate_owner": "pass \u2014 the plan names and extends the owners rather than forking them: `budget_reset`'s store and `recent_resets` (\u00a71), the `lift_watch`/`recovery_watch`/`ticker` row path (\u00a72), `follower_registration.list_followers` for liveness (\u00a75) and the `model_notice_line` obligation path (\u00a73).",
+    "interface_budget": "a finding \u2014 public_definitions 1979, cli_options 397, mcp_views 19, refusal_families 23; \u00a72 adds a public entry point and a public state word without naming what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan reuses the existing lift machinery (store, row fold, claim, obligations path) but its census of one reused mechanism, the `LIFT_STATES` frozenset in `reckon/crew/ticker.py`, is incomplete: a third consumer besides the two \u00a72 names exists at `reckon/crew/ticker.py:2342`.",
+    "thin_wrapper": "pass \u2014 \u00a72 states the justification the item requires: `sweep_resets` is a second entry rather than an extension of `sweep` because it runs on a different trigger (the clock-driven block, not the change gate) with a different memory (announced event ids, not lifts in force), which the existing `sweep` signature cannot carry."
+  },
+  "section_digests": {
+    "_document": "66d46f9aba483c7c35ecaae0cbd5a12473ca51794d03a3d1a6814a472d204267",
+    "s1": "94def7b6fb41cc276c0577018bcc106bab7eaaa9d39a5df760e2d77ee1a7595d",
+    "s2": "036c8734750c6b5f2a942f4743732867198b7ab2ebdee1211dabe1cbb445e491",
+    "s3": "a481ce43e07f6167db0a1f56a9c3a147b001b2973383c03f33151bc407e5cb4a",
+    "s4": "136bf6f43df2d99c1f758324927ab05eabd9aec938251a8d408a96c67841f596",
+    "s5": "7c0dc3556a9d6a54cf58532f9b8aa1054d9bd3725c15c82e0aa9da736a5e9309",
+    "s6": "c8ff3c099e9d217a97c0f6232689f76a21d7c9cc4b1a7d5ced6db85300180b0a",
+    "s7": "b35e0e8820af110a5858364a331330a3a6c886f10fe5701e5471afe28563c83f"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T20:40:01.431589+00:00"
+}
