@@ -587,6 +587,31 @@ def _live_threads() -> set[int]:
     return {thread.ident for thread in threading.enumerate() if thread.ident is not None}
 
 
+#: How long a handler thread is given to leave once its stream is closed. A
+#: handler that saw EOF exits in milliseconds; one still in its change-stream
+#: wait after this window is the leak the two server cases guard against.
+_HANDLER_EXIT_GRACE_S = 2.0
+
+
+def _handlers_left(before: set[int]) -> set[int]:
+    """The threads still alive once the grace window has passed.
+
+    Read before ``server_close()``, never after. That call joins the non-daemon
+    handler threads (``server.daemon_threads = False`` in each case), so a
+    handler still in its change-stream wait blocks the join there instead of
+    reddening an assertion made after it — and by the time that join returns,
+    the leaked handler has already exited, so a roster read placed after it
+    looks clean either way.
+    """
+
+    deadline = time.monotonic() + _HANDLER_EXIT_GRACE_S
+    extra = _live_threads() - before
+    while extra and time.monotonic() < deadline:
+        time.sleep(0.05)
+        extra = _live_threads() - before
+    return extra
+
+
 def _title(rows: list[dict], slug: str) -> str:
     return next(row["title"] for row in rows if row["slug"] == slug)
 
@@ -648,9 +673,11 @@ def test_a_reported_change_refreshes_the_served_index(
     # handler outlives the test and can call into whatever the next test has
     # patched; non-daemonic handler threads are joined when the server closes.
     server.daemon_threads = False
-    threads_before = _live_threads()
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
+    # Taken after the accept loop starts, so the only threads this reads as new
+    # are the ones a request spawned -- the handler under guard.
+    threads_before = _live_threads()
     stream = _ChangeStream(server.server_port, PROJECT)
     try:
         assert stream.next_event() == "ready"
@@ -666,18 +693,26 @@ def test_a_reported_change_refreshes_the_served_index(
         status, rows = _get(server.server_port, INDEX_ENDPOINT)
     finally:
         stream.close()
+        # Read the roster here, while the handlers are still unjoined, and let
+        # the grace window pass inside _handlers_left.
+        leaked = _handlers_left(threads_before)
         server.shutdown()
-        server.server_close()
+        if leaked:
+            # server_close() joins the non-daemon handler threads, so a leaked
+            # handler blocks it for the rest of the run: the listening socket
+            # is closed without that join and the guard below reddens instead.
+            server.socket.close()
+        else:
+            server.server_close()
         thread.join(timeout=5)
 
     assert status == 200
     assert _title(rows, "alpha") == "Alpha renamed"
 
     # A change-stream handler thread must end with the test that opened the
-    # stream. The declared control for this guard reverts the close below; the
-    # leak it repairs is a thread-timing race, so the guard reads the thread
-    # roster rather than waiting for the leaked handler to reach a later test.
-    assert _live_threads() - threads_before == set(), (
+    # stream. The control reverts the response close in _ChangeStream.close,
+    # which is the leak this guard exists for.
+    assert leaked == set(), (
         "a change-stream handler thread outlived its test: the stream's close "
         "left the socket the handler is waiting on open, so the server's "
         "handler never saw EOF and is still in its change-stream wait"
@@ -721,9 +756,11 @@ def test_two_change_streams_recompute_discovery_once(
     # handler outlives the test and can call into whatever the next test has
     # patched; non-daemonic handler threads are joined when the server closes.
     server.daemon_threads = False
-    threads_before = _live_threads()
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
+    # Taken after the accept loop starts, so the only threads this reads as new
+    # are the ones a request spawned -- the handler under guard.
+    threads_before = _live_threads()
     streams = [_ChangeStream(server.server_port, PROJECT) for _ in range(2)]
     try:
         for stream in streams:
@@ -736,8 +773,17 @@ def test_two_change_streams_recompute_discovery_once(
     finally:
         for stream in streams:
             stream.close()
+        # Read the roster here, while the handlers are still unjoined, and let
+        # the grace window pass inside _handlers_left.
+        leaked = _handlers_left(threads_before)
         server.shutdown()
-        server.server_close()
+        if leaked:
+            # server_close() joins the non-daemon handler threads, so a leaked
+            # handler blocks it for the rest of the run: the listening socket
+            # is closed without that join and the guard below reddens instead.
+            server.socket.close()
+        else:
+            server.server_close()
         thread.join(timeout=5)
 
     # The cold read scanned the tree; the change must add exactly one more.
@@ -748,10 +794,9 @@ def test_two_change_streams_recompute_discovery_once(
     )
 
     # A change-stream handler thread must end with the test that opened the
-    # stream. The declared control for this guard reverts the close below; the
-    # leak it repairs is a thread-timing race, so the guard reads the thread
-    # roster rather than waiting for the leaked handler to reach a later test.
-    assert _live_threads() - threads_before == set(), (
+    # stream. The control reverts the response close in _ChangeStream.close,
+    # which is the leak this guard exists for.
+    assert leaked == set(), (
         "a change-stream handler thread outlived its test: the stream's close "
         "left the socket the handler is waiting on open, so the server's "
         "handler never saw EOF and is still in its change-stream wait"
