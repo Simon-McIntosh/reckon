@@ -2,18 +2,24 @@
 
 ``plan_executable_remainder`` is the one reader of "is any declared section
 still implementable", so the readiness ladder consumes its known zero rather
-than testing the declarations a second time. Four plans separate the cases.
+than testing the declarations a second time. Six plans across five tests
+separate the cases.
 
 ``finished`` declares every section done: it reads ``closable``, leaves
 ``ready_now`` and the critical path, and its ``closure_blockers`` ends with the
 ``close`` op. ``working`` keeps one implementable section and still reads
-``ready``. ``legacy`` declares nothing at all, so its readiness is unchanged.
-``gated`` declares every section done beside an open execution gate and no open
-followup: it reads ``closable``, and the gate appears in ``closure_blockers``
-with the verdict ops that clear it.
+``ready``. ``legacy`` declares nothing at all and ``legacy-empty`` persists an
+empty declaration mapping, which reaches the ladder as the same thing; both keep
+whatever readiness they would otherwise have. ``gated`` declares every section
+done beside an open execution gate and no open followup: it reads ``closable``,
+and the gate appears in ``closure_blockers`` with the verdict ops that clear it.
+``deferred-and-followup`` declares one section done and one deferred beside an
+open followup, and its ``closure_blockers`` names each obstacle with the ops
+that clear it.
 
-On the base ladder the first and fourth plans read ``ready`` and ``blocked``;
-both tests fail there.
+With the closable branch of the readiness ladder disabled, ``finished``,
+``gated`` and ``deferred-and-followup`` lose their closable reading: three of
+the five tests fail, and the two covering the unchanged readinesses pass.
 """
 
 from __future__ import annotations
