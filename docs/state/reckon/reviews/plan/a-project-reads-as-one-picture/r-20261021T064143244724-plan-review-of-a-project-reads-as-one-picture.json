@@ -1,0 +1,107 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T06:51:39.634Z",
+  "dispatched_at": "2026-10-21T06:43:53Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-project-reads-as-one-picture.html:263",
+      "id": "done_when-1",
+      "reason": "the node as briefed would build a control arm that is green on the unfixed code, and it would have to assert the second named path (`sections.<sid>.effort_hours`, which the base does not mention) for the done-when to measure anything.",
+      "text": "\u00a710's done-when says \"On the base commit the refusal does not name it, and the test fails there\", but the base refusal already reads \"set section_depends_on requires the form section_depends_on.<section>\" (`reckon/_store_section_ops.py:438`), so a test asserting the keyed path is named passes on the base commit and the control cannot fail",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-project-reads-as-one-picture.html:263",
+      "id": "reasoning-1",
+      "reason": "the plan's premise (\"the refusal did not name the keyed path\") is false as written, and correcting it changes what the node must add and what its control must assert.",
+      "text": "\u00a710 attributes the repair to a refusal that \"now names section_depends_on.<sid>\", but the base revision's refusal already names that keyed form, so the cited defect is not the one the code shows; the only field the base refusal does not name is `sections.<sid>.effort_hours`",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-project-reads-as-one-picture.html:25",
+      "id": "wiring-1",
+      "reason": "\u00a78 is the plan's validation node, and a dep list that omits the sections whose outputs \u00a78 measures while naming one it never touches misstates what the validation depends on and what must be closed before it can run.",
+      "text": "the `plan-section-depends-on` map declares `s8: [s5, s6, s7]`, yet \u00a78's done-when reads the critical path (\u00a72), the first-ranked item (\u00a73) and who holds a named file (\u00a74) \u2014 none declared \u2014 while \u00a76's followup-ref output, which \u00a78 never exercises, is declared",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e30074eb5334f0ed5ae6f1b6999ea2ed7635dbc403c0db7c5ed4344e2a027398",
+  "plan_slug": "a-project-reads-as-one-picture",
+  "plan_version": 3,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-21T06:52:42.537837+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-21T06:52:51.928360+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-21T06:53:01.172083+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T06:52:42.537837+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T06:52:51.928360+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T06:53:01.172083+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-project-reads-as-one-picture.v3.json",
+  "review_run_id": "r-20261021T064143244724-plan-review-of-a-project-reads-as-one-picture",
+  "reviewed_blob_sha": "c795826783a3547744ed7ac2580c51ff189d8c8d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `docs/evidence/archive/a-project-reads-as-one-picture-landed.html`, `/PLAN-FORMAT.md` and `docs/plans/the-mcp-answers-the-question-asked.html` all resolve at the base revision.",
+    "done_when": "a finding \u2014 \u00a710's negative control (\"on the base commit the refusal does not name it\") cannot fail, because the base refusal already names the keyed path.",
+    "evidence_paths": "pass \u2014 \u00a71's evidence lands in the cumulative `docs/evidence/archive/a-project-reads-as-one-picture-landed.html` and each section's gate log is a durable path, no scratchpad or node-local temp.",
+    "naming": "pass \u2014 the new symbols name their mechanism (`flat-priority-signal`, `undeclared-wait`, `overlapping-scope`, `descoped`); no plan label, ticket number or version tag reaches code or comment.",
+    "reasoning": "a finding \u2014 \u00a710's stated root cause does not match the cited code: the base refusal at `reckon/_store_section_ops.py:438` already names the keyed form, so the coordinators' confusion is not explained by a refusal that omits it.",
+    "single_goal": "pass \u2014 the former \u00a76 bundle is split cleanly: \u00a76 is the slug@f-id ref grammar, \u00a79 the descoped declaration, \u00a710 the refusal text, each with one done-when.",
+    "wiring": "a finding \u2014 the plan-section-depends-on map gives s8 only s5, s6 and s7, while \u00a78's done-when measures the critical path (\u00a72), the first-ranked item (\u00a73) and file holding (\u00a74) and never exercises \u00a76."
+  },
+  "section_digests": {
+    "_document": "dab96557f2538c43f8439ab1f1da96b54c2e54056d6c6c45f28e51e3da2e2827",
+    "s1": "1956dcaef74ad7d3216608fe69c2e7baa2a9e32d702ef86431dc746f15c3878a",
+    "s10": "11fa9e736b4cabcbd63fba7dbeb530c0a9086c4a7e401d4392815eeae0f2b7d7",
+    "s2": "64f2b4d0c82612bd0bfb9eefcafcd13b92a20df1b1cbe711fd1183f50bf843b1",
+    "s3": "fd80d47dc6527a7a3e24a77d127f2483874d0b64aef17e84da1890a991c5cbbb",
+    "s4": "5681204820c5a325bb74eb0eae7f23e929fcd07085ca0aee87be77107db770fc",
+    "s5": "ff089a567fbe0c1760cd53470a5037aa7b3d1f536103b004db83cb7cda55c12d",
+    "s6": "d0f702b85752e3605cfbc815d2de3035b6d1e8e89fb584b661e8571aba7aa175",
+    "s7": "bfeb444f551da88dcabaeab5e28cda9c2c4c7ba177f07712b9cc5686e41e1103",
+    "s8": "1f13b98a4d7476b083792c060d8da48918e0ca44b3b27c910d2cfb7ae1aa69d3",
+    "s9": "a65c8523c1a05e7389c35e43a8737757ab2c60d08633460c1648c40a88138892"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T06:52:36.371536+00:00"
+}
