@@ -758,9 +758,16 @@ def _review_dispatch_fields(
     if write and composing_for_dispatch:
         brief_file.parent.mkdir(parents=True, exist_ok=True)
         brief_file.write_text(brief_text, encoding="utf-8")
-    base_node_id = round_node_id(REVIEW_NODE_PREFIX, review_node_source, head)
-    if rubric_name == review_module.FIGURE_REVIEW_RUBRIC:
-        base_node_id += "-figure"
+    base_node_id = round_node_id(
+        REVIEW_NODE_PREFIX,
+        review_node_source,
+        head,
+        rubric=(
+            review_module.FIGURE_REVIEW_RUBRIC
+            if rubric_name == review_module.FIGURE_REVIEW_RUBRIC
+            else ""
+        ),
+    )
     figure_review = rubric_name == review_module.FIGURE_REVIEW_RUBRIC
     return {
         "run_id": run_id,

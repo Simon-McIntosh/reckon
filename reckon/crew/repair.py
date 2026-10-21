@@ -310,9 +310,46 @@ def repair_round_id(
 # parses by the grammar the writer enforced.
 _ROUND_HEAD_DIGITS = 12
 
+# The rubric suffixes a round's node id may carry after the head it read. Some
+# rounds belong to a rubric other than the default — a figure review is filed
+# under its own — so the id names the rubric as well as the head. The reader
+# strips such a suffix only when a ``-<head[:12]>`` head suffix precedes it, so
+# a source whose own name ends in a rubric word, with no head written before it,
+# is read whole.
+_ROUND_RUBRIC_SUFFIXES = (f"-{review_module.FIGURE_REVIEW_RUBRIC}",)
 
-def round_node_id(prefix: str, source: str, head: str) -> str:
-    """The node id a round of work carries: ``<prefix><source>[-<head[:12]>]``.
+
+def _head_suffix_at(text: str, cut: int) -> bool:
+    """Whether ``text`` carries ``-<head[:12]>`` ending at ``cut``."""
+    if cut < _ROUND_HEAD_DIGITS + 1 or text[cut - (_ROUND_HEAD_DIGITS + 1)] != "-":
+        return False
+    return bool(
+        re.fullmatch(
+            rf"[0-9A-Fa-f]{{{_ROUND_HEAD_DIGITS}}}",
+            text[cut - _ROUND_HEAD_DIGITS : cut],
+        )
+    )
+
+
+def _trailing_rubric_start(text: str) -> int:
+    """Where a trailing rubric suffix begins, or ``-1`` when there is none.
+
+    A rubric suffix counts only when the head the writer prefixes, one
+    separator and the writer's digit count immediately precede it, so a bare
+    source that merely reads as the suffix is never mistaken for a suffixed
+    round.
+    """
+    for suffix in _ROUND_RUBRIC_SUFFIXES:
+        if not text.endswith(suffix):
+            continue
+        cut = len(text) - len(suffix)
+        if _head_suffix_at(text, cut):
+            return cut
+    return -1
+
+
+def round_node_id(prefix: str, source: str, head: str, *, rubric: str = "") -> str:
+    """The node id a round carries: ``<prefix><source>[-<head[:12]>[-<rubric>]]``.
 
     A round's id carries the head it read, so two rounds of one source at
     different heads never share an id and each gets its own worktree path. The
@@ -320,11 +357,19 @@ def round_node_id(prefix: str, source: str, head: str) -> str:
     per prefix, so both cannot drift into different spellings of one identity.
     A round with no head to name — a source that predates the field — keeps the
     bare ``<prefix><source>`` spelling.
+
+    ``rubric`` names a rubric other than the default the round belongs to, and
+    is written after the head suffix so the round's own readers, which parse
+    head-then-rubric, recover both the source and the head. It is written only
+    beside a head, because a rubric suffix with no head before it would read as
+    part of the source rather than as a rubric.
     """
     source = str(source or "").strip()
     head = str(head or "").strip()
     if head:
-        return f"{prefix}{source}-{head[:_ROUND_HEAD_DIGITS]}"
+        node_id = f"{prefix}{source}-{head[:_ROUND_HEAD_DIGITS]}"
+        suffix = str(rubric or "").strip()
+        return f"{node_id}-{suffix}" if suffix else node_id
     return f"{prefix}{source}"
 
 
@@ -333,14 +378,18 @@ def round_node_source(node_id: str, prefix: str) -> str:
 
     The inverse of :func:`round_node_id`: a reader recovering the source a
     round was composed from removes the prefix and, when present, the
-    ``-<head[:12]>`` suffix. A node id carrying no such suffix — one written
-    before rounds were head-keyed — is returned with only the prefix removed,
-    so both spellings resolve to the same source.
+    ``-<head[:12]>`` suffix and the ``-<rubric>`` suffix that follows it. A node
+    id carrying no such suffix — one written before rounds were head-keyed — is
+    returned with only the prefix removed, so both spellings resolve to the same
+    source, and a source whose own name ends in a rubric word is left whole.
     """
     text = str(node_id or "")
     if not text.startswith(prefix):
         return ""
     source = text[len(prefix) :]
+    rubric = _trailing_rubric_start(source)
+    if rubric >= 0:
+        source = source[:rubric]
     cut = len(source) - (_ROUND_HEAD_DIGITS + 1)
     if cut > 0 and source[cut] == "-":
         tail = source[cut + 1 :]
@@ -358,19 +407,27 @@ def round_node_head_suffix(node_id: str, prefix: str) -> str:
     row recorded — reads it here rather than re-parsing the node id, so the
     grammar stays the writer's own, read back through its inverse. The suffix is
     recovered only when the id is exactly the prefix, the source, one separator
-    and the writer's digit count, so a hand dispatch under a coordinator's own
-    id carries no head and is left unresolved rather than guessed.
+    and the writer's digit count, followed by nothing but an optional rubric
+    suffix, so a hand dispatch under a coordinator's own id carries no head and
+    is left unresolved rather than guessed. A rubric suffix that follows the
+    head is dropped with it, so a figure review's id reads back the head its
+    source was reviewed at exactly as any other round's does.
     """
     text = str(node_id or "")
     if not text.startswith(prefix):
         return ""
     raw = text[len(prefix) :]
     source = round_node_source(text, prefix)
-    if len(raw) != len(source) + _ROUND_HEAD_DIGITS + 1 or not raw.startswith(
-        source + "-"
-    ):
+    if not source or not raw.startswith(source + "-"):
         return ""
-    return raw[len(source) + 1 :]
+    tail = raw[len(source) + 1 :]
+    head = tail[:_ROUND_HEAD_DIGITS]
+    if not re.fullmatch(rf"[0-9A-Fa-f]{{{_ROUND_HEAD_DIGITS}}}", head):
+        return ""
+    remainder = tail[_ROUND_HEAD_DIGITS:]
+    if remainder and remainder not in _ROUND_RUBRIC_SUFFIXES:
+        return ""
+    return head
 
 
 def repair_node_id(
