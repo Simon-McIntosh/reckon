@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T08:18:18.734Z",
+  "dispatched_at": "2026-10-21T07:57:20Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:271",
+      "id": "reasoning-1",
+      "reason": "the implementation is unaffected, because the file is written from `plan.stdin_text` on both paths, so a continued lane change still gets exactly one listing from `_prompt_naming_images`; it is the stated justification, not the mechanism or the done-when, that does not hold.",
+      "text": "\u00a715's Change justifies the strip before naming with \"A lane change composes from the record's prompt file, which a fresh dispatch has already written with its figure listing, so the strip `launch_plan` applies before naming, described above, leaves one listing for the current figures rather than a second\", but for a continued lane change `_lane_prompt` returns only the advice and never reads the record's prompt file (reckon/crew/dispatch_sessions.py:1592-1605, `if continued: return advice or ...`), so there is no inherited listing on that path and nothing for the strip to remove \u2014 the prompt handed to `launch_plan` is the bare advice with the restated fence",
+      "type": "reasoning",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:273",
+      "id": "done_when-1",
+      "reason": "the discriminating lane-change clause is present and is covered by the named write path `tests/test_crew_lane_change.py`, so the strip is still measured; making the negative control name the mutation that removes it would sharpen the record without changing what is built.",
+      "text": "the strip is the mechanism this unit changed, yet \u00a715's declared negative control exercises only the fresh-dispatch naming test (\"with the fresh dispatch writing the uncomposed prompt again, the fresh-dispatch naming test fails\"), and the done-when clause that would fail if the strip were omitted is the clive\u2192codex lane change (\"a lane change of the two-figure clive run onto codex writes a lane-change prompt file that carries the brief and the restated fence and no figure listing\"); the codex fresh-dispatch clause beside it passes before the change too, because the fresh-dispatch prompt is the uncomposed brief and carries no listing either way",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "e73f9c3c77200be54a7d819e89ec9a281f4b75ce1779cde7fc2489fa4bf80c1b",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 96,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T075551963935-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "90559989ed906f0cde115051608ba915be074d57",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol resolves at 46b7bcc1dc0d44d55e6ecba2053409b19b159d99: `prompt_path.write_text(prompt)` (reckon/crew/dispatch.py:2126), `_restate_time_fence` (reckon/crew/dispatch_sessions.py:1617, called at :1920), `_write_resume_prompt` (reckon/crew/resumption.py:1205), `Dialect.stdin_prompt` (reckon/_backends.py:1056, no subclass overrides it), `IMAGE_MODALITY` (:143), `declares_image_input` (:2141), `_prompt_naming_images` (:2165), `declared_input_modalities` (reckon/flight.py:1953), and the three test files named in the write paths all exist.",
+    "done_when": "a finding \u2014 one clause of \u00a715's done-when (`the same two-figure node dispatched on codex writes a prompt.txt that carries the brief and no figure listing`) holds on the unfixed code and so cannot show the new strip fires; the clause that does discriminate is the clive\u2192codex lane change beside it.",
+    "evidence_paths": "pass \u2014 the section names no scratch path; logs go \"under the run directory\" (`reckon/crew/runs/<run>`), which is durable, and the plan-level report path is a mounted directory.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches a symbol, filename or comment; the section's identifiers (`prompt.txt`, `lane-change-<n>-prompt.txt`, and the named helpers) are mechanism names.",
+    "reasoning": "pass with a finding \u2014 all three checks hold: the stated root cause (the prompt file written before `launch_plan` composes) matches the cited lines; the strip-then-name mechanism yields the done-when on both the fresh-start and continued lane-change paths; and the caller is named \u2014 `launch_plan` is reached on the cli path from reckon/crew/dispatch.py:2422 (fresh dispatch), reckon/crew/dispatch_sessions.py:1823 (lane change) and the resume path. The one exception is the justification sentence for the strip, which rests on a premise false for a continued lane change.",
+    "single_goal": "pass \u2014 \u00a715 carries one deliverable, the prompt file a worker reads being written from `launch_plan`'s composed prompt on every launch path; the earlier review's two-deliverable objection (comment correction plus modality-read unification) was answered as declined and the 6% change does not alter that answer.",
+    "wiring": "pass \u2014 s15's declared dependency (`plan-section-depends-on` `s15: [\"a-review-can-see-the-figure#s14\"]`) points at s14, which is declared `done` in `plan-section-declarations`; the plan-level `plan-informs` target exists and s15 declares no relationship of its own that could be miswired."
+  },
+  "section_digests": {
+    "_document": "db99e7e8ba0bdba6f31cede33de833186ac9f1f17051db2e5965a4c044ec104d",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s10": "aee314dbe26192cd678dc467a9b229b8cb46873cacefcd4ce369fcbe469a1e37",
+    "s11": "22d519df0a82a0edfb23ceef10d63c14a08f3d8d656ce95a4cd03e5049d4e228",
+    "s12": "234f9999257c9e64bf69518cdf0b98e319850465374deeac091e90b1ed118647",
+    "s13": "d2f0977c2749f5e1d4e28f3962e8b01a182615a0a75edb530e5e4fde18d9a123",
+    "s14": "f06507899a512533562b6d0b348e9b18bec6d1667d6e619d05352d7ce535eb7c",
+    "s15": "18683ff3a4d13534aa9e29ac4a495e86d07a452b032538d3ae4b7a47d2a9966b",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "ce9705dbaad70ab2b3a9425eead9900cc284deb7f1d5ecacb553d3745679b3d7",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a",
+    "s8": "2c200fdd964f328342811e9362e4cd14da60f3c8352368899ccf87797d9e7f5b",
+    "s9": "b62ffeb55dd71d5f62b49f372e069f227a57c7caec9c6c3b45f81a945d284e11"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T08:21:47.976282+00:00"
+}
