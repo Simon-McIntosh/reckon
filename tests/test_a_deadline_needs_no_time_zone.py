@@ -50,6 +50,12 @@ RESUMED_DEADLINE = "2026-10-19T18:00:00Z"
 
 PROJECT = "proj"
 
+# The two zone runs read the clock at their own instants, so their figures differ
+# by however long the gap between the two runs was — one second on an idle host,
+# more when the host is loaded. The drift a zone would produce is 3600 seconds,
+# so this sits far below the defect it guards against while absorbing the gap.
+TOLERATED_DRIFT_SECONDS = 60
+
 
 # ── Reading the statement: the command, and the seconds it prints ────────────
 
@@ -91,13 +97,13 @@ def _epoch(instant: str) -> int:
 
 
 def test_the_stated_command_prints_the_same_seconds_in_two_zones():
-    """The two readings agree within a second, and not merely within a zone.
+    """The two readings agree within the gap between the runs, not within a zone.
 
-    Each run of the command reads the clock at its own instant, so two runs
-    that straddle a second boundary print figures one apart; that one second
-    carries no information about the zone. A zone-dependent command instead
-    differs by the offset, 3600 seconds or more, so the comparison tolerates
-    the straddle and still fails on any offset of an hour or more.
+    Each run of the command reads the clock at its own instant, so the two
+    figures differ by however long the gap between the runs was — a second or
+    two on an idle host, more under load. A zone-dependent command instead
+    differs by the offset, 3600 seconds or more, so the comparison tolerates a
+    drift far smaller than any zone and still fails on an offset of an hour.
     """
     statement = time_fence_statement(time_budget=BUDGET, launch_instant=LAUNCH)
     command = _stated_command(statement)
@@ -111,7 +117,7 @@ def test_the_stated_command_prints_the_same_seconds_in_two_zones():
     )
     assert utc, "the command prints no figure to compare"
     drift = max(abs(a - b) for a, b in zip(utc, paris, strict=True))
-    assert drift <= 1, (
+    assert drift <= TOLERATED_DRIFT_SECONDS, (
         "the command reads differently by zone, so a worker comparing one of "
         f"its readings to the deadline is wrong by the offset (UTC {utc!r}, "
         f"Paris {paris!r})"
