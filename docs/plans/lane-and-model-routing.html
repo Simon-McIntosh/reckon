@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="unattended-execution">
 <meta name="plan-impl" content="0.8823529411764706">
-<meta name="plan-version" content="315">
+<meta name="plan-version" content="316">
 <meta name="plan-modified" content="2026-10-21">
 <meta name="plan-commits" content="8d517e2a8775813f593e7168f5237bd4bb338fcf,d6bf49adc2ab44b3640182a1d3e8db0074909d62,5a93a1477648d72ea9e15571ed84101dfee33edc,26dc670d410b6f6779dc88c57f3865462f054c37">
 </head>
@@ -1001,10 +1001,11 @@ The test asserts the real crew home is untouched.</li>
     <div class="r-fu-body"><p>codex-sub becomes advisory, with the exhausted-window and credit-cap stops kept. It builds after §46.</p></div>
     <pre class="r-fu-prompt">/reckon-build lane-and-model-routing §48</pre>
     </article>
-<article class="r-fu" data-id="f-lamr-052" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-build" data-written-at="2026-10-20" data-recommends-skill="/reckon-build lane-and-model-routing §50" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-lamr-052" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="reckon-build" data-written-at="2026-10-20" data-recommends-skill="/reckon-build lane-and-model-routing §50" data-resolved-at="2026-10-21T05:12:00+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Repair the picker tests that fail at head</h4>
     <div class="r-fu-body"><p>Ten picker tests in four groups fail at main and at every picker node's base: a second ledger walk, an <code>urgency</code> field the prompt tests do not expect, the golden rendered state, and a staleness helper keyed by the bare backend name. §50 repairs them after §46 merges.</p></div>
     <pre class="r-fu-prompt">/reckon-build lane-and-model-routing §50</pre>
+    <p class="r-fu-outcome"><p>§50 landed at merge <code>12f2d4458</code>; the picker population fails only the module-window bound, which budget-fits-a-worker-window addresses for budget.py.</p></p>
     </article>
 <article class="r-fu" data-id="f-lamr-053" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-written-by="reckon-build" data-written-at="2026-10-21" data-recommends-skill="/reckon-build lane-and-model-routing §48" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Repoint the budget.py and picker line citations before §48 builds</h4>
@@ -1504,7 +1505,10 @@ The test asserts the real crew home is untouched.</li>
     <div class="r-comment-body"><p>Review of r-20261021T023749556714-the-pickers-own-tests-pass-at-head over db255a6f4a7aa5ed153d3a2617eb6c376137af57..138f12e5d9afdaa3a71005ae067448d3396f1536 (df6f00480 re-pins the re-frozen figure assertions against the fixture; 138f12e5d records the repair round in the evidence fragment with the arm figure). Scores: goal_fidelity 19, evidence 15, scope_discipline 20, durability 18, fit 18, reuse 18. Added failure count 0 (the head arm's only failure, the module-window bound, is in the base arm's eleven). Two follow-on findings, no blocking finding: repair-controls.log:41 ends mid-command so the control results the fragment records are not reachable from the log it cites, and arm_outcomes.py:16 hand-rolls the figure style its siblings load from the shared sheet. The added assertions are independent literals and the two changed test files pass 15/15 at this head.</p></div>
 </div>
 <div class="r-comment" data-section="s50" data-id="c-run-r-20261021T023749556714-the-pickers-own-tests-pass-at-head" data-who="reckon-build" data-when="2026-10-21T04:47:41Z">
-    <div class="r-comment-body"><p>§50 landed: the pick&#x27;s second ledger walk is folded into the scan&#x27;s single pass (snapshot.py), the prompt and staleness tests move to the urgency field and the option-keyed tables, the golden picker state is re-frozen over the frozen fixture, and the evidence fragment lists the four moved render fields and answers the review&#x27;s four findings with a control for each. Base arm 11 failed / 368 passed at 4d09842e3; head arm at df6f00480 reads 1 failed (out of scope) / 379 passed and no error; all ten base failure ids pass at head under the same ids. The head arm measures df6f00480, whose tests and picker code are what 138f12e5d delivers; only documentation and the figure changed after.</p></div>
+    <div class="r-comment-body"><p>§50 landed: the pick's second ledger walk is folded into the scan's single pass (snapshot.py), the prompt and staleness tests move to the urgency field and the option-keyed tables, the golden picker state is re-frozen over the frozen fixture, and the evidence fragment lists the four moved render fields and answers the review's four findings with a control for each. Base arm 11 failed / 368 passed at 4d09842e3; head arm at df6f00480 reads 1 failed (out of scope) / 379 passed and no error; all ten base failure ids pass at head under the same ids. The head arm measures df6f00480, whose tests and picker code are what 138f12e5d delivers; only documentation and the figure changed after.</p></div>
+</div>
+<div class="r-comment" data-section="s50" data-id="c-close-s50" data-who="reckon-build" data-when="2026-10-21T05:12:00Z">
+    <div class="r-comment-body"><p>§50 landed (merge <code>12f2d4458</code>): the ten picker tests that failed at main pass by id, so picker nodes no longer judge their gates over a red base. Review 108. <a href="/reckon/evidence/archive/lane-and-model-routing-landed.html#s50">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s51" data-id="c-run-r-20261021T034456987157-review-of-the-burn-tests-home-guard-ignores-in-flight-writes-9c5efb85645d" data-who="reckon-build" data-when="2026-10-21T03:59:36.214Z">
     <div class="r-comment-body"><p>§51 — independent review of r-20261021T032952017329-the-burn-tests-home-guard-ignores-in-flight-writes at head 9c5efb856: goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 16, reuse 8; added_failure_count 0; two follow-on findings (the store-temporary predicate is a third copy of an unowned idiom, and the listing-arm exemption narrows the guard's coverage); no blocking finding.</p></div>
