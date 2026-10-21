@@ -1,0 +1,126 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T06:12:21.433Z",
+  "dispatched_at": "2026-10-21T06:02:07Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-mcp-answers-the-question-asked.html:24",
+      "id": "wiring-1",
+      "reason": "\u00a76's done-when cannot be met until \u00a74 exists, so the missing edge mis-orders execution and would let \u00a76 close on an incomplete brief.",
+      "text": "\u00a76's declared depends-on names a-project-reads-as-one-picture#s7 and this plan's #s2, but the brief it returns is composed with each of the ten ready sections' `why` (a-project-reads-as-one-picture \u00a77), and `why()` is this plan's \u00a74 \u2014 no edge to \u00a74 is declared. A worker dispatching \u00a76 before \u00a74 lands returns a brief its own content requires but cannot contain, and the \u00a76 gate would be run against a brief missing a declared field.",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-mcp-answers-the-question-asked.html:159",
+      "id": "wiring-2",
+      "reason": "without the edge, \u00a75 and the peer section each build a parity for run classification, so the plan's own single-derivation rule is violated by the plan itself.",
+      "text": "\u00a75's first fact, \"a run's classification\", is the same fact a-project-reads-as-one-picture \u00a74 already assigns one derivation and one parity test (crew live's classification against the roadmap's run state, with the interrupted-versus-running pair as its negative control), yet \u00a75 declares no depends-on on that section. The plan's stated purpose is to end facts served by more than one derivation, so leaving two nodes to build one parity for one fact reintroduces exactly the duplication \u00a75 exists to remove.",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-mcp-answers-the-question-asked.html:45",
+      "id": "anchors_resolve-1",
+      "reason": "\u00a78's done-when is a comparison against \u00a71, so an unresolvable baseline makes the plan's own success measure unverifiable and the evidence path must be named or the script committed.",
+      "text": "\u00a71 claims the census output is \"kept with the evidence for this section\", but no evidence artifact exists for this plan under docs/evidence/ and no path is named in the plan. The \u00a71 table (707 MCP calls, 588 pointer/crew-JSON reads, 348 plan-HTML parses, 204 CLI reads) is the plan's whole quantitative basis and the baseline \u00a78 is measured against; a reader cannot open it, so none of those figures is checkable.",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-mcp-answers-the-question-asked.html:227",
+      "id": "reasoning-1",
+      "reason": "the plan should pin \u00a71's instrument (re-run the baseline through the extended census, or name the script) so the done-when's delta is a measurement rather than an artifact of two instruments.",
+      "text": "\u00a78 says \"reckon/mcp_census.py already counts MCP connection failures and storage-slow results\" and \"gains three counts ... over the same explicit window\", then \"The census in \u00a71 is the before figure\". reckon/mcp_census.py counts connections and storage-slow results only \u2014 it contains no counting of MCP calls, edit_plan/read_plan/roadmap calls, or Bash commands at all, which are what \u00a71's table reports. So \u00a78's before figure (\u00a71) and after figure (the extended census) are produced by different instruments with different classifiers, and \"down by at least half\" compares two regexes rather than one measure before and after. The stated root cause is not affected, but the gate that certifies the plan cannot distinguish a real fallback reduction from a classification change.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e35b07ddfbd66370a3018ec3105ac1b6b4edd9ac6eb4e92c318f88b8c8a44a74",
+  "plan_slug": "the-mcp-answers-the-question-asked",
+  "plan_version": 0,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-21T06:15:03.117284+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-2",
+      "reason": "",
+      "when": "2026-10-21T06:15:13.373394+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "",
+      "when": "2026-10-21T06:15:25.874420+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-21T06:15:42.369986+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T06:15:25.874420+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T06:15:42.369986+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T06:15:03.117284+00:00"
+    },
+    "wiring-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T06:15:13.373394+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-mcp-answers-the-question-asked.v0.json",
+  "review_run_id": "r-20261021T055916833931-plan-review-of-the-mcp-answers-the-question-asked",
+  "reviewed_blob_sha": "b5f201bc41bc1bbe7dca7147f46bb5b4178f5d64",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a71 asserts the census script's output \"is kept with the evidence for this section\", but no such artifact or path exists in the tree.",
+    "done_when": "pass \u2014 every node names a measurable assertion and a control that can fail (base-commit failure for \u00a72/\u00a73/\u00a75, skill fast-path red for \u00a76, refusal for \u00a74/\u00a77, named positive control and \u00a71 baseline for \u00a78).",
+    "evidence_paths": "pass \u2014 \u00a72/\u00a73/\u00a75 write their arms and deltas to the gate log and \u00a78 to the census, none to a scratchpad or node-local temp path.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach symbols (`why`, `project_brief`, `since`, `cursor-expired`); no changelog prose.",
+    "reasoning": "a finding \u2014 \u00a78's done-when measures \"down by at least half against \u00a71\", but \u00a71's counts come from an instrument other than the census \u00a78 extends, so the before and after arms are not the same instrument.",
+    "single_goal": "pass \u2014 each section names one deliverable; \u00a75's four facts are one deliverable (one owning derivation per fact, held by one parity test).",
+    "wiring": "a finding \u2014 \u00a76 declares depends-on {a-project-reads-as-one-plan... \u00a77, self#s2} but the brief it returns carries each ready section's `why`, which is this plan's \u00a74."
+  },
+  "section_digests": {
+    "_document": "e1c94d9f3b30c8624a6467f53654fb7adcc82487415127ce15d356f2b7b20ff0",
+    "s1": "38dd59877eaa1017afe79e4d917339a7476eb6cb07164cf47218bcc081db510b",
+    "s2": "3c9f990803be49173055a21624115ad2fa745d64c85e6cbc454190247fc5ae76",
+    "s3": "36009a39196f94f79c16cd66666780ac9814b76e487c5369c7cff2da440addab",
+    "s4": "221109abec0e6ad971f2598420df9fe39c47cd59f78dcb949259c1416f20cd3d",
+    "s5": "2b7a9f4e95788d88f863f287034651b421c9a1db8e9a73250eed134e4b533cb1",
+    "s6": "6d20a1c649a069a53bb3e211dfa5c2f6c993b8a9fe94325d1bd3862fc5868e3b",
+    "s7": "5eb0b734bbb0681ca9102fa9003e11bd7dc5278b1dc26da5685ed959db7cfa4b",
+    "s8": "125f94f528513ce9ce88fa2b4c915559d2f235eb11ca28ed57aca9f91bb82f19"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T06:14:55.845848+00:00"
+}
