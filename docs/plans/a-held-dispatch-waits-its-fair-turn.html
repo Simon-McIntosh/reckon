@@ -25,7 +25,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="237">
+<meta name="plan-version" content="238">
 <meta name="plan-modified" content="2026-10-21">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;done&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;done&quot;,&quot;s30&quot;:&quot;done&quot;,&quot;s31&quot;:&quot;done&quot;,&quot;s32&quot;:&quot;done&quot;,&quot;s33&quot;:&quot;done&quot;,&quot;s34&quot;:&quot;done&quot;,&quot;s35&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="3c837fc1">
@@ -774,6 +774,9 @@
 </div>
 <div class="r-comment" data-section="s34" data-id="c-close-s34" data-who="reckon-build" data-when="2026-10-21T05:15:00Z">
     <div class="r-comment-body"><p>§34 landed at <code>9f1d135d3</code>: <code>queued_placements</code> gives a queued pointer without a readable <code>queued_at</code> no place instead of failing the whole read. Reviewed 109/120. The population at merge recovers three read-verb tests and adds one load-only budget-view parity id. <a href="/reckon/evidence/archive/a-held-dispatch-waits-its-fair-turn-landed.html#s34">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s34" data-id="c-run-r-20261021T030540306170-a-queued-pointer-without-its-time-reads-no-place" data-who="reckon-build" data-when="2026-10-21T04:19:38.236Z">
+    <div class="r-comment-body"><p>§34: queued_placements now places only queued pointers carrying a readable queued_at, so a pointer without one reads no place instead of failing the whole read — over a temporary crew home the two placeable pointers return position/rank 1-1 and 2-2 with the third absent and no exception, crew view live lists all three as queued with the third carrying neither figure, and the declared mutation (restoring the propagating call) fails both cases at EXIT=1</p></div>
 </div>
 </section>
 </main>
