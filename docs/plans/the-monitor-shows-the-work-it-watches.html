@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="440">
+<meta name="plan-version" content="441">
 <meta name="plan-modified" content="2026-10-21">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1723,7 +1723,10 @@ Both cases run under the file's existing temporary crew home.</li>
     <div class="r-comment-body"><p>A run whose worker exited under a live supervisor reads exited-unfinished instead of working: local_liveness folds the run's exit record into its reading where the record names the attempt now running and the worker that attempt stood up, and that worker is one this host no longer holds. The fixture that read running at base (exit record on disk, process_alive true) reads exited-unfinished at head; a record whose worker still runs, a record naming no attempt, a record whose worker pid this host still holds, a resumed run's predecessor record, and a worker record naming a process other than the one the exit record names all leave the live reading standing where the record does not decide it. Five cases hold the reading, one per shape; the discrimination between the two records is shown by a mutant that reads the worker record's pid and fails the case written for it.</p></div>
 </div>
 <div class="r-comment" data-section="s70" data-id="c-run-r-20261021T005152287645-review-of-unwatch-reads-the-reconciled-seat-d090d4d77b93" data-who="reckon-build" data-when="2026-10-21T01:04:18.207Z">
-    <div class="r-comment-body"><p>Reviewed run r-20261020T235649990215-unwatch-reads-the-reconciled-seat at base f5e88d284e7d6a31228eaeec6b4ef55191837eaa / head d090d4d77b938b576b67f718f3d88487fd67423d; all six dimensions scored (goal_fidelity 18, evidence 19, scope_discipline 20, durability 19, fit 18, reuse 11), one follow-on finding, no blocking finding; the record is stored at the run&#x27;s review-records/ directory, never in a worktree.</p></div>
+    <div class="r-comment-body"><p>Reviewed run r-20261020T235649990215-unwatch-reads-the-reconciled-seat at base f5e88d284e7d6a31228eaeec6b4ef55191837eaa / head d090d4d77b938b576b67f718f3d88487fd67423d; all six dimensions scored (goal_fidelity 18, evidence 19, scope_discipline 20, durability 19, fit 18, reuse 11), one follow-on finding, no blocking finding; the record is stored at the run's review-records/ directory, never in a worktree.</p></div>
+</div>
+<div class="r-comment" data-section="s70" data-id="c-run-r-20261021T013126775767-review-of-unwatch-reads-the-reconciled-seat-a7c1578b6664" data-who="reckon-build" data-when="2026-10-21T01:44:59.463Z">
+    <div class="r-comment-body"><p>independent review of run r-20261020T235649990215-unwatch-reads-the-reconciled-seat over the commits gained since its previous review (d090d4d77 -&gt; a7c1578b6): d9423d5a2 makes unwatch read the reconciled seat through watch_unit.watch_state instead of re-deriving the shape, and a7c1578b6 extends the landing fragment. Verdict parsed; scores goal_fidelity 19, evidence 16, scope_discipline 20, durability 14, fit 18, reuse 19; one follow-on finding. No blocking finding. Record stored under review-records/ in the reviewed run&#x27;s directory, not in any worktree.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">

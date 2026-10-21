@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_a_producer_sweeps_only_on_change.py::test_quiet_cycles_list_nothing_and_spawn_no_git"
+  ],
+  "call_sites": [
+    "reckon/crew_follow_commands.py:3627",
+    "reckon/crew/dispatch_watch.py:409",
+    "reckon/crew/runs.py:2620"
+  ],
+  "completed_at": "2026-10-21T01:44:59.463Z",
+  "dispatched_at": "2026-10-21T01:32:44Z",
+  "findings": [
+    {
+      "file": "tests/test_unwatch_reads_the_reconciled_seat.py",
+      "line": "183",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion reconciled[\"pid\"] == producer.pid == shared[\"pid\"] (and the host/job lines at :184-185) compares _reconciled_seat_record's output against watch_unit.watch_state(PROJECT)[\"watcher\"], which the implementation copied by construction at reckon/crew/recovery_watch.py:398, so the two sides move together and the assertion survives a reinstated fork; the round's negative control (logs/negative-control-repair.txt) reddens only because the restored pre-repair helper has the old two-argument signature (TypeError), not because the fork was detected, so the no-fork claim rests on the mechanical grep, not on this test."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "unwatch is reached in production by reckon/crew_follow_commands.py:3627 (crew watch --stop), reckon/crew/dispatch_watch.py:409 (the seat-release subprocess) and reckon/crew/runs.py:2620 (replace_stale_watch_seat); the shared reading unwatch now delegates to, watch_unit.watch_state, is called by reckon/crew/dispatch.py:284,298,2568 and reckon/crew/dispatch_plan.py:895.",
+    "diff": "read both commits against base d090d4d77: d9423d5a2 rewrites _reconciled_seat_record to read watch_state and drops the re-shaping, adds the shared-reading test case, and appends a paragraph to the landing fragment; a7c1578b6 extends that fragment only. All three paths are inside the declared scope.",
+    "done_when": "the node's measure is the four-case test plus the -n 8 head/base arms; tests/test_unwatch_reads_the_reconciled_seat.py holds the three behavioral cases (mid-write stopped:135, other project refused:197, foreign host refused:207) and the new shared-reading case at :167, and the manifest records baseline_suite (f5e88d28, 4 failed/420 passed, EXIT=1) and after_suite (fc78de3e8, 1 failed/426 passed, EXIT=1) with their failure ids.",
+    "goal": "the node goal since the prior review is to stop unwatch re-deriving the reconciled seat beside the stop and read it from the shared reading instead; reckon/crew/recovery_watch.py:386-410 now builds _reconciled_seat_record from watch_state(project)[\"watcher\"] rather than re-shaping the record, so the shape's single definition is watch_unit.watch_state:203-210.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T235649990215-unwatch-reads-the-reconciled-seat/manifest.md; status complete, commits ...d9423d5a2 and a7c1578b6, tests line names the -n 8 gate, baseline_suite and after_suite carry revision/command/exit_status/failure_ids, negative_control_log is the bare path, and repair_arms records the repaired-head arm.",
+    "write_paths": "the diff d090d4d77..a7c1578b6 touches exactly reckon/crew/recovery_watch.py, tests/test_unwatch_reads_the_reconciled_seat.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/unwatch-reads-the-reconciled-seat.html, all three of the paths the goal names, and creates no other file."
+  },
+  "justifications": {
+    "durability": "the three behavioral cases (tests/test_unwatch_reads_the_reconciled_seat.py:135,197,207) each redden if the reconciliation or a refusal guard is removed, but the new shared-reading case at :183 compares _reconciled_seat_record's output against watch_unit.watch_state(PROJECT)[\"watcher\"], which the implementation copies at recovery_watch.py:398, so it holds for any re-derivation that lands on the same holder and does not itself guard the fork.",
+    "evidence": "baseline_suite and after_suite in the manifest carry revision, command, exit_status and derived failure ids (logs/gate-base.txt '4 failed, 420 passed' EXIT=1; logs/gate-head.txt '1 failed, 426 passed' EXIT=1), and added_failure_count is derived from them; but the after_suite arm was run at fc78de3e8, not the reviewed head a7c1578b6, and the repair round's negative control (logs/negative-control-repair.txt) reddens on a TypeError, not on the reinstated fork, so the specific no-fork claim is only weakly evidenced.",
+    "fit": "reckon/crew/recovery_watch.py:386-410 keeps the module's idiom (module-private helper, a mechanism docstring), and no symbol, comment or path in the diff carries a plan, sprint, version or ticket label.",
+    "goal_fidelity": "reckon/crew/recovery_watch.py:398 sets reconciled = dict(watch_state(project)[\"watcher\"]), so the shape a reader reports (watch_unit.py:203-210) and the shape a stop acts on are one definition; the de-fork the goal names is landed.",
+    "reuse": "the change removes this node's copy of the reconciled-record shaping and now delegates to the owner watch_unit.watch_state:203-210; the two remaining copies named by the prior finding (watch_unit.py:205-210 and runs.py:3017-3022) are pre-existing and outside this node's write scope, so no new duplication is added.",
+    "scope_discipline": "git diff --stat d090d4d77..a7c1578b6 lists exactly the three files the goal names and nothing else, so the diff carries nothing the goal does not imply."
+  },
+  "node": "review-of-unwatch-reads-the-reconciled-seat-a7c1578b6664",
+  "node:reviewed": "unwatch-reads-the-reconciled-seat",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal since the prior review is to make unwatch read the reconciled seat from the shared reading instead of re-deriving it; reckon/crew/recovery_watch.py:398 now builds _reconciled_seat_record from watch_state(project)[\"watcher\"], so the shape has one definition (watch_unit.py:203-210).\nVERDICT done_when: the measure is the four-case test plus the -n 8 head/base arms; tests/test_unwatch_reads_the_reconciled_seat.py holds the three behavioral cases and the new shared-reading case at :167, and the manifest records baseline_suite (f5e88d28, 4 failed/420 passed) and after_suite (fc78de3e8, 1 failed/426 passed) with their failure ids.\nVERDICT write_paths: the diff d090d4d77..a7c1578b6 touches exactly the three paths the goal names (reckon/crew/recovery_watch.py, tests/test_unwatch_reads_the_reconciled_seat.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/unwatch-reads-the-reconciled-seat.html) and nothing else.\nVERDICT manifest: read; status complete, commits ...d9423d5a2 and a7c1578b6, tests line names the -n 8 gate, baseline_suite/after_suite carry revision+command+exit+failure ids, negative_control_log is the bare path.\nVERDICT diff: read both commits against base d090d4d77; d9423d5a2 rewrites _reconciled_seat_record to read watch_state, adds the shared-reading case and appends to the landing fragment, and a7c1578b6 extends the fragment only - no out-of-scope path.\nCALL_SITES: reckon/crew_follow_commands.py:3627, reckon/crew/dispatch_watch.py:409, reckon/crew/runs.py:2620\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_watch.py:398 reads the reconciled seat from watch_unit.watch_state:203-210, so the shape a reader reports and the shape a stop acts on are one definition.\nSCORE evidence: 16\nJUSTIFICATION evidence: baseline_suite/after_suite carry exit_status and derived failure ids, but the after arm ran at fc78de3e8 and the repair negative control (logs/negative-control-repair.txt) reddens on a TypeError rather than the reinstated fork.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat d090d4d77..a7c1578b6 lists exactly the three goal-named files and no fourth path.\nSCORE durability: 14\nJUSTIFICATION durability: the behavioral cases at tests/test_unwatch_reads_the_reconciled_seat.py:135,197,207 redden on removal of the reconciliation or a refusal guard, but the shared-reading assertion at :183 copies watch_state at recovery_watch.py:398 and so does not guard the fork.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/recovery_watch.py:386-410 keeps the module idiom and introduces no plan-, sprint-, version- or ticket-labelled name.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change removes this node's copy and delegates to the owner watch_unit.watch_state:203-210; the two remaining copies (watch_unit.py:205-210, runs.py:3017-3022) are pre-existing and outside scope.\nFINDING tests/test_unwatch_reads_the_reconciled_seat.py:183 follow-on: the assertion compares _reconciled_seat_record's output against watch_state(project)[\"watcher\"], which the implementation copies by construction (recovery_watch.py:398), so it holds for any reinstated fork and the round's negative control reddens only on a signature TypeError.\n",
+  "review_run_id": "r-20261021T013126775767-review-of-unwatch-reads-the-reconciled-seat-a7c1578b6664",
+  "reviewed_base_sha": "d090d4d77b938b576b67f718f3d88487fd67423d",
+  "reviewed_head_sha": "a7c1578b6664197bdada95a8624d2e29e905241e",
+  "reviewed_run_id": "r-20261020T235649990215-unwatch-reads-the-reconciled-seat",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T01:46:25.595526+00:00",
+  "total": 106
+}
