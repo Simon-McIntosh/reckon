@@ -48,6 +48,11 @@ GRACE = follow_commands.FOLLOWER_SETTLE_GRACE_SECONDS
 # The wait pass's step, real time only: the cases' own clock never advances with
 # it, so an empty window lasts exactly as long as the case says.
 POLL = 0.005
+# How long a case waits for the pane to drain. The pane is a thread on a machine
+# carrying a whole test fleet when this runs, and the closing row reads the
+# session's outstanding runs off disk before it can be printed, so a bound tight
+# enough to trip on a loaded worker measures the worker and not the pane.
+DRAIN_BOUND = 20.0
 
 
 class _Clock:
@@ -264,7 +269,7 @@ def _drain(
         arming.clock.advance(GRACE)
         _wait_until(
             arming.settles,
-            timeout=5.0,
+            timeout=DRAIN_BOUND,
             description="the pane to drain once the grace elapsed",
         )
         return list(arming.settles())
