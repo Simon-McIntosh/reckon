@@ -1,0 +1,52 @@
+<section id="a-regenerated-path-is-proved-on-the-ledger-landing">
+  <h2>The regenerated path's tests prove the fold and the promoted ledger row</h2>
+
+  <p><strong>What changed.</strong> Tests only, in
+  <code>tests/test_a_regenerated_path_is_charged_as_written.py</code>. Two §9 assertions that
+  could not fail are replaced with one that can. The fold case now builds its node through the
+  dispatch surface from <code>--regenerate-path</code> alone &mdash; the path is never named as
+  a write path &mdash; and asserts it reaches the built node's <code>write_paths</code> and the
+  live claim <code>crew.scope_claims</code> reads off the pointer, which is written from the
+  node's own serialisation exactly as a launch writes it. A new promotion case drives
+  <code>crew.complete</code> on an isolated live pointer and asserts the promoted ledger row's
+  <code>node_definition.regenerate_paths</code> carries the path. Both cases go through the
+  fold in <code>TaskNode.__post_init__</code> rather than supplying the value they assert.</p>
+
+  <h3 id="a-regenerated-path-is-proved-on-the-ledger-measured">Measured</h3>
+
+  <p>Gate: the node's test file beside the two census suites, run in place on the fleet
+  allocation with the repository venv. Every log's first line names its revision, tree and
+  command; its last line is a bare <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table id="a-regenerated-path-is-proved-on-the-ledger-table">
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>head (this change)</td>
+        <td><code>e8bbc2ce</code> + change</td>
+        <td><strong>18 passed</strong>, exit 0</td></tr>
+      <tr><td>mutation &mdash; fold in <code>TaskNode.__post_init__</code> deleted</td>
+        <td>e8bbc2ce + mutation</td>
+        <td><strong>4 failed</strong>, exit 1</td></tr>
+      <tr><td>mutation &mdash; <code>regenerate_paths</code> dropped from <code>as_dict</code></td>
+        <td>e8bbc2ce + mutation</td>
+        <td><strong>2 failed</strong>, exit 1</td></tr>
+    </tbody>
+  </table>
+
+  <ul id="a-regenerated-path-is-proved-on-the-ledger-notes">
+    <li><strong>The fold case proves the fold, and the first arm shows it.</strong>
+    <code>test_a_regenerated_path_is_folded_into_the_claimed_write_scope</code> fails as
+    <code>AssertionError</code> when the fold is deleted, because
+    <code>write_paths</code> no longer carries the path and the dispatch refuses with
+    <code>contract-validation</code> (&ldquo;no exclusive write path is enumerated&rdquo;)
+    before a claim exists. At the head the path is admitted as regenerated, folded into the
+    write scope, and reported by <code>crew.scope_claims</code>.</li>
+    <li><strong>The ledger case reads a real promoted row, and the second arm shows it.</strong>
+    <code>test_a_promoted_ledger_row_carries_the_regenerated_paths</code> promotes a live
+    pointer and reads <code>ledger.runs(...)[0]["node_definition"]</code>. Dropping
+    <code>regenerate_paths</code> from <code>TaskNode.as_dict</code> makes it fail with
+    <code>KeyError: 'regenerate_paths'</code> against that promoted row.</li>
+    <li><strong>What is not measured here.</strong> Verifying the merged result belongs to a
+    separately dispatched test node; this node's gate covers only its own change.</li>
+  </ul>
+</section>
