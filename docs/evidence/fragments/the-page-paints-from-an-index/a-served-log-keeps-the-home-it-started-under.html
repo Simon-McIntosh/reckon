@@ -1,0 +1,43 @@
+<article class="r-evidence" data-node="a-served-log-keeps-the-home-it-started-under">
+<h3>A served log keeps the home its server first served under</h3>
+<p>The served log's path was resolved again for every access line
+(<code>Handler.log_message</code> &rarr; <code>_write_access_line</code> &rarr;
+<code>_server_log_path</code> &rarr; the configuration home the environment names) and again
+before every request (<code>_bound_server_log</code>). A change stream's handler runs on a
+thread that outlives the request that opened it, so its closing access line was written after
+a test's teardown had restored <code>RECKON_HOME</code> and landed in the operator's own
+<code>~/.config/reckon/logs/server.log</code> rather than the test's home; a request that
+found the log bound crossed could rotate the operator's log the same way. A server object is
+what every handler reaches as <code>self.server</code>, so a bare
+<code>ThreadingHTTPServer</code> a test builds around <code>serve.Handler</code> leaked
+through the same path as the served entry point.</p>
+<p><strong>Change.</strong> <code>reckon/serve.py</code> resolves the served log path once
+per server object, at that server's first request, and keeps it on the object
+(<code>_kept_served_log_path</code>, attribute <code>_reckon_served_log_path</code>). Every access
+line and every bound check made for that server's requests passes the kept path, so a home
+that moves after the first request &mdash; a teardown restoring the environment while a
+handler thread is still open &mdash; cannot retarget a later line or a rotation. The live
+deployment is unchanged: its environment never moves, and its log path is the one it resolved
+before. The startup bound check in <code>serve.main</code> still resolves freshly, before any
+server exists.</p>
+<p><strong>Measure.</strong> <code>tests/test_a_served_log_keeps_the_home_it_started_under.py</code>
+builds a bare <code>ThreadingHTTPServer</code> around <code>serve.Handler</code> under one
+temporary home, serves one binding request, then points <code>RECKON_HOME</code> at a second
+temporary home. Case 1: a change stream opened before the move closes after it, and the first
+home's log carries the closing <code>GET /_changes/sample</code> line while the second home
+holds no log. Case 2: the log bound is lowered and the first home's log pushed past it after
+the binding request and before the move, and one request after the move rotates that log,
+leaving a non-empty predecessor beside it and asking whether the moved-to home's log
+directory holds a predecessor of its own (scoped to the rotation, so an access line landing
+there does not redden this case). Head arm: 2 passed, <code>EXIT=0</code>
+(<code>logs/gate-head.log</code> with <code>-n 4</code> together with the cross-node suite
+and the module-window check). Controls run one at a time, so each red names its own
+mutation: the access line's path resolved per line again fails only case 1
+(<code>logs/negative-control-access.log</code>, 1 failed 1 passed, <code>EXIT=1</code>),
+and the bound check's path resolved per call again fails only case 2
+(<code>logs/negative-control-bound.log</code>, 1 failed 1 passed, <code>EXIT=1</code>). Each
+arm restored the tree to the head's own sha256 and left <code>git status --porcelain</code>
+empty.
+<code>tests/test_every_module_fits_a_worker_window.py</code> passes with
+<code>reckon/serve.py</code> at 47,084 estimated tokens against the 50,000 bound.</p>
+</article>
