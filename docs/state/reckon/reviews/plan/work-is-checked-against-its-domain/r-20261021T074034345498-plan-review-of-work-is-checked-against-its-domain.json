@@ -1,0 +1,249 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T08:17:46.810Z",
+  "dispatched_at": "2026-10-21T08:01:59Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/review_lifecycle.py:124",
+      "id": "reuse_search-1",
+      "reason": "\u00a72's node would consume `review_lifecycle.is_hot`/`blocking_finding_dispositions` and become an extension of one derivation rather than a second reader of the review store.",
+      "text": "\u00a72 proposes a new read of \"the node's newest stored review carries blocking findings that are not yet disposed\", but that exact derivation already exists and is already consumed: `_run_open` returns \"a run review carries a blocking finding with no answer\" and `lifecycle()` exposes it as the `open` state in `HOT_STATES`; `reckon/crew/repair.py:242` `blocking_finding_dispositions` already enumerates `(index, finding, disposition)` for every blocking finding of a stored review; `reckon/crew/promotion_checks.py:671` `_require_no_undisposed_blocking_figure_finding` is the promotion-side precedent of the same rule; and `reckon/crew/obligations.py`, `reckon/crew/review_dispositions.py` and `reckon/crew/recovery_repair_dispatch.py` all import that machinery at line 744, 9 and 277 respectively, while `reckon/crew/recovery_review_dispatch.py:2056` `dispatch_review_for_run` reads none of it. The plan's claim that \"neither it nor `dispatch_review_for_run` reads the node's previous review record\" is a statement about the caller, not about absent machinery \u2014 the mechanism is written and the change is to read it. The plan cites none of these files, so the implementation node will re-derive the rule and a later change to `_run_open` (which already decides that a blocking finding with no id is unanswerable) will not reach the refusal.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/prescription.py:60",
+      "id": "reuse_search-2",
+      "reason": "the two new judgements should either be properties inside `prescription`'s existing verdict or the plan must say what separates them from it, since two modules judging the same node record will disagree and nothing will report the disagreement.",
+      "text": "\u00a74 and \u00a76 add two new dispatch-time judgements over a node record (whether the repository's invariants match its write paths; whether a model-building node declared `compares_with` or `none-exists`), while `reckon/crew/prescription.py` exists precisely to state such a rule once as a pure judgement over a node record with a one-function surface (`judge_prescribed`, `PRESCRIBED_PROPERTIES`), and is already read at `reckon/crew/dispatch_plan.py:1020` where the dispatch plan bands nodes. \u00a76's own carrier is `TaskNode` (`reckon/crew/node.py:724`), which today has no `inputs` or `compares_with` field, so the plan silently adds two public record fields as well as a refusal. The plan does not mention `prescription.py`, its purity contract, or why a second dispatch-time judgement module is warranted beside the first.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_schema.py:1776",
+      "id": "reuse_search-3",
+      "reason": "\u00a73 should extend `gen_json_schema`/`write_json_schema` so the block's contract and the resource's contract have one generator and one drift test.",
+      "text": "\u00a73 proposes a typed model for the `domain` block, validation on read, and a published schema beside `plan.schema.json`, without naming the generator that already does this: `gen_json_schema()` derives `docs/_shared/plan.schema.json` from the pydantic models via `write_json_schema()`, `tests/test_schema.py` holds the committed file equal to a fresh generation, and `IndexState`/`IndexData` already model the project/index envelope in the same file at lines 1706 and 1733 \u2014 an envelope that is currently not covered by the published schema at all. A second hand-rolled validation path for one block of the same resource forks a contract that already has a maintenance rule (\"change the model, regenerate the schema\") and a test that enforces it.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_flight_schema.py:620",
+      "id": "reuse_search-4",
+      "reason": "the section must name the carrier it chose against the one that exists, because the review floors \u00a75 interacts with already live in the flight config and two carriers for the same policy is the defect this review exists to catch.",
+      "text": "\u00a73 places the repository's declared rules in the project resource while a per-project policy carrier already exists and is already read by the very paths \u00a74, \u00a75 and \u00a76 extend: `docs/state/<project>/flight.yaml`, modelled by the generated pydantic schema in `reckon/_flight_schema.py`, published as `docs/_shared/flight.schema.json`, and carrying `gates.dimension_floors` \u2014 the map that already sets a per-dimension standard for stored review scores and is read at `reckon/crew/review_dispositions.py:67`, `reckon/crew/obligations.py:1330` and `reckon/crew/obligation_snapshot.py:956`. \u00a75 adds a review dimension whose floors would belong in that same map, and no part of the plan says why the declared domain rules belong in the plan-state resource rather than in this one, or how a rule declared in `project.json` is resolved for a worker whose flight config is read from a different layer, or which of the two wins when both are present.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html \u00a73\u2013\u00a76",
+      "id": "deep_module-1",
+      "reason": "naming one module with one `rules_for(project, node)` entry point is the difference between four sites that must be kept in step by hand and one that cannot disagree with itself.",
+      "text": "the `domain` block is read at four independent sites (\u00a74 and \u00a76 at dispatch, \u00a74 at promotion, \u00a75 in the review prompt) and the plan names no module that answers \"which of this project's rules apply to this node\"; each site would therefore re-implement matching an `applies_to` glob and a plan tag against `node.write_paths`, and the same match decides a brief heading, a promotion guard, a review dimension list and a lint. The plan does name one shared thing \u2014 the block's shape (\u00a73) \u2014 but a shape is not the interface; the interface is the match, and it is the part that four callers must agree on. `reckon/crew/prescription.py`'s header states the pattern this design should copy: one public judgement function, private helpers, computable before any worktree exists. The plan's \u00a76 done-when (\"a brief whose write paths match a declared `model_paths` glob\") and \u00a74's (\"a fixture node writing a path an invariant applies to\") test the same match twice from two directions with nothing binding them to one implementation.",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html \u00a73",
+      "id": "thin_wrapper-1",
+      "reason": "either drop the verb in favour of the existing project read, or state the caller it serves, which removes one of the plan's unaccounted interface additions.",
+      "text": "`reckon project domain --project` is a new CLI verb (\u00a73) whose output the same paragraph says the project read in the MCP already returns; the verb adds a read path in front of `_read_project_json` (`reckon/project_state.py:449`) that carries no behaviour the reader lacks, and no reader is named that needs it. A CLI option count of 393 is not the argument against it \u2014 the argument is that the plan's own text shows the data already reachable, and it offers no justification for a second address for one field of a resource. If the reason is that the project read is too large to carry the block, that is a fact about the read and should be stated; as written the verb is surface added for symmetry.",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/review_lifecycle.py:124",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a72 and \u00a75 should extend `review_lifecycle`/`repair.blocking_finding_dispositions` and the rubric list they branch on, so the refusal, the obligation duty row and the promotion guard all read one derivation of \"this blocking finding is unanswered\".",
+      "text": "the undisposed-blocking-finding state \u00a72 needs has one owner and five existing readers, and \u00a72 creates a sixth derivation; \u00a75 compounds it by making a `domain` blocking finding stop promotion \"exactly as any other blocking finding does\" while the blocking-finding readers are already split by rubric (`_run_open` for run reviews, `reckon/crew/plan_review.py` `unanswered_findings` for plan reviews, and `promotion_checks.py:671`, which reads the *figure* rubric only), so a seventh dimension whose blocking findings must behave \"exactly as any other\" has to be taught to each of them.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/prompts.py:1",
+      "id": "duplicate_owner-2",
+      "reason": "naming `prompts.py`/`dispatch_admission` as the owner settles both where the heading is added and whether the brief digest moves with it, which is a fact the review machinery depends on.",
+      "text": "\u00a74 says the matching invariants are \"composed into the brief under a fixed heading\", but the plan names no composition site; brief composition is already owned by `reckon/crew/prompts.py` (which holds the embedded contract constants and the composed prompt text) and `reckon/crew/dispatch_admission.py:2026` `_brief_text`/`_brief_record`, with the composed brief stored and digested so a review can name it (`reckon/crew/recovery_review_subject.py:385`). A second composition point \u2014 the document \u00a74 also says a brief carries the rules under \u2014 would sit beside a mechanism that already records a brief's identity, and the plan does not say whether the domain heading forms part of the composed brief's digest (and therefore whether a rule change re-keys the briefs already stored).",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/promotion_checks.py:671",
+      "id": "duplicate_owner-3",
+      "reason": "the section should name the guard registry and state that a project-declared command is executed at promotion, which is a different trust boundary from the guards beside it and should be said in the plan rather than discovered by the implementing node.",
+      "text": "\u00a74's invariant check \"runs against the node's head, and a failing check is a promotion guard, reported beside the others by `crew complete --dry-run`\", but the plan does not name where a guard is registered; the existing guards are concrete functions in `reckon/crew/promotion_checks.py` (with a figure-finding guard at line 671 and the attempt list at line 2168), and \u00a74 adds a guard whose input is project-declared and whose execution is a subprocess \u2014 the first promotion guard driven by repository-declared configuration rather than by the run's own recorded evidence.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html \u00a72,\u00a73,\u00a74,\u00a75,\u00a76",
+      "id": "interface_budget-1",
+      "reason": "the added dimensions in this section read as though they were local to projects that declare them while the acceptance floor, the parser and the prompt falsifier are derived from one module constant, so \u00a75 must say what makes the declared set per-project without breaking a global.",
+      "text": "public_definitions 1958, cli_options 393, mcp_views 16, refusal_families 23; the plan adds `repair-owed` to the refusal families (\u00a72), a CLI verb `project domain` (\u00a73), `inputs` and `compares_with`/`none-exists` as new node-record vocabulary (`reckon/crew/node.py:724`) plus a dispatch refusal and a lint (\u00a76), a promotion guard (\u00a74), and a seventh member of the review dimension vocabulary (`reckon/crew/review.py:89`) whose acceptance floor is computed as `len(REVIEW_DIMENSIONS) * REVIEW_MAX_SCORE * 9 // 10` at `reckon/crew/recovery_review_acceptance.py:25`; no section names anything it retires or merges, or states why nothing can be, and \u00a75's dimension in particular changes a module constant the acceptance floor, the parser's completeness check and the prompt falsifier are all derived from, while the plan's text reads as though the dimension were local to projects that declare it.",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "8e19dd4ea4b8a137dee8080e32604ee4e0cd4a33b94ceb5a09cf1c881e6157a8",
+  "plan_slug": "work-is-checked-against-its-domain",
+  "plan_version": 3,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-1",
+      "reason": "",
+      "when": "2026-10-21T08:56:01.959109+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-2",
+      "reason": "",
+      "when": "2026-10-21T08:56:11.470179+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-3",
+      "reason": "",
+      "when": "2026-10-21T08:56:20.707610+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-4",
+      "reason": "",
+      "when": "2026-10-21T08:56:29.422796+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "deep_module-1",
+      "reason": "",
+      "when": "2026-10-21T08:56:39.254690+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "thin_wrapper-1",
+      "reason": "",
+      "when": "2026-10-21T08:56:49.593884+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "duplicate_owner-1",
+      "reason": "",
+      "when": "2026-10-21T08:57:00.233009+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "duplicate_owner-2",
+      "reason": "",
+      "when": "2026-10-21T08:57:10.768259+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "duplicate_owner-3",
+      "reason": "",
+      "when": "2026-10-21T08:57:20.955577+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "interface_budget-1",
+      "reason": "",
+      "when": "2026-10-21T08:57:33.570650+00:00"
+    }
+  ],
+  "responses": {
+    "deep_module-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T08:56:39.254690+00:00"
+    },
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T08:57:00.233009+00:00"
+    },
+    "duplicate_owner-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T08:57:10.768259+00:00"
+    },
+    "duplicate_owner-3": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T08:57:20.955577+00:00"
+    },
+    "interface_budget-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T08:57:33.570650+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T08:56:01.959109+00:00"
+    },
+    "reuse_search-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T08:56:11.470179+00:00"
+    },
+    "reuse_search-3": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T08:56:20.707610+00:00"
+    },
+    "reuse_search-4": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T08:56:29.422796+00:00"
+    },
+    "thin_wrapper-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T08:56:49.593884+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-work-is-checked-against-its-domain.v3.json",
+  "review_run_id": "r-20261021T074034345498-plan-review-of-work-is-checked-against-its-domain",
+  "reviewed_blob_sha": "38289750dd904f23a7373e05815f551fa4154e5f",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the `domain` block has four independent readers (\u00a74 brief composition and promotion guard, \u00a75 review prompt, \u00a76 model lint) and the plan names no module between the block and them, so the `applies_to`-vs-node match is re-derived at each site instead of hidden behind one small interface.",
+    "duplicate_owner": "a finding \u2014 \u00a72 duplicates the undisposed-blocking-finding derivation owned by `reckon/crew/review_lifecycle.py:124`, and \u00a73 places the project's declared rules in a resource whose sibling policy carrier is already `docs/state/<project>/flight.yaml`, validated and published by `reckon/_flight_schema.py`.",
+    "interface_budget": "a finding \u2014 public_definitions 1958, cli_options 393, mcp_views 16, refusal_families 23; \u00a72 adds the `repair-owed` refusal family, \u00a73 adds a CLI verb and a schema/CLI/MCP read of a new block, \u00a75 adds a review dimension to a closed vocabulary, and \u00a76 adds node fields, and no section names what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan adds five mechanisms and cites prior art for none of them; \u00a72's \"blocking finding not yet disposed\" is already derived in `reckon/crew/review_lifecycle.py`, \u00a74/\u00a76's \"is this brief adequately declared\" is already owned by `reckon/crew/prescription.py`, \u00a73's derived-schema publication already exists at `reckon/_schema.py:1776`, and \u00a73's project-policy carrier already exists as the validated flight config at `reckon/_flight_schema.py`.",
+    "thin_wrapper": "a finding \u2014 `reckon project domain --project` adds a CLI verb whose only content is a projection of the project read the plan says already returns the block."
+  },
+  "section_digests": {
+    "_document": "d9ac8dec26b264677afd3500f4c31387d9361cad1110b7f412cda641c1c98291",
+    "s1": "096b2231b1cf1ab1c4476bbab2ea39d0ee87ea2bbfae045a542369206b4fbbf2",
+    "s2": "32bff03062cddfd8f5cd5c476c52953f8d024d233b02f5e6e32cd381ae0a0289",
+    "s3": "dcf077e10392e73722cae7a32571663f9ad4966b557a74d183ff621d964bd5b4",
+    "s4": "e74f329529380bbaf295b2babbb6cd4b9e344a7aede802fc39917c93816c5b30",
+    "s5": "bdf6cf1da1a57d6786b7992b575720a6bc7fbf78532279f096b5297afd89303e",
+    "s6": "cca51027e858677aff442aaefa3ac549d828cdfc54c9a584f1fcca362fe5a620",
+    "s7": "e879ff4b66f35787cadc9a3ead8f3ddc9dcf6aa3c1bf041c072563cae4170875"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T08:55:54.671321+00:00"
+}
