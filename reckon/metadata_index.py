@@ -90,6 +90,9 @@ _DISCOVERY_FILES: ContextVar[
     ]
     | None
 ] = ContextVar("reckon_discovery_files", default=None)
+_DISCOVERY_DIRS: ContextVar[dict[str, list[int] | None] | None] = ContextVar(
+    "reckon_discovery_dirs", default=None
+)
 _RESOURCE_CANDIDATES: ContextVar[bool] = ContextVar(
     "reckon_resource_candidates", default=False
 )
@@ -97,13 +100,26 @@ _RESOURCE_CANDIDATES: ContextVar[bool] = ContextVar(
 
 @contextmanager
 def discovery_file_scope():
-    """Share one covered-file listing and its stats within a discovery pass."""
+    """Share one covered-tree observation within a read.
 
-    token = _DISCOVERY_FILES.set({})
+    The region holds one covered-file listing, the stats each of its files is
+    read for, and the identity each covered directory is checked for. A nested
+    entry joins the region already open rather than replacing it, so one read's
+    several readers observe the covered tree once between them; the outermost
+    entry opens the region and the outermost exit closes it, so a change made
+    between two reads is seen by the next.
+    """
+
+    if _DISCOVERY_FILES.get() is not None:
+        yield
+        return
+    files_token = _DISCOVERY_FILES.set({})
+    dirs_token = _DISCOVERY_DIRS.set({})
     try:
         yield
     finally:
-        _DISCOVERY_FILES.reset(token)
+        _DISCOVERY_FILES.reset(files_token)
+        _DISCOVERY_DIRS.reset(dirs_token)
 
 
 @contextmanager
@@ -147,6 +163,26 @@ def covered_stat(
     if observations is not None:
         observations[relative] = observed
     return observed
+
+
+def covered_dir_identity(path: Path) -> list[int] | None:
+    """Return a directory's stat identity, reusing this pass's first observation.
+
+    A reader with no change watch checks every recorded directory to revalidate
+    the covered file set, and a build recomputes the same identities as it
+    records the new shape, so one pass would otherwise stat a directory once
+    per reader that needs it. Inside :func:`discovery_file_scope` the first
+    observation is reused; outside one the stat is taken as before.
+    """
+
+    scoped = _DISCOVERY_DIRS.get()
+    key = os.fspath(path)
+    if scoped is not None and key in scoped:
+        return scoped[key]
+    identity = _dir_identity(path)
+    if scoped is not None:
+        scoped[key] = identity
+    return identity
 
 
 def _stat_signature(observed: os.stat_result) -> list[int]:
@@ -365,7 +401,7 @@ def _reuse_covered(
     dirs: dict[str, Path] = {}
     for relative, identity in stamps.items():
         path = docs_dir / relative
-        if _dir_identity(path) != identity:
+        if covered_dir_identity(path) != identity:
             return None
         dirs[relative] = path
     covered = [(relative, docs_dir / relative) for relative in sorted(entries)]
@@ -458,7 +494,7 @@ def build_index(
         dirs = dirs or {}
     build = IndexBuild(project=project, docs_dir=docs_dir)
     for relative, path in dirs.items():
-        identity = _dir_identity(path)
+        identity = covered_dir_identity(path)
         if identity is not None:
             build.dir_stamps[relative] = identity
     entries: list[dict] = []
@@ -749,7 +785,7 @@ def _record_covered_shape(
     entries = [known.get(relative) or {"path": relative} for relative, _path in files]
     stamps: dict[str, list[int]] = {}
     for relative, path in dirs:
-        identity = _dir_identity(path)
+        identity = covered_dir_identity(path)
         if identity is not None:
             stamps[relative] = identity
     _store_persisted(docs_dir, project, entries, stamps)
