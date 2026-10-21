@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_a_producer_sweeps_only_on_change.py::test_quiet_cycles_list_nothing_and_spawn_no_git"
+  ],
+  "added_failures_note": "derived by differencing the reviewed run's own arms: after_suite (gate-head.txt, rev fc78de3e) failed 1 id, baseline_suite (gate-base.txt, rev f5e88d28) failed 4 ids, and the head's one id is absent from the base's four, so it is the sole added failure. It is a load-sensitive producer-sweep id unattributable to unwatch: it passes in isolation at head (head-recheck.txt, 24 passed EXIT=0), and the base arm fails four different ids of the same producer/follower family, one of which the head arm passes.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:3627",
+    "reckon/crew/dispatch_watch.py:409",
+    "reckon/crew/runs.py:2620"
+  ],
+  "completed_at": "2026-10-21T01:04:18.207Z",
+  "dispatched_at": "2026-10-21T00:52:47Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "405",
+      "text": "follow-on: _reconciled_seat_record re-inlines the seat-record shaping (replace with {\"project\": project} when the record's host/pid differ from the holder's, then update host/pid/job) that is already written at reckon/crew/watch_unit.py:201-207 (watch_state) and reckon/crew/runs.py:3013-3019 (project_watch_visibility); it extends the shared primitive _fresh_watch_holder but forks the shaping, so a change to the reconciled record's shape must now be made in three places."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "unwatch is reached in production by reckon/crew_follow_commands.py:3627 (crew watch --stop), reckon/crew/dispatch_watch.py:409 (the seat-release subprocess), and reckon/crew/runs.py:2620 (replace_stale_watch_seat); reckon/crew/recovery.py:442 re-exports it.",
+    "diff": "read both commits against base f5e88d28: fc78de3e8 changes reckon/crew/recovery_watch.py (+52/-2, the import, _reconciled_seat_record and the unwatch empty-registration branch) and adds tests/test_unwatch_reads_the_reconciled_seat.py (+202); d090d4d77 adds only the 49-line landing fragment.",
+    "done_when": "the done_when names tests/test_unwatch_reads_the_reconciled_seat.py with three cases and a negative control; the file holds all three (mid-write stopped:81, other project refused:105, foreign host refused:122) and the manifest records the head arm (1 failed/426 passed), base arm (4 failed/420 passed) and negative control (EXIT=1, 1 failed/2 passed).",
+    "goal": "the node goal is to make unwatch in recovery_watch.py decide a held seat's project from the reconciled reading watch_state uses rather than the raw registration; recovery_watch.py:452-459 does exactly that for the empty (mid-write) record, delegating to _reconciled_seat_record which calls _fresh_watch_holder as watch_state does.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T235649990215-unwatch-reads-the-reconciled-seat/manifest.md; status complete, commits fc78de3e8 and d090d4d77, tests line names the -n 8 gate over 50 files, baseline_suite and after_suite both carry revision/command/exit/failure ids, negative_control_log is the bare path.",
+    "write_paths": "the manifest's declared paths are recovery_when.py's module, the test file, the landing fragment and a docs/figures dir; the diff touches only the first three, all inside the grant, and no figure file was created."
+  },
+  "justifications": {
+    "durability": "restoring the raw-registration check turns tests/test_unwatch_reads_the_reconciled_seat.py::test_unwatch_stops_a_live_producer_whose_seat_is_mid_write red with the declared message (logs/negative-control.txt EXIT=1), and the two refusal cases redden if the recovery_watch.py:443 project guard or the foreign-host guard is removed, so each added assertion names the code change that reddens it.",
+    "evidence": "the done_when names tests/test_unwatch_reads_the_reconciled_seat.py; the manifest records groups.retry_failures/gate logs: gate-head.txt rev fc78de3e '1 failed, 426 passed' EXIT=1 over 50 files, gate-base.txt rev f5e88d28 '4 failed, 420 passed' EXIT=1, negative-control.txt EXIT=1 '1 failed, 2 passed', repro-pre-fix.txt reproducing the base refusal; the head arm is not green (one flaky id) which the manifest attributes honestly with an isolated re-run (head-recheck.txt 24 passed EXIT=0).",
+    "fit": "reckon/crew/recovery_watch.py:386-411 follows the module's idiom (module-private helper, Mapping param, dict return, a docstring explaining the mechanism) and introduces no name carrying a plan, sprint, version or ticket label; the test file likewise.",
+    "goal_fidelity": "reckon/crew/recovery_watch.py:452-459 makes unwatch reconcile an empty (mid-write) seat via _reconciled_seat_record, which reads the live holder _fresh_watch_holder the same primitive watch_unit.py:203 uses, so a held seat's project is decided from the reconciled reading; a seat naming another project is still refused from the raw registration (recovery_watch.py:443), which the done_when's second case pins.",
+    "reuse": "the added _reconciled_seat_record calls the owner of the live-holder reconciliation (_fresh_watch_holder, reckon/crew/watch_unit.py:39) but re-inlines the record-shaping already written at watch_unit.py:201-207 (watch_state) and reckon/crew/runs.py:3013-3019 (project_watch_visibility) instead of sharing it, so the reconciled shape now lives in three places.",
+    "scope_discipline": "git diff --stat f5e88d28..d090d4d7 lists exactly three files (reckon/crew/recovery_watch.py, tests/test_unwatch_reads_the_reconciled-\u2026 ) \u2014 recovery_watch.py, the new test file, and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/unwatch-reads-the-reconciled-seat.html \u2014 all inside the declared write paths; no figure was written, which the done-when permits."
+  },
+  "node": "review-of-unwatch-reads-the-reconciled-seat-d090d4d77b93",
+  "node:reviewed": "unwatch-reads-the-reconciled-seat",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make unwatch in recovery_watch.py decide a held seat's project from the reconciled reading watch_state uses rather than the raw registration; recovery_watch.py:452-459 does exactly that for the empty (mid-write) record, delegating to _reconciled_seat_record which calls _fresh_watch_holder as watch_state does.\nVERDICT done_when: the done_when names tests/test_unwatch_reads_the_reconciled_seat.py with three cases and a negative control; the file holds all three (mid-write stopped:81, other project refused:105, foreign host refused:122) and the manifest records the head arm (1 failed/426 passed), base arm (4 failed/420 passed) and negative control (EXIT=1, 1 failed/2 passed).\nVERDICT write_paths: the manifest's declared paths are recovery_watch.py, the test file, the landing fragment and a docs/figures dir; the diff touches only the first three, all inside the grant, and no figure file was created.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T235649990215-unwatch-reads-the-reconciled-seat/manifest.md; status complete, commits fc78de3e8 and d090d4d77, tests line names the -n 8 gate over 50 files, baseline_suite and after_suite both carry revision/command/exit/failure ids, negative_control_log is the bare path.\nVERDICT diff: read both commits against base f5e88d28: fc78de3e8 changes reckon/crew/recovery_watch.py (+52/-2, the import, _reconciled_seat_record and the unwatch empty-registration branch) and adds tests/test_unwatch_reads_the_reconciled_seat.py (+202); d090d4d77 adds only the 49-line landing fragment.\nCALL_SITES: reckon/crew_follow_commands.py:3627, reckon/crew/dispatch_watch.py:409, reckon/crew/runs.py:2620\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_watch.py:452-459 makes unwatch reconcile an empty (mid-write) seat via _reconciled_seat_record, which reads the live holder _fresh_watch_holder the same primitive watch_unit.py:203 uses, so a held seat's project is decided from the reconciled reading; a seat naming another project is still refused from the raw registration (recovery_watch.py:443), which the done_when's second case pins.\nSCORE evidence: 19\nJUSTIFICATION evidence: the done_when names tests/test_unwatch_reads_the_reconciled_seat.py; the manifest records gate-head.txt rev fc78de3e '1 failed, 426 passed' EXIT=1 over 50 files, gate-base.txt rev f5e88d28 '4 failed, 420 passed' EXIT=1, negative-control.txt EXIT=1 '1 failed, 2 passed', and repro-pre-fix.txt reproducing the base refusal; the head arm is not green (one flaky id) which the manifest attributes with an isolated re-run (head-recheck.txt 24 passed EXIT=0).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat f5e88d28..d090d4d7 lists exactly three files (reckon/crew/recovery_watch.py, tests/test_unwatch_reads_the_reconciled_seat.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/unwatch-reads-the-reconciled-seat.html), all inside the declared write paths; no figure was written, which the done-when permits.\nSCORE durability: 19\nJUSTIFICATION durability: restoring the raw-registration check turns tests/test_unwatch_reads_the_reconciled_seat.py::test_unwatch_stops_a_live_producer_whose_seat_is_mid_write red with the declared message (logs/negative-control.txt EXIT=1), and the two refusal cases redden if the recovery_watch.py:443 project guard or the foreign-host guard is removed, so each added assertion names the code change that reddens it.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/recovery_watch.py:386-411 follows the module's idiom (module-private helper, Mapping param, dict return, a docstring explaining the mechanism) and introduces no name carrying a plan, sprint, version or ticket label; the test file likewise.\nSCORE reuse: 11\nJUSTIFICATION reuse: the added _reconciled_seat_record calls the owner of the live-holder reconciliation (_fresh_watch_holder, reckon/crew/watch_unit.py:39) but re-inlines the record-shaping already written at watch_unit.py:201-207 (watch_state) and reckon/crew/runs.py:3013-3019 (project_watch_visibility) instead of sharing it, so the reconciled shape now lives in three places.\nFINDING reckon/crew/recovery_watch.py:405 follow-on: _reconciled_seat_record re-inlines the seat-record shaping that is already written at reckon/crew/watch_unit.py:201-207 (watch_state) and reckon/crew/runs.py:3013-3019 (project_watch_visibility); it extends the shared primitive _fresh_watch_holder but forks the shaping, so a change to the reconciled record's shape must now be made in three places.",
+  "review_run_id": "r-20261021T005152287645-review-of-unwatch-reads-the-reconciled-seat-d090d4d77b93",
+  "reviewed_base_sha": "f5e88d284e7d6a31228eaeec6b4ef55191837eaa",
+  "reviewed_head_sha": "d090d4d77b938b576b67f718f3d88487fd67423d",
+  "reviewed_run_id": "r-20261020T235649990215-unwatch-reads-the-reconciled-seat",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 11,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T00:00:00+00:00",
+  "total": 105
+}
