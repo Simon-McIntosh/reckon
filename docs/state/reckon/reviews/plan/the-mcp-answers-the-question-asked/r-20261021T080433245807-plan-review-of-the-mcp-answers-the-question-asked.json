@@ -1,0 +1,166 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T08:33:29.161Z",
+  "dispatched_at": "2026-10-21T08:24:12Z",
+  "findings": [
+    {
+      "anchor": "reckon/mcp_views.py:2406",
+      "id": "reuse_search-1",
+      "reason": "the plan should extend the existing pagination contract to the remaining views and cite it, rather than describe a fresh one.",
+      "text": "\u00a72 says \"a list returns its highest-ranked rows up to a declared count, the total, and a cursor for the rest\" as if new, but `paginate()` at reckon/mcp_views.py:2406 already returns exactly that (page, pagination with cursor/total) and `roadmap_view(` already takes `cursor` and `limit`, emits `pagination` and pages `wiring_findings` (reckon/mcp_views.py:3471, 3492-3496); \u00a72, \u00a73 and \u00a77 cite none of it",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/mcp.py:2189",
+      "id": "reuse_search-2",
+      "reason": "\u00a73 and \u00a77 would become an extension of the existing parameter family rather than a new vocabulary the author must justify as parallel.",
+      "text": "\u00a73 proposes that \"every list view accepts `fields` with one shared vocabulary\", but the crew tool already carries a `fields` request parameter end to end: reckon/mcp.py:2189 and :2174 pass `fields=` and `since=` into `serve_crew_view`, reckon/mcp_views.py:3851 forwards `fields=` to the velocity view, and reckon/mcp_views.py:4018 calls `project_live_rows(live_records, fields=fields, session=session)` (defined reckon/crew/query.py:174); the same is true of \u00a77's `since` cursor (reckon/mcp.py:2174; the velocity view already accepts `since`/`until`/`fields`/`limit`/`cursor`, reckon/mcp_views.py:3846-3856)",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/mcp_views.py:2406",
+      "id": "duplicate_owner-1",
+      "reason": "naming the owner turns \"add a vocabulary\" and \"add a cursor\" into \"widen the owner\", which is the honest change and prevents a second field-projection path drifting from the first.",
+      "text": "\u00a73's `fields` vocabulary and \u00a77's `since` cursor duplicate the parameter/paging mechanism the crew-tool surface already owns; the owning code is the `paginate()` helper and the `serve_crew_view` request signature in reckon/mcp_views.py (with the row projection in reckon/crew/query.py:174 `project_live_rows`), and \u00a75's \"one owning function\" for a run's classification is already owned by `classify_pointer` in reckon/crew/recovery.py (imported for the live view at reckon/mcp_views.py:1877)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "test_surface_parity.py:1",
+      "id": "duplicate_owner-2",
+      "reason": "\u00a75 must say which existing parity guard it extends, or it will build a third one over the same facts.",
+      "text": "\u00a75 leans on a parity test \"from `a-project-reads-as-one-picture` \u00a74\" and cites it as the one to extend, but two parity mechanisms already exist in this tree: `tests/test_surface_parity.py` (rendered-vs-returned over the SPA parity harness) and `tests/test_producer_shares_the_classifier_verdict.py` (one run verdict across producer snapshots and emitted transitions); \u00a75's own `plan-section-depends-on` lists `a-project-reads-as-one-picture#s4` but the section text names none of the three so a reader cannot tell which one carries the run-classification parity",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/mcp_budget.py:1",
+      "id": "thin_wrapper-1",
+      "reason": "the contract needs a machine-readable home (a per-view declaration the existing budget module or the test reads), otherwise nothing can fail when a view's declared size and its actual answer diverge.",
+      "text": "\u00a72 says \"every view declares a size contract in its docstring\" and the contract is \"met by shape\", but the only thing that can enforce a contract is code: the ceiling is owned by reckon/mcp_budget.py (`response_ceiling`, `serialised_characters`), and a docstring promise is unreadable by any tool, so the declared contract sits beside the enforcement point rather than inside it",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "the-mcp-answers-the-question-asked#s4",
+      "id": "interface_budget-1",
+      "reason": "each adding section must account for its surface in its own text (what it replaces, merges, or why nothing can be), or the plan grows mcp_views and cli_options without bound.",
+      "text": "\u00a74 adds a new MCP read `why(ref)` and a new CLI verb `reckon why`, \u00a73 adds a `fields` request parameter to every list view, and \u00a77 adds a `since` cursor to the brief, `crew live` and the roadmap; against public_definitions 1958, cli_options 393, mcp_views 16, refusal_families 23, no section names a definition it retires, a view it merges, or states why nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e72687a7015f7e103a033327d9788b5ef658592d51ecb619550460642ec47773",
+  "plan_slug": "the-mcp-answers-the-question-asked",
+  "plan_version": 4,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-1",
+      "reason": "",
+      "when": "2026-10-21T08:54:53.585443+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-2",
+      "reason": "",
+      "when": "2026-10-21T08:55:04.492444+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "duplicate_owner-1",
+      "reason": "",
+      "when": "2026-10-21T08:55:14.901814+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "duplicate_owner-2",
+      "reason": "",
+      "when": "2026-10-21T08:55:27.354987+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "thin_wrapper-1",
+      "reason": "",
+      "when": "2026-10-21T08:55:37.832240+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "interface_budget-1",
+      "reason": "",
+      "when": "2026-10-21T08:55:50.916381+00:00"
+    }
+  ],
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T08:55:14.901814+00:00"
+    },
+    "duplicate_owner-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T08:55:27.354987+00:00"
+    },
+    "interface_budget-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T08:55:50.916381+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T08:54:53.585443+00:00"
+    },
+    "reuse_search-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T08:55:04.492444+00:00"
+    },
+    "thin_wrapper-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T08:55:37.832240+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-mcp-answers-the-question-asked.v4.json",
+  "review_run_id": "r-20261021T080433245807-plan-review-of-the-mcp-answers-the-question-asked",
+  "reviewed_blob_sha": "eab0d4757b0a8ac2d9a53d27394532a2bedb788d",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a74's `why(ref)` hides the section graph, run placement, held paths and event join behind one ref argument, the smallest interface for the largest behaviour; the other sections add fields to views rather than modules.",
+    "duplicate_owner": "a finding \u2014 \u00a73 and \u00a77 propose a `fields`/`since`/cursor vocabulary parallel to the one already owned by the crew-tool param family (reckon/mcp.py, reckon/mcp_views.py, reckon/crew/query.py), and \u00a75's \"one owning function\" for a run's classification already has an owner to extend in reckon/crew/recovery.py.",
+    "interface_budget": "a finding \u2014 public_definitions 1958, cli_options 393, mcp_views 16, refusal_families 23; \u00a74 adds a new MCP read and a new CLI verb, \u00a73 and \u00a77 add request parameters, and no section names what it retires or merges or states why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a72's paging, \u00a73's `fields` and \u00a77's `since` are all proposed as new but each already exists on the crew-tool surface (reckon/mcp_*), and the plan cites none of them.",
+    "thin_wrapper": "a finding \u2014 \u00a72's per-view size contract lives in a docstring, and a docstring is not readable by the tooling that would enforce it, so the contract is a promise beside the existing runtime ceiling in reckon/mcp_budget.py rather than an extension of it."
+  },
+  "section_digests": {
+    "_document": "e1c94d9f3b30c8624a6467f53654fb7adcc82487415127ce15d356f2b7b20ff0",
+    "s1": "daef4b527685c5d986aa210cce10bb0f4cd5772ef762521051f5920fcb02c98b",
+    "s2": "3c9f990803be49173055a21624115ad2fa745d64c85e6cbc454190247fc5ae76",
+    "s3": "36009a39196f94f79c16cd66666780ac9814b76e487c5369c7cff2da440addab",
+    "s4": "221109abec0e6ad971f2598420df9fe39c47cd59f78dcb949259c1416f20cd3d",
+    "s5": "37ed23ff36fca5327391f1766c535f577b0889839c61667ddf9dbed5aa431489",
+    "s6": "72d443bc7a7499a314bb8fb3b01da359881bffc36e31bdbe2f88986736c43444",
+    "s7": "5eb0b734bbb0681ca9102fa9003e11bd7dc5278b1dc26da5685ed959db7cfa4b",
+    "s8": "27fe0be42478903a55544ca3b72d0fc75b3b096044a368408d31c52ce87bb548"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T08:54:41.180731+00:00"
+}
