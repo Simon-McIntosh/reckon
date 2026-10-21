@@ -12,6 +12,7 @@ from reckon._store import new_plan_html
 from reckon.mcp_views import _blocking
 from reckon.roadmap import build_roadmap
 from reckon.serve import _derive_lifecycle, discover_plans
+from tests.roadmap_fixtures import plan_row
 
 
 def _plan(
@@ -27,31 +28,18 @@ def _plan(
     north_star: str | None = None,
     graph_handle: str | None = None,
 ) -> dict:
-    plan = {
-        "slug": slug,
-        "title": slug.title(),
-        "type": "plan",
-        "status": status,
-        "impl": impl,
-        "depends_on": depends_on or [],
-        "sprint": sprint,
-        "effort": effort,
-        "roi": "high",
-        "blocking": [],
-        "gates": [{"id": "evidence", "verdict": "passed"}],
-        "followups": [
-            {"id": "next", "status": "open", "prompt": "/reckon-build upstream-plan"}
-        ],
-    }
-    if north_star is not None:
-        plan["north_star"] = north_star
-    if graph_handle is not None:
-        plan["graph_handle"] = graph_handle
-    if effort_hours is not None:
-        plan["effort_hours"] = effort_hours
-    if effort_calibrated is not None:
-        plan["effort_calibrated"] = effort_calibrated
-    return plan
+    return plan_row(
+        slug,
+        status=status,
+        impl=impl,
+        depends_on=depends_on,
+        sprint=sprint,
+        effort=effort,
+        effort_hours=effort_hours,
+        effort_calibrated=effort_calibrated,
+        north_star=north_star,
+        graph_handle=graph_handle,
+    )
 
 
 def _project_with_north_stars(*ids: str) -> dict:

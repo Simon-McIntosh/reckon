@@ -39,6 +39,7 @@ from reckon._schema import (
     is_section_identity,
     parse_plan_ref,
     pending_transition_gates,
+    plan_executable_remainder,
     resolve_plan_ref,
     section_dependency_refusals,
     section_depends_on,
@@ -816,13 +817,88 @@ def split_unpassed_gates(
     return plan_holding, section_holding
 
 
-def closure_blockers(plan: dict[str, Any]) -> list[dict[str, Any]]:
-    """Name the pending plan-terminal gates holding a plan's closure."""
+def is_closable(plan: Mapping[str, Any]) -> bool:
+    """Whether a plan declares sections and has resolved every one of them.
 
-    return [
-        {"kind": "gate", "plan": plan.get("slug", ""), **gate}
-        for gate in pending_transition_gates(plan.get("gates") or [], "plan-terminal")
+    ``plan_executable_remainder`` is the one reader of "does a declaration still
+    admit work", and its known zero is a plan whose declared sections are all
+    done, descoped or deferred. This asks that reader the question its answer is
+    about — a plan whose sections are all resolved — and reads a plan that
+    declares no sections as the unknown it is: it keeps the readiness the ladder
+    would otherwise give it. The key check below is where that reading differs
+    from the two collaborators this function calls, and why.
+    """
+
+    declarations = plan.get("section_declarations")
+    # Deliberate divergence from ``plan_executable_remainder``, which documents an
+    # empty declaration as a known zero, and from ``implementable_sections``,
+    # which reads an absent one as declaring no work. Neither reading survives
+    # the row this runs on: ``readiness_from_state`` in ``metadata_index``
+    # collapses an absent declaration set to an empty mapping for every
+    # discovered plan, so an inventory row cannot tell a plan that never
+    # classified its sections from one that classified none. Taking the empty
+    # mapping as resolved would read every legacy plan as finished and empty the
+    # ready set of any project whose plans carry no declarations, so the unknown
+    # remainder wins here and only a plan that declares sections it has resolved
+    # reads closable.
+    if not isinstance(declarations, Mapping) or not declarations:
+        return False
+    return plan_executable_remainder(plan) == 0
+
+
+def closure_blockers(plan: dict[str, Any]) -> list[dict[str, Any]]:
+    """Name what stands between a plan and ``close``, with the ops that clear it.
+
+    A plan that still admits implementable work is held for closure only by its
+    plan-terminal gates: the question of closing is not live until the declared
+    work is resolved. Once no declaration admits work, every remaining obstacle
+    is named — deferred sections, open followups, open execution gates and
+    plan-terminal gates — each carrying the ops that clear it, and the list ends
+    with the ``close`` op so a reader holding the row has the writes to make. A
+    finished plan kept open on purpose states its reason with a plan-terminal
+    gate whose measure says why, which appears here as any other gate.
+    """
+
+    slug = plan.get("slug", "")
+    if not is_closable(plan):
+        return [
+            {"kind": "gate", "plan": slug, **gate}
+            for gate in pending_transition_gates(
+                plan.get("gates") or [], "plan-terminal"
+            )
+        ]
+    declarations = plan.get("section_declarations")
+    blockers: list[dict[str, Any]] = [
+        {
+            "kind": "section",
+            "plan": slug,
+            "id": section,
+            "status": SECTION_DECLARATION_DEFERRED,
+            "ops": ["descope"],
+        }
+        for section, classification in sorted((declarations or {}).items())
+        if str(classification or "").strip() == SECTION_DECLARATION_DEFERRED
     ]
+    blockers.extend(
+        {
+            "kind": "followup",
+            "plan": slug,
+            "id": followup.get("id", ""),
+            "ops": ["resolve"],
+        }
+        for followup in plan.get("followups") or []
+        if isinstance(followup, dict) and followup.get("status", "open") == "open"
+    )
+    blockers.extend(
+        {"kind": "gate", "plan": slug, **gate, "ops": ["pass", "fail"]}
+        for gate in unpassed_gate_blockers(execution_gates(plan))
+    )
+    blockers.extend(
+        {"kind": "gate", "plan": slug, **gate, "ops": ["pass", "fail"]}
+        for gate in pending_transition_gates(plan.get("gates") or [], "plan-terminal")
+    )
+    blockers.append({"kind": "op", "plan": slug, "ops": ["close"]})
+    return blockers
 
 
 def _dispatchability(plan: dict[str, Any]) -> tuple[bool, list[str]]:
@@ -3173,6 +3249,7 @@ def _build_roadmap(
     open_decisions_report: list[dict[str, Any]] = []
     deferred_decisions_report: list[dict[str, Any]] = []
     unauthorised: list[dict[str, Any]] = []
+    closable_slugs: set[str] = set()
     for slug, plan in plans.items():
         status = _status(plan)
         if status in TERMINAL_STATUSES:
@@ -3248,6 +3325,11 @@ def _build_roadmap(
         # whose blockers are all cleared, so a released plan is authorised like
         # any other open work.
         authorised = status in _AUTHORISED_STATUSES or slug in released_by_clear
+        # A plan whose declarations admit no implementable work has nothing to
+        # dispatch, so it leaves the ready set, the blocked set and the critical
+        # path whichever blockers it still carries. What stands between it and
+        # its close is enumerated by ``closure_blockers`` instead.
+        closable = is_closable(authored)
         is_ready = (
             dispatchable
             and authorised
@@ -3257,16 +3339,30 @@ def _build_roadmap(
             and not gate_blockers
             and not plan_holding_decisions
             and slug not in cycle_members
+            and not closable
         )
-        is_blocked = bool(
-            plan_dependency_blockers
-            or explicit_blockers
-            or held_blockers
-            or gate_blockers
-            or plan_holding_decisions
-            or slug in cycle_members
+        is_blocked = (
+            bool(
+                plan_dependency_blockers
+                or explicit_blockers
+                or held_blockers
+                or gate_blockers
+                or plan_holding_decisions
+                or slug in cycle_members
+            )
+            and not closable
         )
-        readiness = "ready" if is_ready else "blocked" if is_blocked else "deferred"
+        readiness = (
+            "closable"
+            if closable
+            else "ready"
+            if is_ready
+            else "blocked"
+            if is_blocked
+            else "deferred"
+        )
+        if closable:
+            closable_slugs.add(slug)
         plan_sprint = plan.get("sprint") or (membership.get(slug) or [None])[0]
         is_schedule_deferred = bool(
             schedule_horizon is not None
@@ -3317,7 +3413,7 @@ def _build_roadmap(
             "held_blockers": held_blockers,
             "gate_blockers": gate_blockers,
             "section_gate_blockers": section_gate_blockers,
-            "closure_blockers": closure_blockers(plan),
+            "closure_blockers": closure_blockers(authored),
             "decision_blockers": decision_blockers,
             "deferred_decisions": deferred_decisions,
             "decisions": decisions,
@@ -3423,7 +3519,7 @@ def _build_roadmap(
             ready.append(row)
         elif is_blocked:
             blocked.append(row)
-        else:
+        elif not closable:
             deferred.append(row)
         if is_schedule_deferred:
             schedule_deferred.append(row)
@@ -3437,7 +3533,7 @@ def _build_roadmap(
         candidates = [
             longest_path(dependency, visiting | {node})
             for dependency in local_graph.get(node, [])
-            if dependency in plans
+            if dependency in plans and dependency not in closable_slugs
         ]
         best = max(
             candidates,
@@ -3448,7 +3544,7 @@ def _build_roadmap(
 
     path_candidates: dict[tuple[str, ...], float] = {}
     for slug, plan in plans.items():
-        if _status(plan) in TERMINAL_STATUSES:
+        if _status(plan) in TERMINAL_STATUSES or slug in closable_slugs:
             continue
         path = longest_path(slug)
         if path:
