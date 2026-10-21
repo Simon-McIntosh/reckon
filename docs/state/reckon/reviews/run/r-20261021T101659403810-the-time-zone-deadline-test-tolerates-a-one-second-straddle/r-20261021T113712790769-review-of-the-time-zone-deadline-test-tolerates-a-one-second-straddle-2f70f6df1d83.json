@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": null,
+  "base_log_revision": "d689667d5ffa542f5d117dec7e0f53ec703453d5",
+  "baseline_suite_log": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-21T11:58:23.811Z",
+  "dispatched_at": "2026-10-21T11:38:43Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "reconciled in the plan by the coordinator: section 29's deliverable now names the 60-second tolerance the first review asked for, because a stall under load exceeds one second while any zone offset is 3,600 seconds or more",
+      "recorded_at": "2026-10-21T12:05:16.854585+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "a cosmetic duplicate tree header in a probe log; the drift figures the fragment cites from it match the probe's own output lines",
+      "recorded_at": "2026-10-21T12:05:39.549777+00:00"
+    }
+  },
+  "findings": [
+    {
+      "blocks": false,
+      "file": "tests/test_a_deadline_needs_no_time_zone.py",
+      "line": "57",
+      "severity": "follow-on",
+      "text": "the tolerance is 60 seconds while plan section 29's deliverable and the node goal both state a one-second tolerance, and the value is not derived from any measurement - the cited probe observed only 0 and 1 over 200 pairs - so the plan text and the code now disagree and the coordinator should reconcile them."
+    },
+    {
+      "blocks": false,
+      "file": "probe-two-zone-drift.log",
+      "line": "2",
+      "severity": "follow-on",
+      "text": "the cited probe log carries a duplicated `# tree:` header line, the first of which has a stray `2>/dev/null` spliced into the path, so a shell fragment survives into a cited evidence record and reads as a second tree."
+    }
+  ],
+  "head_log_revision": "2022e762440f413a197ef0044cf7a0c8b78e1f0f",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "two commits against d689667d5 - 2022e7624 raises the drift tolerance from 1 to a module constant of 60 at tests/test_a_deadline_needs_no_time_zone.py:57 and rewrites the docstring, and 2f70f6df updates the fragment to cite only the logged probe distribution and the new gate and negative-control figures.",
+    "done_when": "the done_when names 20 foreground runs of test_the_stated_command_prints_the_same_seconds_in_two_zones plus a +3600 negative control; gate-20-runs.log records passed 20 of 20, failed 0 with EXIT=0 at revision 2022e7624 and negative-control.log records `assert 3600 <= 60` with EXIT=1.",
+    "goal": "the goal is that the two-zone comparison tolerate a one-second difference while still failing on a zone offset of an hour or more; the landed assertion at tests/test_a_deadline_needs_no_time_zone.py:120 uses a 60-second tolerance and negative-control.log shows the +3600 mutation reddens it.",
+    "manifest": "the manifest states status complete, the 20-of-20 gate at 2022e7624 with EXIT=0, the +3600 mutation and its EXIT=1 log, a probe distribution of {0:196, 1:4}, and lists all five landed commits including head 2f70f6df1.",
+    "write_paths": "the declared scope is tests/test_a_deadline_needs_no_time_zone.py, the node's evidence fragment under docs/evidence/fragments/the-suite-is-green-at-head/ and its docs/figures/ directory; the d689667d5..2f70f6df1 diff changes only the test file and the fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_a_deadline_needs_no_time_zone.py:120 compares the drift derived from the command's own output against the independent module constant, shown live by the +3600 mutation producing `assert 3600 <= 60` in negative-control.log.",
+    "evidence": "gate-20-runs.log records `passed 20 of 20, failed 0` with EXIT=0 and negative-control.log records `assert 3600 <= 60` with EXIT=1 at revision 2022e7624, but the 60-second value's rationale at tests/test_a_deadline_needs_no_time_zone.py:54-56 is asserted rather than measured - the cited probe observed only 0 and 1 over 200 pairs.",
+    "fit": "the module-level TOLERATED_DRIFT_SECONDS at tests/test_a_deadline_needs_no_time_zone.py:57 with its explanatory comment follows the file's existing module-constant idiom and introduces no forbidden name.",
+    "goal_fidelity": "tests/test_a_deadline_needs_no_time_zone.py:57 sets TOLERATED_DRIFT_SECONDS = 60 where plan section 29's deliverable and the node goal both state a one-second tolerance, so the goal's functional clauses (a one-second difference passes, an hour offset fails) hold but the written figure departs from the plan 60-fold.",
+    "reuse": "the diff adds no capability-owning definition; it reuses the pre-existing _figures helper at tests/test_a_deadline_needs_no_time_zone.py:88, and a search over tests/ and reckon/ found no existing drift-tolerance owner to extend.",
+    "scope_discipline": "the d689667d5..2f70f6df1 diffstat shows only tests/test_a_deadline_needs_no_time_zone.py and docs/evidence/fragments/the-suite-is-green-at-head/the-time-zone-deadline-test-tolerates-a-one-second-straddle.html, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the two-zone comparison tolerate a one-second difference while still failing on a zone offset of an hour or more; the landed assertion at tests/test_a_deadline_needs_no_time_zone.py:120 is `drift <= TOLERATED_DRIFT_SECONDS` with that constant 60 at line 57, and negative-control.log shows the +3600 mutation reddens it (`assert 3600 <= 60`, EXIT=1).\nVERDICT done_when: the done_when names 20 foreground runs of test_the_stated_command_prints_the_same_seconds_in_two_zones plus a +3600 negative control; gate-20-runs.log records `passed 20 of 20, failed 0` with EXIT=0 at revision 2022e762440f413a197ef0044cf7a0c8b78e1f0f and negative-control.log records `assert 3600 <= 60` with EXIT=1 at the same revision, both headed by their revision and literal command and both ending in a bare EXIT= line.\nVERDICT write_paths: the declared scope is tests/test_a_deadline_needs_no_time_zone.py, docs/evidence/fragments/the-suite-is-green-at-head/the-time-zone-deadline-test-tolerates-a-one-second-straddle.html and the node's docs/figures/ directory; the d689667d5..2f70f6df1 diffstat shows only the test file and the fragment, and no figure was written.\nVERDICT manifest: read; it states status complete, the 20-of-20 gate at 2022e7624 (EXIT=0), the +3600 mutation with its EXIT=1 log, a probe distribution of {0:196, 1:4}, and its commits line lists all five landed commits including the head 2f70f6df1.\nVERDICT diff: read commit by commit against d689667d5; two commits - 2022e7624 raises the drift tolerance from 1 to a module constant of 60 and rewrites the docstring and comment, and 2f70f6df updates the fragment to cite only the logged probe distribution and the new gate and negative-control figures.\nCALL_SITES: none\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: tests/test_a_deadline_needs_no_time_zone.py:57 sets TOLERATED_DRIFT_SECONDS = 60 where plan section 29 and the node goal both state a one-second tolerance, so the goal's functional clauses hold but the written figure departs from the plan 60-fold.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-20-runs.log and negative-control.log each begin with their revision and literal command and end in EXIT=0 and EXIT=1, though the 60-second value's rationale at tests/test_a_deadline_needs_no_time_zone.py:54-56 is asserted while the cited probe-two-zone-drift.log observed only 0 and 1 over 200 pairs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat d689667d5 2f70f6df1 lists only tests/test_a_deadline_needs_no_time_zone.py and docs/evidence/fragments/the-suite-is-green-at-head/the-time-zone-deadline-test-tolerates-a-one-second-straddle.html, both inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_deadline_needs_no_time_zone.py:120 compares the drift computed from the command's own output against an independent module constant, and negative-control.log shows the +3600 reinstatement reddens it, so it is not a self-comparison.\nSCORE fit: 19\nJUSTIFICATION fit: the module-level TOLERATED_DRIFT_SECONDS at tests/test_a_deadline_needs_no_time_zone.py:57 matched by its explanatory comment follows the file's existing module-constant idiom and introduces no forbidden name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no capability-owning definition; the assertion reuses the pre-existing _figures helper at tests/test_a_deadline_needs_no_time_zone.py:88, and a search of tests/ and reckon/ for an existing drift-tolerance owner found none.\nFINDING tests/test_a_deadline_needs_no_time_zone.py:57 follow-on: the tolerance is 60 seconds while plan section 29's deliverable and the node goal both state a one-second tolerance, and the value is not derived from any measurement - the cited probe observed only 0 and 1 over 200 pairs - so the plan text and the code now disagree and the coordinator should reconcile them.\nFINDING probe-two-zone-drift.log:2 follow-on: the cited probe log carries a duplicated `# tree:` header line, the first of which has a stray `2>/dev/null` spliced into the path, so a shell fragment survives into a cited evidence record and reads as a second tree.\n",
+  "review_run_id": "r-20261021T113712790769-review-of-the-time-zone-deadline-test-tolerates-a-one-second-straddle-2f70f6df1d83",
+  "reviewed_base_sha": "d689667d5ffa542f5d117dec7e0f53ec703453d5",
+  "reviewed_commits": [
+    "2022e762440f413a197ef0044cf7a0c8b78e1f0f",
+    "2f70f6df1d83e7e71f139260f402c6090c598c24"
+  ],
+  "reviewed_head_sha": "2f70f6df1d83e7e71f139260f402c6090c598c24",
+  "reviewed_run_id": "r-20261021T101659403810-the-time-zone-deadline-test-tolerates-a-one-second-straddle",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T12:07:32.885461+00:00",
+  "total": 111
+}
