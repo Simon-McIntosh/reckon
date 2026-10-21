@@ -1,0 +1,76 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs, since manifest.md carries neither baseline_suite nor after_suite. logs/base_gate.log (revision 40c0ab154) ends `10 failed, 47 passed in 464.73s` EXIT=1 with ids: tests/test_every_default_read_fits.py::test_every_view_declares_a_row_and_the_rows_name_every_view, ::test_every_default_read_fits_its_row, ::test_roadmap_detail_fits_by_paging_rather_than_by_refusing, ::test_crew_findings_answers_one_page_and_carries_the_next, tests/test_mcp_census.py::test_doctor_prints_the_census_figures, and five tests/test_mcp_response_budget.py ids. logs/head_gate.log (revision 659cad2c) ends `5 failed, 52 passed in 820.45s` EXIT=1 whose five ids are exactly that response_budget set, so no failure id is present at head that is absent at base and head resolves the other five.",
+  "assertions_added": [
+    "tests/test_every_default_read_fits.py:352 `first.get('error') != 'response_over_budget'` fails if the unpaged findings answer is served again, since an unpaged 60-path answer sits over the declared 24,000 row.",
+    "tests/test_every_default_read_fits.py:353 `size <= FINDINGS_ROW` fails on the unpaged answer; the right-hand side is the test-held literal 24_000, independent of the response.",
+    "tests/test_every_default_read_fits.py:361 `VIEW_BUDGETS.get(('crew','findings')) == FINDINGS_ROW` ties the declared table to that same independent literal.",
+    "tests/test_every_default_read_fits.py:364 `pagination['total'] == FINDING_PATHS` compares the response's total against the fixture's path count.",
+    "tests/test_every_default_read_fits.py:366 `len(first['paths']) < FINDING_PATHS` fails if the reader stops paging and returns every group.",
+    "tests/test_every_default_read_fits.py:367 `len(first['rows']) == sum(len(g['rows']) for g in first['paths'])` fails if the flat rows list ships whole beside the page.",
+    "tests/test_every_default_read_fits.py:375 the disjointness of the second page's paths from the first fails if the cursor does not advance.",
+    "tests/test_every_default_read_fits.py:386 `last['pagination']['next_cursor'] is None` fails if the page size or cursor arithmetic stops terminating.",
+    "tests/test_every_default_read_fits.py:348 `stored == FINDING_PATHS * FINDING_REVIEWS` compares a value supplied to the test's own helper against that helper's return, so it validates the fixture rather than the paging."
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp.py:3220",
+    "reckon/mcp.py:2257",
+    "reckon/mcp_views.py:3839",
+    "reckon/crew/review_records.py:162"
+  ],
+  "completed_at": "2026-10-21T23:52:23.120Z",
+  "dispatched_at": "2026-10-21T23:43:39Z",
+  "findings": [
+    {
+      "file": "tests/test_every_default_read_fits.py",
+      "line": "348",
+      "severity": "follow-on",
+      "text": "`assert stored == FINDING_PATHS * FINDING_REVIEWS` compares _store_findings' return against the very constants the test passed into it, so it validates the fixture rather than the paging under test and cannot redden on a regression in reckon/mcp_views.py:_paged_findings; the guards that do fire on that regression are the size and pagination assertions at :352-:392."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T195617510887-every-default-read-fits/logs/negative_control.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "the negative control the reviewed manifest records mutates only the roadmap view=detail paging path, so the crew view=findings branch this commit exists to exercise has no mutation-based red proof of its own; the base arm at 40c0ab154 falsifies it only by removing every view's paging at once."
+    }
+  ],
+  "justifications": {
+    "durability": "logs/base_gate.log shows the new test reddening at the base revision with `AssertionError: 45986 characters over 24000: paths=60 rows=60 artefacts=0 pagination=None` at tests/test_every_default_read_fits.py:353, which is exactly the unpaged findings answer the test exists to catch.",
+    "evidence": "logs/head_gate.log records `5 failed, 52 passed ... EXIT=1` at 659cad2c and logs/base_gate.log `10 failed, 47 passed ... EXIT=1` at 40c0ab154, an added-failure delta of zero, but the reviewed manifest carries no baseline_suite or after_suite line so the pair was read from the logs it names rather than from the manifest.",
+    "fit": "the findings_project fixture and _store_findings helper follow the file's existing big_project/_populate mount idiom with mechanism names, and no plan label appears in a symbol, path or comment.",
+    "goal_fidelity": "tests/test_every_default_read_fits.py:337 drives crew view=findings on a populated store into reckon/mcp_views.py:3839, the one view the reviewed node's per-view contract could not measure before this commit.",
+    "reuse": "_store_findings writes through the existing reckon/crew/review_records.py:162 store_committed_review rather than hand-writing the committed tree, and no owner of a shared mount-a-project fixture exists in tests/ for the fixture to extend.",
+    "scope_discipline": "the gained commit changes only tests/test_every_default_read_fits.py, which is inside the manifest's declared write paths, and carries no production change."
+  },
+  "project": "reckon",
+  "raw_emission": "VERDICT goal: the reviewed node's goal is to hold every default MCP read to a per-view size contract by paging the views that serialise whole records; the gained commit 659cad2cd touches only tests/test_every_default_read_fits.py, adding test_crew_findings_answers_one_page_and_carries_the_next so the crew findings paging at reckon/mcp_views.py:3839 is exercised against a populated store.\nVERDICT done_when: the done_when names tests/test_every_default_read_fits.py holding every view of every read tool to its row against a 60-plan/400-section fixture with a base arm where roadmap view=detail returns response_over_budget; logs/head_gate.log records `5 failed, 52 passed in 820.45s` EXIT=1 at 659cad2c and logs/base_gate.log `10 failed, 47 passed in 464.73s` EXIT=1 at 40c0ab154, and base_gate.log carries the new test reddening at `45986 characters over 24000 ... pagination=None`.\nVERDICT write_paths: the declared write paths are reckon/mcp_budget.py, reckon/mcp_views.py, reckon/crew/query.py, tests/test_every_default_read_fits.py, tests/test_mcp_response_budget.py, docs/evidence/fragments/the-mcp-answers-the-question-asked/every-default-read-fits.html and docs/figures/the-mcp-answers-the-question-asked/every-default-read-fits; the gained commit changes tests/test_every_default_read_fits.py (154 insertions, 1 deletion) and nothing else, inside that list.\nVERDICT manifest: read manifest.md at head 659cad2c: status complete, commits 696bebeab, 659ccd821, f92511be5, 659cad2cd, naming logs/head_gate.log and logs/base_gate.log among its test_logs, and carrying neither baseline_suite nor after_suite, so the added-failure delta was derived from the two gate logs it names.\nVERDICT diff: read 659cad2cd against its parent f92511be5: one file, tests/test_every_default_read_fits.py, 154 insertions and 1 deletion; it adds module-level VIEW_BUDGETS/view_budget shims read through reckon.mcp_budget, a findings_project fixture, the _store_findings helper and the new test, and changes nothing under reckon/.\nCALL_SITES: reckon/mcp.py:3220, reckon/mcp.py:2257, reckon/mcp_views.py:3839, reckon/crew/review_records.py:162\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_every_default_read_fits.py:337 drives crew view=findings on a populated store into reckon/mcp_views.py:3839, the one view the reviewed node's per-view contract could not measure before this commit.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/head_gate.log records `5 failed, 52 passed ... EXIT=1` at 659cad2c and logs/base_gate.log `10 failed, 47 passed ... EXIT=1` at 40c0ab154, an added-failure delta of zero, but the reviewed manifest carries no baseline_suite or after_suite line so the pair was read from the logs it names rather than from the manifest.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained commit changes only tests/test_every_default_read_fits.py, which is inside the manifest's declared write paths, and carries no production change.\nSCORE durability: 18\nJUSTIFICATION durability: logs/base_gate.log shows the new test reddening at the base revision with `AssertionError: 45986 characters over 24000: paths=60 rows=60 artefacts=0 pagination=None` at tests/test_every_default_read_fits.py:353, which is exactly the unpaged findings answer the test exists to catch.\nSCORE fit: 19\nJUSTIFICATION fit: the findings_project fixture and _store_findings helper follow the file's existing big_project/_populate mount idiom with mechanism names, and no plan label appears in a symbol, path or comment.\nSCORE reuse: 19\nJUSTIFICATION reuse: _store_findings writes through the existing reckon/crew/review_records.py:162 store_committed_review rather than hand-writing the committed tree, and no owner of a shared mount-a-project fixture exists in tests/ for the file to extend.\nFINDING tests/test_every_default_read_fits.py:348 follow-on: `assert stored == FINDING_PATHS * FINDING_REVIEWS` compares _store_findings' return against the very constants the test passed into it, so it validates the fixture rather than the paging under test and cannot redden on a regression in reckon/mcp_views.py:_paged_findings; the guards that do fire on that regression are the size and pagination assertions at :352-:392.\nFINDING logs/negative_control.log:1 follow-on: the negative control the reviewed manifest records mutates only the roadmap view=detail paging path, so the crew view=findings branch this commit exists to exercise has no mutation-based red proof of its own; the base arm at 40c0ab154 falsifies it only by removing every view's paging at once.\n",
+  "review_run_id": "r-20261021T234244144697-review-of-every-default-read-fits-659cad2cdfc5",
+  "reviewed_base_sha": "f92511be59c60ef500d7f7d5f118bbd6d7b10b8e",
+  "reviewed_delta": "the commits the reviewed run gained since its previous review (r-20261021T221804106402, whose record is stored at .at-f92511be59c60ef500d7f7d5f118bbd6d7b10b8e): f92511be59c60ef500d7f7d5f118bbd6d7b10b8e..659cad2cdfc57cbba5ee44840ad2e5a974dbb37f, one commit, tests/test_every_default_read_fits.py only",
+  "reviewed_head_sha": "659cad2cdfc57cbba5ee44840ad2e5a974dbb37f",
+  "reviewed_run_id": "r-20261021T195617510887-every-default-read-fits",
+  "reviewer": "review-of-every-default-read-fits-659cad2cdfc5",
+  "reviewer_run_id": "r-20261021T234244144697-review-of-every-default-read-fits-659cad2cdfc5",
+  "revision_note": "reviewed_base_sha is the parent of the gained commit (the head the previous review recorded, f92511be59c60ef500d7f7d5f118bbd6d7b10b8e); reviewed_head_sha is 659cad2cdfc57cbba5ee44840ad2e5a974dbb37f. The node's full base 40c0ab154f8dbeefa307bb90f991fc7651533c8f is the revision the reviewed run's base gate arm measured.",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T23:56:17.793511+00:00",
+  "total": 110,
+  "verdicts": {
+    "diff": "read 659cad2cd against its parent f92511be5: one file, tests/test_every_default_read_fits.py, 154 insertions and 1 deletion; it adds module-level VIEW_BUDGETS/view_budget shims read through reckon.mcp_budget, a findings_project fixture, the _store_findings helper and the new test, and changes nothing under reckon/.",
+    "done_when": "the done_when names tests/test_every_default_read_fits.py holding every view of every read tool to its row against a 60-plan/400-section fixture with a base arm where roadmap view=detail returns response_over_budget; logs/head_gate.log records `5 failed, 52 passed in 820.45s` EXIT=1 at 659cad2c and logs/base_gate.log `10 failed, 47 passed in 464.73s` EXIT=1 at 40c0ab154, and base_gate.log carries the new test reddening at `45986 characters over 24000 ... pagination=None`.",
+    "goal": "the reviewed node's goal is to hold every default MCP read to a per-view size contract by paging the views that serialise whole records; the gained commit 659cad2cd touches only tests/test_every_default_read_fits.py, adding test_crew_findings_answers_one_page_and_carries_the_next so the crew findings paging at reckon/mcp_views.py:3839 is exercised against a populated store.",
+    "manifest": "read manifest.md at head 659cad2c: status complete, commits 696bebeab, 659ccd821, f92511be5, 659cad2cd, naming logs/head_gate.log and logs/base_gate.log among its test_logs, and carrying neither baseline_suite nor after_suite, so the added-failure delta was derived from the two gate logs it names.",
+    "write_paths": "the declared write paths are reckon/mcp_budget.py, reckon/mcp_views.py, reckon/crew/query.py, tests/test_every_default_read_fits.py, tests/test_mcp_response_budget.py, docs/evidence/fragments/the-mcp-answers-the-question-asked/every-default-read-fits.html and docs/figures/the-mcp-answers-the-question-asked/every-default-read-fits; the gained commit changes tests/test_every_default_read_fits.py (154 insertions, 1 deletion) and nothing else, inside that list."
+  }
+}
