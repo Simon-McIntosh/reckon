@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="It reuses the lift broadcast a-window-paces-the-lane built and the pane rows the-monitor-shows-the-work-it-watches draws, but no live plan waits on it and its first section waits on neither.">
-  <meta name="plan-section-depends-on" content="{&quot;s2&quot;:[&quot;a-limit-reset-reaches-every-session#s1&quot;],&quot;s3&quot;:[&quot;a-limit-reset-reaches-every-session#s2&quot;],&quot;s4&quot;:[&quot;a-limit-reset-reaches-every-session#s3&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s2&quot;:[&quot;a-limit-reset-reaches-every-session#s1&quot;],&quot;s3&quot;:[&quot;a-limit-reset-reaches-every-session#s1&quot;],&quot;s4&quot;:[&quot;a-limit-reset-reaches-every-session#s2&quot;,&quot;a-limit-reset-reaches-every-session#s3&quot;,&quot;a-limit-reset-reaches-every-session#s5&quot;],&quot;s5&quot;:[&quot;a-limit-reset-reaches-every-session#s1&quot;],&quot;s6&quot;:[&quot;a-limit-reset-reaches-every-session#s3&quot;,&quot;a-limit-reset-reaches-every-session#s5&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <title>A Limit Reset Reaches Every Session | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="13">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -63,7 +63,7 @@
 
     <h2 id="s2">§2 — Every pane draws a limit reset once</h2>
 <section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> A producer sweep, a sibling of <code>lift_watch.sweep</code> in a new module <code>reckon/crew/limit_reset_watch.py</code>, is called from the same point of the producer poll as <code>_sweep_lift_rows</code> in <code>reckon/crew/recovery_watch.py</code>, under the same guard that only the project's registered producer writes the stream. For every record whose <code>reset_at</code> has passed and which it has not yet announced, it appends one row built through <code>recovery_watch._watch_transition</code> as a lift row is, with:</p>
+    <p><strong>Deliverable.</strong> A producer sweep, a sibling of <code>lift_watch.sweep</code> in a new module <code>reckon/crew/limit_reset_watch.py</code>, runs on every producer poll, beside <code>_sweep_lift_rows</code> in <code>reckon/crew/recovery_watch.py</code> and under the same guard that only the project's registered producer writes the stream. It does not sit inside the document-change gate that call runs under (<code>if sweep:</code>). A reset announced with a future <code>--at</code> becomes due on the clock, not on a write, so a sweep that runs only when the document changes would never announce it. The sweep therefore keeps the pending resets' due instants in memory, rereads the document only when it changes, and on every poll appends the row for any reset whose instant has passed. For every record whose <code>reset_at</code> has passed and which it has not yet announced, it appends one row built through <code>recovery_watch._watch_transition</code> as a lift row is, with:</p>
     <ul>
       <li>state <code>limit-reset</code>;</li>
       <li>the session field empty for a global reset and naming the session for a scoped one, so the existing selection decides which panes see it;</li>
@@ -78,19 +78,14 @@
       <li>session B's pane draws it exactly once;</li>
       <li>a producer armed two hours after the reset appends no row for it;</li>
       <li>a reset scoped to session B reaches B's pane and not A's;</li>
-      <li>a reset whose <code>reset_at</code> is still ahead appends no row until it passes.</li>
+      <li>a reset whose <code>reset_at</code> is still ahead appends no row until it passes, and then appends it on the first poll after it passes with the document unchanged in between.</li>
     </ul>
-    <p>The negative control removes the claim from the new branch, and session A's pane then draws the line twice. The test files importing <code>reckon/crew/ticker.py</code>, <code>reckon/crew/lift_watch.py</code> or <code>reckon/crew/recovery_watch.py</code>, plus the new file, add no failure against a base arm on the same terms as §1. <code>tests/test_every_module_fits_a_worker_window.py</code> passes at head. Write paths: <code>reckon/crew/limit_reset_watch.py</code> (new), <code>reckon/crew/recovery_watch.py</code>, <code>reckon/crew/ticker.py</code> and the new test.</p>
+    <p>The negative control removes the claim from the new branch, and session A's pane then draws the line twice. A second control runs the reset sweep only when the document changes, and the scheduled reset is then never announced. The test files importing <code>reckon/crew/ticker.py</code>, <code>reckon/crew/lift_watch.py</code> or <code>reckon/crew/recovery_watch.py</code>, plus the new file, add no failure against a base arm on the same terms as §1. <code>tests/test_every_module_fits_a_worker_window.py</code> passes at head. Write paths: <code>reckon/crew/limit_reset_watch.py</code> (new), <code>reckon/crew/recovery_watch.py</code>, <code>reckon/crew/ticker.py</code> and the new test.</p>
 
-    <h2 id="s3">§3 — A session acts on a reset, and one without a pane is named</h2>
+    <h2 id="s3">§3 — A session without a pane learns of a reset on its next prompt</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> Two things in reckon, then one instruction that the coordinator writes once they are on main.</p>
-    <ul>
-      <li>The coordinator obligations hook, <code>reckon/hooks/coordinator_obligations.py</code>, names a global reset whose <code>reset_at</code> lies within the last 60 minutes, in the context it already adds to each prompt. That is the horizon a re-armed producer uses, and the rule needs no memory of what the hook showed before. A session whose follower is down still learns of the reset on its next prompt. A session prompted twice inside the hour reads the line twice, which costs one line of context and no new state.</li>
-      <li><code>reckon crew budget --announce-reset</code> reports its reach. It lists the sessions holding a live follower registration, whose panes will draw the row, and those that hold none. The announcer then needs to message only the second list.</li>
-      <li>After both land, the coordinator adds this paragraph to <code>~/Code/dotfiles/agents/AGENTS.md</code>, in its own commit in that repository: <em>"A reckon monitor row reading <code>usage limit reset</code> means the account's usage limit has reset. Resume the work you stopped at the limit: read the obligations view and continue, including dispatching. When the lead tells you limits have reset, announce it once with <code>reckon crew budget --announce-reset --reason "&lt;what the lead said&gt;"</code> and message only the sessions it lists as having no pane. Never message every session one by one."</em></li>
-    </ul>
-    <p><strong>Done when</strong> a test in a temporary home finds the hook's added context naming a global reset 20 minutes old, and not naming one 90 minutes old nor a reset scoped to another session. A second test finds the announcement's reach report listing one session with a live follower registration and one without. The negative control drops the 60-minute horizon, and the hook then names the 90-minute-old reset too. The tests importing <code>reckon/hooks/coordinator_obligations.py</code> add no failure against a base arm on the same terms as §1. The coordinator's AGENTS.md commit is named in the landing record. Write paths: <code>reckon/hooks/coordinator_obligations.py</code>, <code>reckon/crew/limit_reset.py</code> and the new tests.</p>
+    <p><strong>Deliverable.</strong> The coordinator obligations hook, <code>reckon/hooks/coordinator_obligations.py</code>, names a global reset whose <code>reset_at</code> lies within the last 60 minutes, in the context it already adds to each prompt. That is the horizon a re-armed producer uses, and the rule needs no memory of what the hook showed before. A session whose follower is down still learns of the reset on its next prompt. A session prompted twice inside the hour reads the line twice, which costs one line of context and no new state.</p>
+    <p><strong>Done when</strong> a test in a temporary home finds the hook's added context naming a global reset 20 minutes old, and not naming one 90 minutes old nor a reset scoped to another session. The negative control drops the 60-minute horizon, and the hook then names the 90-minute-old reset too. The tests importing <code>reckon/hooks/coordinator_obligations.py</code> add no failure against a base arm on the same terms as §1. Write paths: <code>reckon/hooks/coordinator_obligations.py</code> and the new test.</p>
 
     <h2 id="s4">§4 — The broadcast is shown working on this workstation</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
@@ -99,7 +94,15 @@
       <li><strong>Rehearsal.</strong> The coordinator announces a reset scoped to its own session, with the reason <code>rehearsal of the limit-reset broadcast; no reset happened</code>. It records three things: the notification that reached its own session, with its time; the row each project's producer appended; and the single claim under the pane's claim directory. It also records that no other session's pane drew the row.</li>
       <li><strong>First real use (followup).</strong> At the lead's next early reset the announcement is global, and the record lists the claim directory, which shows one claim per pane, and the command's reach report naming any session without a pane that was messaged by hand.</li>
     </ul>
-    <p><strong>Done when</strong> the landing record holds the rehearsal's notification text with its timestamp, the stream row from every project's producer, exactly one claim for the pane, and no claim from another session for the rehearsal id. The coordinator runs this section, because it is the announcing session.</p>
+    <p><strong>Done when</strong> the landing record holds the claim directory listed just before the announcement, showing no claim for the rehearsal id, and then the rehearsal's notification text with its timestamp, the stream row from every project's producer, exactly one claim for the pane, and no claim from another session for the rehearsal id. The listing before the announcement is the control: a claim present then would mean the count measured something other than this announcement. The coordinator runs this section, because it is the announcing session.</p>
+
+    <h2 id="s5">§5 — An announcement names the sessions it cannot reach</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Deliverable.</strong> <code>reckon crew budget --announce-reset</code> reports its reach. It lists the sessions holding a live follower registration, whose panes will draw the row, and those that hold none, so the announcer messages only the second list. The registrations are the ones the follower already writes and the obligations hook already reads. The report is part of the command's output and of its JSON document, and writes nothing.</p><p><strong>Done when</strong> a test in a temporary home with one session holding a live follower registration and one holding a stale one finds the report listing the first as reached and the second as not. The negative control treats every registration as live, and the second session is then listed as reached. The tests that exercise <code>crew budget</code> add no failure against a base arm on the same terms as §1. Write paths: <code>reckon/crew/limit_reset.py</code>, <code>reckon/crew_run_commands.py</code> and the new test.</p>
+
+    <h2 id="s6">§6 — Every session is told what a reset row means</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Deliverable.</strong> Once §3 and §5 are on main, the coordinator adds this paragraph to <code>~/Code/dotfiles/agents/AGENTS.md</code>, in its own commit in that repository: <em>"A reckon monitor row reading <code>usage limit reset</code> means the account's usage limit has reset. Resume the work you stopped at the limit: read the obligations view and continue, including dispatching. When the lead tells you limits have reset, announce it once with <code>reckon crew budget --announce-reset --reason "&lt;what the lead said&gt;"</code> and message only the sessions it lists as having no pane. Never message every session one by one."</em></p><p><strong>Done when</strong> the paragraph is on the dotfiles primary branch, the commit is named in this plan's landing record, and every command and row word it names exists on reckon's main. The coordinator does this section, because the instruction governs every session and names commands only the earlier sections create.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -114,7 +117,7 @@
     <pre class="r-fu-prompt">/reckon-build a-limit-reset-reaches-every-session §2</pre>
     </article>
 <article class="r-fu" data-id="f-alrres-003" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-21" data-recommends-skill="/reckon-build a-limit-reset-reaches-every-session §3" data-resolved-at="" data-resolved-by="">
-    <h4 class="r-fu-title">Build §3: a session acts on a reset, and one without a pane is named</h4>
+    <h4 class="r-fu-title">Build §3: a session without a pane learns of a reset on its next prompt</h4>
     <div class="r-fu-body"><p>The obligations hook line, the reach report, and then the global instruction.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-limit-reset-reaches-every-session §3</pre>
     </article>
@@ -127,6 +130,16 @@
     <h4 class="r-fu-title">Record the first real limit-reset announcement</h4>
     <div class="r-fu-body"><p>At the lead's next early reset, announce it globally with <code>reckon crew budget --announce-reset</code> and record the claim directory and the reach report in the landing record under §4.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-limit-reset-reaches-every-session §4</pre>
+    </article>
+<article class="r-fu" data-id="f-alrres-006" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-21" data-recommends-skill="/reckon-build a-limit-reset-reaches-every-session §5" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §5: an announcement names the sessions it cannot reach</h4>
+    <div class="r-fu-body"><p>The reach report on <code>crew budget --announce-reset</code>, after §1.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-limit-reset-reaches-every-session §5</pre>
+    </article>
+<article class="r-fu" data-id="f-alrres-007" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-21" data-recommends-skill="/reckon-build a-limit-reset-reaches-every-session §6" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Write §6: the global instruction for a reset row</h4>
+    <div class="r-fu-body"><p>The coordinator's AGENTS.md paragraph, once §3 and §5 are on main.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-limit-reset-reaches-every-session §6</pre>
     </article>
 </section>
   </main>
