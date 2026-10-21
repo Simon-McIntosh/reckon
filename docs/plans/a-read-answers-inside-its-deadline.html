@@ -26,7 +26,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="355">
+<meta name="plan-version" content="356">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -1128,6 +1128,9 @@
 </div>
 <div class="r-comment" data-section="s43" data-id="c-run-r-20261019T115441866930-a-derivation-builds-the-ledger-index-once" data-who="reckon-build" data-when="2026-10-19T12:47:12.057Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/a-read-answers-inside-its-deadline/a-derivation-builds-the-ledger-index-once.html</p></div>
+</div>
+<div class="r-comment" data-section="s45" data-id="c-s45-runs-view" data-who="reckon-build" data-when="2026-10-21T06:05:00Z">
+    <div class="r-comment-body"><p>A second reader with the same cost, reported by another session. At about 08:00 CEST, <code>crew(view="runs", project="reckon", session=…, limit=10)</code> returned <code>storage-slow</code> with cause <code>computing</code>: 25.2 s of CPU in a 30 s wait, at code stamp <code>f10cf42fa</code>.</p><p>The view reaches the decode through <code>crew/query.runs_view</code> → <code>ledger.runs</code> → <code>read_records</code> → <code>load</code>, so the reuse §45 places inside <code>ledger.load</code> covers it too. The node also times a warm <code>runs</code> view at base and at head.</p></div>
 </div>
 </section>
 </main>
