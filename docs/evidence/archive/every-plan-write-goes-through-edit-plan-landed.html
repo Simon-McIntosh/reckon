@@ -120,6 +120,11 @@ each driven through <code>edit_plan</code> on a temporary project in <code>tests
 <p>The landing waives a review of the final head. The only commits after the reviewed one change the test file and this evidence fragment, with no product source.</p>
   </section>
 
+  <section id="s14">
+    <h2>§14 — The served child and the moved runs view keep their tests green</h2>
+    <p>Run <code>r-20261021T115612658719-the-served-child-and-the-moved-runs-view-keep-their-tests-green</code>, commits <code>96f154a29</code>, <code>160b75b25</code>, <code>15d062774</code> and <code>554731bff</code>, landed at <code>a3ddac58a</code>. <code>tests/test_mcp_crew_runs_run_id.py</code> now patches <code>reckon.crew.query.runs_view</code>, the name <code>mcp._crew</code> reaches through <code>serve_crew_view</code>. <code>CurrentCodeServer</code>'s injected spawner is stored as <code>_spawn_child</code>, so the fleet-gate census no longer matches it as a worker <code>_spawn</code>, and the census needs no exemption. <code>tests/test_the_served_child_is_not_a_worker_launch.py</code> pins the served child's argv shape and rejects every command a crew launch plan builds.</p><p>Both previously red ids pass at head: <code>test_run_id_reaches_runs_view</code> and <code>test_launch_callers_reach_the_shared_gate</code>. The base arm had 4 failures and the head arm 2, both already red at base, so no failure is added. The negative control, which restores <code>_spawn</code>, makes the census name <code>('reckon/served_code.py', '_child_for')</code> again. Reviews scored 112/120, then 116/120 after the repair reflex tightened the argv test. Their follow-ons are exempted.</p>
+  </section>
+
 </main>
 </body>
 </html>
