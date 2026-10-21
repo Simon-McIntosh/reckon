@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-landing-reads-binary-files-landed">
+  <meta name="plan-title" content="A Landing Reads Binary Files — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Landing Reads Binary Files: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-landing-reads-binary-files">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Landing Reads Binary Files — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Landing Reads Binary Files — landed record</h1>
+  <p>Closure synthesis for A Landing Reads Binary Files: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s1">
+    <h2>§1 — The landing marker check reads a blob as bytes</h2>
+    <p>Run <code>r-20261021T163149902891-the-landing-marker-check-reads-a-blob-as-bytes</code>, commits <code>45f5c6e4c</code> (the fix), <code>8aac40ee3</code> (refusal wording and the marker-check case), and <code>d1a6ba547</code> and <code>6feca8b6f</code> (evidence), landed at <code>f60e79e2d</code>. <code>merge.land</code> now judges each changed path by blob identity first. It reads content only where the merged blob differs from the head's, so a head adding a binary file lands, and the <code>survived</code> report names it as <code>blob_identity</code>. A candidate that drops or alters the binary file is refused, naming the path. A candidate whose text file lost the line the change introduced is refused by the marker comparison. <code>_write_origin_and_checkout</code> and <code>_complete_land</code> moved into <code>tests/helpers/landing_repository.py</code>, and <code>tests/test_one_call_lands_a_run.py</code> imports them from there.</p><p>At base the four new tests fail on the same <code>UnicodeDecodeError</code> that crashed <code>crew complete --land</code>. At head the gate passes 49 tests with exit 0. The negative control routes the read through the text call again, and the four tests fail. Reviews scored 99/120, then 111/120 after one repair round. One duplicated blob lookup is exempted, because a shared owner needs a third module (<code>promotion_scope</code> imports <code>merge</code>). Two follow-ons on residual wording and on a docs-only revision offset are also exempted.</p>
+  </section>
+
+</main>
+</body>
+</html>
