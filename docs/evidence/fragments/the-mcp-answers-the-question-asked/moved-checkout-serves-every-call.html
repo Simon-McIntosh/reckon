@@ -67,18 +67,18 @@
   </p>
 
   <p id="moved-checkout-serves-every-call-delta">
-    <strong>The gate's delta, stated plainly.</strong> The gate reports two
-    failures at this head against one at the base, and the difference is one
-    case rather than the new file's seven: the guard's own cases all pass. The
-    added failure is
-    <code>test_a_slow_child_never_forces_a_reconnect.py::test_a_version_conflict_survives_an_unanswered_child</code>,
-    a file outside this node's write scope, and it passes at the base (measured
-    against the base tree: 8 passed). That case writes to a child which answers
-    its probe and then never answers the call, and it expects the running
-    image's <code>version_conflict</code>; routing a write on its first call is
-    exactly what removes that expectation, and the answer a write gets when the
-    child did not answer it is <code>write_may_have_landed</code> with the read
-    that settles it. Which of the two the caller should get is the case's owner
-    to decide, so the failure is reported rather than repaired here.
+    <strong>The gate's delta, stated plainly.</strong> The gate reports one
+    failure at this head, against five at the base, so no failure is added: the
+    guard's own seven cases pass, and the slow-child case the write routing
+    moved passes with them.
+    <code>test_a_slow_child_never_forces_a_reconnect.py::test_an_unanswered_write_says_it_may_have_landed</code>
+    is the case the routing changed: it wrote to a child that answers its probe
+    and then never answers the call, and it asserted the running image's
+    <code>version_conflict</code> — an answer the image no longer gives, because
+    it never ran the write either. It now asserts what such a write gets, that
+    it may have landed with the read that settles it and both code stamps, while
+    keeping its refusal to see a reconnect on a slow child and asserting the
+    image stayed untouched. The remaining failure is the pre-existing one named
+    above, which fails on the base tree too and is not this node's.
   </p>
 </section>
