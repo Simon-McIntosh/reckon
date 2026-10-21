@@ -22,6 +22,7 @@ the reserve out of the pool, which the pool case must fail.
 from __future__ import annotations
 
 import json
+import time
 from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -45,11 +46,11 @@ WEEK_HOURS = PERIOD_MINUTES / 60.0
 CAP = 10_000.0
 BALANCE_AT_GRANT = 60_559.94
 
-#: The namespace every run id this file mints is filed under. The real-home
-#: guard searches for the identifiers this test alone writes, and neither the
-#: project name nor a plain word like "pool" would do: a peer's live pointer
-#: carries the project name in every record, and a fixture word turns up in
-#: the goals of unrelated nodes, so either would report a peer's write.
+#: The namespace every run id this file mints is filed under. The needle arm of
+#: the real-home guard searches for the identifiers this file alone writes, and
+#: neither the project name nor a plain word like "pool" would do: a peer's live
+#: pointer carries the project name in every record, and a fixture word turns up
+#: in the goals of unrelated nodes, so either would report a peer's write.
 FIXTURE_TAG = "burnfixture"
 
 #: Every run id this file minted since the case began.
@@ -79,17 +80,136 @@ def _config() -> dict[str, Any]:
     }
 
 
+def _live_pointer_entries(home: Path) -> set[str]:
+    """The names filed in a crew home's live-pointer directory."""
+
+    try:
+        return {entry.name for entry in (home / "crew" / "live").iterdir()}
+    except OSError:
+        return set()
+
+
+def _named_run_id(pointer: Path, attempts: int = 4) -> str | None:
+    """The run id a live pointer names, or nothing where it names none.
+
+    A crew pointer is written whole and records the run it belongs to. A file
+    that reads here as unparseable is either not a pointer at all or is being
+    written at this instant, so it is read a few times before it is judged: a
+    peer's dispatch writes into this directory continuously, and a torn read of
+    one must not read as a trace of this case.
+    """
+
+    for attempt in range(attempts):
+        try:
+            record = json.loads(pointer.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            if attempt + 1 < attempts:
+                time.sleep(0.05)
+                continue
+            return None
+        run_id = record.get("run_id") if isinstance(record, Mapping) else None
+        return run_id if isinstance(run_id, str) and run_id else None
+    return None
+
+
+def _writes_into_the_live_home(
+    home: Path, before: set[str], minted: tuple[str, ...]
+) -> list[str]:
+    """What a case wrote into a shared crew home, or nothing.
+
+    Two arms, and neither alone is enough. The needle search looks for the
+    identifiers this case mints, which is exact but passes vacuously over a
+    case that mints none. The listing arm reads the live-pointer directory
+    against an earlier reading, so it catches a write whatever the write
+    named. Being a shared directory, it needs one thing more: a pointer that
+    appeared while the case ran and names a run this case did not mint belongs
+    to a peer's dispatch, which is the ordinary traffic of that directory
+    rather than a trace of this case. What no peer produces is a file there
+    naming no run at all, since a pointer is written by the code that owns the
+    run it describes; that is what the listing arm reports.
+    """
+
+    appeared = sorted(_live_pointer_entries(home) - before)
+    live = home / "crew" / "live"
+    return [
+        *(
+            f"a file naming no run of its own appeared in the live-pointer directory: {name}"
+            for name in appeared
+            if _named_run_id(live / name) is None
+        ),
+        *traces_naming(home, ("crew/live",), minted),
+    ]
+
+
 @pytest.fixture(autouse=True)
 def _isolated_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Isolate the crew home, and assert the real one is left untouched."""
 
     home = Path.home() / ".config" / "reckon"
     _MINTED.clear()
+    before = _live_pointer_entries(home)
     monkeypatch.setenv("RECKON_HOME", str(tmp_path))
     monkeypatch.delenv(bl.RUN_ID_ENV, raising=False)
     yield
-    traces = traces_naming(home, ("crew/live",), tuple(_MINTED))
-    assert not traces, f"a test wrote the live crew home: {traces}"
+    leaked = _writes_into_the_live_home(home, before, tuple(_MINTED))
+    assert not leaked, f"a test wrote the live crew home: {leaked}"
+
+
+def test_the_home_guard_reports_a_file_that_appears_beneath_it(tmp_path: Path):
+    """The guard fails on a file appearing in the live-pointer directory.
+
+    The real crew home is shared with every peer session, so the control paints
+    nothing into it: it stands a temporary home up and drives the same helpers
+    the guard runs, which is the path that has to fail. Three readings, so
+    neither a helper that always reported a leak nor one that reported nothing
+    could pass: a clean directory reports nothing, a file naming no run at all
+    is reported, and a peer's own well-formed pointer is not.
+    """
+
+    home = tmp_path / "shared-home"
+    live = home / "crew" / "live"
+    live.mkdir(parents=True)
+    before = _live_pointer_entries(home)
+    assert _writes_into_the_live_home(home, before, ()) == []
+
+    (live / "burnfixture-leak.json").write_text("{}", encoding="utf-8")
+    leaked = _writes_into_the_live_home(home, before, ())
+    assert leaked, "a file appearing in the live-pointer directory was not reported"
+    assert "burnfixture-leak.json" in leaked[0]
+
+    (live / "burnfixture-leak.json").unlink()
+    (live / "a-peers-run.json").write_text(
+        json.dumps({"run_id": "a-run-this-case-never-minted", "project": PROJECT}),
+        encoding="utf-8",
+    )
+    assert _writes_into_the_live_home(home, before, ()) == [], (
+        "a peer's own live pointer was read as this case's write"
+    )
+
+
+def test_the_home_needle_arm_reports_a_pointer_filed_under_a_minted_run_id(
+    tmp_path: Path,
+):
+    """A well-formed pointer carrying a minted id is still this case's write.
+
+    The listing arm leaves a pointer that names a run alone, because a peer's
+    dispatch writes exactly that shape. The needle arm closes the gap: a
+    pointer filed under an identifier this case minted is reported however
+    well-formed it is.
+    """
+
+    home = tmp_path / "shared-home"
+    live = home / "crew" / "live"
+    live.mkdir(parents=True)
+    before = _live_pointer_entries(home)
+    minted = f"{FIXTURE_TAG}-leaked"
+    (live / f"{minted}.json").write_text(
+        json.dumps({"run_id": minted, "project": PROJECT}), encoding="utf-8"
+    )
+
+    leaked = _writes_into_the_live_home(home, before, (minted,))
+    assert leaked, "a pointer filed under a minted run id was not reported"
+    assert minted in leaked[0]
 
 
 def _record(

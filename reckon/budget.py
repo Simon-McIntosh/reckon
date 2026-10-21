@@ -806,35 +806,25 @@ BURN_MIN_SPAN_MINUTES = 30.0
 #: ``routing.budget_period_hours``.
 DEFAULT_BUDGET_PERIOD_HOURS = 6.0
 
-#: The named metered windows a published headroom document keys its figures by,
-#: against the window length a recorded block reports. A dialect that names the
-#: period it measured and one that reports only the position it was furthest
-#: through must resolve to the same window, or a rate measured on one window
-#: would be quoted beside a remainder measured on another.
-NAMED_WINDOW_MINUTES = {300: "five_hour", 10_080: "seven_day"}
 
-
-def _window_key(
-    block: Mapping[str, Any], fallback_minutes: float | None = None
-) -> str | None:
+def _window_key(block: Mapping[str, Any]) -> str | None:
     """The metered window one recorded block's utilisation belongs to.
 
     A recorded block's utilisation is the binding window -- whichever window it
     reported was furthest through when the probe answered -- so the block's own
     tags name it. A dialect that names the period says it, and one that reports
-    only the position names the length instead, which is mapped to the name the
-    published document uses for the same window. A length outside the named set
-    keeps its own key rather than borrowing a name it does not measure.
+    only the position names the length instead, which resolves through
+    ``WINDOW_MINUTES_CLOCK`` to the name the published headroom document keys
+    the same window by. A length outside that map keeps its own key rather than
+    borrowing a name it does not measure.
     """
     named = block.get("rate_limit_type")
-    if isinstance(named, str) and named in NAMED_WINDOW_MINUTES.values():
+    if isinstance(named, str) and named in WINDOW_MINUTES_CLOCK.values():
         return named
     minutes = _numeric(block.get("rate_limit_period_minutes"))
     if minutes is None:
-        minutes = fallback_minutes
-    if minutes is None:
         return None
-    return NAMED_WINDOW_MINUTES.get(int(minutes), f"{int(minutes)}m")
+    return WINDOW_MINUTES_CLOCK.get(int(minutes), f"{int(minutes)}m")
 
 
 def _selected_window(points: Iterable[_BurnPoint]) -> str | None:
@@ -4072,12 +4062,15 @@ def pace_row(
     return row
 
 
-# The window lengths a lane receipt names, mapped to the clock a group's pace
-# reads. A receipt identifies its windows by length in minutes rather than by
-# name, so this map is what lets a recorded receipt and a stream-carried event
-# speak one vocabulary. A length the map does not name is skipped rather than
-# guessed onto a clock: a window nobody can name is not a reading this reader
-# may place.
+# The window lengths a lane names, mapped to the clock a group's pace reads and
+# to the name a published headroom document keys the same window by. Receipts
+# and recorded budget blocks identify their windows by length in minutes rather
+# than by name, so this is the one table that lets a recorded receipt, a
+# stream-carried event and a published figure speak one vocabulary; a caller
+# that needs a window's name resolves it here rather than keeping a second map
+# that can drift from this one. A length the map does not name is skipped rather
+# than guessed onto a clock: a window nobody can name is not a reading this
+# reader may place.
 WINDOW_MINUTES_CLOCK = {300: CLOCK_FIVE_HOUR, 10080: CLOCK_SEVEN_DAY}
 
 
