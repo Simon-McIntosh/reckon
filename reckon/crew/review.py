@@ -627,13 +627,20 @@ def review_record_refusals(record: Mapping[str, Any]) -> list[str]:
     refusals = [
         f"missing {key}" for key in required if not str(record.get(key) or "").strip()
     ]
-    scores = record.get("scores")
-    if not isinstance(scores, Mapping):
-        refusals.append("missing scores")
-    elif record.get("status") == "parsed":
-        refusals.extend(
-            f"missing scores.{key}" for key in REVIEW_DIMENSIONS if key not in scores
-        )
+    # A figure-rubric record is not scored on the six text dimensions, so it
+    # needs neither a ``scores`` mapping nor the dimensions inside one. Its
+    # reviewer records a verdict per rubric item instead, so the absence of the
+    # text scores is the rubric, not an omission.
+    if _review_record_rubric(record) != FIGURE_REVIEW_RUBRIC:
+        scores = record.get("scores")
+        if not isinstance(scores, Mapping):
+            refusals.append("missing scores")
+        elif record.get("status") == "parsed":
+            refusals.extend(
+                f"missing scores.{key}"
+                for key in REVIEW_DIMENSIONS
+                if key not in scores
+            )
     count = record.get("added_failure_count")
     if not isinstance(count, int) or isinstance(count, bool) or count < 0:
         refusals.append("missing or invalid added_failure_count")
@@ -3063,10 +3070,14 @@ def ledger_block(record: dict[str, Any] | None) -> dict[str, Any] | None:
     ``None`` means no review was stored — the run was promoted unreviewed,
     which is not a score of zero. A stored record reduces to its status,
     per-dimension scores, absent dimensions and total, dropping the verbatim
-    text and findings that belong in the review store. A record that never
-    produced scores keeps a status other than ``"parsed"`` with empty scores,
-    so it reads unlike an absent review and unlike a parsed review whose
-    dimensions genuinely measure zero.
+    text and findings that belong in the review store. A figure-rubric record
+    is not scored on the six text dimensions, so it reduces to status
+    ``"parsed"`` with empty scores and a ``None`` total: it is the one parsed
+    record that carries no text scores, and a reader tells it from an unscored
+    text record by its rubric. Any other record that never produced scores
+    keeps a status other than ``"parsed"`` with empty scores, so it reads
+    unlike an absent review and unlike a parsed review whose dimensions
+    genuinely measure zero.
 
     A record that names the revision it read carries the canonical
     ``reviewed_base_sha``/``reviewed_head_sha`` pair onto the block, resolved
@@ -3087,7 +3098,9 @@ def ledger_block(record: dict[str, Any] | None) -> dict[str, Any] | None:
     scores: dict[str, int] = {}
     if isinstance(score_values, Mapping):
         scores = {
-            str(dimension): int(value) for dimension, value in score_values.items()
+            str(dimension): int(value)
+            for dimension, value in score_values.items()
+            if isinstance(value, int) and not isinstance(value, bool)
         }
     total = record.get("total")
     block: dict[str, Any] = {
