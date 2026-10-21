@@ -1429,7 +1429,12 @@ def _lift_section_edges(
         )
         local_graph[waiting_node].append(target_node)
         dependents[target_node].add(waiting_node)
-        dependents[target_slug].add(waiting_slug)
+        if target_slug != waiting_slug:
+            # One plan's own section may wait on another of its sections. That
+            # edge sequences work inside the plan, and it must not report the
+            # plan as an unlock of itself, where the field asks which other
+            # plan's work this one releases.
+            dependents[target_slug].add(waiting_slug)
         edge_meta[(waiting_node, target_node)] = {
             "ref": str(row.get("ref") or target_node),
             "section": target_section,
