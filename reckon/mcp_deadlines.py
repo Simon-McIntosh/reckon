@@ -21,6 +21,7 @@ from reckon._store import (
 )
 from reckon.crew.runs import CrewError
 from reckon.crew.runs import read_pointer as read_run_pointer
+from reckon.lifecycle import TERMINAL_STATUSES
 from reckon.mcp_budget import bound_response
 from reckon.resources import (
     canonical_type,
@@ -614,6 +615,29 @@ def _review_owed_fields(
     return {"review_owed": owed, "review_invocation": invocation}
 
 
+def _plan_status(
+    project: str, slug: str, checkout_path: str | None = None
+) -> str | None:
+    """The persisted status of a plan, or ``None`` when it cannot be read.
+
+    The plan's own HTML is the sole store, so its status is read from the
+    resolved file rather than from any derived surface. ``None`` distinguishes
+    a plan whose status could not be read from one that reads an empty status,
+    so a caller can reserve a status-dependent branch for a plan whose status
+    it actually has.
+    """
+    from reckon import _plan_html
+
+    try:
+        path = _resolve_html_file(project, slug, checkout_path, "plan")
+        if path is None:
+            return None
+        data = _plan_html.read_state(path.read_text(encoding="utf-8", errors="replace"))
+    except Exception:  # noqa: BLE001 — an unreadable status is answered by the roadmap below
+        return None
+    return str(data.get("status") or "").strip().lower() or None
+
+
 def _plan_readiness_fields(
     project: str, slug: str, checkout_path: str | None = None
 ) -> dict[str, Any]:
@@ -628,17 +652,29 @@ def _plan_readiness_fields(
     close op together, so the coordinator does not have to re-read the roadmap
     to learn the plan finished.
 
-    The verdict is the roadmap's rather than a second computation of the same
-    fact, so this reads the assembled roadmap the roadmap surface serves and
-    selects the row for this plan; nothing about readiness is recomputed here.
+    A plan already past its close reads ``closed`` instead, and the roadmap is
+    not consulted for it. The roadmap's ``pending_work`` carries open plans
+    only, so a terminal plan has no row there and a lookup would answer with an
+    error naming a roadmap defect where the roadmap is behaving correctly —
+    read by exactly the coordinator that has just closed the plan. Every
+    terminal status resolves to the same ``closed``, whatever spelling put the
+    plan there: nothing stands between such a plan and its close, because it is
+    already past it.
+
+    For a live plan the verdict is the roadmap's rather than a second
+    computation of the same fact, so this reads the assembled roadmap the
+    roadmap surface serves and selects the row for this plan; nothing about
+    readiness is recomputed here.
 
     A read that cannot answer is reported as unknown, not as ready:
     ``readiness`` is null and ``readiness_error`` names why (the roadmap
     declined, no row matched the plan, or the read raised). The write itself has
     already succeeded, so every failure at this one point is caught and named in
     the response rather than escaping after the write and reporting a completed
-    write as a tool error, which its author may retry into a version conflict.
+    write as a tool error, so nothing here raises out of a landed write.
     """
+    if _plan_status(project, slug, checkout_path) in TERMINAL_STATUSES:
+        return {"readiness": "closed", "closure_blockers": []}
     try:
         from reckon.mcp import _roadmap_scoped
 
