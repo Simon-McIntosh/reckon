@@ -26,6 +26,7 @@ import pytest
 
 import reckon.mcp as mcp_module
 from reckon import _plan_html
+from reckon._store_section_ops import DECLARATIONS_PATH_HEAD
 from tests.mcp_family_reload import reload_mcp_family
 
 PROJECT = "proj"
@@ -125,7 +126,7 @@ def test_landing_write_offers_the_close(setup):
 
     result = _edit(
         docs_dir,
-        [{"op": "set", "path": "section_declarations.s2", "value": "done"}],
+        [{"op": "set", "path": f"{DECLARATIONS_PATH_HEAD}.s2", "value": "done"}],
         0,
     )
     assert result["ok"] is True, result
@@ -143,7 +144,13 @@ def test_working_write_still_reads_ready(setup):
 
     result = _edit(
         docs_dir,
-        [{"op": "set", "path": "section_declarations.s1", "value": "implementable"}],
+        [
+            {
+                "op": "set",
+                "path": f"{DECLARATIONS_PATH_HEAD}.s1",
+                "value": "implementable",
+            }
+        ],
         0,
     )
     assert result["ok"] is True, result
@@ -163,3 +170,28 @@ def test_unrelated_write_carries_no_readiness(setup):
     assert result["ok"] is True, result
     assert "readiness" not in result, result
     assert "closure_blockers" not in result, result
+
+
+def test_a_failed_read_leaves_the_write_landed(setup, monkeypatch):
+    """A roadmap read that cannot answer names why, and the write still lands."""
+    docs_dir = setup
+    path = _make_plan(docs_dir, {"s1": "done", "s2": "implementable"})
+    before = path.read_text(encoding="utf-8")
+
+    def _boom(*args, **kwargs):
+        raise RuntimeError("the roadmap walk is unavailable")
+
+    monkeypatch.setattr(mcp_module, "_roadmap_scoped", _boom)
+    result = _edit(
+        docs_dir,
+        [{"op": "set", "path": "section_declarations.s2", "value": "done"}],
+        0,
+    )
+
+    assert result["ok"] is True, result
+    assert result["readiness"] is None, result
+    assert "readiness_error" in result, result
+    assert "the roadmap walk is unavailable" in result["readiness_error"], result
+    text = path.read_text(encoding="utf-8")
+    assert text != before, "the write did not reach the plan"
+    assert _plan_html.read_state(text)["section_declarations"]["s2"] == "done"

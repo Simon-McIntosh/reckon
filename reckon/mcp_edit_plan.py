@@ -40,6 +40,7 @@ from reckon._store import (
     set_nested,
     write_plan,
 )
+from reckon._store_section_ops import DECLARATIONS_PATH_HEAD
 from reckon.capability import (
     from_legacy_tier,
     validate_capability,
@@ -1010,19 +1011,20 @@ def _attach_changed_targets(
 def _changes_section_declarations(ops: list[dict[str, Any]] | None) -> bool:
     """Whether a state-mode write moves a section's declaration.
 
-    ``section_declarations.<id>`` is the landing beat a section moves to done
-    through, and ``section_declarations`` alone replaces the whole map; either
-    is the write that can leave a plan newly finished. Any other target — a
-    section's typed fields, a decision, a status — cannot, so the readiness
-    the roadmap derives is not attached to it.
+    ``DECLARATIONS_PATH_HEAD.<id>`` is the landing beat a section moves to done
+    through, and the bare head alone replaces the whole map; either is the write
+    that can leave a plan newly finished. Any other target — a section's typed
+    fields, a decision, a status — cannot, so the readiness the roadmap derives
+    is not attached to it. The head is the store's own head constant, so a
+    rename there moves this predicate with the dispatch it keys on rather than
+    detaching the readiness fields in silence.
     """
+    head = DECLARATIONS_PATH_HEAD
     for op in ops or []:
         if not isinstance(op, dict):
             continue
         path = op.get("path")
-        if isinstance(path, str) and (
-            path == "section_declarations" or path.startswith("section_declarations.")
-        ):
+        if isinstance(path, str) and (path == head or path.startswith(f"{head}.")):
             return True
     return False
 
