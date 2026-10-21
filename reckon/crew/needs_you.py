@@ -98,8 +98,18 @@ def _created_seconds(pointer: Mapping[str, Any], *, moment: float) -> float:
     return moment if stamp is None else stamp.timestamp()
 
 
-def _snapshots(project: str, *, moment: float) -> dict[str, dict[str, Any]]:
-    """Every live pointer of the project as its own watch snapshot, by run id."""
+def _snapshots(
+    project: str, *, moment: float
+) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
+    """Every live pointer of the project: its watch snapshot, and the pointer.
+
+    The snapshot is what the fleet partition and its counters read, so it is
+    what this module hands them. The pointer is returned beside it because a
+    run joins the set with no dated transition often enough to matter — a stall
+    writes no ``blocked`` row, and a run that never streamed has no stream to
+    date it from — and the snapshot carries no creation instant, so the run's
+    own pointer is the only other clock such a row can age from.
+    """
     from reckon.crew import recovery as recovery_module
     from reckon.crew import runs as runs_module
 
@@ -107,6 +117,7 @@ def _snapshots(project: str, *, moment: float) -> dict[str, dict[str, Any]]:
         recovery_module.DEFAULT_WATCH_STALL_WINDOW
     )
     snapshots: dict[str, dict[str, Any]] = {}
+    pointers: dict[str, dict[str, Any]] = {}
     for pointer in runs_module._list_live_records(project=project):
         run_id = str(pointer.get("run_id") or "")
         if not run_id:
@@ -114,7 +125,8 @@ def _snapshots(project: str, *, moment: float) -> dict[str, dict[str, Any]]:
         snapshots[run_id] = recovery_module._watch_snapshot(
             pointer, moment=moment, stall_seconds=stall_seconds
         )
-    return snapshots
+        pointers[run_id] = dict(pointer)
+    return snapshots, pointers
 
 
 def needs_you_rows(
@@ -139,7 +151,7 @@ def needs_you_rows(
     from reckon.crew import recovery as recovery_module
 
     at = recovery_module._utc_seconds() if moment is None else float(moment)
-    snapshots = _snapshots(project, moment=at)
+    snapshots, pointers = _snapshots(project, moment=at)
     counts = recovery_module._fleet_counts(snapshots, session=session)
     own, _peers = recovery_module._partition_session_rows(snapshots.values(), session)
     blocked_states = frozenset(recovery_module.FLEET_BLOCKED_STATES)
@@ -154,13 +166,18 @@ def needs_you_rows(
             kind = "unpromoted"
         else:
             continue
+        run_id = str(snapshot.get("run_id") or "")
         stream = snapshot.get("stall_stream_path")
         entered = _state_entered_seconds(
             Path(stream) if stream else None, state, moment=at
         )
         if entered is None:
-            entered = _created_seconds(snapshot, moment=at)
-        run_id = str(snapshot.get("run_id") or "")
+            # The snapshot carries no creation instant, so the run's own pointer
+            # is the only clock left for a run that joined the set with no dated
+            # transition — a stall writes no ``blocked`` row — and no stream to
+            # date it from. Handing the snapshot here reads an absent key and
+            # ages every such row at zero.
+            entered = _created_seconds(pointers.get(run_id) or {}, moment=at)
         rows.append(
             {
                 "run_id": run_id,

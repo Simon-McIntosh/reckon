@@ -72,6 +72,7 @@ def _write_pointer(
     session: str,
     manifest_status: str | None = None,
     transitions: list[tuple[str, str]] | None = None,
+    created_at: str | None = None,
 ) -> None:
     """Write one live pointer, its stream and its manifest the way a dispatch does."""
     log = home / "logs" / f"{run_id}.jsonl"
@@ -95,7 +96,7 @@ def _write_pointer(
         "session": session,
         "node": {"id": node},
         "phase": "working",
-        "created_at": runs._utc_now(),
+        "created_at": created_at or runs._utc_now(),
         "log_path": str(log),
     }
     if manifest_status is not None:
@@ -375,6 +376,43 @@ def test_the_line_and_the_fleet_counters_agree(home):
     assert tallies["blocked"] == counts["blocked"], (rows, counts)
     assert counts["working"] == 1, (rows, counts)
     assert not any(row["node"] == "peer-block-node" for row in rows), rows
+
+
+def test_a_run_with_no_dated_transition_ages_from_its_creation(home):
+    """A run the stream never dated must still age, and lead by that age.
+
+    A stall writes no transition, and a run that has delivered then stopped has
+    no ``blocked`` row to find, so the state-age lookup comes back empty and the
+    row falls back to the run's own creation instant. Aged from the wrong field
+    every such row reads ``0m`` and sorts to the bottom of its group by node
+    name, which is precisely the row a coordinator is meant to see first.
+    """
+    _write_pointer(
+        home,
+        "r-own-recent",
+        "own-recent",
+        session=SESSION,
+        manifest_status="complete",
+        created_at=_stamp_seconds_ago(300),
+    )
+    _write_pointer(
+        home,
+        "r-own-old",
+        "own-old",
+        session=SESSION,
+        manifest_status="complete",
+        created_at=_stamp_seconds_ago(HELD_SECONDS),
+    )
+
+    rows, _counts = need_module.needs_you_rows(PROJECT, session=SESSION)
+
+    assert [row["node"] for row in rows] == ["own-old", "own-recent"], rows
+    assert rows[0]["age_seconds"] >= HELD_SECONDS - 60, rows[0]
+    assert rows[1]["age_seconds"] < 600, rows[1]
+    line = need_module.needs_you_line({"working": 0, "runs": rows})
+    first_entry = line.split(", ")[0]
+    assert first_entry.endswith("own-old 2h00m"), line
+    assert re.search(r"own-old \d+h\d{2}m", line), line
 
 
 def test_a_stored_review_marks_its_run(home):
