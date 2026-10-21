@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": null,
+  "base_log_revision": "09528bd96e0edd836392021c0707330fe9c5374b",
+  "baseline_suite_log": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-21T12:14:50.628Z",
+  "dispatched_at": "2026-10-21T11:57:08Z",
+  "findings": [
+    {
+      "blocks": false,
+      "file": "reckon/crew/domain_rules.py",
+      "line": "77",
+      "severity": "follow-on",
+      "text": "no fixture glob reaches the basename branch guarded by `if \"/\" not in pattern` at line 77 or the wildcard-free prefix branch at line 79, because every pattern in tests/test_domain_rules.py carries both a separator and a wildcard, so deleting either branch leaves all seven tests green and the documented semantics for a bare or directory pattern is unguarded."
+    },
+    {
+      "blocks": false,
+      "file": "logs/base-arm.log",
+      "line": "2",
+      "severity": "follow-on",
+      "text": "the base arm ran in a scratch tree under /tmp/reckon-crew-scratch but its header names no `module.__file__` and the manifest carries no measurement_module or measurement_cwd, so the arm establishes only that the base tree cannot import DomainConfig (a collection ImportError, EXIT=2) and not that the new assertions fail on base."
+    }
+  ],
+  "head_log_revision": "4ce6aed6062e3298562eee2e95ebdc91183873d1",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit against 09528bd9; 4ce6aed6 adds the schema block, the module and its seven tests with both generated artifacts, and 41aaf6ce adds only the evidence fragment, whose element ids each begin with the node id.",
+    "done_when": "the done_when names a validating two-invariant fixture, a malformed entry refused naming its field, rules_for returning exactly the matching rules and nothing without the block, and the regenerated schema under the standing drift test; logs/gate-head.log records `134 passed in 15.43s` with EXIT=0 and my own re-run of tests/test_domain_rules.py alone returned `7 passed` EXIT=0 (logs/gate-head.log, reproduced), while logs/base-arm.log records only a collection ImportError with EXIT=2.",
+    "goal": "the node goal is a typed domain block in the flight config answered by one rules_for module; the diff adds the `domain` slot at reckon/schema/flight.yaml:382 with DomainConfig, DomainInvariant and DomainReviewCheck at reckon/crew/domain_rules.py:22 and one public entry point rules_for at reckon/crew/domain_rules.py:101, so the goal holds.",
+    "manifest": "read; it states status complete, the 134-passed gate with EXIT=0 at revision 4ce6aed6, the declared mutation's `6 failed, 1 passed` with EXIT=1, the base arm's ImportError with EXIT=2, a negative_control_log line carrying the bare path, and commits 4ce6aed6 and 41aaf6ce.",
+    "write_paths": "the declared scope is reckon/schema/flight.yaml, its two generated artifacts, reckon/crew/domain_rules.py, tests/test_domain_rules.py and the node's evidence fragment; `git diff --stat 09528bd96e0edd836392021c0707330fe9c5374b 41aaf6ce7fc47ae61f5a7d9171d8cdc868653eb4` lists exactly those six paths and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_domain_rules.py:113 and tests/test_domain_rules.py:151 redden if the match is dropped or widened and logs/negative-control.log shows 6 of the 7 failing under the declared mutation, but no fixture glob reaches the basename branch at reckon/crew/domain_rules.py:77 or the prefix branch at reckon/crew/domain_rules.py:79.",
+    "evidence": "logs/gate-head.log heads with its revision and literal command and ends `134 passed in 15.43s` EXIT=0, which I reproduced as `7 passed` on tests/test_domain_rules.py, but logs/base-arm.log ends EXIT=2 on a collection ImportError and the manifest carries no measurement_module or measurement_cwd for that scratch tree, so the base arm is weaker than a delta measurement.",
+    "fit": "reckon/crew/domain_rules.py:27 uses the frozen-dataclass and collections.abc idiom of reckon/crew/node.py and the block reaches the tree through scripts/regen_flight_schema.py rather than a new resource, introducing no forbidden name.",
+    "goal_fidelity": "reckon/crew/domain_rules.py:101 is the one public entry point the goal names and reckon/schema/flight.yaml:382 carries the typed block beside the existing per-dimension floors, so the deliverable the goal asks for is what landed.",
+    "reuse": "the write-path glob matcher at reckon/crew/domain_rules.py:62 restates the fnmatch-over-declared-paths idiom already at reckon/crew/node.py:1090 without sharing a helper, and a search of reckon/ and tests/ for an existing owner of which rules apply to a node found none.",
+    "scope_discipline": "git diff --stat 09528bd96e0edd836392021c0707330fe9c5374b 41aaf6ce7fc47ae61f5a7d9171d8cdc868653eb4 lists six paths and every one of them is inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a typed domain block in the flight config answered by one rules_for module; the diff adds the `domain` slot at reckon/schema/flight.yaml:382 with DomainConfig, DomainInvariant and DomainReviewCheck at reckon/crew/domain_rules.py:22 and one public entry point rules_for at reckon/crew/domain_rules.py:101, so the goal holds.\nVERDICT done_when: the done_when names a validating two-invariant fixture, a malformed entry refused naming its field, rules_for returning exactly the matching rules and nothing without the block, and the regenerated schema under the standing drift test; logs/gate-head.log records `134 passed in 15.43s` with EXIT=0 and my own re-run of tests/test_domain_rules.py alone returned `7 passed` EXIT=0 (logs/gate-head.log, reproduced), while logs/base-arm.log records only a collection ImportError with EXIT=2.\nVERDICT write_paths: the declared scope is reckon/schema/flight.yaml, its two generated artifacts, reckon/crew/domain_rules.py, tests/test_domain_rules.py and the node's evidence fragment; `git diff --stat 09528bd96e0edd836392021c0707330fe9c5374b 41aaf6ce7fc47ae61f5a7d9171d8cdc868653eb4` lists exactly those six paths and nothing else.\nVERDICT manifest: read; it states status complete, the 134-passed gate with EXIT=0 at revision 4ce6aed6, the declared mutation's `6 failed, 1 passed` with EXIT=1, the base arm's ImportError with EXIT=2, a negative_control_log line carrying the bare path, and commits 4ce6aed6 and 41aaf6ce.\nVERDICT diff: read commit by commit against 09528bd9; 4ce6aed6 adds the schema block, the module and its seven tests with both generated artifacts, and 41aaf6ce adds only the evidence fragment, whose element ids each begin with the node id.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/domain_rules.py:101 is the one public entry point the goal names and reckon/schema/flight.yaml:382 carries the typed block beside the existing per-dimension floors, so the deliverable the goal asks for is what landed.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-head.log heads with its revision and literal command and ends `134 passed in 15.43s` EXIT=0, which I reproduced as `7 passed` on tests/test_domain_rules.py, but logs/base-arm.log ends EXIT=2 on a collection ImportError and the manifest carries no measurement_module or measurement_cwd for that scratch tree, so the base arm is weaker than a delta measurement.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 09528bd96e0edd836392021c0707330fe9c5374b 41aaf6ce7fc47ae61f5a7d9171d8cdc868653eb4 lists six paths and every one of them is inside the declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_domain_rules.py:113 and tests/test_domain_rules.py:151 redden if the match is dropped or widened and logs/negative-control.log shows 6 of the 7 failing under the declared mutation, but no fixture glob reaches the basename branch at reckon/crew/domain_rules.py:77 or the prefix branch at reckon/crew/domain_rules.py:79.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/domain_rules.py:27 uses the frozen-dataclass and collections.abc idiom of reckon/crew/node.py and the block reaches the tree through scripts/regen_flight_schema.py rather than a new resource, introducing no forbidden name.\nSCORE reuse: 15\nJUSTIFICATION reuse: the write-path glob matcher at reckon/crew/domain_rules.py:62 restates the fnmatch-over-declared-paths idiom already at reckon/crew/node.py:1090 without sharing a helper, and a search of reckon/ and tests/ for an existing owner of which rules apply to a node found none.\nFINDING reckon/crew/domain_rules.py:77 follow-on: no fixture glob reaches the basename branch guarded by `if \"/\" not in pattern` at line 77 or the wildcard-free prefix branch at line 79, because every pattern in tests/test_domain_rules.py carries both a separator and a wildcard, so deleting either branch leaves all seven tests green and the documented semantics for a bare or directory pattern is unguarded.\nFINDING logs/base-arm.log:2 follow-on: the base arm ran in a scratch tree under /tmp/reckon-crew-scratch but its header names no `module.__file__` and the manifest carries no measurement_module or measurement_cwd, so the arm establishes only that the base tree cannot import DomainConfig (a collection ImportError, EXIT=2) and not that the new assertions fail on base.\n",
+  "review_run_id": "r-20261021T115547236010-review-of-domain-rules-in-flight-41aaf6ce7fc4",
+  "reviewed_base_sha": "09528bd96e0edd836392021c0707330fe9c5374b",
+  "reviewed_commits": [
+    "4ce6aed6062e3298562eee2e95ebdc91183873d1",
+    "41aaf6ce7fc47ae61f5a7d9171d8cdc868653eb4"
+  ],
+  "reviewed_head_sha": "41aaf6ce7fc47ae61f5a7d9171d8cdc868653eb4",
+  "reviewed_run_id": "r-20261021T112625211050-domain-rules-in-flight",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T12:17:42.300996+00:00",
+  "total": 104
+}
