@@ -1,0 +1,63 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the base arm (logs/base-gate.log, 4 failed / 379 passed, EXIT=1) names tests/test_a_ledger_row_answers_its_own_session.py::test_a_ledger_row_answers_its_own_session, tests/test_mcp_crew_runs_run_id.py::test_run_id_reaches_runs_view, tests/test_the_fleet_gate_holds_dispatch.py::test_launch_callers_reach_the_shared_gate and tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window; the head arm (logs/head-gate-6e28aa82.log, 3 failed / 380 passed, EXIT=1) names the last three and not the new test, so the head failure ids are a strict subset of the base's and the change adds none.",
+  "call_site_count": 16,
+  "call_sites": [
+    "reckon/crew/query.py:290",
+    "reckon/crew/query.py:534",
+    "reckon/crew/query.py:566",
+    "reckon/crew/promotion_checks.py:394",
+    "reckon/crew/promotion.py:1181",
+    "reckon/crew/fleet_migrate.py:407",
+    "reckon/crew/recovery_stream.py:770",
+    "reckon/crew/runs.py:100",
+    "reckon/mcp.py:2370",
+    "reckon/mcp.py:2389",
+    "reckon/crew/dispatch_sessions.py:607",
+    "reckon/crew/dispatch_sessions.py:704",
+    "reckon/crew/dispatch_sessions.py:835",
+    "reckon/crew/dispatch_sessions.py:2188",
+    "reckon/crew_dispatch_commands.py:2717",
+    "reckon/crew/resumption.py:1837"
+  ],
+  "completed_at": "2026-10-21T11:37:05.126Z",
+  "dispatched_at": "2026-10-21T11:17:48Z",
+  "findings": [
+    {
+      "file": "tests/test_a_ledger_row_answers_its_own_session.py",
+      "line": 105,
+      "severity": "follow-on",
+      "text": "the row-versus-base equality assertion takes its expected value from resumption.resolve_session itself (tests/test_a_ledger_row_answers_its_own_session.py:74) rather than from the session ids the fixture writes (f\"session-{index:03d}\", tests/test_a_ledger_row_answers_its_own_session.py:53), so a regression that breaks the ledger source on both the row-supplied and row-less paths makes both sides agree on the same wrong value and leaves the assertion green; the fixture's known ids were available as independent ground truth, and the declared negative control exercises the load count rather than this assertion."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/query.py:290 is the production call site the change alters, reached from runs_view at reckon/crew/query.py:534 and :566; the other resolve_session callers listed below were grepped and left unchanged because they pass no ledger_row.",
+    "diff": "read the four commits 1cd696f53, cf966d3e4, 6e28aa822 and ca0f06df6 against base 36bbac34; two production files change (reckon/crew/query.py +1, reckon/crew/resumption.py +27/-7), one new test file (+114), one edited test file (+31/-8) and one evidence fragment (+24).",
+    "done_when": "the done_when names the new test plus the 23 tracked test files whose gate must add no failure; the manifest records both arms under the run directory with revision, command, exit_status, completed:true, failure_count and failure_ids, and the head ids are a strict subset of the base's.",
+    "goal": "the goal is to answer a ledger row's session from the row the runs view already holds so one view makes at most one ledger load, per plan section 47; the landed change supplies that row at reckon/crew/query.py:293 and answers from it at reckon/crew/resumption.py:810.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T094057408357-a-ledger-row-answers-its-own-session/manifest.md; status complete, four commits, tests line naming the gate command, baseline_suite and after_suite populated at revisions 36bbac34 and 6e28aa82, negative_control_log naming logs/negative-control.log.",
+    "write_paths": "the dispatch fence names reckon/crew/query.py, reckon/crew/resumption.py, tests/test_a_ledger_row_answers_its_own_session.py, the landing fragment and a figures directory; the diff changes four of those plus tests/test_crew_runs_by_run_id.py, which the coordinator explicitly granted in the run directory's resume-1-advice.txt, so every changed file is inside the fence or a recorded extension. The manifest's orientation_write_paths line still lists only the original five and omits the granted file, so the grant is only visible in the resume advice."
+  },
+  "node": "review-of-a-ledger-row-answers-its-own-session-ca0f06df65e2",
+  "node:reviewed": "a-ledger-row-answers-its-own-session",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to answer a ledger row's session from the row the runs view already holds so one view makes at most one ledger load, per plan section 47; the landed change supplies that row at reckon/crew/query.py:293 and answers from it at reckon/crew/resumption.py:810.\nVERDICT done_when: the done_when names the new test plus the 23 tracked test files; the manifest records both arms under the run directory with revision, command, exit_status, completed true, failure_count and failure_ids, and the head failure ids are a strict subset of the base's.\nVERDICT write_paths: the diff changes four of the five fenced paths plus tests/test_crew_runs_by_run_id.py, which the coordinator granted in the run directory's resume-1-advice.txt; the scope extension aside, every changed file is inside the fence.\nVERDICT manifest: read the reviewed run's manifest.md; status complete, four commits, the gate command on the tests line, and baseline_suite/after_suite populated at revisions 36bbac34 and 6e28aa82 with negative_control_log naming logs/negative-control.log.\nVERDICT diff: read the four commits 1cd696f53, cf966d3e4, 6e28aa822 and ca0f06df6 against base 36bbac34: reckon/crew/query.py +1, reckon/crew/resumption.py +27/-7, tests/test_a_ledger_row_answers_its_own_session.py +114, tests/test_crew_runs_by_run_id.py +31/-8, and the landing fragment +24.\nCALL_SITES: reckon/crew/query.py:290, reckon/crew/query.py:534, reckon/crew/query.py:566, reckon/crew/promotion_checks.py:394, reckon/crew/promotion.py:1181, reckon/crew/fleet_migrate.py:407, reckon/crew/recovery_stream.py:770, reckon/crew/runs.py:100, reckon/mcp.py:2370, reckon/mcp.py:2389, reckon/crew/dispatch_sessions.py:607, reckon/crew/dispatch_sessions.py:704, reckon/crew/dispatch_sessions.py:835, reckon/crew/dispatch_sessions.py:2188, reckon/crew_dispatch_commands.py:2717, reckon/crew/resumption.py:1837\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/resumption.py:810 returns the supplied row's session_id and reckon/crew/query.py:293 supplies the ledger record, so a promoted run with no pointer and no stream is answered without a per-row ledger load.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/base-gate.log and logs/head-gate-6e28aa82.log each carry their revision and a bare EXIT= line with the head failure ids a strict subset of the base's, though the ruff receipts at cf966d3e predate the tests/test_crew_runs_by_run_id.py change at 6e28aa82 (re-run clean at ca0f06df).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every changed file is inside the fence at reckon/crew/query.py and reckon/crew/resumption.py, or the recorded extension for tests/test_crew_runs_by_run_id.py, and reckon/ledger.py is untouched.\nSCORE durability: 18\nJUSTIFICATION durability: logs/negative-control.log reinstates ledger_row=None for ledger rows and the new test reddens with 'one runs view made 53 ledger.load calls over 52 promoted rows' at EXIT=1, though the session-equality assertion at tests/test_a_ledger_row_answers_its_own_session.py:105 takes its expected value from the same resolver rather than the fixture's known ids.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/resumption.py:792 keeps the module's source-helper shape with a keyword-only row argument documented in the resolver docstring, and no added name carries a plan, issue or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the owner reckon/crew/resumption.py:792 _ledger_session rather than adding a second reader of a committed row's session, and a capability search over reckon/ found no other mechanism that answers a run's session from a ledger row.\nFINDING tests/test_a_ledger_row_answers_its_own_session.py:105 follow-on: the row-versus-base equality assertion takes its expected value from resumption.resolve_session itself rather than from the session ids the fixture writes at tests/test_a_ledger_row_answers_its_own_session.py:53, so a regression that breaks the ledger source on both paths leaves both sides equal and the assertion green.\n",
+  "review_run_id": "r-20261021T111652283665-review-of-a-ledger-row-answers-its-own-session-ca0f06df65e2",
+  "reviewed_base_sha": "36bbac34495757e103efacd7bc0573383298ba26",
+  "reviewed_head_sha": "ca0f06df65e21132bc171c4202d5d4c0fa5bfc6a",
+  "reviewed_run_id": "r-20261021T094057408357-a-ledger-row-answers-its-own-session",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T11:40:14.767251+00:00",
+  "total": 114
+}
