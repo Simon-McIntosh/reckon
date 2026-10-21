@@ -1,0 +1,51 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest names no baseline_suite or after_suite gate log, so the count is taken from the two arms its test_logs line names: logs/base-arm.log, a collection error for the new module with no failing test id, and logs/gate-head.log, `136 passed` with no failing test id; the head set minus the base set is empty.",
+  "after_suite_log": null,
+  "base_log_revision": "09528bd96e0edd836392021c0707330fe9c5374b",
+  "baseline_suite_log": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "call_sites_emission": "none",
+  "completed_at": "2026-10-21T14:13:48.760Z",
+  "dispatched_at": "2026-10-21T13:50:38Z",
+  "findings": [
+    {
+      "blocks": false,
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T112625211050-domain-rules-in-flight/manifest.md",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "the artifacts line quotes `136 passed in 14.46s` while the gate log it cites (logs/gate-head.log, revision 11f6497c3) ends `136 passed in 17.66s`, so a reader reconciling the record against its own cited log finds a figure the log does not carry."
+    }
+  ],
+  "head_log_revision": "11f6497c32a6a62147d51ed6ba862f8e84fa6cef",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a repository's declared domain rules carried as a typed block in its flight config and answered by one rules_for module; reckon/schema/flight.yaml:382 adds the `domain` slot whose class is declared at reckon/schema/flight.yaml:1490, and reckon/crew/domain_rules.py:103 defines the one public `rules_for(project, node)`, so the deliverable is present as the goal states it.\nVERDICT done_when: the done-when names tests/test_domain_rules.py plus a gate over tests/test_flight.py, tests/test_flight_lanes.py and tests/test_budget_lift.py, and requires the regenerated schema with the standing drift test passing; the manifest records that gate as `136 passed` EXIT=0 in logs/gate-head.log and the gate command in the manifest's `tests` line is that same literal command, so the gate asserts the measure.\nVERDICT write_paths: the declared scope is reckon/schema/flight.yaml, reckon/_flight_schema.py, docs/_shared/flight.schema.json, reckon/crew/domain_rules.py, tests/test_domain_rules.py and the node's fragment/figure paths; `git diff --stat 09528bd96 4b8d295d1` lists exactly six files, all inside those paths, and the figure directory is correctly left unwritten because the done-when names no artifact.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T112625211050-domain-rules-in-flight/manifest.md; it states status complete, the eight commits, the head gate `136 passed` EXIT=0, the declared negative control's `8 failed, 1 passed` EXIT=1, the two matcher branch arms' `1 failed` EXIT=1 each and the base arm's collection error EXIT=2, but its artifacts line quotes `136 passed in 14.46s` where the cited logs/gate-head.log ends `136 passed in 17.66s`.\nVERDICT diff: read commit by commit against 09528bd96; 4ce6aed60 lands the domain block, the regenerated model and the matcher module, 41aaf6ce7 lands the evidence fragment, f47fa3613, 74ee7a238 and a6b619af5 are the earlier repair round, 641d563bb replaces the raw-dict reader with DomainConfig.model_validate (reckon/crew/domain_rules.py:131), and 11f6497c3 and 4b8d295d1 correct the fragment's field name and its cited gate revision.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/domain_rules.py:103 exposes the single public entry point the plan's \u00a73 names and reckon/schema/flight.yaml:382 carries the typed block, so the landed change does what the goal states.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate in the manifest's `tests` line ran the four named test files to `136 passed` EXIT=0 (logs/gate-head.log) and its result is recorded, but the manifest's own artifacts line at manifest.md:21 quotes a stale `14.46s` figure the cited log does not carry.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat 09528bd96e0edd836392021c0707330fe9c5374b 4b8d295d1abfeb69bb313fcbd2c76cddb1f877ad` lists six files, every one inside the node's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_domain_rules.py:179 and tests/test_domain_rules.py:204 each assert a literal id from the fixture they write, and logs/branch-mutations.log shows deleting each matcher branch (reckon/crew/domain_rules.py:79 and :81-83) reddening exactly one of them.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/domain_rules.py:29-49 follows the repo's frozen-dataclass and collections.abc idiom and every added name (DomainConfig, DomainRules, rules_for) states its mechanism with no plan, sprint or version label.\nSCORE reuse: 16\nJUSTIFICATION reuse: the closest existing write-path-to-glob matcher is reckon/crew/node.py:1081 `_population_covers_a_declared_write_path`, a narrow fnmatch helper for the gate-population check, and no owner of \"which domain rules apply to a node\" exists in reckon/ or tests/, so reckon/crew/domain_rules.py:64 adds the capability rather than forking an owner.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T112625211050-domain-rules-in-flight/manifest.md:21 follow-on: the artifacts line quotes `136 passed in 14.46s` while the gate log it cites (logs/gate-head.log, revision 11f6497c3) ends `136 passed in 17.66s`, so a reader reconciling the record against its own cited log finds a figure the log does not carry.\n",
+  "review_run_id": "r-20261021T134919346430-review-of-domain-rules-in-flight-4b8d295d1abf",
+  "reviewed_base_sha": "09528bd96e0edd836392021c0707330fe9c5374b",
+  "reviewed_commits": [
+    "4ce6aed6062e3298562eee2e95ebdc91183873d1",
+    "41aaf6ce7fc47ae61f5a7d9171d8cdc868653eb4",
+    "f47fa36130ef44ea47b4ee7f298cedf8cb00f04a",
+    "74ee7a23860288579367e117b8f947a05aae88ce",
+    "a6b619af55042f74f1aeea06a42f8d58d36f0269",
+    "641d563bbeca37d256d475e3dcca38d7a8d99589",
+    "11f6497c32a6a62147d51ed6ba862f8e84fa6cef",
+    "4b8d295d1abfeb69bb313fcbd2c76cddb1f877ad"
+  ],
+  "reviewed_head_sha": "4b8d295d1abfeb69bb313fcbd2c76cddb1f877ad",
+  "reviewed_run_id": "r-20261021T112625211050-domain-rules-in-flight",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T14:14:29.235938+00:00",
+  "total": 106
+}

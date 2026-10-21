@@ -26,7 +26,7 @@
   <title>Work Is Checked Against Its Domain | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="10">
+<meta name="plan-version" content="11">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -102,6 +102,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261021T125117918139-review-of-domain-rules-in-flight-a6b619af5504" data-who="reckon-build" data-when="2026-10-21T13:12:51.566Z">
     <div class="r-comment-body"><p>Reviewed the three commits r-20261021T112625211050-domain-rules-in-flight gained since its last review (base 41aaf6ce, head a6b619af); verdict parsed with six scores summing 103 — the two follow-ons the previous review raised are genuinely repaired (tests/test_domain_rules.py:179 and :204 each fail on their own deleted matcher branch, EXIT=1 per arm in logs/branch-mutations.log, and the base arm now records its measurement_module and measurement_cwd at 8 failed/1 passed EXIT=1) — and two non-blocking follow-ons are recorded, one naming the silent empty-view failure a raw-dict read leaves where the validated model used to fail loudly.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261021T134919346430-review-of-domain-rules-in-flight-4b8d295d1abf" data-who="reckon-build" data-when="2026-10-21T14:13:48.760Z">
+    <div class="r-comment-body"><p>The review of r-20261021T112625211050-domain-rules-in-flight stores a parsed record at the reviewed head 4b8d295d1abfeb69bb313fcbd2c76cddb1f877ad from base 09528bd96e0edd836392021c0707330fe9c5374b, scoring all six dimensions (goal_fidelity 18, evidence 16, scope_discipline 20, durability 19, fit 17, reuse 16) with one follow-on finding against the reviewed manifest&#x27;s stale gate timing, and no blocking finding, so the node lands.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261021T115211619347-review-of-review-waits-for-its-repair-492418fba425" data-who="reckon-build" data-when="2026-10-21T12:16:58.672Z">
     <div class="r-comment-body"><p>independent review of run r-20261021T105142717388-review-waits-for-its-repair at head 492418fb against base ac17ed13: scores goal_fidelity 19, evidence 16, scope_discipline 19, durability 18, fit 18, reuse 16; two follow-on findings (the dispose-command pair at reckon/crew/recovery_review_dispatch.py:2089 duplicates reckon/crew/obligations.py:1218, and the repair path at reckon/crew/recovery_repair_dispatch.py:813 never writes the disposition the new guard reads, so an automatic repair round's re-review is refused until a coordinator disposes by hand)</p></div>
