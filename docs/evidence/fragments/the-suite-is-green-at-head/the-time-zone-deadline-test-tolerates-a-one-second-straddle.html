@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s29">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-21">
+  <meta name="plan-tags" content="tests,deadline,time-zone,flake">
+  <title>The time-zone deadline test tolerates a one-second straddle | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-time-zone-deadline-test-tolerates-a-one-second-straddle" data-reckon="landed" data-when="2026-10-21">
+  <h2>The time-zone deadline test tolerates a one-second straddle</h2>
+
+  <p id="the-time-zone-deadline-test-tolerates-a-one-second-straddle-cause"><strong>Cause.</strong>
+  The two-zone case ran the stated seconds-left command
+  once under <code>TZ=UTC</code> and once under <code>TZ=Europe/Paris</code>, then
+  required the two printed figures to be equal (<code>assert utc == paris</code>).
+  Each run of the command reads the clock at its own instant
+  (<code>date +%s</code>), so two runs that straddle a second boundary print
+  figures one apart and the equality failed on the boundary rather than on the
+  zone. The command under test is unchanged.</p>
+
+  <p id="the-time-zone-deadline-test-tolerates-a-one-second-straddle-repro"><strong>Reproduction, before repair.</strong>
+  Traced to the base revision <code>d0370a61a3244494cd434e27d19bf8a526d8f83c</code>.
+  Running the id alone thirty times at that revision produced one failure
+  (29 passed, 1 failed) — the same class the plan records as <em>1 of 5</em> and
+  <code>assert '-128166' == '-128167'</code> at line 100. Because the failure is
+  a clock race, a probe was run to characterise it. Calling the same stated
+  command back to back under the two zones 200 times gave a difference
+  distribution of <code>{0: 195, 1: 5}</code>: the two readings differ by exactly
+  one second, and never by the 3,600 seconds a zone offset would produce. The
+  one-second drift is therefore the straddle, and carries no information about
+  the zone.</p>
+
+  <p id="the-time-zone-deadline-test-tolerates-a-one-second-straddle-fix"><strong>Change.</strong>
+  The comparison parses both readings as figures and fails only when the largest
+  per-figure drift exceeds one second:</p>
+  <pre id="the-time-zone-deadline-test-tolerates-a-one-second-straddle-code"><code>utc = _figures(_run(command, "UTC"))
+paris = _figures(_run(command, "Europe/Paris"))
+assert len(utc) == len(paris), (...)
+assert utc, "the command prints no figure to compare"
+drift = max(abs(a - b) for a, b in zip(utc, paris, strict=True))
+assert drift &lt;= 1, (...)</code></pre>
+  <p>The length check and the non-empty check are kept so a command that prints
+  nothing in one zone cannot pass by comparing two empty readings.</p>
+
+  <p id="the-time-zone-deadline-test-tolerates-a-one-second-straddle-gate"><strong>Gate.</strong>
+  The id ran 20 times in the foreground on the fleet node
+  (98dci4-clu-2068, job 1291586) at the committed revision
+  <code>9cc51c96295903577082ab6a1b405e7ac4299260</code>: <strong>20 of 20
+  passed, EXIT=0</strong>. <code>ruff check</code> and
+  <code>ruff format --check</code> report the changed file clean.</p>
+
+  <p id="the-time-zone-deadline-test-tolerates-a-one-second-straddle-negative"><strong>Negative control.</strong>
+  The declared mutation — add 3,600 to one zone's reading before the comparison —
+  was applied to the tracked test in place and lifted from a backup on exit. The
+  id then failed with <code>assert 3600 &lt;= 1</code> (UTC
+  <code>[-149709]</code>, Paris <code>[-146109]</code>) and
+  <code>EXIT=1</code>, so the tolerance does not swallow a whole-zone offset. The
+  tree was clean after the mutation was lifted.</p>
+</article>
+</body>
+</html>
