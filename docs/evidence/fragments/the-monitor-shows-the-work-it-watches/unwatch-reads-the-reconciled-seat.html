@@ -24,12 +24,19 @@
     another project, or a foreign host, is still refused, because that refusal is decided before
     any reconciliation.
   </p>
+  <p>
+    The reconciled reading is not re-derived beside the stop. It is read from
+    <code>watch_state</code> — the one place a seat is reconciled against the live holder the
+    project's lease names — so the shape of a reconciled seat has a single definition and the
+    shape a reader reports and the shape a stop acts on cannot drift apart.
+  </p>
   <h3 id="unwatch-reads-the-reconciled-seat-measure">Measure</h3>
   <p>
     <code>tests/test_unwatch_reads_the_reconciled_seat.py</code> holds a real producer in a
     temporary crew home, empties its seat record, and finds <code>unwatch</code> stops it
     (<code>stopped: True</code>, the producer exits); a seat naming another project is still
-    refused, and so is a seat naming a foreign host.
+    refused, and so is a seat naming a foreign host. A fourth case asserts the reconciled
+    seat <code>unwatch</code> acts on is the shared reading, so the shape is not forked.
   </p>
   <p>
     Head arm (<code>fc78de3e</code>): <strong>1 failed, 426 passed</strong> over the 50 test files
