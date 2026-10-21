@@ -1,0 +1,83 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T06:55:56.844Z",
+  "dispatched_at": "2026-10-21T06:44:12Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-checked-against-its-domain.html:166",
+      "id": "wiring-1",
+      "reason": "a node dispatched on \u00a76 before \u00a73 lands builds its model-path lint against a key that does not yet exist and would either invent its own spelling of `model_paths` or gate on nothing, and the section table is the record a coordinator dispatches from.",
+      "text": "\u00a76's lint is defined by \"one whose write paths match the project's `domain.model_paths` from \u00a73\" and its done-when branches on \"a declared `model_paths` glob\" versus \"a project that declares no `model_paths`\", so \u00a76 reads the block \u00a73 introduces; but `plan-section-depends-on` lists only `s4 -> s3`, `s5 -> s3` and `s7 -> s2,s4,s5,s6`, and the driving followup f-wicd-001 asserts \"\u00a72, \u00a73 and \u00a76 can start at once\" \u2014 i.e. that \u00a76 may run concurrently with the section that defines the field it reads",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-checked-against-its-domain.html:92",
+      "id": "reasoning-1",
+      "reason": "the implementing node meets a documented constraint that a declared repository-knowledge block is neither, and the cheapest reading of that constraint is to put the block somewhere other than project.json \u2014 which is exactly where \u00a74, \u00a75 and \u00a76 all read it from.",
+      "text": "\u00a73 adds the `domain` block to `docs/state/<project>/project.json`, but `PLAN-FORMAT.md:313` declares that resource is \"identity and presentation only; no active-sprint pointer, collections, rollups, or host checkout path\", and \u00a73 acknowledges the file only by requiring it to \"document the block\" without saying the invariant is being amended",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f4265581c36c8636e11afb21bfddd3b381eebeb17f8d925509d618663bcf1dcd",
+  "plan_slug": "work-is-checked-against-its-domain",
+  "plan_version": 1,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-21T06:59:45.904502+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-21T06:59:57.070986+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T06:59:57.070986+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T06:59:45.904502+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-work-is-checked-against-its-domain.v1.json",
+  "review_run_id": "r-20261021T064321536354-plan-review-of-work-is-checked-against-its-domain",
+  "reviewed_blob_sha": "65dc88644e68a5584b0e49db4e5633479e87914d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_read_project_json` resolves at `reckon/project_state.py:449`, `reckon/_schema.py` and `docs/_shared/plan.schema.json` exist beside each other as \u00a73 says, `crew dispose --project --run --finding --kind folded --node / --kind exempted --reason` all exist at `reckon/crew_run_commands.py:485`, `crew review --answer` exists and answers plan findings only (`reckon/crew_dispatch_commands.py:2372`), and `PLAN-FORMAT.md` and `skills/reckon-sync/SKILL.md` both resolve inside the repository.",
+    "done_when": "pass \u2014 each in-scope unit's done-when names a measurable refusal together with a control that must behave the opposite way: \u00a72 fails on the base commit and passes with the finding disposed; \u00a73's malformed block is refused while a well-formed one loads and an absent block reads empty; \u00a76 refuses a brief with a missing path while the file-present brief dispatches.",
+    "evidence_paths": "pass \u2014 none of the changed units parks evidence in a scratchpad; \u00a72's fixtures, \u00a73's fixtures and \u00a76's fixtures are test-suite artefacts, and the plan's own results are recorded on the run record with a run id.",
+    "naming": "pass \u2014 `repair-owed`, `domain`, `invariants`, `review_checks`, `model_paths`, `inputs`, `compares_with` and `none-exists` name mechanisms; none is a plan label, stage name, ticket number or version tag.",
+    "reasoning": "a finding \u2014 \u00a73 places a new block in the project resource while the plan format's own text declares that resource carries identity and presentation only, and \u00a73 never says it amends that clause.",
+    "single_goal": "pass \u2014 \u00a72 is the refusal of a review round while a blocking finding is unanswered, \u00a73 is the declared domain block, \u00a76 is pre-flight declarations at dispatch; each closes on one verdict.",
+    "wiring": "a finding \u2014 \u00a76 lints against the project's `domain.model_paths`, which \u00a73 defines, but `plan-section-depends-on` carries no `s6` key and followup f-wicd-001 says \u00a76 can start in parallel with \u00a73."
+  },
+  "section_digests": {
+    "_document": "d9ac8dec26b264677afd3500f4c31387d9361cad1110b7f412cda641c1c98291",
+    "s1": "096b2231b1cf1ab1c4476bbab2ea39d0ee87ea2bbfae045a542369206b4fbbf2",
+    "s2": "32bff03062cddfd8f5cd5c476c52953f8d024d233b02f5e6e32cd381ae0a0289",
+    "s3": "42ce47909082231fafc488f5147ae4c0ee5de528ff39900af706895624b32228",
+    "s4": "e74f329529380bbaf295b2babbb6cd4b9e344a7aede802fc39917c93816c5b30",
+    "s5": "bdf6cf1da1a57d6786b7992b575720a6bc7fbf78532279f096b5297afd89303e",
+    "s6": "cca51027e858677aff442aaefa3ac549d828cdfc54c9a584f1fcca362fe5a620",
+    "s7": "e879ff4b66f35787cadc9a3ead8f3ddc9dcf6aa3c1bf041c072563cae4170875"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T06:59:40.452001+00:00"
+}
