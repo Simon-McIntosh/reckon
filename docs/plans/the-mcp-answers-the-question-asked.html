@@ -26,7 +26,7 @@
   <title>The MCP Answers the Question Asked | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -191,6 +191,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-10-21T18:47:00Z">
     <div class="r-comment-body"><p>Landed: unknown flight keys are ignored at load and reported in flight_unknown_keys; reckon flight --check stays strict; gate adds no failure; review 109/120. Evidence: <a href="/reckon/evidence/archive/the-mcp-answers-the-question-asked-landed.html#s9">§9 landing record</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261021T160220332694-a-newer-flight-key-is-ignored-at-load" data-who="reckon-build" data-when="2026-10-21T17:16:43Z">
+    <div class="r-comment-body"><p>Loading a flight config is now forward-compatible while authoring stays strict: the generator emits `extra=&quot;ignore&quot;` (scripts/regen_flight_schema.py, one setting, regenerated), and `resolve` walks every contributing layer against the model&#x27;s own field declarations to report the undeclared key paths on `ResolvedFlight.unknown_keys`, published as `flight_unknown_keys` on `flight_report` — the field `crew(view=&quot;flight&quot;)` already spreads. `reckon flight --check` resolves with `strict=True` and refuses the first such key by path with `Extra inputs are not permitted`. The two tests that pinned the old load-time strictness kept their cases and moved their vehicle: tests/test_budget_lift.py&#x27;s ceilings test refuses an undeclared `budget.lift.nope` through the strict read, and tests/test_one_check_trusts_a_moved_checkout.py&#x27;s probe breaks a declared shipped default (`budget.exhausted_statuses`) instead of adding an unknown key. Measure: a fixture host layer carrying `a_key_from_newer_code` and `budget.a_key_from_newer_code` resolves and reports exactly those two paths (empty for the shipped defaults and for this workstation&#x27;s real `~/.config/reckon/flight.yaml`), `--check` on the same file exits non-zero naming the key, and a type error on a declared key is still refused at load; the load test fails on the base revision with `Extra inputs are not permitted` (2 failed, EXIT=1 under the declared mutation).</p></div>
 </div>
 </section>
 </main>
