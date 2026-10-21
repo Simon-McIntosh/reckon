@@ -21,7 +21,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery_watch, runs
+from reckon.crew import recovery_watch, runs, watch_unit
 from reckon.crew.node import CrewError
 
 PROJECT = "unwatch-reconciled-sample"
@@ -162,6 +162,27 @@ def test_unwatch_stops_a_live_producer_whose_seat_is_mid_write(
         lambda: producer.poll() is not None,
         message="the producer outlived the unwatch that stopped it",
     )
+
+
+def test_unwatch_reconciles_the_seat_through_the_shared_reading(
+    producer, home: Path
+) -> None:
+    """The reconciled seat is the shared reading, not a second copy of its shape.
+
+    unwatch decides a mid-write seat the way the rest of the codebase reads one,
+    so the shape of a reconciled record has a single definition rather than one
+    per reader that must be kept in step.
+    """
+    del home
+    _write_seat(PROJECT, {})
+    assert _seat_record(PROJECT) == {}, "the seat record was not emptied"
+
+    reconciled = recovery_watch._reconciled_seat_record(PROJECT)
+    shared = watch_unit.watch_state(PROJECT)["watcher"]
+
+    assert reconciled["pid"] == producer.pid == shared["pid"]
+    assert reconciled["host"] == shared["host"]
+    assert reconciled["job"] == shared["job"]
 
 
 def test_unwatch_still_refuses_a_seat_naming_another_project(

@@ -44,8 +44,8 @@ from reckon.crew.runs import (
 )
 from reckon.crew.ticker import NEEDS_ACTION, Ticker, _agent_label
 from reckon.crew.watch_unit import (
-    _fresh_watch_holder,
     seat_names_a_live_foreign_producer,
+    watch_state,
 )
 
 # The waiting family is the stop that lifts itself, an overdue wait included:
@@ -383,36 +383,29 @@ def _watch_registration(
 UNWATCH_SEAT_WAIT_SECONDS = 2.0
 
 
-def _reconciled_seat_record(project: str, record: Mapping[str, Any]) -> dict[str, Any]:
-    """The seat record as ``watch_state`` reconciles it before it reports.
+def _reconciled_seat_record(project: str) -> dict[str, Any]:
+    """The seat record as the one shared reconciliation reports it.
 
     A seat record that names no project is one caught in an in-place rewrite:
     the write truncates before it rewrites, so a reader in that window sees an
-    emptied record. ``watch_state`` reconciles such a record against the live
-    holder this project's lease names, and this is that same reading — where the
-    live holder is not the process the record itself names, the record is
-    replaced by the project asked for and the holder's identity. Where no live
-    holder answers, the record comes back unchanged and the caller's own
-    refusals still apply.
+    emptied record, and a caller that read the record alone takes the absent
+    name for a stop of someone else. The reconciled identity is not re-derived
+    here — it is read from :func:`watch_state`, the one place a seat is
+    reconciled against the live holder this project's lease names, so the shape
+    of a reconciled record is defined once and cannot drift between the reading
+    that reports a seat and the one that stops it.
 
     The holder's lease names its host and pid but not the pid's start time, so
     the identity a signal guard needs is taken from the producer's own
     registration — the record written atomically beside the seat — and only when
-    it names the same pid the lease does. A record that names no project but
-    keeps its own identity is left as it is.
+    it names the same pid the reconciled record does.
     """
-    holder = _fresh_watch_holder(project, record)
-    if holder is None:
-        return dict(record)
-    reconciled: dict[str, Any] = dict(record)
-    if (record.get("host"), record.get("pid")) != (holder.host, holder.pid):
-        reconciled = {"project": project}
-    reconciled.update(host=holder.host, pid=holder.pid, job=holder.job)
-    if not reconciled.get("pid_start_time"):
+    reconciled = dict(watch_state(project)["watcher"])
+    pid = reconciled.get("pid")
+    if pid is not None and not reconciled.get("pid_start_time"):
         registration = runs.read_watch_registration(project)
-        if str(registration.get("pid") or "") == str(holder.pid):
-            start_time = registration.get("pid_start_time")
-            start_time = str(start_time) if start_time else ""
+        if str(registration.get("pid") or "") == str(pid):
+            start_time = str(registration.get("pid_start_time") or "")
             if start_time:
                 reconciled["pid_start_time"] = start_time
     return reconciled
@@ -450,11 +443,10 @@ def unwatch(project: str) -> dict[str, Any]:
                 # mid-write looks like: its rewrite truncates before it writes,
                 # so a reader in that window reads an emptied record and would
                 # otherwise take the absent name for a foreign registration. The
-                # seat's project is decided the way watch_state decides it —
-                # from the live holder this project's lease names — and the
-                # holder's identity supplies the pid the stop needs, which the
-                # emptied record cannot.
-                watcher = _reconciled_seat_record(project, watcher)
+                # reconciled reading then decides the seat's project — and
+                # supplies the pid the stop needs, which the emptied record
+                # cannot — from the live holder this project's lease names.
+                watcher = _reconciled_seat_record(project)
             try:
                 pid = int(watcher.get("pid"))
             except (TypeError, ValueError) as exc:
