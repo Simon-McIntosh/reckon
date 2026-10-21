@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run's manifest carries baseline_suite and after_suite as null and names no base arm; plan s10's done-when requires only the two mutation arms, both of which negative-control.log records with EXIT=1 and named failing ids, so no added failure is derivable and none is claimed. This reviewer independently re-ran the node's test file at the reviewed revision bcace6a32 in a scratch extraction (/tmp/reckon-crew-scratch/r-20261021T231933887750-review-of-a-regenerated-path-is-proved-on-the-ledger-bcace6a32d28/rev-check-GYju, log review-head-rerun.log): 6 passed in 46.90s, exit 0, matching gate-head.log.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/node.py:757 TaskNode.__post_init__ folds regenerate_paths into write_paths",
+    "reckon/crew/node.py:787 as_dict serialises regenerate_paths",
+    "reckon/crew/dispatch.py:2138 builds node_definition from node.as_dict",
+    "reckon/crew/promotion.py:229 complete writes the ledger row from the pointer",
+    "reckon/ledger.py:2894 runs reads it"
+  ],
+  "completed_at": "2026-10-21T23:37:44.168Z",
+  "dispatched_at": "2026-10-21T23:20:33Z",
+  "findings": [
+    {
+      "file": "tests/test_a_regenerated_path_is_charged_as_written.py",
+      "line": "353",
+      "severity": "follow-on",
+      "text": "the docstring's last sentence says deleting the fold 'leaves both write_paths and the live claim empty', but with the fold removed the shared builder _dispatched_node fails first at its own assert result.exit_code == 0 (negative-control.log arm 1, refusal contract-validation 'no exclusive write path is enumerated'), so neither the write_paths assertion at :362 nor the claim at :368 is reached; the delivered fragment states the refusal correctly, so only the test's wording overstates what the case measures, and no blocking defect follows."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/node.py:757, reckon/crew/node.py:787, reckon/crew/dispatch.py:2138, reckon/crew/promotion.py:229, reckon/ledger.py:2894 are the production paths the new assertions exercise; none carries the change, which is tests-only.",
+    "diff": "read commit by commit against base e8bbc2ce; the single commit bcace6a32 changes two files only -- the test file gains the _dispatched_node helper, rewrites the fold case to declare the path through --regenerate-path alone and adds the promotion fixture, and the fragment html is new -- with nothing outside the grant.",
+    "done_when": "the done-when is 'deleting the fold in TaskNode.__post_init__ turns the fold case red, and dropping regenerate_paths from the serialised node turns the ledger case red; both mutation arms are in the negative-control log'; negative-control.log arm 1 (revision e8bbc2ce + fold deleted) reports 4 failed EXIT=1 including test_a_regenerated_path_is_folded_into_the_claimed_write_scope, and arm 2 (+ regenerate_paths dropped from as_dict) reports 2 failed EXIT=1 including test_a_promoted_ledger_row_carries_the_regenerated_paths, so the recorded gate measures the done-when.",
+    "goal": "the node's goal is 'Make the regenerated-path tests prove the fold into the write scope and the promoted ledger row', and plan s10 names exactly a fold case and a promotion fixture; the landed diff rewrites tests/test_a_regenerated_path_is_charged_as_written.py:346 to build the node through the dispatch surface from --regenerate-path alone and adds :371 driving crew.complete on a live pointer and reading ledger.runs, so both halves of the goal are present.",
+    "manifest": "read against the tree; it records status complete, commit bcace6a32d, changed_paths matching the diff, gate-head.log 18 passed exit 0 and negative-control.log arms 4 failed and 2 failed, and names both logs under test_logs, while its baseline_suite and after_suite fields are null.",
+    "write_paths": "the declared grant is tests/test_a_regenerated_path_is_charged_as_written.py, docs/evidence/fragments/a-brief-should-not-cost-what-it-names/a-regenerated-path-is-proved-on-the-ledger.html and a figures directory; git diff --name-only e8bbc2ce bcace6a32 lists exactly the test file and the fragment, both inside the grant, with no source change and no plan edit."
+  },
+  "justifications": {
+    "durability": "tests/test_a_regenerated_path_is_charged_as_written.py:362 and :417 both redden under their declared mutation, but the fold case reddens through the shared builder's exit-code assert at :302 rather than a fold-specific assertion, so the failure location names the builder as much as the fold.",
+    "evidence": "negative-control.log records both declared mutation arms with EXIT=1 and the named failing ids at revision e8bbc2ce, and gate-head.log records 18 passed EXIT=0 at bcace6a32, so the done-when's measure is recorded, not claimed.",
+    "fit": "the helpers and docstrings follow the file's own idiom and introduce no name the repository naming rules forbid, though _dispatched_node's docstring at :300 describes a fold outcome the case does not reach.",
+    "goal_fidelity": "tests/test_a_regenerated_path_is_charged_as_written.py:346 now declares the path only through --regenerate-path and :371 reads a promoted ledger row, the two things plan s10 names.",
+    "reuse": "the added helper _dispatched_node drives the production dispatch surface rather than reimplementing it, and each test file here owns its own local builders, so no repo-owned capability is forked.",
+    "scope_discipline": "the diff touches only tests/test_a_regenerated_path_is_charged_as_written.py and the fragment under docs/evidence/fragments/a-brief-should-not-cost-what-it-names/, both inside the grant."
+  },
+  "node": "review-of-a-regenerated-path-is-proved-on-the-ledger-bcace6a32d28",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is 'Make the regenerated-path tests prove the fold into the write scope and the promoted ledger row', and plan s10 names exactly a fold case and a promotion fixture; the landed diff rewrites tests/test_a_regenerated_path_is_charged_as_written.py:346 to build the node through the dispatch surface from --regenerate-path alone and adds :371 driving crew.complete on a live pointer and reading ledger.runs, so both halves of the goal are present.\nVERDICT done_when: the done-when is 'deleting the fold in TaskNode.__post_init__ turns the fold case red, and dropping regenerate_paths from the serialised node turns the ledger case red; both mutation arms are in the negative-control log'; negative-control.log arm 1 (revision e8bbc2ce + fold deleted) reports 4 failed EXIT=1 including test_a_regenerated_path_is_folded_into_the_claimed_write_scope, and arm 2 (+ regenerate_paths dropped from as_dict) reports 2 failed EXIT=1 including test_a_promoted_ledger_row_carries_the_regenerated_paths, so the recorded gate measures the done-when.\nVERDICT write_paths: the declared grant is tests/test_a_regenerated_path_is_charged_as_written.py, docs/evidence/fragments/a-brief-should-not-cost-what-it-names/a-regenerated-path-is-proved-on-the-ledger.html and a figures directory; `git diff --name-only e8bbc2ce bcace6a32` lists exactly the test file and the fragment, both inside the grant, with no source change and no plan edit.\nVERDICT manifest: read against the tree; it records status complete, commit bcace6a32d, changed_paths matching the diff, gate-head.log 18 passed exit 0 and negative-control.log arms 4 failed and 2 failed, and names both logs under test_logs, while its baseline_suite and after_suite fields are null.\nVERDICT diff: read commit by commit against base e8bbc2ce; the single commit bcace6a32 changes two files only -- the test file gains the _dispatched_node helper, rewrites the fold case to declare the path through --regenerate-path alone and adds the promotion fixture, and the fragment html is new -- with nothing outside the grant.\nCALL_SITES: reckon/crew/node.py:757 TaskNode.__post_init__ folds regenerate_paths into write_paths; reckon/crew/node.py:787 as_dict serialises regenerate_paths; reckon/crew/dispatch.py:2138 builds node_definition from node.as_dict; reckon/crew/promotion.py:229 complete writes the ledger row from the pointer; reckon/ledger.py:2894 runs reads it -- no production call site carries the change itself, which is tests-only.\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_a_regenerated_path_is_charged_as_written.py:346 now declares the path only through --regenerate-path and :371 reads a promoted ledger row, the two things plan s10 names.\nSCORE evidence: 19\nJUSTIFICATION evidence: negative-control.log records both declared mutation arms with EXIT=1 and the named failing ids at revision e8bbc2ce, and gate-head.log records 18 passed EXIT=0 at bcace6a32, so the done-when's measure is recorded, not claimed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only tests/test_a_regenerated_path_is_charged_as_written.py and the fragment under docs/evidence/fragments/a-brief-should-not-cost-what-it-names/, both inside the grant.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_regenerated_path_is_charged_as_written.py:362 and :417 both redden under their declared mutation, but the fold case reddens through the shared builder's exit-code assert at :302 rather than a fold-specific assertion, so the failure location names the builder as much as the fold.\nSCORE fit: 19\nJUSTIFICATION fit: the helpers and docstrings follow the file's own idiom and introduce no name the repository naming rules forbid, though _dispatched_node's docstring at :300 describes a fold outcome the case does not reach.\nSCORE reuse: 20\nJUSTIFICATION reuse: the added helper _dispatched_node drives the production dispatch surface rather than reimplementing it, and each test file here owns its own local builders, so no repo-owned capability is forked.\nFINDING tests/test_a_regenerated_path_is_charged_as_written.py:353 follow-on: the docstring's last sentence says deleting the fold 'leaves both write_paths and the live claim empty', but with the fold removed the shared builder _dispatched_node fails first at its own assert result.exit_code == 0 (negative-control.log arm 1, refusal contract-validation 'no exclusive write path is enumerated'), so neither the write_paths assertion at :362 nor the claim at :368 is reached; the delivered fragment states the refusal correctly, so only the test's wording overstates what the case measures, and no blocking defect follows.",
+  "review_logs": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T231933887750-review-of-a-regenerated-path-is-proved-on-the-ledger-bcace6a32d28/review-head-rerun.log"
+  ],
+  "review_run_id": "r-20261021T231933887750-review-of-a-regenerated-path-is-proved-on-the-ledger-bcace6a32d28",
+  "reviewed_base_sha": "e8bbc2ce04d2bb4dc4ac21f7dae44e64176f6a3a",
+  "reviewed_head_sha": "bcace6a32d284c89a24d73620e4ceb67846a8370",
+  "reviewed_run_id": "r-20261021T225901318162-a-regenerated-path-is-proved-on-the-ledger",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T23:33:00+00:00",
+  "total": 117
+}
