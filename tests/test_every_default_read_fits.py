@@ -29,6 +29,11 @@ from tests.mcp_family_reload import reload_mcp_family
 PLANS = 60
 SECTIONS = 400
 
+# The sweep calls every view of every read tool against a 60-plan project, which
+# costs more than one focused test costs, so the module declares its own bound
+# rather than inheriting the suite default.
+pytestmark = pytest.mark.timeout(900)
+
 #: The two views that are explicit lossless opt-ins rather than defaults: a
 #: caller asking for one has already chosen the whole record over a bounded
 #: answer, so the runtime ceiling, not a compact row, is what stands behind
@@ -82,6 +87,9 @@ def big_project(tmp_path, monkeypatch):
     mounts = tmp_path / "mounts.json"
     mounts.write_text(json.dumps({project: str(docs)}))
     monkeypatch.setenv("RECKON_MOUNTS_PATH", str(mounts))
+    # A live server bounds each read; this suite measures the size contract, so
+    # the bound is lifted past what a 60-plan fixture costs on a loaded host.
+    monkeypatch.setenv("RECKON_MCP_READ_DEADLINE_SECONDS", "120")
     monkeypatch.setenv("RECKON_STATE_ROOT", str(state_root))
 
     import reckon.serve as serve_module
@@ -192,7 +200,11 @@ def test_every_default_read_fits_its_row(big_project) -> None:
     project, _docs = big_project
     failures: list[str] = []
     for tool_name, view, arguments in _calls(project):
-        result = _call(tool_name, **arguments)
+        try:
+            result = _call(tool_name, **arguments)
+        except Exception as exc:  # noqa: BLE001 — a view that raises is named here
+            failures.append(f"{tool_name} view={view}: raised {exc!r}")
+            continue
         if not isinstance(result, dict):
             continue
         size = serialised_characters(result)
