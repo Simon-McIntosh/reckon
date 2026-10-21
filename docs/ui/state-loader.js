@@ -202,6 +202,71 @@ const applyIndexRowChanges = (delta) => {
   return true;
 };
 
+// ── Derived blocks ───────────────────────────────────────────────────────
+// What a payload carries beyond its rows. Both the first paint and the
+// background merge read them from the rows on screen, so the sprint
+// augmentation and the counts always describe the same inventory the list
+// renders.
+const augmentSprints = (sprints, inventory) => sprints.map(s => {
+  const explicit = new Set(
+    (s.items || []).map(it => typeof it === "string" ? it : it.slug)
+  );
+  const auto = inventory
+    .filter(p => p.type === "plan" && p.sprint === s.id && !explicit.has(p.slug))
+    .map(p => p.slug);
+  return auto.length ? { ...s, items: [...(s.items || []), ...auto] } : s;
+});
+
+const derivedBlocks = (mergedInventory, { sprints, disc = null, idx = {} }) => {
+  const augmentedSprints = augmentSprints(sprints, mergedInventory);
+  const activeSprintId = disc?.active_sprint_id ?? idx.active_sprint_id ?? null;
+  const activeSprints = augmentedSprints.filter(s => s.status === "active");
+  const activeSprintConflict = activeSprints.length === 0
+    ? activeSprintId !== null
+    : activeSprints.length !== 1 || activeSprints[0].id !== activeSprintId;
+  const activeSprint = augmentedSprints.find(s => s.id === activeSprintId)
+                    || augmentedSprints.find(s => s.status === "active");
+  const surfaceState = disc ?? idx;
+  const readySet = (
+    surfaceState.ready_set &&
+    typeof surfaceState.ready_set === "object" &&
+    !Array.isArray(surfaceState.ready_set)
+  ) ? surfaceState.ready_set : {};
+  const endpoints = Array.isArray(surfaceState.endpoints)
+    ? surfaceState.endpoints
+    : (Array.isArray(readySet.endpoints) ? readySet.endpoints : []);
+  return {
+    sprints: augmentedSprints,
+    active_sprint_id: activeSprintId,
+    active_sprints: activeSprints,
+    active_sprint_conflict: activeSprintConflict,
+    sprint: activeSprint,
+    ready_set: readySet,
+    endpoints,
+    source_format: disc?.source_format ?? idx.source_format ?? "legacy-index",
+    resource_versions: disc?.resource_versions ?? idx.resource_versions ?? {},
+    blockers: Array.isArray(disc?.blockers) ? disc.blockers
+              : (Array.isArray(idx.blockers) ? idx.blockers : []),
+    timeline: Array.isArray(disc?.timeline) ? disc.timeline
+              : (Array.isArray(idx.timeline) ? idx.timeline : []),
+    schedule: (surfaceState && typeof surfaceState.schedule === "object" && surfaceState.schedule !== null)
+      ? surfaceState.schedule
+      : null,
+  };
+};
+
+// Every key the derived merge fills, plus the milestones, which travel beside
+// them. A revalidation of the same project keeps each of these on the published
+// state until a discovery response replaces it, so the reader never sees the
+// flow empty itself while the next block is in flight. Taken from what
+// derivedBlocks returns rather than written out again, so a block added there
+// is carried without a second edit. North stars are outside this set: the index
+// path's merge never fills them, so there is nothing to keep.
+window.DERIVED_STATE_KEYS = Object.freeze([
+  ...Object.keys(derivedBlocks([], { sprints: [] })),
+  "milestones",
+]);
+
 // ── Document checks ──────────────────────────────────────────────────────
 // /_checks/<project> lists the documents that fail the render contract and how
 // many verdicts are still pending; the server computes and keeps the verdicts.
@@ -297,59 +362,6 @@ window.revalidateProjectState = async function () {
   }
 
   const stateBase = `state/${PROJECT}`;
-
-  // ── Derived blocks ───────────────────────────────────────────────────────
-  // What a payload carries beyond its rows. Both the first paint and the
-  // background merge read them from the rows on screen, so the sprint
-  // augmentation and the counts always describe the same inventory the list
-  // renders.
-  const augmentSprints = (sprints, inventory) => sprints.map(s => {
-    const explicit = new Set(
-      (s.items || []).map(it => typeof it === "string" ? it : it.slug)
-    );
-    const auto = inventory
-      .filter(p => p.type === "plan" && p.sprint === s.id && !explicit.has(p.slug))
-      .map(p => p.slug);
-    return auto.length ? { ...s, items: [...(s.items || []), ...auto] } : s;
-  });
-
-  const derivedBlocks = (mergedInventory, { sprints, disc = null, idx = {} }) => {
-    const augmentedSprints = augmentSprints(sprints, mergedInventory);
-    const activeSprintId = disc?.active_sprint_id ?? idx.active_sprint_id ?? null;
-    const activeSprints = augmentedSprints.filter(s => s.status === "active");
-    const activeSprintConflict = activeSprints.length === 0
-      ? activeSprintId !== null
-      : activeSprints.length !== 1 || activeSprints[0].id !== activeSprintId;
-    const activeSprint = augmentedSprints.find(s => s.id === activeSprintId)
-                      || augmentedSprints.find(s => s.status === "active");
-    const surfaceState = disc ?? idx;
-    const readySet = (
-      surfaceState.ready_set &&
-      typeof surfaceState.ready_set === "object" &&
-      !Array.isArray(surfaceState.ready_set)
-    ) ? surfaceState.ready_set : {};
-    const endpoints = Array.isArray(surfaceState.endpoints)
-      ? surfaceState.endpoints
-      : (Array.isArray(readySet.endpoints) ? readySet.endpoints : []);
-    return {
-      sprints: augmentedSprints,
-      active_sprint_id: activeSprintId,
-      active_sprints: activeSprints,
-      active_sprint_conflict: activeSprintConflict,
-      sprint: activeSprint,
-      ready_set: readySet,
-      endpoints,
-      source_format: disc?.source_format ?? idx.source_format ?? "legacy-index",
-      resource_versions: disc?.resource_versions ?? idx.resource_versions ?? {},
-      blockers: Array.isArray(disc?.blockers) ? disc.blockers
-                : (Array.isArray(idx.blockers) ? idx.blockers : []),
-      timeline: Array.isArray(disc?.timeline) ? disc.timeline
-                : (Array.isArray(idx.timeline) ? idx.timeline : []),
-      schedule: (surfaceState && typeof surfaceState.schedule === "object" && surfaceState.schedule !== null)
-        ? surfaceState.schedule
-        : null,
-    };
-  };
 
   // Ensure projects[0] is populated. Some central-index repos (e.g. imas-efit)
   // have data.plans[] + data.counts + data.milestones at the top level and no
@@ -500,13 +512,24 @@ window.revalidateProjectState = async function () {
     }
     state.plans = Object.fromEntries(state.inventory.map(row => [arrivalKeyOf(row), row]));
     state.attachment_relations = attachmentRelationsOf(state.inventory);
+    const derived = derivedBlocks(state.inventory, {
+      sprints: Array.isArray(disc.sprints) ? disc.sprints : state.sprints,
+      disc,
+      idx: {},
+    });
+    // A discovery that could not build its schedule serves a null schedule with
+    // the failure beside it. The schedule already on screen is the last one
+    // that was served, so it is kept and marked stale with that error: the
+    // reader sees bars whose age it can read rather than an emptied flow, and
+    // the marking goes as soon as a later discovery serves a schedule again.
+    if (derived.schedule === null && disc.schedule_error && state.schedule) {
+      state.schedule.stale = true;
+      state.schedule.stale_error = disc.schedule_error;
+      derived.schedule = state.schedule;
+    }
     Object.assign(
       state,
-      derivedBlocks(state.inventory, {
-        sprints: Array.isArray(disc.sprints) ? disc.sprints : state.sprints,
-        disc,
-        idx: {},
-      }),
+      derived,
       {
         milestones: Array.isArray(disc.milestones) ? disc.milestones : state.milestones,
         projects: projectRows(
@@ -517,6 +540,12 @@ window.revalidateProjectState = async function () {
         loaded_at: new Date().toISOString(),
       },
     );
+    // The merge is the moment better blocks are on screen, so it announces
+    // itself: the shell answers with a render rather than waiting for the
+    // /_checks round trip that used to be the only path back to the surface.
+    if (typeof window.dispatchEvent === "function") {
+      window.dispatchEvent(new CustomEvent("reckon:derived", { detail: state }));
+    }
     if (pending.length) {
       const held = [
         ...((state.arrival && Array.isArray(state.arrival.pending)) ? state.arrival.pending : []),
@@ -555,7 +584,19 @@ window.revalidateProjectState = async function () {
   }
 
   if (indexRows !== null) {
+    // The index carries rows and nothing derived. A revalidation of the project
+    // already on screen keeps the derived blocks it had until the discovery
+    // response replaces them: the flow, the sprints and the ready set stay put
+    // rather than emptying for one round trip.
+    const previous = window.STATE && window.STATE.project === PROJECT
+      ? window.STATE
+      : null;
     const state = assemble({ rows: indexRows });
+    if (previous) {
+      for (const key of window.DERIVED_STATE_KEYS) {
+        if (key in previous) state[key] = previous[key];
+      }
+    }
     window.STATE = state;
     window.STATE_ERROR = null;
     // The derived fetch starts one task later, in the background: the first

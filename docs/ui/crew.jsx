@@ -83,6 +83,15 @@ function DerivedFlow() {
           <span className="held"><i></i>held</span>
         </div>
       </header>
+      {payload.stale && (
+        // The schedule on screen predates the last discovery, which could not
+        // build one: say so, with the failure and the instant the bars were
+        // served, rather than drawing an age the reader cannot read.
+        <p className="r-derived-flow-stale" role="status">
+          <span className="r-crew-label">stale schedule</span>
+          {payload.stale_error || "the last discovery built no schedule"}; last served {crewFormatStamp(payload.reference) || "at an unknown time"}
+        </p>
+      )}
       <div className="r-derived-flow-sprints">
         <span className="r-crew-label">Sprint</span>
         {sprintChips.map(chip => (

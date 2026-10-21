@@ -167,8 +167,14 @@ function App() {
   }, [refreshProjectState]);
   useEffect(() => {
     window.addEventListener("reckon:checks", bumpInv);
+    // The derived merge announces itself, so the flow it refreshed repaints
+    // without waiting for the /_checks round trip.
+    window.addEventListener("reckon:derived", bumpInv);
     loadChecksAfterDerived();
-    return () => window.removeEventListener("reckon:checks", bumpInv);
+    return () => {
+      window.removeEventListener("reckon:checks", bumpInv);
+      window.removeEventListener("reckon:derived", bumpInv);
+    };
   }, [bumpInv, loadChecksAfterDerived]);
   useEffect(() => {
     try { localStorage.setItem(SK.collapsed, filtersHidden ? "1" : "0"); } catch {}

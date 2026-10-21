@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-page-paints-from-an-index">
+  <meta name="plan-title" content="A revalidation keeps the derived blocks">
+  <meta name="plan-summary" content="The loader names every derived block once as window.DERIVED_STATE_KEYS and carries each one across an index revalidation until the discovery merge replaces it; a discovery that builds no schedule keeps the one on screen, marked stale with the failure that stopped it; and the merge announces itself as reckon:derived, which the shell answers with a render.">
+  <meta name="plan-evidence-for" content="reckon:the-page-paints-from-an-index">
+  <meta name="plan-verifies" content="reckon:the-page-paints-from-an-index#s10">
+  <meta name="plan-commits" content="460427a10,89327f8ef,b5d266e47,bb6b86463,07b6a2924">
+  <meta name="plan-recorded-at" content="2026-10-21">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="spa,state-loader,revalidation,derived-state,staleness">
+  <title>A revalidation keeps the derived blocks — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-revalidation-keeps-the-derived-blocks" data-reckon="landed" data-when="2026-10-21">
+  <h2>A revalidation keeps the derived blocks</h2>
+
+  <p id="a-revalidation-keeps-the-derived-blocks-what">A page load resolves in two
+  round trips: <code>/_index/&lt;project&gt;</code> answers the rows, and
+  <code>/_discover/&lt;project&gt;</code> answers the derived blocks built from them. A
+  revalidation re-requests the index alone. Before this node, the index path assembled a
+  fresh state object and installed it, so every derived block the first load had filled —
+  the schedule, the sprint fields, the ready set — vanished from
+  <code>window.STATE</code> for as long as the discovery round trip took, and each derived
+  flow that reads them repainted as empty in between. The loader now carries each derived
+  block across that window, and a discovery that cannot build a schedule keeps the one
+  already on screen rather than replacing it with a blank.</p>
+
+  <p id="a-revalidation-keeps-the-derived-blocks-keys">The key list is derived, not
+  restated. <code>docs/ui/state-loader.js</code> hoists the block builder to module scope
+  and freezes <code>window.DERIVED_STATE_KEYS</code> as the keys
+  <code>derivedBlocks</code> itself returns, plus <code>milestones</code>, which travels
+  beside them. A block added to the builder is therefore carried across a revalidation
+  without a second edit, and a key the merge never fills cannot enter the list by being
+  written down by hand.</p>
+
+  <p id="a-revalidation-keeps-the-derived-blocks-stale">A discovery that answers with a
+  null schedule and a <code>schedule_error</code> is the case the second round trip made
+  possible: the rows moved, no schedule could be built from them, and the alternative to
+  keeping the served schedule is showing none. The merge keeps it, sets
+  <code>stale</code> and <code>stale_error</code> on it, and
+  <code>docs/ui/crew.jsx</code> draws the bars plus one line above them naming the failure
+  and the instant the bars were last served. A schedule drawn without that line would
+  read as current.</p>
+
+  <p id="a-revalidation-keeps-the-derived-blocks-event">The merge lands after the checks
+  fetch has already returned, so a reader waiting on <code>reckon:checks</code> alone sees
+  the flow paint once and never again. The loader now dispatches
+  <code>reckon:derived</code> when the merge lands, and
+  <code>docs/ui/shell.jsx</code> answers it with a render, as it answers
+  <code>reckon:checks</code>. The dispatch is guarded on
+  <code>window.dispatchEvent</code> being callable, because the loader's node harness
+  supplies a window without one.</p>
+
+  <h3 id="a-revalidation-keeps-the-derived-blocks-evidence">Evidence</h3>
+
+  <p>Gate at <code>460427a10</code>+<code>89327f8ef</code> over the two SPA test files:
+  <strong>15 passed, EXIT=0</strong> against <strong>10 passed, EXIT=0</strong> for those two
+  files at <code>79ca80dc0</code>: every case this node adds passes, and no base case broke.
+  The browser case runs rather than skips. Three new loader cases, one render case and one
+  served-page case carry the measure:</p>
+
+  <ul>
+    <li id="a-revalidation-keeps-the-derived-blocks-t1">A page whose discovery carries a
+    schedule loads off the home route, then revalidates against a stubbed fetch that
+    answers the index at once and the discovery after a delay. The thirteen keys are
+    written out as literals — schedule, the sprint and active-sprint fields, ready_set,
+    endpoints, source_format, resource_versions, blockers, timeline, milestones —
+    <code>window.DERIVED_STATE_KEYS</code> is asserted equal to that set, and each key is
+    asserted to hold its value after the index lands and to be replaced only by the merge.
+    <strong>Negative control:</strong> restoring the wholesale replacement of
+    <code>window.STATE</code> fails this case.</li>
+
+    <li id="a-revalidation-keeps-the-derived-blocks-t2">A discovery answering a null
+    schedule with <code>schedule_error</code> keeps the previous schedule, marked stale
+    with that error. <strong>Negative control:</strong> restoring the overwrite with null
+    fails this case.</li>
+
+    <li id="a-revalidation-keeps-the-derived-blocks-t3">With <code>/_checks</code> held
+    unanswered, <code>reckon:derived</code> is dispatched once the merge lands — asserted
+    against a recording <code>dispatchEvent</code>. <strong>Negative control:</strong>
+    removing the dispatch fails this case.</li>
+
+    <li id="a-revalidation-keeps-the-derived-blocks-t4">
+    <code>tests/test_spa_derived_flow.py</code> renders a stale schedule and asserts both
+    the bars and the stale line are drawn, then renders the fresh schedule and asserts no
+    stale line, as its own control.</li>
+
+    <li id="a-revalidation-keeps-the-derived-blocks-t5">A real served page runs the
+    shipped shell, crew view and loader. Its index and discovery answers are the fixtures,
+    the discovery is delayed 400 ms, and the drawn flow is sampled every 4 ms across a
+    revalidation: every sample must hold the flow, none may show the unavailable branch,
+    and <code>window.STATE</code> must carry a schedule in all of them. The page then
+    answers a discovery with a null schedule and its failure and the bars stay up with the
+    failure named above them. The two routes a repaint could otherwise arrive on are held
+    unanswered — the checks round trip and the crew poll, each recorded in the log as
+    attempted once and never answered — so the listener <code>docs/ui/shell.jsx</code>
+    registers for <code>reckon:derived</code> is the only route to a render after the
+    merge, and the discovery answers one bar more than the first load, so the count
+    asserted after it is a fact only a render made after that merge can produce. The case
+    prints its observations, which the run leaves at
+    <code>logs/served_case_samples.log</code>: 140 samples taken across the revalidation,
+    none with the flow missing, none showing the unavailable branch, and after the merge
+    2 bars under a <code>2 items</code> header against 1 bar before it.
+    <strong>Negative control:</strong> with both calls carrying the
+    <code>reckon:derived</code> listener removed from the shell, the case fails: the
+    two-bar schedule reaches <code>window.STATE</code> and the flow goes on drawing the
+    single bar of the first load through all 152 samples, so the red arm is at
+    <code>logs/derived_listener_red.log</code>, and restoring the listener passes the same
+    case. Restoring the wholesale replacement of <code>window.STATE</code> fails this case
+    and the loader case together.</li>
+  </ul>
+
+  <p id="a-revalidation-keeps-the-derived-blocks-findings">Two findings stored by an
+  earlier review against <code>tests/test_page_paints_from_the_index.py</code> are
+  repaired in place. The assertion that compared the loader's implementation against the
+  <code>INDEX_ROWS</code> it was handed now asserts literal values. The negative control
+  that passed in 37 consecutive attempts is replaced by a deterministic guard: the two
+  server-starting cases record the set of live threads once their accept loop is running
+  and, after closing each stream, give the handler threads a bounded grace window before
+  reading the roster again — a change-stream handler still alive at that point fails the
+  case rather than leaking into whatever test runs next.</p>
+
+  <p id="a-revalidation-keeps-the-derived-blocks-guard">The roster is read
+  <em>before</em> <code>server_close()</code>, and that placement is the whole guard. The
+  server runs with <code>daemon_threads = False</code> so the close joins its handler
+  threads; read after that join, the roster is clean whether or not a handler leaked, and
+  a reading taken there was measured passing with the leak present. When the roster does
+  show a leak the guard closes the listening socket without that join, because joining it
+  is what would turn the leak into a stall. The control is logged at
+  <code>logs/guard_control.log</code> in the run directory: with the response close in
+  <code>_ChangeStream.close</code> removed — the leak — the repaired guard reddens both
+  cases in 12 s, while the same leak under the post-join reading passes both, which is
+  the shape this paragraph exists to close. That first arm reports both failures and then
+  exits 124 rather than 1, and the reason is the leak itself: the handler is a
+  non-daemon thread, so the interpreter cannot finish while the thread is alive, and the
+  arm is stopped by its own timeout after pytest has already printed its result. The two
+  failures are what the arm shows, not its exit code.</p>
+
+  <p id="a-revalidation-keeps-the-derived-blocks-open">The form this took, and why. The
+  first draft delayed <code>/_discover</code> and held <code>/_checks</code> unanswered on
+  a page served straight from the tree, and observed no fetch at all: the served page's
+  own <code>/_index/reckon</code> never resolved in this harness, so the shell sat on its
+  loading state and never reached the crew view. The delivered case answers the index and
+  the discovery from fixtures instead, which leaves the shell, the crew view and the
+  loader exactly as served, and samples the drawn flow across the revalidation rather
+  than holding a route unanswered.</p>
+</article>
+</body>
+</html>
