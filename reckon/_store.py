@@ -480,6 +480,30 @@ def _fsync_directory(directory: Path) -> None:
         os.close(descriptor)
 
 
+def _sibling_temporary_path(path: Path) -> Path:
+    """A fresh sibling temporary path for ``path``.
+
+    A file is published by writing a uniquely named sibling and renaming it over
+    the destination, so this name is the one ``is_store_temporary`` recognises.
+    The random suffix is regenerated on every call, so a caller retrying after a
+    name collision gets a different candidate rather than the same one again.
+    """
+    return path.parent / f".{path.name}.{os.getpid()}.{secrets.token_hex(8)}.tmp"
+
+
+def is_store_temporary(name: str) -> bool:
+    """Whether ``name`` is one of the store's in-flight sibling temporaries.
+
+    A name this module's writer produces is built by ``_sibling_temporary_path``:
+    a leading dot, the target's name, the writing process and a random token,
+    ending in ``.tmp``. A reader scanning a directory a store write's destination
+    lives in uses this to tell the publisher's own write caught in flight from a
+    file left behind, so the form has one owner here rather than a copy at every
+    call site that can drift out of step.
+    """
+    return name.startswith(".") and name.endswith(".tmp")
+
+
 def _open_sibling_temporary(
     path: Path, create_mode: int, exact_mode: int | None, *, binary: bool = False
 ) -> tuple[IO[Any], Path]:
@@ -504,9 +528,7 @@ def _open_sibling_temporary(
     bytes rather than text writes them without a decode or encode round trip.
     """
     for _ in range(64):
-        candidate = (
-            path.parent / f".{path.name}.{os.getpid()}.{secrets.token_hex(8)}.tmp"
-        )
+        candidate = _sibling_temporary_path(path)
         try:
             descriptor = os.open(
                 candidate, os.O_CREAT | os.O_EXCL | os.O_WRONLY, create_mode

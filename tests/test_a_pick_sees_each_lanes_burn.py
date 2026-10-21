@@ -30,7 +30,7 @@ from typing import Any
 
 import pytest
 
-from reckon import budget
+from reckon import _store, budget
 from reckon.crew import budget_lift as bl
 from reckon.crew.node import TaskNode
 from reckon.crew.picker import PickRequest, prompts, snapshot
@@ -112,6 +112,20 @@ def _named_run_id(pointer: Path, attempts: int = 4) -> str | None:
     return None
 
 
+def _store_temporary(name: str) -> bool:
+    """Whether a live-pointer entry is a store write's own temporary.
+
+    A pointer is published through a sibling temporary and renamed over the
+    destination, so a peer's dispatch can leave one in the directory between two
+    readings. Caught mid-write it holds a partial record and names no run, which
+    is the shape the listing arm reports; the store's own write is not a trace
+    of a case. The name's form is owned by ``reckon._store`` rather than copied
+    here, so it cannot drift out of step with the writer that produces it.
+    """
+
+    return _store.is_store_temporary(name)
+
+
 def _writes_into_the_live_home(
     home: Path, before: set[str], minted: tuple[str, ...]
 ) -> list[str]:
@@ -126,10 +140,16 @@ def _writes_into_the_live_home(
     to a peer's dispatch, which is the ordinary traffic of that directory
     rather than a trace of this case. What no peer produces is a file there
     naming no run at all, since a pointer is written by the code that owns the
-    run it describes; that is what the listing arm reports.
+    run it describes; that is what the listing arm reports, and a store
+    temporary is skipped because it is that own write caught in flight rather
+    than a file left behind.
     """
 
-    appeared = sorted(_live_pointer_entries(home) - before)
+    appeared = sorted(
+        name
+        for name in _live_pointer_entries(home) - before
+        if not _store_temporary(name)
+    )
     live = home / "crew" / "live"
     return [
         *(
@@ -185,6 +205,80 @@ def test_the_home_guard_reports_a_file_that_appears_beneath_it(tmp_path: Path):
     assert _writes_into_the_live_home(home, before, ()) == [], (
         "a peer's own live pointer was read as this case's write"
     )
+
+
+def test_the_home_guard_ignores_a_store_temporary_in_the_live_directory(
+    tmp_path: Path,
+):
+    """An in-flight store temporary is not this case's write.
+
+    Every live pointer is published through a sibling temporary named
+    ``.<name>.<pid>.<token>.tmp`` in that same directory, so a peer's dispatch
+    can leave one there between the two readings. Read after its rename it
+    names no run at all, which is exactly the shape the listing arm reports, so
+    without skipping it a peer's ordinary traffic fails a case that wrote
+    nothing.
+    """
+
+    home = tmp_path / "shared-home"
+    live = home / "crew" / "live"
+    live.mkdir(parents=True)
+    before = _live_pointer_entries(home)
+
+    # Caught mid-write, the temporary holds a partial record rather than the
+    # whole pointer the rename would publish, so it names no run when read.
+    (live / ".burnfixture-leak.json.4242.0f3a1c9d.tmp").write_text(
+        '{"run_id": "burnfixture-leak"', encoding="utf-8"
+    )
+    assert _writes_into_the_live_home(home, before, ()) == [], (
+        "a store temporary was read as this case's write"
+    )
+
+
+def test_the_store_temporary_predicate_matches_the_name_the_store_writes(
+    tmp_path: Path,
+):
+    """The predicate and the writer agree on the temporary's name.
+
+    The listing arm trusts ``reckon._store.is_store_temporary`` to tell the
+    store's own write caught in flight from a file left behind, so the predicate
+    and the name the writer builds are asserted against each other rather than
+    against a hand-written literal: a writer whose form changed would otherwise
+    slip past a predicate still matching the old name.
+    """
+
+    produced = _store._sibling_temporary_path(tmp_path / "a-run.json").name
+    assert _store.is_store_temporary(produced), (
+        "the predicate does not recognise the store's own temporary name"
+    )
+    assert not _store.is_store_temporary("a-run.json"), (
+        "the predicate recognises an ordinary pointer name"
+    )
+
+
+def test_the_home_guard_reports_a_stray_pointer_beside_a_temporary(
+    tmp_path: Path,
+):
+    """The skip is of the store's temporary form, not of every stray file.
+
+    A temporary and a pointer naming no run can sit side by side, so the
+    listing arm must still report the stray one: the filter drops the store's
+    own temporary form and nothing else.
+    """
+
+    home = tmp_path / "shared-home"
+    live = home / "crew" / "live"
+    live.mkdir(parents=True)
+    before = _live_pointer_entries(home)
+
+    (live / ".burnfixture-leak.json.4242.0f3a1c9d.tmp").write_text(
+        '{"run_id": "burnfixture-leak"', encoding="utf-8"
+    )
+    (live / "burnfixture-stray.json").write_text("{}", encoding="utf-8")
+
+    leaked = _writes_into_the_live_home(home, before, ())
+    assert leaked, "a stray pointer beside a store temporary was not reported"
+    assert "burnfixture-stray.json" in leaked[0]
 
 
 def test_the_home_needle_arm_reports_a_pointer_filed_under_a_minted_run_id(
