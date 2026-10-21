@@ -4,6 +4,13 @@
   "added_failures_note": "the reviewed run's manifest records no baseline_suite/after_suite keys; its own gate logs pair a base arm at d3101132693470e7b23e8a11015353e0022efb89 (logs/importers.log: 2 failed, 49 passed, EXIT=1, failing tests/test_a_folded_finding_widens_its_repair.py::test_an_exempted_finding_does_not_widen_a_complete_run and ::test_a_fold_naming_another_node_does_not_widen_the_run) against the head arm at 4afe480601bbf3ee30009806e349d8cd10b7df10 (logs/repair-head.log: 34 passed, EXIT=0, no failure ids). The head arm carries zero failures, so the head arm minus the base arm is empty whatever the base arm holds and the node adds no failure; logs/base-arm-two-failures.log re-runs those same two ids against a git-archive extraction of the base tree and reproduces both at EXIT=1, confirming they are pre-existing and outside this node's declared scope.",
   "completed_at": "2026-10-21T00:51:26.425Z",
   "dispatched_at": "2026-10-21T00:32:48Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the two refusals are input validation on the operator's own flags and fail loudly when hit; a test for each is a small follow-up, recorded on this section's landing comment",
+      "recorded_at": "2026-10-21T01:14:49.653032+00:00"
+    }
+  },
   "findings": [
     {
       "file": "reckon/crew_run_commands.py",
