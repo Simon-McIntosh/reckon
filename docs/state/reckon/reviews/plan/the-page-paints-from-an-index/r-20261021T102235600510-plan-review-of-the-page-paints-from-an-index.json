@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T10:46:43.550Z",
+  "dispatched_at": "2026-10-21T10:23:45Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-page-paints-from-an-index.html:196",
+      "id": "done_when-1",
+      "reason": "the node needs one clause naming an isolated configuration home for the control (or the control's place after the measurement), otherwise it either clobbers the measured service's index or cannot produce a cold `/_index` at all.",
+      "text": "\u00a77's `/_index` control is \"run against a temporary `reckon serve` ... that mounts the same four projects\", and the metadata index it removes lives \"under the configuration home's cache directory\" (\u00a73, line 116), which is also where the mounts the temporary server needs are configured; a server mounting the same four projects from the same configuration home removes the live service's own persisted index, so the control mutates the state the report's two measurement passes depend on and leaves the service cold for every reader afterwards",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-page-paints-from-an-index.html:235",
+      "id": "reasoning-1",
+      "reason": "the second bullet is the specific case and names the key, so a node implementing both keeps the schedule and marks it stale; the wording costs a reading, not a step, so it changes no node as dispatched.",
+      "text": "the first bullet's keep rule is scoped by \"until a discovery response replaces it\" while the second bullet (line 236) requires the schedule to survive a discovery response that carries `schedule: null` with a `schedule_error`, and `mergeDerived` (state-loader.js:503-519) replaces `schedule` from every response; as written the two bullets give opposite instructions for that one key",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "646f1579e2228cc3406e2424f38e360ca2202de9aa4a94aee80b4e962efb32ac",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 53,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T102235600510-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "f77904225b3b5e0ecb3c265d10aba26243a539d1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `derivedBlocks` (state-loader.js:316), `mergeDerived` (:484), `revalidateProjectState` (:263), `watchProjectStateChanges` (:709), `refreshProjectState` and `loadChecksAfterDerived` (shell.jsx:154, :149), `docs/ui/crew.jsx`, `tests/test_spa_derived_flow.py` and `tests/test_page_paints_from_the_index.py` all resolve at the reviewed revision, `the-site-answers-fast-and-agrees` carries `id=\"s24\"`, and the cited landed-evidence file exists.",
+    "done_when": "a finding \u2014 \u00a77's `/_index` clause control (line 196) removes the persisted metadata index while the temporary server is nowhere stated to hold its own configuration home, so the control acts on the index the measured service reads.",
+    "evidence_paths": "pass \u2014 \u00a77's report goes to `docs/evidence/archive/the-page-paints-from-an-index-landed.html` under an anchor, with raw logs under the run directory (line 196); \u00a710's logs go under the run directory and \"suites run on the fleet allocation and not the login node\" (line 245). Both survive the run; neither is a scratchpad or a node-local path.",
+    "naming": "pass \u2014 `DERIVED_STATE_KEYS`, `reckon:derived` and `/_schedule/<project>` name the mechanism; no stage label, ticket number or version tag enters a symbol, filename or comment in either unit.",
+    "reasoning": "a finding \u2014 \u00a710's first bullet (line 235) rules that a block is kept \"until a discovery response replaces it\", which read on its own lets a null-schedule response replace the schedule, the exact overwrite the second bullet (line 236) forbids; the section's stated root cause and its render mechanism are otherwise confirmed at the cited lines of state-loader.js, and the merge's only render path is the checks dispatch (state-loader.js:253 \u2192 shell.jsx:169).",
+    "single_goal": "pass \u2014 \u00a710 (line 223) carries one deliverable (the derived blocks stay on screen until better ones replace them) with three behaviours of that one property, and \u00a77 (line 186) carries one measurement.",
+    "wiring": "pass \u2014 line 29 now carries `s7: [s2, s3, s4, s5, s6]` and `s11: [s10]`; \u00a77's text (\"Once \u00a72 to \u00a76 are merged and the operator restarts the service\", line 187) matches its declared edge, \u00a711's \"Build it after \u00a710\" (line 256) matches `s11: [s10]`, and both targets name sections that exist."
+  },
+  "section_digests": {
+    "_document": "5bedd7f41d8b5b370882135e798f35d56d6e6348c4003130ade8574bbf365128",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "77885f4ed508786131335b340d33f53c52d9a7fe8819fd2db28785e5db99303b",
+    "s11": "bb32b98b9a0a5070d5ec6b5387862bef5af3ba37b5956ac7c9d734723c2ac9fa",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "71fc2ce9413d05aaa70c50dd2c6dd354cab8609cc5822cc6b142bc9ec69223d0",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T10:49:42.072897+00:00"
+}
