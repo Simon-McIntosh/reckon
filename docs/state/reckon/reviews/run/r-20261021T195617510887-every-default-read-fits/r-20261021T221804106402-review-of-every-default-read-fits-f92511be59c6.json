@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own logs rather than from its manifest: manifest.md carries no baseline_suite and no after_suite line, but logs/budget_base_vs_head.log runs tests/test_mcp_response_budget.py against both arms of every path this node's gate names and both arms end `5 failed, 3 passed` with the same five ids ([crew-scopes], [crew-live], test_every_other_read_tool_uses_the_same_ceiling[read_plan], test_every_other_read_tool_uses_the_same_ceiling[audit], test_an_under_budget_read_is_exactly_its_pre_ceiling_answer), EXIT=1, so the id-level delta is zero. logs/head_gate.log's own five failing ids are those five and none of them is in a file this node changed.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/mcp_deadlines.py:508",
+    "reckon/mcp.py:1621",
+    "reckon/mcp.py:1937",
+    "reckon/mcp.py:1983",
+    "reckon/mcp.py:2257",
+    "reckon/crew_run_commands.py:309"
+  ],
+  "completed_at": "2026-10-21T22:45:40.057Z",
+  "dispatched_at": "2026-10-21T22:20:21Z",
+  "findings": [
+    {
+      "file": "tests/test_every_default_read_fits.py",
+      "line": "41",
+      "severity": "follow-on",
+      "text": "LOSSLESS_VIEWS exempts roadmap raw and audit raw from the done-when's \"none returns response_over_budget\" half, so the control the plan states is asserted for neither view; roadmap raw still returns response_over_budget on the 60-plan fixture and the fragment discloses it, so it is recorded rather than held against the landing."
+    },
+    {
+      "file": "reckon/mcp_views.py",
+      "line": "2477",
+      "severity": "follow-on",
+      "text": "the paging branch of _paged_findings is never taken by any gate: every fixture carries no findings, so the empty-groups guard at :2475 returns before paginate() and the one view the plan names as over budget at limit=20 is measured only as a no-op, leaving a regression in it uncaught."
+    },
+    {
+      "file": "tests/test_every_default_read_fits.py",
+      "line": "211",
+      "severity": "follow-on",
+      "text": "the right-hand side of the size assertion is view_budget(tool_name, arguments), read from the same VIEW_BUDGETS table the test exists to hold, so the two sides move together if any row is raised and the assertion stays green; the guard that does fire on a real regression is the response_over_budget check at :218 and test_roadmap_detail_fits_by_paging_rather_than_by_refusing at :229."
+    }
+  ],
+  "justifications": {
+    "durability": "logs/negative_control.log shows tests/test_every_default_read_fits.py reddening at 2 failed when the paging is removed, but only the roadmap detail path was mutated and reckon/mcp_views.py:2477's findings paging is never exercised with a non-empty payload.",
+    "evidence": "logs/head_gate.log records the gate at 5 failed/51 passed EXIT=1 and logs/fixture_arms.log records the base arm as response_over_budget, but the reviewed manifest's baseline_suite and after_suite are null, so the delta it claims rests on a log its manifest does not name.",
+    "fit": "the two page helpers join the paginate idiom already at reckon/mcp_views.py:2406 and every new name describes its mechanism, with no plan identifier in a path, symbol or comment.",
+    "goal_fidelity": "reckon/mcp_budget.py:22 holds every read view to a declared row and reckon/mcp_views.py:3578 stops roadmap view=detail serialising the whole report, which is the goal's own words.",
+    "reuse": "no per-view budget owner existed; VIEW_BUDGETS extends reckon/mcp_budget.py, which already owns response_ceiling and serialised_characters, and all three views reuse the existing paginate() rather than a second pager.",
+    "scope_discipline": "all four changed paths (reckon/mcp_budget.py, reckon/mcp_views.py, tests/test_every_default_read_fits.py, the fragment) are inside the declared write paths, and no figure or extra prose was added."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to hold every default MCP read to a per-view size contract by paging the views that serialise whole records; reckon/mcp_budget.py:22 declares VIEW_BUDGETS over every (tool, view) and reckon/mcp_views.py:3143 pages read_plan raw, :3578 roadmap detail and :3839 crew findings through the paginate() already at :2406.\nVERDICT done_when: the done-when names tests/test_every_default_read_fits.py calling every view of every read tool with only its required arguments against a 60-plan/400-section project, plus a base arm where roadmap view=detail returns response_over_budget; logs/fixture_arms.log records that base arm (a 456-character receipt over the 177,661-character answer the base revision builds with the ceiling lifted) beside the head arm's 14,704 characters against its 30,000 row.\nVERDICT write_paths: the declared paths are reckon/mcp_budget.py, reckon/mcp_views.py, reckon/crew/query.py, tests/test_every_default_read_fits.py, tests/test_mcp_response_budget.py, the fragment and the docs/figures directory; the diff changes four files and every one of them is inside that list.\nVERDICT manifest: read manifest.md twice at head f92511be5 - it read in-progress while the run was still re-producing its logs and reads complete afterwards, with commits 696bebeab, 659ccd821 and f92511be5; it states the gate result as `5 failed, 51 passed in 570.09s` EXIT=1, names four test logs and one negative-control log, and declares neither baseline_suite nor after_suite at either reading, so the added-failure figure was taken from logs/budget_base_vs_head.log instead.\nVERDICT diff: read commit by commit against 40c0ab154; 696bebeab adds VIEW_BUDGETS, DEFAULT_VIEWS and view_budget to reckon/mcp_budget.py and the two page helpers to reckon/mcp_views.py, 659ccd821 adds tests/test_every_default_read_fits.py, f92511be5 rewrites the fragment's figures; 450 insertions, 11 deletions, four paths, no out-of-scope change.\nCALL_SITES: reckon/mcp_deadlines.py:508, reckon/mcp.py:1621, reckon/mcp.py:1937, reckon/mcp.py:1983, reckon/mcp.py:2257, reckon/crew_run_commands.py:309\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/mcp_budget.py:22 holds every read view to a declared row and reckon/mcp_views.py:3578 stops roadmap view=detail serialising the whole report, which is the goal's own words.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/head_gate.log records the gate at 5 failed/51 passed EXIT=1 and logs/fixture_arms.log records the base arm as response_over_budget, but the reviewed manifest's baseline_suite and after_suite are null, so the delta it claims rests on a log its manifest does not name.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: all four changed paths of the diff are inside the declared write paths, and the landing adds no figure and no evidence prose beyond the permitted fragment.\nSCORE durability: 15\nJUSTIFICATION durability: logs/negative_control.log shows tests/test_every_default_read_fits.py reddening at 2 failed when the paging is removed, but only the roadmap detail path was mutated and reckon/mcp_views.py:2477's findings paging is never exercised with a non-empty payload.\nSCORE fit: 18\nJUSTIFICATION fit: the two page helpers join the paginate idiom already at reckon/mcp_views.py:2406 and every new name describes its mechanism, with no plan identifier in a path, symbol or comment.\nSCORE reuse: 20\nJUSTIFICATION reuse: no per-view budget owner existed; VIEW_BUDGETS extends reckon/mcp_budget.py, which already owns response_ceiling and serialised_characters, and all three views reuse the existing paginate() rather than a second pager.\nFINDING tests/test_every_default_read_fits.py:41 follow-on: LOSSLESS_VIEWS exempts roadmap raw and audit raw from the done-when's \"none returns response_over_budget\" half, so the control the plan states is asserted for neither view; roadmap raw still returns response_over_budget on the 60-plan fixture and the fragment discloses it, so it is recorded rather than held against the landing.\nFINDING reckon/mcp_views.py:2477 follow-on: the paging branch of _paged_findings is never taken by any gate: every fixture carries no findings, so the empty-groups guard at :2475 returns before paginate() and the one view the plan names as over budget at limit=20 is measured only as a no-op, leaving a regression in it uncaught.\nFINDING tests/test_every_default_read_fits.py:211 follow-on: the right-hand side of the size assertion is view_budget(tool_name, arguments), read from the same VIEW_BUDGETS table the test exists to hold, so the two sides move together if any row is raised and the assertion stays green; the guard that does fire on a real regression is the response_over_budget check at :218 and test_roadmap_detail_fits_by_paging_rather_than_by_refusing at :229.\n",
+  "review_run_id": "r-20261021T221804106402-review-of-every-default-read-fits-f92511be59c6",
+  "reviewed_base_sha": "40c0ab154f8dbeefa307bb90f991fc7651533c8f",
+  "reviewed_head_sha": "f92511be59c60ef500d7f7d5f118bbd6d7b10b8e",
+  "reviewed_run_id": "r-20261021T195617510887-every-default-read-fits",
+  "reviewer": "review-of-every-default-read-fits-f92511be59c6",
+  "reviewer_run_id": "r-20261021T221804106402-review-of-every-default-read-fits-f92511be59c6",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T22:49:22.130967+00:00",
+  "total": 105
+}
