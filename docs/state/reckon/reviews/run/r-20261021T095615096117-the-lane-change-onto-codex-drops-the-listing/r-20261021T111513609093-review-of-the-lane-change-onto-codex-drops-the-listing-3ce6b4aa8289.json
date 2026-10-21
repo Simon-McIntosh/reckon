@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "assert FIGURE_LISTING_HEADING not in written reddens if the composition stops stripping the listing, or if the production heading at reckon/_backends.py:2160 changes while the fixture's own spelling at :401 does not, since the strip then matches nothing and leaves the fixture's listing in the file; the negative control demonstrates the first, so the assertion is independent of the value under test.",
+      "lines": "tests/test_crew_lane_change.py:658"
+    },
+    {
+      "failure_condition": "the four not-in assertions redden if any figure, whole or as a dash line, survives into the composed file; they compare against the CODEX_* literals the test placed on the node, not against the production path that reads them.",
+      "lines": "tests/test_crew_lane_change.py:659-662"
+    },
+    {
+      "failure_condition": "argv.count(\"-i\") == 2 and the two index lookups redden if the dialect stops attaching images on argv (reckon/_backends.py:1280) or attaches them in another order; the expected count is the literal 2 and the expected paths are the CODEX_* constants.",
+      "lines": "tests/test_crew_lane_change.py:664-666"
+    },
+    {
+      "failure_condition": "assert CODEX_BRIEF in written and the resumed-fence marker redden if the composition drops the existing prompt text, but the brief is the very string the test handed the fixture at :624, so the pair proves the file was carried across rather than that its content was independently derived; the commit changed only the left-hand side from the returned brief to the same constant.",
+      "lines": "tests/test_crew_lane_change.py:653-654"
+    }
+  ],
+  "call_sites": [
+    "reckon/crew_run_commands.py:1808 (the crew lane-change CLI calls change_lane)",
+    "reckon/crew/dispatch_sessions.py:1651 (change_lane composes the new attempt through launch_plan)",
+    "reckon/_backends.py:2213 (launch_plan, which applies _prompt_without_figure_listing at :2349)",
+    "reckon/_backends.py:2160 (_FIGURE_LISTING_HEADING, the listing heading the strip matches on)"
+  ],
+  "completed_at": "2026-10-21T11:34:16.567Z",
+  "dispatched_at": "2026-10-21T11:16:28Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T095615096117-the-lane-change-onto-codex-drops-the-listing/negative-control-lane-change-to-codex.log",
+      "line": 4,
+      "severity": "follow-on",
+      "text": "the log's \"# module:\" header line names the scratch reckon/crew/dispatch_sessions.py as the module under test, while the mutation the same log's first line describes removed the _prompt_without_figure_listing call in launch_plan, which lives in reckon/_backends.py:2213 and is applied at :2349, and the manifest's measurement_module names that _backends.py; the log and the manifest disagree about which module was mutated, so a reader of the log alone is told the wrong one."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 06c59989f; the one gained commit 3ce6b4aa8 deletes the 45-line _stopped_clive_run, adds the FIGURE_LISTING_HEADING constant at tests/test_crew_lane_change.py:401 and the run_id, brief, figures and fence parameters to _stopped_figure_run at :420, and rewires the codex case at :620 onto that builder; the prompt text it composes is the same bytes the two removed spellings composed, checked line by line against the deleted block.",
+    "done_when": "the done_when requires the test green at head, the same test failing on the stale listing once the _prompt_without_figure_listing call leaves launch_plan, and the four redispatch-verb cases untouched; gate-lane-change-to-codex.log at revision 3ce6b4aa8 ends \"1 passed in 2.03s\" EXIT=0, negative-control-lane-change-to-codex.log ends \"1 failed in 1.66s\" EXIT=1 on the listing heading at tests/test_crew_lane_change.py:658, and gate-lane-change-file-head.log records \"4 failed, 3 passed\" whose four ids are exactly the ones coordinator-gate-head.log deselects as failing at base c7d60c722 and 637b41da5.",
+    "goal": "the node's goal is a test in tests/test_crew_lane_change.py that drives a lane change of a two-figure run from clive onto codex and holds the composed prompt file to the brief, the restated fence and no figure listing; at the gained head 3ce6b4aa8 that test stands at tests/test_crew_lane_change.py:584 and both it and the clive case at :506 are built by _stopped_figure_run at :420.",
+    "manifest": "read in full at 2026-10-21T12:55:53Z; it names both commits 06c59989f and 3ce6b4aa8, the literal gate command, the three gate logs and the head, whole-file and negative-control results, and its measurement_module names the scratch reckon/_backends.py, which the negative-control log's own \"# module:\" header line contradicts by naming reckon/crew/dispatch_sessions.py.",
+    "write_paths": "prompt.txt declares tests/test_crew_lane_change.py, the evidence fragment and a docs/figures directory; git diff 06c59989f..3ce6b4aa8 changes only tests/test_crew_lane_change.py, 131 added lines against 8 deleted, so the gained commit sits inside the first declared write path and outside both others."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261021T111513609093-review-of-the-lane-change-onto-codex-drops-the-listing-3ce6b4aa8289",
+  "review_text": "VERDICT goal: the node's goal is a test in tests/test_crew_lane_change.py driving a clive-onto-codex lane change of a two-figure run; at the gained head 3ce6b4aa8 that test stands at tests/test_crew_lane_change.py:584 and both it and the clive case at :506 are built by _stopped_figure_run at :420.\nVERDICT done_when: the done_when requires the test green at head, the same test failing on the stale listing once the _prompt_without_figure_listing call leaves launch_plan, and the four redispatch-verb cases untouched; gate-lane-change-to-codex.log at revision 3ce6b4aa8 ends \"1 passed in 2.03s\" EXIT=0, negative-control-lane-change-to-codex.log ends \"1 failed in 1.66s\" EXIT=1 on the listing heading, and gate-lane-change-file-head.log records \"4 failed, 3 passed\" whose four ids are the ones coordinator-gate-head.log deselects as failing at base.\nVERDICT write_paths: prompt.txt declares tests/test_crew_lane_change.py, the evidence fragment and a docs/figures directory; git diff 06c59989f..3ce6b4aa8 changes only tests/test_crew_lane_change.py, 131 lines against 8, and touches nothing under docs/figures.\nVERDICT manifest: read in full at 2026-10-21T12:55:53Z; it names both commits, the literal gate command, the three logs and the head, whole-file and negative-control results, and its measurement_module names the scratch reckon/_backends.py, which the negative-control log's own \"# module:\" header line contradicts by naming reckon/crew/dispatch_sessions.py.\nVERDICT diff: read commit by commit against 06c59989f; the one gained commit 3ce6b4aa8 deletes the 45-line _stopped_clive_run, adds FIGURE_LISTING_HEADING at tests/test_crew_lane_change.py:401 and the run_id, brief, figures and fence parameters to _stopped_figure_run at :420, and rewires the codex case at :620 onto it, and the composed prompt text it builds is byte-identical to what the two removed spellings built.\nCALL_SITES: reckon/crew_run_commands.py:1808, reckon/crew/dispatch_sessions.py:1651, reckon/_backends.py:2160, reckon/_backends.py:2213, reckon/_backends.py:2349\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_crew_lane_change.py:620 builds the clive run through _stopped_figure_run and :653-666 still asserts the brief, the restated fence, the absent listing and one -i per figure on the codex argv.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate-lane-change-to-codex.log at revision 3ce6b4aa8 ends \"1 passed in 2.03s\" EXIT=0 and the regenerated negative-control-lane-change-to-codex.log ends \"1 failed in 1.66s\" EXIT=1, while the base arm exists only as coordinator-gate-head.log's deselect list and a manifest claim with no base-suite log in the run directory.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 06c59989f..3ce6b4aa8 touches only tests/test_crew_lane_change.py, the first of the declared write paths, and adds no production line.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_crew_lane_change.py:658 is falsified by the declared mutation, which negative-control-lane-change-to-codex.log shows reddening on the stale listing at 3ce6b4aa8, while the refactor's own behavioural risk is covered by the two cases being green at head.\nSCORE fit: 18\nJUSTIFICATION fit: the added FIGURE_LISTING_HEADING, CODEX_BRIEF and CODEX_ATTEMPT_FENCE names carry no plan, phase or version label and follow the file's existing constant-and-fixture idiom at tests/test_crew_lane_change.py:400-420.\nSCORE reuse: 20\nJUSTIFICATION reuse: tests/test_crew_lane_change.py:420 is now the single builder for a stopped figure run; the duplicate _stopped_clive_run is gone and a search of the file and of tests/ for another stopped-run-with-figure-listing fixture found none.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T095615096117-the-lane-change-onto-codex-drops-the-listing/negative-control-lane-change-to-codex.log:4 follow-on: the log's \"# module:\" header names the scratch reckon/crew/dispatch_sessions.py as the module under test while the mutation the same log's first line describes was applied to launch_plan in reckon/_backends.py:2349 and the manifest's measurement_module names that _backends.py, so a reader of the log alone is told the wrong module was mutated.\n",
+  "reviewed_base_sha": "06c59989f2a7360fa5043aa69f85f99aea827e5c",
+  "reviewed_head_sha": "3ce6b4aa8289338c5837103234df48c8988fc9ab",
+  "reviewed_run_id": "r-20261021T095615096117-the-lane-change-onto-codex-drops-the-listing",
+  "score_justifications": {
+    "durability": "tests/test_crew_lane_change.py:658 is falsified by the declared mutation, which negative-control-lane-change-to-codex.log shows reddening on the stale listing at 3ce6b4aa8, and the refactor's own behavioural risk is held by the two cases being green at head.",
+    "evidence": "gate-lane-change-to-codex.log at revision 3ce6b4aa8 ends \"1 passed in 2.03s\" EXIT=0 and the regenerated negative-control-lane-change-to-codex.log ends \"1 failed in 1.66s\" EXIT=1, while the base arm the done_when also requires exists only as coordinator-gate-head.log's deselect list and a manifest claim, with no base-suite log in the run directory.",
+    "fit": "the added FIGURE_LISTING_HEADING, CODEX_BRIEF and CODEX_ATTEMPT_FENCE names carry no plan, phase or version label and follow the file's existing constant-and-fixture idiom at tests/test_crew_lane_change.py:400-420.",
+    "goal_fidelity": "tests/test_crew_lane_change.py:620 builds the clive run through _stopped_figure_run and :653-666 still asserts the brief, the restated fence, the absent listing and one -i per figure on the composed codex argv.",
+    "reuse": "tests/test_crew_lane_change.py:420 is now the single builder for a stopped run whose prompt file carries the figure listing; the duplicate _stopped_clive_run is gone and a search of the file and of tests/ for another such fixture found none.",
+    "scope_discipline": "git diff 06c59989f..3ce6b4aa8 touches only tests/test_crew_lane_change.py, the first of the declared write paths, and adds no production line."
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T11:35:08.715941+00:00",
+  "total": 111
+}
