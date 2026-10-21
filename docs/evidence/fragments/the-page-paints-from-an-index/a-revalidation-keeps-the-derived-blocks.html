@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="The loader names every derived block once as window.DERIVED_STATE_KEYS and carries each one across an index revalidation until the discovery merge replaces it; a discovery that builds no schedule keeps the one on screen, marked stale with the failure that stopped it; and the merge announces itself as reckon:derived, which the shell answers with a render.">
   <meta name="plan-evidence-for" content="reckon:the-page-paints-from-an-index">
   <meta name="plan-verifies" content="reckon:the-page-paints-from-an-index#s10">
-  <meta name="plan-commits" content="460427a10,89327f8ef,b5d266e47">
+  <meta name="plan-commits" content="460427a10,89327f8ef,b5d266e47,bb6b86463">
   <meta name="plan-recorded-at" content="2026-10-21">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-tags" content="spa,state-loader,revalidation,derived-state,staleness">
@@ -110,9 +110,22 @@
   repaired in place. The assertion that compared the loader's implementation against the
   <code>INDEX_ROWS</code> it was handed now asserts literal values. The negative control
   that passed in 37 consecutive attempts is replaced by a deterministic guard: the two
-  server-starting cases record the set of live threads before the server starts and assert
-  the same set afterwards, so a change-stream handler thread that outlives its test is a
-  failure rather than an invisible leak. The guard's own failing run is logged.</p>
+  server-starting cases record the set of live threads once their accept loop is running
+  and, after closing each stream, give the handler threads a bounded grace window before
+  reading the roster again — a change-stream handler still alive at that point fails the
+  case rather than leaking into whatever test runs next.</p>
+
+  <p id="a-revalidation-keeps-the-derived-blocks-guard">The roster is read
+  <em>before</em> <code>server_close()</code>, and that placement is the whole guard. The
+  server runs with <code>daemon_threads = False</code> so the close joins its handler
+  threads; read after that join, the roster is clean whether or not a handler leaked, and
+  a reading taken there was measured passing with the leak present. When the roster does
+  show a leak the guard closes the listening socket without that join, because joining it
+  is what would turn the leak into a stall. The control is logged at
+  <code>logs/guard_control.log</code> in the run directory: with the response close in
+  <code>_ChangeStream.close</code> removed — the leak — the repaired guard reddens both
+  cases in 12 s, while the same leak under the post-join reading passes both, which is
+  the shape this paragraph exists to close.</p>
 
   <p id="a-revalidation-keeps-the-derived-blocks-open">The form this took, and why. The
   first draft delayed <code>/_discover</code> and held <code>/_checks</code> unanswered on
