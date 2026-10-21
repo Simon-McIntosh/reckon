@@ -33,6 +33,7 @@ from pathlib import Path
 import pytest
 
 from reckon import metadata_index, serve
+from tests.spa_browser_harness import installed_browser_or_skip, served_spa
 
 ROOT = Path(__file__).resolve().parents[1]
 LOADER = ROOT / "docs" / "ui" / "state-loader.js"
@@ -1047,4 +1048,156 @@ def test_the_merge_announces_itself_with_a_derived_event() -> None:
     # Nothing but the index and the discovery answered, so the event cannot be
     # a side effect of the checks path.
     assert observed["requested"] == [INDEX_ENDPOINT, DISCOVERY_ENDPOINT]
+
+
+#: The served page's own project. The fixtures answer its index and discovery
+#: routes, so the rest of the page — the shell, the crew view, the loader the
+#: browser actually executes — runs unmodified.
+SERVED_PROJECT = "reckon"
+
+#: A real served page whose index and discovery answers are the fixtures above.
+#: The discovery is delayed so the revalidation window is long enough to sample,
+#: and ``window.__withhold`` makes a later discovery serve the null schedule
+#: with its failure, which is the arm that must leave the served bars on screen.
+_SERVED_PRELOAD = """(() => {
+  const nativeFetch = window.fetch.bind(window);
+  window.__requests = [];
+  const rows = %s;
+  const discovery = %s;
+  const response = payload => new Response(JSON.stringify(payload), {
+    status: 200, headers: { "Content-Type": "application/json" },
+  });
+  window.fetch = (resource, options) => {
+    const url = String(resource);
+    window.__requests.push(url);
+    if (url.endsWith("/_index/%s")) return Promise.resolve(response(rows));
+    if (url.endsWith("/_discover/%s")) {
+      return new Promise(resolve => setTimeout(() => {
+        resolve(response(window.__withhold
+          ? { ...discovery, schedule: null,
+              schedule_error: "RuntimeError: crew rows unavailable" }
+          : discovery));
+      }, window.__discoverDelay || 400));
+    }
+    return nativeFetch(resource, options);
+  };
+})()""" % (
+    json.dumps(INDEX_ROWS),
+    json.dumps(DISCOVERY),
+    SERVED_PROJECT,
+    SERVED_PROJECT,
+)
+
+#: Sample the drawn flow every few milliseconds across a revalidation. The
+#: checks event is dispatched once the index has landed because that is the
+#: event the shell answers with a render: without it a fast discovery could
+#: merge before React ever repainted, and a missing schedule would never reach
+#: the screen where this case is looking for it.
+_SERVED_REVALIDATION_PROBE = """(async () => {
+  const waitFor = async predicate => {
+    const deadline = Date.now() + 8000;
+    while (Date.now() < deadline) {
+      if (predicate()) return true;
+      await new Promise(resolve => setTimeout(resolve, 25));
+    }
+    return false;
+  };
+  const flow = () => document.querySelector('.r-derived-flow');
+  const drew = await waitFor(() => {
+    const drawn = flow();
+    return Boolean(drawn && drawn.querySelector('.r-derived-flow-bar'));
+  });
+  const before = {
+    drew,
+    bars: document.querySelectorAll('.r-derived-flow-bar').length,
+    unavailable: Boolean(flow() && flow().textContent.includes('no schedule payload served')),
+  };
+  window.__withhold = false;
+  const revalidated = window.revalidateProjectState();
+  const samples = [];
+  const timer = setInterval(() => {
+    const drawn = flow();
+    samples.push({
+      flow: Boolean(drawn),
+      unavailable: drawn
+        ? drawn.textContent.includes('no schedule payload served')
+        : null,
+      schedule: Boolean(window.STATE && window.STATE.schedule),
+    });
+  }, 4);
+  await revalidated;
+  window.dispatchEvent(new CustomEvent('reckon:checks'));
+  await window.STATE_DERIVED_READY;
+  await new Promise(resolve => setTimeout(resolve, 80));
+  const kept = {
+    samples: samples.length,
+    missing: samples.filter(sample => !sample.flow).length,
+    unavailable: samples.filter(sample => sample.unavailable).length,
+    withoutSchedule: samples.filter(sample => !sample.schedule).length,
+    bars: document.querySelectorAll('.r-derived-flow-bar').length,
+  };
+  clearInterval(timer);
+  window.__withhold = true;
+  await window.revalidateProjectState();
+  await window.STATE_DERIVED_READY;
+  await new Promise(resolve => setTimeout(resolve, 200));
+  const stale = document.querySelector('.r-derived-flow-stale');
+  return {
+    before,
+    kept,
+    stale: {
+      drawn: Boolean(stale),
+      text: stale ? stale.textContent : null,
+      bars: document.querySelectorAll('.r-derived-flow-bar').length,
+      unavailable: Boolean(flow() && flow().textContent.includes('no schedule payload served')),
+    },
+  };
+})()"""
+
+
+def test_a_served_revalidation_keeps_the_derived_flow_drawn(tmp_path: Path) -> None:
+    """The bars stay on a served page across a revalidation, and age when stale.
+
+    The loader cases above prove the merge announces itself; this one proves the
+    page repaints on it, which is the half a reader sees. A real served page runs
+    the shipped shell, crew view and loader, and the index and discovery answers
+    are the fixtures: the index lands at once and the discovery 400 ms later, so
+    the revalidation window is long enough to sample every few milliseconds.
+    """
+
+    with served_spa(
+        tmp_path, installed_browser_or_skip(), project=SERVED_PROJECT, route="#crew"
+    ) as spa:
+        served = spa.run_probe(
+            _SERVED_REVALIDATION_PROBE,
+            preload_expression=_SERVED_PRELOAD,
+            ready_expression="document.readyState === 'complete'",
+        )
+
+    assert served["before"]["drew"] is True, served
+    assert served["before"]["bars"] == len(SCHEDULE_FIRST["bars"]), served
+
+    kept = served["kept"]
+    assert kept["samples"] > 1, (
+        f"the revalidation was sampled {kept['samples']} time(s): the probe "
+        "cannot show the bars were kept across it without samples inside it"
+    )
+    assert kept["missing"] == 0, (
+        f"the derived flow was absent in {kept['missing']} of {kept['samples']} "
+        "samples taken across the revalidation"
+    )
+    assert kept["unavailable"] == 0, (
+        f"the flow showed no schedule payload served in {kept['unavailable']} of "
+        f"{kept['samples']} samples taken across the revalidation"
+    )
+    assert kept["withoutSchedule"] == 0, kept
+    assert kept["bars"] == served["before"]["bars"], kept
+
+    # A discovery that builds no schedule leaves the served bars up and marks
+    # them stale with the failure, rather than drawing an empty flow.
+    assert served["stale"]["drawn"] is True, served
+    assert "RuntimeError: crew rows unavailable" in served["stale"]["text"], served
+    assert "last served" in served["stale"]["text"], served
+    assert served["stale"]["bars"] == served["before"]["bars"], served
+    assert served["stale"]["unavailable"] is False, served
 
