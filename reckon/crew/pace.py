@@ -39,20 +39,28 @@ WEEK_HOURS = 168.0
 DEFAULT_DRAIN_LEAD_HOURS = 12.0
 DEFAULT_PACE_MULTIPLE = 1.1
 
+# The flight key naming the declared groups whose pace is advice rather than a
+# hold. The ``budget`` block is flat and applies to every group, so the groups a
+# declaration is about are named here rather than implied by where it sits.
+ADVISORY_KEY = "advisory_pace_groups"
+
 # The last window before the deadline is asked for whatever remains rather than
 # for a share of it: the deadline is the point the budget should be gone, and a
 # denominator of zero windows has no meaningful share to return.
 MIN_REMAINING_WINDOWS = 1.0
 
 __all__ = [
+    "ADVISORY_KEY",
     "WEEK_HOURS",
     "WINDOW_HOURS",
     "Allowance",
     "GroupReading",
     "PacePolicy",
+    "advisory_groups",
     "allowance_for_group",
     "allowances_for_groups",
     "drain_deadline",
+    "is_advisory_group",
     "nominal_share",
     "on_pace_utilisation",
     "policy",
@@ -108,6 +116,7 @@ class Allowance:
     provider_ceiling: float | None
     effective_limit: float
     limited_by: str
+    advisory: bool = False
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -122,6 +131,7 @@ class Allowance:
             "provider_ceiling": self.provider_ceiling,
             "effective_limit": self.effective_limit,
             "limited_by": self.limited_by,
+            "advisory": self.advisory,
         }
 
 
@@ -134,6 +144,34 @@ def policy(config: Mapping[str, Any] | None) -> PacePolicy:
         drain_lead_hours=(DEFAULT_DRAIN_LEAD_HOURS if lead is None else float(lead)),
         pace_multiple=(DEFAULT_PACE_MULTIPLE if multiple is None else float(multiple)),
     )
+
+
+def advisory_groups(config: Mapping[str, Any] | None) -> frozenset[str]:
+    """The declared groups whose pace is advice rather than a hold.
+
+    The declaration names its groups because the ``budget`` block is flat: one
+    block bounds what one group's pace may be raised to, so a block-wide
+    sign would move every group at once. A group absent from the list is
+    governed exactly as it was, so omitting the key leaves every hold and
+    reserve in place, and a name this config does not declare is inert rather
+    than an error — it names a group nobody declared.
+    """
+    block = (config or {}).get("budget") or {}
+    raw = block.get(ADVISORY_KEY)
+    if isinstance(raw, str):
+        names: Iterable[Any] = (raw,)
+    elif isinstance(raw, (list, tuple, set, frozenset)):
+        names = raw
+    else:
+        return frozenset()
+    return frozenset(
+        name.strip() for name in names if isinstance(name, str) and name.strip()
+    )
+
+
+def is_advisory_group(config: Mapping[str, Any] | None, group: str | None) -> bool:
+    """Whether one declared group's pace is declared advisory."""
+    return str(group) in advisory_groups(config)
 
 
 def drain_deadline(reading: GroupReading, pace: PacePolicy) -> float:
@@ -197,6 +235,7 @@ def allowance_for_group(
         provider_ceiling=None if ceiling is None else float(ceiling),
         effective_limit=effective_limit,
         limited_by=limited_by,
+        advisory=is_advisory_group(config, reading.group),
     )
 
 
