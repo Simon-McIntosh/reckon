@@ -822,14 +822,25 @@ def is_closable(plan: Mapping[str, Any]) -> bool:
 
     ``plan_executable_remainder`` is the one reader of "does a declaration still
     admit work", and its known zero is a plan whose declared sections are all
-    done, descoped or deferred. A plan that declares no sections at all has
-    nothing for that reader to answer about — the remainder is the deliberate
-    unknown there, and an inventory row cannot tell a plan that never persisted
-    a classification from one that persisted none, so both keep the readiness
-    the ladder would otherwise give them.
+    done, descoped or deferred. This asks that reader the question its answer is
+    about — a plan whose sections are all resolved — and reads a plan that
+    declares no sections as the unknown it is: it keeps the readiness the ladder
+    would otherwise give it. The key check below is where that reading differs
+    from the two collaborators this function calls, and why.
     """
 
     declarations = plan.get("section_declarations")
+    # Deliberate divergence from ``plan_executable_remainder``, which documents an
+    # empty declaration as a known zero, and from ``implementable_sections``,
+    # which reads an absent one as declaring no work. Neither reading survives
+    # the row this runs on: ``readiness_from_state`` in ``metadata_index``
+    # collapses an absent declaration set to an empty mapping for every
+    # discovered plan, so an inventory row cannot tell a plan that never
+    # classified its sections from one that classified none. Taking the empty
+    # mapping as resolved would read every legacy plan as finished and empty the
+    # ready set of any project whose plans carry no declarations, so the unknown
+    # remainder wins here and only a plan that declares sections it has resolved
+    # reads closable.
     if not isinstance(declarations, Mapping) or not declarations:
         return False
     return plan_executable_remainder(plan) == 0
