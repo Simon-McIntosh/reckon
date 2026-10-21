@@ -1,0 +1,65 @@
+<section id="a-regenerated-path-is-charged-as-written-landing">
+  <h2>A declared regenerated path is claimed as written and charged a flat reference cost</h2>
+
+  <p><strong>What changed.</strong> A dispatch can now declare a path with
+  <code>--regenerate-path</code> (added beside <code>--write-path</code> on
+  <code>crew dispatch</code> and <code>crew pick</code>), carried on
+  <code>TaskNode.regenerate_paths</code>. <code>TaskNode.__post_init__</code> folds every
+  regenerated path into <code>write_paths</code>, so a regenerated path is a write path for
+  every scope purpose without touching a single scope consumer: the live-claim walk, the
+  <code>scope-conflict</code> refusal, the peer-scope disclosure and promotion's scope reads
+  all treat it as written because it literally is one. The context census in
+  <code>reckon/crew/routing.py</code> (<code>_context_file_inputs</code>) charges each
+  regenerated path one named constant, <code>_REGENERATED_PATH_REFERENCE_TOKENS</code>
+  (4&nbsp;000 tokens), independent of the file's size, and records it with provenance
+  <code>regenerated</code> plus <code>reference_tokens</code>, so the census shows what was
+  charged and why; an ordinary write path is still charged at full. The regenerated set is
+  part of the census cache key, so two nodes whose scopes differ only there cannot share one
+  cached figure. The live pointer (built from <code>node.as_dict()</code>) and the node
+  definition rebuilt for a shadow or replay carry <code>regenerate_paths</code>, so a node
+  that declares a path regenerated and then reads it is visible to review.</p>
+
+  <h3>Measured</h3>
+
+  <p>Gate: eleven test files over the census, the context refusal, the picker and the
+  dispatch command surface, run in the fleet allocation with the repository venv. Each arm
+  is a log whose first line names its revision and whose last line reads
+  <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>head (this change, working tree)</td>
+        <td><code>0f9888ed</code> + change</td>
+        <td><strong>126 passed</strong>, exit 0</td></tr>
+      <tr><td>base (new tests copied in)</td>
+        <td><code>0f9888ed</code></td>
+        <td>0 passed, 1 collection error, exit 2 — the option and its constant do not exist</td></tr>
+      <tr><td>negative control (regenerated path charged at full size)</td>
+        <td>mutated head</td>
+        <td><strong>2 failed</strong>, exit 1</td></tr>
+    </tbody>
+  </table>
+
+  <ul>
+    <li><strong>The fit measure.</strong> A 1&nbsp;MB fixture file in a lane window of
+    230&nbsp;144 tokens: declared with <code>--regenerate-path</code> the node is admitted
+    (standing context 20&nbsp;000 + reference 4&nbsp;000), declared with
+    <code>--write-path</code> the same file estimates 305&nbsp;715 tokens and is refused with
+    <code>context-window-exceeded</code>. Both arms read the same file at the same size, so
+    the two verdicts differ only in what each declaration was charged.</li>
+    <li><strong>The negative control.</strong> Replacing the reference charge with
+    <code>_tokens_for_bytes</code> for the regenerated arm turns the fit test red on its
+    admission assertion and the census test red on
+    <code>assert 285715 == 4000</code> — the live arm is refused with
+    <code>context-window-exceeded</code>, exactly the mutation declared for this node.</li>
+    <li><strong>The scope claim.</strong> A live pointer holding the path regenerated
+    refuses a second dispatch carrying <code>--regenerate-path</code> with exit 7 and
+    <code>error: scope-conflict</code>, naming the holder; <code>crew.scope_claims</code>
+    reports the path.</li>
+    <li><strong>What is not measured here.</strong> The refusal's <em>message</em> naming
+    the first run is read from the candidate path: this node asserts the conflict, the exit
+    and the holder's run id. Verifying the merged result belongs to a separately dispatched
+    test node.</li>
+  </ul>
+</section>
