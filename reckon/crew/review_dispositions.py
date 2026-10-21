@@ -28,6 +28,7 @@ also stays in that module, whose own remaining writers share it.
 
 from __future__ import annotations
 
+import shlex
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
@@ -483,3 +484,27 @@ def record_finding_disposition(
     _write_record(path, record)
     commit_record_write(project, path)
     return path
+
+
+def dispose_commands(project: str, run_id: str, selector: str) -> tuple[str, str]:
+    """The two commands that answer one duty, as ``(fold, exempt)``.
+
+    The two spaces a disposition lives in — a review finding named by its index
+    and a sub-floor dimension named by its name — reach one rendering here, so
+    a duty row and a refusal cannot print the same command differently. The
+    caller passes the selector in the verb's own spelling (``--finding 3``,
+    ``--dimension fit``), which is the only part the two spaces do not share.
+
+    The fold names the node the duty was folded into and the exemption its
+    reason, the two shapes :func:`record_finding_disposition` and
+    :func:`record_dimension_disposition` accept, so a reader handed either
+    command is handed one the writer takes.
+    """
+    base = (
+        f"reckon crew dispose --project {shlex.quote(project)} "
+        f"--run {shlex.quote(run_id)} {selector}"
+    )
+    return (
+        f"{base} --kind folded --node '<the node the finding went into>'",
+        f"{base} --kind exempted --reason '<why this finding is not being acted on>'",
+    )

@@ -1201,35 +1201,31 @@ def _sub_floor_items_by_session(
             # below its floor is kept but no longer owed.
             continue
         node = pointer.get("node") or {}
-        by_session.setdefault(session, []).extend(
-            {
-                "kind": SUB_FLOOR_DUTY_KIND,
-                "run_id": run_id,
-                "node": str(node.get("id") or run_id),
-                "plan": str(node.get("plan") or ""),
-                "age_seconds": _seconds_since(record.get("timestamp"), now=now),
-                "dimension": finding["dimension"],
-                "score": finding["score"],
-                "floor": finding["floor"],
-                "next_command": (
-                    f"reckon crew dispose --project {shlex.quote(project)} "
-                    f"--run {shlex.quote(run_id)} "
-                    f"--dimension {shlex.quote(str(finding['dimension']))} "
-                    "--kind folded --node '<the node the finding went into>'"
-                ),
-                # The exemption is the other shape the same disposition takes,
-                # so it travels as guidance beside the command rather than in
-                # next_command: that field is read as one runnable command, and
-                # a second --kind in it would name two dispositions at once.
-                "exempt_alternative": (
-                    f"reckon crew dispose --project {shlex.quote(project)} "
-                    f"--run {shlex.quote(run_id)} "
-                    f"--dimension {shlex.quote(str(finding['dimension']))} "
-                    "--kind exempted --reason '<why this finding is not being acted on>'"
-                ),
-            }
-            for finding in review_dispositions.sub_floor_dimensions(record, floors)
-        )
+        for finding in review_dispositions.sub_floor_dimensions(record, floors):
+            # The fold and the exemption are the two shapes one disposition
+            # takes, rendered once by the writer's own module so a duty row and
+            # a refusal cannot spell the same command two ways. They travel as
+            # two fields because next_command is read as one runnable command,
+            # and a second --kind in it would name two dispositions at once.
+            fold, exempt = review_dispositions.dispose_commands(
+                project,
+                run_id,
+                f"--dimension {shlex.quote(str(finding['dimension']))}",
+            )
+            by_session.setdefault(session, []).append(
+                {
+                    "kind": SUB_FLOOR_DUTY_KIND,
+                    "run_id": run_id,
+                    "node": str(node.get("id") or run_id),
+                    "plan": str(node.get("plan") or ""),
+                    "age_seconds": _seconds_since(record.get("timestamp"), now=now),
+                    "dimension": finding["dimension"],
+                    "score": finding["score"],
+                    "floor": finding["floor"],
+                    "next_command": fold,
+                    "exempt_alternative": exempt,
+                }
+            )
     return by_session
 
 

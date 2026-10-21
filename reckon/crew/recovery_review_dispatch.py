@@ -5,7 +5,6 @@ import fcntl
 import importlib
 import json
 import re
-import shlex
 import shutil
 import subprocess
 import tempfile
@@ -2089,19 +2088,16 @@ def _finding_place(finding: Mapping[str, Any]) -> str:
 def _finding_dispose_commands(project: str, run_id: str, index: int) -> tuple[str, str]:
     """The two commands that answer one blocking finding by its index.
 
-    A finding is answered either by folding it into the node that carries the
-    repair (``--kind folded``) or by exempting it with a recorded reason
-    (``--kind exempted``). The disposition both write is the one
-    :func:`blocking_finding_dispositions` reads back, so the command a refusal
-    prints is the one that lifts the refusal.
+    The rendering is the disposition writer's own rendering, so the command a
+    disposition duty row prints for a dimension and the command a refusal
+    prints for a finding are one function's output. The disposition either
+    command writes is the one :func:`blocking_finding_dispositions` reads back,
+    so the command a refusal prints is the one that lifts the refusal.
     """
-    base = (
-        f"reckon crew dispose --project {shlex.quote(project)} "
-        f"--run {shlex.quote(run_id)} --finding {index}"
-    )
-    return (
-        f"{base} --kind folded --node '<the node this finding went into>'",
-        f"{base} --kind exempted --reason '<why this finding is not being acted on>'",
+    from reckon.crew import review_dispositions as review_dispositions_module
+
+    return review_dispositions_module.dispose_commands(
+        project, run_id, f"--finding {index}"
     )
 
 
