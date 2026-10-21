@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>the-served-child-and-the-moved-runs-view-keep-their-tests-green</title>
+<meta name="plan-slug" content="every-plan-write-goes-through-edit-plan">
+<meta name="node-id" content="the-served-child-and-the-moved-runs-view-keep-their-tests-green">
+</head>
+<body>
+<section id="the-served-child-and-the-moved-runs-view-keep-their-tests-green" data-reckon="fragment">
+<h2 id="the-served-child-and-the-moved-runs-view-keep-their-tests-green-h">The served child and the moved runs view keep their tests green</h2>
+
+<p id="the-served-child-and-the-moved-runs-view-keep-their-tests-green-summary">Both red ids pass at head: the runs-view spy patches the name the tool now reaches,
+and the census reads no worker launch in the served child's spawner. Zero added failures against base,
+and <code>ruff check</code> / <code>ruff format --check</code> add no findings on the changed paths.</p>
+
+<h3 id="the-served-child-and-the-moved-runs-view-keep-their-tests-green-changes">What changed</h3>
+<ul>
+<li id="the-served-child-and-the-moved-runs-view-keep-their-tests-green-item-attribute"><code>reckon/served_code.py</code>:
+<code>CurrentCodeServer</code>'s injected spawner attribute is renamed <code>_spawn</code> to <code>_spawn_child</code>,
+in the constructor and in <code>_child_for</code>. The constructor's <code>spawn</code> parameter and
+<code>spawn_served_child</code> keep their names, so tests continue to inject through the parameter, and the census
+no longer reads <code>self._spawn(...)</code> as a worker launch.</li>
+<li id="the-served-child-and-the-moved-runs-view-keep-their-tests-green-item-runs-test"><code>tests/test_mcp_crew_runs_run_id.py</code>:
+the spy is patched onto <code>reckon.crew.query.runs_view</code>, the name
+<code>mcp._crew(view="runs")</code> now reaches through <code>mcp_views.serve_crew_view</code>. The assertions are unchanged.</li>
+<li id="the-served-child-and-the-moved-runs-view-keep-their-tests-green-item-new-test"><code>tests/test_the_served_child_is_not_a_worker_launch.py</code> (new):
+captures <code>spawn_served_child</code>'s argv by standing in for <code>subprocess.Popen</code> and asserts it is
+<code>[sys.executable, "-c", SERVED_CHILD_PROGRAM, root]</code>, and that it names no executable a crew launch plan
+compiles for a worker (<code>codex</code>, <code>claude</code>).</li>
+</ul>
+
+<h3 id="the-served-child-and-the-moved-runs-view-keep-their-tests-green-repro">Reproduction, before the repair</h3>
+<pre id="the-served-child-and-the-moved-runs-view-keep-their-tests-green-repro-pre">FAILED tests/test_mcp_crew_runs_run_id.py::test_run_id_reaches_runs_view - AttributeError: &lt;module 'reckon.mcp'&gt; has no attribute 'crew_runs_view'
+FAILED tests/test_the_fleet_gate_holds_dispatch.py::test_launch_callers_reach_the_shared_gate
+E   AssertionError: ('reckon/served_code.py', '_child_for')
+2 failed in 28.69s</pre>
+
+<h3 id="the-served-child-and-the-moved-runs-view-keep-their-tests-green-gate">Gate</h3>
+<p id="the-served-child-and-the-moved-runs-view-keep-their-tests-green-gate-p">Base arm: 4 failed, 116 passed. Head arm: 2 failed, 120 passed. The head failures are
+<code>test_structural_invariants.py::test_only_the_shared_parser_calls_fromisoformat</code> and
+<code>test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window</code>, both present at base and
+both outside this node's scope (peer work in flight). Head failures are a subset of base: zero added.</p>
+
+<h3 id="the-served-child-and-the-moved-runs-view-keep-their-tests-green-nc">Negative control</h3>
+<p id="the-served-child-and-the-moved-runs-view-keep-their-tests-green-nc-p">Restoring the attribute name <code>_spawn</code> in <code>reckon/served_code.py</code> makes
+<code>test_launch_callers_reach_the_shared_gate</code> fail again, naming <code>('reckon/served_code.py', '_child_for')</code>,
+in <code>logs/negative_control.txt</code> (EXIT=1).</p>
+</section>
+</body>
+</html>
