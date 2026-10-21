@@ -315,11 +315,16 @@ def _failed_result(result: Any) -> Mapping[str, Any] | None:
 
 
 #: The error types a running image raises when a configuration or a schema has
-#: moved past the classes it loaded at start, and the message pydantic gives for
-#: a key those classes do not carry. A failure naming one of these is the
-#: defect this guard answers on the current code, wherever it arrives.
+#: moved past the classes it loaded at start. Only a value led by one of these
+#: is the defect this guard answers on the current code; a failure of the
+#: call's own, whatever its text happens to contain, is the caller's answer.
 _SCHEMA_ERROR_NAMES = ("ValidationError", "FlightConfigError", "SchemaError")
-_SCHEMA_ERROR_MARKERS = ("Extra inputs are not permitted",)
+
+#: The answer fields that carry a sub-computation's exception beside a
+#: successful result rather than the call's own outcome. An error in a field
+#: outside this list is part of the caller's answer and is never re-run, so an
+#: unrelated failure reaching here is not re-read as this guard's case.
+_EMBEDDED_FAILURE_FIELDS = ("review_owed_error",)
 
 
 def _embedded_schema_failure(result: Any) -> Mapping[str, Any] | None:
@@ -330,25 +335,24 @@ def _embedded_schema_failure(result: Any) -> Mapping[str, Any] | None:
     predicate could not answer it, and a config the running image's classes
     cannot validate lands there rather than escaping after the write. Such an
     answer is read as a failure, because it is one — the current code would
-    give the answer the image could not. Any other error in such a field is the
-    call's own result and stands.
+    give the answer the image could not. The field must be one of
+    ``_EMBEDDED_FAILURE_FIELDS`` and its value must lead with a schema error
+    type, so an error of any other kind, or an error in any other field, is the
+    call's own result and stands rather than being re-run.
     """
 
     if not isinstance(result, Mapping):
         return None
-    for key, value in result.items():
-        if not isinstance(key, str) or not key.endswith("_error"):
-            continue
+    for key in _EMBEDDED_FAILURE_FIELDS:
+        value = result.get(key)
         if not isinstance(value, str) or not value:
             continue
-        name = value.split(":", 1)[0].rsplit(".", 1)[-1].strip()
-        if name not in _SCHEMA_ERROR_NAMES and not any(
-            marker in value for marker in _SCHEMA_ERROR_MARKERS
-        ):
+        leading = value.split(":", 1)[0].rsplit(".", 1)[-1].strip()
+        if leading not in _SCHEMA_ERROR_NAMES:
             continue
         return {
             "ok": False,
-            "error": name if name in _SCHEMA_ERROR_NAMES else "schema_error",
+            "error": leading,
             "detail": value,
             "field": key,
         }
@@ -466,25 +470,6 @@ def _reread_hint(name: str, kwargs: Mapping[str, Any]) -> str:
     if name == "crew":
         return f"crew(view={str(kwargs.get('view') or 'summary')!r})"
     return f"{name} read"
-
-
-def _route_to_child(name: str, kwargs: Mapping[str, Any]) -> bool:
-    """Whether a warm child serves this call rather than the running image.
-
-    Every call is routed once the child is warm, because an answer the image
-    gives is the behaviour it was built with — which, on a checkout that has
-    moved, is behaviour the tree no longer has and nothing in the answer says
-    so. A write is the one exception while the child has not yet answered a
-    call of that tool: a write the child does not answer is never re-run on the
-    image, because it may have landed, and the image has not run it yet — so
-    routing it there would answer a write that never ran with "may have landed"
-    rather than its own result. Once the child has served the tool, its writes
-    are routed like every other call.
-    """
-
-    if _is_routed_write(name, kwargs):
-        return name in _SERVE_ON_CURRENT_CODE
-    return True
 
 
 def _current_code_answer(child: Mapping[str, Any]) -> Mapping[str, Any] | None:
@@ -640,10 +625,10 @@ def _served_on_current_code(
     return marked
 
 
-#: Tools the current code has answered a call of — the guard's record of a tool
-#: the child can run, which is what a write waits for. It is not what routes a
-#: call: every call of a warm child is routed, because a call the image answers
-#: is behaviour the tree no longer has.
+#: Tools the current code has answered a call of. It routes nothing — every call
+#: of a warm child is routed, because a call the image answers is behaviour the
+#: tree no longer has — and it survives as the guard's record of which tools the
+#: child has run.
 _SERVE_ON_CURRENT_CODE: set[str] = set()
 
 #: The one persistent child per code stamp behind this guard. It is started when
@@ -696,10 +681,11 @@ def _refuse_when_stale(tool: Callable[..., Any], *, name: str) -> Callable[..., 
     it is cold keeps its own result, marked with the two stamps, rather than
     becoming a reconnect, and one that raises carries the same stamps with the
     reconnect remedy rather than a raw error. Once the child is warm it answers
-    every call, so a call that would have succeeded on the stale image runs on
-    the current code like one that failed. A routed call the child does not
-    answer falls back to the image — a routed write never does, because it may
-    have landed, and its timeout names the re-read to make first. A failure
+    every call of every tool, writes included, so a call that would have
+    succeeded on the stale image runs on the current code like one that failed.
+    A read the child does not answer falls back to the image; a write never
+    does, because it may have landed, and its timeout names the re-read to make
+    first. A failure
     embedded in an otherwise successful answer, naming a schema or a
     configuration error, is answered on the current code like a failed one. The
     child's verdict decides whether a changed signature is compatible — an
@@ -724,7 +710,7 @@ def _refuse_when_stale(tool: Callable[..., Any], *, name: str) -> Callable[..., 
                 refusal = _stale_code_response(None, tool=name)
                 if refusal is not None:
                     return refusal
-            elif _route_to_child(name, kwargs):
+            else:
                 routed = True
                 answer = _answer_from_child(state, server, probe, name, kwargs)
                 if answer is not None:

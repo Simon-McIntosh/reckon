@@ -4,13 +4,16 @@ The guard used to answer on the current code only after a call had failed: a
 call that still worked returned the running image's answer, which after a
 landing is behaviour the tree no longer has, and nothing in the answer said so.
 Once the checkout has moved and can be trusted and the child has answered its
-readiness probe, every call of every tool is served by the child, so the answer
-carries ``served_by_code_stamp``. Two failures escaped the guard entirely and
-are answered here as well: a call that raised while the child was still cold
-became a raw exception with neither stamp nor remedy, and a schema or
-configuration failure embedded in an otherwise successful answer — the
-``review_owed_error`` an ``edit_plan`` write reports — was never read as a
-failure at all.
+readiness probe, every call of every tool is served by the child — writes
+included, from a tool's first call — so the answer carries
+``served_by_code_stamp``. Two failures escaped the guard entirely and are
+answered here as well: a call that raised while the child was still cold became
+a raw exception with neither stamp nor remedy, and a schema or configuration
+failure embedded in an otherwise successful answer — the ``review_owed_error``
+an ``edit_plan`` write reports — was passed on as that answer. The embedded
+read is a named list of fields carrying a sub-computation's exception, matched
+on the leading exception type alone, so an error of the call's own in one of
+those fields, or any error outside them, stands.
 
 An unmoved checkout is the control: it serves in process and starts no child.
 
@@ -101,8 +104,13 @@ _SCHEMA_ERROR = (
 )
 
 #: The error the same field carries when the failure is the call's own and no
-#: code change would answer it.
-_UNRELATED_ERROR = "OSError: fixture could not be read"
+#: code change would answer it. Its text carries pydantic's message on purpose:
+#: a match on the message alone would read this as the guard's case, and the
+#: leading exception type is what says it is not one.
+_UNRELATED_NOTE = (
+    "the config could not be read; Extra inputs are not permitted was never reached"
+)
+_UNRELATED_ERROR = f"OSError: {_UNRELATED_NOTE}"
 
 
 class Rig:
@@ -245,28 +253,53 @@ def test_a_raised_failure_while_the_child_is_cold_carries_the_remedy(
         rig.server.stop()
 
 
+def test_the_first_write_of_a_tool_is_served_by_the_warm_child(tmp_path, monkeypatch):
+    """A write is routed on its first call, not only after the tool has failed."""
+    rig = Rig(tmp_path, monkeypatch)
+    guarded, image = rig.tool(
+        "edit_plan",
+        answer={"ok": True, "version": 4, "served_by": "the image"},
+    )
+    try:
+        assert rig.warm(), "the child must answer its probe"
+        result = call(guarded, project="reckon", slug="a-plan", op="set")
+
+        assert result.get("served_by") == "current code", (
+            f"the first write of a tool is served by the warm child: {result!r}"
+        )
+        assert result.get("served_by_code_stamp") == rig.stamp, (
+            f"a write carries the stamp of the code that served it: {result!r}"
+        )
+        assert image == [], (
+            f"the image never runs a write the warm child answers: {image!r}"
+        )
+    finally:
+        rig.server.stop()
+
+
 # ── a schema failure embedded in a successful answer ───────────────────────
 
 
-def test_an_embedded_schema_failure_is_answered_by_the_current_code(
+def test_an_embedded_schema_failure_is_not_passed_off_as_an_answer(
     tmp_path, monkeypatch
 ):
-    """An edit_plan answer whose review_owed_error names a schema failure is re-run."""
-    rig = Rig(tmp_path, monkeypatch)
+    """A schema failure beside the image's successful write keeps both stamps."""
+    rig = Rig(tmp_path, monkeypatch, cold=True, timeout_s=0.3)
     guarded, image = rig.tool(
         "edit_plan",
         answer={"ok": True, "review_owed": None, "review_owed_error": _SCHEMA_ERROR},
     )
     try:
-        assert rig.warm(), "the child must answer its probe"
         result = call(guarded, project="reckon")
 
-        assert result.get("served_by") == "current code", (
-            f"a schema failure beside a successful write is the guard's own case: "
-            f"{result!r}"
-        )
-        assert result.get("served_by_code_stamp") == rig.stamp, result
         assert image, "the image's own answer is what carries the embedded error"
+        assert result.get("ok") is False, (
+            f"a schema failure the image could not see is not its answer: {result!r}"
+        )
+        assert result.get("error") == "ValidationError", result
+        assert result.get("detail") == _SCHEMA_ERROR, result
+        assert result.get("code_stamp_now") == rig.stamp, result
+        assert "current_code_note" in result, result
     finally:
         rig.server.stop()
 
@@ -283,5 +316,23 @@ def test_an_embedded_error_that_is_not_a_schema_failure_stands(tmp_path, monkeyp
 
         assert result.get("review_owed_error") == _UNRELATED_ERROR, result
         assert "served_by_code_stamp" not in json.dumps(result), result
+        assert result.get("ok") is True, result
+    finally:
+        rig.server.stop()
+
+
+def test_an_error_in_a_field_outside_the_guard_s_own_is_not_read(tmp_path, monkeypatch):
+    """A schema error the call reports in its own field is the caller's answer."""
+    rig = Rig(tmp_path, monkeypatch, cold=True, timeout_s=0.3)
+    guarded, _ = rig.tool(
+        "roadmap",
+        answer={"ok": True, "plan_error": _SCHEMA_ERROR},
+    )
+    try:
+        result = call(guarded, project="reckon")
+
+        assert result.get("ok") is True, result
+        assert result.get("plan_error") == _SCHEMA_ERROR, result
+        assert "code_stamp_now" not in result, result
     finally:
         rig.server.stop()
