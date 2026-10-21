@@ -385,12 +385,18 @@ def _assert_the_pair_reads_the_driven_advance(
     own documents before anything is dropped: at a zero advance both calls read
     one instant, the two documents agree on an empty margin, and the case would
     pass having compared nothing the budget view could not already answer.
+
+    The expected advance is written out rather than read from
+    :data:`_PARITY_CLOCK_ADVANCE`. An expectation taken from the value under
+    test holds at every advance and so holds at zero — the very case this
+    assertion exists to refuse.
     """
     composed = dt.datetime.fromisoformat(str(served["checked_at"]))
     compared = dt.datetime.fromisoformat(str(emitted["checked_at"]))
-    assert compared - composed == _PARITY_CLOCK_ADVANCE, (
+    assert compared - composed == dt.timedelta(seconds=30), (
         f"the budget view with {label} composed its two surfaces {compared - composed} "
-        f"apart and the case drives {_PARITY_CLOCK_ADVANCE} between them"
+        "apart, and the case requires the second call of each pair to read 30 seconds "
+        "after the first"
     )
 
 
