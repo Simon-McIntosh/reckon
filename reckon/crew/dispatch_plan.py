@@ -1,6 +1,8 @@
 # ruff: noqa: I001, UP035
 from __future__ import annotations
 import json
+import math
+import sys
 import uuid
 from dataclasses import (
     dataclass,
@@ -29,6 +31,9 @@ from reckon.crew import (
 from reckon.crew import (
     prescription as prescription_module,
 )
+from reckon._plan_html import (
+    _record_field,
+)
 from reckon.crew.node import (
     _SAFE_ID,
     BudgetHold,
@@ -41,6 +46,7 @@ from reckon.crew.node import (
     gate_population_finding,
     negative_control_finding,
     normalize_section,
+    parse_duration,
     role_may_write_repository_paths,
     validate_node,
 )
@@ -51,6 +57,7 @@ from reckon.crew.routing import (
     _agent_configuration,
     _competence_verdict,
     _fleet_script,
+    _section_record,
     require_plan_reviewed,
     require_plan_section_visible,
     resolve_dispatch_authority,
@@ -228,6 +235,189 @@ def _backend_serving_picked_model(
         return ledger.backend_serving_model(config, lane=lane, model=model)
     except ValueError as exc:
         raise CrewError(str(exc)) from exc
+
+
+# How many times the estimate a default fence must reach before the dispatch
+# stops mentioning it. A caller who names no --time-budget gets whatever the
+# role overlay resolves, and the shipped implement figure is minutes where a
+# plan section may declare hours, so the two are compared here rather than
+# discovered by a worker stopped with most of its work undone.
+FENCE_ESTIMATE_SHARE = 4.0
+
+
+def _hours_label(hours: float) -> str:
+    """Render hours the way a duration is written: ``6h``, ``0.25h``."""
+    whole = int(hours)
+    return f"{whole}h" if hours == whole else f"{hours:g}h"
+
+
+def _section_estimate_hours(
+    node: TaskNode,
+    *,
+    project: str,
+    repo: str | Path | None,
+    authority: Mapping[str, Any] | None,
+) -> float | None:
+    """Return the hours a node's named plan section declares in its record.
+
+    The resolution mirrors the read the section's routing read performs: the
+    plan resource is resolved through the project's docs mount and the
+    section's typed record supplies ``effort_hours``. Anything that goes wrong
+    answers with nothing rather than raising, because an advisory estimate
+    that could refuse a dispatch would be a gate nobody asked for.
+    """
+    from reckon.resources import (
+        ResourceCollision,
+        resolve_resource,
+    )
+
+    if not node.section.strip() or not node.plan.strip():
+        return None
+    if repo is None and authority is None:
+        return None
+    try:
+        resolved = dict(
+            authority or resolve_dispatch_authority(project, Path(str(repo)).resolve())
+        )
+        docs_dir = Path(str(resolved["plan"]["docs"])).resolve()
+        resource = resolve_resource(
+            docs_dir, project, node.plan, "plan", include_archived=False
+        )
+        if resource is None:
+            return None
+        record, _project = _section_record(resource.path, node.section)
+    except (
+        CrewError,
+        ledger.LedgerError,
+        OSError,
+        ResourceCollision,
+        KeyError,
+        TypeError,
+        ValueError,
+    ):
+        return None
+    try:
+        hours = float(_record_field(record, "effort_hours"))
+    except (TypeError, ValueError):
+        return None
+    if math.isfinite(hours) and hours > 0:
+        return hours
+    return None
+
+
+def _estimate_hours(
+    node: TaskNode,
+    *,
+    project: str,
+    repo: str | Path | None,
+    authority: Mapping[str, Any] | None,
+) -> float | None:
+    """Return the node's own estimated hours, else its named section's effort."""
+    try:
+        own = float(node.estimated_hours)
+    except (TypeError, ValueError):
+        own = 0.0
+    if math.isfinite(own) and own > 0:
+        return own
+    return _section_estimate_hours(
+        node, project=project, repo=repo, authority=authority
+    )
+
+
+def _role_budget_key(overlay: Mapping[str, Any], role: str, spec_level: str) -> str:
+    """Return the dotted key a role's overlay declares its time budget under."""
+    if overlay.get("time_budget"):
+        return f"roles.{role}.time_budget"
+    level = (overlay.get("by_spec_level") or {}).get(spec_level)
+    if isinstance(level, Mapping) and level.get("time_budget"):
+        return f"roles.{role}.by_spec_level.{spec_level}.time_budget"
+    by_class = overlay.get("by_capability_class") or {}
+    if isinstance(by_class, Mapping):
+        for class_name in sorted(str(name) for name in by_class):
+            entry = by_class[class_name]
+            if isinstance(entry, Mapping) and entry.get("time_budget"):
+                return f"roles.{role}.by_capability_class.{class_name}.time_budget"
+    return ""
+
+
+def _time_budget_layer_key(
+    config: Mapping[str, Any],
+    backend: Mapping[str, Any],
+    *,
+    backend_name: str,
+    node: TaskNode,
+) -> str:
+    """Return the flight key that supplied the resolved time budget.
+
+    The value is re-read from the layers in the order ``_effective_backend``
+    applies them — a selected lane model's declared keys last, then the role's
+    own overlays, then the backend's own declaration, then the fence — so the
+    key a reader can edit is the one named.
+    """
+    lane_name = str(backend.get("lane") or "")
+    model_key = str(backend.get("model_key") or "")
+    if lane_name and model_key:
+        lane = (config.get("lanes") or {}).get(lane_name) or {}
+        declared_model = (lane.get("models") or {}).get(model_key) or {}
+        if isinstance(declared_model, Mapping) and declared_model.get("time_budget"):
+            return f"lanes.{lane_name}.models.{model_key}.time_budget"
+    role = str(node.role or "")
+    overlay = (config.get("roles") or {}).get(role)
+    if isinstance(overlay, Mapping):
+        key = _role_budget_key(overlay, role, str(node.spec_level or ""))
+        if key:
+            return key
+    declared_backend = (config.get("backends") or {}).get(backend_name) or {}
+    if isinstance(declared_backend, Mapping) and declared_backend.get("time_budget"):
+        return f"backends.{backend_name}.time_budget"
+    if (config.get("fences") or {}).get("time_budget"):
+        return "fences.time_budget"
+    return ""
+
+
+def _default_fence_under_estimate_warning(
+    config: Mapping[str, Any],
+    backend: Mapping[str, Any],
+    *,
+    backend_name: str,
+    node: TaskNode,
+    named_budget: str,
+    default_budget: str,
+    project: str,
+    repo: str | Path | None,
+    authority: Mapping[str, Any] | None,
+) -> str | None:
+    """Warn when a default fence is far below the work the node estimates.
+
+    Nothing is returned unless the caller named no ``--time-budget``, the
+    resolved fence came from a default, and that default is under a quarter of
+    the node's estimate, so the one case with something to say is the one this
+    speaks in. The estimate is the node's own figure, else the hours its named
+    section declares — never the plan's total, which is the same figure for
+    every section of a plan.
+    """
+    if str(named_budget or "").strip() or not str(default_budget or "").strip():
+        return None
+    hours = _estimate_hours(node, project=project, repo=repo, authority=authority)
+    if hours is None:
+        return None
+    try:
+        seconds = parse_duration(str(default_budget))
+    except CrewError:
+        return None
+    if seconds * FENCE_ESTIMATE_SHARE >= hours * 3600:
+        return None
+    layer = _time_budget_layer_key(
+        config, backend, backend_name=backend_name, node=node
+    )
+    from_where = f" from {layer}" if layer else ""
+    return (
+        f"node {node.id} names no --time-budget, so the default fence "
+        f"{default_budget}{from_where} is under a quarter of the "
+        f"{_hours_label(hours)} this node estimates; pass --time-budget "
+        f"{_hours_label(float(math.ceil(hours)))} so the run is not stopped "
+        "with most of the work undone"
+    )
 
 
 def plan_dispatch(
@@ -469,6 +659,7 @@ def plan_dispatch(
     local_resolved = bool(
         local and local_backend_name and backend_name == local_backend_name
     )
+    named_budget = str(node.time_budget or "")
     default_budget = resolved_time_budget(config, backend)
     budget_ceiling = resolved_time_ceiling(config)
     default_token_budget = _resolved_token_budget(config, backend)
@@ -479,6 +670,20 @@ def plan_dispatch(
     caller_manifest = bool(node.manifest_path)
     node.manifest_path = node.manifest_path or durable_manifest
     warnings = list(getattr(config, "warnings", ()))
+    fence_warning = _default_fence_under_estimate_warning(
+        config,
+        backend,
+        backend_name=backend_name,
+        node=node,
+        named_budget=named_budget,
+        default_budget=default_budget,
+        project=project,
+        repo=repo,
+        authority=authority,
+    )
+    if fence_warning is not None:
+        warnings.append(fence_warning)
+        print(fence_warning, file=sys.stderr)
     if caller_manifest and _path_is_tmpfs(node.manifest_path):
         warnings.append(
             f"manifest path {node.manifest_path!r} is on tmpfs; use the durable "
