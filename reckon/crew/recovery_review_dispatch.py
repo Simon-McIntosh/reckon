@@ -5,6 +5,7 @@ import fcntl
 import importlib
 import json
 import re
+import shlex
 import shutil
 import subprocess
 import tempfile
@@ -2053,6 +2054,133 @@ def _dispatch_figure_review_for_run(
     )
 
 
+def _undisposed_blocking_findings(
+    review: Mapping[str, Any],
+) -> list[tuple[int, Mapping[str, Any]]]:
+    """The blocking findings of a stored review that no disposition answers.
+
+    The enumeration is :func:`reckon.crew.repair.blocking_finding_dispositions`,
+    the one reader that pairs each blocking finding with its original index and
+    the disposition recorded against it, so the index a refusal prints is the
+    index ``crew dispose --finding`` answers. A finding whose disposition is
+    anything but ``open`` has been answered — folded into a node, or exempted
+    with a reason — and raises nothing here.
+    """
+    from reckon.crew import repair as repair_module
+
+    return [
+        (index, finding)
+        for index, finding, disposition in repair_module.blocking_finding_dispositions(
+            review
+        )
+        if disposition == "open"
+    ]
+
+
+def _finding_place(finding: Mapping[str, Any]) -> str:
+    """Render a finding's position, so a refusal names where to look for it."""
+    path = str(finding.get("file") or "").strip()
+    line = str(finding.get("line") or "").strip()
+    if path and line:
+        return f"{path}:{line}"
+    return path or "the review's findings"
+
+
+def _finding_dispose_commands(project: str, run_id: str, index: int) -> tuple[str, str]:
+    """The two commands that answer one blocking finding by its index.
+
+    A finding is answered either by folding it into the node that carries the
+    repair (``--kind folded``) or by exempting it with a recorded reason
+    (``--kind exempted``). The disposition both write is the one
+    :func:`blocking_finding_dispositions` reads back, so the command a refusal
+    prints is the one that lifts the refusal.
+    """
+    base = (
+        f"reckon crew dispose --project {shlex.quote(project)} "
+        f"--run {shlex.quote(run_id)} --finding {index}"
+    )
+    return (
+        f"{base} --kind folded --node '<the node this finding went into>'",
+        f"{base} --kind exempted --reason '<why this finding is not being acted on>'",
+    )
+
+
+def _open_review_refusal(
+    record: Mapping[str, Any], *, dry_run: bool
+) -> dict[str, Any] | None:
+    """Refuse to start a review while the run's newest review owes an answer.
+
+    A review round dispatched over a head whose previous review still carries a
+    blocking finding with no disposition is a round certain to repeat that
+    finding, so the round is refused before anything is composed. The state is
+    read through :func:`reckon.crew.review_lifecycle.lifecycle` — the one
+    derivation that decides whether a stored review is still ``open`` — so a
+    later change to ``_run_open`` reaches this refusal too, and a run whose
+    review has landed or been superseded falls through to the rest of the
+    dispatch. A plan review and a review of a review are not run reviews and are
+    left alone: neither carries a node's findings.
+
+    The findings the refusal names are enumerated through
+    :func:`reckon.crew.repair.blocking_finding_dispositions`, the reader that
+    pairs each blocking finding with its index and disposition, so an answered
+    finding no longer refuses and the command the refusal prints is one the
+    disposition writer accepts.
+    """
+    if record.get("subject") == "plan" or _is_review_node(record):
+        return None
+    run_id = str(record.get("run_id") or "")
+    project = str(record.get("project") or "")
+    if not run_id or not project:
+        return None
+    from reckon.crew import review_lifecycle as review_lifecycle_module
+
+    try:
+        stored_reviews = [
+            stored
+            for _path, stored in review_module.stored_records_for_run(project, run_id)
+        ]
+    except (OSError, ValueError):
+        # A store that cannot be read is not evidence that a finding is
+        # undisposed, so the dispatch is left to its own readers rather than
+        # refused on a reading nobody could complete.
+        return None
+    if not stored_reviews:
+        return None
+    closed = run_id in ledger.run_ids(project)
+    for stored in stored_reviews:
+        if (
+            review_lifecycle_module.lifecycle(
+                stored, run_closed=closed, later_records=tuple(stored_reviews)
+            )
+            != review_lifecycle_module.OPEN
+        ):
+            continue
+        undisposed = _undisposed_blocking_findings(stored)
+        if not undisposed:
+            continue
+        rendered = "; ".join(
+            f"{_finding_place(finding)} — dispose it with "
+            f"`{_finding_dispose_commands(project, run_id, index)[0]}` or "
+            f"`{_finding_dispose_commands(project, run_id, index)[1]}`"
+            for index, finding in undisposed
+        )
+        reason = (
+            f"run {run_id!r} cannot be reviewed: its newest review carries "
+            f"{len(undisposed)} blocking finding(s) with no disposition, so a "
+            f"review dispatched now would repeat them: {rendered}"
+        )
+        if not dry_run:
+            _record_review_dispatch(run_id, status="refused", reason=reason)
+        return {
+            "run_id": run_id,
+            "dispatched": False,
+            "refused": True,
+            "reason": reason,
+            "undisposed_findings": [index for index, _finding in undisposed],
+        }
+    return None
+
+
 def dispatch_review_for_run(
     record: Mapping[str, Any],
     *,
@@ -2063,6 +2191,9 @@ def dispatch_review_for_run(
     dry_run: bool = False,
 ) -> dict[str, Any]:
     """Dispatch the text review and, when needed, its separate figure review."""
+    refusal = _open_review_refusal(record, dry_run=dry_run)
+    if refusal is not None:
+        return refusal
     text_report = _dispatch_text_review_for_run(
         record,
         config=config,
