@@ -1,0 +1,124 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T06:56:20.341Z",
+  "dispatched_at": "2026-10-21T06:42:44Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-finished-plan-closes.html:67",
+      "id": "reasoning-1",
+      "reason": "the cited census records \"open plans with no section declarations at all; those are legacy plans outside this plan's scope\", yet the rule as written classifies every one of them closable and pulls them out of `ready_now` and the ready counts, so the node would change readiness for a population \u00a71 excludes and \u00a72's section-bearing fixtures cannot catch it.",
+      "text": "\u00a72 defines closable as \"no implementable section, so every section is done, descoped or deferred\", but a plan with no section declarations at all also has no implementable section, and \u00a71's own evidence names that population and puts it out of scope",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-finished-plan-closes.html:88",
+      "id": "reasoning-2",
+      "reason": "on the verified data \u00a73's mechanism leaves signal-search-finds-the-measured-signal and cut-cell-current-attribution blocked, so \u00a76's done-when (\"no plan reading `blocked` on a gate over finished work\") is reached only through \u00a74's descope path, an ordering \u00a73 never states and its done-when never exercises; a \u00a73 node reading \"done or descoped\" can implement the rule literally and leave two of \u00a71's three examples still blocked.",
+      "text": "\u00a73 clears an unpassed gate only when its gated sections are \"all done or descoped\", leaving `deferred` outside the rule, while \u00a71 attributes two of the three blocked plans to gates whose gated section is deferred (imas-codex `g-ssfms-1` on `s11`; nova's three `g-cca-*` gates on `s6`)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-finished-plan-closes.html:125",
+      "id": "reasoning-3",
+      "reason": "with no caller named, a \u00a75 node wires `closable: true` to an event that never fires, or silently invents a declaration write inside promotion; the plan must name the write path that ticks the declaration, or state that `crew complete`/`crew land` must itself gain it.",
+      "text": "\u00a75 fires \"[w]hen `crew complete` or `crew land` moves a plan's last implementable section to done\", but neither command writes `section_declarations`: `reckon/crew/merge.py` writes no plan state at all, and the only landing-derived plan record is a run comment that `_landed_sections` (reckon/crew/promotion_checks.py:1457) describes as recording \"run outcomes, not document-card shape or section closure\"",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-finished-plan-closes.html:67",
+      "id": "wiring-1",
+      "reason": "both branches are additive supersets of today's behaviour and neither \u00a72's nor \u00a73's done-when fixture depends on a descoped section existing, so the landing order is a scheduling nicety rather than something the mechanism needs.",
+      "text": "\u00a72 and \u00a73 both branch on the `descoped` declaration, which does not exist in the codebase (`grep -rn descoped reckon/` returns nothing; `_schema.SECTION_DECLARATION_ENUM` is `[\"implementable\",\"deferred\",\"done\"]`) and is added only by `a-project-reads-as-one-picture` \u00a79, yet only \u00a74 declares that depends-on",
+      "type": "wiring",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "3aeabbef65ef52350897a4302cd60aecb4da0d8a08ba4fb3a497bf225e1ed56f",
+  "plan_slug": "a-finished-plan-closes",
+  "plan_version": 0,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-21T07:00:07.006227+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-21T07:00:15.915923+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-3",
+      "reason": "",
+      "when": "2026-10-21T07:00:24.640093+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "the descoped branches in \u00a72 and \u00a73 are additive: both rules read done and deferred today, treat descoped as done once a-project-reads-as-one-picture \u00a79 lands, and neither fixture needs a descoped section; an edge would hold \u00a72 and \u00a73 behind \u00a79 for no mechanism they require",
+      "when": "2026-10-21T07:00:34.853093+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T07:00:07.006227+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T07:00:15.915923+00:00"
+    },
+    "reasoning-3": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T07:00:24.640093+00:00"
+    },
+    "wiring-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "the descoped branches in \u00a72 and \u00a73 are additive: both rules read done and deferred today, treat descoped as done once a-project-reads-as-one-picture \u00a79 lands, and neither fixture needs a descoped section; an edge would hold \u00a72 and \u00a73 behind \u00a79 for no mechanism they require",
+      "when": "2026-10-21T07:00:34.853093+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-finished-plan-closes.v0.json",
+  "review_run_id": "r-20261021T064123140711-plan-review-of-a-finished-plan-closes",
+  "reviewed_blob_sha": "133f820ad867ab095328c6689906fa8e1f1019f8",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every citation resolves: the evidence archive exists and its figures match \u00a71 exactly (1862/376/106 declarations; 21 plans at pct=100.0 split 3 blocked / 13 ready / 5 deferred; \"15 of the 20\" carry deferred sections \u2014 5 of the 20 census rows list no deferred section); `a-project-reads-as-one-picture#s9` exists and is titled \"A section can be descoped\"; `a-sprint-closes-on-completable-work` exists with `plan-status=shipped`; `docs/evidence/derived-gate-state-landed.html` exists and lists `reckon/lifecycle.py`, which holds the named blocker function `unpassed_gate_blockers` (lifecycle.py:52); the `the-fleet-node-stays-in-service` gate `g-tfnsis-move-ready` carries `data-section=\"s5\" data-gated-sections=\"s8\"` exactly as \u00a71 states; the nova `g-cca-...-admits-the-hot-path` gate is `closed` with `verdict=\"failed\"` as \u00a71 states; \u00a74's \"skill rule\" resolves to `~/.claude/skills/reckon-build/references/coordinator-reference.md:984`.",
+    "done_when": "pass \u2014 \u00a72, \u00a73, \u00a74 each name an in-fixture control and a base-commit arm the test fails at; \u00a75 names its control (\"a landing that leaves an implementable section returns neither\"); \u00a76's control is the base census reporting the 21 plans of \u00a71. Every done-when is measurable and falsifiable.",
+    "evidence_paths": "pass \u2014 \u00a71 cites `docs/evidence/archive/a-finished-plan-closes-landed.html`, an in-repo durable path that exists and carries the census; \u00a76 writes before/after counts to the landed record. No scratchpad, node-local or session-temporary path appears anywhere in the plan.",
+    "naming": "pass \u2014 the plan's new symbols are mechanism names (`closable`, `stale-gate`, `plan-closable`, `moved_to`); no plan label, stage name, ticket number, version tag or changelog prose reaches a symbol, comment or filename.",
+    "reasoning": "findings \u2014 the stated root cause matches the cited evidence in \u00a71, but \u00a72's scope, \u00a73's gate rule and \u00a75's trigger each diverge from the code and evidence they rest on (FINDING lines below).",
+    "single_goal": "pass \u2014 \u00a72 (readiness gains `closable`), \u00a73 (a gate on finished work stops holding), \u00a74 (deferred work leaves before close), \u00a75 (the finishing node offers its close), \u00a76 (census closes or records). \u00a73's `stale-gate` finding and \u00a75's obligations row are the reporting surface of their one mechanism, not a second deliverable.",
+    "wiring": "a finding \u2014 \u00a72, \u00a73 and \u00a74 all build against the `descoped` declaration, but only \u00a74 declares the depends-on edge (`plan-section-depends-on` s4 -> `a-project-reads-as-one-picture#s9`), while \u00a72 (plan.html:67-68) and \u00a73 (plan.html:88-90) name `descoped` in their own mechanism and declare nothing."
+  },
+  "section_digests": {
+    "_document": "a4ae683796f1cd7d1f79c1a255667e309bf30ed565ec4468724053b7e60a7306",
+    "s1": "1e9dfcb4502718170725c8fe6a094be7008a8414e2b0c4d7396de0b81ce04dab",
+    "s2": "5ebf15d52175bc0c11638fd9300c3d8a598c0f0e5ca5364ae2b68598ea7cc0d3",
+    "s3": "dce9c813e61deee9f22fe7d19b387f63de7b724155ac92d10f90e1d045ae0a19",
+    "s4": "06886da82dec62e1c772f7b868b84778dfd97afe61ca8a9a157b7e8e83b05314",
+    "s5": "8eb1786acc8de87ebed59c8c6ced7a3b873ae29aac240cfebd8a6703978377fe",
+    "s6": "e70b0feb2c2e3f4e81d0af45dc4b770870c85b2bb2afbf74936d2b8b52a9a982"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T07:00:00.487897+00:00"
+}
