@@ -867,6 +867,16 @@ def _omitted_probe_inputs(*, supplied: Mapping[str, bool]) -> list[str]:
     help="Exclusive write path; repeat for each.",
 )
 @click.option(
+    "--regenerate-path",
+    "regenerate_paths",
+    multiple=True,
+    help=(
+        "A write path whose contents are regenerated wholesale rather than "
+        "read; claimed like any write path, but charged one fixed reference "
+        "cost rather than its file size. Repeat for each."
+    ),
+)
+@click.option(
     "--negative-control",
     "negative_control",
     default="",
@@ -909,6 +919,7 @@ def crew_pick(
     done_when,
     section,
     write_paths,
+    regenerate_paths,
     negative_control,
     estimated_hours,
     comment,
@@ -983,6 +994,7 @@ def crew_pick(
                 section=section,
                 negative_control=negative_control or "",
                 write_paths=list(write_paths),
+                regenerate_paths=list(regenerate_paths),
                 estimated_hours=estimated_hours,
             )
             payload = pick(
@@ -1146,6 +1158,16 @@ def _budget_check_report(
     "write_paths",
     multiple=True,
     help="Exclusive write path; repeat for each.",
+)
+@click.option(
+    "--regenerate-path",
+    "regenerate_paths",
+    multiple=True,
+    help=(
+        "A write path whose contents are regenerated wholesale rather than "
+        "read; claimed like any write path, but charged one fixed reference "
+        "cost rather than its file size. Repeat for each."
+    ),
 )
 @click.option(
     "--image",
@@ -1333,6 +1355,7 @@ def crew_dispatch(
     goal,
     done_when,
     write_paths,
+    regenerate_paths,
     image_paths,
     peers,
     required_decisions,
@@ -1478,6 +1501,7 @@ def crew_dispatch(
         negative_control=negative_control or "",
         done_when=done_when,
         write_paths=list(write_paths),
+        regenerate_paths=list(regenerate_paths),
         time_budget=time_budget,
         estimated_hours=estimated_hours,
         manifest_path=manifest,

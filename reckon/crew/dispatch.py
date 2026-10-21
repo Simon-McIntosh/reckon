@@ -580,6 +580,9 @@ def shadow_source(
         spec_level=str(definition.get("spec_level") or primary.get("spec_level") or ""),
         done_when=str(definition["done_when"]),
         write_paths=[str(path) for path in definition.get("write_paths") or ()],
+        regenerate_paths=[
+            str(path) for path in definition.get("regenerate_paths") or ()
+        ],
         negative_control=str(definition.get("negative_control") or ""),
         estimated_hours=definition.get("estimated_hours"),
         requires_decisions=[

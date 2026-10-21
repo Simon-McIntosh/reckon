@@ -745,6 +745,7 @@ class TaskNode:
     spec_level: str = ""
     done_when: str = ""
     write_paths: list[str] = field(default_factory=list)
+    regenerate_paths: list[str] = field(default_factory=list)
     time_budget: str = ""
     manifest_path: str = ""
     negative_control: str = ""
@@ -752,6 +753,22 @@ class TaskNode:
     requires_decisions: list[str] = field(default_factory=list)
     peer_scopes: dict[str, list[str]] = field(default_factory=dict)
     images: list[str] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        """Fold a regenerated path into the write scope it is claimed under.
+
+        A regenerated path is overwritten wholesale, so it is a write path for
+        every scope purpose: claimed against a peer, refused with a
+        scope-conflict, and counted as written by promotion. Recording it in the
+        write scope here makes that true at the type level rather than at each
+        consumer, which is also why the estimator can still charge it by its own
+        reference cost -- the regenerated set names which write paths are
+        regenerated.
+        """
+        claimed = self.write_paths
+        for path in self.regenerate_paths:
+            if path not in claimed:
+                claimed.append(path)
 
     def as_dict(self) -> dict[str, Any]:
         """Return the node as sorted JSON-ready data."""
@@ -767,6 +784,7 @@ class TaskNode:
             "estimated_hours": self.estimated_hours,
             "negative_control": self.negative_control,
             "plan": self.plan,
+            "regenerate_paths": list(self.regenerate_paths),
             "requires_decisions": list(self.requires_decisions),
             "role": self.role,
             "section": self.section,

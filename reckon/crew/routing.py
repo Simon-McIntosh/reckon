@@ -62,6 +62,13 @@ if TYPE_CHECKING:
 # ── Routing ─────────────────────────────────────────────────────────────────
 
 _CONTEXT_BYTES_PER_TOKEN = 3.5
+# A regenerated write path is overwritten wholesale rather than read, so the
+# census charges it one fixed reference cost instead of its full size. The
+# figure is the byte charge of a small module (a few kilobytes), which keeps a
+# regenerated node's estimate independent of the generated record's size while
+# still pricing the brief that names the work. The value is flat by design: a
+# size-dependent charge would reintroduce the cost this path exists to remove.
+_REGENERATED_PATH_REFERENCE_TOKENS = 4_000
 _MEASURED_LAUNCH_CONTEXT_FLOOR_TOKENS = 50_392
 _NAMED_REPOSITORY_FILE = re.compile(
     r"(?<![A-Za-z0-9_./-])(?:/?(?:[A-Za-z0-9_.-]+/)+"
@@ -3076,7 +3083,9 @@ def _context_file_inputs(
 
         granted_paths = _landing_fragment_paths(node, authority=authority)
 
-    def describe(raw: str, *, declared_read: bool) -> dict[str, Any]:
+    def describe(
+        raw: str, *, declared_read: bool, regenerated: bool = False
+    ) -> dict[str, Any]:
         candidate = Path(raw).expanduser()
         resolved = (
             candidate if candidate.is_absolute() else repo / candidate
@@ -3087,10 +3096,13 @@ def _context_file_inputs(
             "bytes": 0,
             "estimated_tokens": 0,
             "counted": False,
-            "provenance": "declared",
+            "provenance": "regenerated" if regenerated else "declared",
             "status": "missing",
+            "reference_tokens": (
+                _REGENERATED_PATH_REFERENCE_TOKENS if regenerated else 0
+            ),
         }
-        if not declared_read and resolved in granted_paths:
+        if not regenerated and not declared_read and resolved in granted_paths:
             record["provenance"] = "granted"
         if not resolved.is_relative_to(repo):
             record["status"] = "outside-repository"
@@ -3104,8 +3116,12 @@ def _context_file_inputs(
         if not is_file:
             record["status"] = "directory" if resolved.is_dir() else "missing"
             return record
-        tokens = _tokens_for_bytes(byte_count)
-        chargeable = record["provenance"] == "declared"
+        tokens = (
+            _REGENERATED_PATH_REFERENCE_TOKENS
+            if regenerated
+            else _tokens_for_bytes(byte_count)
+        )
+        chargeable = record["provenance"] in ("declared", "regenerated")
         record.update(
             {
                 "bytes": byte_count,
@@ -3118,8 +3134,14 @@ def _context_file_inputs(
             counted.add(resolved)
         return record
 
+    regenerated_declared = {str(path) for path in node.regenerate_paths}
     write_paths = [
-        describe(str(path), declared_read=False) for path in node.write_paths
+        describe(
+            str(path),
+            declared_read=False,
+            regenerated=str(path) in regenerated_declared,
+        )
+        for path in node.write_paths
     ]
     named_files = [
         describe(path, declared_read=True) for path in _declared_input_files(node)
@@ -3200,6 +3222,10 @@ def _census_request_key(
         "role": node.role,
         "spec_level": node.spec_level,
         "plan": node.plan,
+        # The regenerated set selects which declared write paths are charged at
+        # the reference cost rather than their size, so two nodes whose scopes
+        # differ only there must not share one cached figure.
+        "regenerate_paths": sorted(str(path) for path in node.regenerate_paths),
         "agent": _context_agent(backend_settings or {}),
         "authority": authority_key,
     }
