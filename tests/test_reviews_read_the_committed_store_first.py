@@ -23,6 +23,7 @@ import pytest
 
 from reckon.crew import plan_review, promotion
 from reckon.crew import review as review_module
+from reckon.crew import review_records as records_module
 
 PROJECT = "reads-committed-first"
 REVIEWED_RUN = "r-reviewed-run"
@@ -236,13 +237,13 @@ def test_the_review_run_lookup_serves_from_the_store_index(
         _plan_review_record(),
     )
     builds: list[Path] = []
-    real_build = review_module._build_store_indexes
+    real_build = records_module._build_store_indexes
 
     def counting(directory: Path):
         builds.append(directory)
         return real_build(directory)
 
-    monkeypatch.setattr(review_module, "_build_store_indexes", counting)
+    monkeypatch.setattr(records_module, "_build_store_indexes", counting)
     review_module.record_for_review_run(PROJECT, REVIEW_RUN)
     assert len(builds) == 1
     # A second lookup for the same directory is served from the cached index
