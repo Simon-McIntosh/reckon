@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-finished-plan-closes-landed">
+  <meta name="plan-title" content="A Finished Plan Closes — landed record">
+  <meta name="plan-summary" content="Baseline census of plans whose sections are all done but which stay open, across every mounted project, 2026-10-21.">
+  <meta name="plan-evidence-for" content="a-finished-plan-closes">
+  <meta name="plan-verifies" content="a-finished-plan-closes#s1">
+  <title>A Finished Plan Closes — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Finished Plan Closes — landed record</h1>
+  <section id="s1">
+   <h2>§1 — The baseline census</h2>
+   <p>Measured on 2026-10-21 at about 08:45 local time by session <code>efd0ee8c-9d4e-4fa3-a440-ac05791d4758</code>, over the 18 mounts in <code>~/.config/reckon/mounts.json</code>. Two instruments were used. The first parses every <code>docs/plans/*.html</code> for plans whose declarations are all <code>done</code>, or <code>done</code> and <code>deferred</code>, while the status is not terminal, and lists their non-done sections, open or failed gates, open followups and <code>depends_on</code>. The second is the lossless roadmap (<code>reckon roadmap --project P --json-output</code>) for the six projects the first found or that the lead named. Its <code>pending_work</code> rows at 100 % progress, or with no implementable section, are listed with <code>effective_status</code>, readiness and every blocker field. The second list also contains open plans with no section declarations at all; those are legacy plans outside this plan's scope.</p>
+   <h3>HTML census output</h3>
+   <pre>declaration values across all plans: {&#x27;done&#x27;: 1862, &#x27;implementable&#x27;: 376, &#x27;deferred&#x27;: 106}
+
+plans with every section done (or only deferred) but not closed: 20  by status: {&#x27;active&#x27;: 14, &#x27;in-progress&#x27;: 6}
+
+imas-ambix   hot-reload-the-serve                                 active       secs= 3 mod=2026-10-20
+              non-done: [(&#x27;s3&#x27;, &#x27;deferred&#x27;)]
+              open followups: [&#x27;f-hrs-001&#x27;]
+imas-ambix   jt60sa-tokamap-from-generated-maps                   active       secs=20 mod=2026-10-10
+imas-codex   mapping-candidate-selection                          in-progress  secs=11 mod=2026-10-07
+              non-done: [(&#x27;s9&#x27;, &#x27;deferred&#x27;)]
+imas-codex   signal-search-finds-the-measured-signal              in-progress  secs=13 mod=2026-10-14
+              non-done: [(&#x27;s11&#x27;, &#x27;deferred&#x27;)]
+              open/failed gates: [&#x27;g-ssfms-1(s11:open/-)&#x27;]
+              open followups: [&#x27;f-ssfms-001&#x27;]
+imas-codex   sn-house-style                                       active       secs=14 mod=2026-10-17
+imas-codex   sn-integrity-backlog                                 active       secs=38 mod=2026-10-20
+              non-done: [(&#x27;s17&#x27;, &#x27;deferred&#x27;), (&#x27;s2&#x27;, &#x27;deferred&#x27;), (&#x27;s22&#x27;, &#x27;deferred&#x27;), (&#x27;s26&#x27;, &#x27;deferred&#x27;), (&#x27;s27&#x27;, &#x27;deferred&#x27;), (&#x27;s3&#x27;, &#x27;deferred&#x27;), (&#x27;s4&#x27;, &#x27;deferred&#x27;)]
+              open followups: [&#x27;f-sib-002&#x27;]
+imas-codex   sn-selection-over-generation                         active       secs= 7 mod=2026-10-21
+              open followups: [&#x27;f-ssog-001&#x27;]
+iter_uda     shared-uda-reader                                    in-progress  secs= 4 mod=2026-10-14
+              non-done: [(&#x27;s4&#x27;, &#x27;deferred&#x27;)]
+nova         cut-cell-current-attribution                         active       secs=11 mod=2026-10-06
+              non-done: [(&#x27;s10&#x27;, &#x27;deferred&#x27;), (&#x27;s11&#x27;, &#x27;deferred&#x27;), (&#x27;s2&#x27;, &#x27;deferred&#x27;), (&#x27;s3&#x27;, &#x27;deferred&#x27;), (&#x27;s4&#x27;, &#x27;deferred&#x27;), (&#x27;s5&#x27;, &#x27;deferred&#x27;), (&#x27;s6&#x27;, &#x27;deferred&#x27;), (&#x27;s7&#x27;, &#x27;deferred&#x27;), (&#x27;s8&#x27;, &#x27;deferred&#x27;), (&#x27;s9&#x27;, &#x27;deferred&#x27;)]
+              open/failed gates: [&#x27;g-cca-exact-mode-executable-admits-the-hot-path(s6:closed/failed)&#x27;, &#x27;g-cca-exact-mode-executable-measured(s6:open/-)&#x27;, &#x27;g-cca-exact-default-waits-on-map-fidelity(s6:open/-)&#x27;]
+              open followups: [&#x27;f-cca-002&#x27;, &#x27;f-cca-003&#x27;, &#x27;f-cca-vertex-ring-census&#x27;, &#x27;f-20260916T000000-positional-stiffness&#x27;, &#x27;f-cca-implicit-arc-tracer-by-parameter&#x27;, &#x27;f-fsaudit-census-assertion-no-receipt&#x27;, &#x27;f-fsaudit-census-assertion-positive-control-uncited&#x27;, &#x27;f-fsaudit-census-assertion-solved-nulls&#x27;, &#x27;f-cca-repair-gate-c-diverted-1000&#x27;, &#x27;f-cca-repair-wholecell-diverted-1000&#x27;, &#x27;f-cca-repair-booked-minus-analytic-overlap&#x27;, &#x27;f-cca-repair-single-null-representation-panel&#x27;, &#x27;f-cca-repair-truncated-level-array&#x27;, &#x27;f-cca-regenerate-hand-drawn-memory-figure&#x27;, &#x27;f-cca-cite-or-delete-dark-figures&#x27;, &#x27;f-cca-restore-null-vocabulary-across-solve-panels&#x27;, &#x27;f-cca-repair-zero-residual-with-nonzero-error&#x27;, &#x27;f-cca-repair-certificate-saddle-in-wrong-place&#x27;, &#x27;f-cca-repair-contours-suppressed-below-stated-max&#x27;, &#x27;f-cca-repair-evidence-stripped-duplicate-renders&#x27;, &#x27;f-cca-restore-residual-line-across-five-templates&#x27;, &#x27;f-cca-repair-minor-rendering-defects&#x27;, &#x27;f-cca-full-re-review-of-the-method&#x27;, &#x27;f-cca-rereview-localization-two-readings-disagree-the-census-outranks-the-panel&#x27;, &#x27;f-cca-rereview-the-first-order-residual-concentrates-at-the-cells-own-nodes&#x27;, &#x27;f-cca-rereview-the-first-order-term-is-not-the-artifact-source&#x27;, &#x27;f-cca-rereview-a-committed-figure-drew-invented-geometry&#x27;, &#x27;f-cca-rereview-sub-mesh-refinement-cannot-bound-the-clipped-fraction&#x27;, &#x27;f-cca-rereview-bounded-shift-is-the-representation-that-keeps-the-frozen-matrix&#x27;, &#x27;f-cca-rereview-gate-b-affine-dominance-is-already-recorded-and-does-not-excuse-the-first-order-term&#x27;, &#x27;f-cca-rereview-two-committed-receipts-disagree-41x-on-the-first-order-image&#x27;, &#x27;f-cca-rereview-vertical-moment-control-denominator-is-degenerate&#x27;, &#x27;f-ecq-complete-module-gate&#x27;, &#x27;f-cca-typed-saddle-compatibility&#x27;, &#x27;f-cca-audit-independent-wedge-oracle&#x27;, &#x27;f-cca-audit-typed-saddle-integration&#x27;, &#x27;f-fsa-exact-terminal-identity&#x27;, &#x27;f-fsa-region-oracle-completion&#x27;, &#x27;f-fsa-saddle-consumer-coverage&#x27;, &#x27;f-cca-verify-the-separatrix-test-repair-1&#x27;, &#x27;f-cca-verify-the-separatrix-test-repair-2&#x27;, &#x27;f-cca-verify-the-separatrix-test-repair-3&#x27;, &#x27;f-cca-verify-the-separatrix-test-repair-4&#x27;, &#x27;f-cca-vertex-ring-generator-is-the-own-node-root-scan&#x27;, &#x27;f-cca-empty-exact-polygon-attribution&#x27;, &#x27;f-cca-wall-cut-cell-islands-at-trip-one&#x27;, &#x27;f-cca-lambda-census-over-the-bank-rows&#x27;, &#x27;f-cca-booking-gate-pins-a-non-converged-state&#x27;, &#x27;f-cca-exact-repair-evidence-gaps&#x27;, &#x27;f-cca-slim-committed-attribution-receipts&#x27;, &#x27;f-cca-booking-lands-under-cfs&#x27;]
+nova         diiid-forward-onboarding                             active       secs=12 mod=2026-10-08
+              non-done: [(&#x27;s4&#x27;, &#x27;deferred&#x27;), (&#x27;s5&#x27;, &#x27;deferred&#x27;)]
+              open followups: [&#x27;f-dfo-004&#x27;, &#x27;f-dfo-010&#x27;, &#x27;f-dfo-011&#x27;, &#x27;f-dfo-post-cutover-estimator-run&#x27;]
+              depends_on: [&#x27;flux-function-forward-equilibrium&#x27;]
+nova         forward-profile-validator-set                        in-progress  secs= 5 mod=2026-10-08
+              non-done: [(&#x27;s4&#x27;, &#x27;deferred&#x27;), (&#x27;s5&#x27;, &#x27;deferred&#x27;)]
+nova         machine-description-retirement                       in-progress  secs= 4 mod=2026-10-08
+              non-done: [(&#x27;s3&#x27;, &#x27;deferred&#x27;), (&#x27;s4&#x27;, &#x27;deferred&#x27;)]
+              open followups: [&#x27;f-mdr-currency-2026-10-01&#x27;, &#x27;f-mdr-ambix-migration&#x27;, &#x27;f-mdr-ambix-map-reconcile&#x27;]
+              depends_on: [&#x27;imas-ambix:machine-map-transform-engine&#x27;]
+nova         mast-nonaxisymmetric-physics                         active       secs= 7 mod=2026-10-08
+              non-done: [(&#x27;s4&#x27;, &#x27;deferred&#x27;), (&#x27;s5&#x27;, &#x27;deferred&#x27;), (&#x27;s6&#x27;, &#x27;deferred&#x27;), (&#x27;s7&#x27;, &#x27;deferred&#x27;)]
+              depends_on: [&#x27;nova-3d-native&#x27;]
+reckon       a-plan-is-reviewed-before-it-is-built                active       secs=31 mod=2026-10-16
+              non-done: [(&#x27;s24&#x27;, &#x27;deferred&#x27;)]
+              open followups: [&#x27;f-apirbiib-dry-run-gate-skip&#x27;]
+reckon       a-review-promotes-only-its-own-verdict               active       secs= 4 mod=2026-10-19
+              non-done: [(&#x27;s4&#x27;, &#x27;deferred&#x27;)]
+              open followups: [&#x27;f-arpoiov-003&#x27;]
+reckon       a-seat-held-elsewhere-is-not-restarted               in-progress  secs=21 mod=2026-10-16
+              non-done: [(&#x27;s16&#x27;, &#x27;deferred&#x27;)]
+reckon       a-window-paces-the-lane                              active       secs=21 mod=2026-10-15
+              open followups: [&#x27;f-20260922T1145-no-commit-guard-owner&#x27;]
+reckon       a-write-on-any-node-reaches-the-page                 active       secs= 2 mod=2026-10-15
+reckon       the-fleet-node-stays-in-service                      active       secs=13 mod=2026-10-20
+              non-done: [(&#x27;s5&#x27;, &#x27;deferred&#x27;)]
+              open/failed gates: [&#x27;g-tfnsis-move-ready(s5:open/-)&#x27;]
+              open followups: [&#x27;f-tfnsis-001&#x27;]
+reckon       the-suite-tests-behaviour                            active       secs=10 mod=2026-10-16
+              non-done: [(&#x27;s6&#x27;, &#x27;deferred&#x27;), (&#x27;s9&#x27;, &#x27;deferred&#x27;)]
+</pre>
+   <h3>Roadmap rows</h3>
+   <pre>imas-ambix   mse-free-current-recovery-v0                     status=active      eff=active      readiness=ready     pct= 40.0 impl_secs=[]
+imas-ambix   nova-physics-consumer-integration                status=active      eff=active      readiness=ready     pct= 96.0 impl_secs=[]
+imas-ambix   equilibrium-topology-fidelity                    status=active      eff=active      readiness=ready     pct= 17.0 impl_secs=[]
+imas-ambix   interior-closure-hardening                       status=draft       eff=draft       readiness=ready     pct=  0.0 impl_secs=[]
+imas-ambix   physics-world-model-strategy                     status=active      eff=active      readiness=ready     pct= 70.0 impl_secs=[]
+imas-ambix   jt60sa-tokamap-from-generated-maps               status=active      eff=active      readiness=ready     pct=100.0 impl_secs=[]
+imas-ambix   agent-sessions-live-on-the-fleet-node            status=active      eff=active      readiness=ready     pct= 60.0 impl_secs=[]
+imas-ambix   hot-reload-the-serve                             status=active      eff=active      readiness=ready     pct=100.0 impl_secs=[]
+imas-ambix   sequential-current-da-v1                         status=active      eff=blocked     readiness=blocked   pct= 35.0 impl_secs=[]
+imas-ambix   machine-agnostic-latent-world-model              status=active      eff=blocked     readiness=blocked   pct=  0.0 impl_secs=[]
+imas-ambix   gs-grounded-latent-engine                        status=active      eff=blocked     readiness=blocked   pct= 90.0 impl_secs=[]
+imas-ambix   absolute-geometry-token-substrate                status=active      eff=blocked     readiness=blocked   pct= 85.0 impl_secs=[]
+imas-ambix   closed-loop-latent-filter                        status=active      eff=blocked     readiness=blocked   pct=  0.0 impl_secs=[]
+imas-ambix   controllable-forecast-and-gate                   status=active      eff=blocked     readiness=blocked   pct=  0.0 impl_secs=[]
+imas-ambix   iter-first-plasma-rehearsal                      status=pending     eff=blocked     readiness=blocked   pct=  0.0 impl_secs=[]
+imas-ambix   internal-current-diagnostics-v0                  status=active      eff=blocked     readiness=blocked   pct= 20.0 impl_secs=[]
+imas-ambix   learned-equilibrium-operator                     status=active      eff=blocked     readiness=blocked   pct= 67.0 impl_secs=[]
+imas-ambix   learned-closure-current-diffusion-v0             status=active      eff=blocked     readiness=blocked   pct=  0.0 impl_secs=[]
+              decision_blockers: [{&quot;kind&quot;: &quot;decision&quot;, &quot;plan&quot;: &quot;learned-closure-current-diffusion-v0&quot;, &quot;id&quot;: &quot;closure-set&quot;, &quot;question&quot;: &quot;Which closures are learnable in v0?&quot;, &quot;status&quot;: &quot;open&quot;, &quot;choice&quot;: &quot;&quot;, &quot;rationale&quot;: &quot;&quot;}, {&quot;kind&quot;: &quot;decision&quot;, &quot;plan&quot;: &quot;learned-closure-current-diffusion-v0&quot;, &quot;id&quot;: &quot;amortization&quot;, &quot;question&quot;: &quot;How are closure parameters fit?&quot;, &quot;status&quot;: &quot;open&quot;, &quot;choice&quot;: &quot;&quot;, &quot;rationale&quot;: &quot;&quot;}, {&quot;kind&quot;: &quot;decision&quot;,
+imas-ambix   mast-machine-configuration-map                   status=draft       eff=blocked     readiness=blocked   pct=  0.0 impl_secs=[]
+              decision_blockers: [{&quot;kind&quot;: &quot;decision&quot;, &quot;plan&quot;: &quot;mast-machine-configuration-map&quot;, &quot;id&quot;: &quot;registry-storage&quot;, &quot;question&quot;: &quot;Where does the shot-map registry live?&quot;, &quot;status&quot;: &quot;open&quot;, &quot;choice&quot;: &quot;&quot;, &quot;rationale&quot;: &quot;&quot;}, {&quot;kind&quot;: &quot;decision&quot;, &quot;plan&quot;: &quot;mast-machine-configuration-map&quot;, &quot;id&quot;: &quot;rmp-passive-treatment&quot;, &quot;question&quot;: &quot;How are the unmodeled in-vessel RMP conductors handled in the passive model?&quot;, &quot;status&quot;: &quot;open&quot;, &quot;c
+imas-ambix   channel-uncertainty-management                   status=draft       eff=blocked     readiness=blocked   pct=  0.0 impl_secs=[]
+              decision_blockers: [{&quot;kind&quot;: &quot;decision&quot;, &quot;plan&quot;: &quot;channel-uncertainty-management&quot;, &quot;id&quot;: &quot;weight-form&quot;, &quot;question&quot;: &quot;Down-weighting form for flagged channels?&quot;, &quot;status&quot;: &quot;open&quot;, &quot;choice&quot;: &quot;&quot;, &quot;rationale&quot;: &quot;&quot;}, {&quot;kind&quot;: &quot;decision&quot;, &quot;plan&quot;: &quot;channel-uncertainty-management&quot;, &quot;id&quot;: &quot;projector-rank&quot;, &quot;question&quot;: &quot;Projector rank truncation: numerical rank (1e-8 rel) or an information-motivated cut?&quot;, &quot;status&quot;: &quot;open&quot;, &quot;c
+imas-ambix   playable-plasma-wm-v0                            status=active      eff=blocked     readiness=blocked   pct=  0.0 impl_secs=[]
+imas-ambix   world-model-prototype                            status=active      eff=blocked     readiness=blocked   pct=  0.0 impl_secs=[]
+              decision_blockers: [{&quot;kind&quot;: &quot;decision&quot;, &quot;plan&quot;: &quot;world-model-prototype&quot;, &quot;id&quot;: &quot;prototype-modalities&quot;, &quot;question&quot;: &quot;Which modality subset does the first runnable skeleton use?&quot;, &quot;status&quot;: &quot;open&quot;, &quot;choice&quot;: &quot;&quot;, &quot;rationale&quot;: &quot;&quot;}, {&quot;kind&quot;: &quot;decision&quot;, &quot;plan&quot;: &quot;world-model-prototype&quot;, &quot;id&quot;: &quot;conditioning-mechanism&quot;, &quot;question&quot;: &quot;How is the pulse-schedule plan injected into the Transformer?&quot;, &quot;status&quot;: &quot;open&quot;, &quot;choice&quot;:
+imas-ambix   joint-multimodal-plasma-wm                       status=active      eff=blocked     readiness=blocked   pct=  0.0 impl_secs=[]
+imas-ambix   physics-carried-playable-plasma                  status=active      eff=blocked     readiness=blocked   pct= 96.0 impl_secs=[]
+              blocked_sections: [&quot;s8&quot;]
+imas-ambix   magnetics-free-equilibrium-recovery              status=active      eff=blocked     readiness=blocked   pct= 39.0 impl_secs=[]
+              decision_blockers: [{&quot;kind&quot;: &quot;decision&quot;, &quot;plan&quot;: &quot;magnetics-free-equilibrium-recovery&quot;, &quot;id&quot;: &quot;floor-bar-source&quot;, &quot;question&quot;: &quot;Where does the \u00a75 flat-top floor bar come from?&quot;, &quot;status&quot;: &quot;open&quot;, &quot;choice&quot;: &quot;&quot;, &quot;rationale&quot;: &quot;&quot;}]
+imas-ambix   sophelio-entry-master                            status=active      eff=blocked     readiness=blocked   pct=  0.0 impl_secs=[]
+              decision_blockers: [{&quot;kind&quot;: &quot;decision&quot;, &quot;plan&quot;: &quot;sophelio-entry-master&quot;, &quot;id&quot;: &quot;submission-cadence&quot;, &quot;question&quot;: &quot;How is the 100-submission leaderboard budget spent?&quot;, &quot;status&quot;: &quot;open&quot;, &quot;choice&quot;: &quot;&quot;, &quot;rationale&quot;: &quot;&quot;}]
+imas-codex   migration-project-state                          status=active      eff=active      readiness=ready     pct=  0.0 impl_secs=[]
+imas-codex   sn-house-style                                   status=active      eff=active      readiness=ready     pct=100.0 impl_secs=[]
+imas-codex   sn-integrity-backlog                             status=active      eff=active      readiness=ready     pct=100.0 impl_secs=[]
+imas-codex   sn-selection-over-generation                     status=active      eff=active      readiness=ready     pct=100.0 impl_secs=[]
+imas-codex   host-dashboard-covers-every-agent-process        status=active      eff=blocked     readiness=blocked   pct=  0.0 impl_secs=[]
+              gate_blockers: [{&quot;kind&quot;: &quot;gate&quot;, &quot;id&quot;: &quot;g-hdcea-1&quot;, &quot;section&quot;: &quot;s4&quot;, &quot;gated_sections&quot;: [&quot;s4&quot;], &quot;status&quot;: &quot;open&quot;, &quot;measure&quot;: &quot;The orphan flag reads a recorded owner from the process environment, so reckon must record the crew session id and owning pid in every process it starts, and its census must exist to agree with.&quot;, &quot;verdict&quot;: &quot;&quot;, &quot;evidence&quot;: &quot;&quot;}]
+imas-codex   signal-search-finds-the-measured-signal          status=in-progress eff=blocked     readiness=blocked   pct=100.0 impl_secs=[]
+              gate_blockers: [{&quot;kind&quot;: &quot;gate&quot;, &quot;id&quot;: &quot;g-ssfms-1&quot;, &quot;section&quot;: &quot;s11&quot;, &quot;gated_sections&quot;: [&quot;s11&quot;], &quot;status&quot;: &quot;open&quot;, &quot;measure&quot;: &quot;JET FacilitySignals re-enriched by the Jev-era signal pipeline, with enriched_at at or after 2026-10-11T19:08:21Z&quot;, &quot;verdict&quot;: &quot;&quot;, &quot;evidence&quot;: &quot;&quot;}]
+imas-codex   mapping-candidate-selection                      status=in-progress eff=in-progress readiness=deferred  pct=100.0 impl_secs=[]
+              missing_dispatchability: [&quot;open_followup&quot;]
+iter_uda     shared-uda-reader                                status=in-progress eff=in-progress readiness=deferred  pct=100.0 impl_secs=[]
+              missing_dispatchability: [&quot;open_followup&quot;]
+nova         ensemble-forward-seam                            status=active      eff=active      readiness=ready     pct= 90.0 impl_secs=[]
+nova         diiid-forward-onboarding                         status=active      eff=active      readiness=ready     pct=100.0 impl_secs=[]
+nova         forward-profile-validator-set                    status=in-progress eff=in-progress readiness=ready     pct=100.0 impl_secs=[]
+nova         mast-nonaxisymmetric-physics                     status=active      eff=active      readiness=ready     pct=100.0 impl_secs=[]
+nova         diiid-pulse-replay                               status=pending     eff=pending     readiness=ready     pct=  0.0 impl_secs=[]
+nova         machine-description-retirement                   status=in-progress eff=in-progress readiness=ready     pct=100.0 impl_secs=[]
+nova         separatrix-spline-extraction                     status=active      eff=active      readiness=ready     pct= 95.0 impl_secs=[]
+nova         single-grid-solver-cutover                       status=pending     eff=blocked     readiness=blocked   pct=  0.0 impl_secs=[]
+              gate_blockers: [{&quot;kind&quot;: &quot;gate&quot;, &quot;id&quot;: &quot;g-s19-clip-mode-lands-first&quot;, &quot;section&quot;: &quot;s1&quot;, &quot;gated_sections&quot;: [&quot;s1&quot;], &quot;status&quot;: &quot;open&quot;, &quot;measure&quot;: &quot;The S19 production clip-mode change has landed on nova/equilibrium/forward_operator.py, source.py and domain.py, and the cutover carries the clipped booking as the single production mode rather than preserving chord mode beside it.&quot;, &quot;verdict&quot;: &quot;&quot;, &quot;evidence&quot;: &quot;&quot;}]
+nova         cut-cell-current-attribution                     status=active      eff=blocked     readiness=blocked   pct=100.0 impl_secs=[]
+              gate_blockers: [{&quot;kind&quot;: &quot;gate&quot;, &quot;id&quot;: &quot;g-cca-exact-mode-executable-admits-the-hot-path&quot;, &quot;section&quot;: &quot;s6&quot;, &quot;gated_sections&quot;: [&quot;s6&quot;], &quot;status&quot;: &quot;closed&quot;, &quot;measure&quot;: &quot;the certificate executable in the clipped production mode at 300 realised cells compiles and runs on the CPU witness and its serialized bytes sit under the route-integrity ceiling (100,000,000), with the compile wall and peak allocation beside it at 
+nova         dual-branch-selection                            status=active      eff=blocked     readiness=blocked   pct= 70.0 impl_secs=[]
+              decision_blockers: [{&quot;kind&quot;: &quot;decision&quot;, &quot;plan&quot;: &quot;dual-branch-selection&quot;, &quot;id&quot;: &quot;unqualified-branch-semantics&quot;, &quot;question&quot;: &quot;What does the published label carry when the diverted arm never\n        qualifies \u2014 degrade to the limited root with the diverted stall recorded, publish a\n        two-state receipt with no single class, or withhold the label? On present evidence this is\n        the common case, so the
+nova         efit-baseline-demonstration                      status=active      eff=blocked     readiness=blocked   pct= 66.7 impl_secs=[]
+nova         mast-catalog-gpu-solve                           status=pending     eff=blocked     readiness=blocked   pct= 20.0 impl_secs=[]
+              decision_blockers: [{&quot;kind&quot;: &quot;decision&quot;, &quot;plan&quot;: &quot;mast-catalog-gpu-solve&quot;, &quot;id&quot;: &quot;sharding-strategy&quot;, &quot;question&quot;: &quot;Multi-GPU strategy: single-process jax.sharding over 8 devices\n        (one compiled program, best batch pooling, new machinery for nova) vs per-GPU process\n        array over shot ranges (zero new JAX machinery, robust, slightly worse pooling)?\n        Recommendation: measure L1 first; take sharding
+nova         uniform-cell-clip-and-coupling                   status=active      eff=blocked     readiness=blocked   pct= 45.0 impl_secs=[]
+reckon       a-plan-is-reviewed-before-it-is-built            status=active      eff=active      readiness=ready     pct=100.0 impl_secs=[]
+reckon       a-window-paces-the-lane                          status=active      eff=active      readiness=ready     pct=100.0 impl_secs=[]
+reckon       history-persists-as-detail-washes-out            status=active      eff=active      readiness=ready     pct= 75.0 impl_secs=[]
+reckon       a-review-promotes-only-its-own-verdict           status=active      eff=active      readiness=ready     pct=100.0 impl_secs=[]
+reckon       a-write-on-any-node-reaches-the-page             status=active      eff=active      readiness=ready     pct=100.0 impl_secs=[]
+reckon       plan-lifecycle-hygiene                           status=active      eff=blocked     readiness=blocked   pct= 33.0 impl_secs=[]
+              decision_blockers: [{&quot;kind&quot;: &quot;decision&quot;, &quot;plan&quot;: &quot;plan-lifecycle-hygiene&quot;, &quot;id&quot;: &quot;enforcement-strictness&quot;, &quot;question&quot;: &quot;Write-time lifecycle invariants: reject-on-write or warn+audit?&quot;, &quot;status&quot;: &quot;open&quot;, &quot;choice&quot;: &quot;&quot;, &quot;rationale&quot;: &quot;&quot;}, {&quot;kind&quot;: &quot;decision&quot;, &quot;plan&quot;: &quot;plan-lifecycle-hygiene&quot;, &quot;id&quot;: &quot;d-plh-002&quot;, &quot;question&quot;: &quot;for each pending mechanism (impl invariants, landed summaries, research-doc closure), which get 
+reckon       roadmap-answers-both-shapes                      status=draft       eff=blocked     readiness=blocked   pct=  0.0 impl_secs=[]
+              decision_blockers: [{&quot;kind&quot;: &quot;decision&quot;, &quot;plan&quot;: &quot;roadmap-answers-both-shapes&quot;, &quot;id&quot;: &quot;d-rabs-001&quot;, &quot;question&quot;: &quot;does an unshippable-outcome finding block execution or warn, per the measured precedent that reports sixteen times and gates nothing?&quot;, &quot;status&quot;: &quot;open&quot;, &quot;choice&quot;: &quot;&quot;, &quot;rationale&quot;: &quot;&quot;}]
+reckon       figures-are-allocated-by-topic-directory         status=active      eff=blocked     readiness=blocked   pct= 90.0 impl_secs=[]
+              decision_blockers: [{&quot;kind&quot;: &quot;decision&quot;, &quot;plan&quot;: &quot;figures-are-allocated-by-topic-directory&quot;, &quot;id&quot;: &quot;sibling-writers-in-one-topic&quot;, &quot;question&quot;: &quot;May two nodes write different files inside one topic directory?&quot;, &quot;status&quot;: &quot;open&quot;, &quot;choice&quot;: &quot;&quot;, &quot;rationale&quot;: &quot;&quot;}, {&quot;kind&quot;: &quot;decision&quot;, &quot;plan&quot;: &quot;figures-are-allocated-by-topic-directory&quot;, &quot;id&quot;: &quot;d-fabtd-002&quot;, &quot;question&quot;: &quot;`sibling-writers-in-one-topic` \u2014 may two nodes 
+reckon       rendered-evidence-on-this-host                   status=active      eff=blocked     readiness=blocked   pct= 90.0 impl_secs=[]
+              decision_blockers: [{&quot;kind&quot;: &quot;decision&quot;, &quot;plan&quot;: &quot;rendered-evidence-on-this-host&quot;, &quot;id&quot;: &quot;d-reoth-002&quot;, &quot;question&quot;: &quot;will the runtime owner repair or replace Chrome&#x27;s Network Service (accepting nothing less than both controls), or is the debt carried visibly; on landing, the paired captures follow.&quot;, &quot;status&quot;: &quot;open&quot;, &quot;choice&quot;: &quot;&quot;, &quot;rationale&quot;: &quot;&quot;}]
+reckon       a-seat-held-elsewhere-is-not-restarted           status=in-progress eff=in-progress readiness=deferred  pct=100.0 impl_secs=[]
+              missing_dispatchability: [&quot;open_followup&quot;]
+reckon       the-fleet-node-stays-in-service                  status=active      eff=blocked     readiness=blocked   pct=100.0 impl_secs=[]
+              gate_blockers: [{&quot;kind&quot;: &quot;gate&quot;, &quot;id&quot;: &quot;g-tfnsis-move-ready&quot;, &quot;section&quot;: &quot;s5&quot;, &quot;gated_sections&quot;: [&quot;s8&quot;], &quot;status&quot;: &quot;open&quot;, &quot;measure&quot;: &quot;A stopped worker&#x27;s step ends without cancellation (not CANCELLED, signal field 0) on the fleet allocation, and a migrate rehearsal passes at the head carrying the second-move fix&quot;, &quot;verdict&quot;: &quot;&quot;, &quot;evidence&quot;: &quot;&quot;}]
+reckon       authoring-exemplar                               status=draft       eff=draft       readiness=deferred  pct=100.0 impl_secs=[]
+              missing_dispatchability: [&quot;open_followup&quot;]
+reckon       the-suite-tests-behaviour                        status=active      eff=active      readiness=deferred  pct=100.0 impl_secs=[]
+              missing_dispatchability: [&quot;open_followup&quot;]
+
+(effective_status, readiness) tally: {(&#x27;active&#x27;, &#x27;ready&#x27;): 20, (&#x27;draft&#x27;, &#x27;ready&#x27;): 1, (&#x27;blocked&#x27;, &#x27;blocked&#x27;): 31, (&#x27;in-progress&#x27;, &#x27;deferred&#x27;): 3, (&#x27;in-progress&#x27;, &#x27;ready&#x27;): 2, (&#x27;pending&#x27;, &#x27;ready&#x27;): 1, (&#x27;draft&#x27;, &#x27;deferred&#x27;): 1, (&#x27;active&#x27;, &#x27;deferred&#x27;): 1}
+</pre>
+   <h3>HTML census script</h3>
+   <pre>&quot;&quot;&quot;Census: plans whose sections are all done but which are not closed, and what holds them.&quot;&quot;&quot;
+import html, json, re, sys
+from collections import Counter
+from pathlib import Path
+
+TERMINAL = {&quot;done&quot;, &quot;shipped&quot;, &quot;archived&quot;, &quot;superseded&quot;, &quot;abandoned&quot;}
+mounts = json.load(open(sys.argv[1]))
+meta = lambda t, n: (lambda m: html.unescape(m.group(1)) if m else &quot;&quot;)(re.search(r&#x27;&lt;meta name=&quot;%s&quot; content=&quot;([^&quot;]*)&quot;&#x27; % n, t))
+decl_values, rows, statuses = Counter(), [], Counter()
+for project, docs in sorted(mounts.items()):
+    docs = docs if isinstance(docs, str) else docs.get(&quot;docs&quot;, &quot;&quot;)
+    for f in sorted(Path(docs, &quot;plans&quot;).glob(&quot;*.html&quot;)):
+        t = f.read_text(errors=&quot;replace&quot;)
+        if meta(t, &quot;reckon-type&quot;) not in (&quot;&quot;, &quot;plan&quot;):
+            continue
+        status = meta(t, &quot;plan-status&quot;)
+        try:
+            decl = json.loads(meta(t, &quot;plan-section-declarations&quot;) or &quot;{}&quot;)
+        except ValueError:
+            decl = {}
+        decl_values.update(decl.values())
+        if not decl or status in TERMINAL:
+            continue
+        open_secs = {k: v for k, v in decl.items() if v != &quot;done&quot;}
+        if open_secs and set(open_secs.values()) - {&quot;deferred&quot;}:
+            continue  # real open work remains
+        gates = re.findall(r&#x27;&lt;div class=&quot;r-gate&quot; data-id=&quot;([^&quot;]*)&quot; data-section=&quot;([^&quot;]*)&quot;[^&gt;]*data-status=&quot;([^&quot;]*)&quot; data-verdict=&quot;([^&quot;]*)&quot;&#x27;, t)
+        held_gates = [f&quot;{g}({s}:{st}/{v or &#x27;-&#x27;})&quot; for g, s, st, v in gates if st != &quot;closed&quot; or v == &quot;failed&quot;]
+        fus = re.findall(r&#x27;&lt;article class=&quot;r-fu&quot; data-id=&quot;([^&quot;]*)&quot;([^&gt;]*)&gt;&#x27;, t)
+        open_fus = [i for i, a in fus if &#x27;data-resolved-at=&quot;&quot;&#x27; in a or &quot;data-resolved-at&quot; not in a]
+        deps = [d for d in meta(t, &quot;plan-depends-on&quot;).split(&quot;,&quot;) if d.strip()]
+        statuses[status] += 1
+        rows.append((project, f.stem, status, len(decl), sorted(open_secs.items()), held_gates, open_fus, deps, meta(t, &quot;plan-modified&quot;)))
+print(&quot;declaration values across all plans:&quot;, dict(decl_values))
+print(f&quot;\nplans with every section done (or only deferred) but not closed: {len(rows)}  by status: {dict(statuses)}\n&quot;)
+for r in rows:
+    project, slug, status, n, opens, gates, fus, deps, mod = r
+    print(f&quot;{project:12s} {slug[:52]:52s} {status:12s} secs={n:2d} mod={mod}&quot;)
+    if opens: print(f&quot;{&#x27;&#x27;:14s}non-done: {opens}&quot;)
+    if gates: print(f&quot;{&#x27;&#x27;:14s}open/failed gates: {gates}&quot;)
+    if fus: print(f&quot;{&#x27;&#x27;:14s}open followups: {fus}&quot;)
+    if deps: print(f&quot;{&#x27;&#x27;:14s}depends_on: {deps}&quot;)
+</pre>
+  </section>
+ </main>
+</body>
+</html>
