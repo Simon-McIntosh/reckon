@@ -2433,6 +2433,59 @@ def paginate(
     }
 
 
+def _paged_plan_state(
+    data: dict[str, Any],
+    *,
+    cursor: str | None,
+    limit: int | None,
+) -> tuple[dict[str, Any], dict[str, Any] | None]:
+    """Reduce a plan's section records to one page, keeping every other fact.
+
+    A large plan's whole section list is the part of its state that grows without
+    bound, so it is the part paged: the page carries its own total and cursor, so
+    a reader that needs the rest asks for the next page rather than reading the
+    file. A plan with no section records is returned unchanged.
+    """
+
+    sections = [
+        item for item in data.get("sections") or [] if isinstance(item, Mapping)
+    ]
+    if not sections:
+        return dict(data), None
+    page, pagination = paginate(sections, cursor=cursor, limit=limit)
+    return {**data, "sections": page}, pagination
+
+
+def _paged_findings(
+    payload: Mapping[str, Any],
+    view: str,
+    *,
+    cursor: str | None,
+    limit: int | None,
+) -> dict[str, Any]:
+    """Page a project's finding groups, carrying each page's rows with it.
+
+    The flat ``rows`` list duplicates every row the groups already hold, so it is
+    rebuilt from the page rather than shipped whole beside them, and the group
+    count and cursor travel with it. Recurrence is read from the records, not
+    from a page, so a group's count is the same whichever page it lands on.
+    """
+
+    groups = [item for item in payload.get("paths") or [] if isinstance(item, Mapping)]
+    if not groups:
+        return {"ok": True, "view": view, **payload}
+    page, pagination = paginate(groups, cursor=cursor, limit=limit)
+    rows = [row for group in page for row in (group.get("rows") or [])]
+    return {
+        **payload,
+        "ok": True,
+        "view": view,
+        "paths": page,
+        "rows": rows,
+        "pagination": pagination,
+    }
+
+
 def _open_decisions(data: dict[str, Any]) -> list[dict[str, Any]]:
     decisions: list[dict[str, Any]] = []
     for key, value in (data.get("decisions") or {}).items():
@@ -3087,12 +3140,15 @@ def resource_view(
             "view": "version",
         }
     elif selected == "raw":
+        reduced, pagination = _paged_plan_state(data, cursor=cursor, limit=limit)
         result = {
             "resource": selector.as_dict(),
             "version": version,
             "view": "raw",
-            "data": data,
+            "data": reduced,
         }
+        if pagination is not None:
+            result["pagination"] = pagination
     else:
         return {
             "resource": selector.as_dict(),
@@ -3520,10 +3576,21 @@ def roadmap_view(
         item for item in raw.get("wiring_findings") or [] if isinstance(item, dict)
     ]
     page, pagination = paginate(findings, cursor=cursor, limit=limit)
-    result = dict(raw)
-    result["view"] = "detail"
+    result: dict[str, Any] = {
+        "project": project,
+        "view": "detail",
+        **_roadmap_project_summary(raw),
+    }
+    result.setdefault(
+        "pending_plans",
+        [
+            _pending_plan_row(row)
+            for row in raw.get("pending_work") or []
+            if isinstance(row, Mapping)
+        ],
+    )
+    result["critical_path"] = raw.get("critical_path") or {}
     result["wiring_findings"] = page
-    result["finding_counts"] = _roadmap_finding_counts(findings)
     result["pagination"] = pagination
     return result
 
@@ -3769,7 +3836,7 @@ def serve_crew_view(
                 "view": view,
                 "detail": str(exc),
             }
-        return {"ok": True, "view": view, **payload}
+        return _paged_findings(payload, view, cursor=cursor, limit=limit)
     if view == "plan-review":
         from reckon.crew import plan_review
 

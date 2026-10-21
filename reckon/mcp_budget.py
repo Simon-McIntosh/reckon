@@ -11,6 +11,73 @@ RESPONSE_CEILING_ENV = "RECKON_MCP_RESPONSE_CEILING"
 DEFAULT_RESPONSE_CEILING = 80_000
 MINIMUM_RESPONSE_CEILING = 128
 
+#: The most characters a *default* call of one read view may return, keyed by
+#: ``(tool, view)``. The transport ceiling above is a guard that refuses an
+#: oversized answer after the fact; this table is the contract each view is
+#: built to, so a call with only its required arguments fits by construction and
+#: a view that reaches the ceiling is a defect in that view rather than a
+#: caller's mistake. A view answers inside its row by paging and by summarising
+#: whole records; the runtime ceiling stays as the backstop for a caller that
+#: asks for the lossless form explicitly.
+VIEW_BUDGETS = {
+    # roadmap: a per-plan table plus a page of graph findings.
+    ("roadmap", "summary"): 20_000,
+    ("roadmap", "detail"): 30_000,
+    ("roadmap", "raw"): 80_000,
+    # read_plan: one plan's page of state, never its whole section list.
+    ("read_plan", "summary"): 24_000,
+    ("read_plan", "detail"): 24_000,
+    ("read_plan", "history"): 24_000,
+    ("read_plan", "version"): 4_000,
+    ("read_plan", "raw"): 60_000,
+    ("read_plan", "schema"): 30_000,
+    ("read_plan", "section"): 24_000,
+    # audit: counts for summary, a page of findings for detail.
+    ("audit", "summary"): 24_000,
+    ("audit", "detail"): 30_000,
+    ("audit", "raw"): 80_000,
+    # crew: one page of rows per view.
+    ("crew", "summary"): 16_000,
+    ("crew", "flight"): 16_000,
+    ("crew", "live"): 24_000,
+    ("crew", "scopes"): 24_000,
+    ("crew", "drain"): 16_000,
+    ("crew", "records"): 24_000,
+    ("crew", "ledger"): 24_000,
+    ("crew", "budget"): 16_000,
+    ("crew", "lanes"): 24_000,
+    ("crew", "routing"): 24_000,
+    ("crew", "directory"): 16_000,
+    ("crew", "fleet"): 16_000,
+    ("crew", "runs"): 24_000,
+    ("crew", "forgotten"): 16_000,
+    ("crew", "obligations"): 24_000,
+    ("crew", "models"): 16_000,
+    ("crew", "velocity"): 24_000,
+    ("crew", "scores"): 24_000,
+    ("crew", "plan-review"): 24_000,
+    ("crew", "findings"): 24_000,
+}
+
+#: The view a tool answers with when the call names none.
+DEFAULT_VIEWS = {
+    "roadmap": "summary",
+    "read_plan": "summary",
+    "audit": "summary",
+    "crew": "summary",
+}
+
+
+def view_budget(tool: str, arguments: Mapping[str, Any]) -> int | None:
+    """The character budget the view this call selects is held to, if declared."""
+
+    view = arguments.get("view")
+    if not isinstance(view, str) or not view.strip():
+        view = DEFAULT_VIEWS.get(tool)
+    if not isinstance(view, str):
+        return None
+    return VIEW_BUDGETS.get((tool, view))
+
 
 def serialised_characters(value: Any) -> int:
     """Return the deterministic compact JSON character count for ``value``."""
@@ -119,17 +186,21 @@ def _bounded_notice(
     ceiling: int,
     omitted: dict[str, int],
     narrow_with: list[dict[str, Any]],
+    budget: int | None = None,
 ) -> dict[str, Any]:
+    truncated: dict[str, Any] = {
+        "ceiling_characters": ceiling,
+        "original_characters": original_characters,
+        "omitted": {"characters": original_characters, **omitted},
+        "narrow_with": narrow_with,
+    }
+    if budget is not None:
+        truncated["view_budget_characters"] = budget
     full = {
         "ok": False,
         "error": "response_over_budget",
         "tool": tool,
-        "truncated": {
-            "ceiling_characters": ceiling,
-            "original_characters": original_characters,
-            "omitted": {"characters": original_characters, **omitted},
-            "narrow_with": narrow_with,
-        },
+        "truncated": truncated,
     }
     if serialised_characters(full) <= ceiling:
         return full
@@ -176,4 +247,5 @@ def bound_response(
         ceiling=configured_ceiling,
         omitted=_omitted_counts(response),
         narrow_with=_narrow_with(tool, arguments),
+        budget=view_budget(tool, arguments),
     )
