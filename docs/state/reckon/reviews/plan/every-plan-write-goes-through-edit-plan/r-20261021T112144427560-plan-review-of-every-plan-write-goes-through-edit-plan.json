@@ -1,0 +1,69 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T11:54:17.432Z",
+  "dispatched_at": "2026-10-21T11:35:23Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/every-plan-write-goes-through-edit-plan/r-20261021T112144427560-plan-review-of-every-plan-write-goes-through-edit-plan/plan.html:335",
+      "id": "done_when-1",
+      "reason": "the intended repoint cannot pass vacuously (a patch at any other name either raises or leaves the spy unfired, and the existing `seen[\"run_id\"]` assertion then fails), and \u00a714's base arm carries the failing id it removes, so an added control would add no measure the section does not already have.",
+      "text": "the section performs two repairs but declares a negative control for one: the only named arm restores `_spawn` in `reckon/served_code.py` and reddens `test_launch_callers_reach_the_shared_gate`, while nothing reddens the runs-view repoint or the new argv test, and the argv test holds on the unfixed tree",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "1238047120a18fed7823f7d09d680f8940b01ad87b266fc39a391fafa0d11c2c",
+  "plan_slug": "every-plan-write-goes-through-edit-plan",
+  "plan_version": 66,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "the runs-view repoint cannot pass vacuously: a patch at any other name raises or leaves the spy unfired and the seen[run_id] assertion fails, and the base arm carries the failing id it removes, so a second control adds no measure",
+      "when": "2026-10-21T11:55:13.410901+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "the runs-view repoint cannot pass vacuously: a patch at any other name raises or leaves the spy unfired and the seen[run_id] assertion fails, and the base arm carries the failing id it removes, so a second control adds no measure",
+      "when": "2026-10-21T11:55:13.410901+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-plan-write-goes-through-edit-plan.v66.json",
+  "review_run_id": "r-20261021T112144427560-plan-review-of-every-plan-write-goes-through-edit-plan",
+  "reviewed_blob_sha": "87f2a227ad0ae831e16ea6b03ef9a01689041dd6",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 verified each: `9530feb56` removed `crew_runs_view` from `reckon/mcp.py` (0 hits after, 2 in the diff) and `reckon/mcp_views.py:3646` defines `serve_crew_view`; `ada13bb60` introduced `_child_for` (0 hits before, 3 in the diff) and `reckon/served_code.py:1816` defines it, calling `self._spawn(self._root)` at `:1851` with the default set at `:1806`; `spawn_served_child` at `:1622` runs `[sys.executable, \"-c\", SERVED_CHILD_PROGRAM, str(root)]`; `c7210260` carries the test patching `mcp.crew_runs_view` while its `reckon/mcp.py` lacks that name.",
+    "done_when": "a finding \u2014 \u00a714's done-when declares one negative control, which covers only its fleet-gate repair; the runs-view repoint has no control of its own, and the new argv test passes on the unfixed code.",
+    "evidence_paths": "pass \u2014 the landing record sits at `docs/evidence/fragments/every-plan-write-goes-through-edit-plan/the-served-child-and-the-moved-runs-view-keep-their-tests-green.html` on a durable tracked path, and each arm's log is required to name its revision, end in `EXIT=`, and live under the run directory.",
+    "naming": "pass \u2014 `_spawn_child` and `tests/test_the_served_child_is_not_a_worker_launch.py` name the mechanism, no plan label, stage name or ticket number reaches a symbol, and the evidence fragment's plan-slug path is this plan's standing artifact convention.",
+    "reasoning": "pass \u2014 all three checks hold for \u00a714. The stated root causes match the cited evidence: both failures reproduce verbatim at the reviewed tree (`AttributeError: <module 'reckon.mcp' ...> has no attribute 'crew_runs_view'`; `AssertionError: ('reckon/served_code.py', '_child_for')`), and a probe patching `reckon.crew.query.runs_view` shows `mcp._crew(view=\"runs\", run_id=\u2026)` reaching it with `project` and `run_id`, so the repoint's target and its unchanged assertions both hold. Each mechanism produces its measure: the census flags a call by exact attribute name (`call.attr in {\"_spawn\", \"_start_supervisor\"}`, with no prefix matching anywhere), so renaming the attribute removes the hit and leaves its `launchers >=` subset and `guarded_spawns ==` assertions untouched. And both paths are named with their callers: `_crew` \u2192 `serve_crew_view` \u2192 `runs_view`, and `_child_for \u2192 self._spawn \u2192 spawn_served_child`.",
+    "single_goal": "pass \u2014 the section's one goal is that the two tests this plan's surface broke are green without a census exemption, and the gate closes on one verdict (\"both named ids pass at head, along with the new argv test, and the gate adds no failure against base\").",
+    "wiring": "pass \u2014 \u00a714 is declared `implementable` with no `plan-section-depends-on` entry, and that is correct: the three sections sharing its `reckon/served_code.py` write path (\u00a711, \u00a712, \u00a713) are all `reckon/docs/plans/every-plan-write-goes-through-edit-plan.html`-declared `done`, crew-surface \u00a75 is `shipped`, and the two other plans whose sections still name `reckon/served_code.py` (`the-codebase-is-reviewed-between-nodes` \u00a713/\u00a714) are `done`, so no edge is missing and none points at a wrong node."
+  },
+  "section_digests": {
+    "_document": "db590db63bc9d835adc3c93388c3fa3d88f096892d3b4e7146e6ec498d6d7459",
+    "s1": "7f96df198aae5b46c87f2d18f8eff17398ead36155ee67ba73607e91aa1d2fe3",
+    "s10": "fd786ebf0d880e15085a2e0ca5423504f73ce4c013e483f5e3cae145e3ad4079",
+    "s11": "19cc30d79534a21675c806c6d7006ea1e8e052fdccf4583b30258f699ee38e45",
+    "s12": "a518fb035478c3d0ebd8f3e07d9c13babbda5a8ab8f5353e60e41564c96ed1b6",
+    "s13": "dd25d451c1972813ffd34279a0d6aeaf5069e4888f6cf1259e3fbbe382da3f44",
+    "s14": "c4467966a573cbea5d7de23da696d1233123f57fbbaa14df1fd73aae6d8bd99b",
+    "s2": "737250903251177035b357be3d656b549480337bc454f97615634dada495e251",
+    "s3": "4150e9281b9c0fe1173e9c23f5582efb0662d22f1d36944861d3033f988d479c",
+    "s4": "e0390ff35ac5e425fa3060cede9882af598c54dc89e0a6069101b3971f8e8367",
+    "s5": "699b049fe374b1219d8b917168575594a5bcb9255bbe13efdbf1d0c928562a86",
+    "s6": "27f4d6436a652181a180df37fa1a640ebff9cb62418e856c86bc907ecda9778f",
+    "s7": "80062db679255aff5087534386e7372545e1cd3414916db8329aec79a1a8388d",
+    "s8": "f9dd6299834b4d039fd1f45b37141d5e265075b4cfd7f341357bea21196f5b35",
+    "s9": "bd2c3090ecc9a89ad8c0b2f7312aae077382dd2709954d9e27f449e984d622a8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T11:55:03.459527+00:00"
+}
