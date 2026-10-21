@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="458">
+<meta name="plan-version" content="459">
 <meta name="plan-modified" content="2026-10-21">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;done&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;done&quot;,&quot;s30&quot;:&quot;implementable&quot;,&quot;s31&quot;:&quot;done&quot;,&quot;s32&quot;:&quot;done&quot;,&quot;s33&quot;:&quot;implementable&quot;,&quot;s34&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
@@ -2067,6 +2067,9 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 </div>
 <div class="r-comment" data-section="s32" data-id="c-close-s32" data-who="reckon-build" data-when="2026-10-21T15:12:00Z">
     <div class="r-comment-body"><p>§32 landed at <code>37af3d1e7</code>: run-record composition moved to <code>reckon/run_record.py</code>, and <code>ledger.py</code> is now 42,735 estimated tokens. Reviewed 113/120. The 155-file population at merge adds no failure. <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed.html#s32">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s32" data-id="c-run-r-20261021T120639851822-run-record-composition-moves-out-of-the-ledger" data-who="reckon-build" data-when="2026-10-21T13:07:38.136Z">
+    <div class="r-comment-body"><p>Moved the run-record composition family out of reckon/ledger.py into reckon/run_record.py with the ledger re-exporting every moved name; ledger.py measures 42735 estimated tokens at head (was 51666, bound 45000) and run_record.py 9665 (bound 40000), and tests/test_every_module_fits_a_worker_window.py no longer names reckon/ledger.py.</p></div>
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261021T134606519218-review-of-the-view-parity-case-reads-the-budget-at-one-instant-4a246412a9e8" data-who="reckon-build" data-when="2026-10-21T14:02:10.380Z">
     <div class="r-comment-body"><p>review-records/r-20261021T130942057343-the-view-parity-case-reads-the-budget-at-one-instant.json — parsed review of run r-20261021T130942057343 against base 0702ee8a3 and head 4a246412a; six scores goal_fidelity 20, evidence 19, scope_discipline 19, durability 16, fit 18, reuse 18; added_failure_count 0 with no added_failure_ids; one follow-on finding that the 30-second clock advance is not itself asserted; CALL_SITES none, the node's change being a test module and an evidence fragment no production code reaches.</p></div>
