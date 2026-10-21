@@ -68,7 +68,7 @@ def _staging_copies_of_record(
     review_run_id = str(record.get("review_run_id") or "").strip()
     if not review_run_id:
         return []
-    directory = review_store_root(base_dir) / project
+    directory = _review.review_store_root(base_dir) / project
     if not directory.is_dir():
         return []
     copies: list[Mapping[str, Any]] = []
@@ -84,7 +84,8 @@ def _staging_copies_of_record(
         if (
             isinstance(stored, Mapping)
             and str(stored.get("review_run_id") or "").strip() == review_run_id
-            and _review_record_rubric(stored) == _review_record_rubric(record)
+            and _review._review_record_rubric(stored)
+            == _review._review_record_rubric(record)
         ):
             copies.append(stored)
     return copies
@@ -126,8 +127,8 @@ def _merge_record_answers(sources: Iterable[Mapping[str, Any]]) -> dict[str, Any
     seen_events: set[str] = set()
     for source in sources:
         for key, target in (
-            (DIMENSION_DISPOSITIONS_KEY, dispositions),
-            (FINDING_DISPOSITIONS_KEY, finding_dispositions),
+            (_review.DIMENSION_DISPOSITIONS_KEY, dispositions),
+            (_review.FINDING_DISPOSITIONS_KEY, finding_dispositions),
             ("responses", responses),
         ):
             mapping = source.get(key)
@@ -148,9 +149,9 @@ def _merge_record_answers(sources: Iterable[Mapping[str, Any]]) -> dict[str, Any
     events.sort(key=_answer_stamp)
     merged: dict[str, Any] = {}
     if dispositions:
-        merged[DIMENSION_DISPOSITIONS_KEY] = dispositions
+        merged[_review.DIMENSION_DISPOSITIONS_KEY] = dispositions
     if finding_dispositions:
-        merged[FINDING_DISPOSITIONS_KEY] = finding_dispositions
+        merged[_review.FINDING_DISPOSITIONS_KEY] = finding_dispositions
     if responses:
         merged["responses"] = responses
     if events:
@@ -214,44 +215,44 @@ def store_committed_review(
             "a committed review record needs the review run id that names it; "
             "refusing to file it under the reviewed run"
         )
-    if not names_a_review_subject(record):
+    if not _review.names_a_review_subject(record):
         raise ValueError(
             "review record names neither a reviewed run nor a plan, so it has "
             "no subject to be filed under"
         )
     reviewed_run_id = str(record.get("reviewed_run_id") or "").strip()
-    if not carries_review_material(record):
+    if not _review.carries_review_material(record):
         raise ValueError(
             "review record carries no review material — findings, scores, a "
             "rubric or a reviewed revision — so it is not a review and the "
             "committed store holds records only"
         )
     if committed_root is None:
-        committed_root = committed_review_root(project, root=root)
+        committed_root = _review.committed_review_root(project, root=root)
     if committed_root is None:
         raise ValueError(f"no committed reviews tree resolves for project {project!r}")
 
-    dispatched, completed, times_source = resolve_record_times(
+    dispatched, completed, times_source = _review.resolve_record_times(
         project, record, root=root
     )
 
     stored = dict(record)
     stored["project"] = project
-    stored[DISPATCH_TIME_KEY] = dispatched
-    stored[COMPLETION_TIME_KEY] = completed
-    stored[TIMES_SOURCE_KEY] = times_source
+    stored[_review.DISPATCH_TIME_KEY] = dispatched
+    stored[_review.COMPLETION_TIME_KEY] = completed
+    stored[_review.TIMES_SOURCE_KEY] = times_source
     if not stored.get("timestamp"):
         stored["timestamp"] = datetime.now(UTC).isoformat()
 
     plan_slug = str(record.get("plan_slug") or "").strip()
     if reviewed_run_id:
-        path = review_path(
+        path = _review.review_path(
             project,
             reviewed_run_id,
             committed_root=committed_root,
             review_run_id=review_run_id,
-            reviewed_head_sha=str(record.get(REVIEWED_HEAD_KEY) or "") or None,
-            rubric=_review_record_rubric(record),
+            reviewed_head_sha=str(record.get(_review.REVIEWED_HEAD_KEY) or "") or None,
+            rubric=_review._review_record_rubric(record),
         )
     else:
         from reckon.crew.plan_review import plan_review_path
@@ -285,7 +286,7 @@ def store_committed_review(
         )
     )
     path.parent.mkdir(parents=True, exist_ok=True)
-    _write_record(path, stored)
+    _review._write_record(path, stored)
     return path
 
 
@@ -300,7 +301,7 @@ def commit_record_write(project: str, path: str | Path) -> bool:
     committed tree, or a path outside it, is not committed here and returns
     ``False``.
     """
-    committed = committed_review_root(project)
+    committed = _review.committed_review_root(project)
     if committed is None:
         return False
     try:
@@ -394,7 +395,7 @@ def _note_malformed_record(
     """
     if path is None or record is None:
         return
-    claimless = claimless_findings(record)
+    claimless = _review.claimless_findings(record)
     if not claimless:
         return
     _note_skipped_record(
@@ -432,7 +433,7 @@ def _select_stored_record(
         except (OSError, ValueError) as error:
             _note_skipped_record(path, error, into=skipped)
             continue
-        if not _review_rubric_matches(record, rubric):
+        if not _review._review_rubric_matches(record, rubric):
             continue
         records.append((path, record, mtime_ns))
     if not records:
@@ -442,7 +443,7 @@ def _select_stored_record(
         return path, record
     named = reviewed_head_sha.strip().lower()
     for path, record, _mtime_ns in records:
-        _, _, carried_head, stored_head = carried_revision_pair(record)
+        _, _, carried_head, stored_head = _review.carried_revision_pair(record)
         if not carried_head or not stored_head:
             continue
         actual = stored_head.lower()
@@ -491,11 +492,11 @@ def _record_with_merged_answers(
     review_run_id = str(record.get("review_run_id") or "").strip()
     if committed is not None and review_run_id and reviewed_run_id:
         committed_record = _committed_record_at(
-            review_path(
+            _review.review_path(
                 project,
                 reviewed_run_id,
-                reviewed_head_sha=carried_revision_pair(record)[3],
-                rubric=_review_record_rubric(record),
+                reviewed_head_sha=_review.carried_revision_pair(record)[3],
+                rubric=_review._review_record_rubric(record),
                 committed_root=committed,
                 review_run_id=review_run_id,
             )
@@ -575,10 +576,10 @@ def stored_record(
     no review at all. A read that names neither is nobody's finding and is
     dropped.
     """
-    committed = committed_review_root(project)
+    committed = _review.committed_review_root(project)
     committed_selected: tuple[Path | None, dict[str, Any] | None] | None = None
     if committed is not None:
-        run_directory = committed / COMMITTED_RUN_DIRNAME / reviewed_run_id
+        run_directory = committed / _review.COMMITTED_RUN_DIRNAME / reviewed_run_id
         committed_paths = (
             sorted(run_directory.glob("*.json")) if run_directory.is_dir() else []
         )
@@ -603,8 +604,10 @@ def stored_record(
                     base_dir=base_dir,
                     skipped=skipped,
                 )
-    directory = review_store_root(base_dir) / project
-    candidates = [review_path(project, reviewed_run_id, base_dir, rubric=rubric)]
+    directory = _review.review_store_root(base_dir) / project
+    candidates = [
+        _review.review_path(project, reviewed_run_id, base_dir, rubric=rubric)
+    ]
     if directory.is_dir():
         candidates.extend(directory.glob(f"{reviewed_run_id}*.at-*.json"))
     existing = {path.resolve(): path for path in candidates if path.is_file()}
@@ -680,7 +683,7 @@ def stored_records_for_run(
     named to the caller's ``skipped`` list or collection region, the same rule
     the by-head readers apply.
     """
-    directory = review_store_root(base_dir) / project
+    directory = _review.review_store_root(base_dir) / project
     if not directory.is_dir():
         return []
     records: list[tuple[Path, dict[str, Any]]] = []
@@ -756,17 +759,17 @@ def _record_filed_elsewhere(
         # request its content no longer matches.
         if str(record.get("reviewed_run_id") or "") != reviewed_run_id:
             continue
-        if not _review_rubric_matches(record, rubric):
+        if not _review._review_rubric_matches(record, rubric):
             continue
         if named is not None:
-            _, _, carried_head, stored_head = carried_revision_pair(record)
+            _, _, carried_head, stored_head = _review.carried_revision_pair(record)
             if not carried_head or not stored_head:
                 continue
             actual = stored_head.lower()
             if not (actual.startswith(named) or named.startswith(actual)):
                 continue
         record = dict(record)
-        record[MISFILED_KEY] = True
+        record[_review.MISFILED_KEY] = True
         return path, record
     return None, None
 
@@ -819,7 +822,7 @@ def _build_store_indexes(
     reviewed: dict[str, list[dict[str, Any]]] = {}
     review_runs: dict[str, list[dict[str, Any]]] = {}
     for path in sorted(directory.glob("*.json")):
-        if not path.is_file() or _INCOMPLETE_RECORD_MARK in path.name:
+        if not path.is_file() or _review._INCOMPLETE_RECORD_MARK in path.name:
             continue
         try:
             record = json.loads(path.read_text(encoding="utf-8"))
@@ -828,7 +831,9 @@ def _build_store_indexes(
             continue
         if not isinstance(record, Mapping):
             continue
-        carried_head, head_sha = _first_carried_revision(record, HEAD_REVISION_FIELDS)
+        carried_head, head_sha = _review._first_carried_revision(
+            record, _review.HEAD_REVISION_FIELDS
+        )
         reviewed.setdefault(str(record.get("reviewed_run_id") or ""), []).append(
             {
                 "path": path,
@@ -886,7 +891,7 @@ def reviewed_run_ids(project: str, *, base_dir: str | Path | None = None) -> lis
     returned. A project directory that does not exist, or one holding no record,
     yields an empty list.
     """
-    directory = review_store_root(base_dir) / project
+    directory = _review.review_store_root(base_dir) / project
     if not directory.is_dir():
         return []
     return sorted(run_id for run_id in _store_index(directory) if run_id)
@@ -910,7 +915,7 @@ def record_for_review_run(
     name = str(review_run_id or "").strip()
     if not name:
         return None
-    directory = review_store_root(base_dir) / project
+    directory = _review.review_store_root(base_dir) / project
     if not directory.is_dir():
         return None
     entries = _review_run_index(directory).get(name)
@@ -949,31 +954,11 @@ def _indexed_head_matches(entry: Mapping[str, Any], named: str | None) -> bool:
     return actual.startswith(named) or named.startswith(actual)
 
 
-# ── The shared schema, resolution and revision helpers, owned by review ──
-# The import sits at the foot of the module so that review.py, which re-exports
-# the family above, can finish defining these names before this module asks for
-# them, whichever module imports first.
-from reckon.crew.review import (  # noqa: E402
-    _INCOMPLETE_RECORD_MARK,
-    COMMITTED_RUN_DIRNAME,
-    COMPLETION_TIME_KEY,
-    DIMENSION_DISPOSITIONS_KEY,
-    DISPATCH_TIME_KEY,
-    FINDING_DISPOSITIONS_KEY,
-    HEAD_REVISION_FIELDS,
-    MISFILED_KEY,
-    REVIEWED_HEAD_KEY,
-    TIMES_SOURCE_KEY,
-    _first_carried_revision,
-    _review_record_rubric,
-    _review_rubric_matches,
-    _write_record,
-    carried_revision_pair,
-    carries_review_material,
-    claimless_findings,
-    committed_review_root,
-    names_a_review_subject,
-    resolve_record_times,
-    review_path,
-    review_store_root,
-)
+# ── The review module, whose helpers this family reads ──
+# The import sits at the foot of the module so that review.py, which
+# re-exports the family above, can finish defining the names below before
+# this module asks for them, whichever module imports first. The helpers are
+# read through the module object rather than bound as locals, so a caller
+# that patches one on reckon.crew.review still reaches the code here that
+# reads it.
+from reckon.crew import review as _review  # noqa: E402
