@@ -26,7 +26,7 @@
   <title>The MCP Answers the Question Asked | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -92,101 +92,19 @@
 
     <h2 id="s2">§2 — A default read fits by construction</h2>
 <section data-reckon="section" data-id="s2" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p>
-      Every view declares a size contract in its docstring: the most characters it returns for a call
-      that names no narrowing argument. It meets that contract by its shape, not by a post-hoc check.
-      A list returns its highest-ranked rows up to a declared count, the total, and a cursor for the
-      rest. A nested structure returns its summary line and a ref the caller can expand. The ceiling
-      in <code>mcp_budget</code> stays as a guard, but a default call that trips it is a defect in that
-      view, and the test suite treats it as one.
-    </p>
-    <p>
-      <strong>Done when:</strong> a test calls every view of every reckon MCP tool with only its
-      required arguments against a synthetic project of 60 plans and 400 sections, and asserts that
-      each answer is within its declared contract and that none returns
-      <code>response_over_budget</code>. On the base commit at least <code>roadmap</code>
-      <code>view=detail</code> fails it. The same assertion runs against <code>power_convertor</code>,
-      and the result is recorded in the gate log.
-    </p>
+    <p>Paging already exists and is extended, not reinvented. <code>paginate()</code> in <code>reckon/mcp_views.py</code> (near line 2406) returns a page with its total and a cursor. <code>roadmap_view</code> already takes <code>cursor</code> and <code>limit</code> and pages <code>wiring_findings</code> (near lines 3471 to 3496). The views that still serialise whole records are brought under <code>paginate()</code> and compact summary rows instead of being refused: <code>roadmap</code> <code>view=detail</code>, and <code>read_plan</code> <code>raw</code> and <code>section</code> on large plans.</p><p>The size contract lives where code can enforce it. One table in <code>reckon/mcp_budget.py</code> maps each view to the most characters a default call may return, beside <code>response_ceiling</code> and <code>serialised_characters</code>. The budget module reads it to label an answer, and the test reads it to hold every view to its row. A docstring does not carry it. The runtime ceiling stays as a guard, but a default call that reaches it is a defect in that view.</p><p>Surface: one table; no parameter, view or refusal is added.</p><p><strong>Done when:</strong> a test calls every view of every reckon MCP tool with only its required arguments against a synthetic project of 60 plans and 400 sections. It asserts that each answer is within its row of the table and that none returns <code>response_over_budget</code>. On the base commit at least <code>roadmap</code> <code>view=detail</code> fails it. The same assertion runs against <code>power_convertor</code> and the result is recorded in the gate log.</p>
 
     <h2 id="s3">§3 — A row is compact and names its section</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p>
-      Rows follow three rules:
-    </p>
-    <ul>
-      <li>A reference is a string in the one grammar, <code>[project:]plan[#section][@run|@f-id]</code>, never an expanded object.</li>
-      <li>An empty or null field is omitted.</li>
-      <li>Every list view accepts <code>fields</code> with one shared vocabulary for the fields views share.</li>
-    </ul>
-    <p>
-      Every row about a run (<code>live</code>, <code>runs</code>, <code>obligations</code>,
-      <code>directory</code>) carries <code>section</code>. A row-level dependency reports the
-      dependency's own state (the section's declaration, or the followup's status), never the
-      containing plan's status.
-    </p>
-    <p>
-      <strong>Done when:</strong> a fixture run dispatched for <code>P#s4</code> reads
-      <code>section: "s4"</code> in each of the four views, and <code>fields=["section"]</code> is
-      accepted by all of them. A section ref whose target section is done but whose plan is in
-      progress reads satisfied, with the section's declaration as its state; this is the
-      <code>section_blocking</code> case <code>power_convertor</code> hit, and it fails on the base
-      commit. The serialized <code>power_convertor</code> roadmap shrinks, measured before and after
-      in the gate log.
-    </p>
+    <p>A <code>fields</code> request parameter already travels end to end on the crew tool. <code>reckon/mcp.py</code> passes <code>fields</code> and <code>since</code> into <code>serve_crew_view</code> (near lines 2174 and 2189), and <code>project_live_rows</code> in <code>reckon/crew/query.py</code> (near line 174) projects live rows. This section widens that owner rather than adding a vocabulary. Every list view routes its rows through the one projection, with one field vocabulary for the fields views share, and asking a view for a field it lacks is refused naming the fields it has, as <code>live</code> does today.</p><p>Rows follow two rules. A reference is a string in the one grammar, <code>[project:]plan[#section][@run|@f-id]</code>, never an expanded object, and an empty or null field is omitted. Every row about a run (<code>live</code>, <code>runs</code>, <code>obligations</code>, <code>directory</code>) carries <code>section</code>, taken from <code>_run_row</code> as <code>a-project-reads-as-one-picture</code> §4 extends it. A row-level dependency reports the dependency's own state (the section's declaration, or the followup's status), never the containing plan's status.</p><p>Surface: one projection serves every list view. The existing <code>fields</code> parameter reaches more views, and no new parameter is added.</p><p><strong>Done when:</strong> a fixture run dispatched for <code>P#s4</code> reads <code>section: "s4"</code> in each of the four views, and <code>fields=["section"]</code> is accepted by all of them. A section ref whose target section is done but whose plan is in progress reads satisfied, with the section's declaration as its state; this is the <code>section_blocking</code> case <code>power_convertor</code> hit, and it fails on the base commit. The serialized <code>power_convertor</code> roadmap shrinks, measured before and after in the gate log.</p>
 
     <h2 id="s4">§4 — One call explains any ref</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p>
-      A new read, <code>why(ref)</code>, takes any ref in the grammar and answers within 4,000
-      characters with:
-    </p>
-    <ul>
-      <li>what the thing is and its state;</li>
-      <li>what it waits on, transitively, each wait with its kind from <code>a-project-reads-as-one-picture</code> §4;</li>
-      <li>what waits on it;</li>
-      <li>which runs and sessions are working on it now, and which paths they hold;</li>
-      <li>its last five events.</li>
-    </ul>
-    <p>
-      This is the question a coordinator otherwise answers by reading a plan, then a pointer file,
-      then messaging a peer. The sessions measured above asked it in every one of their reports.
-    </p>
-    <p>
-      <strong>Done when:</strong> on a fixture where section A waits on B, B is held by a running
-      run, and a followup on A is open, <code>why("A")</code> names the wait on B, B's run and its
-      held path, and the followup, all inside the contract. A ref that does not resolve is refused
-      with the nearest refs that do. The CLI <code>reckon why</code> prints the same answer.
-    </p>
+    <p>A new <code>read_plan</code> view, <code>view="why"</code>, takes any ref in the grammar and answers within its row of the §2 table with:</p><ul><li>what the thing is and its state;</li><li>what it waits on, transitively, each wait with its kind from <code>a-project-reads-as-one-picture</code> §4;</li><li>what waits on it;</li><li>which runs and sessions are working on it now, and which paths they hold;</li><li>its last five events.</li></ul><p>This is the question a coordinator otherwise answers by reading a plan, then a pointer file, then messaging a peer. The sessions measured above asked it in every one of their reports.</p><p>Surface: one value of <code>read_plan</code>'s existing <code>view</code> parameter. No new MCP tool is added, and no CLI verb is added until a caller is named.</p><p><strong>Done when:</strong> on a fixture where section A waits on B, B is held by a running run, and a followup on A is open, <code>read_plan(view="why", section="A")</code> names the wait on B, B's run and its held path, and the followup, all inside its contract. A ref that does not resolve is refused with the nearest refs that do. On the base commit the view is refused as unknown, and the test fails there.</p>
 
     <h2 id="s5">§5 — One derivation per fact, held by a parity check</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p>
-      Three facts are served by more than one derivation today, and the copies disagree. A run's
-      classification is the fourth; <code>a-project-reads-as-one-picture</code> §4 gives it one
-      derivation and a parity test between the roadmap and <code>crew live</code>, and this section
-      extends that same test rather than building a second one. The four facts are:
-    </p>
-    <ul>
-      <li>a run's classification;</li>
-      <li>a section's readiness;</li>
-      <li>a plan's progress;</li>
-      <li>the active sprint.</li>
-    </ul>
-    <p>
-      Each gets one owning function, and every surface reads that function: the MCP tools, the CLI
-      and the SPA payload. A parity test compares the surfaces against each other on one fixture,
-      rather than asserting a literal on each side, because literals on both sides drift together
-      without failing.
-    </p>
-    <p>
-      <strong>Done when:</strong> the parity test from <code>a-project-reads-as-one-picture</code> §4
-      is extended to one fixture with runs in every classification and sections in every
-      declaration, and asserts that <code>roadmap</code>,
-      <code>crew live</code>, <code>read_plan</code> and the <code>/_discover</code> payload agree on all
-      four facts. It is run against the base commit first, and the disagreements it finds there are
-      listed in the gate log as the negative control.
-    </p>
+    <p>Each of four facts already has, or is given, one owner that every surface reads:</p><ul><li>a run's classification: <code>classify_pointer</code> in <code>reckon/crew/recovery.py</code>, reached through <code>partition_live_runs</code> as <code>a-project-reads-as-one-picture</code> §4 extends it;</li><li>a section's readiness: <code>_section_scoped_edges</code> and <code>_section_satisfied</code> in <code>reckon/roadmap.py</code>;</li><li>a plan's progress: the one progress figure already served to every surface;</li><li>the active sprint: the value derived once, as <code>work-scheduling-surface</code> §10 requires.</li></ul><p>The surfaces disagree today where a reader bypasses the owner, as <code>read_plan</code>'s <code>section_blocking</code> does with the plan status. Each bypass is replaced by a call to the owner.</p><p>Parity is held by the two guards that already exist, extended rather than joined by a third. <code>tests/test_producer_shares_the_classifier_verdict.py</code> already holds one run verdict across producer snapshots and transitions, and gains <code>roadmap</code>, <code>crew live</code> and <code>read_plan</code> as readers. <code>tests/test_surface_parity.py</code> already compares what the SPA renders with what is returned, and gains section readiness, progress and active sprint from the <code>/_discover</code> payload.</p><p><strong>Done when:</strong> both extended guards run one fixture with runs in every classification and sections in every declaration, and assert that the surfaces agree on all four facts. They are run against the base commit first, and the disagreements found there are listed in the gate log as the negative control.</p>
 
     <h2 id="s6">§6 — The brief is the default answer</h2>
 <section data-reckon="section" data-id="s6" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
@@ -209,20 +127,7 @@
 
     <h2 id="s7">§7 — A read can ask what changed</h2>
 <section data-reckon="section" data-id="s7" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p>
-      The brief, <code>crew live</code> and the roadmap accept a <code>since</code> cursor and return
-      only what changed after it: sections whose declaration or readiness moved, runs that changed
-      classification, and findings that appeared or cleared. Every response carries the cursor for
-      the next call. A coordinator that polls state today re-reads the whole of it each time; that
-      is the 588 pointer-file reads above.
-    </p>
-    <p>
-      <strong>Done when:</strong> on a fixture, a read with the cursor from a previous read returns
-      exactly the one section whose declaration moved in between, and an unchanged project returns an
-      empty change set with a new cursor. A cursor the server cannot resolve is refused with
-      <code>cursor-expired</code> and the instruction to read in full, never answered as if nothing
-      had changed.
-    </p>
+    <p><code>since</code> already exists on the crew tool as a time bound: <code>reckon/mcp.py</code> passes it to <code>serve_crew_view</code>, and the velocity view takes <code>since</code> and <code>until</code>. The brief, <code>crew live</code> and the roadmap take the same parameter, with the same meaning, an ISO time, rather than a new opaque cursor. They return only what changed after it: sections whose declaration or readiness moved, runs that changed classification, and findings that appeared or cleared. Every response carries <code>observed_at</code>, the time to pass next. A coordinator that polls state today re-reads the whole of it each time; that is the 588 pointer-file reads above.</p><p>Surface: the existing <code>since</code> parameter reaches three more reads, and no cursor or refusal is added. A <code>since</code> older than the retained history is answered in full with <code>full: true</code>, never as if nothing had changed.</p><p><strong>Done when:</strong> on a fixture, a read with the <code>observed_at</code> of a previous read returns exactly the one section whose declaration moved in between. An unchanged project returns an empty change set with a new <code>observed_at</code>. A <code>since</code> older than the retained history returns the full answer with <code>full: true</code>. On the base commit the three reads refuse or ignore <code>since</code>, and the test fails there.</p>
 
     <h2 id="s8">§8 — The surface is re-measured from the transcripts</h2>
 <section data-reckon="section" data-id="s8" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>

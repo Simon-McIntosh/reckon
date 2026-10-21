@@ -27,7 +27,7 @@
   <title>A Project Reads as One Picture | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -77,111 +77,19 @@
 
     <h2 id="s2">§2 — The critical path runs through sections</h2>
 <section data-reckon="section" data-id="s2" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p>
-      One function in Python builds the section graph of a project. Its nodes are the open sections
-      of every live plan, each weighted by its <code>effort_hours</code> scaled by the plan's progress
-      where a section carries no finer figure. Its edges come from three sources. Plan-level
-      <code>depends_on</code> refs and gate edges are already in the base graph between plans; they
-      are carried down to the sections they name, reusing the code that reads them today.
-      <code>plan-section-depends-on</code> entries, which the base reads only for section readiness,
-      become edges for the first time, and that is the new work. Qualified refs (<code>nova:plan#s5</code>) resolve against the named mount and stay
-      blocking until that project closes the section.
-    </p>
-    <p>
-      <code>critical_path</code>, <code>open_paths</code>, <code>unlocks</code> and the ready set are
-      computed over that graph. A plan row keeps its fields, now derived from its sections: it is
-      ready when a section is ready, its <code>unlocks</code> is the set of plans its open sections
-      transitively unblock, and its share of the critical path is named. The section rows are
-      served beside the plan rows rather than replacing them.
-    </p>
-    <p>
-      <strong>Done when:</strong> a synthetic three-plan fixture whose only cross-plan wiring is
-      <code>plan-section-depends-on</code>, <code>A#s2 → B#s3 → C#s1</code>, reports a critical path naming those three sections in that order
-      with their summed effort, and reports C in B's <code>unlocks</code>. The negative control is
-      the same fixture against the base commit, where the path is a single plan and
-      <code>unlocks</code> is empty, and the test must fail there. On <code>power_convertor</code> the
-      critical path spans at least two plans and names
-      <code>iter-switched-terminal-transients#s6</code>, recorded in the gate log with the head it ran
-      at.
-    </p>
+    <p>The section edges are already resolved; they are never lifted into the plan graph. <code>_section_scoped_edges</code> in <code>reckon/roadmap.py</code> (near line 1079) parses every <code>plan-section-depends-on</code> entry through <code>parse_plan_ref</code>, resolves <code>project:</code>-qualified refs against the named mount, judges satisfaction through <code>_section_satisfied</code> and <code>declared_section_identities</code>, refuses malformed refs through <code>section_dependency_refusals</code>, and emits <code>dangling-hard-dependency</code>. <code>_plan_section_deps</code> (near line 409), <code>_gate_section_edges</code> (near line 302) and <code>_after_edges</code> (near line 987) are the other edge sources. The new work is only lifting the resolved, unsatisfied cross-plan section edges into the graph the roadmap already closes over (<code>local_graph</code> and <code>dependents</code>), so the existing <code>unlocks</code> (near line 3324) and the <code>longest_path</code> walk (near line 3434) see them. The path is weighted by each open section's <code>effort_hours</code>. No second resolver is written.</p><p>Surface: <code>critical_path</code> and <code>open_paths</code> gain a <code>sections</code> list beside their <code>plans</code>, and <code>unlocks</code> is the existing field, now non-empty where sections wait. Nothing else is added.</p><p><strong>Done when:</strong> a synthetic three-plan fixture whose only cross-plan wiring is <code>plan-section-depends-on</code>, <code>A#s2 → B#s3 → C#s1</code>, reports a critical path naming those three sections in that order with their summed effort, and reports C in B's <code>unlocks</code>. The negative control is the same fixture against the base commit, where the path is a single plan and <code>unlocks</code> is empty, so the test fails there. On <code>power_convertor</code> the critical path spans at least two plans and names <code>iter-switched-terminal-transients#s6</code>, recorded in the gate log with the head it ran at.</p>
 
     <h2 id="s3">§3 — The ranking reads signals that differ between rows</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p>
-      Ready sections are ranked lexicographically. A section on the critical path to the active
-      sprint's open work comes first. Next is the number of sections it transitively unblocks, then
-      the sprint's remaining time where the sprint states an end or a dated goal, then its stuck
-      signal (two or more attempts, or a run on it blocked for more than a day, which raises it so
-      that it is seen rather than skipped). ROI and effort only break the ties those leave. Every
-      ranked row carries a one-line <code>reason</code> naming the signal that placed it (not <code>why</code>, which names the MCP's <code>why(ref)</code> read), so a reader can
-      disagree with a specific reason rather than with an opaque order.
-    </p>
-    <p>
-      When at least 80 % of a project's open plans share one ROI value, the roadmap emits an
-      informational <code>flat-priority-signal</code> finding that names the share. That tells the
-      lead the ROI field has stopped carrying information and is not being used to rank.
-    </p>
-    <p>
-      <strong>Done when:</strong> on a fixture where every plan is ROI <code>high</code> and effort
-      <code>M</code>, the ranked order puts the section with the largest downstream reach first, and
-      every row's <code>reason</code> names a signal other than ROI. On the base commit the same fixture
-      returns plans in sprint and slug order, and the test fails there. <code>power_convertor</code>
-      reports <code>flat-priority-signal</code> with its measured share (16 of 17 plans).
-    </p>
+    <p>The ranking is the existing <code>priority</code> key in <code>reckon/roadmap.py</code> (near line 3516). It orders ready work by critical-path membership, sprint position, ROI and <code>unlocks</code>, and it is extended rather than rewritten. With §2's edges, critical-path membership and <code>unlocks</code> become section-aware. A stuck signal is added after <code>unlocks</code>: two or more attempts on the section (from <code>section_attempts</code>), or a run on it blocked for more than a day, which raises the row so that it is seen rather than skipped. ROI and effort stay as late tie-breakers.</p><p>The placing signal goes in the existing <code>reason</code> field of <code>immediate_roadmap</code> rows (near line 3551), one vocabulary for plan rows and section rows alike; no second field is added. The <code>flat-priority-signal</code> finding first planned here is dropped. The brief (§7) states the share of open plans carrying one ROI value in its text, which needs no new finding kind.</p><p><strong>Done when:</strong> on a fixture where every plan is ROI <code>high</code> and effort <code>M</code>, the ranked order puts the section with the largest downstream reach first, and every row's <code>reason</code> names a signal other than ROI. On the base commit the same fixture returns plans in sprint and slug order, so the test fails there.</p>
 
     <h2 id="s4">§4 — Work in flight sits on its section</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p>
-      Every live, queued and interrupted run resolves to <code>plan#section</code>. A section row
-      carries its runs with one classification each, taken from the same function
-      <code>crew live</code> calls, so the roadmap and the crew surface can no longer disagree about
-      one run. It also carries the write paths those runs hold, as the dispatch scope claims already
-      record them, and the queued dispatches waiting on those paths.
-    </p>
-    <p>
-      A section's blocking state is named by kind rather than collapsed into one boolean. The kinds
-      are: <code>dependency</code> (an open upstream section), <code>gate</code>,
-      <code>run-blocked</code> (a run's manifest reports blocked, with its blocker text),
-      <code>held-path</code> (a write path claimed by another section's run),
-      <code>external-data</code> (a gate whose measure names data not yet in the repository, such as
-      the dummy-load recorder files) and <code>decision</code>.
-    </p>
-    <p>
-      <strong>Done when:</strong> a fixture live pointer with a plan and section appears on that
-      section's roadmap row with the classification <code>crew live</code> gives it, and a fixture
-      whose manifest reports <code>blocked</code> makes its section <code>run-blocked</code> and
-      carries the blocker text. A parity test asserts that the roadmap's run state equals
-      <code>crew live</code>'s classification for every run in a fixture of mixed states; the
-      <code>interrupted</code>-against-<code>running</code> pair measured on
-      <code>power_convertor</code> is reproduced as its negative control and must fail on the base
-      commit. Two fixture runs claiming one path report the holder and the queued run, in that order.
-    </p>
+    <p>The run classifier already has one owner. <code>partition_live_runs</code> in <code>reckon/mcp_views.py</code> (near line 1860) delegates to <code>classify_pointer</code> in <code>reckon/crew/recovery.py</code>, and its docstring already holds that the roadmap, the sprint view and <code>recover</code> cannot disagree at plan level. The extension is from plan to <code>plan#section</code>: <code>_run_row</code> and <code>_run_target_plan</code> (near lines 1471 and 1486) carry the run's section, so a section row lists its runs with that one classification. The row also lists the write paths they hold, from the dispatch scope claims the <code>scopes</code> view already reads. The <code>interrupted</code>-against-<code>running</code> pair measured on <code>power_convertor</code> is investigated first. It is either a second classification path, which this section removes, or a stale read, and the gate log says which.</p><p>A section's blocking is named by kind, using the existing blocker fields: section dependency blockers (<code>section_readiness</code>), <code>gate_blockers</code> and <code>decision_blockers</code>. Two kinds are new: <code>run-blocked</code>, where a manifest reports blocked, and <code>held-path</code>. The <code>external-data</code> kind first planned is dropped, because a gate already names data not yet in the repository.</p><p><strong>Done when:</strong> a fixture live pointer with a plan and section appears on that section's roadmap row with the classification <code>crew live</code> gives it, and a fixture whose manifest reports <code>blocked</code> makes its section <code>run-blocked</code> with the blocker text. Two fixture runs claiming one path report the holder and the queued run, in that order. On the base commit section rows carry no runs, so the test fails there. The gate log records the explanation of the <code>power_convertor</code> pair.</p>
 
     <h2 id="s5">§5 — A wait nobody declared is a finding</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p>
-      Two wiring findings make the edges coordinators carry in messages visible.
-      <code>undeclared-wait</code> fires when a section's blocked run, gate measure or open followup
-      names another section ref (<code>slug#sN</code> or <code>project:slug#sN</code>) that the
-      section's dependencies do not include. It names both refs and the text that mentioned them, so
-      the repair is one <code>section_depends_on.&lt;sid&gt;</code> write.
-      <code>overlapping-scope</code> fires when two open sections in different plans declare
-      intersecting write paths in their briefs or dispatch history. That is the shape of
-      <code>shared-coil-supply-model#s6</code> and <code>iter-switched-terminal-transients#s6</code>,
-      the same integrated run planned twice.
-    </p>
-    <p>
-      Both findings are warnings with an exact repair. Neither invents an edge: the analyser reports
-      the suspected wait and leaves the decision to whoever owns the plan.
-    </p>
-    <p>
-      <strong>Done when:</strong> a fixture whose blocked manifest names <code>B#s4</code> from a
-      section with no edge to it emits <code>undeclared-wait</code> with both refs, and the same
-      fixture with the edge declared emits nothing. Two fixture sections claiming one path emit
-      <code>overlapping-scope</code>, and two claiming disjoint paths do not. On
-      <code>power_convertor</code> the findings are listed in the gate log, and each is checked by
-      hand as a true or false positive, with the count of each recorded.
-    </p>
+    <p>Two wiring findings make the edges coordinators carry in messages visible. <code>undeclared-wait</code> fires when a section's blocked run, gate measure or open followup names another section ref (<code>slug#sN</code> or <code>project:slug#sN</code>) that the section's dependencies do not include. It names both refs and the text that mentioned them, so the repair is one <code>section_depends_on.&lt;sid&gt;</code> write. <code>overlapping-scope</code> fires when two open sections in different plans declare intersecting write paths in their briefs or dispatch history. That is the shape of <code>shared-coil-supply-model#s6</code> and <code>iter-switched-terminal-transients#s6</code>, the same integrated run planned twice.</p><p>Both are emitted through the existing <code>_finding</code> helper in <code>reckon/roadmap.py</code> (near line 1213) into <code>wiring_findings</code>, severity <code>warn</code>, like every other wiring finding. They add two codes and no surface. Neither invents an edge: the analyser reports the suspected wait and leaves the decision to whoever owns the plan.</p><p><strong>Done when:</strong> a fixture whose blocked manifest names <code>B#s4</code> from a section with no edge to it emits <code>undeclared-wait</code> with both refs, and the same fixture with the edge declared emits nothing. Two fixture sections claiming one path emit <code>overlapping-scope</code>, and two claiming disjoint paths do not. On <code>power_convertor</code> the findings are listed in the gate log, and each is checked by hand as a true or false positive, with the count of each recorded.</p>
 
     <h2 id="s6">§6 — A section can wait on a followup</h2>
 <section data-reckon="section" data-id="s6" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
@@ -200,37 +108,7 @@
 
     <h2 id="s7">§7 — One brief an agent can act on</h2>
 <section data-reckon="section" data-id="s7" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p>
-      <code>reckon.brief.project_brief(project, session=None, since=None)</code> composes, from §2 to
-      §5, the page a coordinator needs before choosing work. It runs to at most 6,000 characters of
-      plain text plus the typed rows behind each line, and contains:
-    </p>
-    <ul>
-      <li>the active sprint's goal and its time left;</li>
-      <li>both completion percentages;</li>
-      <li>the critical path as sections, with hours, the runs on it and what holds its head;</li>
-      <li>the ten highest-ranked ready sections with their <code>reason</code>;</li>
-      <li>true blockers grouped by kind;</li>
-      <li>at-risk work: sections with repeated attempts, runs blocked more than a day, interrupted runs;</li>
-      <li>wiring findings, counted, with the top three shown;</li>
-      <li>when <code>since</code> is given, what changed after that cursor.</li>
-    </ul>
-    <p>
-      The brief is a composition, not a second analyser: every figure in it is read from the payload
-      §2 to §5 produce. The CLI prints it as <code>reckon brief --project</code>, and the MCP surface
-      serves it under the contract its own plan sets.
-    </p>
-    <p>
-      <strong>Done when:</strong> a fixture is built so that its critical-path head, its top-ranked
-      ready section, its oldest blocked run and one undeclared wait are known in advance, and the
-      brief names all four within 6,000 characters. The base commit has no brief and its plan-level
-      analyser names a different head, so the test fails there. A second arm changes one fixture
-      edge and requires the brief's critical-path line to change with it. On
-      <code>power_convertor</code> the brief names the critical-path head, the run blocked since
-      2026-10-17 and the three ready sections with the largest reach. A parity test that every
-      number in the brief equals its roadmap field stays as a guard against drift, not as the
-      control.
-    </p>
+    <p><code>project_brief(project, since=None)</code>, one public function in <code>reckon/roadmap.py</code> beside the payload it reads, composes from §2 to §5 the page a coordinator needs before choosing work. It runs to at most 6,000 characters of plain text plus the typed rows behind each line, and contains:</p><ul><li>the active sprint's goal and its time left;</li><li>both completion percentages, and the share of open plans carrying one ROI value when that share is 80 % or more;</li><li>the critical path as sections, with hours, the runs on it and what holds its head;</li><li>the ten highest-ranked ready sections with their <code>reason</code>;</li><li>true blockers grouped by kind;</li><li>at-risk work: sections with repeated attempts, runs blocked more than a day, interrupted runs;</li><li>wiring findings, counted, with the top three shown;</li><li>when <code>since</code> is given, what changed after that time.</li></ul><p>The brief is a composition, not a second analyser: every figure in it is read from the payload §2 to §5 produce. Surface: one public function and one option on the existing CLI command, <code>reckon roadmap --brief</code>. No new MCP view is added; the MCP serves the brief as <code>roadmap</code>'s default answer, under the contract <code>the-mcp-answers-the-question-asked</code> sets.</p><p><strong>Done when:</strong> a fixture is built so that its critical-path head, its top-ranked ready section, its oldest blocked run and one undeclared wait are known in advance, and the brief names all four within 6,000 characters. The base commit has no brief and its plan-level analyser names a different head, so the test fails there. A second arm changes one fixture edge and requires the brief's critical-path line to change with it. On <code>power_convertor</code> the brief names the critical-path head, the run blocked since 2026-10-17 and the three ready sections with the largest reach. A parity test that every number in the brief equals its roadmap field stays as a guard against drift, not as the control.</p>
 
     <h2 id="s8">§8 — Measured on power_convertor and two other mounts</h2>
 <section data-reckon="section" data-id="s8" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>

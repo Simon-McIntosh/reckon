@@ -26,7 +26,7 @@
   <title>Work Is Checked Against Its Domain | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -65,149 +65,27 @@
 
     <h2 id="s2">§2 — No review round while a blocking finding is unanswered</h2>
 <section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p>
-      Before a review is dispatched for a node, by the reflex or by hand, the node's newest stored
-      review is read. If it carries blocking findings that are not yet disposed, the dispatch is
-      refused with <code>repair-owed</code>. A run review's finding is retired by
-      <code>crew dispose --project P --run &lt;id&gt; --finding &lt;index&gt;</code>, with
-      <code>--kind folded --node &lt;n&gt;</code> when a repair node took it or <code>--kind exempted
-      --reason &lt;r&gt;</code> when it is declined. That is the writer the obligations already pair
-      with their duty row; <code>crew review --answer</code> addresses plan reviews only and cannot
-      retire it. The refusal names each finding and the <code>crew dispose</code> command for it, and
-      the coordinator's obligations show a <code>repair-owed</code> entry in place of
-      <code>review-missing</code>. Disposing the findings lifts the refusal, and the next round then
-      reviews the repair rather than repeating the last one.
-    </p>
-    <p>
-      <strong>Done when:</strong> a fixture run whose previous review has one unanswered blocking
-      finding is refused by the reflex with <code>repair-owed</code>, and no review run is created.
-      The same fixture with the finding disposed through <code>crew dispose</code> dispatches. On the base commit the first fixture
-      dispatches a review, and the test fails there. The obligations test reads
-      <code>repair-owed</code> for the first fixture.
-    </p>
+    <p>The derivation the refusal needs already exists. <code>_run_open</code> in <code>reckon/crew/review_lifecycle.py</code> (near line 124) answers whether a run review carries a blocking finding with no answer, and <code>lifecycle()</code> exposes that as the hot state <code>open</code>. <code>blocking_finding_dispositions</code> in <code>reckon/crew/repair.py</code> (near line 242) enumerates every blocking finding with its disposition. Obligations, <code>review_dispositions</code> and <code>recovery_repair_dispatch</code> already read them, but <code>dispatch_review_for_run</code> (<code>reckon/crew/recovery_review_dispatch.py</code>, near line 2056), which the reflex calls, reads none of it.</p><p>The change is to make it read <code>lifecycle()</code>. A node whose newest review is in state <code>open</code> is refused, with a refusal naming each undisposed finding and its <code>crew dispose --project P --run &lt;id&gt; --finding &lt;index&gt;</code> command (<code>--kind folded --node &lt;n&gt;</code> or <code>--kind exempted --reason &lt;r&gt;</code>). A later change to <code>_run_open</code> therefore reaches the refusal too. The duty the repair machinery already raises for an undisposed blocking finding is the obligation the coordinator sees.</p><p>Surface: one refusal reason on an existing refusal path. No new duty kind and no second derivation are added.</p><p><strong>Done when:</strong> a fixture run whose previous review has one undisposed blocking finding is refused by the reflex, naming the finding and its dispose command, and no review run is created. The same fixture with the finding disposed dispatches. On the base commit the first fixture dispatches a review, and the test fails there. A second test stubs <code>_run_open</code> to report the run closed and shows the refusal lifts, proving the refusal reads the one derivation.</p>
 
     <h2 id="s3">§3 — A repository declares its domain rules once</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p>
-      The project resource (<code>docs/state/&lt;project&gt;/project.json</code>) gains an optional
-      <code>domain</code> block. No schema for the project resource exists today:
-      <code>_read_project_json</code> in <code>reckon/project_state.py</code> checks the envelope's
-      identity and validates nothing else. This section therefore adds a typed model for the block
-      in <code>reckon/_schema.py</code>, validates the block on read, and publishes it beside
-      <code>plan.schema.json</code> under <code>docs/_shared/</code>. <code>PLAN-FORMAT.md</code> still calls
-      this resource "identity and presentation only", although it already carries <code>scope</code>,
-      <code>north_stars</code>, <code>pending_plan_limit</code> and <code>schedule_horizon_sprints</code>.
-      This section corrects that clause, in the same commit, to list what the resource holds,
-      <code>domain</code> included. The block has three lists.
-    </p>
-    <p>
-      <code>invariants</code> are rules a result must satisfy. Each entry has an <code>id</code>,
-      the <code>rule</code> in one sentence, <code>applies_to</code> (path globs or tags) and an
-      optional <code>check</code>, a command whose zero exit means the rule holds.
-    </p>
-    <p>
-      <code>review_checks</code> are questions a reviewer must answer about any node they apply to.
-      Each has an <code>id</code>, the <code>question</code> and <code>applies_to</code>. Examples
-      from the coordinators above are the limit behaviour at DC and at high frequency, whether both
-      sides of a comparison pass through the same measurement operator, whether a perturbation grows,
-      and whether a measurement of the modelled quantity already exists.
-    </p>
-    <p>
-      <code>model_paths</code> is a list of path globs naming where the repository's models live.
-      A node whose write paths match one is a model-building node for the purposes of §6. The plan
-      format has no section-level tags, so the write paths are the carrier that exists.
-    </p>
-    <p>
-      <code>reckon project domain --project</code> and the project read in the MCP return the block.
-      An absent block changes nothing, so every repository keeps today's behaviour until it opts in.
-    </p>
-    <p>
-      <strong>Done when:</strong> a fixture project with two invariants and two checks loads, and a
-      malformed entry (a missing <code>rule</code>, or <code>applies_to</code> that is not a list) is
-      refused naming the field. A project without the block reads an empty <code>domain</code>.
-      <code>PLAN-FORMAT.md</code> and the <code>reckon-sync</code> skill document the block.
-    </p>
+    <p>Per-project policy already has a validated carrier: <code>docs/state/&lt;project&gt;/flight.yaml</code>. It is modelled in <code>reckon/_flight_schema.py</code> and published as <code>docs/_shared/flight.schema.json</code>. It is resolved per layer and shown by <code>crew(view="flight")</code>, and it already holds the per-dimension review floors (<code>gates.dimension_floors</code>, near line 620). The repository's domain rules join it as a typed <code>domain</code> block in that model, so the existing generator and the existing drift test cover its schema. No new resource is added, <code>project.json</code> is unchanged, and no CLI verb is added, because <code>crew(view="flight")</code> already shows the resolved config.</p><p>The block has three lists. <code>invariants</code> are rules a result must satisfy, each with an <code>id</code>, the <code>rule</code> in one sentence, <code>applies_to</code> path globs and an optional <code>check</code> command whose zero exit means the rule holds. <code>review_checks</code> are questions a reviewer must answer about any node they apply to, each with an <code>id</code>, the <code>question</code> and <code>applies_to</code>. Examples from the coordinators above are the limit behaviour at DC and at high frequency, whether both sides of a comparison pass through the same measurement operator, whether a perturbation grows, and whether a measurement of the modelled quantity already exists. <code>model_paths</code> is a list of globs naming where the repository's models live.</p><p>One module answers which rules apply to a node: <code>rules_for(project, node)</code> in a new <code>reckon/crew/domain_rules.py</code>. It matches <code>applies_to</code> and <code>model_paths</code> against the node's write paths, and §4, §5 and §6 call only it, so the match cannot disagree with itself. An absent block changes nothing; every repository keeps today's behaviour until it opts in.</p><p>Surface: one config block and one module with one public function.</p><p><strong>Done when:</strong> a fixture flight config with two invariants and two checks validates, and a malformed entry (a missing <code>rule</code>, or <code>applies_to</code> that is not a list) is refused naming the field. <code>rules_for</code> returns exactly the matching rules for a fixture node and nothing for a project without the block. The regenerated <code>flight.schema.json</code> carries the block and its existing drift test passes.</p>
 
     <h2 id="s4">§4 — A brief carries the rules its node touches, and promotion runs their checks</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
-    <p>
-      When a node is dispatched, the invariants and review checks whose <code>applies_to</code>
-      matches its write paths or its plan's tags are composed into the brief under a fixed heading.
-      The worker therefore reads the converged section count before it chooses one. When the node is
-      completed, every matching invariant that carries a <code>check</code> runs against the node's
-      head, and a failing check is a promotion guard. It is reported beside the others by
-      <code>crew complete --dry-run</code> and waivable only with a stated reason, like every other
-      guard.
-    </p>
-    <p>
-      <strong>Done when:</strong> a fixture node writing a path an invariant applies to has that rule
-      in its composed brief, and a node writing elsewhere does not. A fixture whose invariant check
-      exits non-zero is refused at <code>crew complete</code> with the invariant's id, and passes once
-      the check exits zero. Without the declaration the same fixture promotes; that is the negative
-      control.
-    </p>
+    <p>Brief composition already has an owner. <code>reckon/crew/prompts.py</code> holds the composed prompt text, and <code>_brief_text</code> and <code>_brief_record</code> in <code>reckon/crew/dispatch_admission.py</code> (near lines 2015 and 2026) build the brief that is stored and digested so a review can name it. The rules <code>rules_for</code> returns are added there, under a fixed heading. The heading is part of the composed brief and therefore of its digest, so a rule change re-keys the briefs composed after it. That is intended: a brief records the rules it was given.</p><p>Each matching invariant that carries a <code>check</code> becomes a promotion guard, registered with the guards in <code>reckon/crew/promotion_checks.py</code> and reported by <code>crew complete --dry-run</code> beside them. This is the first guard that executes a repository-declared command, which is a different trust boundary from the guards that read a run's own recorded evidence. The command comes from the committed <code>flight.yaml</code> of the repository being promoted. It runs in the run's worktree with the run's interpreter under a bounded timeout, never in the coordinator's checkout. A project that declares no check runs nothing, and a failing check is waivable only with a stated reason.</p><p>Surface: one heading in an existing brief and one guard.</p><p><strong>Done when:</strong> a fixture node writing a path an invariant applies to has that rule in its composed brief, and a node writing elsewhere does not. A fixture whose invariant check exits non-zero is refused at <code>crew complete</code> with the invariant's id, and passes once the check exits zero. A check that overruns its timeout is refused, not hung. Without the declaration the same fixture promotes; that is the negative control.</p>
 
     <h2 id="s5">§5 — A review answers the domain checks, and a failed one blocks</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
-    <p>
-      When a project declares <code>review_checks</code>, a review of a node they apply to gains a
-      seventh dimension, <code>domain</code>, and one verdict line per matching check, read like the
-      existing <code>REVIEW_ITEMS</code> checklist. A record that omits a declared check's verdict
-      parses as incomplete rather than as a pass, because a reviewer who skips an item must not
-      produce a record that looks thorough. A blocking <code>domain</code> finding stops promotion
-      exactly as any other blocking finding does. The six existing dimensions and the projects that
-      declare nothing are unchanged.
-    </p>
-    <p>
-      <strong>Done when:</strong> the composed review prompt for a fixture node lists exactly the
-      checks that match it. A fixture review record with every verdict parses complete and carries a
-      <code>domain</code> score, and one missing a verdict parses incomplete and names the check. The
-      falsifier that holds <code>prompts/review.md</code> to <code>REVIEW_DIMENSIONS</code> covers the
-      new dimension. A project without declarations still scores six dimensions.
-    </p>
+    <p>Declared checks are not a seventh scored dimension. <code>REVIEW_DIMENSIONS</code> in <code>reckon/crew/review.py</code> stays the global six. The acceptance floor (<code>reckon/crew/recovery_review_acceptance.py</code>, near line 25), the parser's completeness check and the prompt falsifier are all derived from that one constant, and a per-project dimension would change them for every project. Instead the declared checks join the checklist mechanism <code>REVIEW_ITEMS</code> already uses. A review of a node they apply to carries one verdict line per matching check from <code>rules_for</code>, and a record that omits one parses as incomplete rather than as a pass.</p><p>A failed check is recorded as a blocking finding with rubric <code>domain</code>. <code>review_lifecycle</code>'s <code>_run_open</code> reads it like any blocking finding once the rubric list it branches on includes <code>domain</code>, so §2's refusal, the duty row and the promotion guard all see it through the one derivation.</p><p>Surface: one checklist entry kind and one rubric name; the dimension vocabulary and the acceptance floor are unchanged.</p><p><strong>Done when:</strong> the composed review prompt for a fixture node lists exactly the checks that match it. A fixture record with every verdict parses complete, and one missing a verdict parses incomplete and names the check. A failed check is a blocking finding that <code>lifecycle()</code> reports <code>open</code>. A project without declarations scores six dimensions with no checklist lines, and the acceptance floor is unchanged; that is the control.</p>
 
     <h2 id="s6">§6 — A node names its measurement and its inputs before it starts</h2>
 <section data-reckon="section" data-id="s6" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p>
-      A brief can declare <code>inputs</code>: the data files, records or document identifiers the
-      node needs. Dispatch refuses a node whose repository-path inputs do not exist and names them,
-      so a fit is not started on constants nobody holds. A brief for a node that builds or calibrates
-      a model also states <code>compares_with</code>: the measurement or reference the result will be
-      checked against, or <code>none-exists</code> with the search that established it. Dispatch
-      lints a model-building node, one whose write paths match the project's
-      <code>domain.model_paths</code> from §3, that states neither. This is the
-      "is there a measurement of this?" question the coordinators said would have saved two node
-      rounds.
-    </p>
-    <p>
-      <strong>Done when:</strong> a fixture brief naming a missing input path is refused at dispatch
-      with the path, and the same brief with the file present dispatches. A brief whose write paths
-      match a declared <code>model_paths</code> glob and which states neither
-      <code>compares_with</code> nor <code>none-exists</code> receives a lint warning, and one that
-      states either receives none. A project that declares no <code>model_paths</code> is never
-      linted, which is the negative control.
-    </p>
+    <p>Dispatch-time judgements of a node already have an owner: <code>reckon/crew/prescription.py</code>, one public judgement (<code>judge_prescribed</code>, with <code>PRESCRIBED_PROPERTIES</code>) computed before any worktree exists. It is read where the dispatch plan bands nodes and is reported by the dry run. <code>TaskNode</code> (<code>reckon/crew/node.py</code>) gains two optional fields, <code>inputs</code> and <code>compares_with</code>. The two checks become properties in that judgement, not a second judging module.</p><ul><li><code>inputs</code>: a node whose repository-path inputs do not exist is refused, naming them, so a fit is not started on constants nobody holds.</li><li><code>compares_with</code>: a model-building node, one whose write paths match <code>model_paths</code> through <code>rules_for</code>, states the measurement or reference its result will be checked against, or <code>none-exists</code> with the search that established it. A node that states neither gets a lint warning. This is the "is there a measurement of this?" question the coordinators said would have saved two node rounds.</li></ul><p>Surface: two optional node fields and two properties in an existing judgement.</p><p><strong>Done when:</strong> a fixture node naming a missing input path is refused at dispatch with the path, and the same node with the file present dispatches. A node whose write paths match a declared <code>model_paths</code> glob and which states neither <code>compares_with</code> nor <code>none-exists</code> receives the lint, and one that states either does not. A project that declares no <code>model_paths</code> is never linted; that is the negative control. The dry run reports both properties with the others.</p>
 
     <h2 id="s7">§7 — The checks find the faults that got through, on the work they missed</h2>
 <section data-reckon="section" data-id="s7" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p>
-      The <code>power_convertor</code> coordinators author that repository's <code>domain</code> block
-      in their own repository; reckon does not write it for them. With the block in place, the cases
-      in §1 are replayed through the new checks:
-    </p>
-    <ul>
-      <li>a domain review of the landed CS tape record, the one two reviews passed;</li>
-      <li>the 40-section tape node's head, checked against the convergence invariant;</li>
-      <li>a review dispatch at a head with an unanswered blocking finding.</li>
-    </ul>
-    <p>
-      <strong>Done when:</strong> the domain review raises a blocking finding about the record's
-      low-frequency behaviour; the invariant check refuses the 40-section head; and the dispatch is
-      refused with <code>repair-owed</code>. A domain review of a record the coordinators name as
-      sound raises no blocking domain finding; that is the negative control. Each result goes to the
-      landed record with its run id. A miss, where a check does not find the fault it was built for,
-      is recorded with the reason and becomes a section here.
-    </p>
+    <p>The <code>power_convertor</code> coordinators author that repository's <code>domain</code> block in its own <code>docs/state/power_convertor/flight.yaml</code>; reckon does not write it for them. With the block in place, the cases in §1 are replayed through the new checks:</p><ul><li>a domain review of the landed CS tape record, the one two reviews passed;</li><li>the 40-section tape node's head, checked against the convergence invariant;</li><li>a review dispatch at a head with an undisposed blocking finding.</li></ul><p><strong>Done when:</strong> the domain review raises a blocking finding about the record's low-frequency behaviour; the invariant check refuses the 40-section head; and the dispatch is refused through §2. A domain review of a record the coordinators name as sound raises no blocking domain finding; that is the negative control. Each result goes to the landed record with its run id. A miss, where a check does not find the fault it was built for, is recorded with the reason and becomes a section here.</p>
 
 
     <section data-reckon="followups" id="followups" class="r-followups">
