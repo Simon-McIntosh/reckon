@@ -37,12 +37,12 @@
   carries rather than finding something in every config. Against the base revision the same load test fails with
   <code>Extra inputs are not permitted</code>; the negative-control log restoring <code>extra="forbid"</code> is cited in the
   manifest.</p>
-  <p id="a-newer-flight-key-is-ignored-at-load-outofscope">Two pre-existing tests assert the old strictness through a path this
-  node may not write, and are recorded as follow-ons rather than edited:
-  <code>tests/test_budget_lift.py</code> asserts the generated <code>BudgetConfig</code> itself refuses an undeclared key, and
-  <code>tests/test_one_check_trusts_a_moved_checkout.py</code> forces a <code>crew(view="flight")</code> failure by adding an
-  unknown key to the copy's shipped defaults. Both need their vehicle changed — the first to the strict read, the second to a
-  fault that still faults — and neither is a regression in the loader.</p>
+  <p id="a-newer-flight-key-is-ignored-at-load-outofscope">Two tests pinned the old strictness where it no longer applies, and each
+  kept its case and its fault — moved, not deleted. <code>tests/test_budget_lift.py</code> now proves that an undeclared key is refused
+  on the strict read, the one a config is authored against, rather than through the generated <code>BudgetConfig</code> itself, so the
+  ceilings case still holds a layer to the declared shape. <code>tests/test_one_check_trusts_a_moved_checkout.py</code> breaks the value
+  of a declared key in the copy's shipped defaults instead of adding an unknown one, so the moved-checkout probe still forces the flight
+  failure it needs — an unknown key is now ignored and reported, not raised. Neither was a regression in the loader.</p>
 </article>
 </body>
 </html>

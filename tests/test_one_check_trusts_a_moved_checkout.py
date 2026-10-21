@@ -67,12 +67,17 @@ def move_the_stamp():
 
 
 def add_a_shipped_default():
-    """Add a key the running image's schema rejects, as a later commit would."""
+    """Break a declared shipped default, as a later commit the image rejects would.
+
+    The fault has to be one the running image still refuses: a key its schema
+    does not declare is ignored and reported rather than raised, so the mover
+    breaks the value of a key the schema does declare.
+    """
     config = root / "reckon" / "schema" / "flight-defaults.yaml"
     config.write_text(
         config.read_text().replace(
             "  exhausted_statuses: []",
-            "  exhausted_statuses: []\n  a_key_from_the_future: 1",
+            "  exhausted_statuses: not_a_list",
         )
     )
 
@@ -226,7 +231,7 @@ def test_a_dirty_moved_checkout_keeps_the_original_failure(tmp_path: Path) -> No
         f"a dirty moved checkout must not be called stale, got {second!r}"
     )
     assert second.get("error") == "crew_error"
-    assert "Extra inputs are not permitted" in second.get("detail", "")
+    assert "budget.exhausted_statuses" in second.get("detail", "")
 
 
 def test_a_clean_moved_checkout_answers_on_the_current_code(tmp_path: Path) -> None:
@@ -249,7 +254,7 @@ def test_a_clean_moved_checkout_answers_on_the_current_code(tmp_path: Path) -> N
         f"a clean moved checkout answers on its current code, got {second!r}"
     )
     assert second.get("error") == "crew_error"
-    assert "Extra inputs are not permitted" in second.get("detail", "")
+    assert "budget.exhausted_statuses" in second.get("detail", "")
     assert second.get(SERVED_BY_CODE_STAMP), (
         f"an answer the current code served names the stamp that served it: {second!r}"
     )

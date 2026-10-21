@@ -18,13 +18,13 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
-from pydantic import ValidationError
 
 from reckon import _store
 from reckon._flight_schema import BudgetConfig
 from reckon.crew import budget_lift as bl
 from reckon.crew import pace as pace_module
 from reckon.crew import reserve as reserve_module
+from reckon.flight import FlightConfigError
 from tests.real_home_traces import traces_naming
 
 WEEK_HOURS = bl.CLOCK_HOURS[bl.SEVEN_DAY]
@@ -732,22 +732,34 @@ def test_effective_budget_ignores_a_session_environment_variable(monkeypatch):
 # ── the lift ceilings are declared flight keys ──────────────────────────────
 
 
-def test_a_flight_layer_may_set_the_lift_ceilings():
-    """The declared slots validate, and an undeclared key under the block does
-    not, so a layer writing the ceilings is held to the same shape as any
-    other."""
+def test_a_flight_layer_may_set_the_lift_ceilings(tmp_path):
+    """The declared slots validate, and an undeclared key under the block is
+    refused where the config is authored, so a layer writing the ceilings is
+    held to the same shape as any other.
+
+    The refusal belongs to the strict read: a key the running schema does not
+    declare is ignored by the read a running caller makes, so it is the read a
+    config is authored against — the same one ``reckon flight --check`` makes —
+    that catches it.
+    """
     accepted = BudgetConfig.model_validate(
         {"lift": {"max_multiple": 2.0, "max_hours": 24.0}}
     )
     assert accepted.lift is not None
     assert accepted.lift.max_multiple == pytest.approx(2.0)
     assert accepted.lift.max_hours == pytest.approx(24.0)
-    with pytest.raises(ValidationError):
-        BudgetConfig.model_validate({"lift": {"max_multiple": 2.0, "nope": 1}})
+    with pytest.raises(FlightConfigError) as excinfo:
+        _resolved_layer(tmp_path, "    max_multiple: 2.0\n    nope: 1\n", strict=True)
+    assert excinfo.value.key_path == "budget.lift.nope"
 
 
-def _resolved_layer(tmp_path, lift_block: str) -> dict:
-    """Resolve a host layer declaring ``lift_block`` under budget.lift."""
+def _resolved_layer(tmp_path, lift_block: str, *, strict: bool = False) -> dict:
+    """Resolve a host layer declaring ``lift_block`` under budget.lift.
+
+    ``strict`` is the authoring read — the one ``reckon flight --check`` makes
+    — under which a key the running schema does not declare is refused rather
+    than ignored and reported.
+    """
     from reckon import flight
 
     host = tmp_path / "host-flight.yaml"
@@ -759,7 +771,9 @@ def _resolved_layer(tmp_path, lift_block: str) -> dict:
         "  lift:\n"
         f"{lift_block}"
     )
-    resolved = flight.resolve(host_path=host, project_path=tmp_path / "absent.yaml")
+    resolved = flight.resolve(
+        host_path=host, project_path=tmp_path / "absent.yaml", strict=strict
+    )
     return resolved.config
 
 
