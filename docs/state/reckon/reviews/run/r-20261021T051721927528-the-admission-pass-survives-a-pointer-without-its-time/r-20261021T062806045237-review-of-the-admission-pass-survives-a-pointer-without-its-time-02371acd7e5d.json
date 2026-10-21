@@ -1,0 +1,88 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "Restoring the propagating admission_order call makes admit_once raise ValueError on the unplaceable pointer, so result['launched'] is never assigned and both the length check at 270 and the admitted_from equality at 278 redden; negative-control.log records exactly this (2 failed).",
+      "lines": "270-278"
+    },
+    {
+      "failure_condition": "Dropping the unplaced verdict append while still passing the filtered list makes verdicts[UNREADABLE] a KeyError, reddening lines 295-297; reverting the filter reddens via the same raise as above.",
+      "lines": "295-297"
+    },
+    {
+      "failure_condition": "The instrument control at the head of test 1 asserts the malformed pointer is present in the live snapshot (held[UNREADABLE].get('queued_at') is None), so an absence of the unplaceable run from the order cannot pass as evidence \u2014 it fails if the fixture never wrote the pointer.",
+      "lines": "239-242"
+    },
+    {
+      "failure_condition": "Pushing the narrowing down into admission_order would make it stop raising on a pointer with no queued_at, so pytest.raises at 313-315 would fail; this guards the plan's 'the refusal stays in the ordering' clause independently of the pass.",
+      "lines": "313-315"
+    }
+  ],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:1341",
+    "reckon/crew/queue_admission.py:1351"
+  ],
+  "completed_at": "2026-10-21T06:42:54.869Z",
+  "dispatched_at": "2026-10-21T06:28:54Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/the-admission-pass-survives-a-pointer-without-its-time.html",
+      "line": 8,
+      "severity": "follow-on",
+      "text": "the fragment (and the manifest's artifacts line) states 'ruff check and ruff format --check report no finding on either changed file (logs/ruff.log)', but logs/ruff.log records 'W292 No newline at end of file' at the test file and '2 files would be reformatted' with 'check exit=1' and 'format exit=1', so the cited receipt shows the opposite of the claim; the landed head tree is in fact ruff-clean (verified: ruff check prints 'All checks passed!' on both files and the test file ends in a newline), so the log is unrepresentative of the revision it is cited for and its last line EXIT=0 contradicts its own sub-commands' non-zero exits."
+    },
+    {
+      "file": "docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/the-admission-pass-survives-a-pointer-without-its-time.html",
+      "line": 4,
+      "severity": "follow-on",
+      "text": "the measure paragraph states every revision is the one named on its own log's first line and then says the focused gate 'ran at this node's head 5a36f7375', but logs/head-focus.log's first line reads 'revision 94bc5a02887530f7ad79b1a379dc4cc7a8f7cd83 (uncommitted working tree)', so the fragment's own claim is falsified by the log it cites (the 3-passed/EXIT=0 figures do match)."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": 1073,
+      "severity": "follow-on",
+      "text": "the predicate 'parse_utc(pointer.get(\"queued_at\")) is not None' is now written inline a third time in this module (queued_placements at line 998 and the placeable/unplaceable comprehensions at 1068-1074) with no shared helper, so the readability rule for a queued pointer's arrival time is stated in three places that can drift; the plan directs the pass to own its own filter, but the predicate itself has an obvious single home."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 2 production call sites of admit_once inside admit_until_stopped: reckon/crew/queue_admission.py:1341 (the --once branch) and :1351 (the service loop); no caller outside the module's own service loop.",
+    "diff": "read commit by commit against base 94bc5a028; 5a36f7375 adds the 32-line filter/verdict block at reckon/crew/queue_admission.py:1057-1089 plus the 315-line test file; 02371acd7 adds the 9-line evidence fragment.",
+    "done_when": "the done_when names tests/test_the_admission_pass_survives_a_pointer_without_its_time.py (two pointers with queued_at and one without, one stubbed pass, no exception, admission order, a verdict naming the third, and no added failure among the queue_admission/queue_order importers); the manifest records the focused gate 3 passed (logs/head-focus.log) and both importer arms 2 failed/87 passed with identical ids, and I confirmed those figures in the logs; the ruff clause of the same fence is contradicted by its cited log.",
+    "goal": "the goal is to make admit_once leave a queued pointer with no readable queued_at out of its ordering and record a verdict naming it so one such pointer no longer ends the pass; reckon/crew/queue_admission.py:1068-1089 splits the lane's queued pointers, orders only the placeable ones through queue_order.admission_order, and appends one 'unplaced' verdict carrying the run and reason.",
+    "manifest": "read; it records commits 5a36f7375 and 02371acd7, status complete, the focused gate 3 passed, the negative control 2 failed, both arm logs with identical failure ids, the landing line and the follow-ons; the ruff artifacts line and the fragment's head-revision claim do not match their cited logs.",
+    "write_paths": "the manifest declares reckon/crew/queue_admission.py, tests/test_the_admission_pass_survives_a_pointer_without_its_time.py, the evidence fragment and the figures directory; the diff touches exactly the first three and adds no figure; plan section s35 lists the first two, and the fragment is always permitted."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows the declared mutation (filter removed) reddens the two pass cases at tests/test_the_admission_pass_survives_a_pointer_without_its_time.py:270-297 while the head arm passes all three, and the admitted order is read from the admit_request marker the launch re-publishes rather than from what the test passed in.",
+    "evidence": "the test, negative control and both importer arms are recorded and I confirmed their figures in the same logs, but logs/ruff.log cited for the fence's ruff clause records 'Found 1 error' and '2 files would be reformatted' rather than no finding.",
+    "fit": "reckon/crew/queue_admission.py:1061-1089 follows the module's existing comment convention and uses queue_order.admission_order, _session_allowance_read and _verdict_row unchanged; names 'placeable', 'unplaceable' and the verdict string 'unplaced' describe the mechanism and introduce no plan label or version token.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:1068-1076 orders only the placeable pointers and lines 1080-1089 name each unplaceable one in an 'unplaced' verdict, which is exactly the goal.",
+    "reuse": "reckon/crew/queue_admission.py:1080-1089 reuses the existing verdict owner (_verdict_row, _record_pass_verdicts) and adds no new function or class, but it re-derives the readable-queued_at predicate already owned by queued_placements at line 998 instead of extending it.",
+    "scope_discipline": "every path in the diff (reckon/crew/queue_admission.py, the new test file, the evidence fragment) is inside the manifest's declared write paths and carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make admit_once leave a queued pointer with no readable queued_at out of its ordering and name it in a verdict; reckon/crew/queue_admission.py:1068-1089 splits the lane queue, orders the placeable pointers and appends one 'unplaced' verdict per unplaceable one.\nVERDICT done_when: the done_when names tests/test_the_admission_pass_survives_a_pointer_without_its_time.py and the queue_admission/queue_order importers; the manifest records the focused gate 3 passed and both arms 2 failed/87 passed with identical ids, confirmed in the logs, but its ruff clause is contradicted by logs/ruff.log.\nVERDICT write_paths: the diff touches reckon/crew/queue_admission.py, tests/test_the_admission_pass_survives_a_pointer_without_its_time.py and the evidence fragment, all inside the four declared write paths.\nVERDICT manifest: read; it records commits 5a36f7375 and 02371acd7, the focused gate, the negative control EXIT=1, both arm logs with the same two failure ids, and the landing line.\nVERDICT diff: read commit by commit against base 94bc5a028; 5a36f7375 adds the filter/verdict block at queue_admission.py:1057-1089 and the 315-line test file, 02371acd7 adds the evidence fragment.\nCALL_SITES: reckon/crew/queue_admission.py:1341, reckon/crew/queue_admission.py:1351\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:1068-1089 orders only placeable pointers and names each unplaceable one in an 'unplaced' verdict.\nSCORE evidence: 13\nJUSTIFICATION evidence: the test and importer-arm figures are recorded and confirmed, but logs/ruff.log cited for the fence's ruff clause records 'Found 1 error' and '2 files would be reformatted'.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is inside the manifest's declared write paths and no figure or prose beyond the fragment was added.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log reddens the two pass cases at tests/test_the_admission_pass_survives_a_pointer_without_its_time.py:270-297 while the head arm passes all three.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/queue_admission.py:1080-1089 reuses _verdict_row unchanged and introduces no name the naming rules forbid.\nSCORE reuse: 15\nJUSTIFICATION reuse: the change adds no definition and extends the verdict owner, but re-derives the readable-queued_at predicate already owned by queued_placements at reckon/crew/queue_admission.py:998.\nFINDING docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/the-admission-pass-survives-a-pointer-without-its-time.html:8 follow-on: the fragment's ruff claim is contradicted by logs/ruff.log, which records one check error and two files unformatted.\nFINDING docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/the-admission-pass-survives-a-pointer-without-its-time.html:4 follow-on: the fragment says the focused gate ran at head 5a36f7375, but logs/head-focus.log's first line names 94bc5a028 (uncommitted working tree).\nFINDING reckon/crew/queue_admission.py:1073 follow-on: the readable-queued_at predicate is written inline a third time without a shared helper, so the rule can drift across three call sites in one module.",
+  "review_run_id": "r-20261021T062806045237-review-of-the-admission-pass-survives-a-pointer-without-its-time-02371acd7e5d",
+  "reviewed_base_sha": "94bc5a02887530f7ad79b1a379dc4cc7a8f7cd83",
+  "reviewed_commits": [
+    "5a36f737533dd365be7609d973795e0e538faa60",
+    "02371acd7e5de481b1b742c6864eed68b8f25db8"
+  ],
+  "reviewed_head_sha": "02371acd7e5de481b1b742c6864eed68b8f25db8",
+  "reviewed_run_id": "r-20261021T051721927528-the-admission-pass-survives-a-pointer-without-its-time",
+  "scores": {
+    "durability": 19,
+    "evidence": 13,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T06:55:00.000000+00:00",
+  "total": 105
+}
