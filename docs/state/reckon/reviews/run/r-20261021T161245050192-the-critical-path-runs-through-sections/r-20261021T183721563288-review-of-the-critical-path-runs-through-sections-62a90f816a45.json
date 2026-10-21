@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/mcp.py:_roadmap",
+    "reckon/roadmap.py:_lift_section_edges"
+  ],
+  "completed_at": "2026-10-21T18:51:59.844Z",
+  "dispatched_at": "2026-10-21T18:38:35Z",
+  "findings": [
+    {
+      "file": "tests/test_the_critical_path_runs_through_sections.py",
+      "line": 220,
+      "severity": "follow-on",
+      "text": "follow-on: `assert SELF_WIRED not in row[\"unlocks\"]` is strictly subsumed by the `row[\"unlocks\"] == []` assertion one line above it, so it is not a second guard; it reads as though it carried the case independently when the empty-list comparison to the literal is the only assertion whose falsity is demonstrated by the guard-reverted arm."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T161245050192-the-critical-path-runs-through-sections/manifest.md",
+      "line": 20,
+      "severity": "follow-on",
+      "text": "follow-on: negative_control_note says the log carries two mutation arms \"at the head revision\", but the log's own first-arm header names rev c19a077d50e7285cb13a83707478ea2d3fd88974 and tree nc-c19a077.JjCi, so one of the two arms the note describes was run at the pre-repair revision; admission still holds because the second arm is correctly headed at 62a90f816 and its failing id is one the head arm does not fail."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is the roadmap's critical path and unlock set running through the cross-plan section edges; this delta adds no production code and instead covers the guard at reckon/roadmap.py:1432 and re-anchors the path assertions in tests/test_the_critical_path_runs_through_sections.py.\nVERDICT done_when: the done_when's three-plan fixture and its ordered chain, summed effort and unlocks are asserted at tests/test_the_critical_path_runs_through_sections.py:177,185,186,187 and 201-202, and the result is recorded in the manifest's after_suite (118 passed, exit_status 0, logs/gate.log).\nVERDICT write_paths: the source manifest declares seven write paths; the c19a077d..62a90f816 diff names exactly one file, tests/test_the_critical_path_runs_through_sections.py, which is inside that set.\nVERDICT manifest: read; status complete, after_suite now carries the full pytest command with failure_count 0 against baseline_suite failure_count 0, and negative_control_note records two mutation arms of which the second is correctly headed at 62a90f816 with a red EXIT=1 line.\nVERDICT diff: read the single commit 62a90f816 against c19a077d (+72/-31, one file): _write_plan's single `section` parameter becomes a `sections` dict, the path assertions now compare against a written-out EXPECTED_SECTIONS rather than one rendered field against another, a self_wired_project fixture is added, and test_a_plan_does_not_unlock_itself_for_its_own_section_wait asserts the plan reports no unlocks.\nCALL_SITES: reckon/mcp.py:_roadmap, reckon/roadmap.py:_lift_section_edges\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the delta changes no production file and its new case at tests/test_the_critical_path_runs_through_sections.py:214 pins the guard at reckon/roadmap.py:1432 that decides whether a section wait names a plan among its unlocks, which is the goal's unlock-set surface.\nSCORE evidence: 18\nJUSTIFICATION evidence: the done_when's measure is asserted at tests/test_the_critical_path_runs_through_sections.py:177,185-187,193,201-202 with the head arm at 118 passed EXIT=0 in logs/gate.log and the base arm at 117 passed EXIT=0 on the same file list, so both sides of the delta are recorded, not claimed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only c19a077d..62a90f816 names only tests/test_the_critical_path_runs_through_sections.py, inside the source manifest's declared write paths, and the change carries nothing the goal does not imply.\nSCORE durability: 20\nJUSTIFICATION durability: the second arm of logs/negative-control-head.log reverts the guard at reckon/roadmap.py:1432 to `if True:` and test_a_plan_does_not_unlock_itself_for_its_own_section_wait reddens with `assert ['plan-self'] == []` at tests/test_the_critical_path_runs_through_sections.py:219, so the new case names the condition under which it fails.\nSCORE fit: 18\nJUSTIFICATION fit: the added symbols (EXPECTED_SECTIONS, self_wired_project, UPSTREAM_HOURS) are named by what they model and carry no plan, sprint or ticket identifier, though the redundant assert at tests/test_the_critical_path_runs_through_sections.py:220 restates the line above it.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search of tests/ for an existing synthetic-plan builder found tests/roadmap_fixtures.py, which owns the inventory-row builder and not document writing, so the delta's extension of the module-local _write_plan extends the only owner of that capability rather than forking it.\nFINDING tests/test_the_critical_path_runs_through_sections.py:220 follow-on: `assert SELF_WIRED not in row[\"unlocks\"]` is strictly subsumed by `row[\"unlocks\"] == []` on line 219, so it is not a second guard.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T161245050192-the-critical-path-runs-through-sections/manifest.md:20 follow-on: negative_control_note calls both mutation arms head-arm runs, but the log's first arm is headed rev c19a077d and tree nc-c19a077.JjCi.",
+  "review_run_id": "r-20261021T183721563288-review-of-the-critical-path-runs-through-sections-62a90f816a45",
+  "reviewed_base_sha": "c19a077d50e7285cb13a83707478ea2d3fd88974",
+  "reviewed_head_sha": "62a90f816a459574001fa8fb4f5a009890ba7b9d",
+  "reviewed_run_id": "r-20261021T161245050192-the-critical-path-runs-through-sections",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "review",
+  "scores": {
+    "durability": 20,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T18:50:00.000000+00:00",
+  "total": 114
+}
