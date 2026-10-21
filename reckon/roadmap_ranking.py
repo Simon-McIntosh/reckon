@@ -37,6 +37,10 @@ STUCK_SIGNAL = "stuck"
 STUCK_ATTEMPT_THRESHOLD = 2
 STUCK_BLOCKED_RUN_SECONDS = 86400.0
 
+# The classification the shared classifier gives a run whose manifest reports a
+# blocker. It is what the stuck rule reads a run's age against.
+BLOCKED_RUN_CLASSIFICATION = "blocked"
+
 # A row that names no sprint is ranked after every row that names one.
 _NO_SPRINT_PLACE = 10**6
 

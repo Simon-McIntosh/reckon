@@ -27,12 +27,9 @@ from tests.mcp_family_reload import reload_mcp_family
 
 PROJECT = "sample"
 
-# ``wide#s1`` costs the most hours and releases the most sections, so it is both
-# the critical-path head and the largest reach. ``wide#s3`` releases two and
-# ``wide#s2`` releases none, at the same hours and off the path, so reach is the
-# only signal that separates them.
-REACH_HEAD_HOURS = 30.0
-REACH_SIDE_HOURS = 2.0
+# The section chain that holds the critical path costs far more hours than the
+# hub beside it, so nothing on the path can be confused with the reach reading.
+SLOW_HOURS = 40.0
 ORDINARY_HOURS = 1.0
 REASONS = {"critical path", "reach", "stuck"}
 
@@ -114,34 +111,37 @@ def _write_plan(
 
 
 @pytest.fixture()
-def reach_project(mounted_project):
-    """One plan whose sections differ only in the work waiting behind them."""
+def mixed_project(mounted_project):
+    """A long section chain beside a small hub whose section releases two.
+
+    ``slow#s1`` and ``slow-waiter#s1`` cost far more hours than anything else,
+    so the critical path runs through them and every row on it outranks every
+    row off it. ``hub#s1`` releases two sections and ``hub#s2`` none, in the
+    same plan at the same hours, so reach is the only signal that separates
+    them — and neither is on the path, so a reach reading there cannot be
+    satisfied by membership.
+
+    ``loner`` declares no sections at all: it carries no section row, and it is
+    off the path, so a section row that precedes it precedes a plan row.
+    """
 
     project, docs = mounted_project
+    _write_plan(docs, "slow", sections={"s1": SLOW_HOURS})
     _write_plan(
         docs,
-        "wide",
-        sections={
-            "s1": REACH_HEAD_HOURS,
-            "s2": ORDINARY_HOURS,
-            "s3": REACH_SIDE_HOURS,
-        },
+        "slow-waiter",
+        sections={"s1": SLOW_HOURS},
+        section_depends_on={"s1": ["slow#s1"]},
     )
-    waiters = {
-        "waiter-a": "wide#s1",
-        "waiter-b": "wide#s1",
-        "waiter-c": "wide#s1",
-        "waiter-d": "wide#s1",
-        "waiter-e": "wide#s3",
-        "waiter-f": "wide#s3",
-    }
-    for slug, target in waiters.items():
+    _write_plan(docs, "hub", sections={"s1": ORDINARY_HOURS, "s2": ORDINARY_HOURS})
+    for slug in ("hub-waiter-a", "hub-waiter-b"):
         _write_plan(
             docs,
             slug,
             sections={"s1": ORDINARY_HOURS},
-            section_depends_on={"s1": [target]},
+            section_depends_on={"s1": ["hub#s1"]},
         )
+    _write_plan(docs, "loner", sections={})
     return project, docs
 
 
@@ -173,21 +173,40 @@ def _refs(result: dict) -> list[str]:
     return [str(row["ref"]) for row in _section_rows(result)]
 
 
+def _order(result: dict) -> list[str]:
+    """Every ready row's identity in the order the list carries them."""
+
+    return [str(row["slug"]) for row in result["immediate_roadmap"]]
+
+
+def _row(result: dict, identity: str) -> dict:
+    return next(row for row in result["immediate_roadmap"] if row["slug"] == identity)
+
+
 def _reason(result: dict, ref: str) -> str:
     return str(
         next(row for row in _section_rows(result) if row["ref"] == ref)["reason"]
     )
 
 
-def test_the_section_with_the_largest_reach_leads_the_ranked_rows(reach_project):
-    result = mcp_module._roadmap(reach_project[0])
+def test_the_largest_reach_leads_the_off_path_rows(mixed_project):
+    result = mcp_module._roadmap(mixed_project[0])
 
-    assert _refs(result), "no ready section rows were ranked"
-    assert _refs(result)[0] == "wide#s1"
+    critical_ids = set(result["critical_path"]["sections"]) | set(
+        result["critical_path"]["plans"]
+    )
+    order = _order(result)
+    off_path = [identity for identity in order if identity not in critical_ids]
+
+    # The fixture puts the reach where the path is not, so membership cannot be
+    # what places the leading off-path row.
+    assert "hub#s1" not in critical_ids
+    assert len(_row(result, "hub#s1")["unlocks"]) == 2
+    assert off_path[0] == "hub#s1"
 
 
-def test_every_section_row_says_which_signal_placed_it(reach_project):
-    result = mcp_module._roadmap(reach_project[0])
+def test_every_section_row_says_which_signal_placed_it(mixed_project):
+    result = mcp_module._roadmap(mixed_project[0])
 
     reasons = {str(row["reason"]) for row in _section_rows(result)}
 
@@ -196,14 +215,26 @@ def test_every_section_row_says_which_signal_placed_it(reach_project):
 
 
 def test_a_section_placed_by_reach_says_reach_and_outranks_a_side_section(
-    reach_project,
+    mixed_project,
 ):
-    result = mcp_module._roadmap(reach_project[0])
+    result = mcp_module._roadmap(mixed_project[0])
 
     refs = _refs(result)
 
-    assert _reason(result, "wide#s3") == "reach"
-    assert refs.index("wide#s3") < refs.index("wide#s2")
+    assert _reason(result, "hub#s1") == "reach"
+    assert refs.index("hub#s1") < refs.index("hub#s2")
+
+
+def test_a_section_row_outranks_a_plan_row_whose_key_it_beats(mixed_project):
+    result = mcp_module._roadmap(mixed_project[0])
+
+    order = _order(result)
+
+    # ``loner`` is a plan row off the path with nothing waiting behind it, and
+    # ``hub`` is the plan whose section leads: the section row precedes both,
+    # which it cannot do if the section rows are a block after the plan rows.
+    assert order.index("hub#s1") < order.index("hub")
+    assert order.index("hub#s1") < order.index("loner")
 
 
 def test_two_attempts_outrank_an_equal_section_with_none(

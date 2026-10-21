@@ -82,6 +82,7 @@ from reckon.resources import (
 )
 from reckon.roadmap_ranking import (
     _EFFORT_UNIT,
+    BLOCKED_RUN_CLASSIFICATION,
     _lift_section_edges,
     _section_effort_hours,
     plan_ranking_key,
@@ -2664,23 +2665,56 @@ def _plans_released_by_cleared_blockers(
     return released
 
 
+def _recorded_run_classifications(project: str) -> Mapping[str, Mapping[str, Any]]:
+    """The latest watcher event per run, as the live-run classification reads it.
+
+    One stream reduction serves every reader of a run's recorded state, so the
+    stuck signal and the recovery surfaces act on the same event rather than on
+    two parses that could disagree. A stream that cannot be read leaves every
+    run to the pointer classifier, which is the same fallback the live-run
+    partition takes.
+    """
+
+    from reckon.crew.runs import watch_stream_latest_events
+
+    try:
+        return watch_stream_latest_events(project)
+    except OSError:
+        return {}
+
+
 def _pointer_reports_blocked(
     pointer: Mapping[str, Any],
     classify: Callable[[Mapping[str, Any]], Mapping[str, Any]],
+    recorded: Mapping[str, Mapping[str, Any]],
 ) -> bool:
-    """Whether one run pointer reports its node blocked rather than working.
+    """Whether one run reports its node blocked rather than working.
 
-    A run a reader has to act on is one that reports itself blocked, which is a
-    different reading of the pointer than the one the recovery surfaces take.
-    The classifier refuses a pointer it cannot read, and a refusal is no
-    reading rather than a stuck section, so it reads here as unblocked.
+    The recorded watcher event leads and the pointer classifier is the
+    fallback, which is the resolution the live-run partition applies, so a run
+    the roadmap counts as live cannot read as stuck here for a different
+    reason. The three classification keys are read in the partition's order.
+    A classifier that refuses a pointer is no reading rather than a stuck
+    section, so a refusal reads as unblocked.
     """
 
-    try:
-        classified = classify(pointer)
-    except Exception:  # noqa: BLE001 — a refusal is no reading, not a hold
-        return False
-    return str(classified.get("classification") or "") == "blocked"
+    recorded_event = recorded.get(str(pointer.get("run_id") or ""))
+    if recorded_event is not None:
+        classified: Mapping[str, Any] = recorded_event
+    else:
+        try:
+            classified = classify(pointer)
+        except Exception:  # noqa: BLE001 — a refusal is no reading, not a hold
+            return False
+    return (
+        str(
+            classified.get("recovery_classification")
+            or classified.get("classification")
+            or classified.get("to_state")
+            or ""
+        )
+        == BLOCKED_RUN_CLASSIFICATION
+    )
 
 
 def _blocked_section_run_seconds(
@@ -2696,6 +2730,7 @@ def _blocked_section_run_seconds(
 
     from reckon.crew.recovery import classify_pointer
 
+    recorded = _recorded_run_classifications(project)
     now = datetime.now(UTC)
     seconds: dict[tuple[str, str], float] = {}
     for pointer in pointers:
@@ -2707,7 +2742,7 @@ def _blocked_section_run_seconds(
         section_ref = str(node.get("section") or "")
         if not plan_ref or not section_ref:
             continue
-        if not _pointer_reports_blocked(pointer, classify_pointer):
+        if not _pointer_reports_blocked(pointer, classify_pointer, recorded):
             continue
         started = parse_utc(pointer.get("created_at"))
         if started is None:
@@ -3621,42 +3656,27 @@ def _build_roadmap(
                 section for section in sections if section in section_blockers
             ]
             row["section_depends_on"] = mapped_edges
-        # The section rows rank the plan's own ready work, so the plan's ready
-        # sections are enumerated for every open plan rather than only for one
-        # carrying a section-scoped hold. A section is ready when it is still
-        # declared implementable and no section-scoped hold names it: a section
-        # dependency, an open decision scoped to it, or an open gate naming it.
-        section_holds = {
-            str(blocker.get("source_section") or blocker.get("stage"))
-            for blocker in section_dependency_blockers
-        }
+        # The section rows rank the plan's own ready work, which the row already
+        # states twice: the sections it declares implementable, less the ones a
+        # section-scoped hold names. The hold set is the row's own, so a hold
+        # the row does not report cannot hold a section here.
         authored_by_plan[slug] = authored
-        section_holds |= {
-            str(section)
-            for decision in decisions
-            if decision["status"] == "open"
-            for section in decision.get("sections") or []
-        }
-        section_holds |= {
-            str(section)
-            for gate in section_gate_blockers
-            for section in gate.get("gated_sections") or []
-        }
         plan_ready_sections = [
             section
-            for section in implementable_sections(authored.get("section_declarations"))
-            if section not in section_holds
+            for section in row["implementable_sections"]
+            if section not in set(row.get("blocked_sections") or [])
         ]
-        ready_sections_by_plan[slug] = plan_ready_sections
         row["stuck"] = any(
             section_is_stuck(
                 attempts_by_plan.get(slug, {})
                 .get(section_record_id(section), {})
                 .get("attempts", 0),
-                blocked_run_seconds.get((slug, section)),
+                blocked_run_seconds.get((slug, section))
+                or blocked_run_seconds.get((slug, section_record_id(section))),
             )
             for section in plan_ready_sections
         )
+        ready_sections_by_plan[slug] = plan_ready_sections
         if slug in live_runs:
             row["in_flight"] = live_runs[slug]
         if slug in interrupted_runs:
@@ -3726,37 +3746,39 @@ def _build_roadmap(
             row["slug"],
         )
     )
-    immediate = [
-        {
-            "order": position,
-            "slug": row["slug"],
-            "sprint": row["sprint"],
-            "progress_pct": row["progress_pct"],
-            "section_attempts": row["section_attempts"],
-            "unlocks": row["unlocks"],
-            "dependency_ready": row["dependency_ready"],
-            "dependency_readiness": row["dependency_readiness"],
-            "schedule_ready": row["schedule_ready"],
-            "schedule_readiness": row["schedule_readiness"],
-            "schedule_deferred_reason": row["schedule_deferred_reason"],
-            "schedule_behind_sprint": row["schedule_behind_sprint"],
-            "endpoint_closures": endpoint_memberships.get(row["slug"], []),
-            "reason": (
-                f"ready \u2014 sequenced after {', '.join(row['came_after'])}"
-                if row.get("came_after")
-                else "critical path"
-                if row["slug"] in critical_members
-                else "stuck"
-                if row["stuck"]
-                else "ready with all hard prerequisites satisfied"
-            ),
-        }
-        for position, row in enumerate(ready, start=1)
+    plan_rows: list[tuple[tuple[Any, ...], dict[str, Any]]] = [
+        (
+            plan_key(row),
+            {
+                "slug": row["slug"],
+                "sprint": row["sprint"],
+                "progress_pct": row["progress_pct"],
+                "section_attempts": row["section_attempts"],
+                "unlocks": row["unlocks"],
+                "dependency_ready": row["dependency_ready"],
+                "dependency_readiness": row["dependency_readiness"],
+                "schedule_ready": row["schedule_ready"],
+                "schedule_readiness": row["schedule_readiness"],
+                "schedule_deferred_reason": row["schedule_deferred_reason"],
+                "schedule_behind_sprint": row["schedule_behind_sprint"],
+                "endpoint_closures": endpoint_memberships.get(row["slug"], []),
+                "reason": (
+                    f"ready \u2014 sequenced after {', '.join(row['came_after'])}"
+                    if row.get("came_after")
+                    else "critical path"
+                    if row["slug"] in critical_members
+                    else "stuck"
+                    if row["stuck"]
+                    else "ready with all hard prerequisites satisfied"
+                ),
+            },
+        )
+        for row in ready
     ]
-    # One row per ready section, ranked by the same extended key beside the
-    # plan rows. The plan stays ranked too: a section-scoped wait holds its
-    # section, not the plan, so both are ready and both are reported. The ref
-    # names the section as a clickable anchor and names its plan beside it.
+    # One row per ready section, ranked by the same extended key as the plan
+    # rows. The plan stays ranked too: a section-scoped wait holds its section,
+    # not the plan, so both are ready and both are reported. The ref names the
+    # section as a clickable anchor and names its plan beside it.
     section_rows: list[dict[str, Any]] = []
     for row in ready:
         plan_slug = str(row["slug"])
@@ -3790,14 +3812,25 @@ def _build_roadmap(
                     ),
                 }
             )
-    section_rows.sort(
-        key=lambda row: section_ranking_key(
-            row, critical_sections=critical_sections, sprint_order=sprint_order
+    # One ordering over both populations: a plan row and a section row are ranked
+    # by the same key and read in that order, so the row a reader should start
+    # with leads whichever kind of row it is. A term one population cannot carry
+    # is neutral for it, which is what lets one key serve both.
+    ranked: list[tuple[tuple[Any, ...], dict[str, Any]]] = list(plan_rows)
+    ranked.extend(
+        (
+            section_ranking_key(
+                row, critical_sections=critical_sections, sprint_order=sprint_order
+            ),
+            row,
         )
+        for row in section_rows
     )
-    for position, section_row in enumerate(section_rows, start=len(immediate) + 1):
-        section_row["order"] = position
-        immediate.append(section_row)
+    ranked.sort(key=lambda entry: entry[0])
+    immediate: list[dict[str, Any]] = []
+    for position, (_key, row) in enumerate(ranked, start=1):
+        row["order"] = position
+        immediate.append(row)
 
     downstream = _downstream_sprints(all_plans, membership)
     sprint_rows: list[dict[str, Any]] = []
