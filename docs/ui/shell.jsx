@@ -300,14 +300,33 @@ function App() {
     });
   }, [mountNames, fleetIndex, fleetDiscoveries, fleetRuns]);
 
+  // The crew view is the only surface that draws the project's derived flow,
+  // and that flow's bars are placed relative to the instant its schedule was
+  // built. The poll effect below holds no dependency on the route, so the view
+  // it is answering is read through a ref rather than resubscribing the poll
+  // on every navigation.
+  const canvasViewRef = useRef(canvasView);
+  useEffect(() => { canvasViewRef.current = canvasView; }, [canvasView]);
   useEffect(() => {
     // The single /crew poll: the shell owns it and hands the live run list to
     // every surface that needs it, so the crew view does not poll it again.
+    // A poll whose runs and phases are unchanged costs no schedule request,
+    // and an unchanged view re-anchors once a minute rather than letting its
+    // now line drift from the clock.
     return window.startPoll(
       "/crew",
-      payload => {
-        if (Array.isArray(payload?.runs)) {
-          setFleetRuns(payload.runs);
+      async payload => {
+        const runs = Array.isArray(payload?.runs) ? payload.runs : null;
+        if (canvasViewRef.current === "crew") {
+          const scheduleProject = window.STATE?.project;
+          if (scheduleProject && window.scheduleFetchDue?.(runs, scheduleProject)) {
+            // Before the run list lands, so the render this poll provokes
+            // already draws the schedule it just fetched.
+            await window.refreshSchedule?.(scheduleProject, runs);
+          }
+        }
+        if (runs) {
+          setFleetRuns(runs);
           setFleetRunsError("");
         }
         setFleetRunsLoaded(true);
