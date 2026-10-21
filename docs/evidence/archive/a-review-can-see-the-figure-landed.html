@@ -147,6 +147,12 @@ emits an image flag</code></pre>
 <p>Run <code>r-20261021T095615096117-the-lane-change-onto-codex-drops-the-listing</code>, head <code>3ce6b4aa8</code>, merged as <code>831a33510</code>. Gate: 3 passed with the four cases that fail at base through the retired <code>redispatch</code> verb deselected, and the file's failure ids identical to base. With the <code>_prompt_without_figure_listing</code> call removed from <code>launch_plan</code>, the test fails on the stale listing heading. Re-review scored 111 with no failure added.</p>
   </section>
 
+  <section id="s17-a-figure-review-node-names-its-reviewed-run">
+    <h2>§17 — a figure review&#x27;s node id names the run it reviews</h2>
+    <p><code>round_node_id</code> in <code>reckon/crew/repair.py</code> takes an optional rubric and writes it after the head suffix, and only beside a head. <code>round_node_source</code> and <code>round_node_head_suffix</code> strip a trailing <code>-figure</code> only when a 12-hex head precedes it. <code>recovery_review_subject.py</code> mints the figure review's node id through <code>round_node_id</code> instead of appending the suffix. Every reader of a review node id, including the admission grant, the delivery reader and the session lookup, now resolves a figure review to the run it reviews, so the admission check grants its record directory.</p>
+<p>Run <code>r-20261021T120141235782-a-figure-review-node-names-its-reviewed-run</code>, head <code>2d42055f7</code>, merged as <code>6c0e9692d</code>. Gate: 6 passed in <code>tests/test_a_figure_review_node_names_its_reviewed_run.py</code>, including a dry-run figure dispatch for a run whose head changed a PNG, which composes with no scoped refusal and both write paths under that run's <code>review-records/</code>. With the figure-suffix strip removed, 3 fail on the scoped refusal. Population over the 267 test files importing <code>repair</code>, <code>recovery_review_subject</code> and the modules that resolve review node ids: base 17 failed, head 15, every head failure also failing at base. Ruff is clean on all three files at base and head. Code review scored 114.</p>
+  </section>
+
 </main>
 </body>
 </html>
