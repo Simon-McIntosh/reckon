@@ -75,7 +75,7 @@ from datetime import UTC, datetime, timedelta
 from importlib import import_module
 from itertools import pairwise
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from reckon import _store as store
 from reckon._timestamps import parse_utc
@@ -656,6 +656,62 @@ def under_pace_hold(
     if str(lift.get("form")) != DRAIN_BY:
         return False
     return float(utilisation) > drain_line(lift, now=_aware(now))
+
+
+if TYPE_CHECKING:  # pragma: no cover - typing only
+    from reckon.budget import BudgetState
+
+
+def _credit_lift_verdict(
+    state: BudgetState, lift: Mapping[str, Any], purpose: str
+) -> tuple[bool, str] | None:
+    """Judge a spent window against a credit lift: ``(held, reason)``.
+
+    The provider keeps serving past an exhausted window while the account holds
+    credits, so a credit lift admits work until the credits spent since the
+    grant reach its cap. Spend is the balance at grant less the balance now, so
+    it counts every draw on the account, not only this host's runs. A fresh
+    dispatch stops short of the cap by the lift's reserve, because a hold stops
+    only new work and every worker already running keeps drawing; a resume may
+    spend the reserve, which is what it was withheld for.
+
+    Returns ``None`` when the reading carries no balance, so the window ceiling
+    decides: a lift must never admit spend it cannot measure.
+    """
+    if state.credit_balance is None:
+        return None
+    try:
+        cap = float(lift.get("cap"))
+        at_grant = float(lift.get("balance_at_grant"))
+    except (TypeError, ValueError):
+        return None
+    reserve = lift.get("reserve_fraction")
+    fraction = (
+        float(reserve)
+        if isinstance(reserve, (int, float)) and not isinstance(reserve, bool)
+        else DEFAULT_CREDIT_RESERVE_FRACTION
+    )
+    stop = cap if purpose == "resume" else cap * (1.0 - fraction)
+    spent = max(0.0, at_grant - state.credit_balance)
+    position = (
+        f"credit lift {lift.get('id')!r} has spent {spent:,.0f} of its "
+        f"{cap:,.0f}-credit cap (a {purpose} stops at {stop:,.0f}); "
+        f"balance {state.credit_balance:,.2f}"
+    )
+    if not state.credits_available:
+        return True, f"the account reports no usable credits; {position}"
+    if spent >= stop:
+        return True, f"{position}, so the lift is spent"
+    utilisation = (
+        f"{state.utilisation_pct:g}%" if state.utilisation_pct is not None else "spent"
+    )
+    return (
+        False,
+        (
+            f"the {state.backend!r} window is {utilisation}, and the provider "
+            f"serves past it on credits; {position}"
+        ),
+    )
 
 
 def drain_line(lift: Mapping[str, Any], *, now: datetime) -> float:
