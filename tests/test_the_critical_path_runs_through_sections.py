@@ -69,7 +69,7 @@ def _write_plan(
     declarations = json.dumps({section: "implementable"}, separators=(",", ":"))
     head = [
         '<!doctype html><html lang="en"><head><meta charset="utf-8">',
-        '<meta name="docs-project" content="%s">' % PROJECT,
+        f'<meta name="docs-project" content="{PROJECT}">',
         '<meta name="reckon-type" content="plan">',
         meta("plan-slug", slug),
         '<meta name="plan-status" content="active">',
