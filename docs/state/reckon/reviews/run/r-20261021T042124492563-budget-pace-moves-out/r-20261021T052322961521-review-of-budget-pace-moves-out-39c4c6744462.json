@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch.py:1784 budget_module.pace_row",
+    "reckon/budget.py:2252 preflight calls group_pace",
+    "reckon/budget.py:2281 preflight calls pace_hold",
+    "reckon/budget.py:2145 preflight calls _lift_history",
+    "reckon/budget.py:1822 decide calls _credit_lift_verdict"
+  ],
+  "completed_at": "2026-10-21T05:50:14.063Z",
+  "dispatched_at": "2026-10-21T05:24:14Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T042124492563-budget-pace-moves-out/manifest.md",
+      "line": "31",
+      "severity": "follow-on",
+      "text": "follow-on: baseline_suite (:31) and after_suite (:32) are prose one-liners, not the required JSON arm records, so the promotion head-arm reader (_head_suite_failure_ids, reckon/crew/promotion_checks.py:1758) reads after_suite as unreadable and falls back to baseline_suite, which reads as the empty set (promotion_checks.py:1726)."
+    },
+    {
+      "file": "/tmp/reckon-crew-scratch/r-20261021T042124492563-budget-pace-moves-out/logs/negative-control.log",
+      "line": "31",
+      "severity": "follow-on",
+      "text": "follow-on: the control reddens only an id the head arm also fails (head.log:18 'F'), so it names no failing id the head arm does not fail; allowlisting the two pre-existing offenders in the scratch copy would have isolated the mutation."
+    },
+    {
+      "file": "reckon/pace_report.py",
+      "line": "39",
+      "severity": "follow-on",
+      "text": "follow-on: the import-direction rule is unguarded by any gate test, so a module-level import of reckon.budget added later would break the 'import pace_report first' guarantee without reddening the suite."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_every_module_fits_a_worker_window.py:69 reddens when reckon/budget.py regrows past the bound, but the import-direction rule is untested and the arm records promotion compares against are unreadable.",
+    "evidence": "logs base.log and head.log each read '10 failed, 216 passed' EXIT=1 with an empty ids diff, and budget.py/pace_report.py/budget_lift.py reproduce at 36,942/20,502/15,174 tokens, but the manifest arm records are prose not JSON and no test asserts the 45,000 bound.",
+    "fit": "reckon/pace_report.py:37-39 uses the codebase's TYPE_CHECKING and function-level-import idiom and reckon/budget.py:77-80 marks each re-export with its reason.",
+    "goal_fidelity": "reckon/pace_report.py:42-1557 defines all 28 moved functions and reckon/crew/budget_lift.py:665 carries _credit_lift_verdict, with reckon/budget.py:75-81 re-exporting the names.",
+    "reuse": "reckon/pace_report.py:44 composes over reckon.crew.pace's arithmetic and DEFAULT_CREDIT_RESERVE_FRACTION keeps its one definition at reckon/crew/budget_lift.py:113.",
+    "scope_discipline": "git diff --stat c721026..39c4c6744 touches the declared source paths, the fragment and two plan-granted test files, and nothing else."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261021T052322961521-review-of-budget-pace-moves-out-39c4c6744462",
+  "reviewed_base_sha": "c7210260011fd20ea5e9d12a3b53b1c18b457102",
+  "reviewed_head_sha": "39c4c67444626421281ba8c0cceca8ca5c0310ae",
+  "reviewed_run_id": "r-20261021T042124492563-budget-pace-moves-out",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T05:59:22.510670+00:00",
+  "total": 105
+}

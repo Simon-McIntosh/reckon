@@ -25,7 +25,7 @@
   <title>Budget Fits A Worker Window | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="8">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -83,6 +83,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-21T05:58:00Z">
     <div class="r-comment-body"><p>§2 landed. <code>budget.py</code> is down to 36,942 tokens from 56,488, with the moved family in <code>reckon/pace_report.py</code> at 20,502. The gate adds no failures, and reviewed 105/120. lane-and-model-routing §48 can now build on the smaller file. <a href="/reckon/evidence/archive/budget-fits-a-worker-window-landed.html#s2">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261021T052322961521-review-of-budget-pace-moves-out-39c4c6744462" data-who="reckon-build" data-when="2026-10-21T05:50:14.063Z">
+    <div class="r-comment-body"><p>Independent review of the pace and lift move (budget-pace-moves-out) at head 39c4c6744 from base c7210260: a faithful move — reckon/pace_report.py defines all 28 moved functions, reckon/crew/budget_lift.py:665 carries _credit_lift_verdict, and reckon/budget.py:75-81 re-exports the names; every moved function body is identical to its base once the added function-level imports are stripped; scores goal_fidelity 20, evidence 16, scope_discipline 17, durability 14, fit 18, reuse 20; added_failure_count 0; three follow-on findings (prose arm records, a non-discriminating negative control, an untested import direction).</p></div>
 </div>
 </section>
 </main>
