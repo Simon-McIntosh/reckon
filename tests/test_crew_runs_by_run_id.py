@@ -24,15 +24,21 @@ from typing import Any
 
 import pytest
 
-from reckon import crew, ledger
+from reckon import crew, file_memo, ledger
 from reckon.crew.query import runs_view
 
 LEDGER_ROWS = 2000
 TARGET = "r-target-run"
 
-#: The run-id path reads one ledger file and resolves one row's session from it,
-#: so it opens a host-independent handful of files. Measured 2 on the synthetic
-#: ledger below; the uncached full walk over the same ledger opens 2001.
+#: Run documents the synthetic ledger carries, so a non-indexed read has files
+#: of its own to open rather than only the aggregate. Well above the handful a
+#: one-run read is allowed, and small enough to write in a fixture.
+CONTROL_DOCUMENTS = 150
+
+#: A one-run read resolves its session from the row it already holds and decodes
+#: no run document of its own, so it opens a host-independent handful of files
+#: however many rows the ledger carries. Measured 2 through the source read and
+#: 1 through the index on the synthetic ledger below.
 MAX_OPEN_FILES = 4
 
 
@@ -42,8 +48,15 @@ def _repository(root: Path, project: str) -> Path:
     return repository
 
 
-def _write_rows(repository: Path, project: str, count: int) -> None:
-    """Write a ledger envelope directly, so the fixture cost does not scale with rows."""
+def _write_rows(
+    repository: Path, project: str, count: int, *, documents: int = 0
+) -> None:
+    """Write a ledger envelope directly, so the fixture cost does not scale with rows.
+
+    ``documents`` also gives the first that many rows their own run file, built
+    from the same row the aggregate holds so the two serialisations agree and
+    the read accepts the pair as one history.
+    """
     rows = [
         {
             "run_id": TARGET if index == count // 2 else f"r-{index:06d}",
@@ -65,6 +78,10 @@ def _write_rows(repository: Path, project: str, count: int) -> None:
         ),
         encoding="utf-8",
     )
+    if documents:
+        (path.parent / "runs").mkdir(parents=True, exist_ok=True)
+    for row in rows[:documents]:
+        ledger.write_run_file(project, row, repository, fsync=False)
 
 
 @contextmanager
@@ -84,10 +101,10 @@ def _count_opens() -> Iterator[dict[str, int]]:
         io.open = real
 
 
-def _ledger_repository(tmp_path: Path) -> tuple[Path, str]:
+def _ledger_repository(tmp_path: Path, *, documents: int = 0) -> tuple[Path, str]:
     project = "alpha"
     repository = _repository(tmp_path, project)
-    _write_rows(repository, project, LEDGER_ROWS)
+    _write_rows(repository, project, LEDGER_ROWS, documents=documents)
     return repository, project
 
 
@@ -101,17 +118,23 @@ def test_one_run_read_returns_exactly_that_row(tmp_path: Path) -> None:
 def test_one_run_read_opens_a_fixed_small_number_of_files(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    repository, project = _ledger_repository(tmp_path)
+    repository, project = _ledger_repository(tmp_path, documents=CONTROL_DOCUMENTS)
     # Warm any lazy import so the count is the read's own, not import-time I/O.
     runs_view(project, checkout_path=str(repository), run_id=TARGET)
 
     with monkeypatch.context() as patch:
         # SQLite reads bypass io.open, so the positive control uses source files.
         patch.setattr(ledger, "load", partial(ledger.load, use_index=False))
+        # The count is of files this read opens, so drop any parse an earlier
+        # read in this process left memoised for these paths.
+        file_memo.clear()
         with _count_opens() as full:
             runs_view(project, checkout_path=str(repository))
-        # Positive control: the instrument sees the walk's per-row ledger reopen.
-        assert full["n"] > 100, full
+        # Positive control: a non-indexed read opens the aggregate and then one
+        # file per run document, so the instrument sees a count fixed by that
+        # population — measured 151 here — and the small counts below are
+        # readings the instrument made rather than opens it failed to see.
+        assert full["n"] > CONTROL_DOCUMENTS, full
 
         with _count_opens() as one:
             result = runs_view(project, checkout_path=str(repository), run_id=TARGET)
