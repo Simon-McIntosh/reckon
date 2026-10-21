@@ -74,7 +74,13 @@ def _node() -> TaskNode:
 
 
 def _candidate_and_return_time(report, config, repo, moment):
-    """Both surfaces' view of one composed report, for the codex backend."""
+    """Both surfaces' view of one composed report, for the codex backend.
+
+    The return-time blocks are keyed by each offered option's own key -- its
+    lane, model and backend -- so this reads the codex candidate's block through
+    ``lane_context.option_key`` rather than by the bare backend name. A lane
+    offering several models would otherwise lose every block but one.
+    """
 
     request = PickRequest(project="reckon", node=_node(), session="s")
     candidates = snapshot.candidates(
@@ -95,7 +101,7 @@ def _candidate_and_return_time(report, config, repo, moment):
         config=config,
         now=moment,
     )
-    return candidate, blocks["codex"]
+    return candidate, blocks[lane_context.option_key(candidate)]
 
 
 def _document(now: datetime, *, age_seconds: float, shelf_seconds: int = 900) -> dict:
