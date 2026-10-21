@@ -614,6 +614,58 @@ def _review_owed_fields(
     return {"review_owed": owed, "review_invocation": invocation}
 
 
+def _plan_readiness_fields(
+    project: str, slug: str, checkout_path: str | None = None
+) -> dict[str, Any]:
+    """The readiness a plan write leaves behind, with what stands before its close.
+
+    A section moves to done through the landing write, so that write is the
+    moment a plan can newly read finished. ``readiness`` carries the roadmap's
+    own verdict after the write — ``closable`` once no declared section admits
+    work — and ``closure_blockers`` enumerates every obstacle between the plan
+    and its ``close``, each entry naming the op that clears it. The write that
+    ticks the last implementable section therefore answers ``closable`` and the
+    close op together, so the coordinator does not have to re-read the roadmap
+    to learn the plan finished.
+
+    The verdict is the roadmap's rather than a second computation of the same
+    fact, so this reads the assembled roadmap the roadmap surface serves and
+    selects the row for this plan; nothing about readiness is recomputed here.
+
+    A read that cannot answer is reported as unknown, not as ready:
+    ``readiness`` is null and ``readiness_error`` names why (the roadmap
+    declined, no row matched the plan, or the read raised). The write itself has
+    already succeeded, so every failure at this one point is caught and named in
+    the response rather than escaping after the write and reporting a completed
+    write as a tool error, which its author may retry into a version conflict.
+    """
+    try:
+        from reckon.mcp import _roadmap_scoped
+
+        report = _roadmap_scoped(project, checkout_path=checkout_path)
+    except Exception as error:  # noqa: BLE001 — named in the response, not swallowed
+        return {
+            "readiness": None,
+            "readiness_error": f"{type(error).__name__}: {error}",
+        }
+    if isinstance(report, dict) and report.get("ok") is False:
+        return {
+            "readiness": None,
+            "readiness_error": f"the roadmap declined: {report.get('error')}",
+        }
+    rows = report.get("pending_work") if isinstance(report, dict) else None
+    row = next((item for item in rows or [] if item.get("slug") == slug), None)
+    if row is None:
+        return {
+            "readiness": None,
+            "readiness_error": f"the roadmap carries no row for {project}:{slug}",
+        }
+    return {
+        "readiness": row.get("readiness"),
+        "closure_blockers": list(row.get("closure_blockers") or []),
+    }
+
+
 #: Environment variable a crew run exports into every worker it launches. The
 #: worker's harness — and the MCP server that harness starts as a child — inherit
 #: it, so a plan write can tell it is running inside a run.
