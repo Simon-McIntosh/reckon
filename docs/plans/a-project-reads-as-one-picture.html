@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="The roadmap ranks plans while the work and its edges live in sections; derive one cross-plan section graph, rank it on signals that differ, and brief agents.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
-  <meta name="plan-effort-hours" content="20.25">
+  <meta name="plan-effort-hours" content="24.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-reasoning" content="deep">
@@ -22,12 +22,12 @@
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-after" content="work-scheduling-surface">
   <meta name="plan-blocks" content="the-mcp-answers-the-question-asked">
-  <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-project-reads-as-one-picture#s2&quot;],&quot;s5&quot;:[&quot;a-project-reads-as-one-picture#s2&quot;,&quot;a-project-reads-as-one-picture#s4&quot;],&quot;s7&quot;:[&quot;a-project-reads-as-one-picture#s2&quot;,&quot;a-project-reads-as-one-picture#s3&quot;,&quot;a-project-reads-as-one-picture#s4&quot;,&quot;a-project-reads-as-one-picture#s5&quot;],&quot;s8&quot;:[&quot;a-project-reads-as-one-picture#s5&quot;,&quot;a-project-reads-as-one-picture#s6&quot;,&quot;a-project-reads-as-one-picture#s7&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-project-reads-as-one-picture#s2&quot;],&quot;s5&quot;:[&quot;a-project-reads-as-one-picture#s2&quot;,&quot;a-project-reads-as-one-picture#s4&quot;],&quot;s7&quot;:[&quot;a-project-reads-as-one-picture#s2&quot;,&quot;a-project-reads-as-one-picture#s3&quot;,&quot;a-project-reads-as-one-picture#s4&quot;,&quot;a-project-reads-as-one-picture#s5&quot;],&quot;s8&quot;:[&quot;a-project-reads-as-one-picture#s5&quot;,&quot;a-project-reads-as-one-picture#s6&quot;,&quot;a-project-reads-as-one-picture#s7&quot;],&quot;s12&quot;:[&quot;a-project-reads-as-one-picture#s2&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;done&quot;}">
   <title>A Project Reads as One Picture | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -262,6 +262,18 @@
 <section data-reckon="section" data-id="s10" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
 <p><code>set section_depends_on</code> without a section id is refused, and two coordinators concluded from the refusal that the field could not be written. The refusal now names <code>section_depends_on.&lt;sid&gt;</code> and <code>sections.&lt;sid&gt;.effort_hours</code>, which already work.</p><p><strong>Done when:</strong> the refusal text for a bare <code>section_depends_on</code> set names the keyed path, and the keyed write it names succeeds on the same fixture. On the base commit the refusal does not name it, and the test fails there.</p>
 
+    <h2 id="s11">§11 — Every relationship can be written, after included</h2>
+<section data-reckon="section" data-id="s11" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><code>after</code> cannot be changed through <code>edit_plan</code> in either mode. A state <code>set</code> refuses it as an unsupported path, because it is missing from the store's settable plan fields, and text mode refuses any change to the parsed plan state, which includes <code>after</code>. A review that finds a stale soft edge can therefore only remove it by a direct HTML edit. <code>after</code> joins <code>depends_on</code>, <code>blocks</code> and <code>informs</code> as a whole-list <code>set</code>, validated with the same ref grammar.</p><p><strong>Done when:</strong> a fixture plan's <code>after</code> is replaced, emptied and given a qualified ref through <code>set</code>, each read back through <code>read_plan</code>, and an unparseable ref is refused. On the base commit the first <code>set</code> is refused as an unsupported path, and the test fails there. The <code>reckon-review</code> reference drops its bypass note in the same commit.</p>
+
+    <h2 id="s12">§12 — A link that orders nothing is named</h2>
+<section data-reckon="section" data-id="s12" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p>The roadmap reports a dependency on an abandoned or superseded plan (<code>inactive-hard-dependency</code>), but nothing names a link that is merely spent. Two informational findings name the removal candidates a review should judge. <code>settled-link</code> fires for a <code>depends_on</code>, <code>after</code> or section wait whose target is closed and satisfied, where no open section of the plan still waits on it. <code>redundant-link</code> fires for an edge implied by a path of other declared edges in the §2 graph. Each names the ref and the <code>set</code> that removes it. They are candidates, not removals: the review decides.</p><p><strong>Done when:</strong> a fixture with a satisfied edge to a closed plan and no open waiting section raises <code>settled-link</code>, and the same edge with an open section still waiting raises nothing; that is the control. A fixture with A→B, B→C and A→C raises <code>redundant-link</code> on A→C only. On the base commit neither finding exists, and the test fails there. The counts per mount go to the landed record.</p>
+
+    <h2 id="s13">§13 — A review judges every link and names its MCP calls</h2>
+<section data-reckon="section" data-id="s13" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section>
+<p>The lead asked that plan and sprint reviews keep links correct in both directions, removing stale or irrelevant links as well as adding missing ones, and that the review skill name the MCP tools it should use. <code>reckon-review</code> now inventories every link in scope in plan and portfolio mode and gives each a verdict: keep, remove, narrow, convert or re-point. It adds a link only on evidence that something waits on or consumes the target, and reports one <code>LINK</code> line per change plus a tally, so a pass that only adds reads as incomplete. The verdict table and the exact ops are in <code>skills/reckon-review/references/links.md</code>, which keeps the body under its 1,500-word bound. A Tools table maps each step to its MCP call and asks the report to name any CLI fallback, and plan mode closes a plan with no implementable section or records why it stays open.</p><p><strong>Done when:</strong> the skill and its reference are on <code>main</code> and <code>tests/test_skill_contracts.py</code> passes. Both hold: landed at merge <code>abd5a87bd</code> (commit <code>cff57f15f</code>), with 70 of 70 skill contract tests passing on the worktree before the merge.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-aprop-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-21" data-recommends-skill="/reckon-build a-project-reads-as-one-picture §2" data-resolved-at="" data-resolved-by="">
@@ -270,6 +282,11 @@
     <pre class="r-fu-prompt">/reckon-build a-project-reads-as-one-picture §2</pre>
     </article>
 </section>
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s13" data-id="c-close-s13" data-who="reckon-a1" data-when="2026-10-21T07:05:00Z">
+    <div class="r-comment-body"><p>§13 landed at merge <code>abd5a87bd</code>, skill commit <code>cff57f15f</code>: <code>skills/reckon-review/SKILL.md</code> gains a Tools table and a §Links rule, and <code>skills/reckon-review/references/links.md</code> holds the verdict table and the ops. Gate: <code>tests/test_skill_contracts.py</code>, 70 passed, run on the detached worktree at <code>0791a946a</code> plus the change. The first draft failed the body bound at 1,680 words; the reference moved the detail out, leaving 1,367.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
