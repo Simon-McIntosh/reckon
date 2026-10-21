@@ -429,6 +429,7 @@ def _review_brief_text(
     if rubric_name == review_module.FIGURE_REVIEW_RUBRIC:
         required_fields = [
             "Required: project, reviewed_run_id, review_run_id, reviewed_base_sha, reviewed_head_sha,",
+            "added_failure_count, added_failure_ids (a figure review runs no suite, so 0 and an empty list),",
             "findings (each an object with file, line, severity and summary), status.",
         ]
     else:

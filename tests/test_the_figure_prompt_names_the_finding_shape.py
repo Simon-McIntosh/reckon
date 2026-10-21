@@ -90,6 +90,62 @@ def test_the_figure_brief_requires_no_scores_and_names_the_finding_fields() -> N
         assert field in contract, (
             f"the figure brief's contract does not name the finding field {field!r}"
         )
+    # A figure brief names the two ledger fields the store still requires, so a
+    # reviewer that follows the brief does not write a record its own check
+    # refuses for omitting them.
+    assert "added_failure_count" in contract
+    assert "added_failure_ids" in contract
+
+
+def _figure_record() -> dict:
+    """A figure record built from exactly the fields its brief names."""
+    blocking, follow_on = review_module.FINDING_SEVERITIES
+    return {
+        "project": PROJECT,
+        "reviewed_run_id": RUN_ID,
+        "review_run_id": "r-20260101T000000000000-current-review",
+        "reviewed_base_sha": "1" * 40,
+        "reviewed_head_sha": "2" * 40,
+        "rubric": review_module.FIGURE_REVIEW_RUBRIC,
+        "added_failure_count": 0,
+        "added_failure_ids": [],
+        "findings": [
+            {
+                "file": "docs/figures/proj/review/plot.svg",
+                "line": 12,
+                "severity": blocking,
+                "summary": "the y-axis unit is clipped at the canvas edge",
+            },
+            {
+                "file": "docs/figures/proj/review/plot.svg",
+                "line": None,
+                "severity": follow_on,
+                "summary": "a caption repeats the figure title",
+            },
+        ],
+        "status": "parsed",
+    }
+
+
+def test_the_record_the_figure_brief_names_is_not_refused() -> None:
+    record = _figure_record()
+
+    assert review_module.review_record_refusals(record) == [], (
+        "a figure record built from the fields the figure brief names is refused "
+        "by the store's own check, so a reviewer following the brief cannot land "
+        "its record"
+    )
+
+
+def test_a_figure_record_missing_the_ledger_fields_is_refused() -> None:
+    record = _figure_record()
+    del record["added_failure_count"]
+    del record["added_failure_ids"]
+
+    refusals = review_module.review_record_refusals(record)
+
+    assert "missing or invalid added_failure_count" in refusals
+    assert "missing or invalid added_failure_ids" in refusals
 
 
 def test_the_text_brief_still_requires_scores_with_all_six_dimensions() -> None:
