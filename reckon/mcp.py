@@ -89,6 +89,7 @@ from reckon.mcp_views import (
     ViewRequestError,
     audit_view,
     authored_plan_text,
+    crew_view_refusal_detail,
     discovery_view,
     error_response,
     normalize_selector,
@@ -2161,16 +2162,7 @@ def _crew(
         return {
             "ok": False,
             "error": "invalid_view",
-            "detail": (
-                "view must be directory, drain, scopes, summary, flight, live, "
-                "records, ledger, budget, models or obligations; lanes is the endpoint "
-                "quota view, routing is the cross-ledger cost view, runs is the "
-                "compact joined view, scores is the per-dimension review view, "
-                "velocity is the delivery-rate view, and fleet is the "
-                "cross-project view; plan-review reads a plan review and its unanswered findings; "
-                "findings reads stored review findings grouped by the repository "
-                "path they name"
-            ),
+            "detail": crew_view_refusal_detail(),
         }
     return serve_crew_view(
         view,

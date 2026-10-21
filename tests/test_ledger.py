@@ -2516,14 +2516,21 @@ def test_the_crew_tool_reads_the_worktrees_ledger_not_the_main_one(home, repo) -
 
 def test_an_unknown_crew_view_names_every_view_it_has(home, repo) -> None:
     from reckon import mcp
+    from reckon.mcp_views import CREW_VIEWS
 
     result = mcp._crew(PROJECT, view="everything")
 
     assert result["ok"] is False
-    assert (
-        "directory, drain, scopes, summary, flight, live, records, ledger, "
-        "budget or obligations" in result["detail"]
+    prefix = result["detail"].split(";", 1)[0]
+    assert prefix.startswith("view must be ")
+    named = prefix[len("view must be ") :].replace(" or ", ", ").split(", ")
+    assert not set(CREW_VIEWS) - set(named), (
+        f"refusal omits {sorted(set(CREW_VIEWS) - set(named))}"
     )
+    assert not set(named) - set(CREW_VIEWS), (
+        f"refusal names unregistered {sorted(set(named) - set(CREW_VIEWS))}"
+    )
+    assert len(named) == len(CREW_VIEWS), f"refusal repeats a name: {named}"
 
 
 def test_the_crew_tool_reads_budget_headroom_from_the_ledger(home, repo) -> None:
