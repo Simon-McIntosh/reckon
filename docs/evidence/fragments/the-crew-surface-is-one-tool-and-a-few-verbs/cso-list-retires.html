@@ -1,0 +1,102 @@
+<article class="landed-report" data-node="cso-list-retires">
+<h3 id="cso-list-retires-summary">The live-run listing retires behind crew view live</h3>
+<p id="cso-list-retires-change"><strong>Change.</strong> <code>crew list</code>
+is gone. <code>reckon/crew_run_commands.py</code> loses the ~90-line command
+(head, five options, its row-composing body and its watcher block) and binds the
+module-level name the CLI shim re-exports to
+<code>tombstone_command("list")</code>, so the retired name answers with the JSON
+document that names its successor and exits <code>10</code>.
+<code>reckon/crew/tombstones.py</code> gains the row
+<code>list → crew view live</code> with <code>argv=("crew", "view")</code> and
+<code>positional=("live",)</code>, because <code>crew view</code> names its view
+as a positional operand rather than a flag, and no <code>operand_flag</code>: the
+listing's own <code>--project</code>, <code>--phase</code>,
+<code>--session</code> and <code>--mine</code> are options
+<code>crew view</code> defines itself, so the
+caller's arguments forward verbatim and the printed invocation is one the
+successor accepts with no rename. The unused
+<code>_resolved_session</code> import left with the body.
+
+Both skill command blocks drop the verb —
+<code>skills/reckon-build/SKILL.md</code> and
+<code>skills/reckon-build/references/coordinator-reference.md</code> — and
+<code>tests/test_skill_contracts.py</code> drops <code>("crew", "list")</code>
+from the documented-flag map, whose <code>named == set(expected)</code> is read
+off the block. <code>tests/test_crew_help_names_its_state.py</code> drops
+<code>("list",)</code> from <code>STATE_PHRASES</code> (that map is asserted equal
+to the registered leaf set), from <code>POINTER_STATE_READS</code> and from
+<code>NEAR_NAMESAKE_DISTINCTIONS</code>; the near-namesake case keeps its
+surviving row, the roster listing's <em>not live run pointers</em>, and now
+asserts the map holds exactly that one row.</p>
+<p id="cso-list-retires-test"><strong>Test.</strong>
+<code>tests/test_read_verbs_retire_behind_crew_view.py</code> gains
+<code>"list": "crew view live"</code> in <code>SUCCESSORS</code>, so the literal
+successor case covers it, and a new case drives the retired name for each of the
+five option vectors a caller held — bare, <code>--project</code>,
+<code>--phase</code>, <code>--session</code> and <code>--session … --mine</code>
+— asserting each exits <code>10</code>, that the payload's
+<code>successor</code> is <code>crew view live</code>, that the printed
+<code>invocation</code> is the one rendered from the caller's own arguments, and
+then running that invocation and requiring it not to exit <code>2</code> (the
+usage error an option the successor does not define produces). The existing
+<code>no string under reckon/</code> scan now also covers <code>crew list</code>
+through the same <code>SUCCESSORS</code> mapping. The three cases that were red on
+main — <code>test_the_captured_listing_spans_every_filter</code>,
+<code>test_crew_view_live_gives_the_listings_answer[project]</code> and
+<code>[session]</code> — are green: the fixture's queued pointer, which the live
+view ranks through <code>queue_order.admission_order</code>, now carries the
+<code>queued_at</code> instant a real queued pointer always has.</p>
+<p id="cso-list-retires-move"><strong>Callers moved.</strong>
+<code>tests/test_crew_view_serves_every_view.py</code>'s
+<code>test_the_live_view_answers_the_list_filters</code> asked the retired verb
+for its expected run ids; it now names them as literals over the fixture's own
+pointers (<code>{run-mine-working, run-peer-working}</code> for
+<code>--phase working</code>, <code>{run-mine-working, run-mine-dispatch}</code>
+for <code>--mine</code>), so both surfaces are compared against the same written
+down set and the case no longer needs the verb.
+<code>tests/test_queued_work_shows_where_held_work_shows.py</code>'s
+<code>test_crew_list_names_the_queued_runs_place</code> was an expected failure
+driving <code>crew list</code>; it moves to the live view as
+<code>test_the_live_view_names_the_queued_runs_place</code> and is no longer
+xfail, because <code>crew view live</code> already carries
+<code>position</code> and <code>rank</code> on its queued rows. Its
+<code>_crew_list_rows</code> helper is deleted with it — the negative control in
+<code>test_one_queued_run_reads_as_queued_on_every_surface</code> asserts the
+live view reads no queued run after the pointer is removed, which is the same
+claim on the surviving surface — and the now-unused <code>pytest</code> import
+goes with it.</p>
+<p id="cso-list-retires-measure"><strong>Measure.</strong> Gate: this node's
+nine-file command (the literal text is the manifest's <code>tests</code> line),
+run with the main checkout's
+<code>.venv/bin/python -m pytest -p no:cacheprovider</code> from the worktree
+root. Head arm at <code>461120bb5dde24a71b17d49f13dd36365ca9d97b</code>-plus-this-diff:
+<strong>1 failed, 131 passed, EXIT=1</strong>. Base arm over the same nine files
+at <code>461120bb5dde24a71b17d49f13dd36365ca9d97b</code> extracted to a scratch
+tree: <strong>4 failed, 126 passed, 1 xfailed, EXIT=1</strong>. Both arms fail
+<code>test_every_module_fits_a_worker_window</code> and no other id in common — it
+names <code>reckon/budget.py</code>, <code>reckon/crew/review.py</code> and
+<code>reckon/ledger.py</code> over the bound, none a path this node touched. The
+three failures the base arm adds are exactly the three cases named above, and the
+xfail it also carries is the case this node converted to a pass. The node
+therefore adds zero failures and removes three. <code>ruff check</code> on the
+six Python paths reports one finding at head and one at base
+(<code>RUF005</code> in <code>tests/test_skill_contracts.py</code>), and
+<code>ruff format --check</code> reports the same single pre-existing unformatted
+file on both sides. Logs <code>logs/head.txt</code>, <code>logs/base.txt</code>,
+<code>logs/negative-control.log</code> and <code>logs/repro.txt</code> under the
+run directory, each opening with its revision or mutation and closing with a bare
+<code>EXIT=</code> line.</p>
+<p id="cso-list-retires-control"><strong>Negative control.</strong> Pointing the
+<code>list</code> tombstone at the wrong crew view
+(<code>successor="crew view summary"</code>, <code>positional=("summary",)</code>)
+reddens <code>test_each_retired_verb_names_its_view</code> with
+<code>AssertionError: assert 'crew view summary' == 'crew view live'</code> —
+<code>1 failed</code>, <code>EXIT=1</code>, an id the head arm does not fail.
+Log <code>logs/negative-control.log</code>; the mutation was reverted before the
+commit.</p>
+<p id="cso-list-retires-followons"><strong>Follow-ons.</strong> None. The two
+string-literal citations the dispatch notes warned about
+(<code>reckon/_mcp_tools.py</code>, <code>reckon/mcp.py</code>,
+<code>reckon/mcp_views.py</code>) were already clear at this node's base: a scan
+of every file under <code>reckon/</code> finds no <code>crew list</code>.</p>
+</article>

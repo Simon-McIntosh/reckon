@@ -213,7 +213,7 @@ reckon crew dispatch --project <project> --plan <slug> --section <section> --rol
 reckon crew discard --run <id>    reckon crew drain --project <project> --leave <id>=<disposition>
 reckon crew follow --project <project>    reckon crew gc
 reckon crew gate (--pause <reason> | --open) [--pretty]    # prints the shared gate document before and after the change
-reckon crew list    reckon crew member add    reckon crew member list --project <project>
+reckon crew member add    reckon crew member list --project <project>
 reckon crew observe --run <id>    reckon crew budget --check --project <project> --role <role>
 reckon crew pick --project <project> --role <role> --spec-level <level> --goal <goal> --done-when <measure> --replay <n> --outcomes --since <ISO> --all-projects --checkout-path <path>    # reads routing state or outcome history, dispatches nothing
 reckon crew placement --ensure --session <session> --project <project>
