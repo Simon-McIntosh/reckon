@@ -24,7 +24,7 @@
   <title>A Landing Reads Binary Files | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="19">
 <meta name="plan-modified" content="2026-10-21">
 <meta name="plan-section-depends-on" content="{&quot;s2&quot;:[&quot;a-landing-reads-binary-files#s1&quot;]}">
 </head>
@@ -74,6 +74,9 @@
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20261021T183023223202-review-of-the-landing-marker-check-reads-a-blob-as-bytes-6feca8b6f67f" data-who="reckon-build" data-when="2026-10-21T18:45:14.737Z">
     <div class="r-comment-body"><p>review of r-20261021T163149902891 over the gained range d1a6ba547..6feca8b6f stored parsed at review-records/r-20261021T163149902891-the-landing-marker-check-reads-a-blob-as-bytes.json with scores goal_fidelity 18, evidence 16, scope_discipline 20, durability 18, fit 19, reuse 20, added_failure_count 0, two follow-on findings; the repair is verified by the gate logs and the marker-control log.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20261021T163149902891-the-landing-marker-check-reads-a-blob-as-bytes" data-who="reckon-build" data-when="2026-10-21T18:29:09Z">
+    <div class="r-comment-body"><p>merge.land now judges each changed path by blob identity first, so a head adding a binary file lands and the survived report names it blob_identity; evidence fragment docs/evidence/fragments/a-landing-reads-binary-files/the-landing-marker-check-reads-a-blob-as-bytes.html; gate 49 passed at head 8aac40ee3, base 45 passed with the 4 new tests failing on UnicodeDecodeError, delta zero added failures; a second control shows the present-text-path case reaches the marker comparison (skipping it -&gt; DID NOT RAISE MergeError).</p></div>
 </div>
 </section>
 </main>
