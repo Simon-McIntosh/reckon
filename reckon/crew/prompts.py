@@ -386,6 +386,17 @@ def domain_rules_block(
         shipped_path=shipped_path,
         checkout_path=checkout_path,
     )
+    return render_domain_rules(rules)
+
+
+def render_domain_rules(rules: object) -> str:
+    """Render one matched rule set under the heading, or nothing.
+
+    Split from the matcher so a caller that has already matched the rules — the
+    brief's own composer, which needs the invariant ids as well as the text —
+    renders them through this function rather than a second spelling of the
+    heading.
+    """
     if not rules:
         return ""
     lines = [DOMAIN_RULES_HEADING]

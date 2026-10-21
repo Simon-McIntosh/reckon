@@ -3,7 +3,6 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import shutil
 import socket
 import threading
 from collections import (
@@ -1966,7 +1965,74 @@ def _run_scratch_directory(run_directory: str | Path) -> Path:
     return worker_scratch_dir(Path(run_directory).name)
 
 
-def _brief_digest(source: str | Path) -> str:
+def _node_domain_rules(
+    node: TaskNode, project: str, *, project_path: str | None = None
+) -> Any:
+    """The domain rules this node's write paths match, or an empty set.
+
+    Read through the module that owns the match so the brief, the review and the
+    promotion checks cannot disagree about which rules a node touches.
+    """
+    from reckon.crew.domain_rules import DomainRules, rules_for
+
+    if not project:
+        return DomainRules()
+    return rules_for(project, node, project_path=project_path)
+
+
+def _render_domain_rules(rules: Any) -> str:
+    """Render a matched rule set through the prompt module's own renderer."""
+    from reckon.crew.prompts import render_domain_rules
+
+    return render_domain_rules(rules)
+
+
+def _brief_domain_block(
+    node: TaskNode, project: str, *, project_path: str | None = None
+) -> str:
+    """Render the declared domain rules this node touches, under the heading."""
+    rules = _node_domain_rules(node, project, project_path=project_path)
+    return _render_domain_rules(rules)
+
+
+def _domain_rules_carry(
+    node: TaskNode, project: str, *, project_path: str | None = None
+) -> dict[str, Any] | None:
+    """The pointer's record of the rules its brief carried, or None.
+
+    The ids are carried beside the block so a reader — a review, a coordinator
+    or a later dispatch — can name the rules a brief was given without parsing
+    the brief's prose.
+    """
+    rules = _node_domain_rules(node, project, project_path=project_path)
+    if not rules:
+        return None
+    from reckon.crew.prompts import DOMAIN_RULES_HEADING
+
+    return {
+        "heading": DOMAIN_RULES_HEADING,
+        "invariants": [invariant.id for invariant in rules.invariants],
+        "review_checks": [check.id for check in rules.review_checks],
+        "text": _render_domain_rules(rules),
+    }
+
+
+def _brief_carries_heading(text: bytes | str) -> bool:
+    """Whether a brief's own bytes already carry the domain-rules heading.
+
+    A stored copy is written with the heading appended, so a later read of that
+    copy — a resume, a lane change — must recognise it rather than append a
+    second one. The check is on the heading alone, which the renderer emits as
+    the block's first line.
+    """
+    from reckon.crew.prompts import DOMAIN_RULES_HEADING
+
+    needle = DOMAIN_RULES_HEADING.encode("utf-8")
+    haystack = text.encode("utf-8") if isinstance(text, str) else text
+    return needle in haystack
+
+
+def _brief_digest(source: str | Path, *, block: str = "") -> str:
     """Return the sha256 of a brief's stored bytes.
 
     The digest joins a promoted row to the exact text its worker read, so it is
@@ -1975,13 +2041,20 @@ def _brief_digest(source: str | Path) -> str:
     brief that cannot be read is refused here, where the caller still has the
     path it named, rather than inside the worker.
 
+    ``block`` is the domain-rules block the brief carries, appended to the
+    file's own bytes, so the digest covers what the worker read rather than only
+    what the coordinator wrote — a rule declared after a brief was composed
+    re-keys it. A source whose bytes already carry the heading is hashed as it
+    stands, so the run's stored copy is not counted twice.
+
     A run review's brief is a composition, not a document the caller wrote: the
     readers that print the review command name the reviewed run's own
     ``review-brief.md`` without writing it, so when ``source`` is that path the
     text is composed from the run's record here — naming the head its tree
-    carries now — before the digest is taken. A command retyped without a prior
-    composition is then one this dispatch accepts, and its brief never names the
-    head a previous dispatch wrote. Every other brief is read as handed in.
+    carries now — before the digest is taken. A command retyped without a
+    prior composition is then one this dispatch accepts, and its brief never
+    names the head a previous dispatch wrote. Every other brief is read as
+    handed in.
     """
     from reckon.crew.recovery_review_subject import materialize_run_review_brief
 
@@ -1991,10 +2064,12 @@ def _brief_digest(source: str | Path) -> str:
         data = path.read_bytes()
     except OSError as exc:
         raise CrewError(f"the brief {source!r} is not readable: {exc}") from exc
+    if block and not _brief_carries_heading(data):
+        data = data + b"\n\n" + block.encode("utf-8")
     return hashlib.sha256(data).hexdigest()
 
 
-def _store_brief(directory: Path, source: str) -> Path:
+def _store_brief(directory: Path, source: str, *, block: str = "") -> Path:
     """Copy a brief into the run directory and return the stored path.
 
     The brief is durable authority, so its copy lives beside the run's own
@@ -2002,38 +2077,71 @@ def _store_brief(directory: Path, source: str) -> Path:
     pointer names that copy, because the source path a coordinator handed in
     may be a scratch file no later reader can open. The suffix is kept so the
     stored file reads as the document it was.
+
+    ``block`` is the domain-rules block the brief carries, appended to the
+    stored copy so the rules the worker was given are part of the authority
+    that copy is. A source whose bytes already carry the heading is stored
+    unchanged, so the heading is never appended twice.
     """
     destination = directory / f"brief{Path(source).suffix or '.md'}"
     try:
         destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(Path(source).expanduser(), destination)
+        data = Path(source).expanduser().read_bytes()
+        if block and not _brief_carries_heading(data):
+            data = data + b"\n\n" + block.encode("utf-8")
+        destination.write_bytes(data)
     except OSError as exc:
         raise CrewError(f"the brief {source!r} could not be stored: {exc}") from exc
     return destination
 
 
-def _brief_record(node: TaskNode) -> dict[str, str] | None:
-    """Return the pointer's brief block, or None for a plan-carried node."""
+def _brief_record(
+    node: TaskNode, project: str = "", *, project_path: str | None = None
+) -> dict[str, Any] | None:
+    """Return the pointer's brief block, or None for a plan-carried node.
+
+    ``project`` names the repository whose declared domain rules this node's
+    write paths are matched against; the rules the brief carries are recorded
+    beside its digest and path, so a reader sees the rules a worker was given
+    without parsing the brief's prose. A project that declares no ``domain``
+    block records nothing extra, and the block is not part of the brief.
+    """
     if not node.brief.strip():
         return None
-    return {
+    record: dict[str, Any] = {
         "sha256": node.brief_sha256,
         "path": node.brief_path or node.brief,
         "source_path": node.brief,
     }
+    carry = _domain_rules_carry(node, project, project_path=project_path)
+    if carry is not None:
+        record["domain_rules"] = carry
+    return record
 
 
-def _brief_text(node: TaskNode) -> str:
+def _brief_text(
+    node: TaskNode, project: str = "", *, project_path: str | None = None
+) -> str:
     """Return the brief text the composed prompt carries verbatim.
 
     The stored copy is read when dispatch has made one, so the prompt and the
     bytes the pointer names are the same document even if the source moved
     between the digest and the composition.
+
+    The repository's declared domain rules for this node's write paths follow
+    the brief under their own heading, which is the same block the digest covers
+    and the same block the stored copy carries. A source that already carries
+    the heading — the run's own stored copy — is returned unchanged, so the
+    rules are never appended twice.
     """
     if not node.brief.strip():
         return ""
     source = node.brief_path or node.brief
     try:
-        return Path(source).expanduser().read_text(encoding="utf-8")
+        text = Path(source).expanduser().read_text(encoding="utf-8")
     except OSError as exc:
         raise CrewError(f"the brief {node.brief!r} is not readable: {exc}") from exc
+    block = _brief_domain_block(node, project, project_path=project_path)
+    if not block or _brief_carries_heading(text):
+        return text
+    return f"{text}\n\n{block}"

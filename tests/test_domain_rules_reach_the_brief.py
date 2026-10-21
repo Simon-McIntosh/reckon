@@ -120,9 +120,9 @@ def test_the_composed_prompt_carries_the_rule_once(
     prompt = compose_prompt(
         node=node,
         project="fixture",
-        worktree="/tmp/wt",
-        working_directory="/tmp/wt",
-        manifest_path="/tmp/wt/manifest.md",
+        worktree=str(tmp_path / "wt"),
+        working_directory=str(tmp_path / "wt"),
+        manifest_path=str(tmp_path / "wt" / "manifest.md"),
         time_budget="60m",
         needs_help_after_failures=2,
     )
@@ -130,14 +130,115 @@ def test_the_composed_prompt_carries_the_rule_once(
     doubled = compose_prompt(
         node=node,
         project="fixture",
-        worktree="/tmp/wt",
-        working_directory="/tmp/wt",
-        manifest_path="/tmp/wt/manifest.md",
+        worktree=str(tmp_path / "wt"),
+        working_directory=str(tmp_path / "wt"),
+        manifest_path=str(tmp_path / "wt" / "manifest.md"),
         time_budget="60m",
         needs_help_after_failures=2,
         brief=f"{DOMAIN_RULES_HEADING}\n  convergence: a rule",
     )
     assert doubled.count(DOMAIN_RULES_HEADING) == 1
+
+
+def _brief(tmp_path: Path, text: str = "Build the tape model.\n") -> Path:
+    path = tmp_path / "brief.md"
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+def test_the_stored_brief_carries_the_rule_and_its_digest_covers_it(
+    tmp_path: Path,
+) -> None:
+    """The digest a promotion cites covers the rules the worker actually read.
+
+    The heading is composed into the stored copy, and the digest is taken over
+    those same bytes — so a rule declared after a brief was written re-keys the
+    brief rather than leaving a promotion citing text that never carried it.
+    """
+    from reckon.crew import dispatch_admission
+
+    flight = _flight_file(tmp_path, FLIGHT.format(check="true"))
+    node = _node(["models/tape.py"])
+    source = _brief(tmp_path)
+    block = dispatch_admission._brief_domain_block(
+        node, "fixture", project_path=str(flight)
+    )
+    assert block.startswith(DOMAIN_RULES_HEADING)
+    stored = dispatch_admission._store_brief(tmp_path / "run", source, block=block)
+    assert DOMAIN_RULES_HEADING in stored.read_text(encoding="utf-8")
+    with_block = dispatch_admission._brief_digest(stored, block=block)
+    # Read back with the same block the digest is not re-appended: the stored
+    # copy already carries it once.
+    assert with_block == dispatch_admission._brief_digest(stored)
+    assert stored.read_text(encoding="utf-8").count(DOMAIN_RULES_HEADING) == 1
+    assert with_block != dispatch_admission._brief_digest(source)
+
+
+def test_a_brief_that_already_carries_the_heading_is_not_doubled(
+    tmp_path: Path,
+) -> None:
+    from reckon.crew import dispatch_admission
+
+    flight = _flight_file(tmp_path, FLIGHT.format(check="true"))
+    node = _node(["models/tape.py"])
+    source = _brief(tmp_path, f"Build the tape model.\n\n{DOMAIN_RULES_HEADING}\n  x\n")
+    block = dispatch_admission._brief_domain_block(
+        node, "fixture", project_path=str(flight)
+    )
+    stored = dispatch_admission._store_brief(tmp_path / "run", source, block=block)
+    assert stored.read_text(encoding="utf-8").count(DOMAIN_RULES_HEADING) == 1
+
+
+def test_the_brief_text_a_worker_reads_carries_the_rule(tmp_path: Path) -> None:
+    from reckon.crew import dispatch_admission
+
+    flight = _flight_file(tmp_path, FLIGHT.format(check="true"))
+    node = _node(["models/tape.py"])
+    node.brief = str(_brief(tmp_path))
+    text = dispatch_admission._brief_text(
+        node,
+        "fixture",
+        project_path=str(flight),
+    )
+    assert DOMAIN_RULES_HEADING in text
+    assert "convergence" in text
+
+
+def test_the_brief_record_names_the_rules_the_brief_carried(tmp_path: Path) -> None:
+    from reckon.crew import dispatch_admission
+
+    flight = _flight_file(tmp_path, FLIGHT.format(check="true"))
+    node = _node(["models/tape.py"])
+    node.brief = str(_brief(tmp_path))
+    node.brief_sha256 = "f" * 64
+    record = dispatch_admission._brief_record(node, "fixture", project_path=str(flight))
+    assert record is not None
+    assert record["domain_rules"]["invariants"] == ["convergence"]
+    assert record["domain_rules"]["review_checks"] == ["dc-limit"]
+    assert record["domain_rules"]["heading"] == DOMAIN_RULES_HEADING
+
+
+def test_a_project_declaring_nothing_carries_no_rule_heading(tmp_path: Path) -> None:
+    """The negative control: drop the declaration and the brief is unchanged."""
+    from reckon.crew import dispatch_admission
+
+    flight = _flight_file(tmp_path, NO_DOMAIN_FLIGHT)
+    node = _node(["models/tape.py"])
+    node.brief = str(_brief(tmp_path))
+    original = Path(node.brief).read_text(encoding="utf-8")
+    assert (
+        dispatch_admission._brief_domain_block(
+            node, "fixture", project_path=str(flight)
+        )
+        == ""
+    )
+    assert (
+        dispatch_admission._brief_text(node, "fixture", project_path=str(flight))
+        == original
+    )
+    assert dispatch_admission._brief_record(
+        node, "fixture", project_path=str(flight)
+    ) == {"sha256": node.brief_sha256, "path": node.brief, "source_path": node.brief}
 
 
 def test_a_failing_check_refuses_naming_the_invariant(tmp_path: Path) -> None:

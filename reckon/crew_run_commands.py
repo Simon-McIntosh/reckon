@@ -2141,6 +2141,17 @@ def _refuse_a_flag_as_a_reason(
     ),
 )
 @click.option(
+    "--waive-domain-check",
+    callback=_refuse_a_flag_as_a_reason,
+    default="",
+    metavar="REASON",
+    help=(
+        "Promote despite a declared domain invariant whose check command does "
+        "not pass over the paths this run writes, and record which invariants "
+        "were waived and why. Refused when no check is failing."
+    ),
+)
+@click.option(
     "--plan-link",
     default="",
     metavar="SLUG",
@@ -2205,6 +2216,7 @@ def crew_complete(
     accepted_paths,
     no_impl_change,
     waive_live_run,
+    waive_domain_check,
     plan_link,
     unplanned_reason,
     dry_run,
@@ -2323,6 +2335,7 @@ def crew_complete(
                 accepted_paths=dict(accepted_paths),
                 no_impl_change=no_impl_change,
                 live_run_waiver=waive_live_run,
+                domain_waiver=waive_domain_check,
                 plan_link=plan_link,
                 unplanned_reason=unplanned_reason,
             ),
@@ -2351,6 +2364,7 @@ def crew_complete(
             accepted_paths=dict(accepted_paths),
             no_impl_change=no_impl_change,
             live_run_waiver=waive_live_run,
+            domain_waiver=waive_domain_check,
             plan_link=plan_link,
             unplanned_reason=unplanned_reason,
         )
