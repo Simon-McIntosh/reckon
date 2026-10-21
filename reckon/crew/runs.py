@@ -27,6 +27,7 @@ from reckon.env_duration import read_duration_override
 from reckon.crew.host_lease import LEASE_RENEW_SECONDS as LEASE_RENEW_SECONDS, HostLease as HostLease
 from reckon.crew.node import _TERMINAL_RUN_PHASES as _TERMINAL_RUN_PHASES, DEFAULT_WATCH_STALL_WINDOW as DEFAULT_WATCH_STALL_WINDOW, RUN_DRAIN_DISPOSITIONS as RUN_DRAIN_DISPOSITIONS, CrewError as CrewError, TaskNode as TaskNode, parse_duration as parse_duration
 from reckon.crew.obligation_snapshot import CLI_MODULE_FILES as CLI_MODULE_FILES
+from reckon.crew.queue_order import pointer_is_review as pointer_is_review
 
 
 def accepts_keyword(callable_object: Callable[..., Any], keyword: str) -> bool:
@@ -536,6 +537,11 @@ def queue_dispatch(
     the count and the requeue decision are taken under the queue's own lock, so
     two concurrent dispatches from one session cannot both pass the check.
 
+    A review is exempt from the cap: reviewing a delivered run is what lets it
+    land, so it is the last dispatch the cap may refuse. A review is neither
+    refused when the session holds its allowance nor counted against it, so a
+    session's queued reviews do not shrink its room for implementation.
+
     A dispatch of a node whose request is already being admitted, or whose run
     is otherwise in flight, writes nothing: the existing run is returned with
     its phase and ``None`` for the position, because a run that is not queued is
@@ -606,8 +612,9 @@ def queue_dispatch(
                         for pointer in live
                         if pointer.get("phase") == "queued"
                         and str(pointer.get("session") or "") == session
+                        and not pointer_is_review(pointer)
                     )
-                    if held >= cap:
+                    if not pointer_is_review(record) and held >= cap:
                         raise QueueFull(session=session, held=held, cap=cap)
                 run_id = str(record["run_id"])
                 with _pointer_lock(run_id):
