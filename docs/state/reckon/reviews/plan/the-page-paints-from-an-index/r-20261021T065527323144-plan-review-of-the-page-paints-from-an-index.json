@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T07:09:33.400Z",
+  "dispatched_at": "2026-10-21T06:56:14Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-page-paints-from-an-index.html:254",
+      "id": "reasoning-1",
+      "reason": "the trigger needs a bounded re-anchor (or a locally derived now) or the node lands exactly the frozen flow the section exists to prevent, and the done-when's \"an unchanged poll fetches nothing\" assertion would have to be restated.",
+      "text": "\u00a711 refetches `/_schedule/<project>` only when the crew poll shows the run set or a run phase has changed, but the schedule is an instant-anchored snapshot: `_attach_schedule` (serve.py:1768) builds it with `reference=` the request instant and the crew flow draws its `now` tick and `.r-derived-flow-now` line at hour 0 of that frame from the payload's own `low`/`high, which crew.jsx recomputes nothing from a live clock \u2014 so on a crew view where no run changes, the line labelled \"now\" drifts from the real clock for as long as the view is left open, and the section's headline (\"the flow refreshes from its own route\") holds only for the run-change case.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-page-paints-from-an-index.html:257",
+      "id": "done_when-1",
+      "reason": "without a threshold the section's effect is unmeasured, and the node cannot tell a working reduction from a change-only leftover.",
+      "text": "the clause \"the coordinator counts `/_index/power_convertor` requests in the served log over 30 minutes ... and reports the count beside the 92 in 44 minutes measured before\" is the only part of \u00a711's done-when that measures whether the churn actually fell, and it carries no threshold, so a run whose `fleet`-event refetch is suppressed but whose `change` events on power_convertor still fire every few seconds passes every assertion in the section while the request count barely moves.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "7bba9a35cee3df64b52fe4495c59161252a88f4551c80ce50629392132b9d5ef",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 45,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T065527323144-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "bc795fe018582fc0f8827e6ebf96ab5176cb4580",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol the two units cite resolves: `watchProjectStateChanges` (state-loader.js:709), `revalidateProjectState` (state-loader.js:263), `derivedBlocks` (state-loader.js:316), `mergeDerived` (state-loader.js:484), `refreshProjectState` (shell.jsx:154), `loadChecksAfterDerived` (shell.jsx:149), the schedule read at crew.jsx:44, and `_attach_schedule_for_read` (serve.py:1777); the \u00a724 anchor in `the-site-answers-fast-and-agrees` resolves at `docs/plans/the-site-answers-fast-and-agrees.html:364` and is the schedule-swallow section the units cite it as.",
+    "done_when": "a finding \u2014 \u00a711's done-when measures the change's own effect with a coordinator request count that names no threshold, so that clause cannot fail.",
+    "evidence_paths": "pass \u2014 both sections write their logs under the crew run directory and end them in an exit line, and \u00a710 names its test files and SPA sources as write paths on durable repository paths.",
+    "naming": "pass \u2014 `DERIVED_STATE_KEYS`, `reckon:derived`, `/_schedule/<project>` and the stale rule name the mechanism, and no stage label, ticket number or version tag enters a symbol, filename or comment in either unit.",
+    "reasoning": "a finding \u2014 \u00a711's fetch trigger does not reproduce the freshness the schedule payload's own time anchor requires, so the crew flow's now-line comes to name an instant that is not now.",
+    "single_goal": "pass \u2014 \u00a710 states one goal (the derived blocks stay on screen until better ones replace them) carried by three mechanisms that each has its own test and its own control, and \u00a711's route and its removal of the fleet refetch are one coupled change that cannot land apart.",
+    "wiring": "pass \u2014 \u00a711's declared `depends-on` of `the-page-paints-from-an-index#s10` resolves to the `s10` heading in the snapshot, and the text states the s10-before-s11 sequencing the shared write paths require."
+  },
+  "section_digests": {
+    "_document": "5bedd7f41d8b5b370882135e798f35d56d6e6348c4003130ade8574bbf365128",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "a087a6a31d13a36855df8324fb8b7f11c311397453714adca011bd4ce7869312",
+    "s11": "72baeb6a73dd75cdf37920ccacdd36cfd63f406278e604cb9892a9a88f97cd45",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "768d4a5e4156b059d51137b95683149be313a7d4ce026b0836f872b4f4056507",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T07:12:03.414465+00:00"
+}
