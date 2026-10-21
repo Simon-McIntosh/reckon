@@ -1,0 +1,68 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/routing.py:3339 _context_fit_verdict",
+    "reckon/crew/dispatch_plan.py:784 _competence_verdict",
+    "reckon/crew/dispatch_sessions.py:1738",
+    "reckon/crew/dispatch.py:1392",
+    "reckon/crew/picker/snapshot.py:703",
+    "reckon/crew/dispatch_claims.py:816 node.write_paths scope claims",
+    "reckon/crew/promotion_scope.py:732 record node write_paths",
+    "reckon/crew/routing.py:3255 _competence_verdict census read",
+    "reckon/crew_dispatch_commands.py:1504 crew_dispatch",
+    "reckon/crew_dispatch_commands.py:997 crew_pick"
+  ],
+  "completed_at": "2026-10-21T18:31:40.713Z",
+  "dispatched_at": "2026-10-21T18:10:31Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-regenerated-path-is-proved-on-the-ledger",
+      "recorded_at": "2026-10-21T18:35:18.169739+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the option and constant are new, so the honest base arm is a collection error; the negative-control log carries the semantic falsification",
+      "recorded_at": "2026-10-21T18:35:38.529516+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_regenerated_path_is_charged_as_written.py",
+      "line": 337,
+      "severity": "follow-on",
+      "text": "assert LARGE_PATH in definition[\"write_paths\"] is not independent of the value under test: line 332 builds the node with write_paths=[LARGE_PATH] as well as regenerate_paths=[LARGE_PATH], so the assertion holds even if the __post_init__ fold at reckon/crew/node.py:766 is deleted, and it therefore cannot guard the 'a regenerated path is folded into the write scope' claim its own docstring makes. The fold is guarded elsewhere -- the census tests and the scope-conflict test both fail without it -- so this is a misleading assertion rather than an unguarded behaviour."
+    },
+    {
+      "file": "tests/test_a_regenerated_path_is_charged_as_written.py",
+      "line": 39,
+      "severity": "follow-on",
+      "text": "The module-level REFERENCE_TOKENS = routing._REGENERATED_PATH_REFERENCE_TOKENS makes the base arm a collection error rather than a set of failing tests: logs/gate-base.log reads 1 error, 0 failure ids, EXIT=2, so the base arm shows only that the constant is absent and cannot distinguish a missing option from a wrong one. The done-when asks that the tests fail there; the semantic falsification is carried by the negative-control log (2 failed, EXIT=1) instead, so the base arm is weaker evidence than the done-when describes."
+    },
+    {
+      "file": "tests/test_a_regenerated_path_is_charged_as_written.py",
+      "line": 330,
+      "severity": "follow-on",
+      "text": "The done-when requires that the live pointer and the promoted ledger row carry the regenerated paths; the file asserts the live pointer (as_dict and crew.pointer_path) but no assertion anywhere names a promoted ledger row, so the ledger half of that measure is implemented (reckon/crew/promotion.py:1911 copies record['node'], which reckon/crew/dispatch.py:2134 fills from node.as_dict()) and unverified. The rebuilt-from-run-directory fallback at reckon/crew/promotion_records.py:134 replaces node with {'write_paths': declared} and so drops regenerate_paths, which no reader currently depends on."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to charge a declared regenerated path a fixed reference cost in the context census while claiming it like a write path; reckon/crew/routing.py:71 names the constant _REGENERATED_PATH_REFERENCE_TOKENS at routing.py:71 and reckon/crew/node.py:766 folds each regenerated path into write_paths at construction, so both halves are landed.\nVERDICT done_when: the done-when names the fit/refusal pair, the dry-run census's regenerated provenance and reference cost, the scope-conflict refusal, the live pointer and promoted ledger row, base-commit failures, and the exact gate command; the manifest records logs/gate-head.log (126 passed, EXIT=0), logs/gate-base.log (1 collection error, EXIT=2) and the negative-control log (2 failed, EXIT=1), so the fit pair, the scope-conflict refusal and the pointer are asserted, the census is asserted at _context_file_inputs rather than through the dry-run payload the sentence names, the promoted ledger row is carried but asserted nowhere, and the base arm is a collection error rather than failing test ids.\nVERDICT write_paths: the manifest declares eight paths; the diff touches seven files (reckon/crew/routing.py, reckon/crew/node.py, reckon/crew_dispatch_commands.py, reckon/crew/dispatch.py, skills/reckon-build/SKILL.md, tests/test_a_regenerated_path_is_charged_as_written.py, the landing fragment at docs/evidence/fragments/a-brief-should-not-cost-what-it-names/a-regenerated-path-is-charged-as-written.html), every one inside the declared set, and the declared figures directory is unused as the brief permits.\nVERDICT manifest: read; it states the head arm at 126 passed EXIT=0, the base arm as a collection error EXIT=2, the negative control at 2 failed EXIT=1, the exact gate command, the base scratch tree's module.__file__ and cwd, and a landing line that agrees with the diff.\nVERDICT diff: read commit by commit against 0f9888ed; one commit df48984e9, 7 files, 486 insertions and 7 deletions, adding the --regenerate-path option on both crew_pick and crew_dispatch, the TaskNode field with its fold and its as_dict key, the census arm with provenance regenerated and reference_tokens, the regenerated set in the census cache key, the shadow_source passthrough at reckon/crew/dispatch.py:583, the SKILL.md dispatch line, 343 lines of tests and a 65-line fragment.\nCALL_SITES: reckon/crew/routing.py:3339 _context_fit_verdict, reckon/crew/dispatch_plan.py:784 _competence_verdict, reckon/crew/dispatch_sessions.py:1738, reckon/crew/dispatch.py:1392, reckon/crew/picker/snapshot.py:703, reckon/crew/dispatch_claims.py:816 node.write_paths scope claims, reckon/crew/promotion_scope.py:732 record node write_paths, reckon/crew/routing.py:3255 _competence_verdict census read, reckon/crew_dispatch_commands.py:1504 crew_dispatch, reckon/crew_dispatch_commands.py:997 crew_pick\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:3120 charges a regenerated write path the constant declared at routing.py:71 and reckon/crew/node.py:766 makes it a write path for every scope consumer, which is exactly the goal.\nSCORE evidence: 14\nJUSTIFICATION evidence: the manifest records the exact done-when gate command with logs/gate-head.log at 126 passed EXIT=0 and a negative control that genuinely reddens two tests (2 failed, EXIT=1), but the census is asserted at routing.py:3137 through _context_file_inputs rather than the dry-run payload the done-when names, the promoted ledger row is asserted nowhere, and logs/gate-base.log is a collection error (0 failure ids, EXIT=2) rather than the failing tests the done-when describes.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every one of the seven paths in df48984e9 is inside the eight declared write paths in the manifest's orientation_write_paths, and the diff carries no change the goal does not imply.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_regenerated_path_is_charged_as_written.py:176 fails with context-window-exceeded when the regenerated arm is charged at full size, exactly the mutation the negative-control log records, and the census tests fail if the fold at reckon/crew/node.py:766 is removed, but the assertion at tests/test_a_regenerated_path_is_charged_as_written.py:337 supplies the same value it asserts and guards nothing.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/routing.py:3096 extends the existing describe keyword shape and reckon/crew_dispatch_commands.py:869 mirrors --write-path option-for-option, adding no plan, ticket or version identifier; the only departure is the documented in-place self.write_paths mutation at reckon/crew/node.py:767.\nSCORE reuse: 18\nJUSTIFICATION reuse: the added arm extends the capability's owner inside _context_file_inputs and TaskNode rather than duplicating it, and the sibling exemption the repository already owns -- the dispatcher-granted landing fragment at reckon/crew/dispatch_claims.py:749, charged zero under provenance granted -- is a distinct policy left intact, so no second owner of a fixed reference cost was forked.\nFINDING tests/test_a_regenerated_path_is_charged_as_written.py:337 follow-on: assert LARGE_PATH in definition[\"write_paths\"] is not independent of the value under test, because line 332 supplies LARGE_PATH in write_paths as well as in regenerate_paths, so the assertion holds even with the __post_init__ fold at reckon/crew/node.py:766 deleted and does not guard the fold it claims to.\nFINDING tests/test_a_regenerated_path_is_charged_as_written.py:39 follow-on: the module-level import of _REGENERATED_PATH_REFERENCE_TOKENS makes the base arm a collection error (1 error, 0 failure ids, EXIT=2) rather than the failing tests the done-when describes, so the base arm cannot distinguish a missing option from a wrong one.\nFINDING tests/test_a_regenerated_path_is_charged_as_written.py:330 follow-on: the done-when's promoted-ledger-row half is implemented but asserted nowhere; the file stops at the live pointer, and the rebuilt-from-run-directory fallback at reckon/crew/promotion_records.py:134 drops regenerate_paths.\n",
+  "review_run_id": "r-20261021T180904443351-review-of-a-regenerated-path-is-charged-as-written-df48984e9db6",
+  "reviewed_base_sha": "0f9888edada5f53747b0c813da1f17d9afdc800a",
+  "reviewed_head_sha": "df48984e9db6100561c60f661ab828fc1d9262b0",
+  "reviewed_run_id": "r-20261021T173243033733-a-regenerated-path-is-charged-as-written",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T18:22:00+00:00",
+  "total": 106
+}
