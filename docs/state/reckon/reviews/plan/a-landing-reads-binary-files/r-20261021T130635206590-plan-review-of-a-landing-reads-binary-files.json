@@ -1,0 +1,118 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T13:15:19.140Z",
+  "dispatched_at": "2026-10-21T13:08:05Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/merge.py:211",
+      "id": "reuse_search-1",
+      "reason": "adopting object identity deletes the binary-detection heuristic, the bytes read and the docstring rule from \u00a71's deliverable entirely, and changes what the test must assert.",
+      "text": "\u00a71 prescribes reading blob content as bytes and picking \"the narrowest test for binary\" (a NUL byte or a failed UTF-8 decode) inside `_show`, but a content comparison is unnecessary: `git rev-parse <revision>:<path>` returns the blob's object id without decoding anything, and the module already resolves object names that way (`merge.py:125`, `merge.py:264-265`), so a binary path can be compared by blob identity with no bytes read, no binary heuristic and no new docstring rule \u2014 the repo moreover already reads git output in bytes where content really is still wanted (`reckon/crew/promotion_scope.py:922-947`, `git diff --binary` with `capture_output=True` and no `text=True`), which is the pattern \u00a71 should cite if a byte read is genuinely wanted",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "tests/test_one_call_lands_a_run.py:34",
+      "id": "reuse_search-2",
+      "reason": "the new cases belong in the file the plan already gates on (one harness, one revision of the fixture) rather than in two files that re-derive it, and naming the harness shortens both done-when blocks.",
+      "text": "the plan's two new test files (`tests/test_a_landing_reads_binary_files.py`, `tests/test_a_failed_land_exits_nonzero.py`) each rebuild a temporary origin-and-checkout repository with every environment-resolved directory redirected, which this file already provides: `_write_origin_and_checkout` at `tests/test_one_call_lands_a_run.py:34`, the `crew complete --land` CliRunner driver `_complete_land` at `tests/test_one_call_lands_a_run.py:134`, the shared git helper `tests/helpers/git.py:12`, and an existing test over exactly the functions \u00a71 changes at `tests/test_one_call_lands_a_run.py:236`; the same plan already names this file in both gates, so the census is three reused mechanisms across two node briefs, not one drift-prone copy per section",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/merge.py:652",
+      "id": "deep_module-1",
+      "reason": "the plan must state the per-path kind in the `survived` payload (or one place that owns the text/binary decision and returns it), otherwise the landing record reports a check that did not run.",
+      "text": "the binary branch is invisible in the module's own report: `land()` builds `survived` as `{\"checked\": bool(markers), \"paths\": sorted(markers), \"markers\": sum(introduced + removed)}`, and a path judged by blob identity contributes zero introduced and zero removed markers, so a landing whose only reviewed change is binary reports `checked: true, markers: 0` \u2014 a record that \u00a72's own report leans on to state that the land step succeeded, and that cannot be told apart from a check that inspected nothing; the plan adds the decision at `merge.py:280` and `merge.py:305` without saying where it lives or what the report says about it",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew_run_commands.py:74",
+      "id": "duplicate_owner-1",
+      "reason": "the exception-to-refusal mapping (type, message, resume command, exit status) should be one owner \u2014 a helper beside `MergeError` in `reckon/crew/merge.py`, which the five sites call \u2014 or \u00a72 must each add a catch that drifts from the others the first time one changes.",
+      "text": "the mapping from a merge failure to a refusal is duplicated across five sites in one module and \u00a72 extends it by adding more sites rather than naming an owner: `crew_merge`'s `except merge.MergeError` at `reckon/crew_run_commands.py:74` (with `MergePushOutstandingError` at :74-76), the promoted-land handler at `reckon/crew_run_commands.py:2449`, `reckon/crew_run_commands.py:2475`, `reckon/crew_run_commands.py:2485`, and the release-step push handler at `reckon/crew_run_commands.py:2524` (currently `pragma: no cover`); the plan names only two of these (`_land_a_promoted_run` and the `crew merge` verb) and asks each to catch \"any other exception\" separately",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "3976ccb997a57232cad3e919efb42039db49c2196f1a0b1c73cb20db8eae4b76",
+  "plan_slug": "a-landing-reads-binary-files",
+  "plan_version": 1,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-1",
+      "reason": "",
+      "when": "2026-10-21T13:20:13.111136+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-2",
+      "reason": "",
+      "when": "2026-10-21T13:20:31.997159+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "deep_module-1",
+      "reason": "",
+      "when": "2026-10-21T13:20:50.794743+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "duplicate_owner-1",
+      "reason": "",
+      "when": "2026-10-21T13:21:08.663326+00:00"
+    }
+  ],
+  "responses": {
+    "deep_module-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T13:20:50.794743+00:00"
+    },
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T13:21:08.663326+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T13:20:13.111136+00:00"
+    },
+    "reuse_search-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T13:20:31.997159+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-landing-reads-binary-files.v1.json",
+  "review_run_id": "r-20261021T130635206590-plan-review-of-a-landing-reads-binary-files",
+  "reviewed_blob_sha": "08014a365b4f126f1ef63d63dc2eeb3e2e3019b3",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a71 spreads one decision (text or binary, and what \"unchanged\" means for it) across two functions in `reckon/crew/merge.py` (`change_markers` at :280 and `surviving_change_refusals` at :305) without naming where the decision lives, and leaves the module's own public report (`merge.py:652`, the `survived` block) unable to say a path was judged by blob identity, so the landing record cannot distinguish a binary check from a no-op.",
+    "duplicate_owner": "a finding \u2014 the merge-exception-to-refusal mapping is already duplicated across five sites in `reckon/crew_run_commands.py` and \u00a72 adds a per-site catch at two of them rather than extending one owner for the mapping.",
+    "interface_budget": "pass \u2014 public_definitions 1969, cli_options 394, mcp_views 19, refusal_families 23; neither section adds a public definition, a CLI option, an MCP view or a new refusal name, so there is no family entry for a section to retire or merge.",
+    "reuse_search": "a finding \u2014 the plan cites `reckon/crew/merge.py`'s `_show`, `change_markers` and `surviving_change_refusals` by line, so it read the code it extends, but it did not search for a mechanism that already answers \"did this path's content change\" without decoding it (`git rev-parse <rev>:<path>`, already used in `reckon/crew/merge.py:125`), nor for the repo's existing bytes-mode git read (`reckon/crew/promotion_scope.py:922`), and its two new test files rebuild a temporary-repository harness that `tests/test_one_call_lands_a_run.py:34` already carries.",
+    "thin_wrapper": "pass \u2014 \u00a71 extends `_show`/`_run` in place inside `reckon/crew/merge.py` and adds no parallel reader or second landing path; \u00a72 extends the existing land-step and `crew merge` handlers rather than wrapping them in a layer."
+  },
+  "section_digests": {
+    "_document": "7bb1ca28fd8d819b9ceb9071e32e02ca1fd54ae9ab6eab729c2a0506806c5dce",
+    "s1": "aa91535c6d229763cd21f67f9136ea8b8fdd929794f57529df0c451d9f787f21",
+    "s2": "a3d4de97d6cdc1acd5206225a191b8b5bf01b82a71db8c39a958f16741717bf2"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T13:19:57.793990+00:00"
+}
