@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": null,
+  "base_log_revision": "d0370a61a3244494cd434e27d19bf8a526d8f83c",
+  "baseline_suite_log": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-21T11:07:02.891Z",
+  "dispatched_at": "2026-10-21T10:51:59Z",
+  "findings": [
+    {
+      "file": "tests/test_a_deadline_needs_no_time_zone.py",
+      "line": "114",
+      "severity": "follow-on",
+      "text": "the tolerance equals the observed maximum drift of one second, so a stall of more than a second between the two _run calls would push drift to 2 and fail again; the change reduces the flake rather than eliminating it."
+    },
+    {
+      "file": "docs/evidence/fragments/the-suite-is-green-at-head/the-time-zone-deadline-test-tolerates-a-one-second-straddle.html",
+      "line": "38",
+      "severity": "follow-on",
+      "text": "cites two probe distributions, {0: 195, 1: 5} and {0: 194, 1: 6}, but reproduction-base.log records only the second; the first probe run has no log on disk, so that figure cannot be checked against its instrument."
+    },
+    {
+      "file": "manifest.md",
+      "line": "7",
+      "severity": "follow-on",
+      "text": "the commits line lists only 9cc51c962 and 20a3c1622 and omits the head commit d689667d5, so a reader reconstructing the reviewed revision from the manifest alone would stop one commit short."
+    }
+  ],
+  "head_log_revision": "9cc51c96295903577082ab6a1b405e7ac4299260",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "three commits against d0370a61 - 9cc51c962 replaces `assert utc == paris` with figure parsing, a length check, a non-empty check and `drift <= 1` at tests/test_a_deadline_needs_no_time_zone.py:105-118; 20a3c1622 and d689667d5 add the 72-line evidence fragment; the command under test, reckon/crew/prompts.py:time_fence_statement, is untouched by the diff.",
+    "done_when": "the done_when names 20 foreground runs of test_the_stated_command_prints_the_same_seconds_in_two_zones plus a +3600 negative control; gate-20-runs.log records \"passed 20 of 20, failed 0\" with EXIT=0 at revision 9cc51c962 and negative-control.log records `assert 3600 <= 1` with EXIT=1.",
+    "goal": "the goal is that the two-zone comparison in tests/test_a_deadline_needs_no_time_zone.py tolerate a one-second difference and still fail on an hour-or-more zone offset; the landed comparison at tests/test_a_deadline_needs_no_time_zone.py:114 asserts drift <= 1, and the +3600 control reddens it.",
+    "manifest": "the manifest states status complete, the 20-of-20 gate at 9cc51c96, the +3600 mutation and its EXIT=1 log, and names three log paths; its commits line lists only two of the three landed commits.",
+    "write_paths": "the declared scope is tests/test_a_deadline_needs_no_time_zone.py, the node's evidence fragment under docs/evidence/fragments/the-suite-is-green-at-head/ and its docs/figures/ directory; the d0370a61..d689667d5 diff changes only the test file and the fragment, and no figure was written."
+  },
+  "justifications": {
+    "durability": "tests/test_a_deadline_needs_no_time_zone.py:114 reddens on a zone-dependent command, shown by the +3600 mutation producing `assert 3600 <= 1` in negative-control.log.",
+    "evidence": "gate-20-runs.log records \"passed 20 of 20, failed 0\" with EXIT=0 and negative-control.log records `assert 3600 <= 1` with EXIT=1, but a 20/20 run of a check that failed about 1 in 30 before the change is weak evidence the flake is gone, and one of the two distributions the fragment cites has no log on disk.",
+    "fit": "the added docstring at tests/test_a_deadline_needs_no_time_zone.py:94-101 states the mechanism, reuses the module's existing _figures helper at line 114, and introduces no forbidden name.",
+    "goal_fidelity": "tests/test_a_deadline_needs_no_time_zone.py:114 asserts drift <= 1, which tolerates the one-second straddle and still refuses a whole-zone offset, exactly the goal.",
+    "reuse": "the diff adds no definition; it reuses the pre-existing _figures helper (tests/test_a_deadline_needs_no_time_zone.py:82, present at the base blob) rather than forking a new one.",
+    "scope_discipline": "the d0370a61..d689667d5 diffstat shows only tests/test_a_deadline_needs_no_time_zone.py and the node's evidence fragment, both inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the two-zone comparison in tests/test_a_deadline_needs_no_time_zone.py tolerate a one-second difference and still fail on an hour-or-more zone offset; the landed comparison at tests/test_a_deadline_needs_no_time_zone.py:114 asserts drift <= 1, and the +3600 control reddens it.\nVERDICT done_when: the done_when names 20 foreground runs of test_the_stated_command_prints_the_same_seconds_in_two_zones plus a +3600 negative control; gate-20-runs.log records \"passed 20 of 20, failed 0\" with EXIT=0 at revision 9cc51c962 and negative-control.log records `assert 3600 <= 1` with EXIT=1.\nVERDICT write_paths: the declared scope is tests/test_a_deadline_needs_no_time_zone.py, the node's evidence fragment under docs/evidence/fragments/the-suite-is-green-at-head/ and its docs/figures/ directory; the d0370a61..d689667d5 diff changes only the test file and the fragment, and no figure was written.\nVERDICT manifest: the manifest states status complete, the 20-of-20 gate at 9cc51c96, the +3600 mutation and its EXIT=1 log, and names three log paths; its commits line lists only two of the three landed commits.\nVERDICT diff: three commits against d0370a61 - 9cc51c962 replaces `assert utc == paris` with figure parsing, a length check, a non-empty check and `drift <= 1` at tests/test_a_deadline_needs_no_time_zone.py:105-118; 20a3c1622 and d689667d5 add the 72-line evidence fragment; the command under test, reckon/crew/prompts.py:time_fence_statement, is untouched by the diff.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_a_deadline_needs_no_time_zone.py:114 asserts drift <= 1, which tolerates the one-second straddle and still refuses a whole-zone offset, exactly the goal.\nSCORE evidence: 14\nJUSTIFICATION evidence: gate-20-runs.log records \"passed 20 of 20, failed 0\" with EXIT=0 and negative-control.log records `assert 3600 <= 1` with EXIT=1, but a 20/20 run of a check that failed about 1 in 30 before the change is weak evidence the flake is gone, and one of the two distributions the fragment cites has no log on disk.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the d0370a61..d689667d5 diffstat shows only tests/test_a_deadline_needs_no_time_zone.py and the node's evidence fragment, both inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_deadline_needs_no_time_zone.py:114 reddens on a zone-dependent command, shown by the +3600 mutation producing `assert 3600 <= 1` in negative-control.log.\nSCORE fit: 19\nJUSTIFICATION fit: the added docstring at tests/test_a_deadline_needs_no_time_zone.py:94-101 states the mechanism, reuses the module's existing _figures helper at line 114, and introduces no forbidden name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition; it reuses the pre-existing _figures helper (tests/test_a_deadline_needs_no_time_zone.py:82, present at the base blob) rather than forking a new one.\nFINDING tests/test_a_deadline_needs_no_time_zone.py:114 follow-on: the tolerance equals the observed maximum drift of one second, so a stall of more than a second between the two _run calls would push drift to 2 and fail again; the change reduces the flake rather than eliminating it.\nFINDING docs/evidence/fragments/the-suite-is-green-at-head/the-time-zone-deadline-test-tolerates-a-one-second-straddle.html:38 follow-on: cites two probe distributions, {0: 195, 1: 5} and {0: 194, 1: 6}, but reproduction-base.log records only the second; the first probe run has no log on disk, so that figure cannot be checked against its instrument.\nFINDING manifest.md:7 follow-on: the commits line lists only 9cc51c962 and 20a3c1622 and omits the head commit d689667d5, so a reader reconstructing the reviewed revision from the manifest alone would stop one commit short.\n",
+  "review_run_id": "r-20261021T105035819660-review-of-the-time-zone-deadline-test-tolerates-a-one-second-straddle-d689667d5ffa",
+  "reviewed_base_sha": "d0370a61a3244494cd434e27d19bf8a526d8f83c",
+  "reviewed_commits": [
+    "9cc51c96295903577082ab6a1b405e7ac4299260",
+    "20a3c162234141b0be3520a9e4aad25066fda775",
+    "d689667d5ffa542f5d117dec7e0f53ec703453d5"
+  ],
+  "reviewed_head_sha": "d689667d5ffa542f5d117dec7e0f53ec703453d5",
+  "reviewed_run_id": "r-20261021T101659403810-the-time-zone-deadline-test-tolerates-a-one-second-straddle",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T11:10:27.442949+00:00",
+  "total": 111
+}
