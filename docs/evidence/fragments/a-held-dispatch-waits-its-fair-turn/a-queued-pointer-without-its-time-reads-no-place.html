@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-held-dispatch-waits-its-fair-turn">
+  <meta name="plan-title" content="A queued pointer without its time reads no place">
+  <meta name="plan-summary" content="A queued pointer whose queued_at cannot be read no longer takes the whole live read down: queued_placements leaves it out of the ordering, so its run is still listed as queued while every other queued request keeps the place the admission pass gives it.">
+  <meta name="plan-evidence-for" content="reckon:a-held-dispatch-waits-its-fair-turn">
+  <meta name="plan-verifies" content="reckon:a-held-dispatch-waits-its-fair-turn#s34">
+  <meta name="plan-recorded-at" content="2026-10-21">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-tags" content="crew,queue,admission,resilience">
+  <title>A queued pointer without its time reads no place — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-queued-pointer-without-its-time-reads-no-place-record" data-node="a-queued-pointer-without-its-time-reads-no-place" data-reckon="landed" data-when="2026-10-21">
+  <h2 id="a-queued-pointer-without-its-time-reads-no-place-head">A queued pointer without its time reads no place</h2>
+  <p id="a-queued-pointer-without-its-time-reads-no-place-defect">The place a queued request holds is derived from when it arrived, and the ordering that derives it refuses a pointer carrying no readable <code>queued_at</code>. <code>queued_placements</code> let that refusal propagate, so one malformed pointer cost every queued request on the lane its place and, through <code>crew view live</code> and the obligations read, took the whole read down with it. Reproduced at base revision <code>9cb55dea5</code>: a three-pointer snapshot whose third carries no <code>queued_at</code> raises <code>ValueError("queued pointer has no readable queued_at")</code>.</p>
+  <p id="a-queued-pointer-without-its-time-reads-no-place-place">The refusal now belongs to the pointer rather than to the read. Before ordering, <code>queued_placements</code> drops any queued pointer whose <code>queued_at</code> does not parse; the rest are ordered exactly as before, so each keeps the place it will be launched at and the third reads no place at all. Its run is still listed as queued, because the classification and the listing read the pointer rather than the ordering. The ordering the admission pass ranks by, <code>queue_order.admission_order</code>, is unchanged and still refuses such a read, and a case holds that so the narrowing cannot drift out of the reader and into the pass.</p>
+  <p id="a-queued-pointer-without-its-time-reads-no-place-measure">Over a temporary crew home holding two placeable queued pointers and one without its time: <code>queued_placements</code> returns <code>{older: position 1 rank 1, newer: position 2 rank 2}</code> with the third absent and no exception raised, and <code>crew view live</code> lists all three with classification <code>queued</code>, the two carrying their position and rank and the third carrying neither.</p>
+  <p id="a-queued-pointer-without-its-time-reads-no-place-control">The declared mutation restores the propagating call in <code>queued_placements</code>. Under it the two cases that read the placement fail with the original <code>ValueError</code>, <code>2 failed, 1 passed</code>, ending <code>EXIT=1</code>; the fix reverted, the file passes <code>3 passed</code>, <code>EXIT=0</code>.</p>
+  <p id="a-queued-pointer-without-its-time-reads-no-place-arm">The regression arm runs the test files whose imports reach <code>reckon/crew/queue_admission.py</code> or <code>reckon/crew/query.py</code> — fifty-one at head, one of them this node's new file, so fifty at the base revision — under <code>-n 8</code> in place, each arm from its own tree with its own log.</p>
+</article>
+</body>
+</html>
