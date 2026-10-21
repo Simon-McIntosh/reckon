@@ -1,0 +1,50 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/mcp_edit_plan.py:1429",
+    "reckon/mcp.py:3133",
+    "reckon/roadmap.py:1082",
+    "reckon/roadmap.py:1342",
+    "reckon/roadmap.py:3405"
+  ],
+  "completed_at": "2026-10-21T13:42:19.484Z",
+  "dispatched_at": "2026-10-21T13:15:15Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-project-reads-as-one-picture/after-is-settable.html",
+      "line": 14,
+      "severity": "follow-on",
+      "text": "follow-on: the landing record's plan-verdict meta reads content=\"blocked\" while the record's own text says nothing is left open on the measure and the gate is green, so a reader browsing the evidence reads a completed node as blocked; nothing validates the value (reckon/evidence.py:417 writes pass/qualified/fail), so the contradiction survives."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T113026513475-after-is-settable/manifest.md",
+      "line": 12,
+      "severity": "follow-on",
+      "text": "follow-on: the manifest names its arm logs only under test_logs and carries no baseline_suite or after_suite field, so the review contract's own reader (reckon/crew/review.py:2494-2499) can only report the added-failure count as unmeasured; every review of this run must fall back to parsing the two logs by hand, and the structured arm record the promotion suite-delta check reads is absent."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to let edit_plan set a plan's after list with a whole-list set validated by the plan ref grammar; reckon/_store.py:2376 adds after to _PLAN_SET_TOP and the write path re-validates every link list through reckon/_schema.py:1555, which refuses a malformed ref by field and by the ref it names.\nVERDICT done_when: the done_when names tests/test_after_is_settable.py plus four regression modules; the manifest's test_logs name the head arm (head-arm-2.log, 98 passed, EXIT=0) and the base arm (base-arm.log, 4 failed, 94 passed, EXIT=1) whose four failures are the new cases, and the four cases assert a replacement, an emptying, a project-qualified ref and a refusal read back through read_plan and off the plan-after meta.\nVERDICT write_paths: the fence declared in prompt.txt is reckon/_store.py, tests/test_after_is_settable.py, skills/reckon-review/references/links.md, docs/evidence/fragments/a-project-reads-as-one-picture/after-is-settable.html and a figures dir, extended by the resume advice at resume-1-advice.txt to tests/test_north_star_write.py; every path in the 6c67ef89d..db71426be diff is inside that set and nothing else changed.\nVERDICT manifest: read; it records status complete at aea7f9059 with commits 5062ae302, aea7f9059 and db71426be, the gate green (98 passed, EXIT=0) and both the base arm (4 failed, EXIT=1) and mutation arm (5 failed, EXIT=1) in its artifacts, but it carries no baseline_suite or after_suite field, so the review contract's own reader reckons the added-failure count unmeasured.\nVERDICT diff: read commit by commit from 6c67ef89d to db71426be: 5062ae302 adds after to _PLAN_SET_TOP, the new test module, the links.md edit and the landing fragment; aea7f9059 extends the north-star snapshot literal with after; db71426be rewrites the fragment's open item as the closed measure.\nCALL_SITES: reckon/mcp_edit_plan.py:1429, reckon/mcp.py:3133, reckon/roadmap.py:1082, reckon/roadmap.py:1342, reckon/roadmap.py:3405\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_store.py:2376 adds after to _PLAN_SET_TOP so the whole-list set lands, and reckon/_schema.py:1555 applies the shared plan ref grammar to it, refusing a malformed ref by field and ref name, which is the goal exactly.\nSCORE evidence: 15\nJUSTIFICATION evidence: the named gate ran and its result is recorded \u2014 test_logs names head-arm-2.log (98 passed, EXIT=0) and base-arm.log (4 failed, EXIT=1) \u2014 but the reviewed manifest carries neither baseline_suite nor after_suite (both null in its classified record), so the review contract's own reader at reckon/crew/review.py:2494-2499 reports the added-failure count unmeasured and the done_when's ruff-clean arm is claimed with no log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the 6c67ef89d..db71426be diff (reckon/_store.py, tests/test_after_is_settable.py, tests/test_north_star_write.py, skills/reckon-review/references/links.md, the landing fragment) is inside the declared fence as extended, and the change carries nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the regression \u2014 after removed from _PLAN_SET_TOP with the new suite in place \u2014 reddens the four cases in tests/test_after_is_settable.py (base-arm.log, 4 failed, EXIT=1) and adds tests/test_skill_contracts.py::test_every_documented_op_object_is_supported_by_the_store (negative-control.log, 5 failed, EXIT=1), so each added assertion names the condition that fails it; the read-back equalities at tests/test_after_is_settable.py:153,164,174 compare against the same ref literals the test passed in, the guard that fails the regression is the result[\"ok\"] is True side at lines 149, 163 and 173, and the refusal assertion at 183 \u2014 which the base arm is the demonstration of\nSCORE fit: 18\nJUSTIFICATION fit: the production change is the one-line frozenset addition at reckon/_store.py:2376 beside depends_on, blocks and informs, and the new module tests/test_after_is_settable.py is named by what it measures with no plan or ticket identifier in source.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the owner of the capability \u2014 reckon/_store.py:2376 _PLAN_SET_TOP together with the shared grammar at reckon/_schema.py:1555 \u2014 rather than forking it, and the test reuses tests/mcp_family_reload.reload_mcp_family; a search over reckon/ and tests/ found no other settable-plan-field owner and no shared mounts fixture (91 test modules set RECKON_MOUNTS_PATH inline).\nFINDING docs/evidence/fragments/a-project-reads-as-one-picture/after-is-settable.html:14 follow-on: the landing record's plan-verdict meta reads content=\"blocked\" while the record's own text says nothing is left open on the measure and the gate is green, so a reader browsing the evidence reads a completed node as blocked; nothing validates the value (reckon/evidence.py:417 writes pass/qualified/fail), so the contradiction survives.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T113026513475-after-is-settable/manifest.md:12 follow-on: the manifest names its arm logs only under test_logs and carries no baseline_suite or after_suite field, so the review contract's own reader (reckon/crew/review.py:2494-2499) can only report the added-failure count as unmeasured; every review of this run must fall back to parsing the two logs by hand, and the structured arm record the promotion suite-delta check reads is absent.",
+  "review_run_id": "r-20261021T131338489380-review-of-after-is-settable-db71426be438",
+  "reviewed_base_sha": "6c67ef89d3ab6ab56e3829b7b0f008ef5cd31785",
+  "reviewed_head_sha": "db71426be4387ee4e4d0bda4e2c892900e41afdc",
+  "reviewed_run_id": "r-20261021T115132248521-after-is-settable",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T13:44:15.623646+00:00",
+  "total": 110
+}
