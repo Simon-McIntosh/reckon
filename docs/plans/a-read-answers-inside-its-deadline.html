@@ -26,7 +26,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="362">
+<meta name="plan-version" content="363">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -1138,6 +1138,9 @@
 </div>
 <div class="r-comment" data-section="s45" data-id="c-run-r-20261021T075820529129-review-of-a-warm-ledger-load-decodes-once-70d7ad6c726a" data-who="reckon-build" data-when="2026-10-21T08:28:23.405Z">
     <div class="r-comment-body"><p>none; this node writes a review record, not a plan change, and its verdicts land on the reviewed run's ledger row through the review store</p></div>
+</div>
+<div class="r-comment" data-section="s45" data-id="c-run-r-20261021T063006245045-a-warm-ledger-load-decodes-once" data-who="reckon-build" data-when="2026-10-21T10:06:28Z">
+    <div class="r-comment-body"><p>ledger.load decodes each stored payload once per process, keyed on the index&#x27;s own per-record stamp and the aggregate&#x27;s stamp, and hands every caller its own copy of the payload&#x27;s containers; a second load over an unchanged index decodes 0 payloads (first load 8), a changed run file re-decodes exactly 1, and a caller that mutates a nested list or mapping cannot reach the next read</p></div>
 </div>
 <div class="r-comment" data-section="s46" data-id="c-run-r-20261021T073421033803-review-of-a-warm-read-revalidates-once-0f04bf6de4d8" data-who="reckon-build" data-when="2026-10-21T07:55:08.409Z">
     <div class="r-comment-body"><p>landing: review of r-20261021T063338435157-a-warm-read-revalidates-once at 0f04bf6de4d8 against 22e519727493 — parsed record scores all six dimensions (goal_fidelity 18, evidence 13, scope_discipline 19, durability 18, fit 18, reuse 19), added_failure_count 0 (base and head both fail only test_every_module_fits_a_worker_window), one follow-on finding: §46's fleet-node timing/profile clause is unmeasured.</p></div>
