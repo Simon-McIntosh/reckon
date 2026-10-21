@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="docs-project" content="reckon">
+<meta name="plan-slug" content="a-coordinator-can-clear-its-own-duties">
+<meta name="reckon-type" content="plan">
+<title>a-coordinator-can-clear-its-own-duties</title>
+<link rel="stylesheet" href="/_shared/foundation.css">
+<link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-title" content="A Coordinator Can Clear Its Own Duties">
+<meta name="plan-summary" content="A review owed is never refused by its own queue cap, a duty follows the run&#x27;s current head, and a queued run keeps one id.">
+<meta name="plan-status" content="active">
+<meta name="plan-roi" content="high">
+<meta name="plan-sprint" content="S26">
+<meta name="plan-effort-hours" content="6.0">
+<meta name="plan-after" content="work-is-checked-against-its-domain#s2">
+<meta name="plan-capability-version" content="1.0">
+<meta name="plan-capability-class" content="orchestrator">
+<meta name="plan-capability-reasoning" content="deep">
+<meta name="plan-capability-verification" content="strict">
+<meta name="plan-version" content="2">
+<meta name="plan-modified" content="2026-10-21">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+</head>
+<body>
+<main class="plan-doc">
+
+
+<h2 id="s1">§1 — Why: the surface holds a coordinator to duties it will not let it clear</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section>
+<p>Measured on 2026-10-21 by one reckon coordinator running five plans through about twenty runs. Each item cost a hand step that the obligations hook or the monitor then reported as the coordinator's to clear.</p><ul><li><strong>The stop hook demands a review the queue cap refuses.</strong> Three times (moved-checkout-serves-every-call at 16:40Z, a-finishing-write-offers-its-close at 16:56Z, review-waits-for-its-repair at 19:36Z) the hook blocked the turn with <code>review-missing</code> and printed the dispatch command, and that exact command returned <code>queue-full</code>: the session already held 2 queued runs, at its cap of 2. Each was cleared only by a hand <code>crew ack</code>.</li><li><strong>A queued review waits behind implementation.</strong> The session's queue held an implementation node queued at 16:08Z ahead of a review queued at 16:33Z. With the session's share at 0 slots, the review that unblocks a landing waited behind new work for about half an hour, and no verb reorders a session's queue.</li><li><strong>An obligation stays on the head a resume replaced.</strong> After <code>crew resume --reopen</code> of a-newer-flight-key-is-ignored-at-load (16:43Z) and the-critical-path-runs-through-sections (17:08Z), and after plain resumes of three more runs, the hook kept listing <code>review-missing</code> and <code>promotable-stale</code> for the replaced heads. They were acknowledged by hand six times.</li><li><strong>The review reflex races the reopen.</strong> The reflex queued a review of the-critical-path-runs-through-sections at <code>daf10d2</code> at 17:07Z; the coordinator reopened the run at 17:08Z and discarded the queued review by hand, since it would have scored a head being replaced.</li><li><strong>A queued run changes its id while it waits.</strong> the-critical-path-runs-through-sections was dispatched as <code>…160638960523</code> and launched as <code>…161245050192</code>; a-brief-carries-its-domain-rules went through <code>…160852144811</code>, <code>…161828762522</code> and <code>…170216319822</code> and launched as <code>…170434451667</code>; a-regenerated-path-is-charged-as-written went from <code>…170639960137</code> to <code>…173243033733</code>. The monitor printed each retired id as <code>dropped</code>, and <code>crew discard</code> on the id the dispatch returned failed with <code>no live run</code>.</li></ul>
+
+<h2 id="s2">§2 — A review is never refused by its session&#x27;s queue cap, and launches before implementation</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p>A review of a delivered run is what lets that run land, so it is the last dispatch a cap should refuse. Reviews are exempt from the per-session queue cap, and among one session's queued runs a review launches before an implementation node queued earlier. The cap still bounds implementation.</p><p><strong>Done when:</strong> a fixture session holding its cap of queued implementation nodes dispatches a review and gets it queued, not <code>queue-full</code>; with one slot free, that review launches before the earlier implementation nodes; and a further implementation dispatch is still refused <code>queue-full</code>, which is the control. On the base commit the review is refused <code>queue-full</code>, so the test fails there.</p>
+
+<h2 id="s3">§3 — An obligation follows the run&#x27;s current head</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p>A resume replaces the head a review or a promotion would read. From the moment a complete run is resumed until it delivers again, its <code>review-missing</code> and <code>promotable-stale</code> duties for the prior head are withdrawn, and a review queued for that head is withdrawn rather than launched, recorded as superseded by the resume. When the run delivers again, the duties return for the new head.</p><p><strong>Done when:</strong> a fixture complete run owing a review is resumed and its obligations list no <code>review-missing</code> or <code>promotable-stale</code> for the old head; a review queued before the resume is withdrawn and recorded as superseded; after the run delivers a new head, <code>review-missing</code> names the new head. A run that is not resumed keeps its duties, which is the control. On the base commit the old duties persist, so the test fails there.</p>
+
+<h2 id="s4">§4 — A queued run keeps one id from dispatch to launch</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p>The id a dispatch returns is the one a coordinator records, cites and later acts on. Admission retries and the launch reuse it rather than minting a new one, so <code>crew observe</code>, <code>crew discard</code> and the ledger all answer for the id the dispatch printed, and the monitor never reports a run that launched as dropped.</p><p><strong>Done when:</strong> a fixture dispatch that is queued, retried by admission twice and then launched carries the same run id throughout; <code>crew discard</code> on that id while queued succeeds; the watch stream carries no <code>dropped</code> transition for it. On the base commit the launched run has a different id, so the test fails there.</p>
+
+<section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-accd-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-21" data-recommends-skill="/reckon-build a-coordinator-can-clear-its-own-duties §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §2 to §4</h4>
+    <div class="r-fu-body">Filed from one coordinator's measured session. §2 and §4 are independent; §3 follows work-is-checked-against-its-domain §2, which already reads review_lifecycle for the review reflex.</div>
+    <pre class="r-fu-prompt">/reckon-build a-coordinator-can-clear-its-own-duties §2</pre>
+    </article>
+</section>
+</main>
+</body>
+</html>
