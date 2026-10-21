@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="The repair dispatch reads the figure review">
+  <meta name="plan-summary" content="dispatch_repair_for_run read a run's stored review once, from which it decided whether any finding was raised, whether any of them blocked, and which paths the round's scope grants. The composer folded the figure review in, but the reflex returned before reaching it whenever the text review carried no finding, so a clean text review hid a blocking figure finding. The reflex now merges the run's figure review at the same head into the record once, where it reads the stored review, so all three readings see the figure findings.">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-10-21">
+  <meta name="plan-verdict" content="passed">
+  <title>The repair dispatch reads the figure review | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The repair dispatch reads the figure review</h1>
+
+    <section id="the-repair-dispatch-reads-the-figure-review-defect">
+      <h2>The defect</h2>
+      <p>A run that drew a figure carries two stored reviews at one head: its
+        text review and its figure review under the figure rubric.
+        <code>dispatch_repair_for_run</code> (<code>reckon/crew/recovery_repair_dispatch.py</code>)
+        read the stored review through <code>_stored_review</code>, which selects
+        the text record, and took three readings from it — whether any finding
+        was raised, whether any of them blocks, and which paths the round's scope
+        grants. Its composer,
+        <code>repair.compose_repair_for_run</code>, folds the figure review in,
+        but the reflex returned <em>before</em> reaching the composer whenever
+        the text review carried no finding. So a clean text review hid an
+        undisposed blocking figure finding: the round was never composed and the
+        figure defect waited for a coordinator.</p>
+      <p>Reproduced before the repair: the gate's first case, a blocking figure
+        finding behind a clean text review, got
+        <code>"the stored review carries no finding, so composes no repair"</code>
+        — 2 failed, <code>EXIT=1</code>
+        (<code>logs/repro-clean-text-figure-finding.log</code>). The other two
+        cases passed unchanged at that revision, which is the positive control
+        that the harness drives the real reflex path.</p>
+    </section>
+
+    <section id="the-repair-dispatch-reads-the-figure-review-change">
+      <h2>The change</h2>
+      <p>The reflex merges the run's figure review at the same head into the
+        record <strong>once</strong>, immediately after it reads and completeness-checks
+        the stored review and before any of the three readings that decide the
+        round:</p>
+      <pre><code>review = repair_module.review_with_figure(review)
+findings = repair_module.review_findings(review)</code></pre>
+      <p>Merging later would leave the blocking check and the scope deciding over
+        the text-only list and route the round to decline-only, which is exactly
+        what <code>&sect;23</code> warns of: changing the first check alone still
+        declines. The merged record keeps the text record's identity fields, so
+        the round stays keyed to the text review's run and head; and
+        <code>review_with_figure</code> re-keys the figure record's dispositions
+        onto the appended positions, so a figure finding already disposed is not
+        repaired twice.</p>
+    </section>
+
+    <section id="the-repair-dispatch-reads-the-figure-review-evidence">
+      <h2>Evidence</h2>
+      <p>Gate: <code>tests/test_a_clean_text_review_still_repairs_a_figure_finding.py</code>
+        passes — 4 passed, <code>EXIT=0</code>
+        (<code>logs/gate-clean-text-figure-finding.log</code>): a blocking figure
+        finding behind a clean text review resumes the run, the advice naming the
+        figure and the finding and the scope carrying that finding; the same
+        finding once disposed on its own record resumes nothing and records
+        <code>decline-only</code>; two clean reviews decline with today's reason
+        verbatim; a text blocking finding gets the round it got before.</p>
+      <p>Negative control — the merged record swapped in only for the first
+        findings check and not for the blocking scope: the first case is declined
+        and the second fails too, 2 failed, <code>EXIT=1</code>
+        (<code>logs/negative-control-merged-review-first-check-only.log</code>).</p>
+      <p>Focused population at head — the new file plus the sibling
+        repair/reflex/figure test modules that exercise
+        <code>dispatch_repair_for_run</code> and the composer: 56 passed,
+        <code>EXIT=0</code>
+        (<code>logs/gate-repair-reflex-population.log</code>). <code>ruff check</code>
+        and <code>ruff format --check</code> add no finding on the changed paths:
+        the only remaining check is a pre-existing <code>ISC004</code> at
+        line 446, present identically in the base blob.</p>
+    </section>
+  </main>
+</body>
+</html>
