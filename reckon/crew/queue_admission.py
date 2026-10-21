@@ -1026,6 +1026,9 @@ def admit_once(
     The pass reads the fleet gate, then the queued and live pointers. It ranks
     the queued entries by current lane occupancy and admits each in turn while
     the lane grants its session room. A held or paused gate launches nothing.
+    A queued pointer whose arrival time cannot be read is left out of the
+    ordering and named in a verdict, so it costs its own place rather than
+    ending the pass for every other request on the lane.
     ``lock`` serialises the pass against a concurrent drainer so one queued run
     launches once; a caller already holding the admit lock passes ``lock=False``.
     """
@@ -1054,10 +1057,37 @@ def admit_once(
             queued = [
                 pointer for pointer in queued if str(pointer.get("backend")) == lane
             ]
-        order = queue_order.admission_order(queued, live, now=moment)
+        # A queued pointer whose arrival time cannot be read has no place in the
+        # ordering, and the ordering refuses such a pointer outright. That
+        # refusal belongs to the pointer, not to the pass: left to propagate, one
+        # such record — a fixture, or a hand-edited record in the crew home —
+        # ends the pass and the service with it, so no queued request on the lane
+        # launches for any session. The pointer is left out of the ordering and
+        # named in a verdict instead, and every other request is admitted in the
+        # order the pass would otherwise have given them.
+        placeable = [
+            pointer
+            for pointer in queued
+            if parse_utc(pointer.get("queued_at")) is not None
+        ]
+        unplaceable = [
+            pointer for pointer in queued if parse_utc(pointer.get("queued_at")) is None
+        ]
+        order = queue_order.admission_order(placeable, live, now=moment)
         remaining: dict[str, float | None] = {}
         allowance_sources: dict[str, str] = {}
         verdicts: list[dict[str, Any]] = result["verdicts"]
+        for pointer in unplaceable:
+            allowance, source = _session_allowance_read(pointer, config_for=config_for)
+            verdicts.append(
+                _verdict_row(
+                    pointer,
+                    allowance=allowance,
+                    allowance_source=source,
+                    verdict="unplaced",
+                    detail="the queued pointer carries no readable queued_at",
+                )
+            )
         # The pass's own claim resolutions, so every overlap comparison reads a
         # request's resolved claims rather than resolving them again. A fresh
         # cache per pass means a request whose write paths or mounts change is
