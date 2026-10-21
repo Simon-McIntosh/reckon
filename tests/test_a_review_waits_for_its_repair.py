@@ -24,6 +24,8 @@ from pathlib import Path
 
 import pytest
 
+from reckon.crew import findings as findings_module
+from reckon.crew import repair as repair_module
 from reckon.crew import review as review_module
 from reckon.crew import review_dispositions, runs
 from reckon.crew import review_lifecycle as lifecycle_module
@@ -234,6 +236,26 @@ def _drive(
             recovery.unwatch(PROJECT)
 
 
+def _drive_repair(
+    world: dict, record: dict, monkeypatch: pytest.MonkeyPatch
+) -> tuple[dict, list[str]]:
+    """Run the real repair reflex for one run, capturing the resume it asks for."""
+    from reckon.crew import recovery, resumption
+
+    resumed: list[str] = []
+
+    def capture_resume(_run_id, _record, *, config=None, launcher=None, advice=""):
+        resumed.append(advice)
+        return {"pid": os.getpid(), "turn": os.getpid(), "log_path": "resume-1.jsonl"}
+
+    monkeypatch.setattr(resumption, "_resume", capture_resume)
+    with runs.follower_claim(PROJECT, SESSION, delivery="stream"):
+        report = recovery.dispatch_repair_for_run(
+            record, config=CONFIG, launcher=lambda *a, **k: os.getpid()
+        )
+    return report, resumed
+
+
 def _live_run_ids() -> list[str]:
     return [
         str(pointer.get("run_id") or "") for pointer in runs.list_live(project=PROJECT)
@@ -307,3 +329,59 @@ def test_the_refusal_lifts_when_the_review_is_no_longer_open(
 
     assert report.get("refused") is not True, report.get("reason")
     assert report["dispatched"] is True, report.get("reason")
+
+
+@pytest.mark.arms_watch_producer
+def test_the_repair_round_folds_its_findings_and_the_review_proceeds(
+    world: dict, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A composed repair round answers its findings, so the re-review proceeds.
+
+    The reflex composing a round for a review's blocking findings and the guard
+    refusing a round over an undisposed finding are two halves of one loop: if
+    the repair records nothing, the guard refuses the review of the very head
+    the repair produced, and the automatic loop stalls until a coordinator
+    disposes the findings by hand.
+    """
+    reviewed = world["reviewed"]
+    _write_run(world, run_id="r-repaired", head=reviewed)
+    _store_review("r-repaired", base=reviewed, head=reviewed, finding=FINDING)
+
+    # While the round is in flight nothing is folded: the finding is the work
+    # this round was composed for, and folding it now would take the round's own
+    # retry away from it.
+    in_flight, resumed = _drive_repair(
+        world, runs.read_pointer("r-repaired"), monkeypatch
+    )
+
+    assert in_flight["resumed"] is True, in_flight.get("reason")
+    assert not in_flight.get("folded_findings"), in_flight
+    assert len(resumed) == 1, resumed
+
+    # The round lands the head the next review will read, and the reflex then
+    # reads the stored review as describing a revision the run has moved past:
+    # the findings are folded into the round that answered them.
+    _commit(world["repo"], {"pkg/mod.py": "VALUE = 3\n"}, "fix: answer the finding")
+
+    landed, _ = _drive_repair(world, runs.read_pointer("r-repaired"), monkeypatch)
+
+    assert landed["folded_findings"] == [0], landed
+    _path, stored = review_module.stored_record(PROJECT, "r-repaired")
+    assert stored is not None
+    _index, _finding, disposition = repair_module.blocking_finding_dispositions(stored)[
+        0
+    ]
+    assert disposition == "folded", disposition
+    # The fold names the round, through the node id the composer minted for it.
+    assert findings_module.finding_disposition(stored, 0).startswith(
+        "folded:repair-of-r-repaired-"
+    ), findings_module.finding_disposition(stored, 0)
+    captured: dict = {}
+
+    review_report = _drive(
+        world, runs.read_pointer("r-repaired"), monkeypatch, captured
+    )
+
+    assert review_report.get("refused") is not True, review_report.get("reason")
+    assert review_report["dispatched"] is True, review_report.get("reason")
+    assert captured.get("worker"), captured
