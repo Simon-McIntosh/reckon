@@ -16,7 +16,6 @@ from reckon.crew_dispatch_commands import (
     _lane_paused_detail,
     _resolved_flight,
     _resolved_gc_repo,
-    _resolved_session,
     crew,
 )
 
@@ -170,96 +169,6 @@ def crew_placement(ensure, replace_job, session, project, pretty):
         },
         pretty,
     )
-
-
-@crew.command(name="list")
-@click.option("--project", default=None, help="Return runs for one project only.")
-@click.option("--phase", default=None, help="Return runs in one phase only.")
-@click.option(
-    "--session",
-    default=None,
-    help="Mark rows dispatched by this session as mine, and report its follower.",
-)
-@click.option("--mine", is_flag=True, help="Return only rows this --session owns.")
-@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_list(project, phase, session, mine, pretty):
-    """List live run pointers, not roster members or session-closure state.
-
-    Every row names its owning session and, when one is supplied, whether that
-    session owns it. The first question a recovering orchestrator asks is which
-    of these runs are its own, and a node name is not evidence of ownership.
-    """
-    from reckon.crew.recovery import agent_label
-    from reckon.crew.runs import project_watch_visibility
-
-    if mine and session is None:
-        raise click.ClickException("--mine needs --session to say whose runs to keep.")
-
-    crew_module, _ = _crew_modules()
-    project_records = crew_module.list_live(project=project)
-    runs = []
-    for record in project_records:
-        if phase is not None and str(record.get("phase") or "") != phase:
-            continue
-        owner = str(record.get("session") or "") or None
-        if mine and owner != session:
-            continue
-        classified = crew_module.classify_pointer(record)
-        runs.append(
-            {
-                "run_id": record.get("run_id"),
-                "node": (record.get("node") or {}).get("id"),
-                "project": record.get("project"),
-                "plan": (record.get("node") or {}).get("plan"),
-                "session": owner,
-                # The worker's own session, resolved rather than passed
-                # through: a listing is exactly where a reader decides a run is
-                # unresumable, and the pointer field is null until something
-                # folds the stream in.
-                **_resolved_session(str(record.get("run_id") or ""), record),
-                "member": record.get("member"),
-                "agent": agent_label(record) or None,
-                "mine": None if session is None else owner == session,
-                "backend": record.get("backend"),
-                "launch": record.get("launch"),
-                "phase": record.get("phase"),
-                "worktree": record.get("worktree"),
-                "manifest_path": record.get("manifest_path"),
-                "classification": classified.get("classification"),
-                "process_alive": classified.get("process_alive"),
-                "elapsed_seconds": classified.get("elapsed_seconds"),
-                "log_age_seconds": classified.get("log_age_seconds"),
-                "budget_seconds": classified.get("budget_seconds"),
-                "budget_overrun": classified.get("budget_overrun"),
-                # The token allowance and the separately named wall-clock
-                # ceiling are distinct: the budget verdict is denominated in
-                # generated tokens when a token budget is set, while
-                # ceiling_overrun catches a hang under the ceiling's own name.
-                "budget_tokens": classified.get("budget_tokens"),
-                "generated_tokens": classified.get("generated_tokens"),
-                "budget_overrun_tokens": classified.get("budget_overrun_tokens"),
-                "hang_ceiling_seconds": classified.get("hang_ceiling_seconds"),
-                "ceiling_overrun": classified.get("ceiling_overrun"),
-                "manifest_status": classified.get("manifest_status"),
-                "next_action": classified.get("next_action"),
-            }
-        )
-    payload = {"runs": runs}
-    if project is not None:
-        payload["watcher"] = project_watch_visibility(project, session=session)
-    else:
-        projects = sorted(
-            {
-                str(record.get("project") or "")
-                for record in project_records
-                if record.get("project")
-            }
-        )
-        payload["watchers"] = [
-            project_watch_visibility(project_name, session=session)
-            for project_name in projects
-        ]
-    _emit_crew_result(payload, pretty)
 
 
 @crew.command(name="directory")
@@ -2778,6 +2687,9 @@ def crew_member_list(project, checkout_path, pretty):
 
 # Preserve the CLI re-export while the retired names resolve through the crew
 # group's tombstone lookup.
+crew_list = tombstone_command("list")
+
+
 crew_ledger = tombstone_command("ledger")
 
 

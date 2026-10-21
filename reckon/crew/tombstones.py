@@ -208,6 +208,16 @@ TOMBSTONES: tuple[Tombstone, ...] = (
         detail="a run moves backend through `crew resume --backend`",
     ),
     Tombstone(
+        retired="list",
+        successor="crew view live",
+        argv=("crew", "view"),
+        positional=("live",),
+        detail=(
+            "live run pointers are read by `crew view live`; its --project, "
+            "--phase, --session and --mine options are the listing's own"
+        ),
+    ),
+    Tombstone(
         retired="ledger",
         successor="crew view ledger",
         argv=("crew", "view"),

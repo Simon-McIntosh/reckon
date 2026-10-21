@@ -52,6 +52,7 @@ _DISPATCH_IDENTITY = ("RECKON_RUN_ID", "RECKON_MANIFEST", "RECKON_ATTEMPT_STARTE
 #: types. A row pointed at any other view fails :func:`test_each_retired_verb_names_its_view`.
 SUCCESSORS = {
     "ledger": "crew view ledger",
+    "list": "crew view live",
     "velocity": "crew view velocity",
 }
 
@@ -325,6 +326,45 @@ def test_the_invocation_a_tombstone_prints_runs_as_written(checkout: Path) -> No
         assert followed.exit_code == 0, f"{invocation}: {followed.output}"
 
 
+def test_each_listing_filter_reaches_an_invocation_the_view_accepts() -> None:
+    """The listing's arrow resolves for every option the retired verb took.
+
+    A caller moving off the listing carries ``--project``, ``--phase``,
+    ``--session`` and ``--mine`` across, and the live view defines all four, so
+    the invocation the tombstone prints is one the successor accepts. Each call
+    is answered by the tombstone, the printed invocation is read back, and that
+    invocation is then run: exit 2 is the usage error an option the successor
+    does not define produces, so it is the code this case holds out. The call
+    that carries no filter at all is read too, because a bare ``crew list`` was
+    the widest answer the verb gave.
+    """
+    runner = CliRunner()
+    calls = {
+        "bare": ["crew", "list"],
+        "project": ["crew", "list", "--project", PROJECT],
+        "phase": ["crew", "list", "--project", PROJECT, "--phase", "working"],
+        "session": ["crew", "list", "--project", PROJECT, "--session", "keeper"],
+        "mine": [
+            "crew",
+            "list",
+            "--project",
+            PROJECT,
+            "--session",
+            "keeper",
+            "--mine",
+        ],
+    }
+    for label, arguments in calls.items():
+        result = runner.invoke(cli_main, arguments)
+        assert result.exit_code == TOMBSTONE_EXIT_CODE, result.output
+        payload = json.loads(result.output)
+        assert payload["successor"] == "crew view live", payload["successor"]
+        invocation = " ".join(("reckon", "crew", "view", "live", *arguments[2:]))
+        assert payload["invocation"] == invocation, f"{label}: {payload['invocation']}"
+        followed = runner.invoke(cli_main, shlex.split(invocation)[1:])
+        assert followed.exit_code != 2, f"{invocation}: {followed.output}"
+
+
 def test_no_reckon_source_names_a_retired_read_as_a_command() -> None:
     """No string under ``reckon/`` still sends a caller to a retired verb.
 
@@ -373,6 +413,10 @@ LIVE_POINTERS = (
         "project": PROJECT,
         "session": "peer",
         "phase": "queued",
+        # Every queued pointer dispatch writes carries the instant it joined
+        # the queue, and the live view ranks the queued ones by it, so a
+        # fixture without one is not a pointer the code reads.
+        "queued_at": "2026-10-13T00:00:00+00:00",
     },
     {
         "run_id": "r-live-elsewhere",

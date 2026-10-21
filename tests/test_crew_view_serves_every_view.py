@@ -154,7 +154,7 @@ def fleet(tmp_path: Path, isolated_reckon_home: Path) -> Path:
 
 
 def _live_pointer(run_id: str, *, session: str, phase: str) -> dict:
-    """One live pointer in the fields both `crew list` and `live` read."""
+    """One live pointer in the fields both the listing and `live` read."""
     return {
         "run_id": run_id,
         "project": PROJECT,
@@ -193,39 +193,31 @@ def live_fleet(fleet: Path, monkeypatch) -> Path:
 
 
 def test_the_live_view_answers_the_list_filters(live_fleet: Path) -> None:
-    """The live view keeps, for `--phase` and `--mine`, the rows `crew list` keeps.
+    """The live view keeps, for `--phase` and `--mine`, the rows the listing kept.
 
-    The two surfaces answer the flags identically, and both keep the rows the
-    pointers' own phase and session select — so a caller moving off the retired
-    verb keeps the rows it kept before, and a filter dropped from either surface
-    answers a different set rather than the same one.
+    A caller moving off the retired listing keeps the rows it kept before, so
+    the expected sets are the fixture's own pointers named by the phase and the
+    session they carry. Both surfaces are compared against the same literals,
+    and a filter dropped from either answers a different set rather than the
+    same one.
     """
-    listed_phase = CliRunner().invoke(
-        main, ["crew", "list", "--project", PROJECT, "--phase", "working"]
-    )
-    assert listed_phase.exit_code == 0, listed_phase.output
-    expected_phase = [row["run_id"] for row in json.loads(listed_phase.output)["runs"]]
+    expected_phase = {"run-mine-working", "run-peer-working"}
     phase_arguments = {**_BASE_ARGUMENTS, "phase": "working"}
     for label, served in (
         ("command line", _served_by_the_cli),
         ("crew tool", _served_by_the_tool),
     ):
         rows = served("live", phase_arguments)["runs"]
-        assert [row["run_id"] for row in rows] == expected_phase, f"phase on {label}"
+        assert {row["run_id"] for row in rows} == expected_phase, f"phase on {label}"
 
-    listed_mine = CliRunner().invoke(
-        main,
-        ["crew", "list", "--project", PROJECT, "--session", LIVE_SESSION, "--mine"],
-    )
-    assert listed_mine.exit_code == 0, listed_mine.output
-    expected_mine = [row["run_id"] for row in json.loads(listed_mine.output)["runs"]]
+    expected_mine = {"run-mine-working", "run-mine-dispatch"}
     mine_arguments = {**_BASE_ARGUMENTS, "session": LIVE_SESSION, "mine": True}
     for label, served in (
         ("command line", _served_by_the_cli),
         ("crew tool", _served_by_the_tool),
     ):
         rows = served("live", mine_arguments)["runs"]
-        assert [row["run_id"] for row in rows] == expected_mine, f"mine on {label}"
+        assert {row["run_id"] for row in rows} == expected_mine, f"mine on {label}"
 
     # The filters must actually narrow: an unfiltered read is wider, so a filter
     # dropped from the view would answer more rows and the cases above would

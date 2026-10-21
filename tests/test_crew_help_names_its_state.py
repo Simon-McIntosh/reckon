@@ -31,7 +31,6 @@ STATE_PHRASES: dict[CommandPath, str] = {
     ("gate",): "shared crew gate state",
     ("host",): "one live session's crew followers",
     ("gc",): "integrated state makes them disposable",
-    ("list",): "live run pointers",
     ("member", "add"): "missing roster member",
     ("member", "list"): "roster members and reusable sessions",
     ("merge",): "a reviewed head on the primary branch",
@@ -60,12 +59,10 @@ STATE_PHRASES: dict[CommandPath, str] = {
 }
 
 NEAR_NAMESAKE_DISTINCTIONS: dict[CommandPath, str] = {
-    ("list",): "not roster members",
     ("member", "list"): "not live run pointers",
 }
 
 POINTER_STATE_READS: dict[CommandPath, str] = {
-    ("list",): "List live run pointers",
     ("drain",): "Report the session-closure count",
     ("recover",): "Classify live pointers",
 }
@@ -143,10 +140,16 @@ def test_the_retired_review_plan_alias_is_not_reachable() -> None:
     assert result.exit_code != 0, result.output
 
 
-def test_the_two_one_word_near_namesakes_state_their_distinction() -> None:
+def test_the_one_word_near_namesake_states_its_distinction() -> None:
+    """A one-word verb that reads like another names the other it is not.
+
+    The retired listing was one of the pair, so the surviving row is what keeps
+    this a check rather than a nothing: the roster listing still has to say it
+    is not the live run pointers the listing read.
+    """
     leaves = _leaf_commands(cli_module.crew)
 
-    assert len(NEAR_NAMESAKE_DISTINCTIONS) == 2
+    assert len(NEAR_NAMESAKE_DISTINCTIONS) == 1
     for path, distinction in NEAR_NAMESAKE_DISTINCTIONS.items():
         assert distinction in _first_help_line(leaves[path])
 

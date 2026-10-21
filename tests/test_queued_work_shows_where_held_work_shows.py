@@ -3,7 +3,7 @@
 A request waiting for a lane slot is not missing work: its pointer exists, it
 is being waited on. These cases read one queued pointer from the same live
 pointer through every surface that reports held work — the follower's waiting
-count, the obligations view, the live view and the run list — and assert that a
+count, the obligations view and the live view — and assert that a
 request whose pointer is gone reads nowhere, which is the declared negative
 control.
 """
@@ -14,7 +14,6 @@ import json
 import subprocess
 from datetime import UTC, datetime, timedelta
 
-import pytest
 from click.testing import CliRunner
 
 PROJECT = "proj"
@@ -156,14 +155,6 @@ def _crew_view_rows():
     return json.loads(result.output)["runs"]
 
 
-def _crew_list_rows():
-    from reckon import cli
-
-    result = CliRunner().invoke(cli.main, ["crew", "list", "--project", PROJECT])
-    assert result.exit_code == 0, result.output
-    return json.loads(result.output)["runs"]
-
-
 def _row_for(rows, run_id):
     return next(row for row in rows if str(row.get("run_id") or "") == run_id)
 
@@ -197,23 +188,18 @@ def test_one_queued_run_reads_as_queued_on_every_surface(tmp_path, monkeypatch):
     assert _waiting_count().get("waiting", 0) == 0
     assert _obligation_items() == []
     assert _crew_view_rows() == []
-    assert _crew_list_rows() == []
 
 
-@pytest.mark.xfail(
-    reason=(
-        "reckon/crew_run_commands.py, where crew list composes its rows, is "
-        "claimed by another session's run cso-ledger-and-velocity-retire and "
-        "cannot carry the place yet; it needs the two keys added to its row "
-        "dict, read from queue_admission.queued_placements(project_records). "
-        "The change is named in the manifest's follow_ons."
-    ),
-    strict=False,
-)
-def test_crew_list_names_the_queued_runs_place(tmp_path, monkeypatch):
+def test_the_live_view_names_the_queued_runs_place(tmp_path, monkeypatch):
+    """The view a listing's callers moved to names where a held run sits.
+
+    ``position`` and ``rank`` are the two keys a reader decides with, and the
+    listing's successor carries both on its queued rows rather than making the
+    reader derive the place from the set of queued pointers.
+    """
     repository = _mounted_project(tmp_path, monkeypatch)
     _queue(repository, "r-queued-nine", queued_at=datetime.now(tz=UTC))
-    row = _row_for(_crew_list_rows(), "r-queued-nine")
+    row = _row_for(_crew_view_rows(), "r-queued-nine")
     assert (row.get("position"), row.get("rank")) == (1, 1)
 
 
