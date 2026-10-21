@@ -2451,6 +2451,15 @@ def dispatch(
                 )
                 record["session_harness"] = plan.dialect if reuse_session else None
                 plan = resolve_backend_placement(plan, backend, project, payload=record)
+                # The worker is handed the run's prompt file, not the plan, and
+                # the plan is where the prompt is composed: a lane that names
+                # its figures adds each figure's path to the text it carries.
+                # The file written above holds the prompt before that
+                # composition, so it is rewritten here from the composed text —
+                # the text every dialect carries, since every dialect takes its
+                # prompt on stdin. A fresh figure review on such a lane is then
+                # handed its image paths by the file it actually reads.
+                prompt_path.write_text(plan.stdin_text, encoding="utf-8")
             except (_backends.BackendError, flight.FlightConfigError, OSError) as exc:
                 raise CrewError(format_refusal("D22", str(exc))) from exc
             placement = flight.placement_for(backend)

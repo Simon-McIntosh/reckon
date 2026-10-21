@@ -138,8 +138,10 @@ WORKSPACE_WRITE = "workspace-write"
 WORKTREE_FULL = "worktree-full"
 
 # The input modality a lane declares when its harness receives an image. Named
-# once because the declaration is read in two places — the dialect that decides
-# how the path travels, and the review-lane selection that admits the lane.
+# once so the one reader, :func:`declares_image_input`, compares against a
+# single spelling: whether a lane is named its figures is decided here, and the
+# review-lane selection that admits the lane reads the same declaration through
+# reckon.flight, which owns the normalisation both share.
 IMAGE_MODALITY = "image"
 
 
@@ -2145,12 +2147,21 @@ def declares_image_input(backend: Mapping[str, Any]) -> bool:
     share one flag grammar and only the measured one may be handed a figure:
     keying on the dialect would declare the unmeasured lane beside it, and a
     review running on a lane that never receives the image answers from the
-    filename while reporting a verdict. Absence reads as no image input.
+    filename while reporting a verdict. Absence reads as no image input. The
+    declaration is normalised by reckon.flight, the same read the review-lane
+    selection makes, so a lane admitted to a figure review is a lane this
+    dispatch recognises as one to name its figures.
     """
-    declared = backend.get("input_modalities") or ()
-    if isinstance(declared, str):
-        declared = declared.split(",")
-    return IMAGE_MODALITY in {str(modality).strip().lower() for modality in declared}
+    from reckon.flight import normalise_input_modalities
+
+    return IMAGE_MODALITY in normalise_input_modalities(backend.get("input_modalities"))
+
+
+_FIGURE_LISTING_HEADING = (
+    "Figures attached to this node. Open each path below with your own Read "
+    "tool before you judge anything: a verdict formed without looking at "
+    "them is not a verdict."
+)
 
 
 def _prompt_naming_images(prompt: str, images: Sequence[str]) -> str:
@@ -2164,12 +2175,39 @@ def _prompt_naming_images(prompt: str, images: Sequence[str]) -> str:
     diff.
     """
     listing = "\n".join(f"- {path}" for path in images)
-    return (
-        f"{prompt}\n\n"
-        "Figures attached to this node. Open each path below with your own Read "
-        "tool before you judge anything: a verdict formed without looking at "
-        f"them is not a verdict.\n{listing}\n"
-    )
+    return f"{prompt}\n\n{_FIGURE_LISTING_HEADING}\n{listing}\n"
+
+
+def _prompt_without_figure_listing(prompt: str) -> str:
+    """Drop a figure listing the prompt already carries, keeping the rest.
+
+    The prompt handed to :func:`launch_plan` is not always a bare brief: a lane
+    change composes from the run's prompt file, which a fresh dispatch has
+    already written with a listing. Naming a second listing onto such a prompt
+    hands the worker the figures twice, while moving such a run to a lane that
+    names no figures would hand it a listing for figures that lane was never
+    given. Stripping here, on every lane and before the branch that decides
+    whether this lane is named its figures, leaves exactly one listing naming
+    the current figures on a lane that names them and none on a lane that does
+    not.
+
+    Only the heading and the paths under it come out: a prompt composed for an
+    earlier attempt may carry text appended after its listing, and cutting from
+    the heading to the end of the prompt would take that text — a restated time
+    fence among it — away from the worker.
+    """
+    head, separator, tail = prompt.partition(_FIGURE_LISTING_HEADING)
+    if not separator:
+        return prompt
+    lines = tail.split("\n")
+    index = 1 if lines and not lines[0] else 0
+    end = index
+    while end < len(lines) and lines[end].startswith("- "):
+        end += 1
+    remainder = "\n".join(lines[end:]).strip("\n")
+    if not remainder:
+        return head.rstrip()
+    return f"{head.rstrip()}\n\n{remainder}"
 
 
 def launch_plan(
@@ -2299,7 +2337,16 @@ def launch_plan(
     # dialect unchanged, so it still refuses by name rather than answering from
     # the filename. The paths are the run-local PNGs dispatch records, so a
     # fresh launch, a resume and a lane change all name the same files.
+    #
+    # The prompt may already carry a listing from an earlier composition — a
+    # lane change reads the run's prompt file, which a fresh dispatch wrote
+    # with one — so it is stripped first, on every lane and before the branch
+    # below: naming onto a listing already there would hand the worker the
+    # figures twice, and leaving one on a lane that names none would hand it
+    # figures it was never given. What follows then composes exactly one
+    # listing, naming the figures this launch actually carries.
     attached = tuple(str(image) for image in images)
+    prompt = _prompt_without_figure_listing(prompt)
     named_in_prompt = (
         bool(attached) and not dialect.images_on_argv and declares_image_input(backend)
     )

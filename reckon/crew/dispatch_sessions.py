@@ -1805,6 +1805,22 @@ def change_lane(
             )
         ),
     }
+    # The prompt this attempt launches with was composed for the attempt that
+    # already ended — the bare advice for a continued session, or the original
+    # prompt with its original fence for a fresh one — so restating the fence
+    # for the attempt now starting is what stops the worker reading the first
+    # attempt's deadline. It is restated here, before the plan is composed,
+    # because the composition appends what the launch adds to the prompt: a
+    # lane that names its figures appends them to the text the plan carries,
+    # and a fence restated at the file write instead would be appended to a
+    # prompt the file already holds without — the worker would read the
+    # figures, and no fence, or the fence and a second copy of the figures.
+    prompt = _restate_time_fence(
+        prompt,
+        record,
+        attempt_started_at=lane_change["changed_at"],
+        config=config,
+    )
     # An in-harness attempt is delegated, so its directive is the only place the
     # attempt identity can be carried: the harness exports this environment to
     # the task it spawns. Composed here so the preview and the persisted record
@@ -1912,18 +1928,13 @@ def change_lane(
         )
 
     directory.mkdir(parents=True, exist_ok=True)
-    # The lane-change prompt was composed for the attempt that already ended —
-    # the bare advice for a continued session, or the original prompt with its
-    # original fence for a fresh one — so restating the fence for the attempt now
-    # starting is what stops the worker reading the first attempt's deadline. The
-    # resume path does the same through resume_plan.
+    # The worker reads this file as its prompt, so it is written from the text
+    # the plan carries once the plan is composed — the restated fence above,
+    # plus whatever the composition added to it, which for a lane that names
+    # its figures is the listing of that run's figures. An in-harness attempt
+    # composes no plan and writes the prompt it holds uncomposed, as before.
     prompt_path.write_text(
-        _restate_time_fence(
-            prompt,
-            record,
-            attempt_started_at=lane_change["changed_at"],
-            config=config,
-        ),
+        target_plan.stdin_text if target_plan is not None else prompt,
         encoding="utf-8",
     )
     # The move relaunches a worker over the same manifest path, so a done word

@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+<head>
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="doc">
+</head>
+<body>
+<section id="the-prompt-file-carries-the-named-figures">
+<h2 id="the-prompt-file-carries-the-named-figures-landed">The prompt file a worker reads carries the figures launch_plan composed</h2>
+<p id="the-prompt-file-carries-the-named-figures-landing">
+A fresh dispatch and a lane change now write the run's prompt file from
+<code>plan.stdin_text</code>, the text <code>launch_plan</code> composes, which
+every dialect carries because every dialect takes its prompt on stdin. A lane
+that declares image input and has no flag to attach one is therefore named its
+figures in the file the worker opens, not only in a plan the worker never sees.
+<code>change_lane</code> restates the time fence on the prompt before composing
+rather than at the file write, so the composed text — and the file written from
+it — carries both the fence and the figures. An in-harness launch composes no
+plan and keeps writing the prompt it composed itself.
+</p>
+<p id="the-prompt-file-carries-the-named-figures-strip">
+<code>launch_plan</code> in <code>reckon/_backends.py</code> strips any figure
+listing the prompt it is handed already carries, on every lane and before the
+branch that decides whether this lane is named its figures. A lane change
+composes from the run's own prompt file, which a fresh dispatch has written with
+a listing, so the composition yields exactly one listing naming the current
+figures on a lane that names them and none on codex, whose figures ride
+<code>-i</code>. The strip removes the heading and the paths under it only:
+text a prompt carries after its listing, a restated time fence among it, stays.
+</p>
+<p id="the-prompt-file-carries-the-named-figures-declaration">
+<code>declares_image_input</code> in <code>reckon/_backends.py</code> reads a
+lane's <code>input_modalities</code> through
+<code>reckon.flight.normalise_input_modalities</code>, the one function
+<code>declared_input_modalities</code> also reads it through, which strips and
+case-folds each entry and reads a string declaration as a comma-separated list.
+The eligibility that admits a lane to a figure review and the naming that hands
+it the figure therefore cannot disagree.
+</p>
+<p id="the-prompt-file-carries-the-named-figures-measure">
+Measure: a two-figure dispatch on a clive lane writes a
+<code>prompt.txt</code> naming both PNG paths and the Read instruction, and the
+same node on codex writes a <code>prompt.txt</code> carrying the brief with no
+listing while both paths ride <code>-i</code>; a figureless dispatch and an
+in-harness dispatch write prompt files with no listing; a lane change between
+two such lanes writes its <code>lane-change-2-prompt.txt</code> naming each path
+exactly once and carrying the restated fence; a prompt that already carries a
+figure listing composes to exactly one listing naming the current figures; and
+over the declarations <code>[text, image]</code>, <code>[text]</code>,
+<code>[]</code>, nothing, <code>[IMAGE]</code>, <code>[" image "]</code> and
+<code>"text,image"</code> the two reads agree, the last three admitting an
+image. Gate: 130 passed, 4 failed over the seven test files that reach the four
+changed modules; the four are <code>test_crew_lane_change.py</code>'s
+<code>redispatch</code> cases, red before this change because that verb is
+tombstoned behind <code>crew resume --backend</code> and the file was not
+updated. The declared negative control writes the uncomposed prompt to the fresh
+dispatch's file again, and the fresh-dispatch naming test then fails (1 failed,
+9 passed) while every plan-level arm stays green.
+</p>
+</section>
+</body>
+</html>

@@ -6,6 +6,7 @@ import importlib
 import json
 import subprocess
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from click.testing import CliRunner
@@ -387,3 +388,165 @@ def test_both_commands_call_the_shared_lane_change_operation(monkeypatch) -> Non
 
     assert resume.exit_code == redispatch.exit_code == 0
     assert calls == [("r-shared", "beta"), ("r-shared", "beta")]
+
+
+# ── the figures a lane change names in the file its worker reads ────────────
+
+FIRST_IMAGE = "docs/figures/plan-b/node-b/first.svg"
+SECOND_IMAGE = "docs/figures/plan-b/node-b/second.svg"
+
+# The heading a prompt carries when its lane is named its figures. Spelled here
+# rather than imported so the count reads the text a worker is handed.
+FIGURE_LISTING_MARKER = "Figures attached to this node"
+
+
+def _clive_lane(command: Path) -> dict:
+    """A lane that declares image input and carries no flag to attach one."""
+    return {
+        "launch": "cli",
+        "command": str(command),
+        "sandbox": "worktree-full",
+        "time_budget": "25m",
+        "session_reuse": True,
+        "input_modalities": ["text", "image"],
+    }
+
+
+def _stopped_figure_run(tmp_path: Path, *, lane: str) -> tuple[str, Path]:
+    """A clive run as a lane change finds it: ended on this host, its prompt
+    file carrying the listing a fresh dispatch wrote, its figures on the node."""
+    run_id = f"r-lane-figures-{lane}"
+    directory = crew.run_dir(run_id)
+    directory.mkdir(parents=True, exist_ok=True)
+    tree = tmp_path / f"{run_id}-tree"
+    tree.mkdir(parents=True, exist_ok=True)
+    manifest = directory / "manifest.md"
+    manifest.write_text(f"node: {run_id}\nstatus: waiting\n", encoding="utf-8")
+    prompt_path = directory / "prompt.txt"
+    prompt_path.write_text(
+        "carry the two figures through the move\n\n"
+        f"{FIGURE_LISTING_MARKER}. Open each path below with your own Read tool "
+        "before you judge anything: a verdict formed without looking at them is "
+        f"not a verdict.\n- {FIRST_IMAGE}\n- {SECOND_IMAGE}\n",
+        encoding="utf-8",
+    )
+    (directory / recovery.EXIT_RECORD_NAME).write_text(
+        json.dumps({"run_id": run_id, "exit_code": 0}), encoding="utf-8"
+    )
+    crew._write_json(
+        crew.pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": "sample",
+            "repo": str(tmp_path / "repo"),
+            "worktree": str(tree),
+            "launch": "cli",
+            "backend": lane,
+            "dialect": "clive",
+            "role": "implement",
+            "pid": None,
+            "pid_start_time": None,
+            "session_id": "session-on-clive",
+            "session_harness": "clive",
+            "attempt": 1,
+            "base_sha": "HEAD",
+            "log_path": str(directory / "stream.jsonl"),
+            "manifest_path": str(manifest),
+            "prompt_path": str(prompt_path),
+            "phase": "working",
+            "node": {
+                "id": "node-b",
+                "plan": "fixture",
+                "section": "movement",
+                "time_budget": "25m",
+                "write_paths": ["package/target.py"],
+                "images": [FIRST_IMAGE, SECOND_IMAGE],
+            },
+        },
+    )
+    return run_id, prompt_path
+
+
+def _lane_change_resolution(config: dict, destination: str) -> SimpleNamespace:
+    return SimpleNamespace(
+        backend=destination,
+        launch="cli",
+        backend_settings=dict(config["backends"][destination]),
+        lane_gate={
+            "state": "open",
+            "gate_path": "fixture-gate.json",
+            "paused": False,
+            "reason": None,
+            "detail": "",
+            "path_check": "skipped",
+            "path_check_handled": False,
+            "path_check_detail": "fixture",
+        },
+        validation=SimpleNamespace(ok=True, findings=[]),
+        competence={"allowed": True},
+        authority="a-ledger-authority",
+        sandbox_write_roots=None,
+    )
+
+
+def test_a_lane_change_names_the_figures_in_the_prompt_file_it_writes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A lane change composes from the run's prompt file, and a fresh dispatch
+    has already written that file with its figure listing, so the composition
+    strips that listing and names the current figures once. The worker reads
+    the lane-change file, so both the restated fence and the naming have to be
+    in it: a fence applied at the file write instead would land beside a prompt
+    the composition never reached."""
+    monkeypatch.setattr(dispatch_sessions_module, "FENCE_WORKERS", True)
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+    bindir = tmp_path / "bin"
+    bindir.mkdir()
+    # Both lanes are the one clive harness under two lane names: a dialect is
+    # chosen from the command's stem, and a lane change requires a destination
+    # whose name differs from the source's.
+    stub = bindir / "clive"
+    stub.write_text("#!/bin/sh\nexec cat\n", encoding="utf-8")
+    stub.chmod(0o755)
+    config = {
+        "default_backend": "clive",
+        "backends": {
+            "clive": _clive_lane(stub),
+            "clive-b": _clive_lane(stub),
+        },
+        "roles": {"implement": {}},
+        "fences": {"time_budget": "25m", "needs_help_after_failures": 2},
+    }
+    run_id, original = _stopped_figure_run(tmp_path, lane="clive")
+
+    monkeypatch.setattr(
+        dispatch_sessions_module,
+        "plan_dispatch",
+        lambda **kwargs: _lane_change_resolution(config, "clive-b"),
+    )
+    monkeypatch.setattr(
+        dispatch_sessions_module, "_budget_verdict", lambda **kwargs: {"held": False}
+    )
+    monkeypatch.setattr(
+        dispatch_sessions_module,
+        "resolve_dispatch_ledger_root",
+        lambda authority: authority,
+    )
+
+    moved = dispatch_sessions_module.change_lane(
+        run_id,
+        "clive-b",
+        "the lane is spent",
+        config=config,
+        launch=True,
+        launcher=lambda *args, **kwargs: 43007,
+    )
+
+    written = Path(moved["prompt_path"]).read_text(encoding="utf-8")
+    assert moved["prompt_path"] != str(original)
+    assert "lane-change-2-prompt.txt" in moved["prompt_path"]
+    assert "FENCE — TIME (resumed attempt)" in written
+    assert written.count(FIRST_IMAGE) == 1, written
+    assert written.count(SECOND_IMAGE) == 1, written
