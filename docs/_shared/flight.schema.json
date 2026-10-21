@@ -540,6 +540,16 @@
             "additionalProperties": false,
             "description": "Thresholds that decide whether a wave opens. They are compared against whatever a backend actually reported; a backend that reports nothing is never held by them.",
             "properties": {
+                "advisory_pace_groups": {
+                    "description": "Declared budget groups whose pace is advice rather than a hold. The `budget` block is flat and applies to every group, so the groups a declaration is about are named here rather than implied by where it sits. A group named here is never withheld by its pace hold, and its dispatch ceiling carries none of the resume, coordinator or bookend reserves, so its whole window is open to the work it serves. The hard stops are not touched: an exhausted window with no credits lift is still held, and a credits lift's cap is still spent through. A group that is left out keeps every hold and reserve, so omitting the key leaves the routing unchanged.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
                 "bookend_reserve_pct": {
                     "description": "Headroom withheld from implementation work, in percentage points, so the review and verify roles that keep the fleet honest have a floor at the start of every window rather than only near its ceiling. A fresh dispatch outside those roles stops this fraction below the window's ceiling. On a declared budget group whose every member the configuration removes from review routing, the reserve is not withheld: no review can run on that group, so the fraction it was sized for would starve the implementation work the group does serve. A group with one member that can carry a review keeps the reserve.",
                     "maximum": 100,

@@ -777,6 +777,19 @@ slots:
     range: float
     minimum_value: 0
 
+  advisory_pace_groups:
+    description: >-
+      Declared budget groups whose pace is advice rather than a hold. The
+      `budget` block is flat and applies to every group, so the groups a
+      declaration is about are named here rather than implied by where it sits.
+      A group named here is never withheld by its pace hold, and its dispatch
+      ceiling carries none of the resume, coordinator or bookend reserves, so
+      its whole window is open to the work it serves. The hard stops are not
+      touched: an exhausted window with no credits lift is still held, and a
+      credits lift's cap is still spent through. A group that is left out keeps
+      every hold and reserve, so omitting the key leaves the routing unchanged.
+    multivalued: true
+
   pace_multiple:
     description: >-
       Deliberate lean above the linear share, applied on top of the same
@@ -1420,6 +1433,7 @@ classes:
       - evidence_shelf_life_minutes
       - drain_lead_hours
       - pace_multiple
+      - advisory_pace_groups
       - lift
 
   LiftConfig:

@@ -40,6 +40,19 @@ from reckon.crew import window_reading
 OBSERVED = "observed"
 UNOBSERVED = "unobserved"
 
+# The reservations a wallet's dispatch ceiling is measured through. A group
+# declaring its pace advisory carries none of them, so its ceiling is the
+# window's own: the resume reserve answers a stopped worker, the coordinator
+# reserve keeps headroom for the audit that follows a wave, and the bookend
+# reserve floors the review roles. Both are named here rather than restated in
+# the ceiling arithmetic, so the one resolution a dispatch, a resume prediction
+# and the picker share is the one place the declaration moves.
+RESERVE_KEYS: tuple[str, ...] = (
+    "resume_reserve_pct",
+    "coordinator_reserve_pct",
+    reserve_module.RESERVE_KEY,
+)
+
 # The two metered clocks a wallet's figures read, under the period names the
 # provider's own streams carry and the reader publishes. The five-hour clock is
 # the window that fills, so the bar is drawn against it; the seven-day clock is
@@ -182,6 +195,28 @@ def reserve_block_for_group(
     return resolved
 
 
+def advisory_block_for_group(
+    block: Mapping[str, Any] | None,
+    config: Mapping[str, Any] | None,
+    group: str | None,
+) -> dict[str, Any]:
+    """Return a budget block whose three reserves suit one declared wallet.
+
+    A wallet whose pace the configuration declares advisory carries no resume,
+    coordinator or bookend reserve, so its dispatch ceiling is the window's own
+    ceiling rather than one withheld below it. The declaration is the operator's
+    statement that this wallet's pace may be spent by the work it serves; the
+    hard stops are not touched: an exhausted window still holds, and a credit
+    lift's cap is still spent through the credit branch. Every other wallet, and
+    every undeclared grouping, is judged through the block unchanged.
+    """
+    resolved = dict(block) if isinstance(block, Mapping) else {}
+    if pace_module.is_advisory_group(config, group):
+        for key in RESERVE_KEYS:
+            resolved[key] = 0.0
+    return resolved
+
+
 def effective_block(
     config: Mapping[str, Any] | None,
     group: str,
@@ -193,14 +228,15 @@ def effective_block(
 ) -> dict[str, Any]:
     """The budget block a declared group's reserves are judged through.
 
-    Two rules can zero a wallet's reserves, and they are composed here in one
-    resolution rather than through two parallel paths a reader would have to
+    Three rules can zero a wallet's reserves, and they are composed here in one
+    resolution rather than through three parallel paths a reader would have to
     reconcile. A lift in force releases all three reserves for its group,
-    raising the multiple to the lifted figure; and a wallet whose every member
-    is barred from review routing withholds no bookend reserve. The lift is
-    applied first and the review-exclusion rule then applied to its result, so a
-    wallet under both resolves through the same call, and a wallet under neither
-    is returned with its configured reserve untouched.
+    raising the multiple to the lifted figure; a wallet whose every member is
+    barred from review routing withholds no bookend reserve; and a wallet the
+    configuration declares advisory carries none of the three, so its ceiling is
+    the window's own. Each rule is applied to the result of the one before it,
+    so a wallet under any combination resolves through the same call, and a
+    wallet under none is returned with its configured reserves untouched.
 
     Expiry is read here rather than run anywhere: the block carries the lifted
     figure only while the lift is in force, judged from the record, the group's
@@ -215,7 +251,9 @@ def effective_block(
         session=session,
         path=path,
     )
-    return reserve_block_for_group(lifted, config, group)
+    return advisory_block_for_group(
+        reserve_block_for_group(lifted, config, group), config, group
+    )
 
 
 def _lift_readings(
@@ -389,9 +427,7 @@ def group_figures(
     moment = _aware(now) if now is not None else datetime.now(UTC)
     supplied = windows if isinstance(windows, Mapping) else {}
     base_config = (
-        {**(config or {}), "budget": block}
-        if isinstance(block, Mapping)
-        else config
+        {**(config or {}), "budget": block} if isinstance(block, Mapping) else config
     )
 
     freshest = _freshest_member(members, supplied, moment=moment)

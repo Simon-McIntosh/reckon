@@ -999,6 +999,7 @@ def group_pace(
         _now,
     )
     from reckon.crew import budget_group, window_reading
+    from reckon.crew import pace as pace_module
 
     moment = _now(now)
     readings = windows if isinstance(windows, Mapping) else {}
@@ -1060,6 +1061,12 @@ def group_pace(
             group, members, clocks, records, effective, moment=moment
         )
         allowance = _group_allowance(group, reading, clocks, effective, moment=moment)
+        if pace_module.is_advisory_group(config, group):
+            # The declaration is carried on the group's own allowance, so the
+            # hold that reads it and any reader of the report see it on the one
+            # payload they already consult rather than resolving it again from
+            # configuration they may not hold.
+            allowance = {**allowance, "advisory": True}
         lift_id = effective_block.get("lift_id")
         session_lift = None
         if lift_id:
@@ -1263,9 +1270,16 @@ def pace_hold(entry: Mapping[str, Any], role: str | None) -> dict[str, Any]:
     The reserve's bookend roles are never held by pace: review and verify are
     the expenditure a spent window is being protected for, so they are admitted
     at any utilisation and the hold applies only to the roles that spend the
-    window down. A group carrying no derived allowance -- an unread window or a
-    reset that cannot be placed -- holds nothing, because absence of a reading
-    is not a measured overspend.
+    window down.
+
+    A group whose pace the configuration declares advisory is also never held:
+    the pace is reported, not enforced, so the work that spends that wallet is
+    admitted at any utilisation the window still has. The ceiling and a credit
+    lift's cap are judged elsewhere and are unchanged by the declaration.
+
+    A group carrying no derived allowance -- an unread window or a reset that
+    cannot be placed -- holds nothing, because absence of a reading is not a
+    measured overspend.
 
     A held verdict also names ``releases_at``: the instant the hold's own burn
     comparison first admits with the utilisation held fixed, which is almost
@@ -1353,7 +1367,14 @@ def pace_hold(entry: Mapping[str, Any], role: str | None) -> dict[str, Any]:
         if isinstance(raw_line, (int, float)) and not isinstance(raw_line, bool)
         else None
     )
-    if not bookend and lift_kind in (budget_lift.UNCAPPED, budget_lift.CREDITS):
+    # A group whose pace the configuration declares advisory is admitted at any
+    # utilisation the window still has: the pace is a reading of how fast the
+    # wallet is emptying, not a boundary its work is stopped at, and the two
+    # hard stops below still bound it.
+    advisory = bool(allowance.get("advisory"))
+    if advisory or (
+        not bookend and lift_kind in (budget_lift.UNCAPPED, budget_lift.CREDITS)
+    ):
         held = False
     elif not bookend and lift_kind == budget_lift.DRAIN_BY:
         held = drain_line is not None and float(utilisation) > drain_line
@@ -1367,7 +1388,14 @@ def pace_hold(entry: Mapping[str, Any], role: str | None) -> dict[str, Any]:
     # hold does not actually release at.
     factor = _banked_reset_factor(allowance)
     releases_at = None
-    if bookend:
+    if advisory:
+        reason = (
+            f"the {entry.get('group')!r} group declares its pace advisory, so it "
+            f"does not withhold a {role} dispatch: the window stands at "
+            f"{float(utilisation) * 100:g}% against a {float(derived) * 100:g}% "
+            "allowance and the pace is reported rather than held"
+        )
+    elif bookend:
         reason = (
             f"the {role} role is a bookend, so the {entry.get('group')!r} group's "
             f"pace does not withhold it: the window stands at "
