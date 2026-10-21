@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_ledger.py::test_every_read_view_returns_and_large_defaults_are_compact"
+  ],
+  "call_sites": [
+    "reckon/crew_run_commands.py:827",
+    "reckon/crew/review.py:2832",
+    "reckon/crew/reports.py:1900",
+    "reckon/crew/promotion.py:1346",
+    "reckon/crew/promotion_release.py:948",
+    "reckon/crew/promotion_release.py:954"
+  ],
+  "completed_at": "2026-10-21T17:01:06.100Z",
+  "dispatched_at": "2026-10-21T16:21:58Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-review-can-see-the-figure/a-figure-review-promotes-without-text-scores.html",
+      "line": "4",
+      "severity": "follow-on",
+      "text": "follow-on: the paragraph opens a <code> before ['missing scores'] that is never closed (the file holds 47 '<code>' against 46 '</code>'), so the rest of that paragraph renders as inline code on the composed plan page."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": "3101",
+      "severity": "follow-on",
+      "text": "follow-on: ledger_block now drops, rather than coerces, any score value that is not an int, so a hand-written or legacy text record carrying scores as numeric strings or floats silently loses those dimensions instead of being refused, since review_record_refusals validates no score value type."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew_run_commands.py:827 calls review_record_refusals; reckon/crew/review.py:2832 is the store's own write path and reckon/crew/reports.py:1900 the reporting read; reckon/crew/promotion.py:1346 (_complete_locked) and reckon/crew/promotion_release.py:948/954 are the promotion readers of ledger_block.",
+    "diff": "read commit by commit against base 453262f9; one commit (ffffa1382) changes review_record_refusals to gate on the rubric, filters ledger_block's score map to integer values, rewrites its docstring, adds the 225-line test file and writes the 9-line landing fragment.",
+    "done_when": "the done_when names tests/test_a_figure_review_promotes_without_text_scores.py; the manifest records that gate and gate.head.log ends '7 passed in 62.56s' / 'EXIT=0', and the file's seven cases cover each clause (null scores, no scores key, the text missing-dimension refusal, the two ledger_block reductions, and the crew.complete promotion writing a ledger row).",
+    "goal": "the node's goal is to let a figure-rubric review record pass review_record_refusals and reduce through ledger_block without text-dimension scores so a figure review run promotes; reckon/crew/review.py:634 gates the score requirement on _review_record_rubric != FIGURE_REVIEW_RUBRIC and reckon/crew/review.py:3098-3103 keeps only integer-valued dimensions, exactly what the goal names.",
+    "manifest": "read; it records status complete, commits [ffffa1382775e196f508368a73d917236ccf9408], the gate command and its two logs, and declares baseline_suite/after_suite null because the node ran no arm; the merge-time importer population was the coordinator's own, and its two logs sit in the run directory.",
+    "write_paths": "the declared paths are reckon/crew/review.py, tests/test_a_figure_review_promotes_without_text_scores.py and the landing fragment under docs/evidence/fragments/a-review-can-see-the-figure/; git diff --stat 453262f9..ffffa1382 lists exactly those three files (259 insertions, 12 deletions) and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_figure_review_promotes_without_text_scores.py:113 and :121 fail with TypeError if ledger_block calls int() on a null score again, and :209 fails inside crew.complete, which negative_control.log confirms (2 failed / 5 passed, EXIT=1).",
+    "evidence": "gate.head.log ends EXIT=0 with '7 passed in 62.56s'; the reviewed run records no arms, so the delta came from the coordinator's coordinator-population-base.log and coordinator-population-head.log, which completed 6 failed/1385 passed and 7 failed/1391 passed, and the single added failure is a load-induced pytest-timeout re-run green in 8.6s (rerun-ledger-view.log).",
+    "fit": "the change extends the module's own rubric helper _review_record_rubric (reckon/crew/review.py:2155) and follows the surrounding docstring style at reckon/crew/review.py:3068-3093, with no plan or ticket identifier in any name or comment.",
+    "goal_fidelity": "reckon/crew/review.py:634 and :3101 do precisely what the goal states, and the gate's promotion case tests/test_a_figure_review_promotes_without_text_scores.py:209 drives crew.complete through to a ledger row with status parsed and empty scores.",
+    "reuse": "the score-requirement decision is added to the existing owner _review_record_rubric/FIGURE_REVIEW_RUBRIC (reckon/crew/review.py:274,2155) rather than forking a second rubric read inside review_record_refusals, and a capability search over reckon/ found no other mechanism deciding whether a record needs the six text scores.",
+    "scope_discipline": "git diff --stat 453262f9..ffffa1382 shows only reckon/crew/review.py, tests/test_a_figure_review_promotes_without_text_scores.py and the landing fragment, all inside the declared paths, though the manifest's scope-damage files record a repo-wide ruff --fix that had to be reverted before that diff."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to let a figure-rubric review record pass review_record_refusals and reduce through ledger_block without text-dimension scores so a figure review run promotes; reckon/crew/review.py:634 gates the score requirement on _review_record_rubric != FIGURE_REVIEW_RUBRIC and reckon/crew/review.py:3098-3103 keeps only integer-valued dimensions, exactly what the goal names.\nVERDICT done_when: the done_when names tests/test_a_figure_review_promotes_without_text_scores.py; the manifest records that gate and gate.head.log ends '7 passed in 62.56s' / 'EXIT=0', and the file's seven cases cover each clause.\nVERDICT write_paths: the declared paths are reckon/crew/review.py, tests/test_a_figure_review_promotes_without_text_scores.py and the landing fragment under docs/evidence/fragments/a-review-can-see-the-figure/; git diff --stat 453262f9..ffffa1382 lists exactly those three files and nothing else.\nVERDICT manifest: read; it records status complete, commits [ffffa1382775e196f508368a73d917236ccf9408], the gate command and its two logs, and declares baseline_suite/after_suite null because the node ran no arm.\nVERDICT diff: read commit by commit against base 453262f9; one commit (ffffa1382) changes review_record_refusals to gate on the rubric, filters ledger_block's score map to integer values, rewrites its docstring, adds the 225-line test file and writes the 9-line landing fragment.\nCALL_SITES: reckon/crew_run_commands.py:827, reckon/crew/review.py:2832, reckon/crew/reports.py:1900, reckon/crew/promotion.py:1346, reckon/crew/promotion_release.py:948, reckon/crew/promotion_release.py:954\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:634 and :3101 do precisely what the goal states.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate.head.log ends EXIT=0; the delta came from coordinator-population-{base,head}.log and the single added failure is a load-induced pytest-timeout re-run green in 8.6s.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff --stat 453262f9..ffffa1382 shows only the three in-scope files, though a repo-wide ruff --fix had to be reverted before it.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_figure_review_promotes_without_text_scores.py:113 and :121 fail with TypeError if ledger_block calls int() on a null score again, confirmed by negative_control.log.\nSCORE fit: 20\nJUSTIFICATION fit: the change extends _review_record_rubric at reckon/crew/review.py:2155 and follows the docstring style at reckon/crew/review.py:3068-3093.\nSCORE reuse: 20\nJUSTIFICATION reuse: the decision extends the existing owner _review_record_rubric/FIGURE_REVIEW_RUBRIC (reckon/crew/review.py:274,2155) rather than forking a second rubric read.\nFINDING docs/evidence/fragments/a-review-can-see-the-figure/a-figure-review-promotes-without-text-scores.html:4 follow-on: an unclosed <code> tag (47 '<code>' vs 46 '</code>') makes the rest of the paragraph render as inline code.\nFINDING reckon/crew/review.py:3101 follow-on: ledger_block drops rather than coerces a non-int score value, silently losing a dimension a numeric-string or float score previously contributed.\n",
+  "review_run_id": "r-20261021T162009783921-review-of-a-figure-review-promotes-without-text-scores-ffffa1382775",
+  "reviewed_base_sha": "453262f97fff8160eec221a32bfb1f1160f96448",
+  "reviewed_head_sha": "ffffa1382775e196f508368a73d917236ccf9408",
+  "reviewed_run_id": "r-20261021T154016746120-a-figure-review-promotes-without-text-scores",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T17:06:11.818688+00:00",
+  "total": 114
+}
