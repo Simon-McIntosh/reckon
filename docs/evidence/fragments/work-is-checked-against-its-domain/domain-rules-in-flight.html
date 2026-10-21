@@ -32,20 +32,32 @@
   project's flight config and returns the invariants, review checks and matched model-path
   globs whose <code>applies_to</code> reaches the node's declared write paths. A node that
   writes outside every declared glob carries nothing; a project that declares no block
-  returns an empty <code>DomainRules</code> and keeps today's behaviour.</p>
+  returns an empty <code>DomainRules</code> and keeps today's behaviour. The reader maps the
+  already-validated resolved block into its own frozen <code>Invariant</code> and
+  <code>ReviewCheck</code> views rather than importing the generated Pydantic classes, so the
+  schema stays the one place the block's shape is declared and the reader carries only what
+  its callers read.</p>
   <p id="domain-rules-in-flight-measure"><strong>Measure.</strong> Logs are under the run
   directory (paths below are absolute on the fleet node). Head arm: at
-  <code>4ce6aed60</code>, <code>134 passed</code> in
+  <code>74ee7a238</code>, <code>136 passed</code> in
   <code>tests/test_domain_rules.py tests/test_flight.py tests/test_flight_lanes.py tests/test_budget_lift.py</code>,
   <code>EXIT=0</code> (<code>logs/gate-head.log</code>). Negative control — the declared
   mutation, the <code>domain</code> slot dropped from <code>reckon/schema/flight.yaml</code>
-  and regenerated, run in a scratch extraction: <code>6 failed, 1 passed</code>, the
+  and regenerated, run in the worktree: <code>8 failed, 1 passed</code>, the
   refusals naming <code>domain: Extra inputs are not permitted</code>, <code>EXIT=1</code>
   (<code>logs/negative-control.log</code>). The one passing test is
   <code>test_rules_for_is_empty_for_a_project_without_the_block</code>, which declares no
-  block and so cannot fail on a tree that drops it. Base arm: the same test file against
-  base <code>09528bd96</code> fails to collect — <code>ImportError: cannot import name
-  'DomainConfig'</code> — <code>EXIT=2</code> (<code>logs/base-arm.log</code>). No figure:
+  block and so cannot fail on a tree that drops it. Matcher-branch arms — each of the glob
+  matcher's two optional branches deleted in turn, the whole test file run for each: the
+  basename arm and the wildcard-free directory-prefix arm each <code>1 failed</code>, on
+  <code>test_rules_for_matches_a_bare_basename_pattern</code> and
+  <code>test_rules_for_matches_a_wildcard_free_directory_prefix</code> respectively,
+  <code>EXIT=1</code> each (<code>logs/branch-mutations.log</code>). Base arm: the same test
+  file against a base-revision scratch tree carrying this node's <code>domain_rules.py</code>
+  but the base flight schema (<code>measurement_module</code> and
+  <code>measurement_cwd</code> in the manifest) — <code>8 failed, 1 passed</code>, every
+  refusal naming <code>domain: Extra inputs are not permitted</code>, <code>EXIT=1</code>
+  (<code>logs/base-arm.log</code>). No figure:
   the done-when names none, and the relationship is a two-line schema block, not a spatial
   one. <code>ruff check</code> and <code>ruff format --check</code> add no findings on the
   changed hand-written paths (<code>All checks passed!</code>, <code>2 files already
