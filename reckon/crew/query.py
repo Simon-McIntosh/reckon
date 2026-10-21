@@ -250,6 +250,46 @@ def _resumability(
     return True, "session resolved, worktree exists and process is not alive"
 
 
+#: Where a compact row carries the inputs its path-derived fields are computed
+#: from, when those fields are deferred. The key is removed before a row is
+#: returned, so a reader never sees it.
+_PATH_INPUTS = "_path_inputs"
+
+
+def _path_derived(inputs: Mapping[str, Any]) -> dict[str, Any]:
+    """Compute the fields derived from where a run's artifacts are.
+
+    These are the expensive fields of a compact row — one filesystem probe each
+    for the worktree, the manifest and the transcript — so a caller projecting a
+    whole ledger defers them and computes them only for the rows it returns.
+    Every value here is the one an eager projection produced.
+    """
+    record = inputs["record"]
+    classified = inputs["classified"]
+    worktree_exists = _path_exists(inputs["worktree"], directory=True)
+    resumable, resumable_reason = _resumability(
+        inputs["session"],
+        worktree_exists=worktree_exists,
+        process_alive=inputs["process_alive"],
+    )
+    transcript = inputs["transcript"]
+    return {
+        "worktree_exists": worktree_exists,
+        "manifest_present": bool(
+            classified.get("manifest_present", False)
+            if inputs["source"] == "live"
+            else _path_exists(record.get("manifest_path"))
+        ),
+        "transcript_exists": (
+            bool(record.get("transcript_exists"))
+            if "transcript_exists" in record
+            else _path_exists(transcript)
+        ),
+        "resumable": resumable,
+        "resumable_reason": resumable_reason,
+    }
+
+
 def _compact_row(
     record: Mapping[str, Any],
     *,
@@ -259,9 +299,10 @@ def _compact_row(
     repository: Path | None,
     selected_fields: tuple[str, ...],
     classified_live: Mapping[str, Any] | None = None,
+    ledger_row: Any = None,
+    with_path_fields: bool = True,
 ) -> dict[str, Any]:
     """Project one source record into the stable compact row shape.
-
 
     A brief run's authority is the stored brief it read, not a plan section, so
     its row carries ``plan`` null and the digest of that brief. The live pointer
@@ -269,6 +310,16 @@ def _compact_row(
     ``brief`` block promotion writes. A plan run has neither, so ``plan`` is the
     section's plan and ``brief_sha256`` is left off the row (see the projection
     below) rather than carried empty.
+
+    ``ledger_row`` is the committed row the caller already holds for this run,
+    or a nullary callable returning it. A callable is resolved only if the
+    pointer and the stream leave the session unanswered, so a view that never
+    reaches the ledger source never loads it.
+
+    ``with_path_fields`` false leaves the path-derived fields off the row and
+    parks their inputs under :data:`_PATH_INPUTS` for :func:`_finalize_paths`,
+    so a caller that will discard most of its rows pays no filesystem probe for
+    them.
     """
     classified = classified_live or classify_pointer(record) if source == "live" else {}
     node_data = record.get("node")
@@ -285,32 +336,37 @@ def _compact_row(
         else ""
     )
     worktree = record.get("worktree") or None
-    worktree_exists = _path_exists(worktree, directory=True)
     transcript = record.get("transcript_path") or None
     session = resolve_session(
         str(record.get("run_id") or ""),
         record=record if source == "live" else None,
-        ledger_row=record if source == "ledger" else None,
+        ledger_row=record if source == "ledger" else ledger_row,
         project=project,
         root=checkout_path,
     )
     if source == "live":
         commits = classified.get("manifest_commits") or record.get("commits") or []
-        manifest_present = classified.get("manifest_present", False)
     else:
         commits = record.get("commits") or []
-        manifest_present = _path_exists(record.get("manifest_path"))
     process_alive = (
         classified.get("process_alive")
         if source == "live"
         else record.get("process_alive")
     )
-    resumable, resumable_reason = _resumability(
-        session,
-        worktree_exists=worktree_exists,
-        process_alive=process_alive,
-    )
     identity = ledger.normalize_identity(record)
+    path_inputs = {
+        "source": source,
+        "record": record,
+        "classified": classified,
+        "session": session,
+        "worktree": worktree,
+        "transcript": transcript,
+        "process_alive": process_alive,
+    }
+    # A deferred row carries ``None`` in each path-derived field until
+    # :func:`_finalize_paths` fills it, so the projection below keeps the key
+    # order and shape an eager row has.
+    paths = _path_derived(path_inputs) if with_path_fields else {}
     complete = {
         "lane": identity.get("lane"),
         "model_key": identity.get("model_key"),
@@ -329,15 +385,11 @@ def _compact_row(
         "session_id": session["session_id"],
         "session_id_source": session["source"],
         "worktree": worktree,
-        "worktree_exists": worktree_exists,
+        "worktree_exists": paths.get("worktree_exists"),
         "transcript_path": transcript,
-        "transcript_exists": (
-            bool(record.get("transcript_exists"))
-            if "transcript_exists" in record
-            else _path_exists(transcript)
-        ),
-        "resumable": resumable,
-        "resumable_reason": resumable_reason,
+        "transcript_exists": paths.get("transcript_exists"),
+        "resumable": paths.get("resumable"),
+        "resumable_reason": paths.get("resumable_reason"),
         "project": project,
         "repo": str(repository) if repository is not None else "",
         "repo_exists": repository.is_dir() if repository is not None else False,
@@ -346,7 +398,7 @@ def _compact_row(
             dict(record["agent"]) if isinstance(record.get("agent"), Mapping) else {}
         ),
         "base_sha": str(record.get("base_sha") or ""),
-        "manifest_present": bool(manifest_present),
+        "manifest_present": paths.get("manifest_present"),
         "commits": [str(commit) for commit in commits],
         # The three fields a coordinator checks first, drawn from the same
         # classification the live view already computes. A ledger row carries
@@ -369,6 +421,8 @@ def _compact_row(
         ),
     }
     row = {field: complete[field] for field in selected_fields}
+    if not with_path_fields:
+        row[_PATH_INPUTS] = path_inputs
     if identity.get("lane"):
         row.update(lane=identity["lane"], model_key=identity.get("model_key"))
     if classified.get("lane_event"):
@@ -379,6 +433,34 @@ def _compact_row(
     if not row.get("brief_sha256"):
         row.pop("brief_sha256", None)
     return row
+
+
+def _finalize_paths(row: dict[str, Any]) -> dict[str, Any]:
+    """Fill a deferred row's path-derived fields in place, and return it.
+
+    A row that already carries its path fields has nothing parked under
+    :data:`_PATH_INPUTS`, so finalizing it is a no-op rather than a second
+    round of filesystem probes.
+    """
+    inputs = row.pop(_PATH_INPUTS, None)
+    if inputs is not None:
+        derived = _path_derived(inputs).items()
+        row.update({field: value for field, value in derived if field in row})
+    return row
+
+
+def _canonical_root(root: Any) -> str | None:
+    """One key for one ledger, whatever spelling of its root a caller holds.
+
+    The two arms reach the same project's ledger from different values — one
+    from the checkout path the request carried, the other from the root a live
+    record recorded — so a cache keyed on the raw value reads the same ledger
+    twice and the "one load per project" bound holds only by accident.
+    """
+    text = str(root or "").strip()
+    if not text:
+        return None
+    return str(Path(text).expanduser().resolve())
 
 
 def _mounted_projects() -> dict[str, Path]:
@@ -506,6 +588,21 @@ def runs_view(
         selected_fields = (*selected_fields, *WORKSTATION_RUN_FIELDS)
     row_fields = tuple(dict.fromkeys((*selected_fields, "member")))
     mounted_projects = _mounted_projects() if selected_scope == "workstation" else {}
+    # One committed-row read per project, shared by both arms. The live arm
+    # reaches it only when a live row's pointer and stream leave the session
+    # unanswered, so a view whose live rows all carry a session reads no ledger
+    # at all, and one whose rows do not reads it once rather than once per row.
+    committed: dict[tuple[str, str | None], dict[str, Mapping[str, Any]]] = {}
+
+    def committed_rows(row_project: str, root: Any) -> dict[str, Mapping[str, Any]]:
+        key = (row_project, _canonical_root(root))
+        if key not in committed:
+            committed[key] = {
+                str(record.get("run_id") or ""): record
+                for record in ledger.runs(row_project, key[1])
+            }
+        return committed[key]
+
     rows: list[dict[str, Any]] = []
     if selected_source in {"all", "live"}:
         if selected_run_id:
@@ -530,19 +627,40 @@ def runs_view(
             record = records_by_id[str(classified.get("run_id") or "")]
             row_project = str(record.get("project") or "")
             repository = _record_repository(record, mounted_projects)
+            row_checkout = (
+                str(repository)
+                if selected_scope == "workstation" and repository is not None
+                else checkout_path
+            )
+            live_run_id = str(record.get("run_id") or "")
+
+            def live_ledger_row(
+                _project: str = row_project,
+                _record: Mapping[str, Any] = record,
+                _checkout: str | None = row_checkout,
+                _run_id: str = live_run_id,
+            ) -> Mapping[str, Any]:
+                """The live row's committed row, read only when the ledger is asked.
+
+                The absence of a row answers with an empty mapping rather than
+                ``None``, because ``None`` sends the ledger source to load the
+                ledger itself and pay for a search this lookup already made.
+                """
+                root = _checkout if _checkout is not None else _record.get("repo")
+                found = committed_rows(_project, root).get(_run_id)
+                return found if found is not None else {}
+
             rows.append(
                 _compact_row(
                     record,
                     source="live",
                     project=row_project,
-                    checkout_path=(
-                        str(repository)
-                        if selected_scope == "workstation" and repository is not None
-                        else checkout_path
-                    ),
+                    checkout_path=row_checkout,
                     repository=repository,
                     selected_fields=row_fields,
                     classified_live=classified,
+                    ledger_row=live_ledger_row,
+                    with_path_fields=False,
                 )
             )
     if selected_source in {"all", "ledger"}:
@@ -555,7 +673,7 @@ def runs_view(
         )
         for row_project, repository in ledger_projects:
             ledger_root = str(repository) if repository is not None else None
-            ledger_rows = ledger.runs(row_project, ledger_root)
+            ledger_rows = list(committed_rows(row_project, ledger_root).values())
             if selected_run_id:
                 ledger_rows = [
                     record
@@ -570,14 +688,13 @@ def runs_view(
                     checkout_path=ledger_root,
                     repository=repository,
                     selected_fields=row_fields,
+                    with_path_fields=False,
                 )
                 for record in ledger_rows
             )
 
-    rows = [
-        row
-        for row in rows
-        if _matches(
+    def keep(row: Mapping[str, Any], *, judged_resumable: bool) -> bool:
+        return _matches(
             row,
             node=node,
             plan=plan,
@@ -585,10 +702,20 @@ def runs_view(
             session=session,
             member=member,
             classification=classification,
-            resumable=resumable,
+            resumable=resumable if judged_resumable else None,
             run_id=selected_run_id or None,
         )
-    ]
+
+    rows = [row for row in rows if keep(row, judged_resumable=False)]
+    # A caller judging on ``resumable`` pays the path probes for every row the
+    # other filters left, because that is the fact it asked to be judged on;
+    # every other caller pays them only for the rows it returns.
+    if resumable is not None:
+        rows = [
+            row
+            for row in (_finalize_paths(candidate) for candidate in rows)
+            if keep(row, judged_resumable=True)
+        ]
     rows.sort(key=lambda row: str(row.get("run_id") or ""), reverse=True)
     if newest_per_node:
         newest: list[dict[str, Any]] = []
@@ -602,6 +729,7 @@ def runs_view(
         rows = newest
     if limit is not None:
         rows = rows[:limit]
+    rows = [_finalize_paths(row) for row in rows]
     if "member" not in selected_fields:
         for row in rows:
             row.pop("member", None)
