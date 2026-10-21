@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:work-is-checked-against-its-domain">
+  <meta name="plan-verifies" content="reckon:work-is-checked-against-its-domain#s3">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-21">
+  <meta name="plan-tags" content="flight-config,domain-rules,schema">
+  <title>A repository declares its domain rules once, in the flight config | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="domain-rules-in-flight" data-reckon="landed" data-when="2026-10-21">
+  <h2 id="domain-rules-in-flight-title">A repository declares its domain rules once, in the flight config.</h2>
+  <p id="domain-rules-in-flight-what"><strong>What changed.</strong> The per-project
+  flight layer gained a typed <code>domain</code> block carrying the repository's own
+  rules: <code>invariants</code> (each an <code>id</code>, the <code>rule</code> in one
+  sentence, <code>invariants[].applies_to</code> path globs and an optional
+  <code>check</code> command), <code>review_checks</code> (each an <code>id</code>, the
+  <code>question</code> and <code>applies_to</code>) and <code>model_paths</code>. The
+  block is modelled in <code>reckon/schema/flight.yaml</code> and reaches the tree through
+  the existing generator, so <code>reckon/_flight_schema.py</code> and
+  <code>docs/_shared/flight.schema.json</code> are regenerated and the standing drift test
+  in <code>tests/test_flight.py</code> covers them. <code>reckon/crew/domain_rules.py</code>
+  exposes one public function, <code>rules_for(project, node)</code>, which resolves the
+  project's flight config and returns the invariants, review checks and matched model-path
+  globs whose <code>applies_to</code> reaches the node's declared write paths. A node that
+  writes outside every declared glob carries nothing; a project that declares no block
+  returns an empty <code>DomainRules</code> and keeps today's behaviour.</p>
+  <p id="domain-rules-in-flight-measure"><strong>Measure.</strong> Logs are under the run
+  directory (paths below are absolute on the fleet node). Head arm: at
+  <code>4ce6aed60</code>, <code>134 passed</code> in
+  <code>tests/test_domain_rules.py tests/test_flight.py tests/test_flight_lanes.py tests/test_budget_lift.py</code>,
+  <code>EXIT=0</code> (<code>logs/gate-head.log</code>). Negative control — the declared
+  mutation, the <code>domain</code> slot dropped from <code>reckon/schema/flight.yaml</code>
+  and regenerated, run in a scratch extraction: <code>6 failed, 1 passed</code>, the
+  refusals naming <code>domain: Extra inputs are not permitted</code>, <code>EXIT=1</code>
+  (<code>logs/negative-control.log</code>). The one passing test is
+  <code>test_rules_for_is_empty_for_a_project_without_the_block</code>, which declares no
+  block and so cannot fail on a tree that drops it. Base arm: the same test file against
+  base <code>09528bd96</code> fails to collect — <code>ImportError: cannot import name
+  'DomainConfig'</code> — <code>EXIT=2</code> (<code>logs/base-arm.log</code>). No figure:
+  the done-when names none, and the relationship is a two-line schema block, not a spatial
+  one. <code>ruff check</code> and <code>ruff format --check</code> add no findings on the
+  changed hand-written paths (<code>All checks passed!</code>, <code>2 files already
+  formatted</code>, <code>logs/ruff.log</code>).</p>
+</article>
+</body>
+</html>
