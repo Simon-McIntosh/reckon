@@ -2521,8 +2521,16 @@ def test_an_unknown_crew_view_names_every_view_it_has(home, repo) -> None:
     result = mcp._crew(PROJECT, view="everything")
 
     assert result["ok"] is False
-    missing = [name for name in CREW_VIEWS if name not in result["detail"]]
-    assert not missing, f"refusal omits {missing}"
+    prefix = result["detail"].split(";", 1)[0]
+    assert prefix.startswith("view must be ")
+    named = prefix[len("view must be ") :].replace(" or ", ", ").split(", ")
+    assert not set(CREW_VIEWS) - set(named), (
+        f"refusal omits {sorted(set(CREW_VIEWS) - set(named))}"
+    )
+    assert not set(named) - set(CREW_VIEWS), (
+        f"refusal names unregistered {sorted(set(named) - set(CREW_VIEWS))}"
+    )
+    assert len(named) == len(CREW_VIEWS), f"refusal repeats a name: {named}"
 
 
 def test_the_crew_tool_reads_budget_headroom_from_the_ledger(home, repo) -> None:
