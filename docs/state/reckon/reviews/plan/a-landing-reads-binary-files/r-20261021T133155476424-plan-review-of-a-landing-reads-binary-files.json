@@ -1,0 +1,120 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T14:03:42.710Z",
+  "dispatched_at": "2026-10-21T13:49:28Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-landing-reads-binary-files.html:66",
+      "id": "wiring-1",
+      "reason": "a coordinator following the followup would dispatch \u00a72 in parallel and it would import a helper that does not yet exist, failing on the node that most depends on the ordering.",
+      "text": "the followup body says \"\u00a71 and \u00a72 dispatch in parallel\", contradicting the declared dependency `plan-section-depends-on` `s2:[\"a-landing-reads-binary-files#s1\"]` (snapshot line 29) and \u00a72's own Sequence (\"\u00a72 runs after \u00a71 lands and imports those helpers\"), because \u00a72's done-when imports `_write_origin_and_checkout` and `_complete_land` from `tests/helpers/landing_repository.py`, which \u00a71's write paths are what create",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-reads-binary-files.html:42",
+      "id": "done_when-1",
+      "reason": "a test written literally against `land_merge` passes on the unfixed code, so the node's central measure would be a suite that passes before the repair.",
+      "text": "\u00a71's first done-when bullet asserts \"`merge.land_merge` lands that head without raising\", but `land_merge` (`reckon/crew/merge.py:474`) reads no blob content \u2014 no `_show`, no `git show`, no content diff \u2014 so it cannot raise the `UnicodeDecodeError` the section's negative control requires, and its report carries no `survived` block (that block is produced only by `land()` at `reckon/crew/merge.py:652`), which the next bullet asserts",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-reads-binary-files.html:39",
+      "id": "anchors_resolve-1",
+      "reason": "the mechanism claim (rev-parse yields a blob id without decoding) is true and the primary anchor resolves, so only a reader re-checking that one pointer is misled.",
+      "text": "\u00a71's \"Why\" says the module \"already resolves object names this way (near lines 125 and 264)\", but in `reckon/crew/merge.py` the `rev-parse` calls are at lines 125, 133 and 345; line 264 is inside the `change_markers` docstring and resolves nothing, so the second half of that citation is stale",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-landing-reads-binary-files.html:52",
+      "id": "reasoning-1",
+      "reason": "collapsing all five into one refusal function would regress the exit-6 push-outstanding contract and the non-fatal release-error path, both of which the plan's own gate tests assert, so the worker must be told which sites are refusals and which are not.",
+      "text": "\u00a72 claims a single merge-failure-to-refusal mapping (type, message, resume command, exit status) \"is written out at five sites \u2026 near lines 2449, 2475, 2485 and 2524\" and that \"all five call the new function, and none keeps a catch of its own\", but of those four sites `reckon/crew_run_commands.py:2475` catches `MergePushOutstandingError` \u2014 a landing whose push is outstanding, reported `ok: true` with `steps.land.push_outstanding` and exit `PUSH_OUTSTANDING_EXIT` (6), pinned by `tests/test_a_reviewed_head_lands_without_touching_the_index.py:352` \u2014 and `reckon/crew_run_commands.py:2524` catches a `_rev_parse` failure inside the release, recorded under `steps.release.push_error` rather than as a land refusal",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b7265422c1a213dd81827beba8912c19e54152890b2804a5594833af776f16c0",
+  "plan_slug": "a-landing-reads-binary-files",
+  "plan_version": 10,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-21T14:04:34.901649+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-21T14:04:47.580454+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "",
+      "when": "2026-10-21T14:05:06.615268+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-21T14:05:24.474168+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T14:05:06.615268+00:00"
+    },
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T14:04:47.580454+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T14:05:24.474168+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T14:04:34.901649+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-landing-reads-binary-files.v10.json",
+  "review_run_id": "r-20261021T133155476424-plan-review-of-a-landing-reads-binary-files",
+  "reviewed_blob_sha": "24e398b4b166bd94d6634f16ec5dae0592295722",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the \u00a71 \"Why\" cites \"near lines 125 and 264\" as places `reckon/crew/merge.py` resolves object names; line 125 does, line 264 carries no `rev-parse` call.",
+    "done_when": "a finding \u2014 \u00a71's done-when asserts `merge.land_merge` lands the binary head, but the marker check under test lives in `merge.land`, so the named entry point cannot raise the failure the section's own negative control requires.",
+    "evidence_paths": "pass \u2014 both gate logs are stated to live under the run directory (a durable crew path), and the evidence fragments are written under `docs/evidence/fragments/<slug>/` in the repository, not a scratchpad or node-local temp.",
+    "naming": "pass \u2014 the new test modules (`test_a_landing_reads_binary_files.py`, `test_a_failed_land_exits_nonzero.py`), the shared helper (`tests/helpers/landing_repository.py`) and the report key `blob_identity` are named by mechanism; no plan label, stage name, ticket number or changelog prose reaches a symbol or path.",
+    "reasoning": "a finding \u2014 \u00a72 asserts that one merge-failure-to-refusal mapping is written out at five caller sites and that \"none keeps a catch of its own\", but two of the four promoted-land sites it names are not that mapping.",
+    "single_goal": "pass \u2014 \u00a71 carries the blob-aware landing check alone, \u00a72 carries \"a failure after promotion reports itself\" alone; \u00a72's extraction of the shared refusal function is the means to that one goal, not a second deliverable.",
+    "wiring": "a finding \u2014 the plan declares `plan-section-depends-on` `s2 -> s1` and \u00a72's Sequence restates that order, but the plan's only open followup (`f-alrbf-001`) tells a coordinator to dispatch \"\u00a71 and \u00a72 \u2026 in parallel\"."
+  },
+  "section_digests": {
+    "_document": "7bb1ca28fd8d819b9ceb9071e32e02ca1fd54ae9ab6eab729c2a0506806c5dce",
+    "s1": "bb5239d3e5a6b98ebcd08a5837ea6ab8f2bab9d1fceb0dd185443e0835c9bb3d",
+    "s2": "20f0bc760317d50c079ba05e2eae01c742a6605bc8e2d19f1b5bb0839a6fdafd"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T14:04:28.203652+00:00"
+}
