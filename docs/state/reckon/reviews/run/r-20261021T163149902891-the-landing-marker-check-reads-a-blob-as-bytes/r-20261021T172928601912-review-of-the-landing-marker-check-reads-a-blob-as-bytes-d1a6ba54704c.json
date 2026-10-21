@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2474",
+    "reckon/crew_run_commands.py:67"
+  ],
+  "completed_at": "2026-10-21T17:50:45.778Z",
+  "dispatched_at": "2026-10-21T17:30:49Z",
+  "finding_dispositions": {
+    "2": {
+      "kind": "folded",
+      "node": "the-landing-marker-check-reads-a-blob-as-bytes",
+      "recorded_at": "2026-10-21T17:52:06.821610+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_scope.py",
+      "line": "1892",
+      "severity": "follow-on",
+      "text": "_revision_blob already owns the \"blob id a revision carries for a path\" capability, so the added _blob_id at reckon/crew/merge.py:244 duplicates it rather than extending it; merge.py cannot import promotion_scope (which imports merge at reckon/crew/promotion_scope.py:2413), so a shared owner would have to be a third module."
+    },
+    {
+      "file": "tests/test_a_landing_reads_binary_files.py",
+      "line": "152",
+      "severity": "follow-on",
+      "text": "The case named for the text file's marker check drops reviewed.txt entirely, so it reaches the absent-path refusal at reckon/crew/merge.py:434 and never the marker comparison at reckon/crew/merge.py:447-455; a regression that broke the marker comparison would not redden this gate."
+    },
+    {
+      "file": "reckon/crew/merge.py",
+      "line": "442",
+      "severity": "follow-on",
+      "text": "The refusal \"the merge altered a binary file the change carried\" also fires when the head's path was text and the merge produced a binary blob, so the wording misnames the kind of change for a reader triaging the refusal."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Two production call sites reach the landed change: reckon/crew_run_commands.py:2474 calls merge.land for crew complete --land, and reckon/crew_run_commands.py:67 calls merge.land_merge for crew merge, which shares change_markers and surviving_change_refusals.",
+    "diff": "Read commit by commit against e1772180f: 45f5c6e4c changes reckon/crew/merge.py and the four test paths, d1a6ba547 adds docs/evidence/fragments/a-landing-reads-binary-files/the-landing-marker-check-reads-a-blob-as-bytes.html, all inside the declared scope.",
+    "done_when": "The done_when names tests/test_a_landing_reads_binary_files.py with the fixture helpers moved into tests/helpers/landing_repository.py, and the gate ran that file with tests/test_a_reviewed_head_lands_without_touching_the_index.py, tests/test_one_call_lands_a_run.py, tests/test_producer_takes_new_code.py and tests/test_crew_tool_carries_the_write_verbs.py at both arms.",
+    "goal": "The goal is to judge a landed path by blob identity so a binary file lands; reckon/crew/merge.py:259 does exactly that and a binary-only landing now reports judgements rather than an empty marker count.",
+    "manifest": "Read; it records status complete, the two commits, 49 passed at head against 4 failed and 45 passed at base, a delta of zero added failures, and names logs/head-arm.log, logs/base-arm.log and logs/negative-control.log.",
+    "write_paths": "Read the manifest's four declared code paths; every path in git diff --stat e1772180f..d1a6ba547 is inside them, and the declared docs/figures directory is unused."
+  },
+  "justifications": {
+    "durability": "The negative-control log logs/negative-control.log shows all four new test ids reddening with UnicodeDecodeError when reckon/crew/merge.py:301 routes the content read back through the text git call.",
+    "evidence": "The gate named in the manifest runs tests/test_a_landing_reads_binary_files.py beside the pre-existing files and its result is recorded, not claimed: logs/base-arm.log ends '4 failed, 45 passed' with EXIT=1 and logs/head-arm.log ends '49 passed' with EXIT=0.",
+    "fit": "reckon/crew/merge.py:211 sits beside _run at reckon/crew/merge.py:108 in the module's own private-helper idiom, and _read_path, _blob_id, _show_bytes and _decode_text carry mechanism names with no plan, sprint or version label.",
+    "goal_fidelity": "reckon/crew/merge.py:259 makes _read_path the one place a changed path is read and compares blob identity before content, and the survived block at reckon/crew/merge.py:794 carries the judgements map the goal asked for.",
+    "reuse": "reckon/crew/promotion_scope.py:1892 already holds the same blob-id capability as the added _blob_id.",
+    "scope_discipline": "git diff --stat e1772180f..d1a6ba547 lists five files and every one is inside the declared write paths recorded in the manifest's changed_paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to judge a landed changed path by blob identity so a head adding a binary file lands; reckon/crew/merge.py:259 makes _read_path the one reading and reckon/crew/merge.py:794 reports each path's judgement.\nVERDICT done_when: the done_when names tests/test_a_landing_reads_binary_files.py, the fixture helpers moved into tests/helpers/landing_repository.py, and base/head arms judged by delta; the manifest records that gate with failure_ids in tests/<file>::<name> form.\nVERDICT write_paths: read the manifest's declared paths; git diff --stat e1772180f..d1a6ba547 changes five files and every one is inside them.\nVERDICT manifest: read; it states status complete, 49 passed at head against 4 failed and 45 passed at base, zero added failures, and names logs/head-arm.log, logs/base-arm.log and logs/negative-control.log.\nVERDICT diff: read commit by commit against e1772180f; 45f5c6e4c carries the merge fix and four test paths and d1a6ba547 records the evidence fragment, with nothing outside the declared scope.\nCALL_SITES: reckon/crew_run_commands.py:2474, reckon/crew_run_commands.py:67\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/merge.py:259 compares each path's blob id before any content read, and reckon/crew/merge.py:794 reports the judgement per path.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/base-arm.log ends '4 failed, 45 passed' with EXIT=1 and logs/head-arm.log ends '49 passed' with EXIT=0, matching the manifest's baseline_suite and after_suite.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff --stat e1772180f..d1a6ba547 is inside the manifest's declared changed_paths, and the declared docs/figures directory is unused.\nSCORE durability: 17\nJUSTIFICATION durability: logs/negative-control.log reddens all four new test ids with UnicodeDecodeError when reckon/crew/merge.py:301 routes the content read back through the text git call.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/merge.py:211 follows the private-helper idiom beside reckon/crew/merge.py:108 and carries no plan, sprint or version name.\nSCORE reuse: 10\nJUSTIFICATION reuse: _read_path and _decode_text extend no existing owner, but the added _blob_id at reckon/crew/merge.py:244 duplicates _revision_blob at reckon/crew/promotion_scope.py:1892.\nFINDING reckon/crew/promotion_scope.py:1892 follow-on: _revision_blob already owns the blob-id-for-a-path capability, so _blob_id duplicates rather than extends it, and merge.py cannot import promotion_scope because promotion_scope imports merge at reckon/crew/promotion_scope.py:2413.\nFINDING tests/test_a_landing_reads_binary_files.py:152 follow-on: the case named for the text marker check drops reviewed.txt entirely, reaching the absent-path refusal at reckon/crew/merge.py:434 rather than the marker comparison at reckon/crew/merge.py:447-455, so a regression in that comparison would not redden this gate.\nFINDING reckon/crew/merge.py:442 follow-on: the refusal 'the merge altered a binary file the change carried' also fires when the head's path was text and the merge produced a binary blob, misnaming the kind of change for a reader triaging it.\n",
+  "review_run_id": "r-20261021T172928601912-review-of-the-landing-marker-check-reads-a-blob-as-bytes-d1a6ba54704c",
+  "reviewed_base_sha": "e1772180f98aa78548687738487bc37ac781d0b9",
+  "reviewed_head_sha": "d1a6ba54704c99fb37a5e09ed47664c942b68835",
+  "reviewed_run_id": "r-20261021T163149902891-the-landing-marker-check-reads-a-blob-as-bytes",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 10,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T17:54:05.584965+00:00",
+  "total": 99
+}
