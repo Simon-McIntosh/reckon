@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S26">
-<meta name="plan-version" content="108">
+<meta name="plan-version" content="109">
 <meta name="plan-modified" content="2026-10-21">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;deferred&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="f2ea9301,5b1759ab,428477c7">
 <meta name="plan-impl" content="0.4">
 <meta name="plan-section-depends-on" content="{&quot;s14&quot;:[&quot;a-review-can-see-the-figure#s13&quot;],&quot;s15&quot;:[&quot;a-review-can-see-the-figure#s14&quot;],&quot;s16&quot;:[&quot;a-review-can-see-the-figure#s14&quot;]}">
@@ -322,6 +322,11 @@
     <div class="r-fu-body"><p>Both decisions are locked. §10 renders SVG figures to PNG on the dispatch, §11 refuses a PNG twin at promotion, and §12 lets a figure review take an image lane. The three write disjoint files and can run together. <code>scoring-should-stop-a-promotion</code> §6 follows §12.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-review-can-see-the-figure §10</pre>
     <p class="r-fu-outcome">§10 (f1d444cb3), §11 (bcdace7c1) and §12 (b5c3c6fd7) landed. The remaining work, a figure review that promotion dispatches and reads, is carried by scoring-should-stop-a-promotion §6 and §18 to §20, whose §6 now depends on this plan's §10 and §12.</p>
+    </article>
+<article class="r-fu" data-id="f-arcstf-007" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-21" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Measure what the local lane can judge (§3), now that figure reviews run on it</h4>
+    <div class="r-fu-body"><p>Figure reviews now run end to end on the local lane. The first live one, on power_convertor's <code>vs1-first-turn-convergence</code> at 15:45 on 2026-10-21, opened all three rendered PNGs and stored a parsed figure record with 18 verdicts and 3 findings. §13 measured only that clive receives an image. Whether it applies the six rules, and in particular whether it fails a known-bad figure, is what §3's pairs measure, and §8 ran those pairs only on codex. §3 runs the same pairs, with their image-withheld controls, on the free local lane. §4's selection by artifact is in effect (the live dispatch chose the figure review because the run changed images under <code>figures/</code>); whether the figure review waits for the text review, its "cheap review first" half, is unverified and belongs in the same pass.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-review-can-see-the-figure §3</pre>
     </article>
 </section>
 
