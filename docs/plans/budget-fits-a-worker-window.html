@@ -25,7 +25,7 @@
   <title>Budget Fits A Worker Window | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="3">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -44,10 +44,10 @@
       <li>the lift-reading helpers: <code>_other_session_lift</code>, <code>_lift_label</code>, <code>_lift_resolved_config</code>, <code>_lift_history</code>, <code>_record_lift_reading</code>, <code>_reading_lift_entry</code> and <code>_lift_order</code>;</li>
       <li>the credit-lift verdict, <code>_credit_lift_verdict</code>, with <code>DEFAULT_CREDIT_RESERVE_FRACTION</code>.</li>
     </ul>
-    <p>Moving it leaves <code>budget.py</code> near 41,600 tokens, which leaves room for §48.</p>
+    <p>The family alone is not enough once §46 has landed. At <code>76946f9a9</code>, the merge that landed §46, <code>budget.py</code> measures 56,488 tokens, and moving the family alone would leave about 46,600. So the cut also takes the family's private helpers: the 17 functions in <code>budget.py</code> that are called only by family members and from nowhere else in <code>reckon/</code>. The largest are <code>_group_allowance</code>, <code>_group_bar</code>, <code>_group_runway</code>, <code>_run_cost_flow</code> and <code>_scale_for_banked_reset</code>. With them the cut is about 19,800 tokens, which leaves <code>budget.py</code> near 36,700 and gives §48 room.</p>
     <p><strong>Deliverable.</strong></p>
     <ul>
-      <li>The pace functions and the lift-reading helpers move to a new module, <code>reckon/budget_pace.py</code>.</li>
+      <li>The pace functions, the lift-reading helpers and the family's private helpers move to a new module, <code>reckon/pace_report.py</code>. The name says what it adds. <code>reckon/crew/pace.py</code> already owns pace arithmetic: the week's allowance for a budget group (<code>policy</code>, <code>GroupReading</code>, <code>Allowance</code>, <code>allowance_for_group</code>). The new module owns the report, the row and the hold composed over that allowance. A new allowance figure goes in <code>crew/pace.py</code>; a new way of reporting or holding on it goes in <code>pace_report.py</code>. The family cannot live in <code>crew/pace.py</code>, because <code>budget.py</code> imports that module at module level, and <code>group_pace</code> reads <code>budget.py</code>'s readings. Hosting it there would make <code>crew/pace.py</code> import <code>reckon.budget</code>, which is a cycle. The lift-reading helpers read the lift lifecycle that <code>reckon/crew/lift_watch.py</code> owns. They move as readers of it and duplicate none of it.</li>
       <li><code>_credit_lift_verdict</code> moves into <code>reckon/crew/budget_lift.py</code>, which already owns the credits lift form. At <code>f5e88d284</code> that module is 14,536 tokens.</li>
       <li><code>DEFAULT_CREDIT_RESERVE_FRACTION</code> already has a home: <code>reckon/crew/budget_lift.py:113</code> defines it with the same value and comment. <code>budget.py</code>'s copy is deleted, and <code>reckon.budget</code> re-exports the existing constant, so there is one definition.</li>
       <li><code>decide()</code> imports the verdict lazily, as <code>budget.py</code> already does for <code>budget_lift</code>, so the two modules form no import cycle.</li>
@@ -55,7 +55,7 @@
       <li>Every moved public name stays importable from <code>reckon.budget</code>, so <code>reckon/crew/budget_group.py</code>, <code>reckon/crew/dispatch.py</code> and the tests that import those names are unchanged.</li>
       <li>A test that monkeypatches a <code>reckon.budget</code> helper which moved code now reads from its own module is repointed at that module. It is never weakened.</li>
     </ul>
-    <p><strong>Done when</strong> <code>tests/test_every_module_fits_a_worker_window.py</code>, run at the node's head, no longer names <code>reckon/budget.py</code>, and the file measures at most 45,000 tokens by <code>reckon.crew.routing._tokens_for_bytes</code>. Neither <code>reckon/budget_pace.py</code> nor <code>reckon/crew/budget_lift.py</code> measures over 40,000. The test's remaining offenders are exactly the base arm's, less <code>budget.py</code>.</p>
+    <p><strong>Done when</strong> <code>tests/test_every_module_fits_a_worker_window.py</code>, run at the node's head, no longer names <code>reckon/budget.py</code>, and the file measures at most 45,000 tokens by <code>reckon.crew.routing._tokens_for_bytes</code>. Neither <code>reckon/pace_report.py</code> nor <code>reckon/crew/budget_lift.py</code> measures over 40,000. The test's remaining offenders are exactly the base arm's, less <code>budget.py</code>.</p>
     <p>The gate also runs, at base and at head, every test file that reaches a moved name, and adds no failure:</p>
     <ul>
       <li><code>tests/test_preflight_pace.py</code>, <code>tests/test_preflight_runs_remaining.py</code>, <code>tests/test_pace_reads_the_lift.py</code>, <code>tests/test_pace_hold_releases_at.py</code>, <code>tests/test_a_paced_window_reanchors_at_lift_end.py</code>;</li>
@@ -63,9 +63,9 @@
       <li><code>tests/test_picker.py</code>, <code>tests/test_picker_lanes.py</code>, <code>tests/test_picker_latency.py</code>, <code>tests/test_picker_reserved_lanes.py</code>.</li>
     </ul>
     <p>Negative control: put <code>budget.py</code> back to its base content in a scratch copy, and the width test names it again. <code>ruff check</code> and <code>ruff format --check</code> findings on each changed path do not exceed base.</p>
-    <p><strong>Write paths.</strong> The worker reads and edits only these files. The gate's other test files are run, not read. The fence is sized to fit one local-lane window: about 66,000 tokens for the two existing modules, plus the five test files below.</p>
+    <p><strong>Write paths.</strong> The worker reads and edits only these files. The gate's other test files are run, not read. The fence is sized to fit one local-lane window: about 71,000 tokens for the two existing modules at <code>76946f9a9</code>, plus the five test files below.</p>
     <ul>
-      <li><code>reckon/budget.py</code>, <code>reckon/budget_pace.py</code> and <code>reckon/crew/budget_lift.py</code>;</li>
+      <li><code>reckon/budget.py</code>, <code>reckon/pace_report.py</code> and <code>reckon/crew/budget_lift.py</code>;</li>
       <li>the five test files that reach moved names most often: <code>tests/test_preflight_pace.py</code>, <code>tests/test_preflight_runs_remaining.py</code>, <code>tests/test_pace_reads_the_lift.py</code>, <code>tests/test_pace_hold_releases_at.py</code> and <code>tests/test_a_paced_window_reanchors_at_lift_end.py</code>.</li>
     </ul>
     <p>Any other test in the gate that the move breaks is granted from the failure ids the worker reports, not fenced up front. If dispatch's context check still refuses the fence, the five test files move to the gate only and are granted the same way.</p>
