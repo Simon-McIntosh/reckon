@@ -261,6 +261,7 @@ def _candidates_scan(
     *,
     now: datetime,
     key_counts: MutableMapping[tuple[str, str], dict[str, Counter[str]]] | None = None,
+    attempts_out: MutableMapping[str, int] | None = None,
 ) -> tuple[
     dict[tuple[str, str | None], dict[str, int]],
     dict[str, list[float]],
@@ -316,6 +317,13 @@ def _candidates_scan(
     now. A caller wanting those tallies passes ``key_counts`` and receives them
     in it, the way a caller wanting the context estimate passes ``context_out``
     to ``_fit``; a caller that passes none pays nothing for the tally.
+
+    The same walk counts the node's own attempts -- and, like the key tally,
+    does so before any window or role filter, because an attempt happened
+    whether or not its row still falls inside the outcome window. A caller that
+    passes ``attempts_out`` receives the count under ``"attempts"``; the count
+    is taken over every row, so it equals a separate count of the rows matching
+    ``node`` and ``plan`` while costing no second walk.
     """
 
     cutoff = now - timedelta(days=14)
@@ -331,6 +339,10 @@ def _candidates_scan(
     moved_in: dict[tuple[str, str | None], Counter[str]] = {}
     moved_off: dict[tuple[str, str | None], int] = {}
     for row in records:
+        if attempts_out is not None and (
+            row.get("node") == request.node.id and row.get("plan") == request.node.plan
+        ):
+            attempts_out["attempts"] = attempts_out.get("attempts", 0) + 1
         stamp = parse_utc(
             str(row.get("completed_at") or row.get("dispatched_at") or "")
         )
@@ -1308,14 +1320,10 @@ def candidates(
     # The same declared tier and attempt count govern the probe and the gate.
     reserved = flight.reserved_lane_policies(config)
     declared_attempts = getattr(request, "attempts", None)
-    attempts = (
-        declared_attempts
-        if declared_attempts is not None
-        else sum(
-            row.get("node") == request.node.id and row.get("plan") == request.node.plan
-            for row in rows
-        )
-    )
+    # The node's attempt count is taken in the one pass the scan already makes
+    # over the rows rather than in a walk of its own, so a pick reads the ledger
+    # list exactly once whatever the backend count.
+    attempts_out: dict[str, int] = {}
     declared_requirements = {
         **(request.capability.get("requirements") or {}),
         **(getattr(request, "orchestrator_assessment", None) or {}),
@@ -1416,7 +1424,16 @@ def candidates(
         requirement_counts,
         moved_in_counts,
         moved_off_counts,
-    ) = _candidates_scan(rows, request, now=now, key_counts=key_counts)
+    ) = _candidates_scan(
+        rows, request, now=now, key_counts=key_counts, attempts_out=attempts_out
+    )
+    # The scan counted the node's own rows in the pass above; a request that
+    # declares its attempt count keeps that figure instead.
+    attempts = (
+        declared_attempts
+        if declared_attempts is not None
+        else attempts_out.get("attempts", 0)
+    )
     # A candidate stands on its own model id's record once it holds this many
     # outcomes; below it the candidate also reads its lane model key's earlier
     # generations as a prior. Read from the routing config so a host or project
