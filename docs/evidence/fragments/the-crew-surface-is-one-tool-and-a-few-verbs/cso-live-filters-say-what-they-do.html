@@ -1,0 +1,76 @@
+<article class="landed-report" data-node="cso-live-filters-say-what-they-do">
+<h3 id="cso-live-filters-say-what-they-do-summary">The live view's filters describe what they do, not the verb they replaced</h3>
+<p id="cso-live-filters-say-what-they-do-change"><strong>Change.</strong>
+Three string literals described the <code>live</code> view's <code>phase</code>
+and <code>mine</code> filters by reference to <code>crew list</code>, a verb the
+section is retiring. Each now states the filter's own behaviour, and a comment
+block that did the same was rewritten in the same pass so the module no longer
+points at a retired verb:
+
+<ul>
+<li><code>reckon/_mcp_tools.py:113</code> — the <code>phase</code> Field
+description becomes "Keep only the live pointers in one phase".</li>
+<li><code>reckon/mcp.py:2095</code> — the <code>_crew</code> docstring now reads
+"<code>phase</code> keeps the live pointers in one phase, and <code>mine</code>
+keeps only the runs dispatched by the calling session".</li>
+<li><code>reckon/mcp_views.py:3686</code> — the <code>serve_crew_view</code>
+docstring says the same, keeping the note that <code>mine</code> needs
+<code>session</code> because ownership is a comparison.</li>
+<li><code>reckon/mcp_views.py:3994</code> — the dispatcher comment now names the
+two filters as the <code>live</code> view's own: both narrow the pointers before
+classification, and <code>mine</code> compares the pointer's own session.</li>
+</ul>
+
+No behaviour changes: every edit is a docstring, a Field description or a
+comment.</p>
+<p id="cso-live-filters-say-what-they-do-test"><strong>Test.</strong> No test is
+added or changed. The section's scan,
+<code>test_no_string_literal_names_a_tombstoned_verb_as_a_crew_command</code> in
+<code>tests/test_crew_families_fold.py</code>, reads every string literal under
+<code>reckon/</code> and fails naming any line that reaches for a name in the
+tombstone registry; it reddens on the three files the moment
+<code>crew list</code> enters that registry, which is what the negative control
+below shows. The change is verified by that scan and by the gate adding no
+failures.</p>
+<p id="cso-live-filters-say-what-they-do-measure"><strong>Measure.</strong> Gate:
+<code>PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest
+-p no:cacheprovider tests/test_crew_view_serves_every_view.py
+tests/test_mcp_tools.py tests/test_crew_families_fold.py
+tests/test_read_verbs_retire_behind_crew_view.py
+tests/test_skill_contracts.py</code>. Head arm at <code>7722b063e</code>:
+3 failed, 139 passed, <code>EXIT=1</code>. Base arm at
+<code>03aeab0d3</code>, extracted with <code>git archive</code> under
+<code>$TMPDIR</code> and run over the same five files: 3 failed, 139 passed,
+<code>EXIT=1</code>. Both arms fail the same three ids and no others, all in
+<code>tests/test_read_verbs_retire_behind_crew_view.py</code>
+(<code>test_the_captured_listing_spans_every_filter</code>,
+<code>test_crew_view_live_gives_the_listings_answer[project]</code>,
+<code>test_crew_view_live_gives_the_listings_answer[session]</code>, each on
+<code>ValueError('queued pointer has no readable queued_at')</code>), so the node
+adds zero failures.
+<code>grep -nE 'crew\s+list\b' reckon/_mcp_tools.py reckon/mcp.py
+reckon/mcp_views.py</code> prints nothing at head (<code>exit 1</code>) and the
+five references at base. <code>ruff check --no-cache</code> over the three
+changed paths reports 13 findings at head and 13 at base;
+<code>ruff format --check</code> reports all three files already formatted on
+both sides. Logs <code>logs/base-gate.log</code>, <code>logs/head-gate.log</code>
+and <code>logs/ruff-base-head.log</code> under the run directory, each opening
+with its revision, tree, working directory and the literal command, and the
+gate logs closing with a bare <code>EXIT=</code> line.</p>
+<p id="cso-live-filters-say-what-they-do-control"><strong>Negative control.</strong>
+<code>crew list</code> was added to the tombstone registry in a scratch copy of
+each arm (<code>git archive</code> trees under <code>$TMPDIR</code>, so no
+tracked file was touched), and the section's scan was run alone. At base it
+fails, naming exactly the three files —
+<code>reckon/_mcp_tools.py:113</code>, <code>reckon/mcp.py:2011</code>,
+<code>reckon/mcp_views.py:3673</code>, 1 failed, <code>EXIT=1</code>. At head the same mutation
+passes for those files, 1 passed, <code>EXIT=0</code>. Log
+<code>logs/negative-control.log</code>; the scratch copies are discarded with
+the run's scratch, and no tracked file was mutated.</p>
+<p id="cso-live-filters-say-what-they-do-followons"><strong>Follow-ons.</strong>
+None. The three base-arm failures sit in
+<code>tests/test_read_verbs_retire_behind_crew_view.py</code>, outside this
+node's write scope, and are identical in both arms, so they are left untouched.
+Nothing is written outside the landing fragment; this node's done-when names no
+figure.</p>
+</article>
