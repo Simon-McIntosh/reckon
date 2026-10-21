@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>a-brief-carries-its-domain-rules — landed record</title>
+</head>
+<body>
+<main>
+<h2 id="a-brief-carries-its-domain-rules-heading">A brief carries its domain rules, and promotion runs their checks</h2>
+<p id="a-brief-carries-its-domain-rules-what">The rules a repository declares once are rendered into the composed prompt under one
+fixed heading, and each invariant carrying a check command is replayed at promotion through the
+existing integration replay — the same <code>sh -c</code> execution under one bound, with the
+output kept in the run directory, that the project's suite command goes through. Surface is
+<code>prompts.domain_rules_block</code> called from <code>compose_prompt</code>, plus
+<code>promotion_gate.replay_domain_invariant_checks</code>,
+<code>promotion_gate.domain_check_refusal_text</code> and the
+<code>promotion_checks._require_domain_invariant_checks</code> guard wired into the promotion's
+guard list. Nothing runs for a project that declares no <code>domain</code> block.</p>
+<p id="a-brief-carries-its-domain-rules-measure">Measure: <code>tests/test_domain_rules_reach_the_brief.py</code> — 10 passed. A fixture node
+writing <code>models/**</code> carries <code>convergence</code> and <code>dc-limit</code> under the
+heading and a node writing <code>docs/**</code> carries neither; a check exiting non-zero refuses
+with the invariant id in the refusal text and writes
+<code>domain-check-convergence.log</code>; a check exiting zero returns no refusal; a check that
+sleeps 30 s at a 1 s bound is refused rather than hung (proved by the test completing and its log
+carrying the cut-short line); a project declaring no <code>domain</code> block, and a node matching
+no rule, both run nothing.</p>
+<p id="a-brief-carries-its-domain-rules-open">Open on this node: <code>_brief_text</code> and
+<code>_brief_record</code> take only a <code>TaskNode</code>, and their call sites
+(<code>reckon/crew/dispatch.py</code>, <code>reckon/crew/dispatch_plan.py</code>) are outside this
+node's write scope, so the rules reach the composed prompt but not yet the stored brief record and
+its digest. The declared gate's base arm, the negative-control log and the wider gate suite were
+not produced before this node's stop, so this record is delivered as blocked rather than complete.</p>
+</main>
+</body>
+</html>
