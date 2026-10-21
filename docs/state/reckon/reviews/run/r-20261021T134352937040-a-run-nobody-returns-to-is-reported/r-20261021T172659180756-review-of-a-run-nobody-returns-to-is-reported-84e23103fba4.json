@@ -1,0 +1,25 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-21T17:49:48.484Z",
+  "dispatched_at": "2026-10-21T17:28:29Z",
+  "findings": [],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node's goal is to report terminal, unpromoted runs whose owning session has no live follower and no dispatch past a threshold, as a forgotten crew read view in reckon/crew/forgotten_runs.py; this delta (0904d78f1..84e23103f) closes the \"unpromoted\" half of that predicate by adding the settled-run case at tests/test_forgotten_runs_are_reported.py:254.\nVERDICT done_when: the source done-when (prompt FENCE-EVIDENCE) names tests/test_forgotten_runs_are_reported.py plus both arms from git checkouts; the delta's new case is inside the head-arm command (logs/head-arm.log ran tests/test_forgotten_runs_are_reported.py at 560266378, recording 148 passed / 1 failed), and I independently re-ran that file at 84e23103f for 5 passed.\nVERDICT write_paths: the declared write paths are reckon/crew/forgotten_runs.py, reckon/mcp_views.py, tests/test_forgotten_runs_are_reported.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-run-nobody-returns-to-is-reported.html and docs/figures/the-monitor-shows-the-work-it-watches/a-run-nobody-returns-to-is-reported; both delta files sit on the list and the diff touches nothing else.\nVERDICT manifest: read; status complete, commits edb6994bacdb8332da592bd015204c6ff54b667a, 5602663780a093a8bcd8273576ad95ea88f2182d and 84e23103f are listed, the landing states \"5 cases pass and the view names exactly the one forgotten pointer of five\", and retry_failures attributes the view-parity flake to parallel-run timing.\nVERDICT diff: read commit by commit; edb6994ba adds the settled-run case and _landed helper, 560266378 reflows one assertion message, 84e23103f rewrites the fragment's measure, negative-control and gate paragraphs; both changed paths are inside the declared write paths.\nCALL_SITES: reckon/mcp_views.py:4029, reckon/mcp_views.py:3612, reckon/_mcp_tools.py:99\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_forgotten_runs_are_reported.py:254 lands the \"unpromoted\" half the goal names; the delta adds coverage, not production behaviour.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/head-arm.log records 148 passed / 1 failed at 560266378 and logs/negative-control-unpromoted.log shows the added case reddening under the mutation; the source manifest.md carries no baseline_suite/after_suite keys, so the two arm logs were read directly and my re-run of tests/test_forgotten_runs_are_reported.py at 84e23103f gave 5 passed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both paths in git diff 0904d78f1..84e23103f (tests/test_forgotten_runs_are_reported.py and the evidence fragment) are among the manifest's orientation_write_paths.\nSCORE durability: 19\nJUSTIFICATION durability: the assertions at tests/test_forgotten_runs_are_reported.py:269-279 compare fixed run-id constants against a derived list, and logs/negative-control-unpromoted.log shows them reddening when reckon/crew/forgotten_runs.py:_terminal_unpromoted is bypassed, so the case fails if the classifier's settled overwrite at reckon/crew/recovery_classification.py:1616 regresses.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_forgotten_runs_are_reported.py:148 _landed and :254 the new case follow the file's existing _pointer/fixture idiom and carry no plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: _landed delegates to ledger.write_run_file (the owner) rather than reimplementing row serialisation, and no existing test helper owns \"persist a run row\".\n",
+  "review_run_id": "r-20261021T172659180756-review-of-a-run-nobody-returns-to-is-reported-84e23103fba4",
+  "reviewed_base_sha": "0904d78f1cc3db7c538b568609afc81fc578f9b5",
+  "reviewed_head_sha": "84e23103fba455fea36a23b990b984a6c3847e98",
+  "reviewed_run_id": "r-20261021T134352937040-a-run-nobody-returns-to-is-reported",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T17:51:39.669589+00:00",
+  "total": 114
+}
