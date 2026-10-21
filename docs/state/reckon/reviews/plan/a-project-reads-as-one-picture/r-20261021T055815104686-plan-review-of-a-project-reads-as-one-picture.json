@@ -1,0 +1,147 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T06:10:41.037Z",
+  "dispatched_at": "2026-10-21T05:59:08Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-project-reads-as-one-picture.html:25",
+      "id": "wiring-1",
+      "reason": "the missing s7\u2192s5 edge changes the build order and lets a node be dispatched against a section that cannot supply one of its listed outputs.",
+      "text": "plan-section-depends-on gives s7 the dependencies s2, s3 and s4, but \u00a77 (line 231) says it \"composes, from \u00a72 to \u00a75\" and its brief carries \"wiring findings, counted, with the top three shown\" (line 225), which are \u00a75's undeclared-wait and overlapping-scope outputs; s5 is not an ancestor of s7, so a scheduler honouring the declared map can build \u00a77 before \u00a75 exists and the brief cannot produce those rows",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-project-reads-as-one-picture.html:180",
+      "id": "single_goal-1",
+      "reason": "\u00a76 should split into sections so each deliverable carries its own reviewable verdict, as \u00a72 to \u00a75 each do.",
+      "text": "\u00a76 bundles three separable deliverables \u2014 the slug@f-id ref grammar, the new `descoped` declaration, and the refusal text naming the keyed write path \u2014 and its done-when (line 204 onward) asserts three distinct behaviours, so the section can be neither reviewed nor closed on one verdict and its gate proves only whichever third ran",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-project-reads-as-one-picture.html:250",
+      "id": "done_when-1",
+      "reason": "without a declared control or a known-wrong input, \u00a78's measure cannot fail and so measures nothing about the derivations it exists to validate.",
+      "text": "\u00a78's done-when turns on \"Every disagreement with a coordinator is listed with its cause\", an assertion that is satisfied vacuously when no disagreement is found, and the section declares no negative control, so a derivation that is wrong in a way no coordinator happens to notice passes the node's gate; \u00a72 to \u00a76 each declare an arm that must fail on the base commit and \u00a78 declares none",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-project-reads-as-one-picture.html:234",
+      "id": "done_when-2",
+      "reason": "the section's stated control cannot fail on the defect it exists to catch (a wrong leading figure), so \u00a77 needs a declared failing arm on a fixture, as its siblings have.",
+      "text": "\u00a77's control is a parity test, but \u00a77 itself defines the brief as \"a composition, not a second analyser: every figure in it is read from the brief's own payload\", so the parity assertion holds by construction whenever the composition is faithful and can only catch a brief that re-derives, not a brief whose figures are wrong; no base arm is named",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-project-reads-as-one-picture.html:67",
+      "id": "reasoning-1",
+      "reason": "the plan's central causal claim is contradicted by the code it cites, and a builder reading \u00a72 as \"add propagation for these three edge kinds\" would double-handle the gate and plan-level ones instead of extending the plan-section-depends-on path the base actually drops.",
+      "text": "\u00a71 states the analyser \"rolls everything up to plan granularity before computing paths, so the edges cancel out \u2026 a section-level edge between two plans never becomes an unlocks\", but at the base revision reckon/roadmap.py:2955-2970 adds every cross-plan gate-section edge to `dependents` (hence to the target's `unlocks`) and roadmap.py:2878-2887 does the same for a section-qualified plan-level depends-on ref, so two of the three edge kinds \u00a72 lists (line 78-81) already propagate to plan-level unlocks; the stated cause is broader than the cited evidence (the power_convertor table) supports and \u00a72 will re-cover edges the base already handles",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f25d99d00ae6572d03fb759d48c759038ee265c81c8aa6e09586064b835fc3c4",
+  "plan_slug": "a-project-reads-as-one-picture",
+  "plan_version": 0,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-21T06:13:20.569364+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "single_goal-1",
+      "reason": "",
+      "when": "2026-10-21T06:13:30.081788+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-21T06:13:40.682616+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-2",
+      "reason": "",
+      "when": "2026-10-21T06:13:50.878396+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-21T06:13:59.719618+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T06:13:40.682616+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T06:13:50.878396+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T06:13:59.719618+00:00"
+    },
+    "single_goal-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T06:13:30.081788+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T06:13:20.569364+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-project-reads-as-one-picture.v0.json",
+  "review_run_id": "r-20261021T055815104686-plan-review-of-a-project-reads-as-one-picture",
+  "reviewed_blob_sha": "9c6685e2a3c6bb03238b459cbba7418412afe8c2",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 a-project-reads-as-one-picture.html, the-mcp-answers-the-question-asked.html, work-scheduling-surface.html, PLAN-FORMAT.md, the reckon-edit skill and the cited followup f-tfcv-007 (on power_convertor, tf-cold-test-validation \u00a74) all resolve; the plan's only hrefs are the shared CSS links.",
+    "done_when": "a finding \u2014 \u00a72 to \u00a76 each name a base-commit negative control, but \u00a77's parity test is tautological by its own definition and \u00a78 declares no control at all.",
+    "evidence_paths": "pass \u2014 \u00a72 and \u00a75 write to \"the gate log\" and \u00a78 to the cumulative landed record; no section names a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 the new names are mechanism terms (critical_path, unlocks, undeclared-wait, overlapping-scope, descoped); the one ticket-shaped token, f-tfcv-007, appears only in evidence prose as a real followup id, never in a symbol or filename.",
+    "reasoning": "a finding \u2014 \u00a71's stated root cause overstates what the base analyser does, and \u00a72's edge list partly re-covers edges the base already propagates to plan-level unlocks.",
+    "single_goal": "a finding \u2014 \u00a76 carries three independent schema deliverables (followup ref grammar, the `descoped` declaration, the refusal text) each with its own test.",
+    "wiring": "a finding \u2014 the section dependency map is correct for s3, s5 and s8, but \u00a77 reads \u00a75 and a-project-reads-as-one-picture#s5 is absent from s7's depends-on."
+  },
+  "section_digests": {
+    "_document": "407117caf19f0a94852cdf3534f0e6d23f3cc4f7ac23c434612aeca92aeced05",
+    "s1": "11a26f8842b346790fe15319b1ae6c6560cb3ec52083a92ec8b73efed6a97118",
+    "s2": "29915c7bfb6a053c7c5e0b7b455e89e2bd329215c8744954829f6b72fd4e4951",
+    "s3": "1447b20023896c111286bdac216ce1938a0e74443ffa11cbdb8e4eef2427f54a",
+    "s4": "5681204820c5a325bb74eb0eae7f23e929fcd07085ca0aee87be77107db770fc",
+    "s5": "ff089a567fbe0c1760cd53470a5037aa7b3d1f536103b004db83cb7cda55c12d",
+    "s6": "c984af5558ba1384ca28b1764b5bf719abbe1e9fc06ccc2b7eddc2c2dc3b74f3",
+    "s7": "8b3e3ddff19e60f3f88793f70945885f5d91708e982d410a93dd2e7e7fd77a89",
+    "s8": "d154bac6e5a82c38864f59aaf16cc12a5f8bd15a62297d6d967a11f9c33cbbc4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T06:13:14.053385+00:00"
+}
