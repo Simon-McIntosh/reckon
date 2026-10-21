@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T18:13:35.808Z",
+  "dispatched_at": "2026-10-21T18:00:45Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-limit-reset-reaches-every-session.html:41",
+      "id": "reasoning-1",
+      "reason": "\u00a72 states the required placement explicitly and names the gate to avoid, so an implementer follows the section and the table's wording changes no deliverable.",
+      "text": "the reuse table says `lift_watch.sweep \u2014 `lift_watch.sweep`, called from `_sweep_lift_rows` in `reckon/crew/recovery_watch.py` \u2014 runs \"on every poll\", but the call sits inside the crew-home change gate `if sweep:` (`reckon/crew/recovery_watch.py:2700`\u2013`:2710`), so it runs only when the change token moves; \u00a72 states plainly that the call runs under that gate and that the reset sweep must not, so the table's cadence claim contradicts the section it justifies",
+      "type": "reasoning",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-limit-reset-reaches-every-session.html:42",
+      "id": "anchors_resolve-1",
+      "reason": "`take_lift_claim` is generic over the transition string (`_lift_claim_path`, `reckon/crew_follow_commands.py:1305`), so the existing callback already carries a `limit-reset` claim and the section's write paths are in fact sufficient; only the table's attribution is loose.",
+      "text": "the table's Pane row says the row policy \"in `reckon/crew/ticker.py` draws a lift row once per pane through the shared claim `take_lift_claim`\", but that function is defined in `reckon/crew_follow_commands.py:1417` and reaches the ticker only as the callback `PaneRowPath._lift_claim` supplied by the follower (`reckon/crew/ticker.py:1765`, wired at `reckon/crew_follow_commands.py:1505`); \u00a72's write paths therefore name `reckon/crew/ticker.py` while asserting \"the follower module itself does not change\", leaving it open whether the claim for the new state is reachable from the declared writes",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "3b6599e2d658a4ed0a0b969e8b1dd4c2a79d3ca9f40b7f17c01a67b64b7cfd4e",
+  "plan_slug": "a-limit-reset-reaches-every-session",
+  "plan_version": 19,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T175856453622-plan-review-of-a-limit-reset-reaches-every-session",
+  "reviewed_blob_sha": "e651d35b2feb9b75fa7d1ffc337ee0896f558ba2",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the reuse table attributes the shared claim to the ticker's row policy, but `take_lift_claim` is defined in `reckon/crew_follow_commands.py:1417`, not `reckon/crew/ticker.py`, and \u00a72's write paths omit the follower module while declaring it unchanged.",
+    "done_when": "pass \u2014 each changed section names a measurable done-when and a declared negative control: \u00a72 removes the claim (A's pane draws twice) and gates the sweep on document change (the scheduled reset is never announced); \u00a73 removes the 60-minute horizon (the 90-minute-old reset is named). \u00a72's fifth bullet is the head arm for its second control.",
+    "evidence_paths": "pass \u2014 logs sit under the run directory with a revision header and a bare `EXIT=` last line; \u00a74's evidence lands in the landing record, not a scratchpad.",
+    "naming": "pass \u2014 the new surface (`limit-reset`, `reset`, `limit_reset.py`, `limit_reset_watch.py`) carries no plan label, stage name, ticket number or version tag, and no comment in the changed units narrates a changelog.",
+    "reasoning": "a finding \u2014 the table's description of the lift sweep's cadence does not match the code it cites and is contradicted by \u00a72's own mechanism.",
+    "single_goal": "pass \u2014 \u00a72's sweep and its pane branch are the produce-once/draw-once halves of one broadcast under one gate; \u00a73 is now a single deliverable (the hook line) after the earlier reach-report split into \u00a75.",
+    "wiring": "pass \u2014 `plan-section-depends-on` gives s2\u2192s1, s3\u2192s1, s4\u2192s2/s3/s5, s5\u2192s1, s6\u2192s3/s5; each dependency is real (\u00a72 and \u00a73 both read \u00a71's `<config-home>/limit-resets.json`, \u00a76's paragraph names commands \u00a71 and \u00a75 create) and the followups `f-alrres-001`\u2013`f-alrres-007` each name the section they build."
+  },
+  "section_digests": {
+    "_document": "9ddd59951ac5706e5c09b6796b61e9bf763a8800fa8c4b79222df6abf52343bc",
+    "s1": "baf87d0138fbe63d90de461ca590ce87510e78c52140119a5905ce875b50da49",
+    "s2": "489f178fad5c3397749e3f34d28f0ae89e228c66b7acfa09a07841614c1ad026",
+    "s3": "038ca137a06a54351755b0ab4ef61b492b094afa3d4c00afa37d3f1cc9358217",
+    "s4": "7e261dc6824166853bdbd8ea2fcdca3e0b3849eefa7c9218c5356b800cbb6ed6",
+    "s5": "92fb4014fd0118f16cf83458ec0db9fbc6b7f0bdbb8025721cf36cec8e7d7d38",
+    "s6": "a251812d1c4424307b60c05534931ab571918a32f65a2b7d01d6d255a3c10042"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T18:15:47.034032+00:00"
+}
