@@ -1,0 +1,104 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T10:22:21.568Z",
+  "dispatched_at": "2026-10-21T10:08:41Z",
+  "findings": [
+    {
+      "anchor": ".../r-20261021T094031992135-plan-review-of-work-is-checked-against-its-domain/plan.html:80",
+      "id": "reasoning-1",
+      "reason": "a node told to edit a rubric list inside `_run_open` must either fail to locate it or invent a branch, and the plan's \"one derivation\" claim would rest on an edit no reader can find.",
+      "text": "\u00a75 says a failed check becomes a blocking finding \"with rubric `domain`\" and that `review_lifecycle`'s `_run_open` reads it \"once the rubric list it branches on includes `domain`\"; `_run_open` (`reckon/crew/review_lifecycle.py:124`) branches on no rubric list at all \u2014 it delegates to `_blocking`, which reads the finding's `severity` against `NON_BLOCKING_SEVERITIES = frozenset({\"follow-on\"})` (line 74), and the only `rubric` references in that file (`:235`) are the review *subject* discriminator for figure reviews \u2014 so the edit the plan names does not exist, and the real requirement is that the finding be stored with a blocking severity (no change to `_run_open`); as written the node is sent to extend a rubric list it will not find and may add a spurious rubric branch to compensate",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": ".../r-20261021T094031992135-plan-review-of-work-is-checked-against-its-domain/plan.html:84",
+      "id": "reasoning-2",
+      "reason": "the implementing node must either break the documented purity contract (and the no-repository synthesised-node path) or move the check to the caller, neither of which the plan states.",
+      "text": "\u00a76 puts the new `inputs` check inside `judge_prescribed` (\"The two checks become properties in that judgement\") and requires a node \"whose repository-path inputs do not exist\" be refused, but `judge_prescribed(node)` (`reckon/crew/prescription.py:130`) takes the node and nothing else while the module's own docstring declares the judgement pure \u2014 \"computable before any worktree, plan file or flight configuration exists\" and \"a caller can judge a synthesised node with no repository\" \u2014 and `TaskNode` (`reckon/crew/node.py:724`) carries no repository root, so the check has no base to resolve \"repository-path inputs\" against and the plan never names one; the done-when (\"refused at dispatch with the path, and the same node with the file present dispatches\") therefore cannot be produced by the mechanism as placed",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": ".../r-20261021T094031992135-plan-review-of-work-is-checked-against-its-domain/plan.html:76",
+      "id": "reasoning-3",
+      "reason": "a node told this trust boundary is new will build fresh execution and logging rather than reuse the established re-run path, changing the guard's surface and its estimate.",
+      "text": "\u00a74 says the new promotion guard \"is the first guard that executes a repository-declared command, which is a different trust boundary from the guards that read a run's own recorded evidence\", but promotion already executes a flight-declared command under a bounded timeout: the integration re-run in `reckon/crew/promotion_gate.py:787` runs `subprocess.run([\"sh\", \"-c\", replayed], cwd=\u2026, timeout=bound_seconds)` on the recorded gate command, which \u00a74's own sibling mechanism arms from `gates.suite_command` in the repository's `flight.yaml` (`reckon/crew/promotion_records.py:347`); the plan also asserts \"Surface: \u2026 one guard\" without acknowledging the existing worktree-root rewriting and replay-log convention that path already carries",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "55063dcd2c85d49e5252b84ce21e771895ed081b1b64aefe6ec9dffce97ccbea",
+  "plan_slug": "work-is-checked-against-its-domain",
+  "plan_version": 4,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-21T10:24:40.003903+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-21T10:24:53.429613+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-3",
+      "reason": "",
+      "when": "2026-10-21T10:25:07.720483+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T10:24:40.003903+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T10:24:53.429613+00:00"
+    },
+    "reasoning-3": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T10:25:07.720483+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-work-is-checked-against-its-domain.v4.json",
+  "review_run_id": "r-20261021T094031992135-plan-review-of-work-is-checked-against-its-domain",
+  "reviewed_blob_sha": "e028563d4c793d5da080ae927733bf835fd57a26",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves at `866fb9bf`: `_run_open` (`reckon/crew/review_lifecycle.py:124`), `dispatch_review_for_run` (`reckon/crew/recovery_review_dispatch.py:2056`), `blocking_finding_dispositions` (`reckon/crew/repair.py:242`), `gates.dimension_floors` (`reckon/_flight_schema.py:620`), `_brief_record`/`_brief_text` (`reckon/crew/dispatch_admission.py:2015,2026`), `judge_prescribed`/`PRESCRIBED_PROPERTIES` (`reckon/crew/prescription.py:130,46`), `TaskNode` (`reckon/crew/node.py:724`), `REVIEW_DIMENSIONS`/`REVIEW_ITEMS` (`reckon/crew/review.py:89,108`), acceptance floor (`reckon/crew/recovery_review_acceptance.py:24`), `docs/_shared/flight.schema.json`, and the `docs/state/<project>/flight.yaml` convention (`reckon/flight.py:481`).",
+    "done_when": "pass \u2014 each of \u00a72\u2013\u00a76 declares a negative control that can fail: \u00a72 \"on the base commit the first fixture dispatches a review, and the test fails there\", \u00a73 \"nothing for a project without the block\", \u00a74 \"without the declaration the same fixture promotes\", \u00a75 \"a project without declarations scores six dimensions \u2026 the acceptance floor is unchanged\", \u00a76 \"a project that declares no `model_paths` is never linted\".",
+    "evidence_paths": "pass \u2014 the done-whens gate in pytest, and \u00a77 writes its replay results to the landed record with run ids; no gate log is placed in a scratchpad or node-local temp path.",
+    "naming": "pass \u2014 the new symbols (`rules_for`, `domain`, `inputs`, `compares_with`) are named by mechanism, and no plan label.",
+    "reasoning": "findings \u2014 \u00a75 names a rubric branch `_run_open` does not have; \u00a76 places a filesystem check in a judgement documented as pure with no repository root; \u00a74 overstates the novelty of executing a repository-declared command.",
+    "single_goal": "pass \u2014 each section names one capability; \u00a74's brief-side and guard-side are the two halves of one wiring (`rules_for` into dispatch and into promotion), reviewed on one verdict.",
+    "wiring": "pass \u2014 `plan-section-depends-on` resolves every edge to a node that exists (s4/s5/s6\u2192s3, s7\u2192s2,s4,s5,s6), `plan-after: scoring-should-stop-a-promotion` resolves to `docs/plans/scoring-should-stop-a-promotion.html`, and no section reads a unit it does not depend on."
+  },
+  "section_digests": {
+    "_document": "d9ac8dec26b264677afd3500f4c31387d9361cad1110b7f412cda641c1c98291",
+    "s1": "096b2231b1cf1ab1c4476bbab2ea39d0ee87ea2bbfae045a542369206b4fbbf2",
+    "s2": "f39faf3a2bcf5933cb261265e9e542fae3e409fd9bdffc0c2c0623161f3cad56",
+    "s3": "eca25029a7c8cca2e22a3d4d879135d32aa739c860c67cbd0f563910c524a0b7",
+    "s4": "0185c39e0d1cfa0581914c77cad00cf5833d6e37533442e93a0ccf3121e1dc92",
+    "s5": "94fcd56f1ae7c259bfd4d944280e571be0dd398d5388f0b4deba9442e9598a89",
+    "s6": "ba17697404bec7e542626b553d6524e41111f6a9823a6b8230e9cfd6932ac1ce",
+    "s7": "ca3f9f129fae7eeff42ece50be5f648250554ce1998644ad4d07e46b7c6fb742"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T10:24:31.481324+00:00"
+}
