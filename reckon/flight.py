@@ -1950,19 +1950,33 @@ def input_modalities_required(profile: str) -> tuple[str, ...]:
         ) from None
 
 
+def normalise_input_modalities(declared: Any) -> tuple[str, ...]:
+    """Normalise one lane's declared input modalities into comparable words.
+
+    One read of the declaration is what keeps its two consumers agreeing: the
+    review-lane selection that admits a lane to a figure review and the
+    dispatch that names that lane its figure both ask this function, so a lane
+    cannot be admitted on a spelling the naming path does not recognise. A
+    declaration written as one string is read as a comma-separated list, and
+    each entry is stripped and case-folded, so ``[IMAGE]`` and ``[' image ']``
+    name an image exactly as ``image`` does. Absence is read as no declared
+    modality rather than as every modality: a lane that does not say it
+    receives an image is treated as not receiving one, which is what turns a
+    silent wrong verdict into a refusal.
+    """
+    if declared is None:
+        return ()
+    entries = declared.split(",") if isinstance(declared, str) else declared
+    return tuple(str(modality).strip().casefold() for modality in entries)
+
+
 def declared_input_modalities(
     config: Mapping[str, Any], backend: str
 ) -> tuple[str, ...]:
-    """Return the input modalities a backend declares, empty when none are.
-
-    Absence is read as no declared modality rather than as every modality: a
-    lane that does not say it receives an image is treated as not receiving
-    one, which is what turns a silent wrong verdict into a refusal.
-    """
+    """Return the input modalities a backend declares, empty when none are."""
     backends = config.get("backends") or {}
     entry = backends.get(backend) or {}
-    declared = entry.get("input_modalities") or []
-    return tuple(str(modality) for modality in declared)
+    return normalise_input_modalities(entry.get("input_modalities"))
 
 
 def missing_input_modalities(

@@ -7,21 +7,26 @@ resume or lane change reads those paths from the run record.
 Each property is asserted on the composed plan the launcher would run, never on
 a helper returned by one:
 
-* a node dispatched with two figures emits one ``-i`` per file on a codex lane;
+* a node dispatched with two figures emits one ``-i`` per file on a codex lane,
+  and its prompt file carries the brief with no listing beside the flag;
 * ``crew dispatch --image`` threads the flag through the command to the same
   argv, so the option the delivery probe and the evaluation use is wired;
 * a run whose record carries two figures resumes with both flags;
 * moving such a run to another codex lane keeps both flags in the new argv;
 * the same node on a clive lane, which declares image input and carries no
   image flag, is handed each figure's path in its prompt and nothing on argv;
+* those paths are in the prompt file the worker reads, not only in the composed
+  plan, because the file is what the worker is fed;
+* a node carrying no figures writes a prompt file with no listing;
+* an in-harness launch composes no plan and writes the uncomposed prompt;
 * the same node on the claude lane, which shares clive's flag grammar and
   declares nothing, is refused, and the refusal names the lane.
 
-Two mutations, each dropping one arm. Dropping the figures at each
-``launch_plan`` call site in turn fails the fresh dispatch, the resume and the
-lane change as before. Removing the image naming from :func:`launch_plan`
-leaves every flag arm unchanged and fails only the clive case -- the
-discrimination sits on the declaration, not on the lane count.
+Writing the file from the prompt as it stood before ``launch_plan`` composed
+it -- which is what a fresh dispatch did -- leaves every plan-level arm here
+green and fails only the clive case, because that case reads the file rather
+than the plan. The discrimination sits on the file the worker is fed, not on
+the composition the launcher would run.
 """
 
 from __future__ import annotations
@@ -48,6 +53,11 @@ PROJECT = "sample"
 PLAN = "plan-a"
 FIRST = "docs/figures/plan-a/node-a/first.svg"
 SECOND = "docs/figures/plan-a/node-a/second.svg"
+
+# The heading a prompt carries when its lane is named its figures. Spelled here
+# rather than imported so the assertion reads the text the worker is handed,
+# and a lane that names no figures is shown to leave it out.
+FIGURE_LISTING_MARKER = "Figures attached to this node"
 
 # Resolved before any fixture patches HOME, so it names the operator's own crew
 # home however the tests redirect theirs.
@@ -108,11 +118,9 @@ def operator_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 # The mutation the node declares, repeated here so a reader of the file meets it.
 NEGATIVE_CONTROL_MUTATION = (
-    "drop the images at each launch_plan call site in turn, as before the "
-    "change: at the fresh dispatch the two-flag codex case must fail, at "
-    "resume_plan the resume case must fail, and at change_lane the lane-change "
-    "case must fail; and remove the image naming from launch_plan, which must "
-    "fail only the clive prompt case"
+    "make the fresh dispatch write the uncomposed prompt to its prompt file "
+    "again: the clive case must then fail on the file it reads, because the "
+    "composed naming never reaches it"
 )
 
 
@@ -274,6 +282,11 @@ def _image_pairs(argv: list[str]) -> list[tuple[str, str]]:
     ]
 
 
+def _worker_prompt(run_id: str) -> str:
+    """The prompt the worker is handed: the run's own prompt file."""
+    return (crew.run_dir(run_id) / "prompt.txt").read_text(encoding="utf-8")
+
+
 def _write_figure_sources(repo: Path) -> None:
     for name in (FIRST, SECOND):
         source = repo / name
@@ -376,11 +389,18 @@ def test_a_clive_lane_is_handed_the_figures_in_the_prompt_its_worker_reads(
     _CREATED_RUN_IDS.add(str(record["run_id"]))
     directory = crew.run_dir(record["run_id"])
     recorded = [str(directory / f"image-{index}.png") for index in range(2)]
+    handed = _worker_prompt(str(record["run_id"]))
 
     for path in recorded:
         assert path in recorder.stdin_text[0]
     assert "Read" in recorder.stdin_text[0]
     assert _image_pairs([str(token) for token in record["argv"]]) == []
+    # The worker is fed this file, not the plan, so the naming has to be in the
+    # file itself: a path that only ever existed in the composed plan is handed
+    # to a worker that never reads the plan.
+    for path in recorded:
+        assert path in handed, handed
+    assert "Read" in handed
 
 
 def test_an_undeclared_lane_refuses_the_figures_and_names_the_lane(
@@ -549,3 +569,97 @@ def test_a_lane_change_keeps_both_flags(
 
     argv = [str(token) for token in moved["argv"]]
     assert _image_pairs(argv) == [("-i", FIRST), ("-i", SECOND)], argv
+
+
+def test_a_codex_prompt_file_carries_the_brief_and_no_figure_listing(
+    config: dict, repo: Path, tmp_path: Path
+) -> None:
+    """The codex lane hands each figure over on ``-i``, so its prompt file must
+    not name them: a listing beside the flag would hand the worker the figure a
+    second time, and a worker that opens a file the harness was already given
+    is exactly the delivery a lane that names its figures does not need."""
+    _write_figure_sources(repo)
+    record = dispatch_module.dispatch(
+        node=_node(tmp_path, [FIRST, SECOND]),
+        project=PROJECT,
+        repo=repo,
+        config=config,
+        session="fig-codex-prompt",
+        check_budget=False,
+        launcher=_Recorder(),
+    )
+    _CREATED_RUN_IDS.add(str(record["run_id"]))
+    directory = crew.run_dir(record["run_id"])
+    handed = _worker_prompt(str(record["run_id"]))
+
+    assert _image_pairs([str(token) for token in record["argv"]]) == [
+        ("-i", str(directory / "image-0.png")),
+        ("-i", str(directory / "image-1.png")),
+    ]
+    assert FIGURE_LISTING_MARKER not in handed
+    assert "carry a node's figures through every launch path" in handed
+
+
+def test_a_figureless_dispatch_writes_a_prompt_with_no_figure_listing(
+    config: dict, repo: Path, tmp_path: Path
+) -> None:
+    """A node carrying no figures composes no listing, so the marker is absent
+    because this dispatch had nothing to name rather than because its lane is
+    one that names no figures."""
+    record = dispatch_module.dispatch(
+        node=_node(tmp_path, []),
+        project=PROJECT,
+        repo=repo,
+        config=config,
+        session="fig-none",
+        check_budget=False,
+        backend_override="clive",
+        launcher=_Recorder(),
+    )
+    _CREATED_RUN_IDS.add(str(record["run_id"]))
+    handed = _worker_prompt(str(record["run_id"]))
+
+    assert handed.strip()
+    assert FIGURE_LISTING_MARKER not in handed
+    assert not (crew.run_dir(record["run_id"]) / "image-0.png").exists()
+
+
+def test_an_in_harness_dispatch_writes_the_uncomposed_prompt_file(
+    config: dict, repo: Path, tmp_path: Path
+) -> None:
+    """An in-harness launch composes no plan — reckon cannot spawn the calling
+    harness's own delegation primitive — so there is no composition for this
+    file to be written from, and it keeps the prompt dispatch composed itself.
+    A node carrying figures must not raise here: those paths reach a plan this
+    path never builds."""
+    _write_figure_sources(repo)
+    embedded = {
+        **config,
+        "backends": {
+            **config["backends"],
+            "embedded": {
+                "launch": "in-harness",
+                "model": "embedded-model",
+                "effort": "high",
+                "sandbox": "worktree-full",
+                "time_budget": "25m",
+            },
+        },
+    }
+    record = dispatch_module.dispatch(
+        node=_node(tmp_path, [FIRST, SECOND]),
+        project=PROJECT,
+        repo=repo,
+        config=embedded,
+        session="fig-native",
+        check_budget=False,
+        backend_override="embedded",
+        route="deterministic",
+    )
+    _CREATED_RUN_IDS.add(str(record["run_id"]))
+    handed = _worker_prompt(str(record["run_id"]))
+
+    assert record["launch"] == "in-harness"
+    assert handed.strip()
+    assert FIGURE_LISTING_MARKER not in handed
+    assert "carry a node's figures through every launch path" in handed
