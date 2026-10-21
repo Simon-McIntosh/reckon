@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/model_catalogue.py:check_model_catalogue",
+    "reckon/crew/recovery_watch.py:2738",
+    "reckon/crew/recovery_review_delivery.py:_review_delivery_verdict",
+    "reckon/crew/promotion_checks.py:1371",
+    "reckon/crew/dispatch_launch.py:3502"
+  ],
+  "completed_at": "2026-10-21T18:23:22.294Z",
+  "dispatched_at": "2026-10-21T17:57:02Z",
+  "findings": [
+    {
+      "file": "logs/base-arm-importers.log",
+      "line": 5,
+      "severity": "follow-on",
+      "text": "the log's command header, and the manifest's baseline_suite.command and after_suite.command copied from it, are truncated to the first of the 21 test files the importer arms collected (the remaining 20 print without the header prefix on lines 6-25), so s34's requirement that every log start with its revision and the literal command is unmet and re-running the recorded command would measure one file rather than the importer subset."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against base 7af5a4776c382d96ae331890958d5cd5264c9124 - ef138f825 routes both readers and adds the table, f73ec22ad adds the trailing newline the style check flagged, 94884ba0d adds the evidence fragment; four files, every one inside the declared scope.",
+    "done_when": "plan section s34 at docs/plans/the-suite-is-green-at-head.html:767 requires the structural invariant at head plus a seven-row table that fails at the base revision on the zoneless, padded and lowercase rows; logs/head-catalogue-stamps.log records 9 passed EXIT=0 and logs/base-arm-catalogue-stamps.log records 3 failed / 5 passed EXIT=1 on exactly those three rows, but s34's requirement that every log start with its revision and the literal command is unmet by both importer-arm logs.",
+    "goal": "the node's goal is to route the ISO-string parsing in model_catalogue._created and recovery_review_delivery._review_dispatch_instant through reckon._timestamps.parse_utc; commit ef138f825 sends both through reckon/_timestamps.py parse_utc, and the head gate log reports 9 passed.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T162029131151-two-stamp-parsers-go-through-the-shared-parser/manifest.md; it reports status complete, names seven gate logs and four changed paths, and its baseline_suite and after_suite command fields name only the first of the 21 files those two arms collected.",
+    "write_paths": "the dispatch declared reckon/crew/model_catalogue.py, reckon/crew/recovery_review_delivery.py, tests/test_catalogue_stamps_read_through_the_shared_parser.py, docs/evidence/fragments/the-suite-is-green-at-head/two-stamp-parsers-go-through-the-shared-parser.html and a figures directory; the diff touches the first four and nothing else."
+  },
+  "justifications": {
+    "durability": "logs/base-arm-importers.log shows the new table reddening at the base revision on the zoneless_paris, padded and lowercase_z rows, so reversing the delegation at reckon/crew/model_catalogue.py:64 reddens it; the oracle is parse_utc itself, so the assertion pins the routing and cannot see a fault inside the parser, and tests/test_catalogue_stamps_read_through_the_shared_parser.py:98 pins the numeric branch against an independent literal.",
+    "evidence": "logs/head-catalogue-stamps.log reports 9 passed EXIT=0 and logs/base-arm-catalogue-stamps.log 3 failed EXIT=1, both re-runnable, but logs/base-arm-importers.log:5 and logs/head-arm-importers.log:5 head their 21-file runs with a single file name, so two of seven logs break s34's literal-command requirement.",
+    "fit": "the added test follows the idiom of tests/test_structural_invariants.py and the evidence fragment follows docs/evidence/fragments/, and no added name carries a version, plan or ticket label.",
+    "goal_fidelity": "reckon/crew/model_catalogue.py:64 and reckon/crew/recovery_review_delivery.py:137 both return reckon/_timestamps.py parse_utc's result, the two readers the goal names, with no direct fromisoformat left in either.",
+    "reuse": "both readers now delegate to reckon/_timestamps.py parse_utc, the repository's single owner of timestamp parsing, extending that owner rather than forking it, and a search over reckon/ for a second timestamp parser found none.",
+    "scope_discipline": "the three commits touch reckon/crew/model_catalogue.py, reckon/crew/recovery_review_delivery.py, tests/test_catalogue_stamps_read_through_the_shared_parser.py and the evidence fragment only, all four inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to route the ISO-string parsing in model_catalogue._created and recovery_review_delivery._review_dispatch_instant through reckon._timestamps.parse_utc; commit ef138f825 sends both through reckon/_timestamps.py parse_utc, and the head gate log reports 9 passed.\nVERDICT done_when: plan section s34 at docs/plans/the-suite-is-green-at-head.html:767 requires the structural invariant at head plus a seven-row table that fails at the base revision on the zoneless, padded and lowercase rows; logs/head-catalogue-stamps.log records 9 passed EXIT=0 and logs/base-arm-catalogue-stamps.log records 3 failed / 5 passed EXIT=1 on exactly those three rows, but s34's requirement that every log start with its revision and the literal command is unmet by both importer-arm logs.\nVERDICT write_paths: the dispatch declared reckon/crew/model_catalogue.py, reckon/crew/recovery_review_delivery.py, tests/test_catalogue_stamps_read_through_the_shared_parser.py, docs/evidence/fragments/the-suite-is-green-at-head/two-stamp-parsers-go-through-the-shared-parser.html and a figures directory; the diff touches the first four and nothing else.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T162029131151-two-stamp-parsers-go-through-the-shared-parser/manifest.md; it reports status complete, names seven gate logs and four changed paths, and its baseline_suite and after_suite command fields name only the first of the 21 files those two arms collected.\nVERDICT diff: read commit by commit against base 7af5a4776c382d96ae331890958d5cd5264c9124 - ef138f825 routes both readers and adds the table, f73ec22ad adds the trailing newline the style check flagged, 94884ba0d adds the evidence fragment; four files, every one inside the declared scope.\nCALL_SITES: reckon/crew/model_catalogue.py:check_model_catalogue, reckon/crew/recovery_watch.py:2738, reckon/crew/recovery_review_delivery.py:_review_delivery_verdict, reckon/crew/promotion_checks.py:1371, reckon/crew/dispatch_launch.py:3502\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/model_catalogue.py:64 and reckon/crew/recovery_review_delivery.py:137 both return reckon/_timestamps.py parse_utc's result, the two readers the goal names, with no direct fromisoformat left in either.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/head-catalogue-stamps.log reports 9 passed EXIT=0 and logs/base-arm-catalogue-stamps.log 3 failed EXIT=1, both re-runnable, but logs/base-arm-importers.log:5 and logs/head-arm-importers.log:5 head their 21-file runs with a single file name, so two of seven logs break s34's literal-command requirement.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three commits touch reckon/crew/model_catalogue.py, reckon/crew/recovery_review_delivery.py, tests/test_catalogue_stamps_read_through_the_shared_parser.py and the evidence fragment only, all four inside the manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: logs/base-arm-importers.log shows the new table reddening at the base revision on the zoneless_paris, padded and lowercase_z rows, so reversing the delegation at reckon/crew/model_catalogue.py:64 reddens it; the oracle is parse_utc itself, so the assertion pins the routing and cannot see a fault inside the parser, and tests/test_catalogue_stamps_read_through_the_shared_parser.py:98 pins the numeric branch against an independent literal.\nSCORE fit: 19\nJUSTIFICATION fit: the added test follows the idiom of tests/test_structural_invariants.py and the evidence fragment follows docs/evidence/fragments/, and no added name carries a version, plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: both readers now delegate to reckon/_timestamps.py parse_utc, the repository's single owner of timestamp parsing, extending that owner rather than forking it, and a search over reckon/ for a second timestamp parser found none.\nFINDING logs/base-arm-importers.log:5 follow-on: the log's command header, and the manifest's baseline_suite.command and after_suite.command copied from it, are truncated to the first of the 21 test files the importer arms collected (the remaining 20 print without the header prefix on lines 6-25), so s34's requirement that every log start with its revision and the literal command is unmet and re-running the recorded command would measure one file rather than the importer subset.\n",
+  "review_run_id": "r-20261021T175532171513-review-of-two-stamp-parsers-go-through-the-shared-parser-94884ba0d79d",
+  "reviewed_base_sha": "7af5a4776c382d96ae331890958d5cd5264c9124",
+  "reviewed_head_sha": "94884ba0d79d891da06c99929eccb9088de8ac8f",
+  "reviewed_run_id": "r-20261021T162029131151-two-stamp-parsers-go-through-the-shared-parser",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T18:26:45.939852+00:00",
+  "total": 112
+}
