@@ -30,6 +30,7 @@ Routes:
   POST /state/<project>/<doc>   → write the same path (versioned)
   GET /_discover/<project>      → scan docs dir for HTML plan pages (meta tag opt-in)
   GET /_index/<project>         → the persisted metadata rows, nothing derived
+  GET /_schedule/<project>      → the project's schedule alone, anchored at now
   GET /<project>/<relpath>      → mount[project]/<relpath>
 
 POST versioned write contract — see reckon/serve.py for full details.
@@ -3314,6 +3315,47 @@ class Handler(BaseHTTPRequestHandler):
                     "path": f"{docs_root.name}/{relative}",
                     **verdict,
                 },
+            )
+            return
+
+        if path.startswith("/_schedule/"):
+            # GET /_schedule/<project> — the project's schedule alone.
+            #
+            # A caller that already holds the inventory — the crew view, whose
+            # own poll carries the live run rows — asks for the schedule
+            # without re-reading the rows. It is built the way discovery builds
+            # it, from the stored inventory and the live crew rows at the
+            # instant of the request, so the flow a browser draws and the reader
+            # an agent calls answer from one computation and differ only in
+            # their anchor: every bar is placed relative to this request's now.
+            project = path[len("/_schedule/") :].strip("/")
+            if not project or not SAFE_NAME.match(project):
+                self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad project name"})
+                return
+            schedule_mounts = load_mounts()
+            if project not in schedule_mounts:
+                self._send_json(HTTPStatus.NOT_FOUND, {"error": "unknown project"})
+                return
+            _note_tree_read(schedule_mounts[project])
+            try:
+                discovery, age = route_results._served_result(("discover", project))
+                payload = _attach_schedule_for_read(
+                    discovery,
+                    project,
+                    schedule_mounts,
+                    reference=datetime.now(UTC),
+                )
+            except Exception as exc:  # noqa: BLE001
+                self._send_json(
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                    {"error": "schedule_failed", "detail": str(exc)},
+                )
+                return
+            answer = {"project": project, "schedule": payload.get("schedule")}
+            if payload.get("schedule_error"):
+                answer["schedule_error"] = payload["schedule_error"]
+            self._send_json(
+                HTTPStatus.OK, answer, headers={"X-Result-Age": f"{age:.3f}"}
             )
             return
 

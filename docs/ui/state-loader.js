@@ -267,6 +267,73 @@ window.DERIVED_STATE_KEYS = Object.freeze([
   "milestones",
 ]);
 
+// ── Schedule refresh ─────────────────────────────────────────────────────
+// The schedule is anchored at the instant it was built: every bar is placed
+// relative to that reference, so a view that only re-reads /crew would keep a
+// now line that drifts from the clock, and a run that went live would not draw
+// in flight until the project's documents changed. The crew view's own poll
+// already carries the live run rows, so the loader answers whether the schedule
+// is due from that list and fetches it from its own route — never the whole
+// page.
+//
+// A poll that shows the same runs in the same phases cannot move a bar, so it
+// costs no request; a poll that shows a run appear, leave or change phase
+// fetches at once; and a run of unchanged polls still re-anchors once a minute,
+// which is the longest a now line may age while the view is open.
+const SCHEDULE_REANCHOR_MS = 60000;
+
+//: The run identity a schedule depends on: which runs are live for the project
+//: and which phase each one is in. Sorted, so the order the route happens to
+//: list them in is not a change.
+window.scheduleRunSignature = function (runs) {
+  return (Array.isArray(runs) ? runs : [])
+    .map(run => [
+      (run && (run.run_id || run.id)) || "",
+      (run && run.project) || "",
+      (run && run.phase) || "",
+    ].join(":"))
+    .sort()
+    .join("|");
+};
+
+window.scheduleFetchDue = function (runs, now = Date.now()) {
+  const held = window.SCHEDULE_POLL || null;
+  // Nothing has been built for this view yet: the schedule on screen, if any,
+  // was anchored for a different one and cannot be trusted to this poll.
+  if (!held) return true;
+  if (held.signature !== window.scheduleRunSignature(runs)) return true;
+  return now - held.at >= SCHEDULE_REANCHOR_MS;
+};
+
+window.refreshSchedule = async function (project, runs, now = Date.now()) {
+  // The attempt is recorded before the request, so a failing route is retried
+  // on the next phase change or minute rather than on every poll.
+  window.SCHEDULE_POLL = { signature: window.scheduleRunSignature(runs), at: now };
+  let payload = null;
+  try {
+    const response = await fetch(`/_schedule/${project}`, { cache: "no-store" });
+    if (response.ok) payload = await response.json();
+  } catch (cause) {
+    payload = null; // a route that could not answer leaves the schedule as it is
+  }
+  const state = window.STATE;
+  if (!state) return null;
+  if (payload && payload.schedule) {
+    // A served schedule replaces the one on screen, and a served one is not
+    // stale however long the previous one had aged.
+    state.schedule = payload.schedule;
+    return state.schedule;
+  }
+  // The route answered without a schedule: the one on screen is the last that
+  // was actually served, so it is kept and marked stale with the failure, as a
+  // discovery that could not build a schedule is.
+  if (state.schedule && payload && payload.schedule_error) {
+    state.schedule.stale = true;
+    state.schedule.stale_error = payload.schedule_error;
+  }
+  return state.schedule || null;
+};
+
 // ── Document checks ──────────────────────────────────────────────────────
 // /_checks/<project> lists the documents that fail the render contract and how
 // many verdicts are still pending; the server computes and keeps the verdicts.
@@ -782,9 +849,12 @@ window.watchProjectStateChanges = function (onChange) {
     refetchDerived();
   });
   // A fleet-scoped result — the rollup over every mount, a velocity key — has
-  // no owning project, so the server publishes it on every open stream. The
-  // key is republished on window for a view computing that key, beside the
-  // derived-state refetch the event also asks for.
+  // no owning project, so the server publishes it on every open stream. With
+  // many mounts and live crews those events arrive constantly, and none of
+  // them speaks about this project's documents: the key is republished on
+  // window for a view computing that key, and nothing else is asked for. A
+  // change in this project's runs reaches the flow through the crew view's own
+  // poll, which fetches the schedule from its own route.
   changes.addEventListener("fleet", (event) => {
     let payload = null;
     try {
@@ -796,7 +866,6 @@ window.watchProjectStateChanges = function (onChange) {
     if (fleet && fleet.key) {
       window.dispatchEvent(new CustomEvent("reckon-fleet", { detail: { key: fleet.key } }));
     }
-    refetchDerived();
   });
   return changes;
 };
