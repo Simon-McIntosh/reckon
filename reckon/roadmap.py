@@ -1331,6 +1331,112 @@ def _section_scoped_edges(
     return rows, findings
 
 
+def _path_plan_slugs(path: Iterable[str]) -> list[str]:
+    """The plan slugs one path passes through, in path order and once each.
+
+    A path node is a plan slug or a section node; several of a plan's sections
+    on one path name that plan once, because the field answers "which plans does
+    this path cross", not "how many of its sections does it touch".
+    """
+
+    slugs: list[str] = []
+    seen: set[str] = set()
+    for node in path:
+        slug = node.partition("#")[0]
+        if slug not in seen:
+            seen.add(slug)
+            slugs.append(slug)
+    return slugs
+
+
+def _section_node(plan_slug: str, section: str) -> str:
+    """The graph identity of one section: its plan, then its own id.
+
+    The ``<plan>#<section>`` spelling is the ref grammar the declaration already
+    uses, so a node in the path prints as the anchor a reader may click. No plan
+    slug carries a ``#``, so the two identities never collide.
+    """
+
+    return f"{plan_slug}#{section}"
+
+
+def _section_effort_hours(authored: Mapping[str, Any], section: str) -> float:
+    """The authored effort of one section, or zero when it records none.
+
+    A section's hours live on its own authored record rather than on the plan,
+    because the same plan's sections differ in size and the path is priced by
+    the section the work actually sits in.
+    """
+
+    for record in authored.get("sections") or []:
+        if not isinstance(record, Mapping):
+            continue
+        if str(record.get("id") or "") != section:
+            continue
+        try:
+            return max(0.0, float(record.get("effort_hours") or 0.0))
+        except (TypeError, ValueError):
+            return 0.0
+    return 0.0
+
+
+def _lift_section_edges(
+    rows: Iterable[Mapping[str, Any]],
+    waiting_slug: str,
+    *,
+    plans: Mapping[str, dict[str, Any]],
+    local_graph: dict[str, list[str]],
+    dependents: dict[str, set[str]],
+    section_effort: dict[str, float],
+    edge_meta: dict[tuple[str, str], dict[str, str]],
+    authored: Callable[[str], Mapping[str, Any]],
+    waiting_authored: Mapping[str, Any],
+) -> None:
+    """Give the resolved section waits node identity in the roadmap's graph.
+
+    ``_section_scoped_edges`` resolves these edges; this only names their ends.
+    A resolved, unsatisfied wait becomes an edge between two section nodes, so
+    the critical path and the unlock set run through the sections that carry the
+    work rather than stopping at the plans around them.
+
+    The wait is recorded at plan granularity in ``dependents`` alone. The plan
+    keeps no graph edge of its own, so it stays in the ready set and out of the
+    cycle walk — a plan-level veto is the very behaviour the section-scoped
+    declaration exists to replace.
+    """
+
+    for row in rows:
+        target_section = str(row.get("stage") or "")
+        waiting_section = str(row.get("source_section") or "")
+        target_slug = str(row.get("slug") or "")
+        if (
+            row.get("scope") != "local"
+            or not row.get("found")
+            or row.get("satisfied")
+            or not target_section
+            or not waiting_section
+            or target_slug not in plans
+            or waiting_slug not in plans
+        ):
+            continue
+        target_node = _section_node(target_slug, target_section)
+        waiting_node = _section_node(waiting_slug, waiting_section)
+        section_effort.setdefault(
+            target_node, _section_effort_hours(authored(target_slug), target_section)
+        )
+        section_effort.setdefault(
+            waiting_node, _section_effort_hours(waiting_authored, waiting_section)
+        )
+        local_graph[waiting_node].append(target_node)
+        dependents[target_node].add(waiting_node)
+        dependents[target_slug].add(waiting_slug)
+        edge_meta[(waiting_node, target_node)] = {
+            "ref": str(row.get("ref") or target_node),
+            "section": target_section,
+            "gate": "",
+        }
+
+
 def _finding(
     code: str,
     severity: str,
@@ -2762,6 +2868,9 @@ def _build_roadmap(
     after_rows: dict[str, list[dict[str, Any]]] = defaultdict(list)
     local_graph: dict[str, list[str]] = defaultdict(list)
     dependents: dict[str, set[str]] = defaultdict(set)
+    # The hours of each section node on the graph, so a path that runs through
+    # sections is priced by the section the work sits in.
+    section_effort: dict[str, float] = {}
     # The section an edge waits on, when the dependency names one. A plan-level
     # edge carries no entry, so a reader sees the plan name as before.
     edge_meta: dict[tuple[str, str], dict[str, str]] = {}
@@ -3060,6 +3169,19 @@ def _build_roadmap(
             )
             dependency_rows[slug].extend(section_edge_rows)
             findings.extend(section_edge_findings)
+            _lift_section_edges(
+                section_edge_rows,
+                slug,
+                plans=plans,
+                local_graph=local_graph,
+                dependents=dependents,
+                section_effort=section_effort,
+                edge_meta=edge_meta,
+                authored=lambda target: _plan_authored_state(
+                    all_plans[target], docs_dir, project, target
+                ),
+                waiting_authored=_plan_authored_state(plan, docs_dir, project, slug),
+            )
 
         gate_edge_rows = _gate_section_edges(project, plan, slug, all_plans, docs_dir)
         if gate_edge_rows:
@@ -3572,73 +3694,115 @@ def _build_roadmap(
         open_decisions_report.extend(open_decisions)
         deferred_decisions_report.extend(deferred_decisions)
 
+    def node_hours(node: str) -> float:
+        """Elapsed hours one path node costs: a plan's, or a section's own."""
+
+        if node in plans:
+            return _remaining_wall_hours(plans[node])
+        return section_effort.get(node, 0.0)
+
+    def node_effort(node: str) -> float:
+        if node in plans:
+            return _remaining_effort_hours(plans[node])
+        return section_effort.get(node, 0.0)
+
     def longest_path(node: str, visiting: frozenset[str] = frozenset()) -> list[str]:
         if node in visiting or node in cycle_members:
             return []
         candidates = [
             longest_path(dependency, visiting | {node})
             for dependency in local_graph.get(node, [])
-            if dependency in plans and dependency not in closable_slugs
+            if (dependency in plans or dependency in section_effort)
+            and dependency not in closable_slugs
         ]
         best = max(
             candidates,
-            key=lambda path: sum(_remaining_wall_hours(plans[item]) for item in path),
+            key=lambda path: sum(node_hours(item) for item in path),
             default=[],
         )
         return [*best, node]
 
+    def node_is_live(node: str) -> bool:
+        """Whether a node names work a path may still run through."""
+
+        plan_slug = node.partition("#")[0]
+        plan = plans.get(plan_slug)
+        return plan is not None and _status(plan) not in TERMINAL_STATUSES
+
+    # A sectioned plan's work is its sections. Letting the plan compete as one
+    # node beside them would price that work twice and hide the sections the
+    # path actually runs through.
+    sectioned_plans = {node.partition("#")[0] for node in section_effort}
+
     path_candidates: dict[tuple[str, ...], float] = {}
     for slug, plan in plans.items():
-        if _status(plan) in TERMINAL_STATUSES or slug in closable_slugs:
+        if _status(plan) in TERMINAL_STATUSES:
+            continue
+        if slug in closable_slugs or slug in sectioned_plans:
             continue
         path = longest_path(slug)
         if path:
             path_candidates[tuple(path)] = round(
-                sum(_remaining_wall_hours(plans[item]) for item in path), 3
+                sum(node_hours(item) for item in path), 3
+            )
+    for node in sorted(section_effort):
+        if not node_is_live(node) or node.partition("#")[0] in closable_slugs:
+            continue
+        path = longest_path(node)
+        if path:
+            path_candidates[tuple(path)] = round(
+                sum(node_hours(item) for item in path), 3
             )
     sorted_paths = sorted(path_candidates.items(), key=lambda item: (-item[1], item[0]))
     open_paths = []
     for path, length_hours in sorted_paths[: max(1, max_paths)]:
-        path_plans = list(path)
+        path_plans = _path_plan_slugs(path)
+        path_sections = [node for node in path if "#" in node]
         uncalibrated = _uncalibrated_plans(plans, path_plans)
-        open_paths.append(
-            {
-                "plans": path_plans,
-                # Elapsed time to walk the path, each plan fanning out as far
-                # as it supports; worker-hours is the labour the same path
-                # costs and is reported beside it, never in place of it.
-                "length_hours": length_hours,
-                "length_unit": "elapsed-hours",
-                "worker_hours": round(
-                    sum(_remaining_effort_hours(plans[item]) for item in path), 3
-                ),
-                "effort_unit": _EFFORT_UNIT,
-                "uncalibrated_plans": uncalibrated,
-                "uncalibrated_count": len(uncalibrated),
-                # Each step of the path beside its edge: an edge that waits on
-                # one section of its target names that section, so a plan held
-                # by a single section shows the section rather than the plan.
-                "edges": [
-                    {
-                        "from": dependent,
-                        "to": dependency,
-                        "ref": edge_meta.get((dependent, dependency), {}).get(
-                            "ref", dependency
+        entry: dict[str, Any] = {
+            "plans": path_plans,
+            # Elapsed time to walk the path, each plan fanning out as far
+            # as it supports; worker-hours is the labour the same path
+            # costs and is reported beside it, never in place of it.
+            "length_hours": length_hours,
+            "length_unit": "elapsed-hours",
+            "worker_hours": round(sum(node_effort(item) for item in path), 3),
+            "effort_unit": _EFFORT_UNIT,
+            "uncalibrated_plans": uncalibrated,
+            "uncalibrated_count": len(uncalibrated),
+            # Each step of the path beside its edge: an edge that waits on
+            # one section of its target names that section, so a plan held
+            # by a single section shows the section rather than the plan.
+            "edges": [
+                {
+                    "from": dependent.partition("#")[0],
+                    "to": dependency.partition("#")[0],
+                    "ref": meta.get("ref", dependency.partition("#")[0]),
+                    "section": meta.get("section", "") or dependency.partition("#")[2],
+                    "gate": meta.get("gate", ""),
+                }
+                for dependency, dependent in pairwise(path)
+                for meta in [
+                    edge_meta.get((dependent, dependency))
+                    or edge_meta.get(
+                        (
+                            dependent.partition("#")[0],
+                            dependency.partition("#")[0],
                         ),
-                        "section": edge_meta.get((dependent, dependency), {}).get(
-                            "section", ""
-                        ),
-                        "gate": edge_meta.get((dependent, dependency), {}).get(
-                            "gate", ""
-                        ),
-                    }
-                    for dependency, dependent in pairwise(path_plans)
-                ],
-            }
-        )
-    # The critical path keeps the shape every reader has always seen; the
-    # section an edge waits on rides on the raw view's ``open_paths`` entries,
-    # so no summary of the path has to carry a key it never had.
+                        {},
+                    )
+                ]
+            ],
+        }
+        # The sections the path runs through, beside the plans it names. A path
+        # that runs wholly through plans carries no such list, so the shape
+        # every existing summary reports is unchanged for it.
+        if path_sections:
+            entry["sections"] = path_sections
+        open_paths.append(entry)
+    # The critical path carries the shape every reader has always seen plus the
+    # sections the path runs through, so a summary that never leaves the plan
+    # level reads exactly as it did.
     critical = (
         {key: value for key, value in open_paths[0].items() if key != "edges"}
         if open_paths
