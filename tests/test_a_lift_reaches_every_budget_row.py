@@ -28,7 +28,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import budget
+from reckon import budget, pace_report
 from reckon.crew import budget_lift as bl
 from reckon.crew import reserve as reserve_module
 from reckon.crew import window_reading
@@ -182,7 +182,9 @@ def _pace_row(config, monkeypatch, session, window=None, node="n"):
     if reading is None:
         reading = _window()
     monkeypatch.setattr(budget, "recorded_windows", lambda *a, **k: {LANE: reading})
-    monkeypatch.setattr(budget, "_account_surface_readings", lambda *a, **k: {})
+    # pace_row reads the account surface from its own module, so the empty
+    # surface is patched where pace_row looks it up.
+    monkeypatch.setattr(pace_report, "_account_surface_readings", lambda *a, **k: {})
     return budget.pace_row(
         config,
         project=PROJECT,

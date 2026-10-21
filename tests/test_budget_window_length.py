@@ -12,7 +12,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from reckon import budget
+from reckon import budget, pace_report
 from reckon.crew import reserve
 
 NOW = datetime(2030, 1, 3, tzinfo=UTC)
@@ -195,8 +195,10 @@ def test_pace_reads_the_account_surface_over_a_stale_weekly_receipt(
     stale = _stale_week_receipt()
     fresh = _surface_reading(10_080, 3.0, 0.0084)
     monkeypatch.setattr(budget, "recorded_windows", lambda *a, **k: {"codex": stale})
+    # pace_row reads the account surface from its own module, so the fresh
+    # surface is patched where pace_row looks it up.
     monkeypatch.setattr(
-        budget, "_account_surface_readings", lambda *a, **k: {"codex": fresh}
+        pace_report, "_account_surface_readings", lambda *a, **k: {"codex": fresh}
     )
 
     row = budget.pace_row(
