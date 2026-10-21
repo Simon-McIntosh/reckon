@@ -25,7 +25,7 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="241">
+<meta name="plan-version" content="242">
 <meta name="plan-modified" content="2026-10-21">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;done&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;done&quot;,&quot;s30&quot;:&quot;done&quot;,&quot;s31&quot;:&quot;done&quot;,&quot;s32&quot;:&quot;done&quot;,&quot;s33&quot;:&quot;done&quot;,&quot;s34&quot;:&quot;done&quot;,&quot;s35&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="3c837fc1">
@@ -784,6 +784,9 @@
 </div>
 <div class="r-comment" data-section="s35" data-id="c-close-s35" data-who="reckon-build" data-when="2026-10-21T07:15:00Z">
     <div class="r-comment-body"><p>§35 landed at <code>6665440ed</code>: the admission pass records an <code>unplaced</code> verdict for a queued pointer without a readable <code>queued_at</code> instead of ending, so one such record no longer stalls the lane's queue. Reviewed 105/120. The population at merge adds no failure. <a href="/reckon/evidence/archive/a-held-dispatch-waits-its-fair-turn-landed.html#s35">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s35" data-id="c-run-r-20261021T051721927528-the-admission-pass-survives-a-pointer-without-its-time" data-who="reckon-build" data-when="2026-10-21T05:51:15.674Z">
+    <div class="r-comment-body"><p>admit_once in reckon/crew/queue_admission.py now leaves a queued pointer whose queued_at cannot be read out of the ordering it ranks by, records an `unplaced` verdict naming the run and its reason through the existing admission verdict log, and admits every other queued request in the order it would otherwise have given them, while queue_order.admission_order keeps its own refusal. Focused gate 3 passed; negative control 2 failed / 1 passed with the filter removed; importer population 18 files, base 87 passed 2 failed, head 87 passed the same 2 failed, no added failure.</p></div>
 </div>
 </section>
 </main>
