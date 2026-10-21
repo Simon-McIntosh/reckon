@@ -1,0 +1,32 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-21T04:52:04.919Z",
+  "dispatched_at": "2026-10-21T04:38:30Z",
+  "findings": [
+    {
+      "file": "reckon/_store.py",
+      "line": "504",
+      "severity": "follow-on",
+      "text": "follow-on: the predicate's docstring at reckon/_store.py:497 describes the writer's whole form (a leading dot, the target's name, the writing process and a random token, ending in `.tmp`) but the check at :504 is only a leading dot and a `.tmp` suffix, so any `.<anything>.tmp` \u2014 including a file merely named `.tmp` \u2014 is exempted from the listing arm's report in tests/test_a_pick_sees_each_lanes_burn.py:151. The fragment records this narrowing as an accepted cost with the needle arm closing the material gap, so it is recorded rather than repaired; the docstring reads as a stricter claim than the code makes."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the burn test's listing arm skip an entry named in the store's temporary form; tests/test_a_pick_sees_each_lanes_burn.py:151 filters the appeared set through `_store_temporary`, which delegates to reckon/_store.py:504's `is_store_temporary`, so a peer's in-flight pointer write is no longer reported as a stray.\nVERDICT done_when: the done_when's two cases both landed and were shown to redden \u2014 tests/test_a_pick_sees_each_lanes_burn.py:210 stands a temporary alone and requires the guard to pass, :259 places one beside a stray and requires the stray still be reported \u2014 the gate's logs record head `1 failed, 29 passed` EXIT=1 and base `1 failed, 26 passed` EXIT=1 with the same single pre-existing id, and the negative control (filter removed) reddens both new cases at `2 failed, 14 passed` EXIT=1.\nVERDICT write_paths: the manifest declares tests/test_a_pick_sees_each_lanes_burn.py, the fragment and a figure directory; the diff also touches reckon/_store.py and the two pointer-writer test files, which the coordinator granted in resume-1-advice.txt ('reckon/_store.py and the two other test files are outside your write paths. The coordinator accepts them at promotion') and which the manifest lists in changed_paths, so every path is either declared or granted.\nVERDICT manifest: read at head; status complete, checkpoint names the patched guard and both commits, tests: carries the literal pytest command, test_logs names five logs, negative_control_log is a bare path, and baseline_suite/after_suite both carry revision, exit_status, completed true and the failure ids as pytest prints them, so the added-failure figure is measured rather than assumed.\nVERDICT diff: read commit by commit against d29118417; 9c5efb856 adds the guard filter and the two cases (+83/-2 over the test file and fragment), ae9df9f06 gives the temporary name one owner in reckon/_store.py (+62/-16 over five files), and together they are +135/-8 across the five declared-plus-granted paths; the needle arm and the stray refusal are untouched.\nCALL_SITES: reckon/_store.py:_open_sibling_temporary, reckon/_store.py:write_atomically, reckon/crew/runs.py:305, reckon/crew/runs.py:1791\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_a_pick_sees_each_lanes_burn.py:151 drops a name `is_store_temporary` recognises (reckon/_store.py:504) from the appeared set before the listing arm reports it, which is precisely the goal.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's after_suite records head `1 failed, 29 passed` EXIT=1 and baseline_suite records `1 failed, 26 passed` EXIT=1, both with failure id tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window, and the gate ran over four files (stricter than the done_when's one) so the node's own file passes every case.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches reckon/_store.py and two pointer-writer test files beyond the three declared paths, but resume-1-advice.txt grants exactly those three and the manifest's changed_paths lists them, so nothing outside the declared-or-granted scope is carried.\nSCORE durability: 19\nJUSTIFICATION durability: removing the predicate's use from the listing arm reddens both new cases (negative-control-filter-removed.log, `2 failed, 14 passed` EXIT=1) and tests/test_a_pick_sees_each_lanes_burn.py:251 cross-checks the predicate against a name `_sibling_temporary_path` actually produces, so the guard fails if the writer's form or the predicate's arms regress.\nSCORE fit: 18\nJUSTIFICATION fit: `_sibling_temporary_path` and `is_store_temporary` at reckon/_store.py:483-504 are mechanism-named and sit beside the writer that consumes them, and no plan or ticket label is introduced.\nSCORE reuse: 20\nJUSTIFICATION reuse: the additions extend reckon/_store.py, the owner that names the temporary at :491, and replace the same expression that stood in three test files; a search over reckon/ and tests/ for a temporary-name predicate found no other owner.\nFINDING reckon/_store.py:504 follow-on: the predicate's docstring describes the writer's whole form but the check is only a leading dot and a `.tmp` suffix, so `.<anything>.tmp` is exempted from the listing arm; the fragment records this accepted cost and the needle arm closes the material gap.\n",
+  "review_run_id": "r-20261021T043707689022-review-of-the-burn-tests-home-guard-ignores-in-flight-writes-ae9df9f060ff",
+  "reviewed_base_sha": "d291184170a7433444907b7f8164a925679bc5a9",
+  "reviewed_head_sha": "ae9df9f060ffae8ab3ed74ded07b6b0ec9992940",
+  "reviewed_run_id": "r-20261021T032952017329-the-burn-tests-home-guard-ignores-in-flight-writes",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T05:04:08.821688+00:00",
+  "total": 114
+}
