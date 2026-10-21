@@ -560,7 +560,7 @@ def _unanswered_on_current_code(
     }
 
 
-def _raised_under_the_current_code(exc: BaseException) -> dict[str, Any]:
+def _raised_under_the_current_code(exc: BaseException) -> dict[str, Any] | None:
     """The refusal a call gets when it raised before the current code ran it.
 
     A raised failure carries no error code and no stamps of its own, so a
@@ -568,11 +568,16 @@ def _raised_under_the_current_code(exc: BaseException) -> dict[str, Any]:
     had moved and what to do about it. The answer is the refusal the guard
     already builds for a failure the current code did not take over, with the
     exception that was raised added as ``original_error``.
+
+    ``None`` means there is no such refusal to give: the tree's state is read
+    again inside that refusal, and a tree that no longer loads — moved between
+    this guard's own read and this one, or untrusted — leaves the raise as the
+    call's own failure. An answer built from a refusal that was not made would
+    be a caller's failure replaced by nothing at all.
     """
 
     reason = f"{type(exc).__name__}: {exc}"
-    response = _stale_code_response(reason)
-    return response if response is not None else {}
+    return _stale_code_response(reason)
 
 
 def _write_may_have_landed(
@@ -698,9 +703,14 @@ def _refuse_when_stale(tool: Callable[..., Any], *, name: str) -> Callable[..., 
         try:
             result = await tool(**kwargs)
         except Exception as exc:
-            if probe is None and server is not None:
-                return _raised_under_the_current_code(exc)
-            raise
+            refusal = (
+                _raised_under_the_current_code(exc)
+                if probe is None and server is not None
+                else None
+            )
+            if refusal is None:
+                raise
+            return refusal
         failure = _failed_result(result)
         if failure is None:
             failure = _embedded_schema_failure(result)
