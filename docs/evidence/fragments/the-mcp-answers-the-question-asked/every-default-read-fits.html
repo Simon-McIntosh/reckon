@@ -40,16 +40,18 @@
     each answer is within its row and that no view returns
     <code>response_over_budget</code>. On the base revision the same fixture
     answered <code>roadmap</code> <code>view=detail</code> with
-    <code>response_over_budget</code> at 177,571 characters against the 80,000
-    ceiling; after the change it answers in 14,614 characters against its
-    30,000 row. The gate log records both arms.
+    <code>response_over_budget</code> — the answer it built there was 177,661
+    characters against the 80,000 ceiling, measured with the ceiling lifted so
+    that the size is visible rather than only the refusal — and after the
+    change it answers in 14,704 characters against its 30,000 row. The gate log
+    records an arm for each.
   </p>
 
   <p id="every-default-read-fits-caveat">
     <strong>One gap is recorded rather than closed.</strong> The two
     <code>raw</code> views are explicit lossless opt-ins rather than defaults,
     so the test names them as a declared exception instead of holding them to a
-    compact row: <code>audit</code> <code>raw</code> answers in 23,417
+    compact row: <code>audit</code> <code>raw</code> answers in 23,507
     characters on the fixture and fits, while <code>roadmap</code>
     <code>raw</code> still reaches the 80,000 ceiling on a 60-plan project and
     returns <code>response_over_budget</code>. Paging it would change what the
