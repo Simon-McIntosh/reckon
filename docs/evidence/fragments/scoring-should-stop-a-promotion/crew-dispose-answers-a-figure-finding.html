@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="crew dispose answers a figure finding">
+  <meta name="plan-summary" content="crew dispose selected the record to rewrite through stored_record with no rubric, which returns text-review records only, and composed its receipt from the same text-only selection, so a finding a figure review raised could not be answered through the operator's own verb. crew dispose now takes --rubric figure, threaded through record_finding_disposition and stored_record_for_disposition so the record read, rewritten and read back for the receipt is the run's figure record. The new file and the crew help census pass 10 tests, EXIT=0; the declared mutation drops the rubric before stored_record and leaves the figure finding listed as blocking (1 failed, 4 passed, EXIT=1).">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-10-20">
+  <meta name="plan-verdict" content="passed">
+  <title>crew dispose answers a figure finding | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>crew dispose answers a figure finding</h1>
+
+    <section id="crew-dispose-answers-a-figure-finding-defect">
+      <h2>The defect</h2>
+      <p>A finding is answered by one verb: <code>crew dispose</code> writes a fold or an
+        exemption under <code>finding_dispositions</code> on the stored review record, and
+        the promotion guard and the repair reflex both read that key. A run is reviewed
+        under more than one rubric, and the figure review is filed <em>beside</em> the
+        run's text review rather than in place of it — the store keys a figure record at
+        <code>&lt;run&gt;.figure.at-&lt;sha&gt;.json</code> next to the text record's
+        <code>&lt;run&gt;.at-&lt;sha&gt;.json</code>. The disposition writer selected its
+        record through <code>stored_record</code> with no rubric, and that selection
+        returns text-review records only, so a figure finding had no writer at all: the
+        command either answered the text review or reported an index the record it
+        rewrote did not carry.</p>
+      <p>The receipt had the same shape: it was composed from
+        <code>stored_record_for_disposition</code>, which took no rubric either, so even a
+        correct write would have reported the text record's answer. A run with a clean
+        text review and a wrong figure finding was stranded — the finding refused
+        promotion and the operator's own verb could not retire it.</p>
+    </section>
+
+    <section id="crew-dispose-answers-a-figure-finding-change">
+      <h2>The change</h2>
+      <p><code>crew dispose</code> takes <code>--rubric</code>, and
+        <code>--rubric figure</code> answers a finding on the run's figure review. The
+        rubric is threaded through the two functions that already exist rather than a
+        second writer being added: <code>record_finding_disposition</code> passes it to
+        the <code>stored_record</code> selection it already made, and
+        <code>stored_record_for_disposition</code> passes it to the same selection, so the
+        record read, rewritten and read back for the receipt is the one family the caller
+        named. The index the caller sees printed is counted against the selected record's
+        own findings, so the number in the receipt and the entry the writer keys cannot
+        disagree.</p>
+      <p>Three states stay as they were. Omitting <code>--rubric</code> answers the run's
+        text review exactly as before, because an omitted rubric is the selection every
+        existing caller already made. A run carrying no figure record is refused naming
+        that absence rather than writing somewhere else. And <code>--dimension</code> is
+        refused beside <code>--rubric figure</code>, because a figure review records rubric
+        verdicts rather than the six scored dimensions, so a dimension named against one
+        names a space the record does not carry.</p>
+      <p>Commit: <code>6731422c2</code>. Paths:
+        <code>reckon/crew/review_dispositions.py</code>,
+        <code>reckon/crew_run_commands.py</code>,
+        <code>tests/test_crew_dispose_answers_a_figure_finding.py</code>.</p>
+    </section>
+
+    <section id="crew-dispose-answers-a-figure-finding-gate">
+      <h2>The gate</h2>
+      <p>The new module builds its stores through the store's own writer
+        (<code>reckon.crew.review.store_review</code>) rather than writing records by
+        hand, so the <code>rubric</code> field the store writes and the field the
+        selection reads are the same fact. Both records — the text review and the figure
+        review — live in a temporary configuration home under the test's own temp tree,
+        the reviewed run's pointer names a synthesised checkout seeded by the fixture, and
+        the module asserts the operator's real store gains no directory for the fixture
+        project.</p>
+      <p>The measure reads back through the two readers a consumer uses: the
+        rubric-selected <code>read_review</code>, and <code>repair.blocking_findings</code>
+        — the list a promotion's refusal is built from — which no longer carries the
+        answered finding. The text record is asserted to carry no disposition after the
+        figure write, and the figure record is asserted to keep its own findings, so the
+        rewrite is a splice rather than a replacement.</p>
+      <p>Gate: <code>tests/test_crew_dispose_answers_a_figure_finding.py</code> and
+        <code>tests/test_crew_help_names_its_state.py</code> — 10 passed in 6.08s,
+        <code>EXIT=0</code>. <code>ruff check</code> and <code>ruff format --check</code>
+        report no findings on the three changed paths.</p>
+    </section>
+
+    <section id="crew-dispose-answers-a-figure-finding-negative-control">
+      <h2>Negative control</h2>
+      <p>Declared mutation: drop the rubric before <code>stored_record</code>. The
+        disposition then lands on the text review beside the figure record, so the figure
+        keeps its undisposed blocking finding and the test must fail.</p>
+      <p>The run records exactly that: the assertion on
+        <code>repair.blocking_findings</code> for the figure record fails with the finding
+        still listed, 1 failed and 4 passed, <code>EXIT=1</code>. Log:
+        <code>logs/negative-control.log</code> under the run directory.</p>
+    </section>
+  </main>
+</body>
+</html>
