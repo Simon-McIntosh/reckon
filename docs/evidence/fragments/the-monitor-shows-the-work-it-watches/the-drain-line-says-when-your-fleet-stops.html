@@ -1,0 +1,57 @@
+<section id="the-drain-line-says-when-your-fleet-stops">
+  <h2>The drain line says whether a session's fleet is drained</h2>
+  <p>
+    The row a follower leaves as its session's work drains said only when the
+    work stopped. That is the moment a coordinator looks up from the pane, and
+    the row gave it nothing to act on: a session whose last run had just been
+    delivered unpromoted looked exactly like one that had nothing left to do.
+    The row now keeps its existing text as a prefix &mdash; the session, the
+    <code>since</code> word and the HH:MM stamp &mdash; and gains a tail saying
+    either that the session's fleet is drained or how many of its runs still
+    need the coordinator.
+  </p>
+  <p>
+    The count comes from the derivation the standing needs-you line already
+    reads, composed in <code>reckon/crew/needs_you.py</code> as
+    <code>drain_tail</code> from the same fleet partition and the same two state
+    buckets. A second count composed at the call site would let the closing row
+    and the line it closed disagree about what the session owed, which is the
+    disagreement the shared derivation exists to prevent. The follower gains
+    only the call, so its module stays inside the worker-window bound the token
+    test holds.
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>Fixture state at the drain</th>
+        <th>Settle row's tail</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>The session's last working run delivered, unpromoted</td><td><code>1 run needs the coordinator</code></td></tr>
+      <tr><td>The same run promoted (the pointer unlinked)</td><td><code>fleet drained</code></td></tr>
+      <tr><td>A peer session's working run in the same fixture</td><td>neither named, nor able to hold the pane open</td></tr>
+    </tbody>
+  </table>
+  <p>
+    <code>tests/test_follow_drain_line.py</code> reaches both drains through a
+    run the pane saw working, because the settle is hinged on that sighting: a
+    follower armed into an already quiet session keeps following, so a drain is
+    only observable from live work. The case asserts the prefix is intact to the
+    HH:MM stamp of the sighting, asserts the tail names exactly one run that
+    needs the coordinator, and holds the row against a direct call of the
+    derivation over the same fixture. It then makes the run live again and
+    promotes it, and asserts a second row says the fleet is drained.
+  </p>
+  <p>
+    The gate ran the follower suite of 64 test files in both arms from scratch
+    checkouts, <code>pytest -n 8</code>, with the session-host, follower-owner,
+    follower-image and follower-source variables unset. Base
+    <code>ff7ec47c1</code>: 4 failed, 570 passed. Head <code>67856d08b</code>: 4
+    failed, 571 passed, the same four ids in both arms, so the node adds no
+    failure and the extra pass is the new file. Withholding the tail from the
+    settle row turns the first case red (exit 1) with <em>the drained pane names
+    no run that needs the coordinator</em> and no failing id the head arm does
+    not carry.
+  </p>
+</section>
