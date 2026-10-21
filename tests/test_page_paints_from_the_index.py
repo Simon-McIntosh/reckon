@@ -234,6 +234,32 @@ DISCOVERY_WITHOUT_SCHEDULE = {
     "schedule_error": "RuntimeError: crew rows unavailable",
 }
 
+#: The schedule a revalidation's discovery serves: one bar more than the first
+#: load drew, so a flow that comes to show it can only have rendered after the
+#: merge. The served-page case below holds the checks route and the crew poll
+#: unanswered, which are the other two routes a repaint could arrive on, so the
+#: count it asserts is the merge's own event reaching the shell.
+SCHEDULE_TWO_BARS = {
+    **SCHEDULE_FIRST,
+    "reference": "2026-01-10T00:10:00+00:00",
+    "item_count": 2,
+    "bars": [
+        *SCHEDULE_FIRST["bars"],
+        {
+            "nav_key": "beta",
+            "lane": 0,
+            "start": 0,
+            "end": 5,
+            "split": 2,
+            "state": "recorded",
+            "wall_hours": 5,
+        },
+    ],
+}
+
+#: The same payload the first load answers, with that schedule in it.
+DISCOVERY_REPLACEMENT = {**DISCOVERY, "schedule": SCHEDULE_TWO_BARS}
+
 #: The order the index listed the rows in, which the merge must not change.
 INDEX_ORDER = ["alpha", "beta", "evidence:gate", "figure:plot.png"]
 
@@ -1109,6 +1135,8 @@ _SERVED_PRELOAD = """(() => {
   window.__requests = [];
   const rows = %s;
   const discovery = %s;
+  const replacement = %s;
+  const held = () => new Promise(() => {});
   const response = payload => new Response(JSON.stringify(payload), {
     status: 200, headers: { "Content-Type": "application/json" },
   });
@@ -1116,12 +1144,19 @@ _SERVED_PRELOAD = """(() => {
     const url = String(resource);
     window.__requests.push(url);
     if (url.endsWith("/_index/%s")) return Promise.resolve(response(rows));
+    // Held unanswered: the checks round trip and the crew poll are the two
+    // routes a repaint could otherwise arrive on, and this case is about the
+    // merge's own event. Held, the only render after the merge is the one
+    // shell.jsx draws for reckon:derived.
+    if (url.includes("/_checks/")) return held();
+    if (url.endsWith("/crew")) return held();
     if (url.endsWith("/_discover/%s")) {
+      const payload = window.__replacement ? replacement : discovery;
       return new Promise(resolve => setTimeout(() => {
         resolve(response(window.__withhold
-          ? { ...discovery, schedule: null,
+          ? { ...payload, schedule: null,
               schedule_error: "RuntimeError: crew rows unavailable" }
-          : discovery));
+          : payload));
       }, window.__discoverDelay || 400));
     }
     return nativeFetch(resource, options);
@@ -1129,6 +1164,7 @@ _SERVED_PRELOAD = """(() => {
 })()""" % (
     json.dumps(INDEX_ROWS),
     json.dumps(DISCOVERY),
+    json.dumps(DISCOVERY_REPLACEMENT),
     SERVED_PROJECT,
     SERVED_PROJECT,
 )
@@ -1148,22 +1184,27 @@ _SERVED_REVALIDATION_PROBE = """(async () => {
     return false;
   };
   const flow = () => document.querySelector('.r-derived-flow');
-  const drew = await waitFor(() => {
-    const drawn = flow();
-    return Boolean(drawn && drawn.querySelector('.r-derived-flow-bar'));
-  });
+  const barCount = () => document.querySelectorAll('.r-derived-flow-bar').length;
+  const drew = await waitFor(() => Boolean(flow() && barCount() > 0));
   const before = {
     drew,
-    bars: document.querySelectorAll('.r-derived-flow-bar').length,
+    bars: barCount(),
+    header: flow() ? flow().textContent.slice(0, 60) : null,
     unavailable: Boolean(flow() && flow().textContent.includes('no schedule payload served')),
   };
+  // The revalidation's discovery answers a schedule with one more bar, so the
+  // drawn flow can only come to show it by rendering again after the merge:
+  // nothing else in this page repaints (the checks route and the crew poll are
+  // both held), so the counts below measure the merge's own event.
   window.__withhold = false;
+  window.__replacement = true;
   const revalidated = window.revalidateProjectState();
   const samples = [];
   const timer = setInterval(() => {
     const drawn = flow();
     samples.push({
       flow: Boolean(drawn),
+      bars: barCount(),
       unavailable: drawn
         ? drawn.textContent.includes('no schedule payload served')
         : null,
@@ -1171,15 +1212,15 @@ _SERVED_REVALIDATION_PROBE = """(async () => {
     });
   }, 4);
   await revalidated;
-  window.dispatchEvent(new CustomEvent('reckon:checks'));
   await window.STATE_DERIVED_READY;
-  await new Promise(resolve => setTimeout(resolve, 80));
+  await new Promise(resolve => setTimeout(resolve, 200));
   const kept = {
     samples: samples.length,
     missing: samples.filter(sample => !sample.flow).length,
     unavailable: samples.filter(sample => sample.unavailable).length,
     withoutSchedule: samples.filter(sample => !sample.schedule).length,
-    bars: document.querySelectorAll('.r-derived-flow-bar').length,
+    bars: barCount(),
+    header: flow() ? flow().textContent.slice(0, 60) : null,
   };
   clearInterval(timer);
   window.__withhold = true;
@@ -1193,8 +1234,12 @@ _SERVED_REVALIDATION_PROBE = """(async () => {
     stale: {
       drawn: Boolean(stale),
       text: stale ? stale.textContent : null,
-      bars: document.querySelectorAll('.r-derived-flow-bar').length,
+      bars: barCount(),
       unavailable: Boolean(flow() && flow().textContent.includes('no schedule payload served')),
+    },
+    held: {
+      checks: window.__requests.filter(url => url.includes('/_checks/')).length,
+      crew: window.__requests.filter(url => url.endsWith('/crew')).length,
     },
   };
 })()"""
@@ -1204,10 +1249,16 @@ def test_a_served_revalidation_keeps_the_derived_flow_drawn(tmp_path: Path) -> N
     """The bars stay on a served page across a revalidation, and age when stale.
 
     The loader cases above prove the merge announces itself; this one proves the
-    page repaints on it, which is the half a reader sees. A real served page runs
-    the shipped shell, crew view and loader, and the index and discovery answers
-    are the fixtures: the index lands at once and the discovery 400 ms later, so
-    the revalidation window is long enough to sample every few milliseconds.
+    page repaints on that announcement, which is the half a reader sees. The
+    checks route and the crew poll are held unanswered, so the only route to a
+    render after the merge is the listener ``shell.jsx`` registers for
+    ``reckon:derived``: a page that answered ``/_checks`` could repaint on the
+    checks path and leave that listener unpinned. The revalidation's discovery
+    answers one bar more than the first load, so the count asserted below is a
+    fact only a render made after the merge can bring to the screen.
+
+    The probe prints its per-sample observations, so a run of this case leaves
+    them in the run's log rather than only in the assertion that reads them.
     """
 
     with served_spa(
@@ -1219,14 +1270,23 @@ def test_a_served_revalidation_keeps_the_derived_flow_drawn(tmp_path: Path) -> N
             ready_expression="document.readyState === 'complete'",
         )
 
+    print(json.dumps(served, sort_keys=True))
+
     assert served["before"]["drew"] is True, served
     assert served["before"]["bars"] == len(SCHEDULE_FIRST["bars"]), served
 
     kept = served["kept"]
     assert kept["samples"] > 1, (
-        f"the revalidation was sampled {kept['samples']} time(s): the probe "
-        "cannot show the bars were kept across it without samples inside it"
+        f"the revalidation was sampled {kept['samples']} samples, so it cannot "
+        "show what the flow did while it was in flight"
     )
+    assert kept["bars"] == len(SCHEDULE_TWO_BARS["bars"]), (
+        f"the flow draws {kept['bars']} bars after the merge, where the "
+        "discovery that landed served "
+        f"{len(SCHEDULE_TWO_BARS['bars'])}: the new schedule reached the state "
+        "but no render followed it, so the shell did not answer reckon:derived"
+    )
+    assert f"{len(SCHEDULE_TWO_BARS['bars'])} items" in kept["header"], kept
     assert kept["missing"] == 0, (
         f"the derived flow was absent in {kept['missing']} of {kept['samples']} "
         "samples taken across the revalidation"
@@ -1236,13 +1296,16 @@ def test_a_served_revalidation_keeps_the_derived_flow_drawn(tmp_path: Path) -> N
         f"{kept['samples']} samples taken across the revalidation"
     )
     assert kept["withoutSchedule"] == 0, kept
-    assert kept["bars"] == served["before"]["bars"], kept
+
+    # The two routes a repaint could otherwise arrive on were both attempted and
+    # never answered, which is what makes the assertion above about the merge.
+    assert served["held"]["checks"] >= 1, served
+    assert served["held"]["crew"] >= 1, served
 
     # A discovery that builds no schedule leaves the served bars up and marks
     # them stale with the failure, rather than drawing an empty flow.
     assert served["stale"]["drawn"] is True, served
     assert "RuntimeError: crew rows unavailable" in served["stale"]["text"], served
     assert "last served" in served["stale"]["text"], served
-    assert served["stale"]["bars"] == served["before"]["bars"], served
+    assert served["stale"]["bars"] == len(SCHEDULE_TWO_BARS["bars"]), served
     assert served["stale"]["unavailable"] is False, served
-
