@@ -424,13 +424,25 @@ def _review_brief_text(
     ]
     if brief_path:
         lines.append(f"Reviewed run's brief: {brief_path}")
+    # A figure record carries no text scores; its findings declare their own
+    # severity.
+    if rubric_name == review_module.FIGURE_REVIEW_RUBRIC:
+        required_fields = [
+            "Required: project, reviewed_run_id, review_run_id, reviewed_base_sha, reviewed_head_sha,",
+            "added_failure_count, added_failure_ids (a figure review runs no suite, so 0 and an empty list),",
+            "findings (each an object with file, line, severity and summary), status.",
+        ]
+    else:
+        required_fields = [
+            "Required: project, reviewed_run_id, review_run_id, reviewed_base_sha, reviewed_head_sha,",
+            "scores (" + ", ".join(review_module.REVIEW_DIMENSIONS) + "),",
+            "added_failure_count, added_failure_ids, findings, status.",
+        ]
     lines.extend(
         [
             "",
             "Review record contract (run crew check --review --record <path> on each written record before ending):",
-            "Required: project, reviewed_run_id, review_run_id, reviewed_base_sha, reviewed_head_sha,",
-            "scores (" + ", ".join(review_module.REVIEW_DIMENSIONS) + "),",
-            "added_failure_count, added_failure_ids, findings, status.",
+            *required_fields,
             "Accepted status values: "
             + ", ".join(sorted(review_module.RECOGNISED_REVIEW_STATUSES))
             + ".",

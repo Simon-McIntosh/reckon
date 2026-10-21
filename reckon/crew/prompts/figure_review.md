@@ -24,12 +24,35 @@ specific defect:
   overlapping the data.
 
 Treat a caption that only repeats the figure's title as a finding, but do not
-change it. Anchor each finding to the source figure path and line when the
-source has a useful line; otherwise use the figure path and state that the
-finding concerns the rendered image.
+change it.
+
+## The shape a finding takes
+
+Record every finding as an object with these four fields:
+
+- `file` — the source figure path the finding concerns.
+- `line` — a line in that source, or `null` when the finding concerns only the
+  rendered image and no source line is useful.
+- `severity` — one of the two declared severities below.
+- `summary` — what is wrong and why it matters to a reader.
+
+**Say whether each finding blocks.** `severity` is one of:
+
+- `blocking` — reserved for a defect that stops a reader reading the figure: a
+  clipped or overlapping label, unreadable text, or data the figure does not
+  let a reader see.
+- `follow-on` — anything else worth recording; the defect does not hold the
+  node.
+
+Use no severity outside these two. The word stays in your text as prose where
+no gate can read it, and a finding carrying no severity is read as holding the
+node, so a follow-on left unlabelled refuses a promotion it should not.
+
+## The record to write
 
 Write the review record at one of the declared write paths. It must identify
 the project, reviewed run, review run, reviewed base and head, carry
-`"rubric": "figure"`, include the rubric verdicts and findings, and use a
-recognised review status. The text review's scores do not measure this rubric;
-do not add them or claim suite-delta measurements for a figure review.
+`"rubric": "figure"`, include the rubric verdicts and findings in the shape
+above, and use a recognised review status. A figure record carries no `scores`:
+omit them rather than writing the six text dimensions as `null`, and do not
+claim suite-delta measurements for a figure review.
