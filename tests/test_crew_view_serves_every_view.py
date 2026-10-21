@@ -374,6 +374,26 @@ def _hold_the_budget_clock_at(monkeypatch, moment: dt.datetime) -> None:
     monkeypatch.setattr(budget, "_now", lambda now=None: now or moment)
 
 
+def _assert_the_pair_reads_the_driven_advance(
+    served: dict, emitted: dict, *, label: str
+) -> None:
+    """The clock drive must have moved the two calls of the pair apart.
+
+    The comparison below only measures something while the two calls compose at
+    different instants, and the drop it makes is only exercised while the budget
+    view's stamp moves between them. So the advance is read back off the pair's
+    own documents before anything is dropped: at a zero advance both calls read
+    one instant, the two documents agree on an empty margin, and the case would
+    pass having compared nothing the budget view could not already answer.
+    """
+    composed = dt.datetime.fromisoformat(str(served["checked_at"]))
+    compared = dt.datetime.fromisoformat(str(emitted["checked_at"]))
+    assert compared - composed == _PARITY_CLOCK_ADVANCE, (
+        f"the budget view with {label} composed its two surfaces {compared - composed} "
+        f"apart and the case drives {_PARITY_CLOCK_ADVANCE} between them"
+    )
+
+
 def test_every_declared_view_answers_the_same_document_on_both_surfaces(
     live_fleet: Path, monkeypatch
 ) -> None:
@@ -381,15 +401,15 @@ def test_every_declared_view_answers_the_same_document_on_both_surfaces(
     for name in _view_names():
         for label, arguments in _ARGUMENT_VECTORS:
             _hold_the_budget_clock_at(monkeypatch, _PARITY_INSTANT)
-            served = _without_the_composition_instant(
-                _served_by_the_tool(name, arguments), view=name
-            )
+            served = _served_by_the_tool(name, arguments)
             _hold_the_budget_clock_at(
                 monkeypatch, _PARITY_INSTANT + _PARITY_CLOCK_ADVANCE
             )
-            emitted = _without_the_composition_instant(
-                _served_by_the_cli(name, arguments), view=name
-            )
+            emitted = _served_by_the_cli(name, arguments)
+            if name == "budget":
+                _assert_the_pair_reads_the_driven_advance(served, emitted, label=label)
+            served = _without_the_composition_instant(served, view=name)
+            emitted = _without_the_composition_instant(emitted, view=name)
             if emitted != served:
                 disagreements.append(f"{name} with {label}")
 
