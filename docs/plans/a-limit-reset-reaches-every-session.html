@@ -26,7 +26,7 @@
   <title>A Limit Reset Reaches Every Session | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="19">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -40,7 +40,7 @@
         <tr><td>Record</td><td><code>&lt;config-home&gt;/budget-lifts.json</code>, written by <code>reckon crew budget --lift</code> (<code>reckon/crew/budget_lift.py</code>)</td><td><code>&lt;config-home&gt;/limit-resets.json</code>, written by <code>reckon crew budget --announce-reset</code> (§1)</td></tr>
         <tr><td>Producer</td><td><code>lift_watch.sweep</code>, called from <code>_sweep_lift_rows</code> in <code>reckon/crew/recovery_watch.py</code> on every poll, appends <code>lift-granted</code>, <code>lift-ended</code> and baseline <code>lift-in-force</code> rows to each project's stream</td><td>A sibling sweep at the same call appends one <code>limit-reset</code> row per reset (§2)</td></tr>
         <tr><td>Pane</td><td>The row policy in <code>reckon/crew/ticker.py</code> draws a lift row once per pane through the shared claim <code>take_lift_claim</code> (an exclusive create under <code>&lt;crew-home&gt;/watch/lifts/</code>)</td><td>The same claim, keyed on the reset's id, draws it once per pane (§2)</td></tr>
-        <tr><td>Session</td><td>The session host relays the pane line as a notification</td><td>Unchanged; the line says what to do (§2), and the global instructions say it too (§3)</td></tr>
+        <tr><td>Session</td><td>The session host relays the pane line as a notification</td><td>Unchanged; the line says what to do (§2), and the global instructions say it too (§6)</td></tr>
       </tbody>
     </table>
 
@@ -71,10 +71,10 @@
       <li>a detail that reads plainly in the pane: <code>usage limit reset (window five_hour) at 14:26 UTC, announced by &lt;user&gt;: &lt;reason&gt;; sessions stopped at the usage limit can continue their work</code>.</li>
     </ul>
     <p>The sweep's memory is a set of announced ids, kept across polls as the lift sweep keeps its own. A producer that has just (re)armed announces only resets whose <code>reset_at</code> lies within the last 60 minutes, so a restart never wakes the fleet with an old reset.</p>
-    <p>The pane's row policy in <code>reckon/crew/ticker.py</code> gains a branch for <code>limit-reset</code>. It draws the row once per pane through the shared claim the lift rows use, keyed on (pane, reset id, <code>limit-reset</code>), and it has no end row to pair. A pane that follows several projects therefore draws the reset once although every project's producer carries it. The follower module itself does not change.</p>
+    <p>The pane's row policy in <code>reckon/crew/ticker.py</code> gains a branch for <code>limit-reset</code>, and <code>limit-reset</code> joins <code>PANE_STATES</code> under a word of its own, <code>reset</code>. The pane prints a state only through that table (<code>_display_state</code>), so without it the row's state cell would be blank. It draws the row once per pane through the shared claim the lift rows use, keyed on (pane, reset id, <code>limit-reset</code>), and it has no end row to pair. A pane that follows several projects therefore draws the reset once although every project's producer carries it. The follower module itself does not change.</p>
     <p><strong>Done when</strong> <code>tests/test_a_limit_reset_reaches_every_pane.py</code>, in a temporary crew and config home with two projects' producers, finds:</p>
     <ul>
-      <li>session A's pane, following both projects, draws the reset line exactly once;</li>
+      <li>session A's pane, following both projects, draws the reset line exactly once, with its state cell reading <code>reset</code>;</li>
       <li>session B's pane draws it exactly once;</li>
       <li>a producer armed two hours after the reset appends no row for it;</li>
       <li>a reset scoped to session B reaches B's pane and not A's;</li>
@@ -84,8 +84,8 @@
 
     <h2 id="s3">§3 — A session without a pane learns of a reset on its next prompt</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> The coordinator obligations hook, <code>reckon/hooks/coordinator_obligations.py</code>, names a global reset whose <code>reset_at</code> lies within the last 60 minutes, in the context it already adds to each prompt. That is the horizon a re-armed producer uses, and the rule needs no memory of what the hook showed before. A session whose follower is down still learns of the reset on its next prompt. A session prompted twice inside the hour reads the line twice, which costs one line of context and no new state.</p>
-    <p><strong>Done when</strong> a test in a temporary home finds the hook's added context naming a global reset 20 minutes old, and not naming one 90 minutes old nor a reset scoped to another session. The negative control drops the 60-minute horizon, and the hook then names the 90-minute-old reset too. The tests importing <code>reckon/hooks/coordinator_obligations.py</code> add no failure against a base arm on the same terms as §1. Write paths: <code>reckon/hooks/coordinator_obligations.py</code> and the new test.</p>
+    <p><strong>Deliverable.</strong> The coordinator obligations hook, <code>reckon/hooks/coordinator_obligations.py</code>, names a global reset whose <code>reset_at</code> lies within the last 60 minutes, in the context it already adds to each prompt. That is the horizon a re-armed producer uses. The line joins the set the hook already injects through <code>_inject_list</code>, which emits only when the digest of that set changes (it keeps the digest in <code>&lt;session&gt;.obligations</code>). So a session whose follower is down learns of the reset on its next prompt, does not see it again while nothing else in the set changes, and stops seeing it once the reset passes the 60-minute horizon.</p>
+    <p><strong>Done when</strong> a test in a temporary home finds the hook's added context naming a global reset 20 minutes old, and not naming one 90 minutes old nor a reset scoped to another session. A second prompt with the same reset and nothing else changed adds no context. The negative control drops the 60-minute horizon, and the hook then names the 90-minute-old reset too. The tests importing <code>reckon/hooks/coordinator_obligations.py</code> add no failure against a base arm on the same terms as §1. Write paths: <code>reckon/hooks/coordinator_obligations.py</code> and the new test.</p>
 
     <h2 id="s4">§4 — The broadcast is shown working on this workstation</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
@@ -118,7 +118,7 @@
     </article>
 <article class="r-fu" data-id="f-alrres-003" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-21" data-recommends-skill="/reckon-build a-limit-reset-reaches-every-session §3" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Build §3: a session without a pane learns of a reset on its next prompt</h4>
-    <div class="r-fu-body"><p>The obligations hook line, the reach report, and then the global instruction.</p></div>
+    <div class="r-fu-body"><p>The obligations hook names a recent reset to a session whose pane may be down, after §1.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-limit-reset-reaches-every-session §3</pre>
     </article>
 <article class="r-fu" data-id="f-alrres-004" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-21" data-recommends-skill="/reckon-build a-limit-reset-reaches-every-session §4" data-resolved-at="" data-resolved-by="">
