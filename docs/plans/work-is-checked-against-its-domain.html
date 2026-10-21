@@ -26,7 +26,7 @@
   <title>Work Is Checked Against Its Domain | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -108,6 +108,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-21T15:55:00Z">
     <div class="r-comment-body"><p>§3 landed: a typed domain block in the flight schema, read by one <code>rules_for</code> (run <code>domain-rules-in-flight</code>, head <code>4b8d295d1</code>); gate 136 passed; negative control 8 of 9 red. <a href="/reckon/evidence/archive/work-is-checked-against-its-domain-landed.html#s3">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261021T112625211050-domain-rules-in-flight" data-who="reckon-build" data-when="2026-10-21T13:40:25Z">
+    <div class="r-comment-body"><p>A repository declares its domain rules once in the flight config&#x27;s typed `domain` block (invariants with id/rule/applies_to/optional check, review_checks with id/question/applies_to, model_paths), and one module `reckon/crew/domain_rules.py` answers which rules a node&#x27;s write paths touch via `rules_for(project, node)`; head gate 136 passed, and dropping the domain block from the schema is the negative control.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261021T115211619347-review-of-review-waits-for-its-repair-492418fba425" data-who="reckon-build" data-when="2026-10-21T12:16:58.672Z">
     <div class="r-comment-body"><p>independent review of run r-20261021T105142717388-review-waits-for-its-repair at head 492418fb against base ac17ed13: scores goal_fidelity 19, evidence 16, scope_discipline 19, durability 18, fit 18, reuse 16; two follow-on findings (the dispose-command pair at reckon/crew/recovery_review_dispatch.py:2089 duplicates reckon/crew/obligations.py:1218, and the repair path at reckon/crew/recovery_repair_dispatch.py:813 never writes the disposition the new guard reads, so an automatic repair round's re-review is refused until a coordinator disposes by hand)</p></div>
