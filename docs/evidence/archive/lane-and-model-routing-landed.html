@@ -542,6 +542,11 @@ base revision rather than against the head with the change reverted.</p>
     <p>Ten picker tests in four groups failed at main. All ten now pass under their own ids at head, and the picker population fails only the module-window bound. The groups and fixes: <code>test_candidates_iterates_the_records_once</code>, whose second ledger walk is folded into the pick's single pass in <code>reckon/crew/picker/snapshot.py</code>; two prompt tests that did not expect the <code>urgency</code> field dispatch carries into routing since <code>e26d6b51b</code>; six staleness tests whose helper indexed return-time blocks by bare backend name rather than option key; and the golden rendered state, re-frozen last with every moved field and the change that moved it named in the fragment, and pinned against the fixture rather than against itself. The negative control fails as declared. Review 108 after one repair round. Merged at <code>12f2d4458</code>.</p>
   </section>
 
+  <section id="s51">
+    <h2>§51 — the burn test&#x27;s home guard ignores in-flight writes</h2>
+    <p>The burn test's listing arm could read a peer's in-flight store temporary as a stray pointer. <code>reckon/_store.py</code> now owns the temporary's name through <code>_sibling_temporary_path</code>, used by the atomic write, and <code>is_store_temporary</code>. The listing arm and the two tests that had copied the check, <code>test_runs_pointer_writer_reuses_the_store.py</code> and <code>test_supervisor_write_reuses_the_store.py</code>, use it. The in-flight and stray-pointer cases run against a temporary home and never touch the real crew home. The coordinator ran the 115-file <code>reckon._store</code> importer population at base <code>d29118417</code> and head: 17 failures and 2 errors on both, none added. Review 114 after one repair round raised reuse from 8. Merged at <code>c02d7799b</code>.</p>
+  </section>
+
 </main>
 </body>
 </html>
