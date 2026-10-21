@@ -129,6 +129,13 @@ emits an image flag</code></pre>
 <p>Not yet delivered: a fresh dispatch and a lane change write the run's prompt file from the prompt before <code>launch_plan</code> composes it, so a fresh clive figure review still reads no image paths. The worker reproduced this and measured the one-line repair. §15 carries it.</p>
   </section>
 
+  <section id="s15-the-prompt-file-carries-the-named-figures">
+    <h2>§15 — the prompt file a worker reads carries its named figures</h2>
+    <p>A fresh dispatch on the cli launch path now rewrites the run's <code>prompt.txt</code> from <code>plan.stdin_text</code> once the plan is built, so a lane that declares image input and has no attach flag is handed its figure paths in the file its worker reads. A lane change restates its fence before composing and writes its prompt file from the composed plan; an in-harness launch keeps the uncomposed prompt. <code>launch_plan</code> strips a figure listing the prompt already carries, removing only the heading and its path lines, before naming one, so a named lane gets exactly one listing and any other lane none. <code>declares_image_input</code> and <code>declared_input_modalities</code> now read the declaration through <code>reckon.flight.normalise_input_modalities</code>.</p>
+<p>Run <code>r-20261021T082355039248-the-prompt-file-carries-the-named-figures</code>, head <code>7f28f8385</code>, merged as <code>cc2bad925</code>. Gate: 29 passed over the three changed test files, with the four <code>tests/test_crew_lane_change.py</code> cases that fail at base through the retired <code>redispatch</code> verb deselected. The negative control, the fresh dispatch writing the uncomposed prompt again, fails the fresh-dispatch naming test alone. Population over the 375 test files importing the four changed modules: base 27 failed, head 25 failed. One head failure is not in the base set, <code>test_stored_phase_advances_from_starting_to_working_to_complete</code>, a pytest-timeout hang under parallel load; it passes 3 of 3 alone at both head and base. Code review scored 105.</p>
+<p>Still open: no test yet drives a lane change of a two-figure clive run onto codex, the case where the strip is the only thing that removes the inherited listing. A test node under §15 adds it, and §15 closes when it lands.</p>
+  </section>
+
 </main>
 </body>
 </html>
