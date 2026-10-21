@@ -33,11 +33,12 @@ import re
 import shutil
 import subprocess
 import time
-from collections.abc import Callable, Iterable, Iterator, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping, MutableMapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from types import UnionType
+from typing import Any, Union, get_args, get_origin
 
 from reckon import capability
 from reckon._store import _config_home
@@ -152,6 +153,14 @@ DEFAULT_RUN_FILE_MAX_MB = 256
 # every caller measures the same run against the same number.
 _BUDGET_UNITS = {"s": 1, "m": 60, "h": 3600}
 
+# The refusal the strict check raises for a key the running schema does not
+# declare. A load reports such a key instead, because one shared config is read
+# by servers, producers and workers of several ages and the newest writer's key
+# must not stop the oldest reader; the strict check is where the operator is
+# told, and this is the wording a reader of either surface already knows a typo
+# by.
+UNKNOWN_KEY_CONSTRAINT = "Extra inputs are not permitted"
+
 
 @dataclass(frozen=True)
 class SuiteDeclaration:
@@ -209,6 +218,14 @@ class ResolvedFlight:
     carries. Each entry names the key, the backend and the file so a host
     layer can be emptied of catalogue keys and the report still shows which
     values were coming from where.
+
+    ``unknown_keys`` names every key path, across every layer that
+    contributed, that the running schema does not declare. A config is read by
+    servers, producers and workers of several ages sharing one file, so the
+    newest writer's key reaches an older reader; the path is reported rather
+    than raised so that reader keeps working, and the layer is not carried
+    beside it because the provenance of the keys around it already says whose
+    it is.
     """
 
     config: dict[str, Any]
@@ -220,6 +237,7 @@ class ResolvedFlight:
     layers: list[LayerSource] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     shadows: list[dict[str, str]] = field(default_factory=list)
+    unknown_keys: list[str] = field(default_factory=list)
 
     def origin(self, key_path: str) -> str | None:
         """Return the layer that supplied ``key_path``, or None if unset."""
@@ -1211,12 +1229,21 @@ def placement_scheduler_queries(
     return declared
 
 
-def validate_layer(data: Mapping[str, Any], source: str | Path) -> None:
+def validate_layer(
+    data: Mapping[str, Any], source: str | Path, *, strict: bool = False
+) -> list[str]:
     """Schema-check one layer, raising FlightConfigError on the first violation.
 
     Every layer is partial — a host config setting one backend's model is
     complete in itself — so this checks shape, types, enums, ranges, patterns and
     unknown keys, and leaves whole-config rules to :func:`_validate_resolved`.
+
+    A key the running schema does not declare is the one violation this does
+    not decide here: ``strict`` says whether it is refused. Without it the key
+    is left in place and its path is returned, so a reader older than the
+    config it was handed keeps working and still reports what it did not
+    understand. ``reckon flight --check`` is the caller that passes it, which
+    is where a typo is meant to be caught.
 
     The reckon-owned keys the generated schema does not carry, the plan-review
     gate's mode, the harness-home file declarations and the reserved-lane
@@ -1226,6 +1253,10 @@ def validate_layer(data: Mapping[str, Any], source: str | Path) -> None:
     from pydantic import ValidationError
 
     from reckon._flight_schema import FlightConfig
+
+    unknown = unknown_key_paths(data)
+    if strict and unknown:
+        raise FlightConfigError(source, unknown[0], UNKNOWN_KEY_CONSTRAINT)
 
     schema_layer = {
         key: value for key, value in data.items() if key != PLAN_REVIEW_GATE_KEY
@@ -1291,6 +1322,121 @@ def validate_layer(data: Mapping[str, Any], source: str | Path) -> None:
                         f"backends.{backend_name}.catalog.model_pattern",
                         f"must be a valid regular expression — {exc}",
                     ) from exc
+
+    return unknown
+
+
+def _schema_model(annotation: Any) -> type | None:
+    """The Pydantic model class an annotation names, or ``None``.
+
+    Only the annotation's own branch is unwrapped: a union with ``None`` or
+    with a scalar names the model beside it. A mapping or sequence field such
+    as ``dict[str, BackendConfig]`` is deliberately not unwrapped here: an
+    unwrap would treat the map itself as carrying ``BackendConfig``'s fields,
+    which is exactly backwards — the map's keys are user data.
+    """
+    from pydantic import BaseModel
+
+    if isinstance(annotation, type) and issubclass(annotation, BaseModel):
+        return annotation
+    if get_origin(annotation) in (Union, UnionType):
+        for branch in get_args(annotation):
+            if isinstance(branch, type) and issubclass(branch, BaseModel):
+                return branch
+    return None
+
+
+def _union_branches(annotation: Any) -> tuple[Any, ...]:
+    """The annotation as a tuple of its union members, or as itself."""
+    if get_origin(annotation) in (Union, UnionType):
+        return get_args(annotation)
+    return (annotation,)
+
+
+def _mapping_value_annotation(annotation: Any) -> Any | None:
+    """The value annotation of a mapping field, or ``None``. Its keys are user data."""
+    for branch in _union_branches(annotation):
+        origin = get_origin(branch)
+        if origin is dict or origin in (Mapping, MutableMapping):
+            return get_args(branch)[1]
+    return None
+
+
+def _sequence_item_annotation(annotation: Any) -> Any | None:
+    """The item annotation of a list or tuple field, or ``None``."""
+    for branch in _union_branches(annotation):
+        origin = get_origin(branch)
+        if origin is list or origin is tuple:
+            return get_args(branch)[0] if get_args(branch) else None
+    return None
+
+
+def _unknown_key_paths(value: Any, annotation: Any, prefix: str = "") -> list[str]:
+    """Dotted paths of keys in ``value`` that ``annotation`` does not declare.
+
+    The walk follows the annotation rather than a second restatement of the
+    schema, so a slot added to the LinkML source reaches this check by
+    regeneration alone. A mapping bound to a model names its keys as its
+    fields, and a key outside them is reported; a mapping bound to ``dict``
+    names its keys as user data, so only the values are walked. Sequence items
+    carry their index so two entries' unknown keys are told apart, and anything
+    that is neither a mapping nor a sequence ends the walk.
+    """
+    if isinstance(value, Mapping):
+        model = _schema_model(annotation)
+        if model is not None:
+            fields = model.model_fields
+            found: list[str] = []
+            for key, item in value.items():
+                path = f"{prefix}{key}"
+                declared = fields.get(str(key))
+                if declared is None:
+                    found.append(path)
+                    continue
+                found.extend(_unknown_key_paths(item, declared.annotation, f"{path}."))
+            return found
+        inner = _mapping_value_annotation(annotation)
+        if inner is None:
+            return []
+        return [
+            path
+            for key, item in value.items()
+            for path in _unknown_key_paths(item, inner, f"{prefix}{key}.")
+        ]
+    if isinstance(value, (list, tuple)):
+        inner = _sequence_item_annotation(annotation)
+        if inner is None:
+            return []
+        return [
+            path
+            for index, item in enumerate(value)
+            for path in _unknown_key_paths(item, inner, f"{prefix}{index}.")
+        ]
+    return []
+
+
+def unknown_key_paths(data: Mapping[str, Any]) -> list[str]:
+    """Every key path in one layer that the running schema does not declare.
+
+    The keys reckon owns and the generated schema those layers are not checked
+    against are held out first, because they are declared — just not by the
+    provider-neutral schema — and reporting one as unknown would be wrong. The
+    injection that supplies keyed maps their ``name`` identifier runs first
+    too, so the walk sees the same mapping the model validates. Paths are
+    sorted and deduplicated, so two runs over one config report identically.
+    """
+    from reckon._flight_schema import FlightConfig
+
+    schema_layer = {
+        key: value for key, value in data.items() if key != PLAN_REVIEW_GATE_KEY
+    }
+    return sorted(
+        set(
+            _unknown_key_paths(
+                _inject_map_keys(_schema_view(schema_layer)), FlightConfig
+            )
+        )
+    )
 
 
 def _validate_resolved(config: Mapping[str, Any], sources: str) -> None:
@@ -1799,6 +1945,7 @@ def resolve(
     checkout_path: str | Path | None = None,
     shipped_path: str | Path | None = None,
     catalogue_path: str | Path | None = None,
+    strict: bool = False,
 ) -> ResolvedFlight:
     """Resolve the layers into one config plus per-key provenance.
 
@@ -1807,6 +1954,12 @@ def resolve(
     for the current task, which always wins. The model catalogue rides between
     the shipped defaults and the host layer: its values fill keys a higher
     layer leaves unset, and it never creates a backend no higher layer defines.
+
+    ``strict`` decides what a key the running schema does not declare does: a
+    resolution for a reader ignores it and reports its path on
+    :attr:`ResolvedFlight.unknown_keys`, and one made by ``reckon flight
+    --check`` refuses it. The difference is the caller, not the layer — the
+    same resolution is made either way.
     """
     shipped_file = Path(shipped_path) if shipped_path else shipped_defaults_path()
     host_file = Path(host_path) if host_path else host_config_path()
@@ -1831,6 +1984,7 @@ def resolve(
     layers: list[LayerSource] = []
     contributing: list[str] = []
     warnings: list[str] = []
+    unknown_keys: list[str] = []
     # The raw data of each non-catalogue layer, kept so the shadow report can
     # name which higher layer supplied a value the catalogue also carries.
     layer_data: dict[str, tuple[str | None, Mapping[str, Any]]] = {}
@@ -1857,7 +2011,7 @@ def resolve(
             continue
         data, compatibility_warnings = _ignore_removed_backend_keys(data, source)
         warnings.extend(compatibility_warnings)
-        validate_layer(data, source)
+        unknown_keys.extend(validate_layer(data, source, strict=strict))
         merged = deep_merge(merged, data)
         _record_provenance(data, name, provenance)
         layer_data[name] = (
@@ -1876,7 +2030,7 @@ def resolve(
     # must see the merged result to know which backends exist.
     catalogue = read_layer_file(catalogue_file)
     if catalogue:
-        validate_layer(catalogue, catalogue_file)
+        unknown_keys.extend(validate_layer(catalogue, catalogue_file, strict=strict))
         _apply_catalogue(merged, catalogue, provenance)
         contributing.append(str(catalogue_file))
     # Lanes are expanded after every layer — catalogue included — has merged,
@@ -1893,6 +2047,7 @@ def resolve(
         layers=layers,
         warnings=warnings,
         shadows=shadows,
+        unknown_keys=sorted(set(unknown_keys)),
     )
 
 
@@ -2394,6 +2549,12 @@ def flight_report(
     one row per mounted project, ranked by uncovered critical hours.
     ``portfolio_sources`` is the test seam carrying the mounts, live pointers
     and readers that composition consumes.
+
+    ``flight_unknown_keys`` is the compatibility warning this report exists to
+    carry: every key path the running schema does not declare, from any layer
+    that contributed. It is a warning rather than a refusal because the config
+    is shared by readers of several ages, and ``project`` is passed through as
+    the caller gave it.
     """
     if project == PORTFOLIO_PROJECT:
         return {
@@ -2404,6 +2565,7 @@ def flight_report(
     return {
         "availability": probe_availability(resolved.config, probe_auth=probe_auth),
         "config": resolved.config,
+        "flight_unknown_keys": resolved.unknown_keys,
         "layers": [
             {
                 "name": layer.name,

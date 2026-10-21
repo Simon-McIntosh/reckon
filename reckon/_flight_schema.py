@@ -40,7 +40,7 @@ class ConfiguredBaseModel(BaseModel):
         validate_by_name = True,
         validate_assignment = True,
         validate_default = True,
-        extra = "forbid",
+        extra = "ignore",
         arbitrary_types_allowed = True,
         use_enum_values = True,
         strict = False,

@@ -412,13 +412,25 @@ def badge_command(project, checkout_path, write_badge):
     help="Run each backend's declared auth_check and report its exit status.",
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def flight(project, checkout_path, overrides, probe_auth, pretty):
+@click.option(
+    "--check",
+    is_flag=True,
+    help="Refuse any key the running schema does not declare, naming its path.",
+)
+def flight(project, checkout_path, overrides, probe_auth, pretty, check):
     """Resolve worker routing, gate strictness and fences across all layers.
 
     Prints one JSON object on stdout — the resolved config, the layer that
     supplied each key, and which backends are actually available — with keys in
     sorted order so two runs differ only where a value differs. Exits non-zero
     only when a layer is malformed, naming the file, key path and constraint.
+
+    A key the running schema does not declare is reported in
+    ``flight_unknown_keys`` and otherwise ignored, because one config file is
+    read by servers, producers and workers of several ages and a key added by
+    the newest of them must not stop the oldest reader. ``--check`` is the
+    strict read for the moment the config is authored: there the same key is
+    refused by path, so a typo is caught where it is written rather than never.
     """
     import json
 
@@ -430,6 +442,7 @@ def flight(project, checkout_path, overrides, probe_auth, pretty):
             overrides=parse_overrides(overrides) if overrides else None,
             probe_auth=probe_auth,
             checkout_path=checkout_path,
+            strict=check,
         )
     except FlightConfigError as exc:
         raise click.ClickException(str(exc)) from exc
