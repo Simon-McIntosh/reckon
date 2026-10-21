@@ -1,0 +1,40 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T03:08:06.547Z",
+  "dispatched_at": "2026-10-21T02:51:00Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/budget-fits-a-worker-window.html:50",
+      "id": "reasoning-1",
+      "reason": "without naming the lazy re-export (the `import_module` idiom `reckon/crew/budget_lift.py:75` already uses) or moving the constants beside `crew/pace.py`, the plan's own criterion is applied to one candidate and not to the one it selects, and the chosen home can be unbuildable as written.",
+      "text": "\u00a72 rejects `crew/pace.py` because budget.py imports it at module level and the family reads budget.py, so hosting the family there would make `crew/pace.py` import `reckon.budget` \u2014 a cycle; but after the cut `reckon/pace_report.py` still needs budget.py's module-level clock and window constants (`CLOCK_FIVE_HOUR`, `CLOCK_SEVEN_DAY`, `OBSERVED`, `UNKNOWN`, `WINDOW_SOURCE_RECORDED`, budget.py:2379\u20132397, none of which is in the moved set), and line 55 requires every moved public name to stay importable from `reckon.budget`, so budget.py must import `reckon.pace_report` \u2014 the same back-import, which is a cycle at import time and an `ImportError` for a worker who writes it at the top of budget.py as the file imports its other siblings; \u00a72 names a lazy import only for the verdict into `budget_lift.py` (line 53), never for the new module.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "7aedef1a78a850692f48f44296236a82cac8b5efe9e36dd529a5a0e74862f615",
+  "plan_slug": "budget-fits-a-worker-window",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T024942032645-plan-review-of-budget-fits-a-worker-window",
+  "reviewed_blob_sha": "a67c53ae3811c2a9157e0244e8536e771fe0cb11",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 f5e88d284, 6ebe65ba4 and 76946f9a9 all resolve; budget.py reproduces at 180,363 bytes / 51,533 tokens (f5e88d284) and 197,708 bytes / 56,488 tokens (76946f9a9), budget_lift.py at 14,536 tokens, 6ebe65ba4^ at 50,293 tokens; all fifteen named family symbols exist as module-level definitions in budget.py at f5e88d284; DEFAULT_CREDIT_RESERVE_FRACTION is at budget_lift.py:113; followup f-lamr-053 exists and is open; the extensionless href /reckon/every-module-fits-a-worker-window resolves as docs/plans/every-module-fits-a-worker-window.html.",
+    "done_when": "pass \u2014 s2's done-when measures the width test's offender list at the node's head, a \u226445,000-token bound on budget.py and a \u226440,000 bound on each other touched module, the remaining offenders against the base arm, and a 16-file gate run at base and head that adds no failure, and it declares a negative control (restore budget.py's base content in a scratch copy and the width test must name it again).",
+    "evidence_paths": "pass \u2014 the only scratch tree s2 names is the negative control's copy of base budget.py, which is a measurement tree rather than the evidence store; gate and base-arm logs land in the run directory under the dispatch contract, and no session-scratchpad or node-local path is named as evidence.",
+    "naming": "pass \u2014 `reckon/pace_report.py` names the capability it adds (the report, row and hold composed over crew/pace.py's allowance), and no plan label, stage name or ticket id reaches the new module, symbol or comment.",
+    "reasoning": "a finding \u2014 the cycle argument that rules out crew/pace.py as the family's home (budget.py imports it at module level, and the family reads budget.py's state, so hosting the family there would make crew/pace.py import reckon.budget) applies unchanged to the home the plan chooses.",
+    "single_goal": "pass \u2014 one deliverable: the pace and lift family leaves budget.py, with its re-exports, its test repoints and its citation follow-on as consequences of that one move.",
+    "wiring": "pass \u2014 s2 declares `plan-section-depends-on` = lane-and-model-routing#s46 (budget-fits-a-worker-window.html:23) and lane-and-model-routing \u00a748's own dependency set now carries budget-fits-a-worker-window#s2 beside lane-and-model-routing#s46 (lane-and-model-routing.html:22), so the edge the section's sequence prose relies on is present."
+  },
+  "section_digests": {
+    "_document": "1614740484dbfd4e03e69ff83d11c72be04e1fae29d5472772ec27bb7860cffd",
+    "s1": "91f7e14a7481fa744ec22eb7e159bd794bd7321583546aa5c1a8d090384d75c7",
+    "s2": "fba6e1d93fe9ff61a02c33da1c7a3267ee513d248acb0cc614b780a82f61780d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T03:12:32.471140+00:00"
+}
