@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-21T22:36:45.055Z",
+  "dispatched_at": "2026-10-21T22:17:02Z",
+  "findings": [
+    {
+      "file": "tests/test_a_served_log_keeps_the_home_it_started_under.py",
+      "line": "185",
+      "severity": "follow-on",
+      "text": "follow-on: the two controls are applied together in one run (the mutation header at logs/negative-control.log:3 reads 'mutate both reverted resolutions', and that single run reports 'FF' / '2 failed'), so the docstrings' claim at lines 185 and 226 that each control fails its own case is asserted rather than isolated. A reversion of the access-line path alone reddens only test 1 and a reversion of the bound-check path alone reddens only test 2, and a combined run cannot distinguish which removal caused which failure; the essential guard (reverting the landed mechanism reddens the tests) is still demonstrated, so this does not hold the node."
+    },
+    {
+      "file": "reckon/serve.py",
+      "line": "268",
+      "severity": "follow-on",
+      "text": "follow-on: the added _served_log_path(server) sits one letter from the pre-existing _server_log_path() at reckon/serve.py:255, which resolves the same value from the environment on every call and is exactly the resolution this node exists to stop using per request. A future caller reaching for the wrong one gets an environment-resolved path with no error, which is the defect the node repaired; a name that distinguishes the server-object pinning would remove the footgun."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T214952240779-a-served-log-keeps-the-home-it-started-under/logs/head-smoke.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the log the manifest's artifacts line names as the head smoke ('logs/head-smoke.log 2 passed in 2.89s EXIT=0') carries a revision header reading '86616aaccec32766944d21a2176dfd7457993c20', the base revision rather than the head, and its tree is a scratch copy (.../_XYZW); the gate that carries the head arm (logs/gate-files-n4.log at 91087a8) is sound, so this is receipt hygiene only, but a reader opening the smoke log to confirm the head run finds a base revision where the head is claimed."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that each served log stays on the home its server first served under; reckon/serve.py:268 adds _served_log_path(server), which resolves the path once per server object at its first request and keeps it on the object, and both production call sites use it; the marker is present at the head (reckon/serve.py:2260 and :2270) and absent from the file at the base.\nVERDICT done_when: the done_when states a per-server-object kept path, two cases built on a bare ThreadingHTTPServer around serve.Handler under a temporary home moved mid-flight, each with its own control, plus tests/test_every_module_fits_a_worker_window.py, the -n 4 per-run-basetemp run of the new file and tests/test_cross_node_writes_refresh_the_index.py, and revision-headed EXIT= logs; the manifest records gate-files-n4.log (16 passed, EXIT=0), module-window.log (4 passed, EXIT=0) and negative-control.log (EXIT=1, 2 failing ids).\nVERDICT write_paths: the declared scope is reckon/serve.py, tests/test_a_served_log_keeps_the_home_it_started_under.py, docs/evidence/fragments/the-page-paints-from-an-index/a-served-log-keeps-the-home-it-started-under.html and the docs/figures tree for the node; the diff touches exactly the first three (+326/-2) and writes nothing under the figures path.\nVERDICT manifest: read at .../runs/r-20261021T214952240779-a-served-log-keeps-the-home-it-started-under/manifest.md; status complete, commits 91087a80c and 03de3e4a1, tests: is a literal command, negative_control_log names one bare path, and both baseline_suite and after_suite are null because the node was not armed with a suite measurement.\nVERDICT diff: read commit by commit against 86616aaccec32766944d21a2176dfd7457993c20; 91087a80cdd27ff695cc3a1a603ded06887cbf21 changes reckon/serve.py (adds _SERVER_LOG_PATH_ATTR and _served_log_path, routes Handler.log_message and Handler.handle_one_request through it) and adds the test file, and 03de3e4a14c8b6d1254b313572c787327eb0416a adds the evidence fragment; no other path is touched.\nCALL_SITES: reckon/serve.py:2256 Handler.log_message (calls _write_access_line with _served_log_path(self.server) at :2258), reckon/serve.py:2265 Handler.handle_one_request (calls _bound_server_log(_served_log_path(self.server)) at :2270); the only other caller of the pair is serve.main's startup resolve at reckon/serve.py:4113, which runs before any server object exists.\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/serve.py:268-286 resolves the served log path once per server object and keeps it on that object, and both reachable call sites at reckon/serve.py:2260 and :2270 pass that kept path, so an access line or bound check after the environment moves stays on the home the server first served under.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's tests: and test_logs: lines record logs/gate-files-n4.log (16 passed, EXIT=0 at revision 91087a8) and logs/negative-control.log (EXIT=1 with both case ids failing), but the control run applies both reversions at once so the fragment's claim at docs/evidence/fragments/the-page-paints-from-an-index/a-served-log-keeps-the-home-it-started-under.html:33-35 that each fails its own case is not isolated.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 86616aaccec32766944d21a2176dfd7457993c20..03de3e4a14c8b6d1254b313572c787327eb0416a touches only reckon/serve.py, tests/test_a_served_log_keeps_the_home_it_started_under.py and the declared evidence fragment, with nothing written under the declared figures path.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_served_log_keeps_the_home_it_started_under.py:198 asserts the closing line reached the first home, :204 asserts the moved-to home holds no log and :243-249 asserts the first home's .1 predecessor appears after the move, each reading the filesystem rather than a value the test handed in, and logs/negative-control.log shows them reddening when the resolution is reverted, though only the combined reversion was run.\nSCORE fit: 17\nJUSTIFICATION fit: the helper and the namespaced attribute constant at reckon/serve.py:265-286 follow the module's private-helper and docstring idiom, but the name _served_log_path sits one letter from the pre-existing _server_log_path() at reckon/serve.py:255, which resolves the same value from the environment.\nSCORE reuse: 19\nJUSTIFICATION reuse: a search of reckon/serve.py and reckon/ for a per-object path-pinning capability found none \u2014 module-global path pinning (_resolve_paths) and lru_cache are the nearest owners and neither covers a per-server object \u2014 and the addition extends reckon/serve.py:255 rather than duplicating it.\nFINDING tests/test_a_served_log_keeps_the_home_it_started_under.py:185 follow-on: the two controls are applied together in one mutation run rather than one at a time, so 'each fails its own case' is asserted rather than isolated in logs/negative-control.log:3.\nFINDING reckon/serve.py:268 follow-on: _served_log_path(server) reads one letter from the pre-existing _server_log_path() at reckon/serve.py:255, which returns the environment-resolved path, so a caller reaching for the wrong one fails silently into the defect the node repaired.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T214952240779-a-served-log-keeps-the-home-it-started-under/logs/head-smoke.log:1 follow-on: the log named as the head smoke carries the base revision 86616aac in its revision header, so a reader opening it to confirm the head run finds a base revision where the head is claimed.\n",
+  "review_run_id": "r-20261021T221600948488-review-of-a-served-log-keeps-the-home-it-started-under-03de3e4a14c8",
+  "reviewed_base_sha": "86616aaccec32766944d21a2176dfd7457993c20",
+  "reviewed_head_sha": "03de3e4a14c8b6d1254b313572c787327eb0416a",
+  "reviewed_run_id": "r-20261021T214952240779-a-served-log-keeps-the-home-it-started-under",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T22:37:30.009213+00:00",
+  "total": 111
+}
