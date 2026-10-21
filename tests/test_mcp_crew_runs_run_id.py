@@ -65,7 +65,7 @@ def test_run_id_reaches_runs_view(isolated_reckon_home: Path, monkeypatch) -> No
         seen.update(kwargs)
         return {"ok": True, "view": "runs", "rows": [], "count": 0}
 
-    monkeypatch.setattr(mcp, "crew_runs_view", spy)
+    monkeypatch.setattr("reckon.crew.query.runs_view", spy)
 
     result = mcp._crew(PROJECT, view="runs", source="live", run_id=TARGET)
 

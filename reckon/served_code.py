@@ -1803,7 +1803,7 @@ class CurrentCodeServer:
         death_bound: int = 3,
     ) -> None:
         self._root = Path(root)
-        self._spawn = spawn or spawn_served_child
+        self._spawn_child = spawn or spawn_served_child
         self._timeout_s = timeout_s
         self._death_bound = max(1, int(death_bound))
         self._deaths = 0
@@ -1848,7 +1848,7 @@ class CurrentCodeServer:
                 return self._child
             self._stamp = stamp
             try:
-                process = self._spawn(self._root)
+                process = self._spawn_child(self._root)
             except (OSError, subprocess.SubprocessError):
                 self._child = None
                 return None
