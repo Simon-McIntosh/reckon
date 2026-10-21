@@ -1,0 +1,39 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-21T12:42:22.423Z",
+  "dispatched_at": "2026-10-21T12:22:00Z",
+  "findings": [
+    {
+      "line": 486,
+      "path": "reckon/mcp.py",
+      "severity": "follow-on",
+      "text": "a write is routed to the current code only once the child has already answered a call of that tool, so a first successful write on a moved, trusted checkout still returns the stale image's behaviour with no served_by_code_stamp."
+    },
+    {
+      "line": 340,
+      "path": "reckon/mcp.py",
+      "severity": "follow-on",
+      "text": "_embedded_schema_failure reads any *_error field whose value leads with one of three names or merely contains the pydantic marker as the guard's own schema failure, so an unrelated error reported in such a field can be re-run and answered with a stale-code refusal instead of the call's own result."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261021T122041433530-review-of-moved-checkout-serves-every-call-a3a9ec22c650",
+  "reviewed_base_sha": "ac17ed130e1aa4f9b8c12643dfb41404fd4c2869",
+  "reviewed_head_sha": "a3a9ec22c65085204c710c50d8abcd6153c6cce1",
+  "reviewed_run_id": "r-20261021T105241619584-moved-checkout-serves-every-call",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "subject": "run",
+  "text": "VERDICT goal: the node goal is to serve every MCP call on the current code once the checkout has moved and is trusted, not only calls that failed; reckon/mcp.py:471 (_route_to_child) routes every read of a warm child and defers only a write, so the read case \u00a710 names is served by the current code while a successful first write is not.\nVERDICT done_when: the done_when names tests/test_a_moved_checkout_serves_every_call.py passing with the same tests failing on the base commit as the negative control, plus the six-file gate command judged by failure delta; the manifest records that command and its logs, and tests/test_a_moved_checkout_serves_every_call.py:189,227,251 implement the four named behaviours.\nVERDICT write_paths: read the manifest's declared paths; `git diff --stat ac17ed130 a3a9ec22c` shows three files (reckon/mcp.py, tests/test_a_moved_checkout_serves_every_call.py, docs/evidence/fragments/the-mcp-answers-the-question-asked/moved-checkout-serves-every-call.html), every one inside the declared scope, and the reviewer worktree git status is clean at a3a9ec22c.\nVERDICT manifest: read; it states the six-file gate at head a3a9ec22c ran 1 failed, 31 passed (EXIT=1) with the one failure pre-existing, records the negative control at 3 failed, 2 passed and the base arm at 1 failed, 2 passed, and names its three log paths.\nVERDICT diff: read commit by commit against ac17ed130 \u2014 0ea4b599f adds _route_to_child, _raised_under_the_current_code, _embedded_schema_failure and _SCHEMA_ERROR_NAMES to reckon/mcp.py and the five-case test file; a3a9ec22c adds the evidence fragment.\nCALL_SITES: reckon/mcp.py:3121 (read_plan), reckon/mcp.py:3130 (edit_plan), reckon/mcp.py:3137 (roadmap), reckon/mcp.py:3142 (audit), reckon/mcp.py:3151 (crew)\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/mcp.py:471 routes every read of the warm child, which is \u00a710's own case, but a first write returns at reckon/mcp.py:486 (name in _SERVE_ON_CURRENT_CODE) and is still answered by the image.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate in the manifest's `tests` line is recorded at head with EXIT=1 in gate.log and the one failure is shown failing at the base in base-arm.log, so the failure delta is 0.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: `git -C <reviewed-worktree> diff --stat ac17ed130 a3a9ec22c` lists only the three files the manifest declares as changed_paths, all inside its declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_moved_checkout_serves_every_call.py fails 3 of its 5 cases against the base tree in negative-control.log (test_a_successful_call_is_served_by_the_current_code:197, test_a_raised_failure_while_the_child_is_cold_carries_the_remedy, test_an_embedded_schema_failure_is_answered_by_the_current_code:264), so each of the three guards reddens on the regression it was added for.\nSCORE fit: 18\nJUSTIFICATION fit: the added helpers extend the module's own guard idiom in reckon/mcp.py (private module helpers, one docstring each stating the failure it prevents) and introduce no plan label, version token or forbidden name; the one wording slip is that the raised-failure answer is gated on the server rather than on the cold child at reckon/mcp.py:742, which the docstring at reckon/mcp.py:695 describes.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner exists for classifying a schema failure embedded in a tool answer \u2014 the search over reckon/ for 'Extra inputs are not permitted' and for a *_error-scanning helper found only the producer of the string at reckon/mcp_deadlines.py:610, and _embedded_schema_failure is the first reader.\nFINDING reckon/mcp.py:486 follow-on: a write is routed to the current code only once the child has already answered a call of that tool, and _SERVE_ON_CURRENT_CODE is added to only at reckon/mcp.py:683 (_answer_from_child), which a first warm edit_plan call never reaches when the image answers it successfully \u2014 so a write that still works on a moved, trusted checkout keeps returning the stale image's behaviour with no served_by_code_stamp, which is the residue of the defect the goal states as 'every MCP call'.\nFINDING reckon/mcp.py:340 follow-on: _embedded_schema_failure reads any *_error field whose value leads with ValidationError, FlightConfigError or SchemaError, or merely contains 'Extra inputs are not permitted', as the guard's own schema failure, so an unrelated error a caller's own config produced in such a field is re-run on the current code and can be answered with a stale-code refusal (reckon/mcp.py:646) instead of the result the call made; the negative case in tests/test_a_moved_checkout_serves_every_call.py:274 uses only a value matching none of the three names, so the false-positive path is unguarded.",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T12:48:22.715531+00:00",
+  "total": 108
+}
