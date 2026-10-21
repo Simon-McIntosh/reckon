@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s32">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-21">
+  <meta name="plan-tags" content="ledger,run-record,module-bound">
+  <title>The run-record composition fits a worker window | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="run-record-composition-moves-out-of-the-ledger" data-reckon="landed" data-when="2026-10-21">
+  <h2>The run-record composition fits a worker window</h2>
+
+  <p><strong>Cause.</strong> <code>tests/test_every_module_fits_a_worker_window.py</code>
+  refused <code>reckon/ledger.py</code> at main, measured at 51,666 estimated tokens by
+  <code>reckon.crew.routing._tokens_for_bytes</code> against the test's 50,000 bound. The
+  completion-record family had accreted beside it — the throughput, pace and lane
+  measurements a run reports, the budget-group resolution that decides whether a lane's
+  harness cost is spend, and <code>build_record</code>, which assembles the row promotion
+  commits.</p>
+
+  <p><strong>Change.</strong> That family now lives in
+  <code>reckon/run_record.py</code>, named for what it does. Its constants and helpers stay
+  in the ledger, and the dependency runs one way: <code>run_record</code> imports them at
+  the end of its module, and <code>ledger</code> re-exports every moved name at its own
+  end. A module-scope import in either direction would close an import cycle and make
+  either module depend on which one an interpreter reaches first, so both imports sit after
+  the definitions they need. The re-export is eager, not a lazy attribute hook, so a nested
+  reader such as <code>ledger.effort_report</code> still resolves
+  <code>measurement_exclusion_reason</code> through the module namespace and a patch on
+  <code>ledger.measurement_exclusion_reason</code> still reaches it, exactly as before the
+  move. Callers that already import the moved names from
+  <code>reckon.ledger</code> — <code>reckon/capabilities.py</code>,
+  <code>reckon/calibration.py</code>, <code>reckon/calibration.py</code>'s reader and
+  <code>reckon/crew/promotion.py</code> — keep resolving the same function objects, and the
+  two tests that patch a moved name
+  (<code>tests/test_calibration.py</code>, <code>tests/test_capabilities.py</code>) were not
+  modified, because the name they patch is read from the ledger's namespace at call time.
+
+  <p><strong>Measures.</strong> Both figures are
+  <code>reckon.crew.routing._tokens_for_bytes</code> over the head tree:
+  <code>reckon/ledger.py</code> 42,735 estimated tokens (149,570 bytes) — down from 51,666,
+  and under the 45,000 the plan names; <code>reckon/run_record.py</code> 9,665 estimated
+  tokens (33,825 bytes) — under 40,000. At head the width test no longer names
+  <code>reckon/ledger.py</code>; it names only <code>reckon/crew/review.py</code>
+  (52,989), which is a sibling node's target and outside this node's scope.
+  <code>ruff check</code> and <code>ruff format --check</code> report no finding on either
+  file.</p>
+
+  <p><strong>Two-arm comparison.</strong> Both arms are trees materialised with
+  <code>git archive</code> at their revision under the run's scratch directory and run in
+  place on the fleet node with <code>pytest -n 8</code>; each log names its revision, tree
+  and literal command, and ends in <code>EXIT=</code>. The selection is the
+  <code>tests/</code> files that reference a moved name.</p>
+
+  <p><strong>Negative control.</strong> <code>reckon/ledger.py</code> restored to its base
+  content in a scratch copy of the head tree. The width test then names
+  <code>reckon/ledger.py</code> again — <code>51666 estimated tokens exceeds the 50000
+  bound</code> — and exits non-zero.</p>
+</article>
+</body>
+</html>
