@@ -10,6 +10,7 @@ from reckon._plan_html import write_state
 _PLAN_SET_FIELDS_BEFORE_NORTH_STAR = frozenset(
     {
         "archived",
+        "after",
         "artifacts",
         "blocks",
         "capability",
