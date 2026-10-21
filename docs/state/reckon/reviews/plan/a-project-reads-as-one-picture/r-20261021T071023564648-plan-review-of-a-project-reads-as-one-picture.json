@@ -1,0 +1,110 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T07:23:03.055Z",
+  "dispatched_at": "2026-10-21T07:11:32Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-project-reads-as-one-picture.html:25",
+      "id": "wiring-1",
+      "reason": "without the s12\u2192s11 edge a \u00a712 node can ship a finding that names an op refused at the base revision, so its own recommended repair does not run.",
+      "text": "`plan-section-depends-on` declares `s12: [s2]`, but \u00a712 says each settled-link \"names the ref and the `set` that removes it\" and its first arm covers `after` refs, whose remover is `set after` \u2014 an op the base refuses (`reckon/_store.py:2738`) and that only \u00a711 makes writable",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-project-reads-as-one-picture.html:271",
+      "id": "reasoning-1",
+      "reason": "the node would implement against a source the plan does not provide, and the section names no second source.",
+      "text": "\u00a712 sources `redundant-link` from \"the \u00a72 graph\", but \u00a72 builds its graph over the open sections of live plans and from three edge sources that do not include `after`, so the `after` arm of settled-link and its \"target is closed\" condition cannot be read from the input \u00a712 declares",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-project-reads-as-one-picture.html:271",
+      "id": "reasoning-2",
+      "reason": "a finding computed but surfaced nowhere is dead code, and the plan's stated purpose for \u00a712 (\"the removal candidates a review should judge\") is unrealised unless a consumer is named.",
+      "text": "nothing in the plan reads \u00a712's two findings: \u00a77's brief composes from \u00a72 to \u00a75 and its \"wiring findings\" bullet is \u00a75's output, and \u00a712 names no roadmap field, MCP read or review surface that renders them",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "3f5d6276ed55c51db3c19ebfd97a33b2d5403492ffe0f975709a8f8709c5b37b",
+  "plan_slug": "a-project-reads-as-one-picture",
+  "plan_version": 5,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-21T07:23:56.044090+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-21T07:24:04.505358+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-21T07:24:13.678243+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T07:24:04.505358+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T07:24:13.678243+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T07:23:56.044090+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-project-reads-as-one-picture.v5.json",
+  "review_run_id": "r-20261021T071023564648-plan-review-of-a-project-reads-as-one-picture",
+  "reviewed_blob_sha": "01a52402ca383a88986a772d98affdef15ffea68",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/_store_section_ops.py` line 438 is exactly the `set section_depends_on requires the form section_depends_on.<section>` refusal; the `unsupported plan set path 'after'` text resolves at `reckon/_store.py:2738`; `inactive-hard-dependency` resolves at `reckon/roadmap.py:2888`; and the `reckon-review` bypass note \u00a711 says it will drop is present at `skills/reckon-review/references/links.md:67`.",
+    "done_when": "pass \u2014 \u00a710, \u00a711 and \u00a712 each name a base-commit arm that must fail there (`set after` lists no settable path; the `after` set is refused as unsupported; neither finding exists), and \u00a712 adds a same-fixture control (the same edge with an open waiting section raises nothing).",
+    "evidence_paths": "pass \u2014 \u00a712 sends its per-mount counts to the cumulative landed record at `docs/evidence/archive/a-project-reads-as-one-picture-landed.html`, which exists on disk; the `_document` change adds no new path.",
+    "naming": "pass \u2014 the changed units carry no plan labels, stage names, ticket numbers or version tags; `settled-link`, `redundant-link` and `inactive-hard-dependency` are emitted finding keys (output data), not symbols.",
+    "reasoning": "findings \u2014 \u00a712 declares its findings against \u00a72's graph, which carries no `after` edges and no closed targets, and no surface in the plan reads them.",
+    "single_goal": "pass \u2014 \u00a710 (a refusal lists the writable paths), \u00a711 (`after` writable through `set`) and \u00a712 (name the links that order nothing) each carry one deliverable.",
+    "wiring": "a finding \u2014 `plan-section-depends-on` (line 25) declares `s12: [s2]` only, while \u00a712's settled-link arm promises the `set` that removes an `after` link, which \u00a711 is what makes writable."
+  },
+  "section_digests": {
+    "_document": "f178febf5be7d8d1fe4dc94b58f60952703743e4b0253df8b9434c84afce2640",
+    "s1": "1956dcaef74ad7d3216608fe69c2e7baa2a9e32d702ef86431dc746f15c3878a",
+    "s10": "e102e1c4c48bcc4635b2e41c4a84e2b36433f78cee863762cad68b3deae2cf75",
+    "s11": "ff19dc90f42b226ca45a5aaaf02a9894b54846500c87597775cb2806fc9b6156",
+    "s12": "8b6e6336fd43ac04e9bb586f8e4da5a9d41ea54ea6616c7cdf8f3f71e2ed31f8",
+    "s13": "95e233ad4cbbcd9c2cf975b7cb717f3f0eec9093cbeade0f4f268890aaff8d73",
+    "s2": "64f2b4d0c82612bd0bfb9eefcafcd13b92a20df1b1cbe711fd1183f50bf843b1",
+    "s3": "fd80d47dc6527a7a3e24a77d127f2483874d0b64aef17e84da1890a991c5cbbb",
+    "s4": "5681204820c5a325bb74eb0eae7f23e929fcd07085ca0aee87be77107db770fc",
+    "s5": "ff089a567fbe0c1760cd53470a5037aa7b3d1f536103b004db83cb7cda55c12d",
+    "s6": "d0f702b85752e3605cfbc815d2de3035b6d1e8e89fb584b661e8571aba7aa175",
+    "s7": "bfeb444f551da88dcabaeab5e28cda9c2c4c7ba177f07712b9cc5686e41e1103",
+    "s8": "1f13b98a4d7476b083792c060d8da48918e0ca44b3b27c910d2cfb7ae1aa69d3",
+    "s9": "a65c8523c1a05e7389c35e43a8737757ab2c60d08633460c1648c40a88138892"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T07:23:50.969774+00:00"
+}
