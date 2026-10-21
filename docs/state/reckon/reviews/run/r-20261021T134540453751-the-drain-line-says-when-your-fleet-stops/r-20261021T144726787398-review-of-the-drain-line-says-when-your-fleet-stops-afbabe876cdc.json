@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:2811",
+    "reckon/crew_follow_commands.py:1127",
+    "reckon/crew_follow_commands.py:1130"
+  ],
+  "completed_at": "2026-10-21T15:03:24.298Z",
+  "dispatched_at": "2026-10-21T14:49:09Z",
+  "findings": [
+    {
+      "file": "tests/test_every_module_fits_a_worker_window.py",
+      "line": "69",
+      "severity": "follow-on",
+      "text": "follow-on: the done_when's token clause names this test as passing at head, but it is red in both arms on reckon/ledger.py (reckon/ledger.py: 51666 estimated tokens exceeds the 50000 bound); the node's own touched module reckon/crew_follow_commands.py stands 49486 against the bound, and gate/token-window.log records the run, yet that log is absent from the manifest's test_logs and artifacts lines, so a reader following the manifest cannot reach the only evidence for the clause. ledger.py is unchanged by this node, so this does not hold the node."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read all three commits 1bc1ee111, 67856d08b and afbabe876 against base ff7ec47c1; the tail lands in reckon/crew/needs_you.py:241 as drain_tail, the follower gains only the call at reckon/crew_follow_commands.py:1127-1130, and tests/test_follow_drain_line.py, tests/test_a_pane_does_not_settle_during_admission.py and the landing fragment account for the rest, all inside the declared write paths.",
+    "done_when": "the done_when's behavioural clauses are asserted by tests/test_follow_drain_line.py (one drain whose tail names one run needing the coordinator at :302, the peer session's run absent at :307, the second drain reading fleet drained at :324) and by tests/test_a_pane_does_not_settle_during_admission.py:340; the negative control withheld the tail and the first case failed at :302 with EXIT=1.",
+    "goal": "the goal is for the follower's settle row to carry a tail saying the session's fleet is drained or how many runs need the coordinator, counted by reckon/crew/needs_you.py; reckon/crew/needs_you.py:241 composes that tail from needs_you_runs and reckon/crew_follow_commands.py:1108 appends it after the row's existing prefix.",
+    "manifest": "read; it states the two arms by their own logs (base 4 failed 570 passed, head 4 failed 571 passed, the same four ids), the negative control and its red line, the measurement module and cwd, and files the pre-existing ledger.py token-window failure as a follow-on.",
+    "write_paths": "read the manifest's six declared paths; the diff touches four of them plus the landing fragment, and every changed path is inside the declaration."
+  },
+  "justifications": {
+    "durability": "gate/negative-control.log withholds the tail from the settle row and reddens tests/test_follow_drain_line.py::test_a_drain_names_the_run_that_needs_you at :302 with EXIT=1 ('the drained pane names no run that needs the coordinator'), so the added assertion fails on the exact regression it guards and is not a value compared against itself.",
+    "evidence": "the done_when's command is the manifest's tests line and its result is recorded at gate/head-arm.log (4 failed, 571 passed, EXIT=1) against gate/base-arm.log (4 failed, 570 passed, EXIT=1), with the same four pre-existing ids in both arms, so added_failure_count 0 is derived from the logs rather than claimed.",
+    "fit": "reckon/crew/needs_you.py:236 names the drained word as a module constant in the file's constant style, the module follows the surrounding docstring voice at :241, and the inline import at reckon/crew_follow_commands.py:1120 matches _follower_end_event's own inline-import idiom at :1073.",
+    "goal_fidelity": "reckon/crew/needs_you.py:241 returns DRAINED_TAIL, '1 run needs the coordinator', or an N-run count from needs_you_runs, and reckon/crew_follow_commands.py:1108 appends it after the untouched 'no live work in {session} since {stamp}' prefix the plan requires.",
+    "reuse": "the tail is defined in the owning module reckon/crew/needs_you.py:241 and composes that module's own needs_you_runs, so it extends the owner rather than forking it; a search of reckon/ for an existing count-to-phrase composer found only reckon/crew_follow_commands.py:1042 which names run ids for the end row, a different row and wording the plan prescribes.",
+    "scope_discipline": "every changed path in the diff sits inside the manifest's declared write paths, and the docs/figures path declared but unused is a declared path, not an extra one."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is for the follower's settle row to carry a tail saying the session's fleet is drained or how many runs need the coordinator, counted by reckon/crew/needs_you.py; reckon/crew/needs_you.py:241 composes that tail from needs_you_runs and reckon/crew_follow_commands.py:1108 appends it after the row's existing prefix.\nVERDICT done_when: the done_when's behavioural clauses are asserted by tests/test_follow_drain_line.py (one drain whose tail names one run needing the coordinator at :302, the peer session's run absent at :307, the second drain reading fleet drained at :324) and by tests/test_a_pane_does_not_settle_during_admission.py:340; the negative control withheld the tail and the first case failed at :302 with EXIT=1.\nVERDICT write_paths: read the manifest's six declared paths; the diff touches four of them plus the landing fragment, and every changed path is inside the declaration.\nVERDICT manifest: read; it states the two arms by their own logs (base 4 failed 570 passed, head 4 failed 571 passed, the same four ids), the negative control and its red line, the measurement module and cwd, and files the pre-existing ledger.py token-window failure as a follow-on.\nVERDICT diff: read all three commits 1bc1ee111, 67856d08b and afbabe876 against base ff7ec47c1; the tail lands in reckon/crew/needs_you.py:241 as drain_tail, the follower gains only the call at reckon/crew_follow_commands.py:1127-1130, and tests/test_follow_drain_line.py, tests/test_a_pane_does_not_settle_during_admission.py and the landing fragment account for the rest, all inside the declared write paths.\nCALL_SITES: reckon/crew_follow_commands.py:2811, reckon/crew_follow_commands.py:1127, reckon/crew_follow_commands.py:1130\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:1108 appends the tail after the untouched 'no live work in <session> since HH:MM' prefix and reckon/crew/needs_you.py:241 composes it.\nSCORE evidence: 18\nJUSTIFICATION evidence: the done_when's command is the manifest's tests line and its result is recorded at gate/head-arm.log (4 failed, 571 passed, EXIT=1) against gate/base-arm.log (4 failed, 570 passed, EXIT=1), the same four pre-existing ids in both, so added_failure_count 0 is derived from the logs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path in the diff is inside the manifest's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: gate/negative-control.log withholds the tail and reddens tests/test_follow_drain_line.py::test_a_drain_names_the_run_that_needs_you at :302 with EXIT=1, on the exact regression the assertion guards.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/needs_you.py:236 names the drained word as a module constant, and the inline import at reckon/crew_follow_commands.py:1120 matches _follower_end_event's inline-import idiom at :1073.\nSCORE reuse: 17\nJUSTIFICATION reuse: reckon/crew/needs_you.py:241 composes the owner's own needs_you_runs, extending the owner rather than forking it, and a search of reckon/ found no other count-to-phrase owner for this row.\nFINDING tests/test_every_module_fits_a_worker_window.py:69 follow-on\nFINDING tests/test_every_module_fits_a_worker_window.py:69 follow-on: the done_when's token clause names this test as passing at head, but it is red in both arms on reckon/ledger.py (51666 estimated tokens against the 50000 bound); the node's own touched module reckon/crew_follow_commands.py stands 49486 against the bound, and gate/token-window.log records the run, yet that log is absent from the manifest's test_logs and artifacts lines, so a reader following the manifest cannot reach the only evidence for the clause. ledger.py is unchanged by this node, so this does not hold the node.\n",
+  "review_run_id": "r-20261021T144726787398-review-of-the-drain-line-says-when-your-fleet-stops-afbabe876cdc",
+  "reviewed_base_sha": "ff7ec47c1fa0747847306cebd429bd1a68786ee3",
+  "reviewed_head_sha": "afbabe876cdc7d163c889c948975fd74dc0f52ad",
+  "reviewed_run_id": "r-20261021T134540453751-the-drain-line-says-when-your-fleet-stops",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T15:08:34.350910+00:00",
+  "total": 111
+}
