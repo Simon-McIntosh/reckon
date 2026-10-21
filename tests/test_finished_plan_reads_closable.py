@@ -56,6 +56,10 @@ def _plans() -> list[dict]:
         # No persisted declarations is the legacy population: an unknown
         # remainder keeps whatever readiness the ladder would have given it.
         plan_row("legacy", effort="S", effort_hours=1.0),
+        # A discovery row reports a plan that persisted no classification as an
+        # empty mapping, so an empty map is the same legacy population and not a
+        # plan whose every section happens to be resolved.
+        plan_row("legacy-empty", effort="S", effort_hours=1.0, section_declarations={}),
         # Nothing implementable is left, but an execution gate is still open.
         plan_row(
             "gated",
@@ -111,11 +115,13 @@ def test_a_plan_with_implementable_work_still_reads_ready() -> None:
 
 
 def test_a_plan_without_declarations_keeps_its_readiness() -> None:
-    row = _rows()["legacy"]
+    rows = _rows()
 
-    assert row["readiness"] == "ready"
-    assert row["ready"] is True
-    assert row["closure_blockers"] == []
+    for slug in ("legacy", "legacy-empty"):
+        row = rows[slug]
+        assert row["readiness"] == "ready", slug
+        assert row["ready"] is True, slug
+        assert row["closure_blockers"] == [], slug
 
 
 def test_a_finished_plan_with_an_open_gate_reads_closable_naming_the_gate() -> None:

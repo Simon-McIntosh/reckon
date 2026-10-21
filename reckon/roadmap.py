@@ -818,14 +818,20 @@ def split_unpassed_gates(
 
 
 def is_closable(plan: Mapping[str, Any]) -> bool:
-    """Whether a plan's declarations leave nothing implementable.
+    """Whether a plan declares sections and has resolved every one of them.
 
-    ``plan_executable_remainder`` is the one reader of that question, and its
-    ``None`` sentinel is a plan that never persisted a classification: an
-    unknown remainder is not a finished plan, so only a known zero reads
-    closable.
+    ``plan_executable_remainder`` is the one reader of "does a declaration still
+    admit work", and its known zero is a plan whose declared sections are all
+    done, descoped or deferred. A plan that declares no sections at all has
+    nothing for that reader to answer about — the remainder is the deliberate
+    unknown there, and an inventory row cannot tell a plan that never persisted
+    a classification from one that persisted none, so both keep the readiness
+    the ladder would otherwise give them.
     """
 
+    declarations = plan.get("section_declarations")
+    if not isinstance(declarations, Mapping) or not declarations:
+        return False
     return plan_executable_remainder(plan) == 0
 
 
