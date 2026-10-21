@@ -1,0 +1,32 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-21T00:43:04.187Z",
+  "dispatched_at": "2026-10-21T00:26:00Z",
+  "findings": [
+    {
+      "file": "tests/test_ledger.py",
+      "line": "2521",
+      "severity": "follow-on",
+      "text": "follow-on: the rewritten test drives only the reckon/mcp.py call site, `mcp._crew(PROJECT, view=\"everything\")` at tests/test_ledger.py:2521. The other production surface, `serve_crew_view` at reckon/mcp_views.py:3749, also returns `crew_view_refusal_detail()`, and no test asserts that site returns the other call site's message (git grep of crew_view_refusal_detail across the tests directory at 82054cc0c finds only this one test, and it reaches the composition only through mcp._crew). A regression that re-forked a private literal back into the serve_crew_view refusal, which is exactly the drift this node was dispatched to end, would leave the suite green."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to compose the unknown-crew-view refusal from CREW_VIEWS in one place and have both surfaces reuse it; the gained commits close the durability gap the prior review named, so the landed run meets it; reckon/mcp_views.py:3635 composes the list from CREW_VIEWS, reckon/mcp_views.py:3749 and reckon/mcp.py:2165 both return it, and tests/test_ledger.py:2524-2533 now reads that composition directly.\nVERDICT done_when: the done_when names four gate files, the ledger test red-at-base green-at-head, and no test added; the manifest's tests: line is the literal four-target pytest command, gate-base.log records 2 failed 43 passed EXIT=1 at 001955d96 and gate-head.log 1 failed 44 passed EXIT=1 at 458e584b8, and the sole head failure (test_every_module_fits_a_worker_window) fails identically at base, so the delta is zero and the measure is asserted and recorded.\nVERDICT write_paths: the manifest declares reckon/mcp_views.py, reckon/mcp.py, tests/test_ledger.py, the evidence fragment and a figures directory; git diff --stat 6b8398d3ae 82054cc0cf8c touches only tests/test_ledger.py (+10/-2) and docs/evidence/fragments/the-crew-surface-is-one-tool-and-a-few-verbs/cso-unknown-view-names-the-registry.html (+3/-3), both inside the declared set.\nVERDICT manifest: read at the delivered revision; status complete, commits 6b8398d3ae, 458e584b8 and 82054cc0c, the tests: line a literal command, negative_control_log a single bare path; the manifest checkpoint records the head gate rerun at the fix commit 458e584b8 with 1 failed 44 passed EXIT=1, and test_logs names gate-base.log and gate-head.log.\nVERDICT diff: read both gained commits against 6b8398d3ae3bf20a2256a3dd6e1e68adf5a2ac1c; 458e584b8 replaces the whole-detail containment check in tests/test_ledger.py:2524-2529 with a list-segment parse and three set/length assertions at :2527-2533, and 82054cc0c updates the landing paragraph and its negative-control description in the evidence fragment.\nCALL_SITES: reckon/mcp.py:2165 (the _crew invalid_view refusal returns crew_view_refusal_detail()), reckon/mcp_views.py:3749 (the serve_crew_view unknown-view refusal returns crew_view_refusal_detail())\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_ledger.py:2524-2533 compares the refusal's composed list segment against reckon/mcp_views.py:3598 CREW_VIEWS as a set, which is the one-registry contract the node's goal states, and both call sites return that composition.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-base.log ends 2 failed 43 passed EXIT=1 and gate-head.log ends 1 failed 44 passed EXIT=1 with test_an_unknown_crew_view_names_every_view_it_has the failure that flips, but gate-head.log:1 names 458e584b8, one commit behind reviewed_head_sha 82054cc0c whose only delta is the evidence fragment, so the log's revision is not literally the head it serves.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 6b8398d3ae 82054cc0cf8c changes only tests/test_ledger.py and the node's own evidence fragment, and within tests/test_ledger.py only the one test body at tests/test_ledger.py:2524-2533 moved.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_ledger.py:2527 reddens when a name is dropped from the composed list even while the explanatory prose still mentions it, as negative-control.log shows by dropping runs to AssertionError: refusal omits ['runs'], but the test reaches reckon/mcp_views.py:3749 only through reckon/mcp.py:2165, so a fork re-introduced at the serve_crew_view site would stay green.\nSCORE fit: 19\nJUSTIFICATION fit: the rewritten test keeps the surrounding file's shape (imports inside the test at tests/test_ledger.py:2524-2525, an assert-with-message form) and introduces no name the repository's naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained commits add no definition and fork no capability; the composition owner is reckon/mcp_views.py:3627 crew_view_refusal_detail() over CREW_VIEWS at :3598, and the search for a view-name composition owner found crew_view_names() at :3621 returning the same tuple without composing a message, so nothing was duplicated.\nFINDING tests/test_ledger.py:2521 follow-on: the rewritten test exercises only the reckon/mcp.py:2165 call site through mcp._crew, so the other production surface returning the other call site's message, serve_crew_view at reckon/mcp_views.py:3749, is unguarded and a literal re-forked there would not redden the suite; the drift the node exists to prevent stays reachable at one of its two sites.\n",
+  "review_run_id": "r-20261021T002518166906-review-of-cso-unknown-view-names-the-registry-82054cc0cf8c",
+  "reviewed_base_sha": "6b8398d3ae3bf20a2256a3dd6e1e68adf5a2ac1c",
+  "reviewed_head_sha": "82054cc0cf8c1574c45f041b4f8ea748038fc944",
+  "reviewed_run_id": "r-20261020T233610350415-cso-unknown-view-names-the-registry",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T00:45:37.448108+00:00",
+  "total": 113
+}

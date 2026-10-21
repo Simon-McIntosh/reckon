@@ -26,7 +26,7 @@
   <title>The Crew Surface Is One Tool And A Few Verbs | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="93">
+<meta name="plan-version" content="94">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -479,6 +479,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261020T235834866276-review-of-cso-unknown-view-names-the-registry-6b8398d3ae3b" data-who="reckon-build" data-when="2026-10-21T00:13:30.071Z">
     <div class="r-comment-body"><p>Reviewed run r-20261020T233610350415-cso-unknown-view-names-the-registry at base 001955d965c1cd88cab944c0ef4ac2e083712057 and head 6b8398d3ae3bf20a2256a3dd6e1e68adf5a2ac1c; scored goal_fidelity 19, evidence 18, scope_discipline 19, durability 14, fit 18, reuse 19; added_failure_count 0; two follow-on findings, none blocking.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261021T002518166906-review-of-cso-unknown-view-names-the-registry-82054cc0cf8c" data-who="reckon-build" data-when="2026-10-21T00:43:04.187Z">
+    <div class="r-comment-body"><p>The gained commits since the prior review (458e584b8 test rewrite + 82054cc0c evidence) repair the durability gap that review named — tests/test_ledger.py:2524-2533 now parses the refusal&#x27;s own list segment (text between &quot;view must be &quot; and the first semicolon) and asserts it equals CREW_VIEWS as a set, with no name missing, none unregistered and no repeat, so a name dropped from the composition reddens even while the explanatory prose still mentions it (negative-control.log drops runs to AssertionError: refusal omits [&#x27;runs&#x27;]); scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 17, fit 19, reuse 20; one follow-on finding — the test reaches the shared composition only through reckon/mcp.py:2165, so the second surface reckon/mcp_views.py:3749 is unguarded against a re-forked literal.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261019T220254082188-review-of-cso-budget-family-folds-0274b1227df3" data-who="reckon-build" data-when="2026-10-19T22:24:20.259Z">
     <div class="r-comment-body"><p>Reviewed run r-20261019T202350268699-cso-budget-family-folds at 0274b1227df3acf495023b12695d143ed6c129ab against base 0fa62dca44a63a65382c140c82a003dd7a660e02: the budget fold is complete and its gate is green at both arms with zero added failures, but the run's own manifest and gate logs fail its own `crew check-manifest` audit (ok:false, three findings), so the node cannot promote until the negative_control_log and the two gate-log command headers are repaired.</p></div>
