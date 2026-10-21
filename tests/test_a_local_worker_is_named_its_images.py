@@ -19,7 +19,15 @@ lanes go on refusing by name.
     resumed run is rebuilt from, and the launch composed from those settings
     names the image instead of refusing it;
   - a flight whose only image-declaring lane is clive offers clive as a
-    figure-review candidate.
+    figure-review candidate;
+  - the two reads of a lane's declaration -- the naming in ``launch_plan`` and
+    the review-lane selection in ``reckon.flight`` -- agree on whether it
+    admits an image, over the declarations ``[text, image]``, ``[text]``,
+    ``[]``, nothing, ``[IMAGE]``, ``[' image ']`` and ``text,image``, the last
+    three admitting one, because the naming path reads through the function
+    ``reckon.flight`` owns;
+  - a prompt that already carries a figure listing composes to exactly one,
+    naming the figures the launch carries, and to none on codex.
 
 Every fixture here is built inside the test's own temporary directory, so no
 assertion reads a path outside it.
@@ -36,29 +44,41 @@ from pathlib import Path
 
 import pytest
 
-from reckon import _backends
+from reckon import _backends, flight
 from reckon.crew import recovery
 
 sessions_module = importlib.import_module("reckon.crew.dispatch_sessions")
 
 FIGURE = "run-figures/image-0.png"
+OTHER_FIGURE = "run-figures/image-1.png"
+
+# The heading a prompt carries when its lane is named its figures. Spelled here
+# rather than imported so the count below reads the text a worker is handed.
+FIGURE_LISTING_MARKER = "Figures attached to this node"
 
 DECLARED_LANE = "clive"
 UNDECLARED_LANE = "claude"
 
 
-def _claude_family_lane(command: str, modalities: list[str] | None = None) -> dict:
+def _claude_family_lane(command: str, modalities=None) -> dict:
     lane = {"launch": "cli", "command": command, "sandbox": "worktree-full"}
     if modalities is not None:
         lane["input_modalities"] = modalities
     return lane
 
 
-def _plan(backend: dict, images=(), *, backend_name: str = "lane", fence: bool = False):
+def _plan(
+    backend: dict,
+    images=(),
+    *,
+    backend_name: str = "lane",
+    fence: bool = False,
+    prompt: str = "review the figure",
+):
     return _backends.launch_plan(
         backend_name=backend_name,
         backend=backend,
-        prompt="review the figure",
+        prompt=prompt,
         worktree="/wt",
         images=images,
         fence=fence,
@@ -103,6 +123,101 @@ def test_the_codex_dialect_keeps_carrying_images_on_its_own_flag():
 
     assert plan.argv[plan.argv.index("-i") + 1] == FIGURE
     assert FIGURE not in plan.stdin_text
+
+
+# ── the declaration's two reads ─────────────────────────────────────────────
+
+
+@pytest.mark.parametrize(
+    ("declaration", "admits"),
+    [
+        (["text", "image"], True),
+        (["text"], False),
+        ([], False),
+        (None, False),
+        (["IMAGE"], True),
+        ([" image "], True),
+        ("text,image", True),
+    ],
+)
+def test_the_two_reads_of_a_declaration_agree_on_whether_it_admits_an_image(
+    declaration, admits: bool
+) -> None:
+    """The naming that hands a lane a figure and the selection that admits it to
+    a figure review must not disagree: a lane admitted on a spelling the naming
+    path does not recognise is a review answering from the diff. They agree
+    because both ask one function, whose read strips each entry and case-folds
+    it and reads a string as a comma-separated list."""
+    lane = _claude_family_lane("clive", declaration)
+    config = {"backends": {DECLARED_LANE: lane}}
+
+    named = _backends.declares_image_input(lane)
+    declared = flight.declared_input_modalities(config, DECLARED_LANE)
+
+    assert named is admits, (declaration, declared)
+    assert ("image" in declared) is admits, (declaration, declared)
+    assert flight.missing_input_modalities(config, DECLARED_LANE, "figure") == (
+        () if admits else ("image",)
+    )
+
+
+def test_the_naming_read_goes_through_the_flights_normaliser(monkeypatch) -> None:
+    """The agreement above is held by one implementation rather than by two
+    implementations happening to match: the naming path reads the declaration
+    through ``reckon.flight``, so a change that gives one read a new spelling
+    cannot leave the other behind."""
+    seen: list[object] = []
+    real = flight.normalise_input_modalities
+
+    def recording(declared):
+        seen.append(declared)
+        return real(declared)
+
+    monkeypatch.setattr(flight, "normalise_input_modalities", recording)
+
+    assert _backends.declares_image_input({"input_modalities": ["IMAGE"]}) is True
+    assert seen == [["IMAGE"]]
+
+
+# ── the figure listing a prompt may already carry ───────────────────────────
+
+
+def test_a_prompt_already_carrying_a_listing_is_composed_with_exactly_one():
+    """A lane change composes from the run's prompt file, so the composer is
+    handed a prompt that already carries a listing. It strips that listing
+    before naming the figures this launch carries, so the worker is handed one
+    listing -- the current figures -- rather than both."""
+    lane = _claude_family_lane("clive", ["text", "image"])
+    named = _plan(lane, (FIGURE,), backend_name=DECLARED_LANE)
+
+    recomposed = _plan(
+        lane, (OTHER_FIGURE,), backend_name=DECLARED_LANE, prompt=named.stdin_text
+    )
+
+    assert recomposed.stdin_text.count(FIGURE_LISTING_MARKER) == 1
+    assert OTHER_FIGURE in recomposed.stdin_text
+    assert FIGURE not in recomposed.stdin_text
+
+
+def test_a_prompt_already_carrying_a_listing_composes_to_none_on_codex():
+    """The strip runs on every lane, not only on a lane that names its figures:
+    moving a run whose prompt carries a listing onto codex, which hands the
+    figures over itself, must not leave that stale listing in the prompt."""
+    named = _plan(
+        _claude_family_lane("clive", ["text", "image"]),
+        (FIGURE,),
+        backend_name=DECLARED_LANE,
+    )
+
+    moved = _plan(
+        _claude_family_lane("codex"),
+        (FIGURE,),
+        backend_name="codex",
+        prompt=named.stdin_text,
+    )
+
+    assert FIGURE_LISTING_MARKER not in moved.stdin_text
+    assert moved.argv[moved.argv.index("-i") + 1] == FIGURE
 
 
 # ── the resumed run ─────────────────────────────────────────────────────────

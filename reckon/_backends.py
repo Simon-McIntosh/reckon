@@ -2179,7 +2179,7 @@ def _prompt_naming_images(prompt: str, images: Sequence[str]) -> str:
 
 
 def _prompt_without_figure_listing(prompt: str) -> str:
-    """Drop a figure listing the prompt already carries, keeping what precedes it.
+    """Drop a figure listing the prompt already carries, keeping the rest.
 
     The prompt handed to :func:`launch_plan` is not always a bare brief: a lane
     change composes from the run's prompt file, which a fresh dispatch has
@@ -2190,11 +2190,24 @@ def _prompt_without_figure_listing(prompt: str) -> str:
     whether this lane is named its figures, leaves exactly one listing naming
     the current figures on a lane that names them and none on a lane that does
     not.
+
+    Only the heading and the paths under it come out: a prompt composed for an
+    earlier attempt may carry text appended after its listing, and cutting from
+    the heading to the end of the prompt would take that text — a restated time
+    fence among it — away from the worker.
     """
-    head, separator, _ = prompt.partition(_FIGURE_LISTING_HEADING)
+    head, separator, tail = prompt.partition(_FIGURE_LISTING_HEADING)
     if not separator:
         return prompt
-    return head.rstrip()
+    lines = tail.split("\n")
+    index = 1 if lines and not lines[0] else 0
+    end = index
+    while end < len(lines) and lines[end].startswith("- "):
+        end += 1
+    remainder = "\n".join(lines[end:]).strip("\n")
+    if not remainder:
+        return head.rstrip()
+    return f"{head.rstrip()}\n\n{remainder}"
 
 
 def launch_plan(
