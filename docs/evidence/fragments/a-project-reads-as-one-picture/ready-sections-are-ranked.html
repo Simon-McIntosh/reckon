@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-project-reads-as-one-picture">
+  <meta name="plan-evidence-for" content="reckon:a-project-reads-as-one-picture">
+  <meta name="plan-verifies" content="reckon:a-project-reads-as-one-picture#s3">
+  <meta name="plan-verdict" content="pass">
+  <title>Ready sections are ranked by the signal that places them</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="ready-sections-are-ranked-landing" data-node="ready-sections-are-ranked" data-reckon="landed" data-when="2026-10-21">
+  <h2>Ready sections are ranked by the signal that places them</h2>
+  <p id="ready-sections-are-ranked-gap"><code>immediate_roadmap</code> held plan rows and nothing else. Once the section edges reached the graph, the walk could cross a plan's sections, but the ready list a reader starts from still named plans: a reader could see that <code>wide</code> was ready and not which of its sections to open, and the only ordering signal was the plan's own reach. The ranking key was a nested closure inside <code>_build_roadmap</code>, so no section-scoped term could be expressed in it without touching the payload function itself.</p>
+  <p id="ready-sections-are-ranked-key">The key is extended rather than rewritten, and the extension is the same key for both populations: <code>after_hold</code>, critical-path membership, sprint position, ROI, reach, the stuck signal, remaining effort, identity. A term a row cannot carry is neutral for it, so the plan rows keep the order they had wherever the new terms are neutral — which is everywhere a plan carries no stuck section — and ROI and effort stay late tie-breakers. Reach for a section counts the sections that wait on it, which the section edges now supply; reach for a plan is unchanged.</p>
+  <p id="ready-sections-are-ranked-stuck">The stuck signal is <code>section_is_stuck(attempts, blocked_run_seconds)</code>: true when the section has been attempted twice, from <code>section_attempts_by_plan</code>, or when a run on it has reported itself blocked for more than a day, from the live pointers that <code>classify_pointer</code> reads the same way the recovery surfaces do. It leads among rows otherwise equal, because a row a reader has already been through twice is the one to look at first. Where a section is both on the critical path and stuck, the row reports critical path: one field, one vocabulary, and the first signal in key order is the one named.</p>
+  <p id="ready-sections-are-ranked-rows">One row per ready section, appended after the plan rows and ranked by that key, each carrying <code>ref</code> <code>&lt;plan&gt;#&lt;section&gt;</code> with its plan named beside it in <code>plan</code>, its own remaining effort, the sections it releases, and the placing signal in the existing <code>reason</code> field. No second field is added: a section row's <code>reason</code> and a plan row's <code>reason</code> are read by the same consumer, so they are the same vocabulary. A section held by a dependency is not in the list; a section-scoped wait holds its section, not its plan, so the plan row and its remaining ready sections both stay.</p>
+  <p id="ready-sections-are-ranked-bound">The ranking arithmetic moves whole into <code>reckon/roadmap_ranking.py</code>: the priority key and both wrappers, the path ranking including the critical-path selection, the section edge lifting and the section-effort read it needs. Nothing there reads a project — every function takes the values the caller resolved — and <code>reckon/roadmap.py</code> loses those bodies rather than keeping a copy. The module bound is what forced the move.</p>
+  <p id="ready-sections-are-ranked-gate">Gate: 102 tests across the eleven roadmap-surfaces files, green at <code>EXIT=0</code> on the committed tree; ruff check and ruff format clean on the three changed paths, with the two findings the file carried before the change — <code>RUF005</code> and <code>PERF401</code> — the only ones remaining and neither added. The four new tests fail on the base commit, where <code>immediate_roadmap</code> has no section rows.</p>
+  <p id="ready-sections-are-ranked-negative-control">Negative control: with the append into <code>immediate_roadmap</code> held out — the section rows computed and then dropped, so nothing else in the read changes — all four new tests fail, <code>EXIT=1</code>, on <code>test_the_section_with_the_largest_reach_leads_the_ranked_rows</code>, <code>test_every_section_row_says_which_signal_placed_it</code>, <code>test_a_section_placed_by_reach_says_reach_and_outranks_a_side_section</code> and <code>test_two_attempts_outrank_an_equal_section_with_none</code>. The rows are what the append adds.</p>
+  <p id="ready-sections-are-ranked-fixture">The ranking fixture writes every plan ROI-high and effort-M, so ROI and effort decide nothing in it: what separates two rows is the signal the test is about. <code>wide#s1</code> releases four sections at 30 hours, <code>wide#s3</code> releases two, <code>wide#s2</code> releases none, and all three are otherwise equal. The ranked section rows come out <code>wide#s1</code>, <code>wide#s3</code>, <code>wide#s2</code>: the largest reach first, then the side section with two waiters ahead of the one with none. The stuck test uses a second fixture whose two sections are equal in reach, hours, ROI and sprint, so only attempts can move them, and the section with two attempts is the one that leads.</p>
+</article>
+</body>
+</html>
