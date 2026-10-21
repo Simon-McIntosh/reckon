@@ -1,0 +1,78 @@
+<section id="the-view-parity-case-reads-the-budget-at-one-instant">
+  <h2>the-view-parity-case-reads-the-budget-at-one-instant — the parity case drives the budget clock instead of waiting for load to move it</h2>
+
+  <p><strong>Defect.</strong>
+  <code>tests/test_crew_view_serves_every_view.py::test_every_declared_view_answers_the_same_document_on_both_surfaces</code>
+  drives every crew view once through the crew tool and once through
+  <code>reckon crew view</code> and requires the two documents to match after the
+  keys in <code>_VOLATILE_KEYS</code> are dropped.
+  <code>reckon.budget.preflight</code> stamps its report's top-level
+  <code>checked_at</code> from the instant it composes
+  (<code>reckon/budget.py</code>, the <code>moment = _now(now)</code> at the head
+  staged into the <code>report</code> mapping). Both surfaces call the same
+  function, so their documents agree exactly when they agree on that instant and
+  differ otherwise. A loaded arm produced the difference by chance and the case
+  then failed naming <code>budget</code>; an idle arm never produced it. The case
+  therefore reported a defect only at load, which is a case that cannot be
+  relied on in either direction.</p>
+
+  <p><strong>Fix, one commit.</strong> The parity case drives the clock itself.
+  <code>budget._now</code> is pinned to one instant for the first call of each
+  pair and to 30 seconds past it for the second, through
+  <code>_hold_the_budget_clock_at</code>, so the divergence the case guards
+  against happens on every run rather than on some. The budget view's top-level
+  <code>checked_at</code> is then dropped before the two documents are compared,
+  by view and at the document's own top level only
+  (<code>_TOP_LEVEL_COMPOSITION_STAMPS</code>,
+  <code>_without_the_composition_instant</code>).</p>
+
+  <p><strong>Why not <code>_VOLATILE_KEYS</code>.</strong> That set is dropped by
+  key name at every depth of every view. The review views carry a
+  <code>checked_at</code> copied from a stored review record
+  (<code>reckon/mcp_views.py</code>), at a nested position, and it records what
+  was written rather than when the surface ran — dropping it by name would stop
+  comparing a stored value the two surfaces must still agree on. Scoping the drop
+  to one view's own top level removes the composition stamp and nothing else.</p>
+
+  <p><strong>New case.</strong>
+  <code>tests/test_crew_view_serves_every_view.py::test_only_the_budget_views_own_stamp_is_dropped</code>
+  drives the parity case's own filter with a document of each shape: a view other
+  than budget carrying a nested <code>checked_at</code> keeps it, a budget view's
+  nested <code>checked_at</code> keeps it, and only the budget view's top-level
+  <code>checked_at</code> goes. The confinement the drop claims is therefore
+  asserted rather than assumed.</p>
+
+  <p id="the-view-parity-case-reads-the-budget-at-one-instant-measure"><strong>Measure.</strong>
+  Ten runs of
+  <code>PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q -n 12 tests/test_crew_view_serves_every_view.py tests/test_crew_lanes_view.py tests/test_crew_runs_view.py tests/test_crew_velocity_view.py tests/test_mcp_views.py tests/test_read_verbs_retire_behind_crew_view.py</code>
+  at <code>f27886f59</code> in the foreground on the fleet node: <strong>10 of 10
+  passed</strong>, each run <code>105 passed</code> with <code>EXIT=0</code>
+  (<code>gate-run-01.log</code> … <code>gate-run-10.log</code> under the run
+  directory).</p>
+
+  <p><strong>Reproduction and negative control.</strong> A probe on the case's own
+  fixture read <code>budget._now</code> 6 times per composition, and holding the
+  pair 30 seconds apart moved exactly one leaf between the two documents —
+  <code>.checked_at</code> — while <code>age_seconds</code>,
+  <code>seconds_until_reset</code>, <code>resume_after_seconds</code> and
+  <code>mean_age_seconds</code> did not move; the sweep over every view and
+  argument vector under the advance produced that one disagreement on
+  <code>budget</code> and none on any other view
+  (<code>probe-sweep.log</code>). The declared mutation — stop dropping the
+  budget view's top-level <code>checked_at</code> while keeping the 30-second
+  advance — leaves the case red and naming the view: <code>AssertionError: these
+  view/argument pairs answer differently on the command line and on the crew
+  tool: ['budget with mine', 'budget with phase', 'budget with read', 'budget
+  with session']</code>, all four vectors, <code>2 failed, 4 passed</code>,
+  <code>EXIT=1</code> (<code>negative-control.log</code>). The second failure is
+  the confinement case above, which the same mutation drives red.</p>
+
+  <p><strong>Lint.</strong> <code>ruff check</code> and
+  <code>ruff format --check</code> add no findings to
+  <code>tests/test_crew_view_serves_every_view.py</code>, judged against the base
+  blob at <code>0702ee8a3</code>: both clean before and after.</p>
+
+  <p><strong>Scope.</strong> Only the parity case's filter and its clock are
+  touched; no product source changed. Verifying the merged result belongs to a
+  separately dispatched test node.</p>
+</section>
