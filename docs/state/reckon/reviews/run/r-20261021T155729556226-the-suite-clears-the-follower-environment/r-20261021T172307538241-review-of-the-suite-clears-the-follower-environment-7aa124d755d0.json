@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_a_pane_settles_when_no_work_is_live.py::test_the_real_follower_settles_when_the_host_advertises_it",
+    "tests/test_follower_freshness.py::test_running_follower_reloads_without_stream_or_registration_gap"
+  ],
+  "call_sites": [],
+  "completed_at": "2026-10-21T17:41:24.948Z",
+  "dispatched_at": "2026-10-21T17:24:56Z",
+  "findings": [
+    {
+      "file": "tests/test_the_suite_clears_the_follower_environment.py",
+      "line": "101",
+      "severity": "follow-on",
+      "text": "the assertion compares os.environ[\"RECKON_FOLLOWER_OWNER\"] against the literal \"a-test-owner\" that line 100 supplied to that same variable, so the two sides move together: monkeypatch.setenv overrides both the autouse fixture's delenv and any ambient value, so the assertion holds whether the fixture is present, absent, or set to something else, and it survives the very regression it names for coverage. Reverting the fixture leaves it green."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T155729556226-the-suite-clears-the-follower-environment/gate/alone5-tests_test_follower_freshness.py__test_running_follower_reloads_without_stream_or_registration_gap-cleared.log",
+      "line": "547",
+      "severity": "follow-on",
+      "text": "the five-runs-alone control that adjudicates the two derived added ids as environment-independent is itself asymmetric: this cleared arm reports 4 failed of 5 while the matching set arm reports 0 of 5, a 4/5-versus-0/5 split between arms that the manifest attributes to machine warm-up without a control for arm order or warm-up. Both arms carry the fixture at head, so the arms should be equivalent samples of the same code, and the residual difference is the reason the derived count of 2 is retired rather than the reason it is absent."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read against base da1a110ab commit by commit; 42b077dc6 adds the fixture and the test module, bf1e00cb3 widens the inner pool from 4 to 8 workers, 7aa124d75 adds the evidence fragment; 213 insertions, no deletions, no runtime code.",
+    "done_when": "Section 33's done_when asks for the fixture, a test that keeps its own value, a subprocess over the three files that is green with the four set and red without the fixture, and two gate arms whose derived added id is adjudicated away; the landed test file asserts the first three and gate/arm-cleared.log + gate/arm-set.log supply the fourth, though the derivation returns 2 ids and not none.",
+    "goal": "The goal is an autouse fixture in tests/conftest.py removing the four follower variables a crew host sets; tests/conftest.py:327-331 is that fixture and the three affected files go from 32 failed/17 passed to 49 passed under a crew-host environment.",
+    "manifest": "Read; status complete, commits 42b077dc6/bf1e00cb3/7aa124d75, five gate logs under gate/. The manifest carries no baseline_suite or after_suite key, so the added-failure pair was derived from the arm-cleared/arm-set logs it names in test_logs.",
+    "write_paths": "Read the manifest's three declared paths; all three paths in the diff lie inside them, and no path outside them is touched."
+  },
+  "justifications": {
+    "durability": "tests/test_the_suite_clears_the_follower_environment.py:107 asserts the subprocess over the three follower files returns 0 with the four variables set, which reddens when the fixture is removed (gate/negative-control.log, EXIT=1, failing id test_the_affected_files_pass_with_a_crew_host_session_set), but the assertion at line 101 compares os.environ to the literal the test itself set on line 100.",
+    "evidence": "gate/arm-cleared.log ends '3 failed, 410 passed in 359.68s' EXIT=1 and gate/arm-set.log ends '5 failed, 408 passed in 380.78s' EXIT=1, with gate/repro-three-files.log recording '32 failed, 17 passed' EXIT=1 at da1a110ab and gate/fix-three-files.log '49 passed' EXIT=0; reckon.crew.review.added_failures_from_gate_logs(base=cleared, head=set) over those two arm logs returns 2 ids, and the five-runs-alone adjudication is a directional test rather than a matched sample.",
+    "fit": "tests/conftest.py:327 sits directly after without_the_live_claude_session at :304 and restates its shape, module constant plus autouse fixture with a one-line docstring, and the added names are mechanism names carrying no plan label.",
+    "goal_fidelity": "tests/conftest.py:327-331 defines the autouse fixture without_the_follower_session, which deletes the four names in _FOLLOWER_SESSION_ENV for every test, which is exactly what the goal states.",
+    "reuse": "searched the suite for an existing owner of clearing follower-session variables and found only per-concern siblings (without_dispatch_identity at tests/conftest.py:287, without_the_live_claude_session at :304), so tests/conftest.py:319's _FOLLOWER_SESSION_ENV extends that pattern rather than forking a capability, and no runtime owner of a general test-environment scrub exists.",
+    "scope_discipline": "git diff da1a110ab 7aa124d75 touches only tests/conftest.py, tests/test_the_suite_clears_the_follower_environment.py and docs/evidence/fragments/the-suite-is-green-at-head/the-suite-clears-the-follower-environment.html, 213 insertions and no deletions, all three inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is an autouse fixture in tests/conftest.py removing the four follower variables a crew host sets; tests/conftest.py:327-331 is that fixture and the three affected files go from 32 failed/17 passed to 49 passed under a crew-host environment.\nVERDICT done_when: section 33's done_when asks for the fixture, a test that keeps its own value, a subprocess over the three files green with the four set and red without the fixture, and two gate arms whose derived added id is adjudicated away; the landed test file asserts the first three and arm-cleared.log + arm-set.log supply the fourth, though the derivation returns 2 ids and not none.\nVERDICT write_paths: read the manifest's three declared paths; all three paths in the diff lie inside them and no path outside them is touched.\nVERDICT manifest: read; status complete, commits 42b077dc6/bf1e00cb3/7aa124d75, five gate logs under gate/, and no baseline_suite or after_suite key, so the added-failure pair was derived from the arm logs it names in test_logs.\nVERDICT diff: read against base da1a110ab commit by commit; 42b077dc6 adds the fixture and the test module, bf1e00cb3 widens the inner pool from 4 to 8 workers, 7aa124d75 adds the evidence fragment; 213 insertions, no deletions, no runtime code touched.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/conftest.py:327-331 defines the autouse fixture without_the_follower_session, which deletes the four names in _FOLLOWER_SESSION_ENV for every test, which is exactly what the goal states.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate/arm-cleared.log ends '3 failed, 410 passed in 359.68s' EXIT=1 and gate/arm-set.log ends '5 failed, 408 passed in 380.78s' EXIT=1, with repro-three-files.log recording '32 failed, 17 passed' EXIT=1 at da1a110ab and fix-three-files.log '49 passed' EXIT=0; added_failures_from_gate_logs(base=cleared, head=set) returns 2 ids, and the five-runs-alone adjudication is a directional test rather than a matched sample.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff da1a110ab 7aa124d75 touches only tests/conftest.py, tests/test_the_suite_clears_the_follower_environment.py and docs/evidence/fragments/the-suite-is-green-at-head/the-suite-clears-the-follower-environment.html, 213 insertions and no deletions, all three inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_suite_clears_the_follower_environment.py:107 asserts the subprocess over the three follower files returns 0 with the four variables set, which reddens when the fixture is removed (gate/negative-control.log, EXIT=1, failing id test_the_affected_files_pass_with_a_crew_host_session_set), but the assertion at line 101 compares os.environ to the literal the test itself set on line 100.\nSCORE fit: 18\nJUSTIFICATION fit: tests/conftest.py:327 sits directly after without_the_live_claude_session at :304 and restates its shape, a module constant plus an autouse fixture with a one-line docstring, and the added names carry no plan label.\nSCORE reuse: 20\nJUSTIFICATION reuse: searched the suite for an existing owner of clearing follower-session variables and found only per-concern siblings (without_dispatch_identity at tests/conftest.py:287, without_the_live_claude_session at :304), so tests/conftest.py:319's _FOLLOWER_SESSION_ENV extends that pattern rather than forking a capability, and no runtime owner of a general test-environment scrub exists.\nFINDING tests/test_the_suite_clears_the_follower_environment.py:101 follow-on: the assertion compares os.environ against the literal the test itself supplied to that variable on line 100, so it holds whether the fixture is present absent or altered and cannot redden on a regression of the fixture it names.\nFINDING gate/alone5-tests_test_follower_freshness.py__test_running_follower_reloads_without_stream_or_registration_gap-cleared.log:547 follow-on: the five-runs-alone control that adjudicates the two derived ids is asymmetric (4 failed of 5 in the cleared arm against 0 of 5 in the set arm) and the manifest attributes the split to machine warm-up with no control for arm order, so the retirement of the derived count of 2 rests on an unmatched comparison.\n",
+  "review_run_id": "r-20261021T172307538241-review-of-the-suite-clears-the-follower-environment-7aa124d755d0",
+  "reviewed_base_sha": "da1a110ab13de2c3f5b38a38fb807c35cbad06ae",
+  "reviewed_head_sha": "7aa124d755d022fbae5fcbc246e2d70e7a491ab0",
+  "reviewed_run_id": "r-20261021T155729556226-the-suite-clears-the-follower-environment",
+  "reviewer": "review-of-the-suite-clears-the-follower-environment-7aa124d755d0",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T17:44:50.496607+00:00",
+  "total": 112
+}
