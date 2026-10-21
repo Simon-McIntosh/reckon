@@ -13,7 +13,7 @@ what every handler reaches as <code>self.server</code>, so a bare
 through the same path as the served entry point.</p>
 <p><strong>Change.</strong> <code>reckon/serve.py</code> resolves the served log path once
 per server object, at that server's first request, and keeps it on the object
-(<code>_served_log_path</code>, attribute <code>_reckon_served_log_path</code>). Every access
+(<code>_kept_served_log_path</code>, attribute <code>_reckon_served_log_path</code>). Every access
 line and every bound check made for that server's requests passes the kept path, so a home
 that moves after the first request &mdash; a teardown restoring the environment while a
 handler thread is still open &mdash; cannot retarget a later line or a rotation. The live

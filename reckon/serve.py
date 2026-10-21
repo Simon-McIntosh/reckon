@@ -265,8 +265,8 @@ def _server_log_path() -> Path:
 _SERVER_LOG_PATH_ATTR = "_reckon_served_log_path"
 
 
-def _served_log_path(server: object) -> Path:
-    """The served log path ``server`` resolved at its first request, kept.
+def _kept_served_log_path(server: object) -> Path:
+    """The served log path ``server`` resolved at its first request, kept on it.
 
     A server resolves its log path once, the first time it handles a request,
     and keeps the result on itself. Every access line and every bound check
@@ -277,6 +277,9 @@ def _served_log_path(server: object) -> Path:
     than per process, so a bare ``ThreadingHTTPServer`` a test builds around
     ``serve.Handler`` keeps its own, exactly as the served entry point does;
     ``Handler`` reaches its server as ``self.server``.
+
+    ``_server_log_path`` beside it is a different thing: that one resolves from
+    the environment on every call, for the callers that want the current home.
     """
 
     kept = getattr(server, _SERVER_LOG_PATH_ATTR, None)
@@ -2257,7 +2260,7 @@ class Handler(BaseHTTPRequestHandler):
         ts = datetime.now().strftime("%H:%M:%S")
         _write_access_line(
             f"[{ts}] {self.address_string()} {fmt % args}",
-            _served_log_path(self.server),
+            _kept_served_log_path(self.server),
         )
 
     # ── Request duration: the access line and the Server-Timing header ────
@@ -2267,7 +2270,7 @@ class Handler(BaseHTTPRequestHandler):
 
         self._request_started = time.perf_counter()
         self._response_status: int | None = None
-        _bound_server_log(_served_log_path(self.server))
+        _bound_server_log(_kept_served_log_path(self.server))
         try:
             super().handle_one_request()
         finally:
