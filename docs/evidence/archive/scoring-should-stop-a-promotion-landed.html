@@ -2027,6 +2027,16 @@ E  assert 5 == 90</pre>
     <p><code>parse_figure_review</code> and <code>_FIGURE_RUBRIC_LINE_RE</code> are deleted from <code>reckon/crew/review.py</code>: nothing in production called them, because a run review is filed as a structured record through <code>store_review</code>. The one rubric-line pattern left is <code>_PLAN_RUBRIC_LINE_RE</code>. <code>FIGURE_REVIEW_ITEMS</code> stays, since the dispatch composes the figure review's done-when from it. The test that also covered the parser is renamed <code>test_figure_prompt_and_brief_cover_every_visual_rule</code> and keeps its prompt and brief assertions.</p><p><strong>Measure.</strong> <code>tests/test_figure_review.py</code>: 7 passed at <code>df3946ee5</code>, replayed green by <code>verify-gate</code> at the merge <code>10e76593a</code>. <code>git grep</code> finds neither deleted name in <code>reckon/</code> or <code>tests/</code>, so no other test can reach them. Removing a <code>FIGURE_REVIEW_ITEMS</code> entry from the prompt fails the prompt test. Review: 111/120.</p>
   </section>
 
+  <section id="s20-the-repair-composer-reads-the-figure-review">
+    <h2>§20 — The repair composer reads a run&#x27;s figure review</h2>
+    <p><code>review_with_figure</code> in <code>reckon/crew/repair.py</code> folds a run's figure review at the same head into the findings a repair is composed from, appending them after the text review's and re-keying the figure record's dispositions, so a figure finding already disposed on its own record stays disposed. <code>compose_repair_for_run</code> calls it, so a blocking figure finding names the figure in the repair round's advice.</p><p><strong>Measure.</strong> <code>tests/test_a_blocking_figure_finding_resumes_the_worker.py</code>: 4 passed at <code>d460d20c0</code>, replayed green by <code>verify-gate</code> at the merge <code>863f79622</code>. Over 20 repair test files the base reads 131 passed and the head 135, 0 added. Review: 98/120. Its follow-on, that the dispatch path above the composer returned early on a clean text review, is §23.</p>
+  </section>
+
+  <section id="s23-the-repair-dispatch-reads-the-figure-review">
+    <h2>§23 — The repair dispatch reads the figure review before it decides there is nothing to repair</h2>
+    <p><code>dispatch_repair_for_run</code> in <code>reckon/crew/recovery_repair_dispatch.py</code> now swaps in <code>review_with_figure(review)</code> once, where it reads the stored review, so its findings check, its blocking check and its scope all see the figure review's findings. A run whose text review is clean and whose figure review carries a blocking finding now gets a repair round naming the figure, instead of "the stored review carries no finding".</p><p><strong>Measure.</strong> <code>tests/test_a_clean_text_review_still_repairs_a_figure_finding.py</code>: 4 passed at <code>0cba56f4e</code>, replayed green by <code>verify-gate</code> at the merge <code>35b9f369c</code>. With the merged review swapped in only for the first check, the round is declined and the test fails. Over 25 repair test files the base reads 192 passed and the head 196, 0 added. Review: 112/120, no findings.</p>
+  </section>
+
 </main>
 </body>
 </html>
