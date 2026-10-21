@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T10:13:37.213Z",
+  "dispatched_at": "2026-10-21T09:56:17Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-page-paints-from-an-index.html:241",
+      "id": "done_when-1",
+      "reason": "a node following the assertion sentence would keep `north_stars` in `DERIVED_STATE_KEYS` and assert a value no code path fills, contradicting the deliverable it is implementing; this is the residual half of the earlier review's north-stars finding, whose fix removed the key from the literal list but not from the assertion sentence.",
+      "text": "\u00a710's first case still asserts the kept set as \"every block `derivedBlocks` returns, together with the milestones and north stars\", but the same bullet's literal key set and \u00a710's deliverable (line 235, \"North stars are outside this section: on the index path the merge never fills them, so there is nothing to keep\") both exclude north stars, so the case as written cannot be satisfied: `mergeDerived` (`state-loader.js:503-519`) assigns no `north_stars`, and `derivedBlocks` (`state-loader.js:334-351`) returns no such key",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-page-paints-from-an-index.html:196",
+      "id": "done_when-2",
+      "reason": "the node cannot show the gate can go red without a corpus large enough for the cold build to exceed 1 s, and \u00a73's own gate set the precedent by naming 200 documents; one clause naming the control's scale closes it.",
+      "text": "\u00a77's `/_index` clause control (\"the persisted metadata index is removed before the restart, and the first pass's `/_index` gate fails\") is run \"against a temporary `reckon serve`\" whose project scale is unstated, while the cost that can make it fail is the cold build's parse of every document: the endpoint builds lazily per request (`serve.py:3246` \u2192 `_served_index_rows`, `serve.py:1159-1175` \u2192 `metadata_index.index_rows`), so on a temporary mount of a handful of documents the first `/_index` answers well inside the 1 s bound even with the index removed, the control passes, and the section's only gate clause is left with no demonstrated falsifier",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "df868546bf72d4849da262ca00be0ce6546723536a8bd1480aff15323fd5b79e",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 52,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T095030652994-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "1e289d75902f8bc404fce549ebf957ec93c8c944",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `docs/evidence/archive/the-page-paints-from-an-index-landed.html`, `tests/test_page_paints_from_the_index.py`, `tests/test_spa_derived_flow.py`, `docs/plans/the-site-answers-fast-and-agrees.html` (\u00a724 present at line 364, \"A schedule failure leaves discovery served\") and `docs/figures/the-page-paints-from-an-index/startup-bind-and-arm.svg` all resolve; the `#s7` anchor is the node's own write into a file that exists, and the extensionless hrefs resolve once `.html` is appended.",
+    "done_when": "a finding \u2014 \u00a710's first case asserts a kept set that includes north stars while the same bullet's literal key set and \u00a710's deliverable exclude them (line 241), and \u00a77's `/_index` clause control is asserted to fail against a temporary `reckon serve` whose corpus size is unstated (line 196).",
+    "evidence_paths": "pass \u2014 \u00a77's report lands under `docs/evidence/archive/the-page-paints-from-an-index-landed.html` with raw logs under the run directory, and \u00a710 puts its logs and raw evidence under the run directory; neither names a session scratchpad or a node-local path.",
+    "naming": "pass \u2014 the changed units carry no ticket numbers, version tags or changelog prose; the new names state the mechanism (`DERIVED_STATE_KEYS`, `reckon:derived`) rather than a plan label.",
+    "reasoning": "pass \u2014 \u00a710's stated cause matches its cited evidence and the landed code (the log's 92 `/_index` and 94 `/_discover` in 44 minutes and one 33,888 ms discovery, against `state-loader.js:557-572` replacing `window.STATE` from index rows and `shell.jsx:154-172` rendering through `bumpInv`/`reckon:checks` with no render on the merge), and its mechanism runs on the real path via a named caller chain (`watchProjectStateChanges` \u2192 `refreshProjectState` \u2192 `revalidateProjectState`); \u00a77 is a measurement, not a mechanism.",
+    "single_goal": "pass \u2014 \u00a77 carries one measure (the cold-start timing report with its hard gate) and \u00a710 one goal (\"The derived blocks stay on screen until better ones replace them\"), whose three listed behaviours are facets of that goal rather than separate deliverables.",
+    "wiring": "pass \u2014 `plan-section-depends-on` now carries `s7: [s2, s3, s4, s5, s6]`, matching \u00a77's own \"Once \u00a72 to \u00a76 are merged\" at line 187, and \u00a711's `s10` edge still holds; every edge names a node that exists and none points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "5bedd7f41d8b5b370882135e798f35d56d6e6348c4003130ade8574bbf365128",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "54799dc7e5d9e74b22ebcd6d94df918f7f51350a4b9e5b7032e7bdedbf148a89",
+    "s11": "bb32b98b9a0a5070d5ec6b5387862bef5af3ba37b5956ac7c9d734723c2ac9fa",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "d350bcaca0792bd74f9d09fae4fd84b37aefdc9f62e0c732e3244edee68b24ba",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T10:16:34.476478+00:00"
+}
