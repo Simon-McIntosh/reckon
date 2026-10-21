@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": null,
+  "base_log_revision": "41aaf6ce7fc47ae61f5a7d9171d8cdc868653eb4",
+  "baseline_suite_log": null,
+  "call_site_count": 0,
+  "call_sites": [],
+  "call_sites_emission": "none",
+  "completed_at": "2026-10-21T13:12:51.566Z",
+  "dispatched_at": "2026-10-21T12:52:30Z",
+  "findings": [
+    {
+      "blocks": false,
+      "file": "reckon/crew/domain_rules.py",
+      "line": "124",
+      "severity": "follow-on",
+      "text": "the reader now reads the resolved block by raw dict keys (entry.get('rule'), entry.get('applies_to')) instead of through the validated DomainConfig, so a future schema rename of one of those keys no longer fails loudly at the reader: it silently yields empty views and a node that carries no rules, which is the failure the typed model used to catch."
+    },
+    {
+      "blocks": false,
+      "file": "docs/evidence/fragments/work-is-checked-against-its-domain/domain-rules-in-flight.html",
+      "line": "24",
+      "severity": "follow-on",
+      "text": "the what-changed paragraph reads `invariants[].applies_to` where the plan and the schema spell the field `applies_to`; the line is not one the increment touched, but the increment rewrote this paragraph and a reader is shown a field name that exists nowhere."
+    }
+  ],
+  "head_log_revision": "a6b619af55042f74f1aeea06a42f8d58d36f0269",
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against 41aaf6ce; f47fa3613 maps the resolved block through this module's own view types, 74ee7a238 adds the two matcher-branch fixtures and their mutation log, and a6b619af refreshes the evidence fragment's measure paragraph.",
+    "done_when": "the done_when names the tests in tests/test_domain_rules.py and a gate over four test files; the manifest records that gate at 74ee7a238 as `136 passed` EXIT=0 in logs/gate-head.log.",
+    "goal": "the node goal is a typed domain block in the flight config answered by one rules_for module; reckon/crew/domain_rules.py:141 still exposes the one public rules_for, and the three gained commits only rework how it reads the resolved block and add matcher coverage.",
+    "manifest": "read; it states status complete, the five commits, the 136-passed head gate with EXIT=0, the declared mutation's `8 failed, 1 passed`, the branch arms' `1 failed` each and the rebuilt base arm's `8 failed, 1 passed` with its measurement_module and measurement_cwd.",
+    "write_paths": "the increment is scoped to docs/evidence/fragments/work-is-checked-against-its-domain/domain-rules-in-flight.html, reckon/crew/domain_rules.py and tests/test_domain_rules.py; `git diff --stat 41aaf6ce a6b619af` lists exactly those three paths."
+  },
+  "justifications": {
+    "durability": "tests/test_domain_rules.py:179 and tests/test_domain_rules.py:204 are independent of the code under test and logs/branch-mutations.log shows deleting reckon/crew/domain_rules.py:95 and :99 reddening exactly one of them per arm.",
+    "evidence": "logs/gate-head.log ends `136 passed in 29.81s` EXIT=0 at revision 74ee7a238 and logs/branch-mutations.log and logs/base-arm.log each end on a bare EXIT=1 naming the new tests as failures.",
+    "fit": "reckon/crew/domain_rules.py:26 follows the module's existing frozen-dataclass and collections.abc idiom and introduces no plan, sprint or version label in any added name.",
+    "goal_fidelity": "reckon/crew/domain_rules.py:141 keeps the one public entry point the goal names and the gained commits change only how it reads the block.",
+    "reuse": "the added Invariant and ReviewCheck at reckon/crew/domain_rules.py:26 restate the field shape of the generated DomainInvariant and DomainReviewCheck at reckon/_flight_schema.py:734 and a search of reckon/ and tests/ for another owner of which rules apply to a node found none.",
+    "scope_discipline": "git diff --stat 41aaf6ce7fc47ae61f5a7d9171d8cdc868653eb4 a6b619af55042f74f1aeea06a42f8d58d36f0269 lists only the three files the review goal names."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a typed domain block in the flight config answered by one rules_for module; the gained commits keep that deliverable \u2014 reckon/crew/domain_rules.py:141 still exposes the one public rules_for, and the three commits only rework how it reads the resolved block and add matcher coverage.\nVERDICT done_when: the done_when names the new tests in tests/test_domain_rules.py and a gate over four test files; the manifest records that gate at 74ee7a238 as `136 passed` with EXIT=0 in logs/gate-head.log, and the gained tests themselves are named and exercised.\nVERDICT write_paths: the reviewed increment is scoped to docs/evidence/fragments/work-is-checked-against-its-domain/domain-rules-in-flight.html, reckon/crew/domain_rules.py and tests/test_domain_rules.py; `git diff --stat 41aaf6ce a6b619af` lists exactly those three paths and nothing else.\nVERDICT manifest: read; it states status complete, the five commits, the 136-passed head gate with EXIT=0 at 74ee7a238, the declared mutation's `8 failed, 1 passed` with EXIT=1, the branch arms' `1 failed` EXIT=1 each, the rebuilt base arm's `8 failed, 1 passed` with EXIT=1 and its measurement_module/measurement_cwd, so the two follow-ons the previous review raised are recorded as repaired.\nVERDICT diff: read commit by commit against 41aaf6ce; f47fa3613 maps the resolved block through this module's own Invariant/ReviewCheck instead of the generated Pydantic classes, 74ee7a238 adds the two matcher-branch fixtures and their mutation log, and a6b619af refreshes the evidence fragment's measure paragraph.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/domain_rules.py:141 keeps the one public entry point the goal names and the gained commits change only how it reads the block, so the deliverable stands and the node's behaviour is unchanged for its callers.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/gate-head.log heads with revision 74ee7a238 and the literal gate command and ends `136 passed in 29.81s` EXIT=0, and logs/branch-mutations.log and logs/base-arm.log each end on a bare EXIT=1 whose failing ids are the new tests.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 41aaf6ce7fc47ae61f5a7d9171d8cdc868653eb4 a6b619af55042f74f1aeea06a42f8d58d36f0269 lists only the three files the review goal names, every one inside the source node's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_domain_rules.py:179 and tests/test_domain_rules.py:204 are independent of the code under test \u2014 each asserts a literal id from the fixture YAML it wrote \u2014 and logs/branch-mutations.log shows deletion of reckon/crew/domain_rules.py:95 and :99 reddening exactly one of them per arm.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/domain_rules.py:26 follows the module's existing frozen-dataclass and collections.abc idiom and introduces no plan, sprint or version label in any added name.\nSCORE reuse: 14\nJUSTIFICATION reuse: the added Invariant and ReviewCheck at reckon/crew/domain_rules.py:26 restate the field shape of the generated DomainInvariant and DomainReviewCheck at reckon/_flight_schema.py:734 and a search of reckon/ and tests/ for another owner of which rules apply to a node found none.\nFINDING reckon/crew/domain_rules.py:124 follow-on: the reader now reads the resolved block by raw dict keys (`entry.get(\"rule\")`, `entry.get(\"applies_to\")`) instead of through the validated DomainConfig, so a future schema rename of one of those keys no longer fails loudly at the reader \u2014 it silently yields empty views and a node that carries no rules, which is the failure the typed model used to catch.\nFINDING docs/evidence/fragments/work-is-checked-against-its-domain/domain-rules-in-flight.html:24 follow-on: the what-changed paragraph reads `<code>invariants[].applies_to</code>` where the plan and the schema spell the field `applies_to`; the line is not one the increment touched, but the increment rewrote this paragraph and a reader of the fragment is shown a field name that exists nowhere.\n",
+  "review_run_id": "r-20261021T125117918139-review-of-domain-rules-in-flight-a6b619af5504",
+  "reviewed_base_sha": "41aaf6ce7fc47ae61f5a7d9171d8cdc868653eb4",
+  "reviewed_commits": [
+    "f47fa36130ef44ea47b4ee7f298cedf8cb00f04a",
+    "74ee7a23860288579367e117b8f947a05aae88ce",
+    "a6b619af55042f74f1aeea06a42f8d58d36f0269"
+  ],
+  "reviewed_head_sha": "a6b619af55042f74f1aeea06a42f8d58d36f0269",
+  "reviewed_run_id": "r-20261021T112625211050-domain-rules-in-flight",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T13:07:31.260458+00:00",
+  "total": 103
+}
