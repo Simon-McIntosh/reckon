@@ -918,9 +918,11 @@ def _backend_settings(
     where it names the fence, which is a wrapper rather than a harness: the
     composed argv's first element and the harness are different commands, and
     a rebuild of a command line around the fence is a rebuild of the harness.
-    The configured lane supplies the window, the model and the effort, without
-    which a stream-announced window substitutes as the utilisation's
-    denominator and a resumed turn launches without its recorded model. The two
+    The configured lane supplies the window, the model, the effort and the
+    declared input modalities, without which a stream-announced window
+    substitutes as the utilisation's denominator, a resumed turn launches
+    without its recorded model, and a resumed figure run drops the declaration
+    that lets its lane name the image instead of refusing it. The two
     are merged rather than one derived from the other, and a value the row
     recorded itself wins the merge: the row is the authority for what it was
     measured against, which a fresh config lookup cannot answer for a run
@@ -973,7 +975,7 @@ def _backend_settings(
     ).strip()
     if identity:
         settings.setdefault("dialect", identity)
-    for key in ("usable_input_window", "model", "effort"):
+    for key in ("usable_input_window", "model", "effort", "input_modalities"):
         if isinstance(configured, Mapping) and configured.get(key) is not None:
             settings.setdefault(key, configured[key])
     agent = record.get("agent")

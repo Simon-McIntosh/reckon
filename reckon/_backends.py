@@ -137,6 +137,11 @@ READ_ONLY = "read-only"
 WORKSPACE_WRITE = "workspace-write"
 WORKTREE_FULL = "worktree-full"
 
+# The input modality a lane declares when its harness receives an image. Named
+# once because the declaration is read in two places — the dialect that decides
+# how the path travels, and the review-lane selection that admits the lane.
+IMAGE_MODALITY = "image"
+
 
 def delivery_write_roots(
     *,
@@ -1031,6 +1036,13 @@ class Dialect:
     """
 
     name = ""
+    # Whether this dialect hands an attached image to its harness on a flag of
+    # its own. A dialect that does not can still be handed one when its lane
+    # declares image input: the paths go into the prompt the worker reads, and
+    # the worker opens each one with its own Read tool. A lane that declares
+    # nothing keeps refusing, because a review answered from a filename is
+    # worse than no review at all.
+    images_on_argv = False
     # Whether a lane speaking this dialect authenticates with the operator's
     # stored subscription login, which must be bound writable into the run's
     # harness home. False for a lane whose account lives elsewhere — the local
@@ -1227,6 +1239,7 @@ class _CodexDialect(Dialect):
     """codex-cli: `exec --json`, thread ids, token usage without headroom."""
 
     name = "codex"
+    images_on_argv = True
 
     def argv(
         self,
@@ -2125,6 +2138,40 @@ def _harness_credential_binds(
 # ── Public translation surface ──────────────────────────────────────────────
 
 
+def declares_image_input(backend: Mapping[str, Any]) -> bool:
+    """Whether a lane's own declaration admits an image.
+
+    The declaration is the lane's rather than the dialect's, because two lanes
+    share one flag grammar and only the measured one may be handed a figure:
+    keying on the dialect would declare the unmeasured lane beside it, and a
+    review running on a lane that never receives the image answers from the
+    filename while reporting a verdict. Absence reads as no image input.
+    """
+    declared = backend.get("input_modalities") or ()
+    if isinstance(declared, str):
+        declared = declared.split(",")
+    return IMAGE_MODALITY in {str(modality).strip().lower() for modality in declared}
+
+
+def _prompt_naming_images(prompt: str, images: Sequence[str]) -> str:
+    """Append each attached figure's path to a prompt its lane has no flag for.
+
+    A dialect with no attach flag can still hand an image over: the worker
+    opens the file itself, which is how a lane whose harness carries no
+    attachment receives one. The instruction rides in the prompt because that
+    is the only channel such a dialect has, and a path with no instruction to
+    open it is a filename — a review may then answer from the name and the
+    diff.
+    """
+    listing = "\n".join(f"- {path}" for path in images)
+    return (
+        f"{prompt}\n\n"
+        "Figures attached to this node. Open each path below with your own Read "
+        "tool before you judge anything: a verdict formed without looking at "
+        f"them is not a verdict.\n{listing}\n"
+    )
+
+
 def launch_plan(
     *,
     backend_name: str,
@@ -2244,6 +2291,20 @@ def launch_plan(
         if fence
         else [Path(path) for path in writable_directories]
     )
+    # A dialect that carries an image on a flag of its own is handed the paths
+    # there. A dialect that has no such flag names them in the prompt instead,
+    # when and only when its lane declares image input: the worker opens each
+    # file with its own Read tool, which is the channel a harness with no
+    # attachment flag has. A lane that declares nothing is handed to the
+    # dialect unchanged, so it still refuses by name rather than answering from
+    # the filename. The paths are the run-local PNGs dispatch records, so a
+    # fresh launch, a resume and a lane change all name the same files.
+    attached = tuple(str(image) for image in images)
+    named_in_prompt = (
+        bool(attached) and not dialect.images_on_argv and declares_image_input(backend)
+    )
+    if named_in_prompt:
+        prompt = _prompt_naming_images(prompt, attached)
     argv = dialect.argv(
         command=str(backend["command"]),
         backend=backend,
@@ -2252,7 +2313,7 @@ def launch_plan(
         writable_directories=tuple(str(path) for path in dialect_roots),
         final_message_path=final_path,
         resume_session=resume_session,
-        images=tuple(str(image) for image in images),
+        images=() if named_in_prompt else attached,
     )
     # Every dialect, every entry point — fresh dispatch, resume and redispatch
     # all build their argv here — so the fence is applied once and cannot be

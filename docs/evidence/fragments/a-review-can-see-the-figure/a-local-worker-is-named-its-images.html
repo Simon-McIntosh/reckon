@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+<head>
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="doc">
+</head>
+<body>
+<section id="a-local-worker-is-named-its-images">
+<h2 id="a-local-worker-is-named-its-images-landed">A lane that declares image input is named its figures instead of refusing them</h2>
+<p id="a-local-worker-is-named-its-images-landing">
+A claude-family lane that declares <code>image</code> in its
+<code>input_modalities</code> is now handed its attached figures in the prompt
+it reads rather than refused. <code>launch_plan</code> in
+<code>reckon/_backends.py</code> keys the decision on the lane's own
+declaration, never on the dialect: when the declaration admits an image and the
+dialect carries no attach flag, <code>_prompt_naming_images</code> appends each
+path with an instruction to open it with the Read tool, and the paths are kept
+off <code>argv</code> — the channel decision, made once, at the one place all
+three launch paths compose. A lane that declares nothing reaches the dialect
+unchanged and still refuses by name, which is what keeps the measured lane and
+the unmeasured lane beside it in one flag grammar distinguishable. The codex
+dialect is untouched: it carries images on its own <code>-i</code> flag and an
+undeclared codex lane still emits it.
+</p>
+<p id="a-local-worker-is-named-its-images-resume">
+A resume rebuilds the run's backend through
+<code>_backend_settings</code> in <code>reckon/crew/dispatch_sessions.py</code>,
+which re-applied only the window, model and effort from the configured lane and
+so dropped the declaration; it now carries <code>input_modalities</code> the
+same way, and the resumed launch names the same run-local PNGs the dispatch
+recorded.
+</p>
+<p id="a-local-worker-is-named-its-images-declaration">
+<code>docs/state/reckon/flight.yaml</code> declares
+<code>input_modalities: [text, image]</code> on clive, citing the two
+2026-10-21 local-lane probe runs and their matching node. The claude lane and
+every other claude-family lane stay undeclared until measured.
+</p>
+<p id="a-local-worker-is-named-its-images-measure">
+Measure: 26 tests pass across
+<code>tests/test_launch_plan_attaches_images.py</code>,
+<code>tests/test_codex_declares_image_input.py</code>,
+<code>tests/test_dispatch_attaches_the_figures.py</code> and
+<code>tests/test_a_local_worker_is_named_its_images.py</code>. The declared
+negative control — the naming removed from <code>launch_plan</code> — fails
+exactly the five naming cases (5 failed, 21 passed, <code>EXIT=1</code>) while
+the figureless arm stays green, so the passing arm is discriminating rather
+than coincidental. <code>ruff check</code> and <code>ruff format --check</code>
+add nothing over the base revision on the changed files.
+</p>
+<p id="a-local-worker-is-named-its-images-gap">
+One defect this node found and could not repair inside its write scope is
+recorded here so it is not read past. A supervised run's harness reads its
+prompt from the run's <code>prompt.txt</code>, which <code>dispatch</code>
+writes from the raw brief <em>before</em> it composes the plan. A fresh clive
+dispatch therefore composes the naming onto <code>plan.stdin_text</code> while
+the worker is handed the un-named file: reproduced by dispatching a two-figure
+clive node and asserting the PNG paths in
+<code>&lt;run_dir&gt;/prompt.txt</code>, which fails with the file holding the
+bare brief. Resume is unaffected — <code>_write_resume_prompt</code> writes
+<code>plan.stdin_text</code> to the file the supervisor reads. The repair is
+one line in <code>reckon/crew/dispatch.py</code> after the plan is built
+(<code>prompt_path.write_text(plan.stdin_text or prompt)</code>), a path outside
+this node's fence; applied in a scratch mutation of the worktree, it turns that
+failing assertion green (1 passed, <code>EXIT=0</code>), so the repair is
+measured rather than proposed. Both mutations were restored afterwards and the
+tree is clean at the node's head.
+</p>
+</section>
+</body>
+</html>
