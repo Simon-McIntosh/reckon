@@ -670,20 +670,6 @@ def plan_dispatch(
     caller_manifest = bool(node.manifest_path)
     node.manifest_path = node.manifest_path or durable_manifest
     warnings = list(getattr(config, "warnings", ()))
-    fence_warning = _default_fence_under_estimate_warning(
-        config,
-        backend,
-        backend_name=backend_name,
-        node=node,
-        named_budget=named_budget,
-        default_budget=default_budget,
-        project=project,
-        repo=repo,
-        authority=authority,
-    )
-    if fence_warning is not None:
-        warnings.append(fence_warning)
-        print(fence_warning, file=sys.stderr)
     if caller_manifest and _path_is_tmpfs(node.manifest_path):
         warnings.append(
             f"manifest path {node.manifest_path!r} is on tmpfs; use the durable "
@@ -1135,6 +1121,24 @@ def plan_dispatch(
                 "session": session,
                 "session_attached": attached,
             }
+    # Emitted after the competence verdict, and never for a node this dispatch
+    # refuses: a refused node is never launched, so the fence it would have run
+    # under cannot stop anything and the line is advice with no run to advise.
+    if resolution.competence is None or resolution.competence.get("allowed"):
+        fence_warning = _default_fence_under_estimate_warning(
+            config,
+            backend,
+            backend_name=backend_name,
+            node=node,
+            named_budget=named_budget,
+            default_budget=default_budget,
+            project=project,
+            repo=repo,
+            authority=authority,
+        )
+        if fence_warning is not None:
+            resolution.warnings.append(fence_warning)
+            print(fence_warning, file=sys.stderr)
     return resolution
 
 

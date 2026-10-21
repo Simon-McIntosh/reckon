@@ -25,8 +25,8 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
+from reckon import capabilities, flight
 from reckon import cli as cli_module
-from reckon import flight
 
 # A plan whose total effort is twenty hours while one of its sections declares
 # a quarter of an hour. The pair is what tells a section's own figure apart
@@ -331,6 +331,47 @@ def test_the_nodes_own_estimate_is_read_before_the_section(
 
     assert len(lines) == 1, document.get("warnings")
     assert "12h" in lines[0]
+
+
+def test_a_refused_node_carries_no_line_and_keeps_its_one_document(
+    plan_repo: Path, crew_home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A dispatch that refuses the node advises it of no fence.
+
+    The refused node is never launched, so a fence cannot stop it and the line
+    would be advice with no run to advise. The refusal's own document is what a
+    caller must be able to decode, so the notice channel stays silent here.
+    """
+    arguments = _arguments(plan_repo, node_id="refused", section="s1")
+    # The key is the one the dispatch itself reports for its agent, so the
+    # horizon below lands on this node's configuration without the fixture
+    # restating how a configuration is spelled.
+    key = _document(_dispatch(plan_repo, arguments))["competence"]["agent_key"]
+    monkeypatch.setattr(
+        capabilities,
+        "load_capabilities",
+        lambda: _horizon_cache(key, horizon=2.5),
+    )
+
+    result = _dispatch(plan_repo, arguments)
+    document = _document(result)
+
+    assert document["error"] == "competence-refusal", document
+    assert not _fence_lines(document), document.get("warnings")
+    assert "--time-budget" not in result.stderr
+
+
+def _horizon_cache(key: str, *, horizon: float) -> dict:
+    """A capability cache declaring one agent's competence horizon."""
+    return {
+        "configurations": [
+            {
+                "key": key,
+                "competence_horizon_hours": horizon,
+                "speed": {"mean": 1.0},
+            }
+        ]
+    }
 
 
 def test_the_real_crew_home_is_untouched(
