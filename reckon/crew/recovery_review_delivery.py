@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
+from reckon._timestamps import parse_utc
 from reckon.crew import review as review_module
 from reckon.crew.node import (
     _TERMINAL_RUN_PHASES,
@@ -133,13 +134,10 @@ def _review_dispatch_instant(record: Mapping[str, Any], project: str) -> float |
         dispatched = review_module.run_id_dispatch_time(run_id)
     if not dispatched:
         return None
-    try:
-        moment = datetime.fromisoformat(dispatched)
-    except ValueError:
+    parsed = parse_utc(dispatched)
+    if parsed is None:
         return None
-    if moment.tzinfo is None:
-        moment = moment.replace(tzinfo=UTC)
-    return moment.timestamp()
+    return parsed.timestamp()
 
 
 def _delivered_record_location(

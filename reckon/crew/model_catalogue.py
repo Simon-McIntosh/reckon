@@ -15,6 +15,7 @@ from urllib.request import urlopen
 
 from reckon import flight
 from reckon._store import write_json_atomically
+from reckon._timestamps import parse_utc
 from reckon.crew import obligation_snapshot
 
 # The probe is one headless request through the lane's own command. Its prompt
@@ -60,10 +61,8 @@ def _created(value: Any) -> float | None:
     if isinstance(value, (int, float)) and not isinstance(value, bool):
         return float(value)
     if isinstance(value, str):
-        try:
-            return datetime.fromisoformat(value).timestamp()
-        except ValueError:
-            return None
+        parsed = parse_utc(value)
+        return None if parsed is None else parsed.timestamp()
     return None
 
 
