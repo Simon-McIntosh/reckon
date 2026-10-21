@@ -25,7 +25,7 @@
   <title>Budget Fits A Worker Window | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -53,6 +53,7 @@
       <li><code>decide()</code> imports the verdict lazily, as <code>budget.py</code> already does for <code>budget_lift</code>, so the two modules form no import cycle.</li>
       <li>The burn block §46 adds beside <code>_readings</code> stays where it lands.</li>
       <li>Every moved public name stays importable from <code>reckon.budget</code>, so <code>reckon/crew/budget_group.py</code>, <code>reckon/crew/dispatch.py</code> and the tests that import those names are unchanged.</li>
+      <li>The import runs one way at module level. <code>reckon/pace_report.py</code> imports <code>reckon.budget</code> for the clock and window constants and readings it still needs (<code>CLOCK_FIVE_HOUR</code>, <code>CLOCK_SEVEN_DAY</code>, <code>OBSERVED</code>, <code>UNKNOWN</code>, <code>WINDOW_SOURCE_RECORDED</code> and the rest). <code>budget.py</code> never imports <code>pace_report</code> at module level. Each moved public name that <code>budget.py</code> calls, or that a caller reaches as <code>reckon.budget.&lt;name&gt;</code>, is a thin function in <code>budget.py</code> that imports <code>pace_report</code> inside its body, using the <code>import_module</code> idiom <code>reckon/crew/budget_lift.py</code> already uses. A module-level <code>__getattr__</code> is not enough, because <code>preflight</code> calls <code>group_pace</code> by bare name, and a bare-name lookup inside the module never reaches <code>__getattr__</code>. This direction is the difference from <code>crew/pace.py</code>, which <code>budget.py</code> imports at module level. Importing either module first in a fresh interpreter succeeds.</li>
       <li>A test that monkeypatches a <code>reckon.budget</code> helper which moved code now reads from its own module is repointed at that module. It is never weakened.</li>
     </ul>
     <p><strong>Done when</strong> <code>tests/test_every_module_fits_a_worker_window.py</code>, run at the node's head, no longer names <code>reckon/budget.py</code>, and the file measures at most 45,000 tokens by <code>reckon.crew.routing._tokens_for_bytes</code>. Neither <code>reckon/pace_report.py</code> nor <code>reckon/crew/budget_lift.py</code> measures over 40,000. The test's remaining offenders are exactly the base arm's, less <code>budget.py</code>.</p>
