@@ -2126,11 +2126,16 @@ def _follow_watch_lines(
     # throttled so a follower costs no more than the settle check already does;
     # the line is emitted when the set has changed since the last one printed or
     # when the remind interval has elapsed, whichever comes first.
-    needs_remind_seconds = (
-        needs_you_module.DEFAULT_REMIND_SECONDS if remind is None else float(remind)
-    )
-    needs_scan_seconds = min(
-        max(0.0, needs_remind_seconds), FOLLOWER_SETTLE_SAMPLE_SECONDS
+    #
+    # The line is armed by the caller: with no interval asked for, an arming
+    # draws exactly the rows it always drew. A caller that only wants the rows
+    # — a scripted read of a gap, a test driving the generator directly — must
+    # not have its output reshaped by a line it did not ask for.
+    needs_remind_seconds = None if remind is None else float(remind)
+    needs_scan_seconds = (
+        0.0
+        if needs_remind_seconds is None
+        else min(max(0.0, needs_remind_seconds), FOLLOWER_SETTLE_SAMPLE_SECONDS)
     )
     needs_scanned_at: float | None = None
     last_needs_signature: tuple | None = None
@@ -2138,6 +2143,8 @@ def _follow_watch_lines(
 
     def _needs_you_events() -> Iterable[dict[str, Any]]:
         nonlocal needs_scanned_at, last_needs_signature, needs_emitted_at
+        if needs_remind_seconds is None:
+            return
         moment = clock()
         if (
             needs_scanned_at is not None
@@ -2148,9 +2155,9 @@ def _follow_watch_lines(
         summary = needs_you_module.needs_you(project, session=session)
         signature = needs_you_module.needs_you_signature(summary)
         changed = signature != last_needs_signature
+        interval = needs_remind_seconds
         due = (
-            needs_emitted_at is None
-            or moment - needs_emitted_at >= needs_remind_seconds
+            needs_emitted_at is None or moment - needs_emitted_at >= interval
         )
         if not changed and not due:
             return
@@ -3194,9 +3201,11 @@ def crew_host(
     default=None,
     metavar="DURATION",
     help=(
-        "Re-emit the standing needs-you line every DURATION (an integer plus s, "
-        "m or h, e.g. 10m) even when nothing has changed, so a quiet pane reads "
-        "as a live follower rather than a dead one. Defaults to ten minutes."
+        "Arm the standing needs-you line: emit it after any change of the set "
+        "and again every DURATION (an integer plus s, m or h, e.g. 10m) even "
+        "when nothing has changed, so a quiet pane reads as a live follower "
+        "rather than a dead one. Omitted, the arming draws only its rows, which "
+        "is what a scripted read of a gap or a relayed payload expects."
     ),
 )
 @_ticker_options
@@ -3209,10 +3218,10 @@ def crew_follow(
     json_output,
     pretty,
     lifetime,
-    remind,
-    width,
-    theme,
-    no_color,
+    remind=None,
+    width=0,
+    theme=None,
+    no_color=False,
 ):
     """Follow one session's live runs without acquiring the project watcher seat.
 
