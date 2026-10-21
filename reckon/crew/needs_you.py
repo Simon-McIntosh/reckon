@@ -232,6 +232,31 @@ def needs_you_runs(project: str, *, session: str | None) -> list[dict[str, Any]]
     return needs_you(project, session=session)["runs"]
 
 
+# The word the drain line carries when the session's own fleet has nothing left
+# for the coordinator. The count is what the line reports otherwise, so a reader
+# learns the size of the queue without the ids the standing line already names.
+DRAINED_TAIL = "fleet drained"
+
+
+def drain_tail(project: str, *, session: str | None) -> str:
+    """The tail the follower's settle row gains when the session's work drains.
+
+    The settle row says the pane has nothing left to watch, which is exactly the
+    moment a coordinator looks up: the row therefore carries what the session
+    still owes it, counted from the same derivation the standing needs-you line
+    prints a moment earlier, so the closing row and the line it followed cannot
+    disagree about what is outstanding. Nothing outstanding reads as drained
+    rather than as a zero, because a zero is indistinguishable from a count the
+    row failed to take.
+    """
+    count = len(needs_you_runs(project, session=session))
+    if count == 0:
+        return DRAINED_TAIL
+    if count == 1:
+        return "1 run needs the coordinator"
+    return f"{count} runs need the coordinator"
+
+
 def needs_you_signature(summary: Mapping[str, Any]) -> tuple[tuple[str, str, str], ...]:
     """The identity of the set, so an emitter fires on change and not on repaint.
 

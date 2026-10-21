@@ -337,9 +337,9 @@ def test_a_population_empty_past_the_grace_settles_once(
             settles = arming.settles()
             assert len(settles) == 1, settles
             stamp = time.strftime("%H:%M", time.localtime(drain_wall))
-            assert settles[0]["line"] == (f"no live work in {SESSION} since {stamp}"), (
-                settles[0]["line"]
-            )
+            assert settles[0]["line"] == (
+                f"no live work in {SESSION} since {stamp} · fleet drained"
+            ), settles[0]["line"]
         finally:
             arming.end()
 
