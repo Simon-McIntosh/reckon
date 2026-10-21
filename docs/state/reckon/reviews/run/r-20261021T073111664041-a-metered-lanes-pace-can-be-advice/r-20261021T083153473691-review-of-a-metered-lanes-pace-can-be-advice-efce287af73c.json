@@ -1,0 +1,68 @@
+{
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/dispatch_admission.py:329 budget_group.effective_block (dispatch admission)",
+    "reckon/crew/resumption.py:929 budget_group_module.effective_block (resume prediction)",
+    "reckon/crew/picker/snapshot.py:1113 budget_group_module.effective_block and :1175 budget.effective_ceiling",
+    "reckon/crew/routing.py:425 budget_group_module.effective_block",
+    "reckon/budget.py:1051 and :2142 budget_group.effective_block, :1754 effective_ceiling, :2281 pace_hold",
+    "reckon/crew/budget_group.py:459 effective_block (group_figures)",
+    "reckon/budget.py:733 effective_ceiling for the resume purpose"
+  ],
+  "completed_at": "2026-10-21T08:47:48.221Z",
+  "dispatched_at": "2026-10-21T08:32:49Z",
+  "findings": [
+    {
+      "file": "reckon/pace_report.py",
+      "line": "1271",
+      "severity": "follow-on",
+      "text": "follow-on: the added docstring paragraph is spliced into the middle of the pre-existing sentence so it now reads \"...so they are admitted\" followed immediately by \"A group whose pace the configuration declares advisory is also never held:\", and the same bookend paragraph is then repeated verbatim at :1275-1278; reflow the advisory sentence into one paragraph and drop the duplication so the docstring reads as one statement."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T073111664041-a-metered-lanes-pace-can-be-advice/manifest.md",
+      "line": "15",
+      "severity": "follow-on",
+      "text": "follow-on: baseline_suite and after_suite record failure_ids as bare test function names (e.g. \"test_cli_budget_reset_round_trip\") rather than the path::name form pytest -rA prints, though the done_when asks for the ids exactly as pytest prints them; the same log headers omit the module.__file__ and resolved cwd lines the gate-log contract requires for a scratch-tree base arm run from /tmp scratch."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T073111664041-a-metered-lanes-pace-can-be-advice/head-arm.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T073111664041-a-metered-lanes-pace-can-be-advice/base-arm.log"
+  },
+  "item_verdicts": {
+    "diff": "Read commit by commit from 8c372bc0603297d6bd6274d1b6fbc2a08cb2de86 to efce287af73c8b8c2a1a6f7583d8a6f58fe8a527; c0eb31713 changes reckon/crew/pace.py, reckon/crew/budget_group.py, reckon/pace_report.py, reckon/schema/flight.yaml and the two generated schema artifacts plus the new test file, and efce287af adds only the landing fragment.",
+    "done_when": "The done_when names five test cases plus a head-vs-base delta; tests/test_a_metered_lanes_pace_can_be_advice.py asserts all five (not-held-at-96%-burn-19, ceiling-100-and-held-at-100, credit-cap-stop, declaring-nothing-keeps-92-and-pace, unread-balance-falls-back) and the manifest records head-arm.log 11 failed/534 passed and base-arm.log 15 failed/523 passed with every head failure id also a base failure id, so the gate asserts the measure.",
+    "goal": "The node goal is to let a flight list groups in budget.advisory_pace_groups so its pace hold never holds them and its dispatch ceiling carries none of the resume, coordinator or bookend reserves while the exhausted-window and credit-cap stops stay; reckon/crew/pace.py:42 ADVISORY_KEY with :149 advisory_groups and :172 is_advisory_group, reckon/crew/budget_group.py:43 RESERVE_KEYS with :198 advisory_block_for_group composed into :251 effective_block, and reckon/pace_report.py:1374 pace_hold admitting the sign, implement exactly that and leave effective_ceiling and the credit-cap branch untouched.",
+    "manifest": "Read; it states status complete, commits c0eb31713 and efce287af, head 11 failed/534 passed and base 15 failed/523 passed with the delta, both negative controls failing exactly the case each declares, and the ruff delta -10/-1; its four log paths resolve on disk and each ends in a bare EXIT= line.",
+    "write_paths": "The declared fence names reckon/budget.py, reckon/pace_report.py, reckon/crew/budget_lift.py, reckon/crew/budget_group.py, reckon/crew/pace.py, reckon/schema/flight.yaml, reckon/_flight_schema.py, docs/_shared/flight.schema.json, tests/test_a_metered_lanes_pace_can_be_advice.py, the evidence fragment and the figures dir; git show --stat over 8c372bc0..efce287af changes eight of those paths and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_metered_lanes_pace_can_be_advice.py:171 asserts effective_ceiling(judged, \"dispatch\") == 100.0 against an independent expected ceiling (the base returns 92.0, as negative-control-reserves.log shows), and :175 asserts pace_hold(...)[\"held\"] is False while negative-control-pace-hold.log reddens exactly that line.",
+    "evidence": "base-arm.log and head-arm.log carry the literal command and revision each ran at and end in EXIT=1, the head ids are a strict subset of the base ids, and both negative-control logs end 1 failed, 6 passed, EXIT=1 against exactly the declared case; the manifest's failure_ids are recorded as bare test names rather than pytest's path::name form.",
+    "fit": "reckon/pace_report.py:1271 inserts the added paragraph into the middle of the pre-existing bookend sentence (\"...so they are admitted\").",
+    "goal_fidelity": "reckon/crew/budget_group.py:251 composes advisory_block_for_group beside the lift and review-exclusion rules in effective_block, and reckon/pace_report.py:1374 admits the group in pace_hold, so both halves of the goal land while effective_ceiling and the credit-cap branch are untouched.",
+    "reuse": "reckon/crew/budget_group.py:198 extends effective_block, the owner of the shared reserve composition, and reckon/pace_report.py:1374 extends pace_hold, the owner of the hold, while RESERVE_KEYS reuses reserve_module.RESERVE_KEY for the bookend key rather than restating it.",
+    "scope_discipline": "git show --stat 8c372bc0..efce287af changes only reckon/crew/pace.py, reckon/crew/budget_group.py, reckon/pace_report.py, reckon/schema/flight.yaml, reckon/_flight_schema.py, docs/_shared/flight.schema.json, the new test file and the landing fragment, all inside the declared fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to let a flight list groups in budget.advisory_pace_groups so its pace hold never holds them and its dispatch ceiling carries none of the resume, coordinator or bookend reserves while the exhausted-window and credit-cap stops stay; reckon/crew/pace.py:42 ADVISORY_KEY with :149 advisory_groups and :172 is_advisory_group, reckon/crew/budget_group.py:43 RESERVE_KEYS with :198 advisory_block_for_group composed into :251 effective_block, and reckon/pace_report.py:1374 pace_hold admitting the sign, implement exactly that and leave effective_ceiling and the credit-cap branch untouched.\nVERDICT done_when: The done_when names five test cases plus a head-vs-base delta; tests/test_a_metered_lanes_pace_can_be_advice.py asserts all five (not-held-at-96%-burn-19, ceiling-100-and-held-at-100, credit-cap-stop, declaring-nothing-keeps-92-and-pace, unread-balance-falls-back) and the manifest records head-arm.log 11 failed/534 passed and base-arm.log 15 failed/523 passed with every head failure id also a base failure id, so the gate asserts the measure.\nVERDICT write_paths: The declared fence names reckon/budget.py, reckon/pace_report.py, reckon/crew/budget_lift.py, reckon/crew/budget_group.py, reckon/crew/pace.py, reckon/schema/flight.yaml, reckon/_flight_schema.py, docs/_shared/flight.schema.json, tests/test_a_metered_lanes_pace_can_be_advice.py, the evidence fragment and the figures dir; git show --stat over 8c372bc0..efce287af changes eight of those paths and nothing outside them.\nVERDICT manifest: Read; it states status complete, commits c0eb31713 and efce287af, head 11 failed/534 passed and base 15 failed/523 passed with the delta, both negative controls failing exactly the case each declares, and the ruff delta -10/-1; its four log paths resolve on disk and each ends in a bare EXIT= line.\nVERDICT diff: Read commit by commit from 8c372bc0603297d6bd6274d1b6fbc2a08cb2de86 to efce287af73c8b8c2a1a6f7583d8a6f58fe8a527; c0eb31713 changes reckon/crew/pace.py, reckon/crew/budget_group.py, reckon/pace_report.py, reckon/schema/flight.yaml and the two generated schema artifacts plus the new test file, and efce287af adds only the landing fragment.\nCALL_SITES: reckon/crew/dispatch_admission.py:329 budget_group.effective_block (dispatch admission), reckon/crew/resumption.py:929 budget_group_module.effective_block (resume prediction), reckon/crew/picker/snapshot.py:1113 budget_group_module.effective_block and :1175 budget.effective_ceiling, reckon/crew/routing.py:425 budget_group_module.effective_block, reckon/budget.py:1051 and :2142 budget_group.effective_block, :1754 effective_ceiling, :2281 pace_hold, reckon/crew/budget_group.py:459 effective_block (group_figures), reckon/budget.py:733 effective_ceiling for the resume purpose\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/budget_group.py:251 composes advisory_block_for_group beside the lift and review-exclusion rules in effective_block, and reckon/pace_report.py:1374 admits the group in pace_hold, so both halves of the goal land while effective_ceiling and the credit-cap branch are untouched.\nSCORE evidence: 17\nJUSTIFICATION evidence: base-arm.log and head-arm.log carry the literal command and revision each ran at and end in EXIT=1, the head ids are a strict subset of the base ids, and both negative-control logs end 1 failed, 6 passed, EXIT=1 against exactly the declared case; the manifest's failure_ids are recorded as bare test names rather than pytest's path::name form.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --stat 8c372bc0..efce287af changes only reckon/crew/pace.py, reckon/crew/budget_group.py, reckon/pace_report.py, reckon/schema/flight.yaml, reckon/_flight_schema.py, docs/_shared/flight.schema.json, the new test file and the landing fragment, all inside the declared fence.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_metered_lanes_pace_can_be_advice.py:171 asserts effective_ceiling(judged, \"dispatch\") == 100.0 against an independent expected ceiling (the base returns 92.0, as negative-control-reserves.log shows), and :175 asserts pace_hold(...)[\"held\"] is False while negative-control-pace-hold.log reddens exactly that line.\nSCORE fit: 14\nJUSTIFICATION fit: reckon/pace_report.py:1271 inserts the added paragraph into the middle of the pre-existing bookend sentence (\"...so they are admitted\").\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/budget_group.py:198 extends effective_block, the owner of the shared reserve composition, and reckon/pace_report.py:1374 extends pace_hold, the owner of the hold, while RESERVE_KEYS reuses reserve_module.RESERVE_KEY for the bookend key rather than restating it.\nFINDING reckon/pace_report.py:1271 follow-on: the added docstring paragraph is spliced into the middle of the pre-existing sentence so it now reads \"...so they are admitted\" followed immediately by \"A group whose pace the configuration declares advisory is also never held:\", and the same bookend paragraph is then repeated verbatim at :1275-1278; reflow the advisory sentence into one paragraph and drop the duplication so the docstring reads as one statement.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T073111664041-a-metered-lanes-pace-can-be-advice/manifest.md:15 follow-on: baseline_suite and after_suite record failure_ids as bare test function names (e.g. \"test_cli_budget_reset_round_trip\") rather than the path::name form pytest -rA prints, though the done_when asks for the ids exactly as pytest prints them; the same log headers omit the module.__file__ and resolved cwd lines the gate-log contract requires for a scratch-tree base arm run from /tmp scratch.\n",
+  "review_run_id": "r-20261021T083153473691-review-of-a-metered-lanes-pace-can-be-advice-efce287af73c",
+  "reviewed_base_sha": "8c372bc0603297d6bd6274d1b6fbc2a08cb2de86",
+  "reviewed_head_sha": "efce287af73c8b8c2a1a6f7583d8a6f58fe8a527",
+  "reviewed_run_id": "r-20261021T073111664041-a-metered-lanes-pace-can-be-advice",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 14,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T08:55:00+00:00",
+  "total": 106
+}
