@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T20:05:59.526Z",
+  "dispatched_at": "2026-10-21T19:51:28Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-limit-reset-reaches-every-session.html:86",
+      "id": "reasoning-1",
+      "reason": "as written a node would ship a broadcast that is invisible on exactly the sessions that took a pace lift, and would regress the standing-lift row on every pane that receives a reset; the plan must name a `limit-reset` case in `_feed_lift` (claiming on the event id and not touching `_lift_groups`) or state that the reset row carries no group in `node`.",
+      "text": "\u00a72 routes `limit-reset` by adding it to `LIFT_STATES`, but `_feed_lift` (`reckon/crew/ticker.py:1740`) recognises only `lift-granted`, `lift-ended` and the baseline in-force case; a new state falls through to the baseline-in-force branch, whose first guard is `if group and group in self._lift_groups: return out`. The plan builds the reset row with the shared builder (`_lift_row`, `reckon/crew/lift_watch.py:170`), which puts the group in `node` \u2014 so a reset for `claude-sub` is silently dropped on any pane that has already drawn a lift for `claude-sub`, and drawing it would add the group to that pane's lift memory, suppressing a later baseline in-force row the lift family relies on. Neither effect is intended (\u00a72 says \"the lift family is not moved\")",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-limit-reset-reaches-every-session.html:87",
+      "id": "done_when-1",
+      "reason": "the coexistence case is the control that would have caught the mechanism defect, and without it \u00a72's gate reports green on the intended behaviour while one class of pane never sees the line.",
+      "text": "\u00a72's done-when drives a pane following two projects, an early/late producer, a session-scoped event, a future-dated event and a `consumed` event, but never a reset arriving where a lift for the same group is also in play, so the negative controls (claim removed; sweep moved into the change gate) both pass while the fallback branch above swallows the row",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-limit-reset-reaches-every-session.html:128",
+      "id": "done_when-2",
+      "reason": "\u00a76 changes prose in another repository with no guard to falsify, and its existence check already fails if \u00a71/\u00a72 did not land, so a control here would not alter what the node does.",
+      "text": "\u00a76 declares no negative control: its done-when (\"the paragraph is on the dotfiles primary branch \u2026 and every command and row word it names exists on reckon's main\") is measurable, but \u00a71\u2013\u00a75 each state the control that would make their check fail and this one does not",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "bae19a05bd9772f912a766edf5e19a0ff9eb934f296ed73e7e1ea8514a8df487",
+  "plan_slug": "a-limit-reset-reaches-every-session",
+  "plan_version": 25,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T193657660044-plan-review-of-a-limit-reset-reaches-every-session",
+  "reviewed_blob_sha": "da1c6445a17a6b35a82b45e09601f0cc42f30bc9",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every module, function, constant, test file and command flag cited above resolves on the reviewed revision, and the two `*_reset*`/`take_lift_claim` relocations raised by an earlier review are now stated at their real homes.",
+    "done_when": "a finding \u2014 \u00a72's done-when covers a reset on a pane that follows two projects, but never a reset and a lift on the same group, which is the one case its own mechanism mishandles (`docs/plans/a-limit-reset-reaches-every-session.html:87`).",
+    "evidence_paths": "pass \u2014 gate logs sit under the run directory and the \u00a77 report under `~/.config/reckon/crew/reports/reckon/a-limit-reset-reaches-every-session/`, both durable and openable; nothing is written to a scratchpad or node-local temporary directory.",
+    "naming": "pass \u2014 the new names are behaviour-named (`recent_resets`, `sweep_resets`, `_sweep_reset_rows`, state `limit-reset`, pane word `reset`, `tests/test_a_limit_reset_is_one_record.py`), carrying no plan label, stage name, ticket number or version tag, and no changelog prose.",
+    "reasoning": "a finding \u2014 \u00a72 asserts that adding `limit-reset` to `LIFT_STATES` makes \"the existing lift branch\" draw the row through the claim, but `_feed_lift` dispatches on exact states and its fallback is the baseline-in-force path, which is gated on and mutates the pane's per-group lift memory.",
+    "single_goal": "pass \u2014 each section names one deliverable (a record, a pane row, a prompt line, a rehearsal, a reach report, one instruction paragraph, one investigation); the earlier three-deliverable \u00a73 has been split so its remaining surfaces (hook line, digest, obligations view) are three readers of one fact.",
+    "wiring": "pass \u2014 the declared map is `s2,s3,s5\u2190s1`, `s4,s6\u2190{s2,s3,s5}`, `s7` standalone; \u00a76's prose (\"Once \u00a72, \u00a73 and \u00a75 are on main\") matches its declared inputs, \u00a77 has no consumer because the plan deliberately does not rely on detection, and no declared edge points at a node that does not exist."
+  },
+  "section_digests": {
+    "_document": "0c4bcab6a3ba9b328c4afde1573543b694e45fb0980c2883371baec89fcb5f5d",
+    "s1": "94def7b6fb41cc276c0577018bcc106bab7eaaa9d39a5df760e2d77ee1a7595d",
+    "s2": "c0d85016d6bc4341d30e215a069cb475b8000e3112a28f664ad4b6e7506472cf",
+    "s3": "a481ce43e07f6167db0a1f56a9c3a147b001b2973383c03f33151bc407e5cb4a",
+    "s4": "136bf6f43df2d99c1f758324927ab05eabd9aec938251a8d408a96c67841f596",
+    "s5": "7c0dc3556a9d6a54cf58532f9b8aa1054d9bd3725c15c82e0aa9da736a5e9309",
+    "s6": "c8ff3c099e9d217a97c0f6232689f76a21d7c9cc4b1a7d5ced6db85300180b0a",
+    "s7": "b35e0e8820af110a5858364a331330a3a6c886f10fe5701e5471afe28563c83f"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T20:09:23.256274+00:00"
+}
