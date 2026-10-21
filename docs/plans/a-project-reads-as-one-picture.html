@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-project-reads-as-one-picture">
+  <meta name="plan-title" content="A Project Reads as One Picture">
+  <meta name="plan-summary" content="The roadmap ranks plans while the work and its edges live in sections; derive one cross-plan section graph, rank it on signals that differ, and brief agents.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="19.75">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S26">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-north-star" content="legible-to-human-and-agent">
+  <meta name="plan-after" content="work-scheduling-surface">
+  <meta name="plan-blocks" content="the-mcp-answers-the-question-asked">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;: [&quot;a-project-reads-as-one-picture#s2&quot;], &quot;s5&quot;: [&quot;a-project-reads-as-one-picture#s2&quot;, &quot;a-project-reads-as-one-picture#s4&quot;], &quot;s7&quot;: [&quot;a-project-reads-as-one-picture#s2&quot;, &quot;a-project-reads-as-one-picture#s3&quot;, &quot;a-project-reads-as-one-picture#s4&quot;], &quot;s8&quot;: [&quot;a-project-reads-as-one-picture#s5&quot;, &quot;a-project-reads-as-one-picture#s6&quot;, &quot;a-project-reads-as-one-picture#s7&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <title>A Project Reads as One Picture | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: four coordinators rebuilt power_convertor's real shape by hand</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>
+      On 2026-10-21 the lead asked whether reckon can tell an agent where a project stands: its
+      direction, its critical path, the work queued behind it and which task matters most. The
+      test project was <code>power_convertor</code>, which has 17 plans, two open sprints and four
+      coordinator sessions, and whose active sprint S3 promises a presentation in the week of
+      19 October. Its <code>roadmap</code> answered as follows.
+    </p>
+    <table>
+      <thead><tr><th>What the roadmap reported</th><th>What the plans' own metadata and the coordinators said</th></tr></thead>
+      <tbody>
+        <tr><td>8 of the 9 open plans are ready, 0 are blocked, and every plan's <code>unlocks</code> is empty.</td><td>The plans declare 30 open sections and 16 cross-plan section edges in <code>plan-section-depends-on</code>. 11 of the 30 open sections wait on another open section.</td></tr>
+        <tr><td>The critical path is one plan, <code>coil-supply-report-rebuild</code>, at 35 h, and the five open paths are five single plans.</td><td>From the stored edges, the effort-weighted section chain is <code>iter-switched-terminal-transients#s6</code> (8 h) → <code>coil-supply-report-rebuild#s4</code> (10 h) → <code>#s8</code> (5 h). Every coordinator named a link one step further back, a solver instability in <code>shared-coil-supply-model#s4</code> that no plan declares as a wait.</td></tr>
+        <tr><td><code>immediate_roadmap</code> orders the 8 ready plans by ROI and effort.</td><td>16 of the 17 plans are ROI <code>high</code> and all 9 open plans are effort <code>M</code>, so that ordering carries no information.</td></tr>
+        <tr><td>Nothing about work in flight.</td><td>The node building <code>iter-switched-terminal-transients#s6</code>, the head of the chain, has been <code>blocked</code> since 2026-10-17. One run reads <code>interrupted</code> in the roadmap and <code>running</code> in <code>crew live</code>.</td></tr>
+        <tr><td><code>view=detail</code>: refused at 141,346 characters against an 80,000 ceiling.</td><td>The lossless CLI report is 214,910 bytes for 17 plans.</td></tr>
+      </tbody>
+    </table>
+    <p>
+      All four coordinators were asked how they chose their current node. Each said it was their
+      own judgement, informed by peer messages, and that no tool ranked anything. They reconstructed
+      blocking chains, file holds (who is writing <code>switched_circuit.py</code> now and who is
+      next), the cross-plan sections that consume their output, and duplicated scope
+      (<code>shared-coil-supply-model#s6</code> and <code>iter-switched-terminal-transients#s6</code>
+      describe the same move of the integrated run). They did it by reading plan HTML, crew pointer
+      files and each other's messages. One coordinator put it as "much of my time is relay messaging
+      between sessions, because holds and cross-plan waits aren't in any shared view".
+    </p>
+    <p>
+      The information is mostly stored already. Sections carry <code>data-effort-hours</code>,
+      declarations and cross-plan dependencies, and live runs carry their plan and section. The
+      analyser rolls everything up to plan granularity before computing paths, so the edges cancel
+      out: a plan with any ready section reads ready, and a section-level edge between two plans
+      never becomes an <code>unlocks</code>. This plan makes the section the unit of the graph and
+      derives the plan view from it. The answer contract the MCP serves it through is
+      <code>the-mcp-answers-the-question-asked</code>.
+    </p>
+
+    <h2 id="s2">§2 — The critical path runs through sections</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>
+      One function in Python builds the section graph of a project. Its nodes are the open sections
+      of every live plan, each weighted by its <code>effort_hours</code> scaled by the plan's progress
+      where a section carries no finer figure. Its edges are every
+      <code>plan-section-depends-on</code> entry, every gate whose <code>required_evidence</code>
+      names a section, and every plan-level <code>depends_on</code> expanded to its target's open
+      sections. Qualified refs (<code>nova:plan#s5</code>) resolve against the named mount and stay
+      blocking until that project closes the section.
+    </p>
+    <p>
+      <code>critical_path</code>, <code>open_paths</code>, <code>unlocks</code> and the ready set are
+      computed over that graph. A plan row keeps its fields, now derived from its sections: it is
+      ready when a section is ready, its <code>unlocks</code> is the set of plans its open sections
+      transitively unblock, and its share of the critical path is named. The section rows are
+      served beside the plan rows rather than replacing them.
+    </p>
+    <p>
+      <strong>Done when:</strong> a synthetic three-plan fixture whose only cross-plan wiring is
+      <code>A#s2 → B#s3 → C#s1</code> reports a critical path naming those three sections in that order
+      with their summed effort, and reports C in B's <code>unlocks</code>. The negative control is
+      the same fixture against the base commit, where the path is a single plan and
+      <code>unlocks</code> is empty, and the test must fail there. On <code>power_convertor</code> the
+      critical path spans at least two plans and names
+      <code>iter-switched-terminal-transients#s6</code>, recorded in the gate log with the head it ran
+      at.
+    </p>
+
+    <h2 id="s3">§3 — The ranking reads signals that differ between rows</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>
+      Ready sections are ranked lexicographically. A section on the critical path to the active
+      sprint's open work comes first. Next is the number of sections it transitively unblocks, then
+      the sprint's remaining time where the sprint states an end or a dated goal, then its stuck
+      signal (two or more attempts, or a run on it blocked for more than a day, which raises it so
+      that it is seen rather than skipped). ROI and effort only break the ties those leave. Every
+      ranked row carries a one-line <code>why</code> naming the signal that placed it, so a reader can
+      disagree with a specific reason rather than with an opaque order.
+    </p>
+    <p>
+      When at least 80 % of a project's open plans share one ROI value, the roadmap emits an
+      informational <code>flat-priority-signal</code> finding that names the share. That tells the
+      lead the ROI field has stopped carrying information and is not being used to rank.
+    </p>
+    <p>
+      <strong>Done when:</strong> on a fixture where every plan is ROI <code>high</code> and effort
+      <code>M</code>, the ranked order puts the section with the largest downstream reach first, and
+      every row's <code>why</code> names a signal other than ROI. On the base commit the same fixture
+      returns plans in sprint and slug order, and the test fails there. <code>power_convertor</code>
+      reports <code>flat-priority-signal</code> with its measured share (16 of 17 plans).
+    </p>
+
+    <h2 id="s4">§4 — Work in flight sits on its section</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>
+      Every live, queued and interrupted run resolves to <code>plan#section</code>. A section row
+      carries its runs with one classification each, taken from the same function
+      <code>crew live</code> calls, so the roadmap and the crew surface can no longer disagree about
+      one run. It also carries the write paths those runs hold, as the dispatch scope claims already
+      record them, and the queued dispatches waiting on those paths.
+    </p>
+    <p>
+      A section's blocking state is named by kind rather than collapsed into one boolean. The kinds
+      are: <code>dependency</code> (an open upstream section), <code>gate</code>,
+      <code>run-blocked</code> (a run's manifest reports blocked, with its blocker text),
+      <code>held-path</code> (a write path claimed by another section's run),
+      <code>external-data</code> (a gate whose measure names data not yet in the repository, such as
+      the dummy-load recorder files) and <code>decision</code>.
+    </p>
+    <p>
+      <strong>Done when:</strong> a fixture live pointer with a plan and section appears on that
+      section's roadmap row with the classification <code>crew live</code> gives it, and a fixture
+      whose manifest reports <code>blocked</code> makes its section <code>run-blocked</code> and
+      carries the blocker text. A parity test asserts that the roadmap's run state equals
+      <code>crew live</code>'s classification for every run in a fixture of mixed states; the
+      <code>interrupted</code>-against-<code>running</code> pair measured on
+      <code>power_convertor</code> is reproduced as its negative control and must fail on the base
+      commit. Two fixture runs claiming one path report the holder and the queued run, in that order.
+    </p>
+
+    <h2 id="s5">§5 — A wait nobody declared is a finding</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>
+      Two wiring findings make the edges coordinators carry in messages visible.
+      <code>undeclared-wait</code> fires when a section's blocked run, gate measure or open followup
+      names another section ref (<code>slug#sN</code> or <code>project:slug#sN</code>) that the
+      section's dependencies do not include. It names both refs and the text that mentioned them, so
+      the repair is one <code>section_depends_on.&lt;sid&gt;</code> write.
+      <code>overlapping-scope</code> fires when two open sections in different plans declare
+      intersecting write paths in their briefs or dispatch history. That is the shape of
+      <code>shared-coil-supply-model#s6</code> and <code>iter-switched-terminal-transients#s6</code>,
+      the same integrated run planned twice.
+    </p>
+    <p>
+      Both findings are warnings with an exact repair. Neither invents an edge: the analyser reports
+      the suspected wait and leaves the decision to whoever owns the plan.
+    </p>
+    <p>
+      <strong>Done when:</strong> a fixture whose blocked manifest names <code>B#s4</code> from a
+      section with no edge to it emits <code>undeclared-wait</code> with both refs, and the same
+      fixture with the edge declared emits nothing. Two fixture sections claiming one path emit
+      <code>overlapping-scope</code>, and two claiming disjoint paths do not. On
+      <code>power_convertor</code> the findings are listed in the gate log, and each is checked by
+      hand as a true or false positive, with the count of each recorded.
+    </p>
+
+    <h2 id="s6">§6 — The schema can say what was only said in messages</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>
+      Two links that coordinators needed have no form today, and one lifecycle state is missing.
+    </p>
+    <ul>
+      <li><strong>A section can wait on a followup.</strong> The ref grammar gains
+      <code>slug@f-id</code>, satisfied when that followup resolves. One coordinator's section
+      really waited on <code>f-tfcv-007</code> and could only declare the whole section it belonged
+      to.</li>
+      <li><strong>A section can be descoped.</strong> A new declaration, <code>descoped</code>, with
+      a required reason, counts as closed for <code>close</code> and the critical path but not as
+      done for <code>impl</code>. It is shown in history. Today a coordinator ticked a deferred section
+      <code>done</code> with an explanatory comment because <code>close</code> refuses any plan with a
+      deferred section, which makes the record say something false.</li>
+      <li><strong>A refused op names the path that works.</strong> <code>set section_depends_on</code>
+      without a section id is refused, and two coordinators concluded the field could not be
+      written. The refusal now names <code>section_depends_on.&lt;sid&gt;</code> and
+      <code>sections.&lt;sid&gt;.effort_hours</code>, which already work.</li>
+    </ul>
+    <p>
+      <code>PLAN-FORMAT.md</code>, the published schema and the <code>reckon-edit</code> skill state
+      the new ref and the new declaration in the same commit as the parser change.
+    </p>
+    <p>
+      <strong>Done when:</strong> a section declared to depend on <code>X@f-1</code> is blocked while
+      the followup is open and ready once it resolves; a plan whose only open section is
+      <code>descoped</code> closes, and its <code>impl</code> excludes that section; the refusal text
+      for a bare <code>section_depends_on</code> names the keyed path. Each behaviour has a test that
+      fails on the base commit.
+    </p>
+
+    <h2 id="s7">§7 — One brief an agent can act on</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>
+      <code>reckon.brief.project_brief(project, session=None, since=None)</code> composes, from §2 to
+      §5, the page a coordinator needs before choosing work. It runs to at most 6,000 characters of
+      plain text plus the typed rows behind each line, and contains:
+    </p>
+    <ul>
+      <li>the active sprint's goal and its time left;</li>
+      <li>both completion percentages;</li>
+      <li>the critical path as sections, with hours, the runs on it and what holds its head;</li>
+      <li>the ten highest-ranked ready sections with their <code>why</code>;</li>
+      <li>true blockers grouped by kind;</li>
+      <li>at-risk work: sections with repeated attempts, runs blocked more than a day, interrupted runs;</li>
+      <li>wiring findings, counted, with the top three shown;</li>
+      <li>when <code>since</code> is given, what changed after that cursor.</li>
+    </ul>
+    <p>
+      The brief is a composition, not a second analyser: every figure in it is read from the payload
+      §2 to §5 produce. The CLI prints it as <code>reckon brief --project</code>, and the MCP surface
+      serves it under the contract its own plan sets.
+    </p>
+    <p>
+      <strong>Done when:</strong> the <code>power_convertor</code> brief fits in 6,000 characters and
+      names the critical-path head, the run blocked since 2026-10-17 and the three ready sections
+      with the largest reach. A parity test asserts that every number in the brief equals the
+      corresponding field of the roadmap payload for the same fixture, so the two cannot drift.
+    </p>
+
+    <h2 id="s8">§8 — Measured on power_convertor and two other mounts</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p>
+      The coordinators' questions are asked again through the new reads on
+      <code>power_convertor</code>, <code>nova</code> and <code>reckon</code> itself. They are: what is
+      critical, what is blocking a named section, who holds a named file, and what should run next.
+      Each answer is compared with what the owning coordinator says is true, and the result goes to
+      the cumulative landed record.
+    </p>
+    <p>
+      <strong>Done when:</strong> each question is answered by one call on each of the three mounts
+      within its read deadline. Every disagreement with a coordinator is listed with its cause, as
+      either a wiring fault in the plans or a defect in the derivation, and each derivation defect
+      becomes a section of this plan or a new plan.
+    </p>
+
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-aprop-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-21" data-recommends-skill="/reckon-build a-project-reads-as-one-picture §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Derive the section graph and its critical path</h4>
+    <div class="r-fu-body"><p>§2 is the foundation: §3, §5 and §7 read its graph. §4 and §6 are independent of it and of each other, so they can run beside §2.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-project-reads-as-one-picture §2</pre>
+    </article>
+    </section>
+  </main>
+</body>
+</html>

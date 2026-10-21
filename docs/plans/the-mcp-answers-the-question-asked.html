@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="the-mcp-answers-the-question-asked">
+  <meta name="plan-title" content="The MCP Answers the Question Asked">
+  <meta name="plan-summary" content="Coordinators read reckon state by hand 4x as often as via the MCP; design each read around its question, bounded by construction, one derivation per fact.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="16.75">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S26">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-north-star" content="legible-to-human-and-agent">
+  <meta name="plan-after" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;a-project-reads-as-one-picture#s2&quot;, &quot;a-project-reads-as-one-picture#s4&quot;], &quot;s6&quot;: [&quot;a-project-reads-as-one-picture#s7&quot;, &quot;the-mcp-answers-the-question-asked#s2&quot;], &quot;s8&quot;: [&quot;the-mcp-answers-the-question-asked#s2&quot;, &quot;the-mcp-answers-the-question-asked#s3&quot;, &quot;the-mcp-answers-the-question-asked#s4&quot;, &quot;the-mcp-answers-the-question-asked#s5&quot;, &quot;the-mcp-answers-the-question-asked#s6&quot;, &quot;the-mcp-answers-the-question-asked#s7&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <title>The MCP Answers the Question Asked | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: the reads are bounded by refusal, so agents read the files instead</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>
+      <code>the-mcp-answers-within-its-ceiling</code> shipped on 2026-10-07 with the measure
+      "nobody falls back to jq over a saved file". On 2026-10-21, <code>roadmap(project=
+      "power_convertor", view="detail")</code> returned <code>response_over_budget</code> at 141,346
+      characters for a 17-plan project, and the session asking saved the CLI's 214,910-byte report and
+      read it with Python. The default <code>summary</code> fits, but it drops the ordered ready list
+      and every section-level blocker, which are the parts a coordinator calls it for.
+      <code>roadmap(project="reckon")</code> did not answer at all: it hit <code>storage-slow</code>
+      at the 30 s deadline.
+    </p>
+    <p>
+      A census of the five <code>power_convertor</code> coordinator transcripts over the three days
+      to 2026-10-21 measures the gap. The script's output is kept with the evidence for this section.
+    </p>
+    <table>
+      <thead><tr><th>Measure</th><th>Count</th></tr></thead>
+      <tbody>
+        <tr><td>reckon MCP calls</td><td>707, of which 312 <code>edit_plan</code> and 94 <code>read_plan</code> version probes, leaving about 300 reads</td></tr>
+        <tr><td>MCP results that were not ok</td><td>87 of 693 (12.6 %): 36 <code>stale_server_code</code>, 12 errors, 10 <code>op_error</code>, 9 <code>storage-slow</code>, 7 <code>text_edit_error</code>, 5 <code>response_over_budget</code>, 8 other</td></tr>
+        <tr><td><code>roadmap</code> calls, and those not ok</td><td>27 calls, 10 not ok (37 %)</td></tr>
+        <tr><td>Bash commands reading crew JSON or pointer files</td><td>588</td></tr>
+        <tr><td>Bash commands parsing plan or sprint HTML</td><td>348</td></tr>
+        <tr><td>CLI <code>roadmap</code>, <code>status</code> or <code>audit</code> runs</td><td>204</td></tr>
+        <tr><td>CLI crew reads</td><td>81</td></tr>
+      </tbody>
+    </table>
+    <p>
+      The fallback counts are regex matches on commands, so they are upper bounds. Even halved, they
+      show coordinators reading reckon's state by hand about twice as often as through the MCP;
+      taken as measured, it is four times. The four coordinators named what sent them there. The
+      summary roadmap returns a one-plan critical path and no ordered ready list.
+      <code>crew live</code> rows carry no section, and asking for <code>section</code> is refused as an
+      unknown field. <code>read_plan</code>'s <code>section_blocking</code> reports a done section as
+      waiting because it reads the target plan's status. One run reads <code>interrupted</code> in the
+      roadmap and <code>running</code> in <code>crew live</code>. And <code>raw</code> or
+      <code>section</code> reads of the two largest plans come back over budget.
+    </p>
+    <p>
+      The cause is one design choice applied everywhere. A view serializes the analyser's internal
+      record (a <code>pending_work</code> row has 45 keys, and every dependency ref is a nine-field
+      object repeating the target plan's status), and the transport ceiling is then enforced after
+      the fact by refusing. Views are named after stores (<code>live</code>, <code>ledger</code>,
+      <code>records</code>, <code>runs</code>, <code>scopes</code>) rather than after questions. The
+      <code>crew</code> tool alone takes 57 parameters across 19 read views and 12 actions. The MCP
+      modules are 11,803 lines and the roadmap analyser another 3,798.
+    </p>
+    <p>
+      This plan inverts that: decide the question, design the smallest answer that settles it, and
+      let the size follow from the design. Work owned elsewhere is not restated here. Read latency is
+      <code>a-read-answers-inside-its-deadline</code> §45 and §46. Verb folding and the single crew
+      tool are <code>the-crew-surface-is-one-tool-and-a-few-verbs</code>, landed, including
+      <code>crew complete --dry-run</code> listing every refusal. Serving current code is
+      <code>every-plan-write-goes-through-edit-plan</code>. The section graph and the brief are
+      computed by <code>a-project-reads-as-one-picture</code>.
+    </p>
+
+    <h2 id="s2">§2 — A default read fits by construction</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>
+      Every view declares a size contract in its docstring: the most characters it returns for a call
+      that names no narrowing argument. It meets that contract by its shape, not by a post-hoc check.
+      A list returns its highest-ranked rows up to a declared count, the total, and a cursor for the
+      rest. A nested structure returns its summary line and a ref the caller can expand. The ceiling
+      in <code>mcp_budget</code> stays as a guard, but a default call that trips it is a defect in that
+      view, and the test suite treats it as one.
+    </p>
+    <p>
+      <strong>Done when:</strong> a test calls every view of every reckon MCP tool with only its
+      required arguments against a synthetic project of 60 plans and 400 sections, and asserts that
+      each answer is within its declared contract and that none returns
+      <code>response_over_budget</code>. On the base commit at least <code>roadmap</code>
+      <code>view=detail</code> fails it. The same assertion runs against <code>power_convertor</code>,
+      and the result is recorded in the gate log.
+    </p>
+
+    <h2 id="s3">§3 — A row is compact and names its section</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>
+      Rows follow three rules:
+    </p>
+    <ul>
+      <li>A reference is a string in the one grammar, <code>[project:]plan[#section][@run|@f-id]</code>, never an expanded object.</li>
+      <li>An empty or null field is omitted.</li>
+      <li>Every list view accepts <code>fields</code> with one shared vocabulary for the fields views share.</li>
+    </ul>
+    <p>
+      Every row about a run (<code>live</code>, <code>runs</code>, <code>obligations</code>,
+      <code>directory</code>) carries <code>section</code>. A row-level dependency reports the
+      dependency's own state (the section's declaration, or the followup's status), never the
+      containing plan's status.
+    </p>
+    <p>
+      <strong>Done when:</strong> a fixture run dispatched for <code>P#s4</code> reads
+      <code>section: "s4"</code> in each of the four views, and <code>fields=["section"]</code> is
+      accepted by all of them. A section ref whose target section is done but whose plan is in
+      progress reads satisfied, with the section's declaration as its state; this is the
+      <code>section_blocking</code> case <code>power_convertor</code> hit, and it fails on the base
+      commit. The serialized <code>power_convertor</code> roadmap shrinks, measured before and after
+      in the gate log.
+    </p>
+
+    <h2 id="s4">§4 — One call explains any ref</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>
+      A new read, <code>why(ref)</code>, takes any ref in the grammar and answers within 4,000
+      characters with:
+    </p>
+    <ul>
+      <li>what the thing is and its state;</li>
+      <li>what it waits on, transitively, each wait with its kind from <code>a-project-reads-as-one-picture</code> §4;</li>
+      <li>what waits on it;</li>
+      <li>which runs and sessions are working on it now, and which paths they hold;</li>
+      <li>its last five events.</li>
+    </ul>
+    <p>
+      This is the question a coordinator otherwise answers by reading a plan, then a pointer file,
+      then messaging a peer. The sessions measured above asked it in every one of their reports.
+    </p>
+    <p>
+      <strong>Done when:</strong> on a fixture where section A waits on B, B is held by a running
+      run, and a followup on A is open, <code>why("A")</code> names the wait on B, B's run and its
+      held path, and the followup, all inside the contract. A ref that does not resolve is refused
+      with the nearest refs that do. The CLI <code>reckon why</code> prints the same answer.
+    </p>
+
+    <h2 id="s5">§5 — One derivation per fact, held by a parity check</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>
+      Four facts are served by more than one derivation today, and the copies disagree:
+    </p>
+    <ul>
+      <li>a run's classification;</li>
+      <li>a section's readiness;</li>
+      <li>a plan's progress;</li>
+      <li>the active sprint.</li>
+    </ul>
+    <p>
+      Each gets one owning function, and every surface reads that function: the MCP tools, the CLI
+      and the SPA payload. A parity test compares the surfaces against each other on one fixture,
+      rather than asserting a literal on each side, because literals on both sides drift together
+      without failing.
+    </p>
+    <p>
+      <strong>Done when:</strong> the parity test builds one fixture with runs in every
+      classification and sections in every declaration, and asserts that <code>roadmap</code>,
+      <code>crew live</code>, <code>read_plan</code> and the <code>/_discover</code> payload agree on all
+      four facts. It is run against the base commit first, and the disagreements it finds there are
+      listed in the gate log as the negative control.
+    </p>
+
+    <h2 id="s6">§6 — The brief is the default answer</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p>
+      <code>roadmap(project)</code> with no view returns the project brief that
+      <code>a-project-reads-as-one-picture</code> §7 composes: text first, typed rows behind it. The
+      existing <code>summary</code>, <code>detail</code> and <code>raw</code> views remain for callers
+      that name them. The <code>reckon-roadmap</code> and <code>reckon-status</code> skills lead with
+      the brief and describe the other views as drill-downs.
+    </p>
+    <p>
+      <strong>Done when:</strong> a default <code>roadmap</code> call on the fixture returns the brief
+      within its contract, a call naming <code>summary</code> is unchanged, and both skills' fast paths
+      name the brief. A test that reads each skill's fast path fails if either still leads with
+      <code>summary</code>.
+    </p>
+
+    <h2 id="s7">§7 — A read can ask what changed</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>
+      The brief, <code>crew live</code> and the roadmap accept a <code>since</code> cursor and return
+      only what changed after it: sections whose declaration or readiness moved, runs that changed
+      classification, and findings that appeared or cleared. Every response carries the cursor for
+      the next call. A coordinator that polls state today re-reads the whole of it each time; that
+      is the 588 pointer-file reads above.
+    </p>
+    <p>
+      <strong>Done when:</strong> on a fixture, a read with the cursor from a previous read returns
+      exactly the one section whose declaration moved in between, and an unchanged project returns an
+      empty change set with a new cursor. A cursor the server cannot resolve is refused with
+      <code>cursor-expired</code> and the instruction to read in full, never answered as if nothing
+      had changed.
+    </p>
+
+    <h2 id="s8">§8 — The surface is re-measured from the transcripts</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p>
+      <code>reckon/mcp_census.py</code> already counts MCP connection failures and
+      <code>storage-slow</code> results. It gains three counts: per-tool and per-view outcomes,
+      Bash fallbacks by class (pointer and crew JSON reads, plan HTML parsing, CLI reads), and
+      fallbacks per coordinator-day, all over the same explicit window. The census in §1 is the
+      before figure.
+    </p>
+    <p>
+      <strong>Done when:</strong> the census over a three-day window that starts after §2 to §7 land
+      shows plan-HTML and pointer-file fallbacks per coordinator-day down by at least half against
+      §1, and fewer than 5 % of <code>roadmap</code> results not ok. A shortfall is recorded with the
+      transcripts' own account of why each fallback happened, and each cause becomes a section here.
+      The census matches one transcript known to contain MCP calls before it reports any absence, as
+      the positive control.
+    </p>
+
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-mcpq-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-21" data-recommends-skill="/reckon-build the-mcp-answers-the-question-asked §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Give every view a size contract it meets by shape</h4>
+    <div class="r-fu-body"><p>§2, §3, §5 and §7 can start at once. §4 waits on the section graph and run placement in a-project-reads-as-one-picture §2 and §4, and §6 on its brief in §7.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-mcp-answers-the-question-asked §2</pre>
+    </article>
+    </section>
+  </main>
+</body>
+</html>
