@@ -41,9 +41,25 @@ from reckon import served_code
 _FAKE_CHILD = r"""
 import json, os, sys
 
+root = sys.argv[1]
+
 cold = os.environ.get("FAKE_CHILD_COLD") == "1"
 silent = os.environ.get("FAKE_CHILD_SILENT") == "1"
 answer = json.loads(os.environ["FAKE_CHILD_ANSWER"])
+
+
+def tree_stamp():
+    # The code identity of the tree this child serves, read from the tree
+    # itself, and reported so a caller learns the child's own reading rather
+    # than the value it was started with.
+    with open(os.path.join(root, "code-stamp")) as handle:
+        return handle.read().strip()
+
+
+def report(stamp):
+    with open(os.path.join(root, "child-reported-stamp"), "w") as handle:
+        handle.write(stamp)
+    return stamp
 
 for line in sys.stdin:
     line = line.strip()
@@ -59,13 +75,24 @@ for line in sys.stdin:
             # A child that never answers its probe stays cold for the life of
             # the process, so every call is served by the running image.
             continue
-        reply = {"id": ident, "op": "probe", "params": {}, "required": {}}
+        reply = {
+            "id": ident,
+            "op": "probe",
+            "params": {},
+            "required": {},
+            "served_by_code_stamp": report(tree_stamp()),
+        }
     else:
         if silent:
             # Warm, but it never answers a call: a child the guard has asked
             # and has no answer from.
             continue
-        reply = {"id": ident, "op": "call", "reached": True, "answer": answer}
+        reply = {
+            "id": ident,
+            "op": "call",
+            "reached": True,
+            "answer": {**answer, "served_by_code_stamp": report(tree_stamp())},
+        }
     sys.stdout.write(json.dumps(reply) + "\n")
     sys.stdout.flush()
 """
@@ -94,7 +121,7 @@ class Spawner:
             "FAKE_CHILD_SILENT": "1" if self.silent else "0",
         }
         process = subprocess.Popen(
-            [sys.executable, "-c", _FAKE_CHILD],
+            [sys.executable, "-c", _FAKE_CHILD, str(root)],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
@@ -149,6 +176,10 @@ class Rig:
         self.stamp = "1" * 64
         self.image_stamp = "0" * 64
         self.moved = moved
+        # The tree carries its own code identity, as the checkout does: the
+        # child reads this file, so what the child reports is its own reading
+        # of the tree and not a value this rig handed it.
+        (self.root / "code-stamp").write_text(self.stamp)
         monkeypatch.setattr(mcp_module, "_current_code_server", lambda: self.server)
         monkeypatch.setattr(mcp_module, "_moved_checkout_state", self._state)
         monkeypatch.setattr(
@@ -199,14 +230,17 @@ class Rig:
             time.sleep(0.02)
         return False
 
-    def child_stamp(self) -> str | None:
-        """The stamp the live child was started for, read from the server.
+    def child_stamp(self) -> str:
+        """The code identity the child read for itself from the tree it serves.
 
-        Read from the object that decided it rather than from a constant this
-        case injected, so an answer stamped with the image's code — or with
-        nothing — fails here.
+        The child resolves this from the tree and writes it out, so this is the
+        child's own report rather than a value this case passed to the server.
         """
-        return self.server.current_stamp()
+        reported = self.root / "child-reported-stamp"
+        assert reported.exists(), (
+            "the child reports its code identity as it answers its probe"
+        )
+        return reported.read_text().strip()
 
 
 def call(guarded, **kwargs) -> dict:
@@ -275,6 +309,46 @@ def test_a_raised_failure_while_the_child_is_cold_carries_the_remedy(
         assert mcp_module._RECONNECT_REMEDY in result.get("detail", ""), result
         assert result.get("reconnect") == mcp_module._RECONNECT_REMEDY, result
         assert "RuntimeError" in result.get("original_error", ""), result
+    finally:
+        rig.server.stop()
+
+
+def test_a_raise_stands_when_the_tree_stops_loading_before_the_refusal(
+    tmp_path, monkeypatch
+):
+    """A tree that turns untrusted between the guard's two reads re-raises.
+
+    The guard reads the tree's state once to decide whether to route at all,
+    and the refusal reads it again while composing its answer. A tree that has
+    stopped loading in between has no refusal to give, so the image's failure
+    is the call's own and reaches the caller rather than being replaced by an
+    answer built from a refusal that was never made.
+    """
+    rig = Rig(tmp_path, monkeypatch, cold=True, timeout_s=0.3)
+    guarded, image = rig.tool("roadmap", raises=RuntimeError("config unreadable"))
+    reads: list[int] = []
+    first = rig._state
+
+    def state_that_stops_loading():
+        reads.append(1)
+        if len(reads) > 1:
+            return served_code.MovedCheckout(
+                moved=True,
+                trusted=False,
+                detail="a tracked file differs from HEAD, so the tree is not read",
+                running_stamp=rig.image_stamp,
+                disk_stamp=rig.stamp,
+            )
+        return first()
+
+    monkeypatch.setattr(mcp_module, "_moved_checkout_state", state_that_stops_loading)
+    try:
+        with pytest.raises(RuntimeError) as raised:
+            call(guarded, project="reckon")
+
+        assert "config unreadable" in str(raised.value), raised.value
+        assert len(reads) > 1, "the refusal reads the tree's state again"
+        assert image, "the running image served the call while the child was cold"
     finally:
         rig.server.stop()
 
