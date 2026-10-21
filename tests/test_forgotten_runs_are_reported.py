@@ -7,12 +7,14 @@ followed -- a coordinator that stepped away for an hour is not gone -- or miss
 the run whose session stopped existing, which is exactly the one no reader will
 otherwise ever see.
 
-Three pointers are built in a temporary home: the first is complete and
-followed, the
-second is complete and forgotten, and the third is running under that same
-forgotten session. Exactly the second is listed, so the first is held out by
-its follower and the third by its classification -- and the second's own
-session is read whole, not one pointer at a time.
+Five pointers are built in a temporary home: the first is complete and
+followed, the second is complete and forgotten, the third is running under that
+same forgotten session, and the fourth and fifth are complete under it with
+their outcome already landed -- one by a ledger row carrying commits, one by a
+row recording a report-only completion. Exactly the second is listed, so the
+first is held out by its follower, the third by its classification, and the
+fourth and fifth by the promotion that already settled them -- and the second's
+own session is read whole, not one pointer at a time.
 
 The temporary RECKON_HOME makes every pointer and follower registration local
 to the case, so no real crew directory is read or written.
@@ -30,6 +32,7 @@ from typing import Any
 
 import pytest
 
+from reckon import ledger
 from reckon.crew import forgotten_runs as forgotten
 from reckon.crew.follower_registration import (
     _write_watch_record,
@@ -44,6 +47,8 @@ FORGOTTEN_SESSION = "session-forgotten"
 ATTENDED_RUN = "run-attended-complete"
 FORGOTTEN_RUN = "run-forgotten-complete"
 RUNNING_RUN = "run-forgotten-running"
+PROMOTED_RUN = "run-forgotten-promoted"
+RECORDED_RUN = "run-forgotten-recorded"
 SEVEN_HOURS = 7 * 60 * 60.0
 EIGHT_HOURS = 8 * 60 * 60.0
 
@@ -68,6 +73,7 @@ def _pointer(
     age_seconds: float,
     pid: int,
     phase: str = "working",
+    repo: str = "",
 ) -> dict[str, Any]:
     """One live pointer, with its whole evidence aged to one instant.
 
@@ -95,6 +101,7 @@ def _pointer(
         "log_path": str(stream),
         "manifest_path": str(manifest),
         "worktree": str(directory / "tree" / run_id),
+        "repo": repo,
         "base_sha": "",
         **_aged(moment),
     }
@@ -138,6 +145,20 @@ def _hold_a_live_registration(project: str, session: str, *, age_seconds: float)
     return handle
 
 
+def _landed(run_id: str, *, commits: list[str], repo: str) -> Path:
+    """Persist the run's own ledger row, which is what settles its completion.
+
+    Promotion appends this row and then removes the live pointer, so for the
+    length of that window a pointer still exists for a run the ledger has
+    already settled. The row's presence, not its commit list, is what the
+    classifier reads -- a report-only completion declares no change and is
+    settled just the same -- so the two rows below differ only in that list.
+    """
+
+    ledger.run_path(PROJECT, run_id, repo).parent.mkdir(parents=True, exist_ok=True)
+    return ledger.write_run_file(PROJECT, {"run_id": run_id, "commits": commits}, repo)
+
+
 @pytest.fixture
 def fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """Three pointers and a follower the derivation must tell apart."""
@@ -172,6 +193,25 @@ def fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         age_seconds=SEVEN_HOURS,
         pid=os.getpid(),
     )
+    repo = str(tmp_path / "repo")
+    promoted = _pointer(
+        PROMOTED_RUN,
+        session=FORGOTTEN_SESSION,
+        status="complete",
+        age_seconds=SEVEN_HOURS,
+        pid=_absent_pid(),
+        repo=repo,
+    )
+    recorded = _pointer(
+        RECORDED_RUN,
+        session=FORGOTTEN_SESSION,
+        status="complete",
+        age_seconds=SEVEN_HOURS,
+        pid=_absent_pid(),
+        repo=repo,
+    )
+    _landed(PROMOTED_RUN, commits=["2b1e0000"], repo=repo)
+    _landed(RECORDED_RUN, commits=[], repo=repo)
     handle = _hold_a_live_registration(
         PROJECT, ATTENDED_SESSION, age_seconds=SEVEN_HOURS
     )
@@ -180,6 +220,8 @@ def fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
             "attended": attended,
             "forgotten": forgotten_pointer,
             "running": running,
+            "promoted": promoted,
+            "recorded": recorded,
         }
     finally:
         handle.close()
@@ -207,6 +249,35 @@ def test_the_view_lists_exactly_the_run_nobody_is_coming_back_to(
     # the row, so a reader acts on the view rather than on a second read.
     assert row["recover"] in set(RECOVERY_VERBS.values())
     assert isinstance(row["next_action"], str) and row["next_action"]
+
+
+def test_a_run_whose_outcome_is_already_landed_is_not_forgotten(
+    fleet: dict[str, dict[str, Any]],
+) -> None:
+    """A landed completion owes no reader, however long its session has been gone.
+
+    Terminal is only half the predicate: a run the ledger has already settled --
+    by a row carrying commits, or by a report-only row declaring none -- is
+    finished work, not a delivery nobody came back for. Both pointers below sit
+    under the forgotten session, so the session's own age is the same seven
+    hours that lists the third; the only thing holding them out is the landing,
+    and a derivation that dropped it would list them.
+    """
+
+    listed = [row["run_id"] for row in forgotten.forgotten_runs(PROJECT)]
+
+    assert PROMOTED_RUN not in listed, (
+        "a run the ledger settled with commits is promoted, not forgotten; "
+        f"the view named {listed}"
+    )
+    assert RECORDED_RUN not in listed, (
+        "a report-only completion is recorded, not forgotten; "
+        f"the view named {listed}"
+    )
+    assert FORGOTTEN_RUN in listed, (
+        "the settled rows must not take the unfinished one's place; "
+        f"the view named {listed}"
+    )
 
 
 def test_a_threshold_older_than_the_session_lists_nothing(
