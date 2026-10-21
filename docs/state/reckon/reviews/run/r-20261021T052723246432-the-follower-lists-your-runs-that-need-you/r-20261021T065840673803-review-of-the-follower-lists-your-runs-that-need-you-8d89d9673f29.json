@@ -1,0 +1,92 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest's baseline_suite (logs/base-arm.log, revision eca5c58dc8) fails 3 ids and its after_suite (logs/head-arm.log, revision f33909bbf) fails the same 3 ids, so the set difference is empty.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:2155",
+    "reckon/crew_follow_commands.py:1077",
+    "reckon/crew_follow_commands.py:3221"
+  ],
+  "completed_at": "2026-10-21T07:20:05.586Z",
+  "dispatched_at": "2026-10-21T06:59:36Z",
+  "finding_dispositions": {
+    "3": {
+      "kind": "folded",
+      "node": "the-follower-lists-your-runs-that-need-you",
+      "recorded_at": "2026-10-21T07:21:43.732650+00:00"
+    },
+    "4": {
+      "kind": "folded",
+      "node": "the-follower-lists-your-runs-that-need-you",
+      "recorded_at": "2026-10-21T07:22:04.955291+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": 2134,
+      "severity": "blocking",
+      "text": "the standing line is emitted only when the caller arms an interval: needs_remind_seconds is None unless remind is passed, and _needs_you_events returns on that condition before it yields anything (reckon/crew_follow_commands.py:2134-2137). No production caller passes remind: the only caller that reaches it with an interval is tests/test_follow_needs_you_line.py:127, and the crew follow --remind option (reckon/crew_follow_commands.py:3221) defaults to None, so every follower the fleet runs emits no needs-you line and no heartbeat. Plan section 7 asks for the opposite: emit the line after any transition that changes the set, and again on a cadence whether or not the set is empty, with the cadence defaulting to ten minutes. The section exists because a quiet pane must not look the same for a healthy follower and a dead one, and as landed it looks exactly the same. The worker disclosed this in follow_ons with the measurement behind it (unconditional emission measured 14 failed, 687 passed against the base arm's 3, every added failure in four frozen output contracts outside its write scope), so the repair is a coordinator ruling rather than a worker error: arm the line from the host/pane path, or relax the four frozen contracts. It blocks because the section cannot be called delivered while no follower shows the line the section was filed to add, and because the decision it needs is one the worker was fenced out of."
+    },
+    {
+      "file": "reckon/crew/needs_you.py",
+      "line": 34,
+      "severity": "follow-on",
+      "text": "DEFAULT_REMIND_SECONDS = 600.0 is defined and never referenced anywhere in the repository, and its comment asserts what the plan asks for and the follower does not do (that the follower re-emits the line on this cadence). The plan's ten-minute default therefore survives only as dead code; either the emitter should read this constant as its default interval, or the constant should not sit here claiming a behaviour nothing runs."
+    },
+    {
+      "file": "reckon/crew/needs_you.py",
+      "line": 144,
+      "severity": "follow-on",
+      "text": "the session-ownership filter at needs_you.py:142-145 and the bucket partition at needs_you.py:149-158 restate rules the repository already owns: _partition_session_rows (reckon/crew/recovery_watch.py:270) owns the rule that a pointer with no recorded owner stays in the counted set, and _fleet_counts (reckon/crew/recovery_watch.py:270 owns the rule that a pointer with no recorded owner stays in the counted set, and _fleet_counts (reckon/crew/recovery_watch.py:1381-1419) owns the working/blocked/unpromoted partition including the held exclusion that needs_you.py:151 re-derives. The module's own docstring claims the counters cannot disagree with the line, and that holds only while two copies of the rule stay in step. The row list is a different output from the counts, so this is a partial reuse gap rather than a fork, which is why reuse scores 14 rather than below 5."
+    },
+    {
+      "file": "tests/test_follow_needs_you_line.py",
+      "line": 271,
+      "severity": "follow-on",
+      "text": "the parity assertion compares follow._needs_you_runs (tests/test_follow_needs_you_line.py:271) against need_module.needs_you_runs (:265), and reckon/crew_follow_commands.py:942 makes the former a one-line delegate of the latter, so the two sides move together and the assertion holds whatever either function does. It can redden only if a future edit re-forks the derivation and the fork diverges on this fixture, which is the contract worth guarding but is not the equality the case's own docstring claims. The rest of the case carries the durability weight: derived_nodes equals the set holding own-unpromoted, asserted against the fixture's literal node name, which is independent of the code."
+    },
+    {
+      "file": "manifest.md",
+      "line": 15,
+      "severity": "follow-on",
+      "text": "the delivered manifest's tests: line is 'python -m pytest -q tests/test_follow_needs_you_line.py tests/test_every_module_fits_a_worker_window.py (head tree, PYTHONPATH=<tree>/arms/head)' - a literal command with a description tail and an unsubstituted <tree> placeholder - and both baseline_suite.command and after_suite.command embed '<53 follower-touching files from ...>' and '<the same 53 files retargeted at arms/head2>', which the manifest contract refuses because a template command cannot be re-run. The gate receipt can fall back to each log's own '# command:' header (logs/head-needs-you.log line 4, logs/base-arm.log line 4), which carries the real command, but a reader parsing the manifest's own field gets prose and no runnable command."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read all four commits (a87ed9cae, 510db0aaa, f33909bbf, 8d89d9673) against base eca5c58dc8: a new derivation module, a follower emitter plus delegation of the old list, its focused gate, and the landing fragment.",
+    "done_when": "the plan section 7 done_when names tests/test_follow_needs_you_line.py and tests/test_every_module_fits_a_worker_window.py; the gate ran both and the second exits 1 at head on three pre-existing over-bound modules (logs/head-needs-you.log).",
+    "goal": "the node goal is a follower-emitted needs-you line derived in a new reckon/crew/needs_you.py; that module exists and reckon/crew_follow_commands.py:2155 composes its line, but the emitter returns early unless the caller arms an interval (reckon/crew_follow_commands.py:2134), so no production caller reaches it.",
+    "manifest": "read; it records the focused gate's four passing cases and its negative control (logs/negative-control.log, EXIT=1, assert 1 >= 2), and its follow_ons discloses that the line is --remind-gated rather than default-on.",
+    "write_paths": "read the manifest's five declared paths; the diff's four changed files are reckon/crew/needs_you.py, reckon/crew_follow_commands.py, tests/test_follow_needs_you_line.py and the landing fragment, every one inside them."
+  },
+  "justifications": {
+    "durability": "removing the cadence emission reddens tests/test_follow_needs_you_line.py::test_the_line_names_your_unpromoted_run_and_repeats with EXIT=1, while the parity assertion at tests/test_follow_needs_you_line.py:271 compares a delegating wrapper with the function it delegates to.",
+    "evidence": "the gate's revision, command and bare EXIT= line are recorded (logs/head-needs-you.log, logs/negative-control.log), but that arm exits 1 on tests/test_every_module_fits_a_worker_window.py and the manifest's tests: line is a template rather than the command.",
+    "fit": "reckon/crew/needs_you.py reads the fleet buckets from recovery_watch and renders ages through ticker._elapsed like its neighbours, but DEFAULT_REMIND_SECONDS at reckon/crew/needs_you.py:34 is referenced by no caller.",
+    "goal_fidelity": "reckon/crew/needs_you.py:212 composes the plan's exact line from the owning session's blocked and unpromoted runs, but reckon/crew_follow_commands.py:2134 withholds it from every follower the fleet runs.",
+    "reuse": "reckon/crew_follow_commands.py:942 makes the pre-existing list a delegate of the new module rather than a fork, while reckon/crew/needs_you.py:142-158 restates the partition that reckon/crew/recovery_watch.py:1381 already owns.",
+    "scope_discipline": "every path the diff touches is one of the five declared write paths, and the landing fragment's element ids are prefixed with the node id."
+  },
+  "node": "review-of-the-follower-lists-your-runs-that-need-you-8d89d9673f29",
+  "node:reviewed": "the-follower-lists-your-runs-that-need-you",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a pointer-without-its-time needs-you line derived in a new module; the module exists (reckon/crew/needs_you.py:113) and reckon/crew_follow_commands.py:2155 composes its line, but the emitter returns early unless an interval is armed (reckon/crew_follow_commands.py:2134).\nVERDICT done_when: the plan section 7 done_when names tests/test_follow_needs_you_line.py and tests/test_every_module_fits_a_worker_window.py; the gate ran both and the second exits 1 at head on three pre-existing over-bound modules (logs/head-needs-you.log).\nVERDICT write_paths: read the manifest's five declared paths; the diff's four changed files are reckon/crew/needs_you.py, reckon/crew_follow_commands.py, tests/test_follow_needs_you_line.py and the landing fragment under docs/evidence/fragments/the-monitor-shows-the-work-it-watches/, all inside them.\nVERDICT manifest: read; it records the focused gate's four passing cases and its negative control (logs/negative-control.log, EXIT=1, assert 1 >= 2), and its follow_ons discloses that the line is --remind-gated rather than on by default.\nVERDICT diff: read all four commits (a87ed9cae, 510db0aaa, f33909bbf, 8d89d9673) against base eca5c58dc8: a new derivation module, a follower emitter plus delegation of the old list, the focused gate, and the landing fragment.\nCALL_SITES: reckon/crew_follow_commands.py:2155, reckon/crew_follow_commands.py:1077, reckon/crew_follow_commands.py:3221\nSCORE goal_fidelity: 12\nJUSTIFICATION goal_fidelity: reckon/crew/needs_you.py:212 composes the plan's exact line from the owning session's blocked and unpromoted runs, but reckon/crew_follow_commands.py:2134 withholds it from every follower the fleet runs.\nSCORE evidence: 14\nJUSTIFICATION evidence: the gate's revision, command and bare EXIT= line are recorded (logs/head-needs-you.log, logs/negative-control.log), but that arm exits 1 on tests/test_every_module_fits_a_worker_window.py and the manifest's tests: line is a template rather than the command.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path the diff touches is one of the five declared write paths, and the landing fragment's element ids are prefixed with the node id.\nSCORE durability: 16\nJUSTIFICATION durability: removing the cadence emission reddens tests/test_follow_needs_you_line.py::test_the_line_names_your_unpromoted_run_and_repeats with EXIT=1, while the parity assertion at tests/test_follow_needs_you_line.py:271 compares a delegating wrapper with the function it delegates to.\nSCORE fit: 14\nJUSTIFICATION fit: reckon/crew/needs_you.py reads the fleet buckets from recovery_watch and renders ages through ticker._elapsed like its neighbours, but DEFAULT_REMIND_SECONDS at reckon/crew/needs_you.py:34 is referenced by no caller.\nSCORE reuse: 14\nJUSTIFICATION reuse: reckon/crew_follow_commands.py:942 makes the pre-existing list a delegate of the new module rather than a fork, while reckon/crew/needs_you.py:142-158 restates the partition that reckon/crew/recovery_watch.py:1381 already owns.\nFINDING reckon/crew_follow_commands.py:2134 blocking: the needs-you line is emitted only when the caller arms an interval, and no production caller does, so an unarmed follower emits neither the change-triggered line nor the heartbeat plan section 7 requires.\nFINDING reckon/crew/needs_you.py:34 follow-on: DEFAULT_REMIND_SECONDS is defined and never referenced, so the plan's ten-minute default survives only as a constant nothing reads.\nFINDING reckon/crew/needs_you.py:144 follow-on: the session-ownership filter and the bucket partition are restated here rather than extending their owners, _partition_session_rows and _fleet_counts in reckon/crew/recovery_watch.py.\nFINDING tests/test_follow_needs_you_line.py:271 follow-on: the parity assertion compares a delegating wrapper with the function it delegates to, so it holds whatever either does and only catches a future re-fork.\nFINDING manifest.md:15 follow-on: the tests: line and both suite commands carry descriptions and angle-bracket placeholders instead of the literal command that ran, so a reader cannot re-run the gate from the manifest's own field.\n",
+  "review_run_id": "r-20261021T065840673803-review-of-the-follower-lists-your-runs-that-need-you-8d89d9673f29",
+  "reviewed_base_sha": "eca5c58dc8f9697bda11cecc6f68d261f5b1d94a",
+  "reviewed_head_sha": "8d89d9673f29f39adae3bb1db7925f85c45d4abe",
+  "reviewed_run_id": "r-20261021T052723246432-the-follower-lists-your-runs-that-need-you",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 14,
+    "goal_fidelity": 12,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T00:00:00+00:00",
+  "total": 90
+}
