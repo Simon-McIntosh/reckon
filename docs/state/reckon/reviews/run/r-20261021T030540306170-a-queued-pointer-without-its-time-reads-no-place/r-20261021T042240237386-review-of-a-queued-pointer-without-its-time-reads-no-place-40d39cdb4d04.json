@@ -1,0 +1,80 @@
+{
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_a_deadline_needs_no_time_zone.py::test_the_stated_command_prints_the_same_seconds_in_two_zones",
+    "tests/test_ledger.py::test_every_read_view_returns_and_large_defaults_are_compact"
+  ],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T030540306170-a-queued-pointer-without-its-time-reads-no-place/gate-head.log",
+  "assertion_analysis": [
+    {
+      "failure_condition": "Restoring the propagating admission_order call makes queued_placements raise on the pointer with no queued_at, so the equality at line 118 and the absence check at line 122 never hold; the negative-control log records exactly this failure.",
+      "lines": "118-122"
+    },
+    {
+      "failure_condition": "A regression that gave the unreadable pointer a place, or that dropped it from the live listing, reddens the row-set equality at line 130, the position/rank None checks at 134-135, or the classification check at 131.",
+      "lines": "130-135"
+    },
+    {
+      "failure_condition": "If the narrowing were pushed down into admission_order, tests/test_a_queued_pointer_without_its_time_reads_no_place.py:152 would stop raising and the pytest.raises would fail.",
+      "lines": "152-153"
+    }
+  ],
+  "base_log_revision": "9cb55dea5e48b9e95494ed801546ffa0355130a0",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T030540306170-a-queued-pointer-without-its-time-reads-no-place/gate-base.log",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/query.py:208",
+    "reckon/crew/obligation_snapshot.py:1048",
+    "reckon/crew/obligations.py:1293"
+  ],
+  "completed_at": "2026-10-21T04:39:22.880Z",
+  "dispatched_at": "2026-10-21T04:25:07Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "1057",
+      "severity": "follow-on",
+      "text": "admit_once builds its queued list without the readable-queued_at filter (lines 1053-1055) and calls queue_order.admission_order, which still raises ValueError on a pointer whose queued_at does not parse, so a malformed queued pointer remains fatal to the admission pass even though it is now harmless to the read; the node's evidence declares this boundary deliberately and the change does not introduce it."
+    }
+  ],
+  "head_log_revision": "5cdf65f78cc9a9ef5a0f169f03f7686d8adfd8b1",
+  "item_verdicts": {
+    "call_sites": "verified 3 production call sites: reckon/crew/query.py:208, reckon/crew/obligation_snapshot.py:1048, reckon/crew/obligations.py:1293.",
+    "diff": "read commit by commit against base 9cb55dea5; 5cdf65f78 adds a one-line filter plus docstring at reckon/crew/queue_admission.py:995-998, the new test file carries 3 cases, and 40d39cdb4 adds the evidence fragment.",
+    "done_when": "the done_when names tests/test_a_queued_pointer_without_its_time_reads_no_place.py plus the files importing queue_admission/query and requires no added failure against base; the manifest records gate-head.log (7 failed, 774 passed) against gate-base.log (5 failed, 773 passed), leaving 2 added failures against that clause.",
+    "goal": "the goal is to make queued_placements place only queued pointers with a readable queued_at so one without one reads no place; reckon/crew/queue_admission.py:998 carries that filter and the third pointer is dropped from the ordering.",
+    "manifest": "read; it records the fix commit 5cdf65f78, landing fragment 40d39cdb4, both arm logs, negative-control.log (EXIT=1) and names the 2 added failures under blockers, with status repaired from blocked to complete and the repair recorded in status-repair.json.",
+    "write_paths": "the three declared paths are reckon/crew/queue_admission.py, tests/test_a_queued_pointer_without_its_time_reads_no_place.py and the evidence fragment; the diff touches exactly those three."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows the declared mutation (filter removed, propagating call restored) reddens test_queued_placements_places_only_pointers_with_a_readable_time and test_the_live_view_lists_the_unplaceable_run_as_queued at tests/test_a_queued_pointer_without_its_time_reads_no_place.py:118-122 and :130-135, EXIT=1.",
+    "evidence": "gate-head.log records 7 failed / 774 passed and gate-base.log 5 failed / 773 passed, so the done_when's no-added-failure clause is unmet by 2 ids; both are timing-bound cases that do not import the changed function and the tier-confounded attribution is recorded but unproven in blockers.",
+    "fit": "reckon/crew/queue_admission.py:998 reuses the module's existing parse_utc import (line 28) and the same idiom already used at line 478; no name introduced.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:998 adds the readable-queued_at filter so queued_placements places only pointers whose queued_at parses, and lines 999-1010 order and publish places from that filtered queue.",
+    "reuse": "the change adds no new definition; the capability it narrows is the existing owner reckon/crew/queue_admission.py:961 queued_placements, and a capability search over reckon/crew found no separate place-ordering owner to extend.",
+    "scope_discipline": "every path in the diff (reckon/crew/queue_admission.py, tests/test_a_queued_pointer_without_its_time_reads_no_place.py, docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/a-queued-pointer-without-its-time-reads-no-place.html) is inside the manifest's three declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make queued_placements place only queued pointers with a readable queued_at; reckon/crew/queue_admission.py:998 adds that filter and the ordering is built from the filtered queue.\nVERDICT done_when: the done_when names tests/test_a_queued_pointer_without_its_time_reads_no_place.py and the queue_admission/query importers; the manifest records gate-head.log 7 failed/774 passed against gate-base.log 5 failed/773 passed, so 2 added failures stand against the no-added-failure clause.\nVERDICT write_paths: the diff changes exactly reckon/crew/queue_admission.py, the new test file and the evidence fragment, all inside the three declared write paths.\nVERDICT manifest: read; it records fix 5cdf65f78, fragment 40d39cdb4, both arm logs, negative-control.log EXIT=1, and names the 2 added failures under blockers.\nVERDICT diff: read commit by commit against base 9cb55dea5; 5cdf65f78 adds the one-line filter at queue_admission.py:995-998, the new test file carries 3 cases, 40d39cdb4 adds the fragment.\nCALL_SITES: reckon/crew/query.py:208, reckon/crew/obligation_snapshot.py:1048, reckon/crew/obligations.py:1293\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:998 places only pointers whose queued_at parses.\nSCORE evidence: 13\nJUSTIFICATION evidence: gate-base.log 5 failed and gate-head.log 7 failed leave 2 added failures against the done_when's no-added-failure clause.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is inside the manifest's three declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log reddens both placement cases at tests/test_a_queued_pointer_without_its_time_reads_no_place.py:118-135, EXIT=1.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/queue_admission.py:998 reuses the existing parse_utc import used at line 478 and introduces no name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition and narrows the existing owner reckon/crew/queue_admission.py:961; no separate ordering owner exists.\nFINDING reckon/crew/queue_admission.py:1057 follow-on: admit_once still ranks the unfiltered queue through admission_order, so a queued pointer without a readable queued_at stays fatal to the admission pass while it is now harmless to the read.",
+  "review_run_id": "r-20261021T042240237386-review-of-a-queued-pointer-without-its-time-reads-no-place-40d39cdb4d04",
+  "reviewed_base_sha": "9cb55dea5e48b9e95494ed801546ffa0355130a0",
+  "reviewed_commits": [
+    "5cdf65f78cc9a9ef5a0f169f03f7686d8adfd8b1",
+    "40d39cdb4d04aea914b9fd63e662f42c4b1cac74"
+  ],
+  "reviewed_head_sha": "40d39cdb4d04aea914b9fd63e662f42c4b1cac74",
+  "reviewed_run_id": "r-20261021T030540306170-a-queued-pointer-without-its-time-reads-no-place",
+  "scores": {
+    "durability": 19,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T04:45:55.877205+00:00",
+  "total": 109
+}
