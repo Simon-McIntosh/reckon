@@ -30,7 +30,7 @@ from typing import Any
 
 import pytest
 
-from reckon import budget
+from reckon import _store, budget
 from reckon.crew import budget_lift as bl
 from reckon.crew.node import TaskNode
 from reckon.crew.picker import PickRequest, prompts, snapshot
@@ -115,14 +115,15 @@ def _named_run_id(pointer: Path, attempts: int = 4) -> str | None:
 def _store_temporary(name: str) -> bool:
     """Whether a live-pointer entry is a store write's own temporary.
 
-    A pointer is published through a sibling temporary named
-    ``.<name>.<pid>.<token>.tmp`` and renamed over the destination, so a peer's
-    dispatch can leave one in the directory between two readings. Caught
-    mid-write it holds a partial record and names no run, which is the shape
-    the listing arm reports; the store's own write is not a trace of a case.
+    A pointer is published through a sibling temporary and renamed over the
+    destination, so a peer's dispatch can leave one in the directory between two
+    readings. Caught mid-write it holds a partial record and names no run, which
+    is the shape the listing arm reports; the store's own write is not a trace
+    of a case. The name's form is owned by ``reckon._store`` rather than copied
+    here, so it cannot drift out of step with the writer that produces it.
     """
 
-    return name.startswith(".") and name.endswith(".tmp")
+    return _store.is_store_temporary(name)
 
 
 def _writes_into_the_live_home(
@@ -231,6 +232,27 @@ def test_the_home_guard_ignores_a_store_temporary_in_the_live_directory(
     )
     assert _writes_into_the_live_home(home, before, ()) == [], (
         "a store temporary was read as this case's write"
+    )
+
+
+def test_the_store_temporary_predicate_matches_the_name_the_store_writes(
+    tmp_path: Path,
+):
+    """The predicate and the writer agree on the temporary's name.
+
+    The listing arm trusts ``reckon._store.is_store_temporary`` to tell the
+    store's own write caught in flight from a file left behind, so the predicate
+    and the name the writer builds are asserted against each other rather than
+    against a hand-written literal: a writer whose form changed would otherwise
+    slip past a predicate still matching the old name.
+    """
+
+    produced = _store._sibling_temporary_path(tmp_path / "a-run.json").name
+    assert _store.is_store_temporary(produced), (
+        "the predicate does not recognise the store's own temporary name"
+    )
+    assert not _store.is_store_temporary("a-run.json"), (
+        "the predicate recognises an ordinary pointer name"
     )
 
 

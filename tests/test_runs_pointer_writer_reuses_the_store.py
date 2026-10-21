@@ -22,6 +22,7 @@ from typing import Any
 
 import pytest
 
+from reckon import _store
 from reckon.crew import runs
 
 PLAIN: dict[str, Any] = {"run_id": "r-1", "phase": "running", "attempt": 1}
@@ -77,7 +78,7 @@ def _leftover_temporaries(directory: Path) -> list[str]:
     return sorted(
         entry.name
         for entry in directory.iterdir()
-        if entry.name.startswith(".") and entry.name.endswith(".tmp")
+        if _store.is_store_temporary(entry.name)
     )
 
 
