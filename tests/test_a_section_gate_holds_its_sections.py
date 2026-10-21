@@ -1,12 +1,18 @@
 """A gate naming sections holds those sections, not the whole plan.
 
 Four plans separate the cases. Plan ``p`` declares an ungated implementable
-``s1`` beside an implementable ``s2`` its unpassed gate names, so the gate
-leaves ``s1`` reachable and holds only ``s2``: ``p`` reads unblocked, is
-dispatchable, and carries the gate in the section-hold field. Plans ``q``,
-``r`` and ``t`` read ``blocked``, because no section is left for the gate to
-spare: ``q``'s only implementable section is the one its gate names, ``r``'s
-gate names no section at all, and ``t`` declares no section.
+``s1`` beside an implementable ``s2`` its open gate names, so the gate leaves
+``s1`` reachable and holds only ``s2``: ``p`` reads unblocked and carries the
+gate in the section-hold field. Plans ``q``, ``r`` and ``t`` read ``blocked``,
+because no section is left for the gate to spare: ``q``'s only implementable
+section is the one its gate names, ``r``'s gate names no section at all, and
+``t`` declares no section.
+
+A gate holds nothing once it is settled. A fifth plan ``u`` carries a closed
+gate with verdict ``failed`` over its only implementable section and reads
+ready, because a recorded verdict is the plan's outcome rather than work to
+wait for; the gate names a section, so without the settled-gate reading it
+would hold ``u``.
 
 Every reader that projects unpassed gates into ``effective_status`` is
 checked, so the split is shared rather than applied in one place: the roadmap
@@ -23,11 +29,13 @@ PROJECT = "sample"
 SPRINT = [{"id": "current", "status": "active", "items": ["p", "q", "r", "t"]}]
 
 
-def _gate(gate_id: str, *, gated_sections: list[str] | None = None) -> dict:
+def _gate(
+    gate_id: str, *, gated_sections: list[str] | None = None, status: str = "open"
+) -> dict:
     gate = {
         "id": gate_id,
         "section": "s1",
-        "status": "closed",
+        "status": status,
         "measure": "a check that has not passed",
         "verdict": "failed",
         "evidence": f"/sample/evidence/{gate_id}",
@@ -105,12 +113,17 @@ def _served_plans() -> dict[str, dict]:
     return {plan["slug"]: plan for plan in discovered}
 
 
-def _served_plan(slug: str) -> dict:
-    return _served_plans()[slug]
+def _served_plan(
+    slug: str, *, plans: list[dict] | None = None, sprint: list[dict] | None = None
+) -> dict:
+    discovered, _hydrated = _derive_lifecycle(
+        PROJECT, plans or _plans(), sprint or SPRINT
+    )
+    return next(plan for plan in discovered if plan["slug"] == slug)
 
 
-def _mcp_view(slug: str) -> dict:
-    plan = next(plan for plan in _plans() if plan["slug"] == slug)
+def _mcp_view(slug: str, *, plans: list[dict] | None = None) -> dict:
+    plan = next(plan for plan in (plans or _plans()) if plan["slug"] == slug)
     return resource_view(
         ResourceSelector(PROJECT, "plan", slug),
         1,
@@ -132,7 +145,9 @@ def test_an_ungated_section_keeps_the_plan_unblocked_across_every_reader() -> No
     assert [
         (gate["id"], gate["gated_sections"]) for gate in row["section_gate_blockers"]
     ] == [("g-p", ["s2"])]
-    assert "p" in [ready["slug"] for ready in build_roadmap(PROJECT, _plans(), SPRINT)["ready_now"]]
+    assert "p" in [
+        ready["slug"] for ready in build_roadmap(PROJECT, _plans(), SPRINT)["ready_now"]
+    ]
 
     served = _served_plan("p")
     assert served["effective_status"] != "blocked"
@@ -143,6 +158,39 @@ def test_an_ungated_section_keeps_the_plan_unblocked_across_every_reader() -> No
     assert view["state"]["effective_status"] != "blocked"
     assert view["blocking"] == []
     assert [gate["id"] for gate in view["section_gate_blockers"]] == ["g-p"]
+
+
+def test_a_settled_gate_holds_neither_the_plan_nor_its_section() -> None:
+    """A closed gate is an outcome recorded, not work still to wait for."""
+
+    plan = _plan(
+        "u",
+        declarations={"s1": "implementable"},
+        gates=[_gate("g-u", gated_sections=["s1"], status="closed")],
+    )
+    sprint = [{"id": "current", "status": "active", "items": ["u"]}]
+    result = build_roadmap(PROJECT, [plan], sprint)
+    rows = {
+        row["slug"]: row
+        for section in ("ready_now", "blocked", "deferred", "pending_work")
+        for row in result.get(section, [])
+    }
+    row = rows["u"]
+
+    # The gate names the plan's only implementable section, so the old reading
+    # made it hold the whole plan.
+    assert row["readiness"] == "ready"
+    assert row["gate_blockers"] == []
+    assert row["section_gate_blockers"] == []
+    assert "u" in [ready["slug"] for ready in result["ready_now"]]
+
+    served = _served_plan("u", plans=[plan], sprint=sprint)
+    assert served["effective_status"] != "blocked"
+    assert served["blocking"] == []
+
+    view = _mcp_view("u", plans=[plan])
+    assert view["state"]["effective_status"] != "blocked"
+    assert view["blocking"] == []
 
 
 def test_a_gate_with_no_free_section_holds_the_whole_plan() -> None:

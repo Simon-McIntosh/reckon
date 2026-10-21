@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-finished-plan-closes">
+  <meta name="plan-evidence-for" content="reckon:a-finished-plan-closes">
+  <meta name="plan-verifies" content="reckon:a-finished-plan-closes#s3">
+  <meta name="plan-verdict" content="pass">
+  <title>A gate over finished work stops holding the plan | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="finished-work-gates-release-landing" data-node="finished-work-gates-release" data-reckon="landed" data-when="2026-10-21">
+  <h2>A gate over finished work stops holding the plan</h2>
+  <p><code>split_unpassed_gates</code> in <code>reckon/roadmap.py</code> now reads a gate against the plan's declarations: a gate holds a section only while the plan still declares that section implementable, so a gate whose named sections are all done, descoped or deferred holds nothing. The gate over a resolved section is no longer a wait, and the plan it was pinning reads unblocked — <code>closable</code> where the declared-remainder reader gives it that value, <code>ready</code> where other live work remains.</p>
+  <p>A settled gate holds nothing at all, whatever its verdict. The pass and fail ops write a gate's status together with its verdict, so a gate whose status records that verdict is an outcome the plan already carries: a failed verdict says the measure will not be met and the work proceeds without it. A gate naming an implementable section therefore holds the plan only while it is still open — the same gate once closed holds neither the plan nor its section, live or finished.</p>
+  <p>The four plan shapes the census measured are covered: an open gate over a done section, an open gate over a deferred section, a concluded gate whose verdict is <code>failed</code> over a deferred section, and a concluded gate over a section that is still work. A gate naming no sections still holds the plan, so the split's existing contract is unchanged for open gates.</p>
+  <p>One boundary is worth naming. A plan that persisted no section classification tells this function nothing about which sections a gate still holds, so it keeps the reading an undeclared plan had before declarations were consulted at all: every unpassed gate holds it. That is the population the readiness ladder itself sets aside, and it is why the settled-gate reading sits inside the declaration-aware branch. Applying the settled-gate rule to undeclared plans as well needs a one-line fixture change outside this node's write scope, at <code>tests/test_roadmap.py:1391</code>, where the gate's <code>"status": "closed"</code> would become <code>"open"</code>; it is filed as the node's scope request rather than made here.</p>
+  <p>Gate: <code>tests/test_gates_on_finished_work_release.py</code> passes beside <code>tests/test_finished_plan_reads_closable.py</code>, <code>tests/test_roadmap.py</code>, <code>tests/test_mcp_roadmap.py</code>, <code>tests/test_closure_gates.py</code>, <code>tests/test_transition_gates_read_alike.py</code> and <code>tests/test_a_section_gate_holds_its_sections.py</code> — 114 passed, exit 0, no failure added against the base. The declared mutation is the base revision's own split; with it restored the seven new tests read 6 failed and 1 passed, exit 1, and the one that survives is the control, an open gate over an implementable section, which holds under either reading. The new tests pin the section-holding half the closable test cannot mask: the fixture carrying an implementable <code>s2</code> beside an open gate over a done <code>s1</code> reports that gate in neither <code>gate_blockers</code> nor <code>section_gate_blockers</code> and leaves <code>s2</code> ready, one fixture carries a settled gate over a live section and reads ready, and one test asserts the roadmap, the served inventory and the plan view agree on every fixture.</p>
+  <p>The gates that were expected to hold in <code>tests/test_a_section_gate_holds_its_sections.py</code> now read <code>status: "open"</code>, which is what that module always meant by an unpassed gate; its intent per plan is unchanged, and it gains the settled-gate case beside them.</p>
+  <p>Declared mutation — the split restored to treat every unpassed gate as holding once no implementable section is left outside the gates' scope, so no gate is read as settled — was applied to this tree by swapping in the base revision's module and the new tests re-run: <code>negative-control.log</code> reads <code>6 failed, 1 passed</code>, exit 1, with the failing ids being the three finished-work cases, the settled gate over a live section, the section-holding case and the agreement test. The one that passes is the control, an open gate over an implementable section, which holds under either reading.</p>
+</article>
+</body>
+</html>
