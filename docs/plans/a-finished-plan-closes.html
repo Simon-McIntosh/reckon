@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;a-project-reads-as-one-picture#s9&quot;],&quot;s6&quot;:[&quot;a-finished-plan-closes#s2&quot;,&quot;a-finished-plan-closes#s3&quot;,&quot;a-finished-plan-closes#s4&quot;,&quot;a-finished-plan-closes#s5&quot;],&quot;s5&quot;:[&quot;a-finished-plan-closes#s2&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <title>A Finished Plan Closes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="12">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -64,7 +64,7 @@
     </p>
 
     <h2 id="s2">§2 — A plan with nothing left to build reads closable</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p>Readiness gains the value <code>closable</code>, decided by the declared-remainder reader that already exists rather than a new predicate. <code>plan_executable_remainder</code> in <code>reckon/_schema.py</code> returns a plan's implementable remainder, and <code>None</code> for a plan that declares no sections; <code>open_sections</code> in <code>reckon/_plan_html.py</code> is the predicate under it. A plan reads closable when that remainder is empty, so every declared section is done, descoped or deferred. A <code>None</code> keeps today's readiness, which is the legacy population §1 sets aside. The closable test runs before the readiness ladder falls through to <code>blocked</code> or <code>deferred</code> (<code>reckon/roadmap.py</code>, near line 3269).</p><p>What still stands between a closable plan and <code>close</code> is reported by the one enumeration that already exists, <code>closure_blockers</code> in <code>reckon/roadmap.py</code>, which is on every roadmap row. It is widened from plan-terminal gates to every obstacle (deferred sections, open followups, open gates and plan-terminal gates), and each entry carries the op that clears it. A finished plan that should stay open says why the existing way, with a plan-terminal gate whose measure states the reason, so no new keep-open field is added.</p><p>This retires a surface rather than adding one. Closable plans leave <code>ready_now</code>, the ready counts and the critical path, which today carry 13 finished plans as ready work. The new vocabulary is one readiness value.</p><p><strong>Done when:</strong> a fixture plan with every section done reads <code>closable</code>, is absent from <code>ready_now</code>, and its <code>closure_blockers</code> ends with the <code>close</code> op. A fixture with one implementable section still reads <code>ready</code>, and a fixture with no section declarations keeps its current readiness; those are the controls. A fixture with every section done, an open execution gate and no open followup reads <code>closable</code>, with the gate and its <code>pass</code> or <code>fail</code> op in <code>closure_blockers</code>, where the base reads it <code>blocked</code>, because <code>split_unpassed_gates</code> returns the gate as plan-holding once no implementable section remains. On the base commit the first fixture reads <code>ready</code>, and the test fails there.</p>
 
     <h2 id="s3">§3 — A gate on finished work stops holding the plan</h2>
@@ -85,10 +85,16 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-afpc-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-21" data-recommends-skill="/reckon-build a-finished-plan-closes §2" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-afpc-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-21" data-recommends-skill="/reckon-build a-finished-plan-closes §2" data-resolved-at="2026-10-21T12:55:45+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Give a finished plan the readiness closable</h4>
     <div class="r-fu-body"><p>§2 and §3 can start at once. §5 returns §2's closing list and waits on it, §4 waits on the descoped declaration in a-project-reads-as-one-picture §9, and §6 runs once the rest land.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-finished-plan-closes §2</pre>
+    <p class="r-fu-outcome">§2 landed from run closable-readiness at 2573ab94a (closable readiness, widened closure_blockers); §3 is next.</p>
+    </article>
+<article class="r-fu" data-id="f-afpc-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-21" data-recommends-skill="/reckon-build a-finished-plan-closes §3" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Stop gates on finished work from holding the plan</h4>
+    <div class="r-fu-body"><p>§2 landed. §3 edits split_unpassed_gates in roadmap.py and goes next; §5 builds on §2's closing list; §4 waits on a-project-reads-as-one-picture §9.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-finished-plan-closes §3</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -99,7 +105,10 @@
     <div class="r-comment-body"><p>review of run r-20261021T094105608837-closable-readiness over its gained range cfbdda9dd..2863b2d6335c: status parsed, six dimensions scored (goal_fidelity 19, evidence 13, scope_discipline 20, durability 19, fit 16, reuse 20), two findings — one blocking on the landing fragment's declared-mutation figure (docs/evidence/fragments/a-finished-plan-closes/closable-readiness.html:22) and one follow-on on the test module's stale docstring (tests/test_finished_plan_reads_closable.py:5) — added_failure_count 0 against a head arm reading 116 passed, exit 0</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261021T122229485916-review-of-closable-readiness-2573ab94adbd" data-who="reckon-build" data-when="2026-10-21T12:42:03.441Z">
-    <div class="r-comment-body"><p>Reviewed r-20261021T094105608837-closable-readiness at head 2573ab94adbd against base 2863b2d6335c: parsed, goal_fidelity 18, evidence 16, scope_discipline 20, durability 17, fit 18, reuse 20; the two repair commits resolve the previous review&#x27;s blocking figure-versus-log mismatch (negative-control-head.log reads 3 failed, 2 passed, exit 1, matching closable-readiness.html:22) and the docstring counts now match the file (six plans, five tests), with one follow-on finding that the fragment calls the third failing case &quot;the deferred-and-finished plan&quot; for the fixture &quot;deferred-and-followup&quot;.</p></div>
+    <div class="r-comment-body"><p>Reviewed r-20261021T094105608837-closable-readiness at head 2573ab94adbd against base 2863b2d6335c: parsed, goal_fidelity 18, evidence 16, scope_discipline 20, durability 17, fit 18, reuse 20; the two repair commits resolve the previous review's blocking figure-versus-log mismatch (negative-control-head.log reads 3 failed, 2 passed, exit 1, matching closable-readiness.html:22) and the docstring counts now match the file (six plans, five tests), with one follow-on finding that the fragment calls the third failing case "the deferred-and-finished plan" for the fixture "deferred-and-followup".</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-21T12:55:00Z">
+    <div class="r-comment-body"><p>§2 landed: closable readiness and a widened <code>closure_blockers</code> in <code>reckon/roadmap.py</code> (run <code>closable-readiness</code>, head <code>2573ab94a</code>); gate 116 passed; negative control 3 of 5 red; review 109/120. <a href="/reckon/evidence/archive/a-finished-plan-closes-landed.html#s2">evidence</a></p></div>
 </div>
 </section>
 </main>
