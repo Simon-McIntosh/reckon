@@ -1,0 +1,32 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-21T03:14:08.534Z",
+  "dispatched_at": "2026-10-21T03:05:59Z",
+  "findings": [
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": "204",
+      "severity": "follow-on",
+      "text": "follow-on: crew_list now calls queue_admission.queued_placements, which orders through queue_order.admission_order and raises ValueError(\"queued pointer has no readable queued_at\") at reckon/crew/queue_order.py:36 on any queued pointer lacking it, so one malformed queued pointer now takes down the whole `crew list` listing, a failure mode the listing did not have before; the plan already files this as \u00a734 with its fix in the un-fenced queue_admission.py, so no repair is owed inside this node."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that `reckon crew list` show a queued run's position and rank from queue_admission.queued_placements; reckon/crew_run_commands.py:204 calls it once over the project's live records and reckon/crew_run_commands.py:250-252 gives each matching row position and rank, which is the goal met.\nVERDICT done_when: the done_when names tests/test_queued_work_shows_where_held_work_shows.py::test_crew_list_names_the_queued_runs_place with its expected-failure marker removed, a declared negative control, the population arm over the files importing reckon/crew_run_commands.py, and ruff; logs/gate-head.log records \"5 passed in 6.91s\" EXIT=0, logs/negative-control.log records the red arm, and both population logs are present.\nVERDICT write_paths: the manifest declares reckon/crew_run_commands.py, tests/test_queued_work_shows_where_held_work_shows.py, docs/evidence/fragments/a-held-dispatch-waits-its-fair-turn/crew-list-shows-a-queued-runs-place.html and the figures directory; git diff touches the first three, every path inside the declared set.\nVERDICT manifest: read; status complete, landing states the change and the gate figure, tests: is the literal pytest command, test_logs names five logs, and baseline_suite/after_suite both record 10 failed and 335 passed over the same eleven ids.\nVERDICT diff: read commit by commit against 0376a2f1b; 1133e7ac2 rewrites the crew_list row into a dict then updates it from `placements`, 72435fc47 adds the evidence fragment, and the test change removes only the xfail decorator and its now-unused pytest import.\nCALL_SITES: reckon/cli.py:458 (the `crew list` verb imports crew_list), reckon/crew/query.py:208 and reckon/crew/obligations.py:1293 (the live view and obligations reuse the same queued_placements owner)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:204 reads the placement once and reckon/crew_run_commands.py:250-252 carries position and rank onto each queued row, which is exactly the goal's deliverable.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/gate-head.log records \"5 passed in 6.91s\" EXIT=0 for the named case and logs/base-population.log and logs/head-population.log both show \"10 failed, 335 passed\" over the identical id set, so the recorded result is the measure's.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 0376a2f1b..72435fc47 changes only reckon/crew_run_commands.py, the one test file and the declared evidence fragment, with no ordering logic added in the listing.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_queued_work_shows_where_held_work_shows.py:206 asserts (position, rank) == (1, 1) against an independently queued pointer, and logs/negative-control.log shows removing the row.update reddens exactly that id, so the guard fires; the single queued run cannot distinguish a position/rank swap.\nSCORE fit: 18\nJUSTIFICATION fit: the lazy `from reckon.crew.queue_admission import queued_placements` at reckon/crew_run_commands.py:192 matches the neighbouring function-scope imports and the dict-then-update idiom matches the surrounding row build.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change consumes the existing owner reckon/crew/queue_admission.py:961 queued_placements rather than ordering the queue itself, reckon/crew/queue_admission.py:44 names it the single place, and reckon/crew/query.py:208 plus reckon/crew/obligations.py:1293 already share it.\nFINDING reckon/crew_run_commands.py:204 follow-on: crew_list now calls queue_admission.queued_placements, which orders through queue_order.admission_order and raises ValueError(\"queued pointer has no readable queued_at\") at reckon/crew/queue_order.py:36 on any queued pointer lacking it, so one malformed queued pointer now takes down the whole `crew list` listing \u2014 a failure mode the listing did not have before; the plan already files this as \u00a734 with its fix in the un-fenced queue_admission.py, so no repair is owed inside this node.\n",
+  "review_run_id": "r-20261021T030501638479-review-of-crew-list-shows-a-queued-runs-place-72435fc47c10",
+  "reviewed_base_sha": "0376a2f1bffae96a5debf42db7d7fd26c6f9683c",
+  "reviewed_head_sha": "72435fc47c103f72538d80168e11dbb2626bbc96",
+  "reviewed_run_id": "r-20261021T024128083637-crew-list-shows-a-queued-runs-place",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T03:15:12.924725+00:00",
+  "total": 112
+}
