@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="lane-and-model-routing">
+  <meta name="plan-title" content="A bare dispatch names a fence far below its effort">
+  <meta name="plan-summary" content="A dispatch that names no --time-budget now warns, in its result and on stderr, when the resolved default fence is under a quarter of the node's own estimate or its named section's declared effort; the plan's total effort is never read.">
+  <meta name="plan-evidence-for" content="reckon:lane-and-model-routing">
+  <meta name="plan-verifies" content="reckon:lane-and-model-routing#s52">
+  <meta name="plan-recorded-at" content="2026-10-21">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,dispatch,time-budget,estimate,warning">
+  <title>A bare dispatch names a fence far below its effort — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-bare-dispatch-names-a-fence-far-below-its-effort-landing" data-node="a-bare-dispatch-names-a-fence-far-below-its-effort" data-reckon="landed" data-when="2026-10-21">
+  <h2>A bare dispatch names a fence far below its effort</h2>
+  <p id="a-bare-dispatch-names-a-fence-far-below-its-effort-summary">A dispatch that names no <code>--time-budget</code> takes the resolved default, and the shipped implement figure is minutes where a plan section may declare hours. Nothing compared the two, so a section of about six hours was fenced at eight minutes and the worker stopped with most of its work undone. <code>plan_dispatch</code> now carries one warning when the resolved default is under a quarter of the node's estimate: the node's own <code>--estimated-hours</code> figure, else the hours its named section declares through <code>_section_record</code>. The plan's total is never read, because it is the same figure for every section of a plan. The line names the estimate, the resolved fence, the flight key that supplied it and the <code>--time-budget</code> to pass, appears in the dispatch result and in a dry run, and is printed to stderr while stdout carries only the JSON document. The dispatch is warned about, never refused, and an explicitly named budget produces no line however small it is relative to the fixture's six-hour estimate.</p>
+  <p id="a-bare-dispatch-names-a-fence-far-below-its-effort-cases">The five cases the section names, each a dry-run CLI dispatch against a temporary repository whose plan declares twenty hours in total with one six-hour section and one quarter-hour section: (1) a bare implement dispatch of the six-hour section carries exactly one warning, naming <code>6h</code>, <code>8m</code>, <code>roles.implement.time_budget</code> and <code>--time-budget</code>; (2) that same line reaches stderr while stdout decodes as one JSON document with no bare notice on it; (3) the same dispatch with <code>--time-budget 1h</code> — still under a quarter of the estimate — carries none; (4) the quarter-hour section of the twenty-hour plan carries none, so the section's figure is read and not the plan's; (5) a node whose authority is a brief names no section and carries none.</p>
+  <p id="a-bare-dispatch-names-a-fence-far-below-its-effort-measure">Gate: <code>tests/test_a_bare_dispatch_names_a_fence_far_below_its_effort.py</code> 8 passed. Importer set and the worker-window check: see the head and base arms recorded in the run manifest. Ruff <code>check</code> and <code>format --check</code> clean on both staged paths. Negative control: disabling the warning's append and its stderr print leaves the six-hour case reporting <code>0 == 1</code> warnings and fails, <code>EXIT=1</code>.</p>
+</article>
+</body>
+</html>
