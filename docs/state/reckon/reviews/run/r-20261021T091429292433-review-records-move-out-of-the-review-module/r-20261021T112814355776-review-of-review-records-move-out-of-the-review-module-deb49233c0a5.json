@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/promotion.py:1650",
+    "reckon/crew/promotion_checks.py:637",
+    "reckon/crew/obligations.py:1145",
+    "reckon/crew/obligation_snapshot.py:963"
+  ],
+  "completed_at": "2026-10-21T11:47:55.098Z",
+  "dispatched_at": "2026-10-21T11:29:14Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-suite-is-green-at-head/review-records-move-out-of-the-review-module.html",
+      "line": 39,
+      "severity": "follow-on",
+      "text": "the Measure paragraph cites the sibling module's over-bound figure as \"reckon/ledger.py (52,989 tokens)\", but 52,989 is review.py's base figure and ledger.py measures 51,666 (negative-control.log, and my own width-test run at deb49233c), so the fragment misreports the one sibling figure a reader would carry forward."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T091429292433-review-records-move-out-of-the-review-module/manifest.md",
+      "line": 23,
+      "severity": "follow-on",
+      "text": "the done-when requires the manifest to record both modules' estimated tokens at head, but the manifest's artifacts and landing fields carry only review.py's 41,357, leaving review_records.py's 12,512 only in the cited fragment."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source goal is to move the committed review-record store family out of reckon/crew/review.py into reckon/crew/review_records.py so review.py fits the worker-window bound; reckon/crew/review_records.py:1 carries the family and reckon/crew/review.py:3179 re-exports ten names, and I measured review.py at 41,357 tokens and review_records.py at 12,512 by reckon.crew.routing._tokens_for_bytes at deb49233c.\nVERDICT done_when: the done_when names the two-arm population gate, both module bounds, the negative control and ruff; the manifest records gate-base.log (5 failed) and gate-head2.log (5 failed, same ids, zero added) and the fragment records both token figures, though the manifest itself carries only review.py's 41,357 and not review_records.py's 12,512.\nVERDICT write_paths: read the manifest's declared paths (reckon/crew/review.py, reckon/crew/review_records.py, three test files, the evidence fragment, a figures dir); the diff touches review.py, review_records.py, two tests under tests/ and the fragment, so every changed path is inside them.\nVERDICT manifest: read; it states the two-arm suite result (base 5 failed / head 5 failed with identical ids), attributes the sub-floor setup ERROR as scaffolding with five alone-run logs, records the negative control, the landing line and both gate commands.\nVERDICT diff: read the three commits against base c66a1ced9 -- e392f4cd9 moves the family and re-exports it (944 lines out of review.py, 979 into review_records.py), e6a43d618 corrects patch semantics by reading shared names through the review module at call time, deb49233c adds the 58-line evidence fragment; review_records.py imports only `review as _review`, so no shared name stays a module local.\nCALL_SITES: reckon/crew/promotion.py:1650 store_committed_review, reckon/crew/promotion_checks.py:637 stored_record, reckon/crew/obligations.py:1145 stored_records_for_run, reckon/crew/obligation_snapshot.py:963 collect_read_failures\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/review_records.py:1 holds the store family and reckon/crew/review.py:3179 re-exports it, with review.py measuring 41,357 tokens against the plan's 45,000 bound at deb49233c.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate-head2.log records the head arm at 5 failed/1121 passed and I ran the width test at deb49233c, which names only reckon/ledger.py (51,666), but the manifest's own fields carry review.py's 41,357 and omit review_records.py's 12,512.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the three commits touch only reckon/crew/review.py, reckon/crew/review_records.py, the two tests whose patch target moved and the landing fragment, all inside the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: I ran tests/test_every_module_fits_a_worker_window.py at deb49233c and it names only ledger.py, and negative-control.log shows restoring review.py reddens it naming review.py: 52989, so the bound guard fires; the patch-semantics fix rests on tests/test_a_review_with_no_base_is_not_carried.py:94 patching review_store_root.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/review_records.py:1 follows the package idiom with a module docstring and a foot-of-module import to break the cycle, and carries no plan, ticket or version identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the new module extends the owner rather than duplicating it -- reckon/crew/review.py:3179 re-exports the same ten names -- and a capability search across reckon/crew found no second review-record store.\nFINDING docs/evidence/fragments/the-suite-is-green-at-head/review-records-move-out-of-the-review-module.html:39 follow-on: the Measure paragraph cites the sibling module's over-bound figure as \"reckon/ledger.py (52,989 tokens)\", but 52,989 is review.py's base figure and ledger.py measures 51,666 (negative-control.log, and my own width-test run at deb49233c), so the fragment misreports the one sibling figure a reader would carry forward.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T091429292433-review-records-move-out-of-the-review-module/manifest.md:23 follow-on: the done-when requires the manifest to record both modules' estimated tokens at head, but the manifest's artifacts and landing fields carry only review.py's 41,357, leaving review_records.py's 12,512 only in the cited fragment.\n",
+  "review_run_id": "r-20261021T112814355776-review-of-review-records-move-out-of-the-review-module-deb49233c0a5",
+  "reviewed_base_sha": "c66a1ced94ab64cf087ad415b5269c0b3baf83a0",
+  "reviewed_head_sha": "deb49233c0a592039689a0423eb464f990703bd8",
+  "reviewed_run_id": "r-20261021T091429292433-review-records-move-out-of-the-review-module",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T11:49:45.839504+00:00",
+  "total": 108
+}
