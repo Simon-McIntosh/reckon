@@ -254,3 +254,63 @@ return { barCount: bars.length, staleCount: staleNodes.length, staleText };
     )
     assert fresh["barCount"] == len(served["bars"])
     assert fresh["staleCount"] == 0
+
+
+def test_the_replaced_schedule_draws_the_newly_working_runs_bar_in_flight() -> None:
+    """A schedule the flow refreshes to draws the run that just went live.
+
+    The crew view replaces the schedule from its own route, so the flow it
+    renders is the route's answer rather than the one discovery served. A run
+    that went live since then must draw its plan's bar in flight, and the bar
+    must carry the done share its split describes — a bar merely labelled in
+    flight would not show the reader where the work has reached.
+    """
+
+    plans, runs = _fixture()
+    before = schedule_report("reckon", plans, runs, reference=REFERENCE)
+    working = [
+        *runs,
+        {
+            "run_id": "live-pending",
+            "project": "reckon",
+            "plan": "pending-first",
+            "phase": "working",
+        },
+    ]
+    after = schedule_report("reckon", plans, working, reference=REFERENCE)
+    assert (
+        next(bar for bar in after["bars"] if bar["plan"] == "pending-first")["state"]
+        == "in-flight"
+    ), after
+
+    probe = """
+window.STATE = { project: "reckon", inventory: plans, schedule: servedSchedule };
+const flow = window.__derivedFlowTest.DerivedFlow({ runs, project: "reckon" });
+const bars = findAll(flow, node => hasClass(node, "r-derived-flow-bar"));
+const target = bars.find(bar => bar.props.href === "#plan/pending-first");
+const share = target
+  ? findAll(target, node => hasClass(node, "r-derived-flow-bar-done"))[0]
+  : null;
+return {
+  cls: target ? String(target.props.className) : null,
+  doneWidth: share ? share.props.style.width : null,
+  barCount: bars.length,
+};
+"""
+    replaced = _run_probe(plans=plans, runs=runs, schedule=after, probe=probe)
+    assert replaced["cls"] is not None, replaced
+    assert "in-flight" in replaced["cls"], (
+        "the replaced schedule drew the newly working run's bar as "
+        f"{replaced['cls']} rather than in flight"
+    )
+    assert replaced["doneWidth"] is not None, replaced
+
+    # Control: the schedule the view held before that run went live draws the
+    # same bar predicted, so the assertion above is about the replacement and
+    # not about a bar always classed in flight.
+    control = _run_probe(plans=plans, runs=runs, schedule=before, probe=probe)
+    assert control["cls"] is not None, control
+    assert "in-flight" not in control["cls"], control
+    # Both answers carry the same bars, so the state is the only thing that
+    # moved between them.
+    assert control["barCount"] == replaced["barCount"], (control, replaced)

@@ -137,6 +137,26 @@ SCHEDULE_REPLACEMENT = {
     "high": 12,
 }
 
+#: What ``/_schedule/<project>`` answers in the cases below: the same plan, now
+#: drawn in flight and anchored at a later instant, so a schedule that came from
+#: the route is distinguishable by value from either one a discovery served.
+SCHEDULE_FROM_ROUTE = {
+    **SCHEDULE_FIRST,
+    "reference": "2026-01-10T00:30:00+00:00",
+    "high": 10,
+    "bars": [
+        {
+            "nav_key": "alpha",
+            "lane": 0,
+            "start": -2,
+            "end": 6,
+            "split": 0,
+            "state": "in-flight",
+            "wall_hours": 8,
+        }
+    ],
+}
+
 #: The keys a revalidation must keep, written out as literals rather than read
 #: back off the loader, so a key dropped from its list fails the case.
 DERIVED_STATE_KEYS = [
@@ -278,6 +298,26 @@ global.window = {
   dispatchEvent: event => { dispatched.push(event.type); return true; },
 };
 global.document = { querySelector: () => ({ content: PROJECT }) };
+// The change stream, driven by hand: a case pushes the exact event it is about
+// through the listener the loader registered, so nothing here depends on a
+// server or on timing.
+global.EventSource = class {
+  constructor(url) {
+    this.url = url;
+    this.listeners = {};
+    EventSource.instances.push(this);
+  }
+  addEventListener(type, handler) {
+    (this.listeners[type] = this.listeners[type] || []).push(handler);
+  }
+  emit(type, payload) {
+    for (const handler of this.listeners[type] || []) {
+      handler({ data: JSON.stringify(payload) });
+    }
+  }
+  close() { this.closed = true; }
+};
+EventSource.instances = [];
 const requested = [];
 const ok = (payload) => ({ ok: true, status: 200, json: async () => payload });
 const missing = () => ({ ok: false, status: 404, json: async () => ({}) });
@@ -330,6 +370,23 @@ _DISCOVERY_ANSWERS = """
   if (url === "/_discover/sample") {
     requested.push(url);
     return ok(DATA.discovery);
+  }
+"""
+
+# The project's schedule, from its own route. The answer is the whole one the
+# route gives, so a case reading it reads what the server would serve.
+_SCHEDULE_ANSWERS = """
+  if (url === "/_index/sample") {
+    requested.push(url);
+    return ok(DATA.index);
+  }
+  if (url === "/_discover/sample") {
+    requested.push(url);
+    return ok(DATA.discovery);
+  }
+  if (url === "/_schedule/sample") {
+    requested.push(url);
+    return ok({ project: "sample", schedule: DATA.schedule_route });
   }
 """
 
@@ -395,13 +452,13 @@ const summary = state => ({
 """
 
 
-def _run_node(behaviour: str, body: str) -> dict:
+def _run_node(behaviour: str, body: str, timeout_ms: int = READY_TIMEOUT_MS) -> dict:
     """Run the real loader under node against a recording fetch."""
 
     script = (
         _HARNESS.replace("__PROJECT__", json.dumps(PROJECT))
         .replace("__LOADER__", json.dumps(str(LOADER)))
-        .replace("__TIMEOUT__", str(READY_TIMEOUT_MS))
+        .replace("__TIMEOUT__", str(timeout_ms))
         .replace(
             "__DATA__",
             json.dumps(
@@ -414,6 +471,7 @@ def _run_node(behaviour: str, body: str) -> dict:
                         "schedule": SCHEDULE_REPLACEMENT,
                     },
                     "discovery_without_schedule": DISCOVERY_WITHOUT_SCHEDULE,
+                    "schedule_route": SCHEDULE_FROM_ROUTE,
                 }
             ),
         )
@@ -1140,6 +1198,10 @@ _SERVED_PRELOAD = """(() => {
   const response = payload => new Response(JSON.stringify(payload), {
     status: 200, headers: { "Content-Type": "application/json" },
   });
+  // What the page was actually answered with, per route. A route that was
+  // attempted and held is recorded in __requests alone: this is the difference
+  // between a repaint path that was closed and one that was merely slow.
+  window.__answered = { checks: 0, crew: 0 };
   window.fetch = (resource, options) => {
     const url = String(resource);
     window.__requests.push(url);
@@ -1148,8 +1210,16 @@ _SERVED_PRELOAD = """(() => {
     // routes a repaint could otherwise arrive on, and this case is about the
     // merge's own event. Held, the only render after the merge is the one
     // shell.jsx draws for reckon:derived.
-    if (url.includes("/_checks/")) return held();
-    if (url.endsWith("/crew")) return held();
+    if (url.includes("/_checks/")) {
+      if (!window.__answerChecks) return held();
+      window.__answered.checks += 1;
+      return Promise.resolve(response({ documents: [], checked: 0, pending: 0 }));
+    }
+    if (url.endsWith("/crew")) {
+      if (!window.__answerCrew) return held();
+      window.__answered.crew += 1;
+      return Promise.resolve(response({ runs: [] }));
+    }
     if (url.endsWith("/_discover/%s")) {
       const payload = window.__replacement ? replacement : discovery;
       return new Promise(resolve => setTimeout(() => {
@@ -1238,8 +1308,10 @@ _SERVED_REVALIDATION_PROBE = """(async () => {
       unavailable: Boolean(flow() && flow().textContent.includes('no schedule payload served')),
     },
     held: {
-      checks: window.__requests.filter(url => url.includes('/_checks/')).length,
-      crew: window.__requests.filter(url => url.endsWith('/crew')).length,
+      checks: window.__answered.checks,
+      crew: window.__answered.crew,
+      checks_attempted: window.__requests.filter(url => url.includes('/_checks/')).length,
+      crew_attempted: window.__requests.filter(url => url.endsWith('/crew')).length,
     },
   };
 })()"""
@@ -1299,8 +1371,20 @@ def test_a_served_revalidation_keeps_the_derived_flow_drawn(tmp_path: Path) -> N
 
     # The two routes a repaint could otherwise arrive on were both attempted and
     # never answered, which is what makes the assertion above about the merge.
-    assert served["held"]["checks"] >= 1, served
-    assert served["held"]["crew"] >= 1, served
+    assert served["held"]["checks_attempted"] >= 1, served
+    assert served["held"]["crew_attempted"] >= 1, served
+    # Held rather than merely attempted, which is the difference that makes the
+    # assertion above about the merge's event: an answered checks route renders
+    # the page on its own path, and a page that answered it could repaint there
+    # instead of on `reckon:derived`.
+    assert served["held"]["checks"] == 0, (
+        "the checks route was answered, so a render could have arrived on it "
+        "rather than on the merge's own event"
+    )
+    assert served["held"]["crew"] == 0, (
+        "the crew poll was answered, so a render could have arrived on it "
+        "rather than on the merge's own event"
+    )
 
     # A discovery that builds no schedule leaves the served bars up and marks
     # them stale with the failure, rather than drawing an empty flow.
@@ -1309,3 +1393,330 @@ def test_a_served_revalidation_keeps_the_derived_flow_drawn(tmp_path: Path) -> N
     assert "last served" in served["stale"]["text"], served
     assert served["stale"]["bars"] == len(SCHEDULE_TWO_BARS["bars"]), served
     assert served["stale"]["unavailable"] is False, served
+
+
+# ─── The flow refreshes from its own route ───────────────────────────────
+
+
+#: Two crew polls, then a change event. A fleet event says nothing about this
+#: project's documents, so it must dispatch its key and ask for no refetch; a
+#: change event is still the cue the project's own revalidation waits on. The
+#: settle window is 500 ms, so each wait below outlasts it.
+_STREAM_BODY = """
+window.STATE_READY.then(async () => {
+  clearTimeout(watchdog);
+  await window.STATE_DERIVED_READY;
+  let refreshes = 0;
+  const stream = window.watchProjectStateChanges(() => { refreshes += 1; });
+  stream.emit("fleet", { fleet: { key: "rollup" } });
+  await new Promise(resolve => setTimeout(resolve, 900));
+  const afterFleet = refreshes;
+  const fleetEvents = dispatched.filter(name => name === "reckon-fleet").length;
+  stream.emit("change", { rows: { changed: [], added: [], removed: [] } });
+  await new Promise(resolve => setTimeout(resolve, 900));
+  console.log(JSON.stringify({
+    resolved: true,
+    timeout: false,
+    after_fleet: afterFleet,
+    after_change: refreshes,
+    fleet_events: fleetEvents,
+    requested: requested.slice(),
+  }));
+});
+"""
+
+
+def test_a_fleet_event_dispatches_its_key_and_refreshes_nothing() -> None:
+    """A fleet event is not a fact about this project, so it revalidates nothing.
+
+    The rollup over every mount has no owning project, and with many mounts and
+    live crews those events arrive constantly. The key still reaches a view
+    computing it; the derived refetch they used to ask for does not, and a
+    change event still does — one revalidation, once per settle window.
+    """
+
+    observed = _run_node(
+        _INDEX_ANSWERS + _DISCOVERY_ANSWERS, _STREAM_BODY, timeout_ms=5000
+    )
+
+    assert observed["resolved"] is True, observed
+    assert observed["fleet_events"] == 1, (
+        "the fleet key did not reach the window exactly once: "
+        f"{observed['dispatched']} event(s)"
+    )
+    assert observed["after_fleet"] == 0, (
+        "a fleet event still refreshed the project's derived state: "
+        f"{observed['after_fleet']} refetch(es) within the settle window"
+    )
+    # The positive control: the same stream, with a change event, still
+    # refreshes — so the assertion above is about the fleet event and not about
+    # a listener that stopped answering altogether.
+    assert observed["after_change"] == 1, (
+        f"a change event refreshed {observed['after_change']} times, not once"
+    )
+    # Nothing but the index and the discovery was asked for, so the refresh the
+    # change event made is the only request this case's stream could have made.
+    assert observed["requested"] == [INDEX_ENDPOINT, DISCOVERY_ENDPOINT], observed
+
+
+#: The due decision driven with a supplied clock, then the fetch driven by it.
+#: The first poll has nothing built for the view; the second shows the run in a
+#: different phase; the third and fourth leave it unchanged, one inside the
+#: minute and one past it.
+_SCHEDULE_DUE_BODY = """
+window.STATE_READY.then(async () => {
+  clearTimeout(watchdog);
+  await window.STATE_DERIVED_READY;
+  const held = window.STATE.schedule;
+  const T0 = 1000000000000;
+  const working = [{ project: "sample", run_id: 41, phase: "working" }];
+  const verifying = [{ project: "sample", run_id: 41, phase: "completed_unpromoted" }];
+  const scheduleRequests = () =>
+    requested.filter(url => url === "/_schedule/sample").length;
+  const dueFirst = window.scheduleFetchDue(working, T0);
+  await window.refreshSchedule("sample", working, T0);
+  const afterFirst = scheduleRequests();
+  const dueChanged = window.scheduleFetchDue(verifying, T0 + 3000);
+  await window.refreshSchedule("sample", verifying, T0 + 3000);
+  const afterChanged = scheduleRequests();
+  const dueWithin = window.scheduleFetchDue(verifying, T0 + 33000);
+  const afterWithin = scheduleRequests();
+  const dueAfter = window.scheduleFetchDue(verifying, T0 + 63000);
+  await window.refreshSchedule("sample", verifying, T0 + 63000);
+  const afterMinute = scheduleRequests();
+  const served = window.STATE.schedule;
+  console.log(JSON.stringify({
+    resolved: true,
+    timeout: false,
+    due_first: dueFirst,
+    after_first: afterFirst,
+    due_changed: dueChanged,
+    after_changed: afterChanged,
+    due_within: dueWithin,
+    after_within: afterWithin,
+    due_after: dueAfter,
+    after_minute: afterMinute,
+    replaced: served === DATA.schedule_route,
+    unfetched_kept: held === DATA.discovery.schedule,
+    held_reference: held && held.reference,
+    served_reference: served && served.reference,
+    served_state: served && served.bars[0].state,
+    requested: requested.slice(),
+  }));
+});
+"""
+
+
+def test_the_schedule_fetch_is_due_on_a_phase_change_and_once_a_minute() -> None:
+    """The poll decides whether the schedule is due, and the fetch replaces it.
+
+    A poll that shows the same runs in the same phases cannot have moved a bar,
+    so it costs no request; a poll that shows a run in a different phase fetches
+    at once; and an unchanged view re-anchors once a minute so its now line
+    cannot drift from the clock. What the route answers is what lands on
+    ``window.STATE``, and the state the view held before is the control: it is
+    unchanged only because nothing fetched, so the replacement assertion cannot
+    be satisfied by reading a state that was never replaced.
+    """
+
+    observed = _run_node(_SCHEDULE_ANSWERS, _SCHEDULE_DUE_BODY)
+
+    assert observed["resolved"] is True, observed
+    assert observed["due_first"] is True, observed
+    assert observed["after_first"] == 1, observed
+
+    # A changed phase: due, and exactly one request.
+    assert observed["due_changed"] is True, observed
+    assert observed["after_changed"] == observed["after_first"] + 1, observed
+
+    # Unchanged, inside the minute: not due, and no request at all.
+    assert observed["due_within"] is False, (
+        "an unchanged poll inside the minute asked for the schedule again"
+    )
+    assert observed["after_within"] == observed["after_changed"], observed
+
+    # Unchanged, past the minute: due, and exactly one request, the re-anchor.
+    assert observed["due_after"] is True, (
+        "an unchanged poll past the minute did not re-anchor the schedule"
+    )
+    assert observed["after_minute"] == observed["after_changed"] + 1, observed
+
+    # The fetched schedule is the one on the state, and it is the route's own
+    # answer rather than the one discovery served.
+    assert observed["replaced"] is True, observed
+    assert observed["served_reference"] == SCHEDULE_FROM_ROUTE["reference"], observed
+    assert observed["served_state"] == "in-flight", observed
+    # The control: the schedule the view held before any fetch is still the
+    # discovery's, so `replaced` above is a fact about the fetch.
+    assert observed["unfetched_kept"] is True, observed
+    assert observed["held_reference"] == SCHEDULE_FIRST["reference"], observed
+    assert observed["held_reference"] != observed["served_reference"], observed
+
+
+#: A served page whose crew poll answers a run list whose phase the probe moves,
+#: and whose schedule route answers the schedule the flow is meant to refresh to.
+#: Everything else falls through to the real server, so the shell, the crew view
+#: and the loader the browser executes are all unmodified.
+_SCHEDULE_BROWSER_PRELOAD = """(() => {
+  const P = __PROJECT__;
+  const nativeFetch = window.fetch.bind(window);
+  window.__requests = [];
+  window.__crewPhase = "working";
+  const rows = __ROWS__;
+  const discovery = __DISCOVERY__;
+  const schedule = __SCHEDULE__;
+  const response = payload => new Response(JSON.stringify(payload), {
+    status: 200, headers: { "Content-Type": "application/json" },
+  });
+  window.fetch = (resource, options) => {
+    const url = String(resource);
+    window.__requests.push(url);
+    if (url.endsWith("/_index/" + P)) return Promise.resolve(response(rows));
+    if (url.endsWith("/_discover/" + P)) return Promise.resolve(response(discovery));
+    if (url.endsWith("/_schedule/" + P)) {
+      return Promise.resolve(response({
+        project: P,
+        schedule: { ...schedule, reference: new Date().toISOString() },
+      }));
+    }
+    if (url.includes("/_checks/")) {
+      return Promise.resolve(response({ documents: [], checked: 0, pending: 0 }));
+    }
+    if (url.endsWith("/crew")) {
+      return Promise.resolve(response({
+        project: P,
+        runs: [{ project: P, run_id: "r-1", plan: "alpha", phase: window.__crewPhase }],
+      }));
+    }
+    return nativeFetch(resource, options);
+  };
+})()"""
+
+#: Poll the counts across a phase change. The first poll has nothing built for
+#: the view, so it fetches; the run's phase then moves, so the next poll fetches
+#: once more; and a further, unchanged poll must fetch nothing.
+_SCHEDULE_BROWSER_PROBE = """(async () => {
+  const waitFor = async (predicate, budget) => {
+    const deadline = Date.now() + budget;
+    while (Date.now() < deadline) {
+      if (predicate()) return true;
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    return false;
+  };
+  const scheduleCount = () =>
+    window.__requests.filter(url => url.includes("/_schedule/")).length;
+  const crewCount = () => window.__requests.filter(url => url.endsWith("/crew")).length;
+  await waitFor(() => crewCount() >= 1 && scheduleCount() >= 1, 20000);
+  const first = scheduleCount();
+  const crewsBefore = crewCount();
+  window.__crewPhase = "completed_unpromoted";
+  await waitFor(() => crewCount() > crewsBefore && scheduleCount() > first, 20000);
+  const afterChange = scheduleCount();
+  const crewsAtChange = crewCount();
+  await waitFor(() => crewCount() > crewsAtChange, 20000);
+  return {
+    first,
+    after_change: afterChange,
+    settled: scheduleCount(),
+    crew_requests: crewCount(),
+    replaced: Boolean(window.STATE && window.STATE.schedule),
+  };
+})()"""
+
+#: The same page on a route that draws no flow. The poll the shell owns still
+#: runs, so a schedule request there would be the poll's doing and not the
+#: route's.
+_OTHER_ROUTE_PROBE = """(async () => {
+  const waitFor = async (predicate, budget) => {
+    const deadline = Date.now() + budget;
+    while (Date.now() < deadline) {
+      if (predicate()) return true;
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    return false;
+  };
+  const scheduleCount = () =>
+    window.__requests.filter(url => url.includes("/_schedule/")).length;
+  const crewCount = () => window.__requests.filter(url => url.endsWith("/crew")).length;
+  await waitFor(() => crewCount() >= 1, 20000);
+  window.__crewPhase = "completed_unpromoted";
+  await waitFor(() => crewCount() >= 2, 20000);
+  return {
+    crew_requests: crewCount(),
+    schedule_requests: scheduleCount(),
+    hash: window.location.hash,
+  };
+})()"""
+
+
+def _schedule_preload() -> str:
+    return (
+        _SCHEDULE_BROWSER_PRELOAD.replace("__PROJECT__", json.dumps(SERVED_PROJECT))
+        .replace("__ROWS__", json.dumps(INDEX_ROWS))
+        .replace("__DISCOVERY__", json.dumps(DISCOVERY))
+        .replace("__SCHEDULE__", json.dumps(SCHEDULE_FROM_ROUTE))
+    )
+
+
+def test_the_crew_view_refreshes_the_schedule_from_its_own_route(
+    tmp_path: Path,
+) -> None:
+    """The shell's own /_schedule request follows the runs the poll serves.
+
+    The crew view draws the flow, so it is the view that asks for the schedule:
+    one request when the poll shows a run whose phase has moved since the
+    schedule was built, none for a further poll that shows nothing new, and
+    none at all on a route that draws no flow however often it polls.
+    """
+
+    with served_spa(
+        tmp_path,
+        installed_browser_or_skip(),
+        project=SERVED_PROJECT,
+        route="#crew",
+    ) as spa:
+        served = spa.run_probe(
+            _SCHEDULE_BROWSER_PROBE,
+            preload_expression=_schedule_preload(),
+            ready_expression="document.readyState === 'complete'",
+        )
+
+    print(json.dumps(served, sort_keys=True))
+
+    assert served["first"] >= 1, served
+    assert served["after_change"] == served["first"] + 1, (
+        "a poll showing a run in a moved phase asked for the schedule "
+        f"{served['after_change'] - served['first']} times, not once: {served}"
+    )
+    assert served["settled"] == served["after_change"], (
+        f"a further poll that showed nothing new asked for the schedule again: {served}"
+    )
+    assert served["crew_requests"] >= 2, served
+
+
+def test_a_route_that_draws_no_flow_asks_for_no_schedule(tmp_path: Path) -> None:
+    """The poll runs on every route; only the crew view's asks for the schedule.
+
+    The control for the case above: the same page, the same poll, on a route
+    that draws no derived flow, makes no request at all.
+    """
+
+    with served_spa(
+        tmp_path, installed_browser_or_skip(), project=SERVED_PROJECT, route="#cockpit"
+    ) as spa:
+        served = spa.run_probe(
+            _OTHER_ROUTE_PROBE,
+            preload_expression=_schedule_preload(),
+            ready_expression="document.readyState === 'complete'",
+        )
+
+    print(json.dumps(served, sort_keys=True))
+
+    # The positive control: the poll the shell owns ran here too, so an
+    # unanswered schedule route is a decision and not a page that never polled.
+    assert served["crew_requests"] >= 2, served
+    assert served["schedule_requests"] == 0, (
+        "a route that draws no flow asked for the schedule: "
+        f"{served['schedule_requests']} request(s)"
+    )
