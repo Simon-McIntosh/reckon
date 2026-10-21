@@ -25,6 +25,11 @@
     <p>Run <code>a-regenerated-path-is-charged-as-written</code> (commit <code>df48984e9</code>). <code>reckon crew dispatch</code> and <code>reckon crew pick</code> take <code>--regenerate-path</code>, carried on <code>TaskNode.regenerate_paths</code> and folded into <code>write_paths</code> when the node is built, so the live-claim walk, the scope-conflict refusal and promotion's scope reads treat it as written with no change to any scope consumer. The context census in <code>reckon/crew/routing.py</code> charges it a flat <code>_REGENERATED_PATH_REFERENCE_TOKENS</code> (4,000) independent of the file's size, records provenance <code>regenerated</code>, and keys its cache on the regenerated set. The serialised node carries the regenerated paths onto the live pointer, the shadow and replay definitions, and the promoted ledger row.</p><p>Gate: 126 passed, EXIT=0. Review: 106/120 (goal 20, evidence 14, scope 20, durability 16, fit 18, reuse 18), landed under the bar because the code is right and a power_convertor coordinator is blocked on two 1 MB generated records. Two test-quality follow-ons (an assertion independent of the fold, and an assertion on the promoted ledger row) are folded into §10; the base arm's collection error is exempted as the honest reading for a new option.</p>
   </section>
 
+  <section id="s10">
+    <h2>§10 — the regenerated path&#x27;s tests prove the fold and the ledger row</h2>
+    <p>Run <code>a-regenerated-path-is-proved-on-the-ledger</code>, landed at <code>bcace6a32</code>, tests only. The fold case now declares the path only through <code>regenerate_paths</code> and asserts it reaches <code>write_paths</code> and the live claim; a promotion fixture asserts the promoted ledger row's node carries <code>regenerate_paths</code>. The negative-control log carries both mutation arms: deleting the fold in <code>TaskNode.__post_init__</code> and dropping <code>regenerate_paths</code> from the serialised node each turn their case red.</p><p>Review: 117/120 (goal 20, evidence 19, scope 20, durability 19, fit 19, reuse 20); one docstring follow-on exempted, since the fold case reddens through the builder's refusal rather than at the later assertion its docstring names.</p>
+  </section>
+
 </main>
 </body>
 </html>

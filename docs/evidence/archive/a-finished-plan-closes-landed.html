@@ -225,6 +225,11 @@ for r in rows:
     <p>Run <code>a-finishing-write-offers-its-close</code> (commits <code>0d523f4a0</code>, <code>81476a599</code>, <code>cbd5db3af</code>). An <code>edit_plan</code> state write that changes a section declaration now returns the plan's <code>readiness</code> after the write together with its <code>closure_blockers</code>, through a helper beside <code>_review_owed_fields</code> in <code>reckon/mcp_deadlines.py</code>; the path head is the store's own <code>DECLARATIONS_PATH_HEAD</code>. A failure to read readiness leaves <code>readiness</code> null with <code>readiness_error</code> naming the cause and the write still landed. No obligation row was added.</p><p>Gate: 36 passed, EXIT=0, on the five declared test files. Negative control: dropping the readiness fields fails the closable case and the ready control. Review of the repaired head: 113/120 (goal 19, evidence 18, scope 20, durability 19, fit 17, reuse 20). Two follow-ons were exempted (the MCP's checkout-scoped roadmap entry is the right read; the roadmap read runs only on declaration writes). One was folded into §7: a declaration write on an already finished plan reads a roadmap error rather than closed.</p>
   </section>
 
+  <section id="s7">
+    <h2>§7 — a write on a finished plan reads closed</h2>
+    <p>Run <code>a-finished-plan-reads-closed</code>, landed at <code>f9918395c</code>. The readiness helper in <code>reckon/mcp_deadlines.py</code> reads the plan's persisted status, and a declaration write on a plan whose status is in <code>TERMINAL_STATUSES</code> (read from <code>reckon/lifecycle.py</code>) returns <code>readiness: closed</code> with no <code>readiness_error</code>; the roadmap lookup is kept for live plans. The closed case is parametrised over every terminal status, so narrowing the branch or dropping a member reddens a case.</p><p>Gate: base arm (the head's tests on the base module) 7 failed, EXIT=1; head 37 passed, EXIT=0. Review of the repaired head: 112/120 (goal 19, evidence 17, scope 20, durability 19, fit 17, reuse 20); its two log-hygiene follow-ons were exempted. The first round scored 107 and was repaired for single-status coverage and an unmeasured base arm.</p>
+  </section>
+
 </main>
 </body>
 </html>
