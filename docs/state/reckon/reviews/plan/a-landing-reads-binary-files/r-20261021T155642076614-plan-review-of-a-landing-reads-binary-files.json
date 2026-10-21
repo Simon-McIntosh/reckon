@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T16:21:23.656Z",
+  "dispatched_at": "2026-10-21T16:02:26Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-landing-reads-binary-files.html:39",
+      "id": "anchors_resolve-1",
+      "reason": "the deliverable states the `<revision>:<path>` mechanism in full and does not depend on the precedent, so no node's implementation or gate changes; the citation is worth tightening, not re-deciding.",
+      "text": "the \"Why\" cites `merge.py` lines 133 and 345 as precedent for resolving object names, but line 133 is `rev-parse <commit>^@` (a parent list) and line 345 is `_git_dir`'s `rev-parse --absolute-git-dir` (a directory path); only line 125, `<rev>^{commit}`, and no site in the module resolves the `<revision>:<path>` form the deliverable rests on, so the citation supports \"the module already calls `rev-parse`\" rather than \"already resolves object names this way\"",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "7e4ac706a8c71995726461de785d3e061aebbd131c6cf42fc08d439f1a45d731",
+  "plan_slug": "a-landing-reads-binary-files",
+  "plan_version": 16,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "the deliverable states the revision:path rev-parse mechanism in full and does not rest on the precedent; the citation only shows the module already calls rev-parse",
+      "when": "2026-10-21T16:22:48.342838+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "the deliverable states the revision:path rev-parse mechanism in full and does not rest on the precedent; the citation only shows the module already calls rev-parse",
+      "when": "2026-10-21T16:22:48.342838+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-landing-reads-binary-files.v16.json",
+  "review_run_id": "r-20261021T155642076614-plan-review-of-a-landing-reads-binary-files",
+  "reviewed_blob_sha": "7f2abb1f0fb0c014e7a308efe9bf60da676e428e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the \u00a71 \"Why\" cites lines 133 and 345 as sites where \"the module already resolves object names this way\".",
+    "done_when": "pass \u2014 \u00a71's four bullets fail on the unfixed code (I reproduced the `UnicodeDecodeError` at `merge.py:275`, so the first bullet cannot pass at base) and \u00a71 declares its negative control in the mutant form; \u00a72 names its own base arm as the reproduction.",
+    "evidence_paths": "pass \u2014 arms live under the run directory and evidence under `docs/evidence/fragments/a-landing-reads-binary-files/`, the established per-plan fragment layout (96 such directories exist), not a scratch or node-local path.",
+    "naming": "pass \u2014 the new file, module and report-key names (`test_a_landing_reads_binary_files.py`, `tests/helpers/landing_repository.py`, `blob_identity`) state the mechanism; no section label, ticket number or version tag reaches a symbol or comment.",
+    "reasoning": "pass \u2014 all three checks hold on the changed unit: the stated root cause is the one the reproduction shows (`_show`'s `text=True` decode at `merge.py:275`); the blob-identity-then-content mechanism is capable of the done-when, and it preserves the existing refusals the in-gate mutant exercises (`change_markers`' `removed`/`introduced` lines are all absent from the head's own copy, so a merged blob equal to the same commit's blob implies exactly what the marker comparison would have concluded); and it runs on the named production caller (`crew complete --land` \u2192 `merge.land` at `reckon/crew_run_commands.py:2474`), not on a path only the test drives.",
+    "single_goal": "pass \u2014 \u00a71's deliverable is the blob-identity landing check, and the harness move it also carries is measurable by the same gate rather than by a second verdict.",
+    "wiring": "pass \u2014 `plan-section-depends-on` carries `s2:[\"\u2026-binary-files#s1\"]` (snapshot line 29), \u00a72's Sequence (line 60) and the followup body (line 66) both say \u00a72 runs after \u00a71 and imports the harness \u00a71 moves, and \u00a71's write paths (line 60) include both the new helper module and the file it repoints."
+  },
+  "section_digests": {
+    "_document": "7bb1ca28fd8d819b9ceb9071e32e02ca1fd54ae9ab6eab729c2a0506806c5dce",
+    "s1": "dbcdedcf563d97f3ba98f412ff5189e53d330fc1a075ff82968f1aa3968b566e",
+    "s2": "ee84d3cfe290e31bb750ba45a5f81b60b731362af712c49f139a96a91f5960f5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T16:22:24.617865+00:00"
+}
