@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-21T05:42:05.567Z",
+  "dispatched_at": "2026-10-21T05:18:43Z",
+  "findings": [
+    {
+      "file": "tests/test_dispatch_attaches_the_figures.py",
+      "line": "357",
+      "severity": "follow-on",
+      "text": "follow-on: the case is named for \"the prompt its worker reads\" but records plan.stdin_text through the launcher seam, and a fresh dispatch's worker reads <run_dir>/prompt.txt written from the raw brief at reckon/crew/dispatch.py:2125-2126, so the regression its name claims to prevent -- the naming never reaching the worker -- would leave this assertion green; the node's own retry_failures records the assertion being moved off the prompt file for exactly this reason."
+    },
+    {
+      "file": "reckon/_backends.py",
+      "line": "2141",
+      "severity": "follow-on",
+      "text": "follow-on: declares_image_input re-reads input_modalities, which reckon/flight.py:1953 declared_input_modalities owns for the same lane -- the new reader case-folds and splits a comma string where the owner does not -- so the eligibility that admits a lane to a figure review and the naming that delivers the figure are held by two readers that can disagree."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make a claude-family lane that declares image input name each attached figure in its launch and resume prompt instead of refusing it; reckon/_backends.py:2296-2308 does exactly that at the one place all three launch paths compose, and reckon/crew/resumption.py:1220 writes plan.stdin_text into the file a resumed worker reads, but on a fresh supervised dispatch the naming lands only on plan.stdin_text while the harness feeds <run_dir>/prompt.txt, written from the raw brief at reckon/crew/dispatch.py:2125-2126, so the launch half is composed and not delivered.\nVERDICT done_when: the done-when is a list of named assertions and each is present -- naming plus the Read instruction with argv free of the path (tests/test_launch_plan_attaches_images.py:135, tests/test_a_local_worker_is_named_its_images.py:66), the undeclared lane refused by name (tests/test_launch_plan_attaches_images.py:117, tests/test_dispatch_attaches_the_figures.py:376), the carry through _backend_settings (tests/test_a_local_worker_is_named_its_images.py:155) -- and the manifest records the gate at 26 passed, EXIT=0.\nVERDICT write_paths: the manifest declares reckon/_backends.py, reckon/crew/dispatch_sessions.py, docs/state/reckon/flight.yaml, four test files under tests/ and the evidence fragment; git diff --stat 5441d3287 bdea1641c lists exactly those eight files and nothing else.\nVERDICT manifest: read; status complete, commits 78ecd1821/8797e9118/7acb027f4/bdea1641c, the gate and the declared negative control both logged with EXIT= lines, and its evidence_inputs(3) and follow_ons disclose the fresh-dispatch delivery gap rather than leaving it to a reader; baseline_suite and after_suite are null.\nVERDICT diff: read commit by commit against 5441d3287; 78ecd1821 adds IMAGE_MODALITY, Dialect.images_on_argv, declares_image_input, _prompt_naming_images and the launch_plan branch that consumes them, plus the input_modalities carry in _backend_settings; 8797e9118 adds the gate tests, 7acb027f4 the evidence fragment, bdea1641c the measured gap note.\nCALL_SITES: reckon/crew/dispatch.py:2423, reckon/crew/dispatch_sessions.py:1334, reckon/crew/dispatch_sessions.py:1824, reckon/crew/resumption.py:555, reckon/crew/recovery_review_dispatch.py:1340\n\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/_backends.py:2296-2308 names each attached figure on the composed prompt and keeps the paths off argv (reckon/_backends.py:2313), and reckon/crew/resumption.py:1220 delivers that text to a resumed worker, but a fresh clive worker reads the file written from the raw brief at reckon/crew/dispatch.py:2125-2126, so the launch half of the goal is composed and not delivered.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-named-images.log carries its revision, the literal command and EXIT=0 with 26 passed, the declared negative control reddens (negative-control-named-images.log, 5 failed at the five naming cases, EXIT=1), and coordinator-population-head.log (bdea1641c, 15 failed, 1423 passed) is a strict subset of coordinator-population-base.log (5441d328, 16 failed, 1412 passed), so the added-failure count is 0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --stat 5441d3287 bdea1641c -- the two source files, flight.yaml, the four test files and the evidence fragment -- is inside the manifest's declared write paths, carrying nothing the goal does not imply.\nSCORE durability: 16\nJUSTIFICATION durability: the naming assertions redden under the declared mutation (negative-control-named-images.log, 5 failed exactly at the naming cases, EXIT=1), so the composition is guarded, but tests/test_dispatch_attaches_the_figures.py:357 asserts plan.stdin_text through the launcher seam and not the file a fresh worker reads, so the delivery it names is unguarded.\nSCORE fit: 17\nJUSTIFICATION fit: the addition follows the surrounding idiom of reckon/_backends.py -- a module-level constant at :143, a dialect class attribute at :1045, a Mapping-typed helper at :2141 -- and introduces no plan label, version tag or tracker reference; the flight.yaml comment cites dated probe runs as evidence, not a plan identifier.\nSCORE reuse: 15\nJUSTIFICATION reuse: the addition re-reads backend[\"input_modalities\"] at reckon/_backends.py:2149-2153, a read the repository already owns for the same lane at reckon/flight.py:1953; it is not a fork (it reads the composed settings mapping the config-level owner cannot resolve) but the read is duplicated and the two readers can disagree.\nFINDING tests/test_dispatch_attaches_the_figures.py:357 follow-on: the case is named for \"the prompt its worker reads\" but records plan.stdin_text through the launcher seam, and a fresh dispatch's worker reads <run_dir>/prompt.txt written from the raw brief at reckon/crew/dispatch.py:2125-2126, so the regression its name claims to prevent -- the naming never reaching the worker -- would leave this assertion green; the node's own retry_failures records the assertion being moved off the prompt file for exactly this reason.\nFINDING reckon/_backends.py:2141 follow-on: declares_image_input re-reads input_modalities, which reckon/flight.py:1953 declared_input_modalities owns for the same lane -- the new reader case-folds and splits a comma string where the owner does not -- so the eligibility that admits a lane to a figure review and the naming that delivers the figure are held by two readers that can disagree.\n",
+  "review_run_id": "r-20261021T051740729201-review-of-a-local-worker-is-named-its-images-bdea1641caeb",
+  "reviewed_base_sha": "5441d3287ab0c58bb095a63922c357a566d02308",
+  "reviewed_head_sha": "bdea1641caebbae64339a3a94c3bea3d87e195e0",
+  "reviewed_run_id": "r-20261021T043704759117-a-local-worker-is-named-its-images",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T05:43:37.309588+00:00",
+  "total": 101
+}
