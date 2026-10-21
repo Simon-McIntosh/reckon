@@ -669,6 +669,16 @@ def dispatch_repair_for_run(
                 else "the stored review does not cover the run's current head"
             ),
         }
+    # Fold the run's figure review at the same head into the record once, here,
+    # so every reading below sees the figure review's findings as well as the
+    # text review's. The three readings this pre-empts each decide from the
+    # record in hand — whether any finding was raised, whether any of them
+    # blocks, and which paths the round's scope grants — and a merge made after
+    # any of them would leave that reading answering over the text review alone.
+    # Read without the merge, a clean text review hides a blocking figure
+    # finding: the round is never composed and the figure defect waits for a
+    # coordinator, which is what the merge exists to prevent.
+    review = repair_module.review_with_figure(review)
     findings = repair_module.review_findings(review)
     if not findings:
         return {
