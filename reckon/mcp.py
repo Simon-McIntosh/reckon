@@ -2092,9 +2092,9 @@ def _crew(
     ``runs``, ``session`` filters the worker session identity carried by each
     compact row.
 
-    Pass ``phase`` and ``mine`` on ``live`` to narrow it as ``crew list`` does:
-    ``phase`` keeps pointers in one phase, and ``mine`` keeps only the rows the
-    ``session`` owns, so it needs ``session`` and is refused without one.
+    Pass ``phase`` and ``mine`` on ``live`` to narrow it: ``phase`` keeps the
+    live pointers in one phase, and ``mine`` keeps only the runs dispatched by
+    the calling session, so it needs ``session`` and is refused without one.
 
     Pass ``fields`` to read only what you asked for: a ``live`` row is narrowed
     to the requested fields plus ``run_id``, and ``runs`` accepts the three

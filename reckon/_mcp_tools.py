@@ -110,7 +110,7 @@ class CrewArgs(BaseModel):
     limit: int | None = Field(None, ge=1)
     phase: str | None = Field(
         None,
-        description="Keep only live pointers in this phase, as crew list does",
+        description="Keep only the live pointers in one phase",
     )
     mine: bool | None = Field(
         None,
