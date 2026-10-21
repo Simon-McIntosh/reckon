@@ -26,7 +26,7 @@
   <title>The Crew Surface Is One Tool And A Few Verbs | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="97">
+<meta name="plan-version" content="98">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -491,6 +491,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261021T012603255790-review-of-cso-list-callers-move-to-crew-view-7c3207bd4adc" data-who="reckon-build" data-when="2026-10-21T01:44:31.942Z">
     <div class="r-comment-body"><p>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T233339145168-cso-list-callers-move-to-crew-view/review-records/r-20261020T233339145168-cso-list-callers-move-to-crew-view.json</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-cso-list-callers-move-to-crew-view" data-who="reckon-build" data-when="2026-10-21T01:50:00Z">
+    <div class="r-comment-body"><p>Third of §9's four nodes landed at merge <code>109e5a40f</code>, run <code>r-20261020T233339145168-cso-list-callers-move-to-crew-view</code>. Every reckon caller and citation of <code>crew list</code> has moved to <code>crew view live</code>, including <code>reckon/mcp_deadlines.py</code>'s refusal answer. The listing's answers for <code>--project</code>, <code>--phase</code>, <code>--mine</code> and <code>--session</code> are held against the live view, row by row. A fixed-name scan keeps the listing out of <code>reckon/</code>; its control restores the deadline answer and fails, naming the file.</p><p>The gate adds no failures. The base arm, rerun over the same twelve files, also fails the load-sensitive deadline test, which passes in isolation. Reviewed 107/120, with two follow-ons exempted.</p><p>Two things stay before <code>crew list</code> retires:</p><ul><li>string-literal citations in <code>_mcp_tools.py</code>, <code>mcp.py</code> and <code>mcp_views.py</code>, which describe the live filters by reference to the listing (node <code>cso-live-filters-say-what-they-do</code>, running);</li><li><code>tests/test_crew_view_serves_every_view.py</code>, which still drives the listing and joins the retire node's fence.</li></ul></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261019T220254082188-review-of-cso-budget-family-folds-0274b1227df3" data-who="reckon-build" data-when="2026-10-19T22:24:20.259Z">
     <div class="r-comment-body"><p>Reviewed run r-20261019T202350268699-cso-budget-family-folds at 0274b1227df3acf495023b12695d143ed6c129ab against base 0fa62dca44a63a65382c140c82a003dd7a660e02: the budget fold is complete and its gate is green at both arms with zero added failures, but the run's own manifest and gate logs fail its own `crew check-manifest` audit (ok:false, three findings), so the node cannot promote until the negative_control_log and the two gate-log command headers are repaired.</p></div>
