@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-21T09:41:54.948Z",
+  "dispatched_at": "2026-10-21T09:14:37Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_lane_change.py",
+      "line": "492",
+      "severity": "follow-on",
+      "text": "follow-on: the done_when names a lane change of the two-figure clive run onto codex writing a lane-change prompt file that carries the brief and the restated fence and NO figure listing, but no test asserts that arm. The one added lane-change test (test_a_lane_change_names_the_figures_in_the_prompt_file_it_writes) moves clive -> clive-b and its fixture prompt (tests/test_crew_lane_change.py:413) carries the same FIRST_IMAGE/SECOND_IMAGE the run record's node.images carries, so writing the raw pre-composition prompt (the regression the change_lane write guards against at reckon/crew/dispatch_sessions.py:1936) yields a byte-identical file and the test still passes count==1. The strip itself is guarded elsewhere (test_a_prompt_already_carrying_a_listing_composes_to_none_on_codex), but the change_lane 'write target_plan.stdin_text' line is not held for a destination lane that names no figures, which is the only case where the two differ for a figure-carrying run."
+    },
+    {
+      "file": "manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed run's manifest (r-20261021T082355039248-the-prompt-file-carries-the-named-figures/manifest.md) names neither baseline_suite nor after_suite, the two fields reckon.crew.review.annotate_review_of_run reads to derive added_failure_count at read time, and the only base-arm log in the run directory (coordinator-population-base.log) is truncated at 98% with no summary line, so added_failures_from_gate_logs returns unmeasured (None, []). The record's added_failure_count=0 therefore rests on the reviewed manifest's own retry_failures line naming all four head failures as pre-existing (the tombstoned `redispatch` verb in reckon/crew/tombstones.py:205, present at the base revision too), not on a measured base arm."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the prompt file a worker reads carry launch_plan's composed prompt (figure listing included) on a fresh dispatch and on a lane change; reckon/crew/dispatch.py:2462 writes the run's prompt file from plan.stdin_text and reckon/crew/dispatch_sessions.py:1936 writes the lane-change file from target_plan.stdin_text, both carrying the composition.\nVERDICT done_when: read the done-when's arms against the gate; tests/test_dispatch_attaches_the_figures.py reads the run's prompt.txt for the clive naming and the codex brief-only case, tests/test_a_local_worker_is_named_its_images.py holds the two-reads agreement over the seven declarations, and tests/test_crew_lane_change.py holds the lane-change file -- but the named 'lane change onto codex' prompt-file arm is asserted by no test.\nVERDICT write_paths: read the manifest's declared paths; every path in the diff (four production modules, three test files, one evidence fragment) is inside them and no path is outside.\nVERDICT manifest: read; status complete, the gate log named, the gate at '4 failed, 130 passed in 106.28s' and the negative control at '1 failed, 9 passed', but it carries neither baseline_suite nor after_suite.\nVERDICT diff: read all three commits (d27668afb, 2c78472da, 7f28f8385) against base c7d60c72; the change adds the normaliser, the listing strip, the two file writes and their tests, all inside scope.\nCALL_SITES: reckon/crew/dispatch.py:2462, reckon/_backends.py:2351, reckon/crew/dispatch_sessions.py:1936, reckon/crew/resumption.py:555\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:2462 and reckon/crew/dispatch_sessions.py:1936 write the file the worker is fed from plan.stdin_text, so the composed listing reaches the worker on both paths the goal names.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate log (logs/gate-prompt-file-carries-figures.log, EXIT=1, 4 failed/130 passed) records the run, but the done-when's codex lane-change arm is asserted by no test in the gate.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff c7d60c72..7f28f8385 touches only the eight paths the manifest declares, all inside the fence's write_paths.\nSCORE durability: 14\nJUSTIFICATION durability: the negative control (logs/negative-control-uncomposed-prompt.log, EXIT=1) reddens the fresh-dispatch file test on the exact reverted line, but the change_lane write at reckon/crew/dispatch_sessions.py:1936 is unguarded for a non-naming destination and tests/test_crew_lane_change.py:492 cannot distinguish the raw prompt because its fixture figures equal the run's.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/flight.py:1953 and reckon/_backends.py:2181 follow the module's local-import and module-constant idiom, and no added name carries a plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the search for 'input_modalities' readers at 7f28f8385 finds both the naming path (reckon/_backends.py:2157) and the review selection (reckon/flight.py:1979) reading the one owner normalise_input_modalities, consolidating two ad-hoc reads rather than forking them.\nFINDING tests/test_crew_lane_change.py:492 follow-on: the done_when's 'lane change onto codex writes a prompt file with no figure listing' arm is asserted by no test, and the one lane-change test's fixture figures equal the run's, so the change_lane write of target_plan.stdin_text is not held against a regression for a non-naming destination.\nFINDING manifest.md:1 follow-on: the reviewed manifest names neither baseline_suite nor after_suite and its only base log is truncated, so the added-failure count is unmeasured from logs and the record carries 0 from the manifest's own retirement of the four pre-existing failures.",
+  "review_run_id": "r-20261021T091343655320-review-of-the-prompt-file-carries-the-named-figures-7f28f8385f18",
+  "reviewed_base_sha": "c7d60c7227755847deffcb157c92efb73fdf63c6",
+  "reviewed_head_sha": "7f28f8385f185071d5426e51f05853cbdab894ce",
+  "reviewed_run_id": "r-20261021T082355039248-the-prompt-file-carries-the-named-figures",
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T09:30:00Z",
+  "total": 105
+}
