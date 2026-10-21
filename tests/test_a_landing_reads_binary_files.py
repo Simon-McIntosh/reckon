@@ -145,20 +145,31 @@ def test_a_candidate_that_alters_the_binary_file_is_refused(tmp_path: Path) -> N
         merge.land(repository, head=head, candidate=candidate)
 
     assert "asset.bin" in str(refused.value)
-    assert "altered a binary file" in str(refused.value)
+    assert "not the head's" in str(refused.value)
     assert _git(origin, "rev-parse", "main") == origin_before
 
 
-def test_a_candidate_that_drops_the_text_change_is_refused(tmp_path: Path) -> None:
-    """The text file's marker check behaves as at base: a dropped change is named."""
+def test_a_text_path_that_lost_its_line_is_refused_by_the_marker_check(
+    tmp_path: Path,
+) -> None:
+    """A present text path missing the introduced line reaches the marker check.
+
+    The merged copy of the text file still exists, so this cannot be refused by
+    the absent-path branch: it is refused only because the line the change
+    introduced is not in it, which is the comparison the marker check makes.
+    """
     origin, repository = _write_origin_and_checkout(tmp_path)
     base = _git(repository, "rev-parse", "HEAD")
     head = _head_adding_a_binary_file(repository)
-    candidate = _candidate_merge(repository, base, head, drop="reviewed.txt")
+    candidate = _candidate_merge(
+        repository, base, head, alter=("reviewed.txt", b"a different line\n")
+    )
     origin_before = _git(origin, "rev-parse", "main")
 
     with pytest.raises(merge.MergeError) as refused:
         merge.land(repository, head=head, candidate=candidate)
 
     assert "reviewed.txt" in str(refused.value)
+    assert TEXT_MARKER.strip() in str(refused.value)
+    assert "did not survive the merge" in str(refused.value)
     assert _git(origin, "rev-parse", "main") == origin_before

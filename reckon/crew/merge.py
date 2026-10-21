@@ -405,9 +405,9 @@ def surviving_change_refusals(
     Each path is read through :func:`_read_path` against the head's own blob id.
     A path whose blob at ``revision`` equals the head's survived, whether it is
     text or binary, and its content is never read. A path whose
-    blob differs was altered by the merge: a binary one is refused as an altered
-    binary file, and a text one is compared by the markers it was expected to
-    carry.
+    blob differs was altered by the merge: one whose content is not text is
+    refused because it cannot be compared line by line, and a text one is
+    compared by the markers it was expected to carry.
 
     Each path that survives has its judgement recorded on its marker record
     under ``judgement`` — ``blob_identity`` when the blob matched and the
@@ -439,7 +439,8 @@ def surviving_change_refusals(
             continue
         if expected.get("binary") or reading["text"] is None:
             refusals.append(
-                f"{path}: the merge altered a binary file the change carried"
+                f"{path}: the merge's content is not the head's and is not text, "
+                "so the change could not be compared line by line"
             )
             continue
         expected["judgement"] = "markers"
