@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-brief-should-not-cost-what-it-names">
   <meta name="plan-title" content="A Brief Should Not Cost What It Names">
   <meta name="plan-summary" content="The dispatch surface prices a brief by what it names and fences out what it mandates, so the only lever under pressure is to communicate less.">
-  <meta name="plan-status" content="draft">
+  <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="5.0">
   <meta name="plan-capability-version" content="1.0">
@@ -23,9 +23,9 @@
   <title>A Brief Should Not Cost What It Names | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="2">
-<meta name="plan-section-declarations" content="{&quot;s8&quot;:&quot;implementable&quot;}">
+<meta name="plan-version" content="3">
+<meta name="plan-modified" content="2026-10-21">
+<meta name="plan-section-declarations" content="{&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -209,6 +209,10 @@
     <h2 id="s8">§8 — Report the per-file term breakdown beside the total</h2>
 <section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
 Section 2 comes first and is nearly free: the per-file breakdown is already computed and already present in the dry-run payload, and only the total is reported. It converts a guessing game into a decision without changing what the estimator charges. Section 3 is the behaviour change and needs its decision settled on what a mention costs. Section 4 follows section 3, since an opt-out is only meaningful once a mention is cheap enough that the opt-out is about certainty rather than about cost. Section 5 is independent of all three and could run in the same wave as section 2. Note that the estimator lives in <code>reckon/crew/routing.py</code>, which was unclaimed when this plan was written, while <code>reckon/crew/dispatch.py</code> was held — check both before scoping.<p><strong>Done when</strong> the dry-run payload reports the per-file contribution beside the call and the section.</p><p>Moved from followup f-bcn-001 on a-brief-should-not-cost-what-it-names by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>draft</code>, live; the per-file term breakdown is not in the estimator — grep for <code>per_file</code>/<code>per-file</code> in <code>reckon/crew/routing.py</code> found none</p>
+
+    <h2 id="s9">§9 — A regenerated path is charged as written, not read</h2>
+<section data-reckon="section" data-id="s9" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> The context census in <code>reckon/crew/routing.py</code> (<code>_context_file_inputs</code>) charges every declared write path that exists as a file at its full size; only the landing fragments the dispatcher grants itself are exempt. A node whose job is to regenerate a large generated record never reads the file it overwrites, yet pays for it. Measured on power_convertor on 2026-10-21: <code>docs/research/iter-cs-quench-tape-pickup-appendix.html</code> (1.08 MB) could be regenerated only after the coordinator git-removed the superseded file so the path no longer existed, which cost a modify/delete conflict at landing; <code>docs/research/iter-quench-detection-pickup.html</code> (1.01 MB) is cited by the claims register's pin checks and cannot be removed, so the node that splits it into a slim record and a compact appendix estimated over the local window, while the metered lanes were at their ceiling or reserved. No lane fitted, and the only remaining workaround — declaring the containing directory, which the census does not charge — claims a whole directory against every peer. This is §1's first row (a declared write path on a large file, no lever) in its regenerating form.</p><p><strong>Change.</strong> A dispatch declares a regenerated path with one new option, <code>--regenerate-path</code>, carried on <code>TaskNode</code> beside <code>write_paths</code>. A regenerated path is a write path for every scope purpose: it is claimed, a peer claiming it is refused with <code>scope-conflict</code>, and promotion's scope checks treat it as written. The census charges it a fixed reference cost, one named constant, independent of the file's size, and records it with provenance <code>regenerated</code> so the dry run shows what was charged and why. The run pointer and its ledger row record the regenerated paths, so a node that declares a path regenerated and then reads it is visible to review. Nothing else changes: an ordinary write path is still charged at full, and a mention is §3's business.</p><p><strong>Done when:</strong> a fixture node declaring a 1 MB file with <code>--regenerate-path</code> fits a lane window that the same file declared with <code>--write-path</code> exceeds, which is refused with <code>context-window-exceeded</code>; the dry run's census lists the path with provenance <code>regenerated</code> and the reference cost; a second dispatch writing the same path is refused with <code>scope-conflict</code> naming the first run; the live pointer and the promoted ledger row carry the regenerated paths. On the base commit the option does not exist and the fixture is refused, so the tests fail there.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
