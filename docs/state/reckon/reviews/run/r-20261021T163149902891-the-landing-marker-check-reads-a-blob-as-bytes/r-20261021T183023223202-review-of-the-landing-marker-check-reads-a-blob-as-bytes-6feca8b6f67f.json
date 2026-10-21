@@ -1,0 +1,46 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-21T18:45:14.737Z",
+  "dispatched_at": "2026-10-21T18:31:49Z",
+  "findings": [
+    {
+      "file": "reckon/crew/merge.py",
+      "line": "440",
+      "severity": "follow-on",
+      "text": "the reworded refusal states the merged content is not text unconditionally, but this branch is also taken on expected.get(binary) when the merged blob happens to decode as text, so that case is still described inaccurately; the repair covered only one direction of the earlier wording finding."
+    },
+    {
+      "file": "docs/evidence/fragments/a-landing-reads-binary-files/the-landing-marker-check-reads-a-blob-as-bytes.html",
+      "line": "40",
+      "severity": "follow-on",
+      "text": "the fragment's gate sentence names 8aac40ee3 as the head and the manifest's after_suite carries the same revision, while the manifest's own commit list ends at 6feca8b6f; the intervening commit touches only this fragment, so the measurement stands, but the recorded revision is not the head the record is attached to."
+    }
+  ],
+  "justifications": {
+    "durability": "logs/marker-control.log shows tests/test_a_landing_reads_binary_files.py:169 failing DID NOT RAISE MergeError when the introduced-line comparison is skipped, so the rewritten case reaches the marker comparison rather than an absent-path refusal.",
+    "evidence": "logs/head-arm.log ends with 49 passed and EXIT=0 and logs/base-arm.log ends with 4 failed and 45 passed and EXIT=1, but the head log's revision header reads 8aac40ee3 rather than the reviewed head 6feca8b6f.",
+    "fit": "the reworded refusal at reckon/crew/merge.py:442 follows the module's refusal idiom and the rewritten test at tests/test_a_landing_reads_binary_files.py:152 is named for the mechanism it exercises.",
+    "goal_fidelity": "reckon/crew/merge.py:425-455 keeps the blob-identity judgement the goal asks for and the gained commits change no branch of it.",
+    "reuse": "the gained commits add no definition at all, so nothing at reckon/crew/merge.py:440-443 or tests/test_a_landing_reads_binary_files.py:152-175 forks a capability the repository already owns.",
+    "scope_discipline": "git diff --stat d1a6ba547..6feca8b6f lists reckon/crew/merge.py, tests/test_a_landing_reads_binary_files.py and the evidence fragment, all inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that merge.land judge each changed path by blob identity so a head adding a binary file lands; the gained commits leave that judgement at reckon/crew/merge.py:425-455 intact and reword only the differing-blob refusal at reckon/crew/merge.py:440-443.\nVERDICT done_when: the done_when names a six-file pytest gate judged by zero added failures at head against a base arm, plus ruff no worse than base; the manifest records after_suite 49 passed EXIT=0 at 8aac40ee3 and baseline 4 failed / 45 passed EXIT=1 at e1772180f, and ruff on the two changed code paths reports 0 findings with both files formatted.\nVERDICT write_paths: the manifest declares six write paths; git diff --stat d1a6ba547..6feca8b6f changes exactly three files and every one of them is inside the declared scope.\nVERDICT manifest: read the reviewed run's manifest; it records status complete, its four commits, both arm logs with literal commands and paths, the marker-control log, and a delta of zero added failures.\nVERDICT diff: read commit by commit against d1a6ba547; 8aac40ee3 reworks the differing-blob refusal at reckon/crew/merge.py:440-443 and rewrites the text-path case at tests/test_a_landing_reads_binary_files.py:152-175, and 6feca8b6f extends docs/evidence/fragments/a-landing-reads-binary-files/the-landing-marker-check-reads-a-blob-as-bytes.html with the reworded refusal and the marker control.\nCALL_SITES: reckon/crew_run_commands.py:2474, reckon/crew_run_commands.py:67\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/merge.py:425-455 keeps the blob-identity judgement the goal asks for and the gained commits change no branch of it.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/head-arm.log ends with 49 passed and EXIT=0 and logs/base-arm.log ends with 4 failed and 45 passed and EXIT=1, but the head log's revision header reads 8aac40ee3 rather than the reviewed head 6feca8b6f.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat d1a6ba547..6feca8b6f lists reckon/crew/merge.py, tests/test_a_landing_reads_binary_files.py and the evidence fragment, all inside the manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: logs/marker-control.log shows tests/test_a_landing_reads_binary_files.py:169 failing DID NOT RAISE MergeError when the introduced-line comparison is skipped, so the rewritten case reaches the marker comparison rather than an absent-path refusal.\nSCORE fit: 19\nJUSTIFICATION fit: the reworded refusal at reckon/crew/merge.py:442 follows the module's refusal idiom and the rewritten test at tests/test_a_landing_reads_binary_files.py:152 is named for the mechanism it exercises.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained commits add no definition at all, so nothing at reckon/crew/merge.py:440-443 or tests/test_a_landing_reads_binary_files.py:152-175 forks a capability the repository already owns.\nFINDING reckon/crew/merge.py:440 follow-on: the reworded refusal states the merged content is not text unconditionally, but this branch is also taken on expected.get(binary) when the merged blob happens to decode as text, so that case is still described inaccurately; the repair covered only one direction of the earlier wording finding.\nFINDING docs/evidence/fragments/a-landing-reads-binary-files/the-landing-marker-check-reads-a-blob-as-bytes.html:40 follow-on: the fragment's gate sentence names 8aac40ee3 as the head and the manifest's after_suite carries the same revision, while the node's head is 6feca8b6f; the intervening commit touches only this fragment, so the measurement stands, but the recorded revision is not the head the record is attached to.\n",
+  "review_run_id": "r-20261021T183023223202-review-of-the-landing-marker-check-reads-a-blob-as-bytes-6feca8b6f67f",
+  "reviewed_base_sha": "d1a6ba54704c99fb37a5e09ed47664c942b68835",
+  "reviewed_head_sha": "6feca8b6f67f1442ac9b856561572a1a82504d91",
+  "reviewed_run_id": "r-20261021T163149902891-the-landing-marker-check-reads-a-blob-as-bytes",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T18:45:36.631455+00:00",
+  "total": 111
+}
