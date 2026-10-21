@@ -1,0 +1,30 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "unmeasured from the reviewed run's own arms: its manifest names no baseline_suite and no after_suite, so the set difference has no two logs to take; recorded as zero by the store's convention for an unarmed reviewed run",
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:534",
+    "reckon/crew/recovery.py:185"
+  ],
+  "completed_at": "2026-10-21T00:51:11.296Z",
+  "dispatched_at": "2026-10-21T00:32:51Z",
+  "findings": [],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that dispatch_repair_for_run read a run's merged text and figure findings so a blocking figure finding behind a clean text review opens a repair round; reckon/crew/recovery_repair_dispatch.py:681 folds repair.review_with_figure into the record before the findings check, the blocking check and the scope.\nVERDICT done_when: the done_when names tests/test_a_clean_text_review_still_repairs_a_figure_finding.py passing four cases; the manifest records that run at 0cba56f4e as \"4 passed in 6.36s\" EXIT=0 (logs/gate-clean-text-figure-finding.log) and its base reproduction at f5e88d284 as \"2 failed, 2 passed in 6.71s\" EXIT=1 (logs/repro-clean-text-figure-finding.log).\nVERDICT write_paths: read from the manifest; the commit 0cba56f4e touches exactly reckon/crew/recovery_repair_dispatch.py, tests/test_a_clean_text_review_still_repairs_a_figure_finding.py and docs/evidence/fragments/scoring-should-stop-a-promotion/the-repair-dispatch-reads-the-figure-review.html, all inside the four declared paths (the declared docs/figures directory carried no file).\nVERDICT manifest: read; it states the new test file passed (4 passed EXIT=0) and the focused repair/reflex population passed (56 passed EXIT=0), names all four logs on disk, records the declared negative control with its red log, and carries a landing line naming commit 0cba56f4e.\nVERDICT diff: read commit by commit against base f5e88d284; one commit, one added statement in the reflex plus a new 279-line test file and an 88-line evidence fragment, with no change to any other source file.\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:534 (dispatch_awaiting_reviews, reached from reckon/crew/resumption.py:1917), reckon/crew/recovery.py:185 (re-export of dispatch_repair_for_run)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_repair_dispatch.py:681 merges the figure review into the record the three readings below it decide from, which is precisely the capability the goal names.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_a_clean_text_review_still_repairs_a_figure_finding.py:216-231 resumes through the real reflex entry point and its red-at-base arm is on disk, but the reviewed manifest carries no baseline_suite or after_suite, so the suite delta the record reports is unmeasured rather than a measured zero.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 0cba56f4e lists three files, every one inside the manifest's declared write paths, and the source change is the single added statement at reckon/crew/recovery_repair_dispatch.py:681.\nSCORE durability: 19\nJUSTIFICATION durability: reverting reckon/crew/recovery_repair_dispatch.py:681 makes the reflex return \"the stored review carries no finding, so composes no repair\" and leaves tests/test_a_clean_text_review_still_repairs_a_figure_finding.py:227-229 red, which the recorded base-arm log shows as 2 failed EXIT=1 and the declared negative control reproduces for the partial merge.\nSCORE fit: 16\nJUSTIFICATION fit: the added statement at reckon/crew/recovery_repair_dispatch.py:681 uses the module alias repair_module the surrounding block already reads, and its comment explains the ordering in mechanism terms with no plan, ticket or stage name anywhere in the diff.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability owner reckon/crew/repair.py:622 review_with_figure is called rather than re-implemented, and the only other caller is the composer at reckon/crew/repair.py:697, so the reflex now extends the one owner instead of forking it.\n",
+  "review_run_id": "r-20261021T003157197589-review-of-the-repair-dispatch-reads-the-figure-review-0cba56f4e768",
+  "reviewed_base_sha": "f5e88d284e7d6a31228eaeec6b4ef55191837eaa",
+  "reviewed_head_sha": "0cba56f4e768e496724e5a2fd763c99d0f2a49e1",
+  "reviewed_run_id": "r-20261020T235804952254-the-repair-dispatch-reads-the-figure-review",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T00:52:01.333377+00:00",
+  "total": 112
+}
