@@ -1,0 +1,84 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T07:26:34.569Z",
+  "dispatched_at": "2026-10-21T07:11:32Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-mcp-answers-the-question-asked.html:246",
+      "id": "reasoning-1",
+      "reason": "the node would pass its gate on a parser failure, so \u00a78 needs the same non-zero-per-class control applied to the after run (or the synthetic-transcript control bound to the after window's transcript format).",
+      "text": "\u00a78 declares two controls, but the one that guards against a parser seeing nothing (\"the census's run over \u00a71's window must report a non-zero count for every class \u00a71 found\") is bound to the before window only, while the verdict is read off the after window; a parser that reads \u00a71's 2026-10-18\u219210-21 transcripts but returns zero on the after window would satisfy both controls and report a 100 % reduction",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-mcp-answers-the-question-asked.html:244",
+      "id": "done_when-1",
+      "reason": "without a minimum session-day count the node can neither reach a verdict nor show the reduction is real, which is a clause the done-when needs.",
+      "text": "\"both runs divide by that count\" states the divisor but sets no floor and no action when a window yields zero coordinator session-days, so the after arm can be 0/0 (undefined, node blocked) or a 2-vs-20 comparison in which \"down by at least half\" is noise",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "d40792a1d655fd1f69e41a4d2e1ce552dbd56c5cd874359894f8f0828ab0d13d",
+  "plan_slug": "the-mcp-answers-the-question-asked",
+  "plan_version": 3,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-21T07:29:16.532968+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-21T07:29:25.076509+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T07:29:25.076509+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T07:29:16.532968+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-mcp-answers-the-question-asked.v3.json",
+  "review_run_id": "r-20261021T071046578624-plan-review-of-the-mcp-answers-the-question-asked",
+  "reviewed_blob_sha": "4691e878cdcae85bbdce25f2964af1f5569e5f4c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/mcp_census.py`, `reckon/mcp_budget.py`, `a-project-reads-as-one-picture.html#s7`, `a-read-answers-inside-its-deadline.html#s45/#s46`, `docs/evidence/archive/the-mcp-answers-the-question-asked-landed.html`, `skills/reckon-roadmap`, `skills/reckon-status` and `tests/test_skill_contracts.py` all resolve, and the `roadmap` signature carries the `view` parameter \u00a76 names.",
+    "done_when": "a finding \u2014 \u00a78's divisor \u00a78's divisor (coordinator session-days) is defined but unbounded for the after arm, so the verdict arm can be undecidable or noise-dominated; \u00a76's control is sound and verified (neither `skills/reckon-roadmap/SKILL.md` nor `skills/reckon-status/SKILL.md` contains the word \"brief\", so its test does fail on the base commit).",
+    "evidence_paths": "pass \u2014 \u00a71's census is kept at `docs/evidence/archive/the-mcp-answers-the-question-asked-landed.html`, which exists and carries `plan-verifies=\u2026#s1`; both changed sections route their figures to the gate log rather than a scratch path.",
+    "naming": "pass \u2014 the changed prose adds no plan labels, ticket numbers or version tags and names mechanisms (`reason`, `why(ref)`, `coordinator session-day`) rather than trackers.",
+    "reasoning": "a finding \u2014 \u00a78's second control (\"a non-zero count for every class \u00a71 found\") (\"a non-zero count for every class \u00a71 found\") is applied only to the \u00a71-window run, so it proves the parser sees the before window's formats but says nothing about the after window's, which is the run the verdict rests on.",
+    "single_goal": "pass \u2014 \u00a76 carries one deliverable (the brief is the default `roadmap` answer) with the two skill files as the surfaces that lead with it, and \u00a78 carries one (the census re-measurement).",
+    "wiring": "pass \u2014 \u00a76 now declares depends-on `a-project-reads-as-one-picture#s7` and nothing to \u00a74, and the sibling's \u00a77 composes the brief from its own \u00a72\u2013\u00a75 with each ranked row carrying a `reason` field (a-project-reads-as-one-picture.html:212), so the previous missing \u00a74 edge is genuinely absent rather than merely undeclared; \u00a78's depends-on lists \u00a72\u2013\u00a77 and the census it measures is `reckon/mcp_census.py`, which exists."
+  },
+  "section_digests": {
+    "_document": "e1c94d9f3b30c8624a6467f53654fb7adcc82487415127ce15d356f2b7b20ff0",
+    "s1": "daef4b527685c5d986aa210cce10bb0f4cd5772ef762521051f5920fcb02c98b",
+    "s2": "3c9f990803be49173055a21624115ad2fa745d64c85e6cbc454190247fc5ae76",
+    "s3": "36009a39196f94f79c16cd66666780ac9814b76e487c5369c7cff2da440addab",
+    "s4": "221109abec0e6ad971f2598420df9fe39c47cd59f78dcb949259c1416f20cd3d",
+    "s5": "37ed23ff36fca5327391f1766c535f577b0889839c61667ddf9dbed5aa431489",
+    "s6": "72d443bc7a7499a314bb8fb3b01da359881bffc36e31bdbe2f88986736c43444",
+    "s7": "5eb0b734bbb0681ca9102fa9003e11bd7dc5278b1dc26da5685ed959db7cfa4b",
+    "s8": "1e828151f268cbd03cae184bfc528ecc3cf6066e7d0e415283689d74d5082784"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T07:29:09.527293+00:00"
+}
