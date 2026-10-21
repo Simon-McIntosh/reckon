@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S26">
-<meta name="plan-version" content="110">
+<meta name="plan-version" content="111">
 <meta name="plan-modified" content="2026-10-21">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="f2ea9301,5b1759ab,428477c7">
@@ -43,12 +43,12 @@
     cosmetic: a flux plot is the evidence, and a review that cannot open it is reviewing a filename.</p>
 
     <p><strong>The capability exists and has existed throughout.</strong> The codex dialect composes
-    <code>codex exec</code> at <code>reckon/_backends.py:1220</code>, and that subcommand takes
+    <code>codex exec</code> in <code>_CodexDialect.argv</code> in <code>reckon/_backends.py</code>, and that subcommand takes
     <code>-i, --image &lt;FILE&gt;...</code> — optional images attached to the initial prompt. Nothing
     had to be built to make the lane see; what was missing was any way to say which lanes can.</p>
 
-    <p><strong>That absence is the whole risk, and it fails open.</strong> <code>BackendConfig</code>
-    carries 27 slots and not one expresses modality. So a figure profile has nothing to select on and
+    <p><strong>That absence was the whole risk, and it failed open.</strong> When this plan was written, <code>BackendConfig</code>
+    carried 27 slots and not one expressed modality; §1 added <code>input_modalities</code>. Without it a figure profile has nothing to select on and
     falls through to <code>default_backend</code> — plausibly a lane that ignores <code>-i</code>
     entirely and answers from the filename, the path and the diff. The reply is well-formed, scored,
     and stored. <em>A review that reports a judgement it could not have formed is worse than no review,
@@ -288,7 +288,7 @@
     <h2 id="s18">§18 — A figure review promotes without text scores</h2>
 <section data-reckon="section" data-id="s18" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
 <p><strong>Why.</strong> The first live figure review, <code>r-20261021T131411862066-review-of-vs1-first-turn-convergence-5eeeee28d527-figure</code> on power_convertor, stored a parsed figure record but cannot be promoted. On 2026-10-21 its session reported that <code>crew complete</code> raises <code>TypeError: int() argument must be ... not 'NoneType'</code> in <code>ledger_block</code> in <code>reckon/crew/review.py</code>, reached from <code>_complete_locked</code> in <code>reckon/crew/promotion.py</code>. The record carries <code>scores</code> with all six text dimensions set to <code>null</code> and a note that they measure nothing for this rubric. <code>review_record_refusals</code> in <code>reckon/crew/review.py</code> requires every text dimension as a key on any parsed record, so a figure reviewer has to write them. <code>ledger_block</code> then calls <code>int()</code> on each value, so no figure review whose record carries null text scores can be promoted.</p>
-<p><strong>Change.</strong> A figure-rubric record is not scored on the six text dimensions. <code>review_record_refusals</code> does not require them on a record whose <code>rubric</code> is the figure rubric, whether the record omits <code>scores</code> or carries them as <code>null</code>; a text-rubric record is refused for a missing dimension as today. <code>ledger_block</code> keeps only dimensions whose value is an integer, so a figure record reduces to its status with empty scores and no total, which is what the ledger block's docstring already says a record that never produced scores looks like.</p>
+<p><strong>Change.</strong> A figure-rubric record is not scored on the six text dimensions. <code>review_record_refusals</code> does not require them on a record whose <code>rubric</code> is the figure rubric, whether the record omits <code>scores</code> or carries them as <code>null</code>; a text-rubric record is refused for a missing dimension as today. <code>ledger_block</code> keeps only dimensions whose value is an integer, so a figure record reduces to status <code>parsed</code> with empty scores and no total. <code>ledger_block</code>'s docstring says today that a record which never produced scores keeps a status other than <code>parsed</code>; it is updated to name the figure rubric as the one parsed record that carries no text scores, so a reader can tell it from an unscored text record by its rubric.</p>
 <p><strong>Write paths:</strong> <code>reckon/crew/review.py</code>, <code>tests/test_a_figure_review_promotes_without_text_scores.py</code> (new).</p>
 <p><strong>Done when</strong> a figure-rubric record whose six text scores are all <code>null</code>, and one that carries no <code>scores</code>, both pass <code>review_record_refusals</code>; <code>ledger_block</code> on each returns status <code>parsed</code>, empty scores and a <code>None</code> total without raising; a text-rubric record missing one dimension is still refused, and a fully scored text record keeps its six integer scores and its total; and a figure review run, promoted through the same harness <code>tests/test_a_promoted_code_review_is_stored.py</code> uses, in a temporary repository and crew home, promotes with no error and writes a ledger row whose review block has status <code>parsed</code> and empty scores. The test files importing <code>reckon/crew/review.py</code> show no added failure against base, which the coordinator runs at merge; <code>ruff check</code> and <code>ruff format --check</code> add no findings on changed files; every log is written under the run directory, starts with its revision and the literal command, and ends in <code>EXIT=</code>. <strong>Negative control:</strong> with <code>ledger_block</code> calling <code>int()</code> on every score value again, the null-score case raises <code>TypeError</code> and the promotion case fails.</p>
 
