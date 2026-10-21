@@ -117,7 +117,7 @@ def test_held_local_dispatch_is_one_queued_pointer_and_can_be_discarded(
         == "updated request"
     )
 
-    listed = CliRunner().invoke(cli.main, ["crew", "list", "--project", "proj"])
+    listed = CliRunner().invoke(cli.main, ["crew", "view", "live", "--project", "proj"])
     assert listed.exit_code == 0
     row = json.loads(listed.output)["runs"][0]
     assert row["classification"] == "queued"

@@ -67,7 +67,7 @@ Detail: `crew(project, view="live")`, `crew(project, view="scopes")`,
 `crew(project, view="velocity")`; also `crew(view="directory")`,
 `crew(view="fleet")` and `crew(view="obligations", session=<session>)`.
 On `live`, `phase` keeps pointers in one phase and `mine` keeps only the rows
-`session` owns — the same two filters `crew list` takes.
+the named `session` owns — the two filters `reckon crew view live` carries.
 
 The loop has six steps, in order.
 

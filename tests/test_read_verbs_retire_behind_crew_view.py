@@ -36,6 +36,7 @@ from reckon import velocity
 from reckon.cli import main as cli_main
 from reckon.crew import findings as findings_module
 from reckon.crew.tombstones import TOMBSTONE_EXIT_CODE, TOMBSTONES
+from tests.test_crew_surface_parity import CLASSIFICATION_FIELDS
 
 PROJECT = "retired-reads"
 COMPONENT = "reckon/crew_run_commands.py"
@@ -346,3 +347,295 @@ def test_the_registry_carries_both_retired_reads() -> None:
     """The scan above is only meaningful if the names really are retired."""
     registered = {row.retired for row in TOMBSTONES}
     assert set(SUCCESSORS) <= registered, sorted(registered)
+
+
+# --------------------------------------------------------------------------
+# The live listing: the read the mover node moved its callers off.
+# --------------------------------------------------------------------------
+
+#: The project the captured listing was read for. Its pointers span two phases
+#: and two sessions, and a third pointer sits in another project: every filter
+#: case below needs more than one value to be visible, because a case whose
+#: filter was dropped would otherwise answer the same rows as one whose filter
+#: worked and both would pass.
+LIVE_PROJECT = PROJECT
+
+#: The pointers the captured listing was read over, as dispatch writes them.
+LIVE_POINTERS = (
+    {
+        "run_id": "r-live-working",
+        "project": PROJECT,
+        "session": "keeper",
+        "phase": "working",
+    },
+    {
+        "run_id": "r-live-queued",
+        "project": PROJECT,
+        "session": "peer",
+        "phase": "queued",
+    },
+    {
+        "run_id": "r-live-elsewhere",
+        "project": "retired-reads-other",
+        "session": "keeper",
+        "phase": "working",
+    },
+)
+
+#: The selections the captured answers were read with, as the successor takes
+#: them: one entry per flag the retired listing accepted. A session on its own
+#: names a caller without narrowing the listing, which is what the verb did
+#: with it; ``--mine`` is the flag that narrows by it.
+CREW_LIST_CASES: dict[str, tuple[str, ...]] = {
+    "project": ("--project", LIVE_PROJECT),
+    "phase": ("--project", LIVE_PROJECT, "--phase", "working"),
+    "session": ("--project", LIVE_PROJECT, "--session", "keeper"),
+    "mine": ("--project", LIVE_PROJECT, "--session", "keeper", "--mine"),
+}
+
+#: The pointer fields every captured row carries, so the classified fields are
+#: values the fixture sets rather than whatever the running machine reports.
+LIVE_POINTER_FIELDS = {
+    "backend": "codex",
+    "launch": "cli",
+    "process_alive": True,
+    "created_at": "1970-01-01T00:11:40+00:00",
+}
+
+#: The instant every clock in the classification path is held at, with the
+#: pointer's creation stamp and its stream's mtime fixed around it, so
+#: ``elapsed_seconds`` and ``log_age_seconds`` are fixture values.
+FROZEN_NOW = 1000.0
+LOG_MTIME = 900
+
+_CLOCK_MODULES = (
+    "reckon.crew.recovery_stream",
+    "reckon.crew.recovery_liveness",
+    "reckon.crew.recovery_classification",
+    "reckon.crew.recovery_watch",
+)
+
+#: The answers the retired listing composed for each case at the base revision
+#: this node's callers moved at, keyed by case and then by run id, holding the
+#: fields the listing and its successor share: :data:`CLASSIFICATION_FIELDS`,
+#: the set written down in ``tests/test_crew_surface_parity.py``. Captured by
+#: driving the retired verb over :func:`live_listing`; written down rather than
+#: recomputed so the comparison still runs once the verb is a tombstone.
+CREW_LIST_BASE_ROWS: dict[str, dict[str, dict]] = {
+    "project": {
+        "r-live-working": {
+            "budget_overrun": True,
+            "budget_seconds": 200,
+            "classification": "running",
+            "elapsed_seconds": 300,
+            "log_age_seconds": 100,
+            "manifest_status": None,
+            "next_action": "reckon crew observe --run r-live-working",
+            "process_alive": True,
+        },
+        "r-live-queued": {
+            "budget_overrun": True,
+            "budget_seconds": 200,
+            "classification": "queued",
+            "elapsed_seconds": 300,
+            "log_age_seconds": 100,
+            "manifest_status": None,
+            "next_action": "wait for a local lane slot",
+            "process_alive": True,
+        },
+    },
+    "phase": {
+        "r-live-working": {
+            "budget_overrun": True,
+            "budget_seconds": 200,
+            "classification": "running",
+            "elapsed_seconds": 300,
+            "log_age_seconds": 100,
+            "manifest_status": None,
+            "next_action": "reckon crew observe --run r-live-working",
+            "process_alive": True,
+        },
+    },
+    "session": {
+        "r-live-working": {
+            "budget_overrun": True,
+            "budget_seconds": 200,
+            "classification": "running",
+            "elapsed_seconds": 300,
+            "log_age_seconds": 100,
+            "manifest_status": None,
+            "next_action": "reckon crew observe --run r-live-working",
+            "process_alive": True,
+        },
+        "r-live-queued": {
+            "budget_overrun": True,
+            "budget_seconds": 200,
+            "classification": "queued",
+            "elapsed_seconds": 300,
+            "log_age_seconds": 100,
+            "manifest_status": None,
+            "next_action": "wait for a local lane slot",
+            "process_alive": True,
+        },
+    },
+    "mine": {
+        "r-live-working": {
+            "budget_overrun": True,
+            "budget_seconds": 200,
+            "classification": "running",
+            "elapsed_seconds": 300,
+            "log_age_seconds": 100,
+            "manifest_status": None,
+            "next_action": "reckon crew observe --run r-live-working",
+            "process_alive": True,
+        },
+    },
+}
+
+#: The name the listing must not appear under as a command. The bare name stays
+#: legitimate prose — the live view's own docstring describes what it narrowed —
+#: while a ``reckon crew`` invocation of it is an answer about to expire.
+CREW_LIST_COMMAND = "reckon crew list"
+
+
+def _live_pointer(record: dict, tmp_path: Path) -> dict:
+    log = tmp_path / "stream.jsonl"
+    log.write_text("")
+    os.utime(log, (LOG_MTIME, LOG_MTIME))
+    return {
+        **record,
+        **LIVE_POINTER_FIELDS,
+        "log_path": str(log),
+        "manifest_path": str(tmp_path / "manifest.md"),
+        "worktree": str(tmp_path / "worktree"),
+        "node": {"id": record["run_id"], "plan": "plan-a", "time_budget": "200s"},
+    }
+
+
+@pytest.fixture()
+def live_listing(tmp_path, monkeypatch) -> Path:
+    """Pointers on disk spanning two projects, two phases and two sessions.
+
+    Both sides of the comparison read one fleet through one crew home, and the
+    clock is held still with the stream's mtime fixed, so the classified fields
+    are values the fixture determines rather than readings of when the case ran.
+    """
+    from importlib import import_module
+
+    from reckon import crew
+    from reckon.crew import runs as runs_module
+
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "crew-home"))
+    for record in LIVE_POINTERS:
+        crew._write_json(
+            crew.pointer_path(record["run_id"]), _live_pointer(record, tmp_path)
+        )
+    for name in _CLOCK_MODULES:
+        monkeypatch.setattr(import_module(name), "_utc_seconds", lambda: FROZEN_NOW)
+    # The listing publishes a per-project watch stream; answer from the fixture
+    # so the projected rows do not depend on a producer having run.
+    monkeypatch.setattr(
+        runs_module,
+        "project_watch_visibility",
+        lambda project, session=None: {"project": project, "session": session},
+    )
+    return tmp_path
+
+
+def _live_rows(arguments: tuple[str, ...]) -> dict[str, dict]:
+    """The successor's rows for one selection, keyed by run id."""
+    payload = _cli(["live", *arguments])
+    return {row["run_id"]: row for row in payload["runs"]}
+
+
+def _classification(row: dict) -> dict:
+    return {field: row.get(field) for field in CLASSIFICATION_FIELDS}
+
+
+def test_the_live_rows_are_compared_over_the_written_down_field_set() -> None:
+    """The field set the listing's answers are compared over is the shared one.
+
+    Only fields both documents carry can be compared, and a set that dropped to
+    one or two would let a successor that answered almost nothing pass.
+    """
+    assert {
+        "classification",
+        "process_alive",
+        "elapsed_seconds",
+        "log_age_seconds",
+        "budget_seconds",
+        "budget_overrun",
+        "manifest_status",
+        "next_action",
+    } == CLASSIFICATION_FIELDS
+
+
+def test_the_captured_listing_spans_every_filter(live_listing: Path) -> None:
+    """The captured fixture can fail: each filter narrows, and nothing is empty.
+
+    A fixture whose cases all answered the same rows would let a successor that
+    dropped every filter agree with it, and an empty capture would agree with a
+    successor that answered nothing at all.
+    """
+    captured = {
+        case: _live_rows(arguments) for case, arguments in CREW_LIST_CASES.items()
+    }
+    for case, rows in captured.items():
+        assert rows, case
+    assert set(captured["project"]) == {"r-live-working", "r-live-queued"}
+    assert set(captured["phase"]) == {"r-live-working"}
+    assert set(captured["mine"]) == {"r-live-working"}
+    assert set(captured["session"]) == set(captured["project"])
+
+
+@pytest.mark.parametrize("case", sorted(CREW_LIST_CASES))
+def test_crew_view_live_gives_the_listings_answer(
+    case: str, live_listing: Path
+) -> None:
+    """Each captured listing's answer is what ``crew view live`` serves for it.
+
+    Compared row by row per run id over :data:`CLASSIFICATION_FIELDS`, never as
+    whole documents: the listing and the view compose their rows with different
+    builders, so the shared field set is the contract. The rows were captured
+    from the retired verb at the base revision the callers moved at, so the case
+    still holds once the verb is a tombstone.
+    """
+    expected_rows = CREW_LIST_BASE_ROWS[case]
+    rows = _live_rows(CREW_LIST_CASES[case])
+
+    # The instrument check: a case compared over zero rows would pass on two
+    # empty documents, so the fixture's own ids must be present on both sides.
+    assert expected_rows, f"no captured answer for {case!r}"
+    for run_id, expected in expected_rows.items():
+        assert run_id in rows, f"successor answers no {run_id} for {case!r}"
+        missing = [
+            field for field in CLASSIFICATION_FIELDS if field not in rows[run_id]
+        ]
+        assert not missing, f"{run_id} carries no {missing}"
+        assert _classification(rows[run_id]) == expected, run_id
+    assert set(rows) == set(expected_rows), (sorted(rows), sorted(expected_rows))
+
+
+def test_no_reckon_source_answers_with_the_listing_as_a_command() -> None:
+    """No invocation under ``reckon/`` still sends a caller to the listing.
+
+    A caller follows an answer literally, so a refusal handing back
+    ``reckon crew list`` during the window before the tombstone hands over a
+    name about to expire. The scan reads every file under ``reckon/``: the
+    deadline refusal that carried this answer is a module literal, and the crew
+    AGENTS map carried the same name in prose.
+    """
+    offenders: list[str] = []
+    scanned: list[Path] = []
+    for path in sorted(ROOT.glob("reckon/**/*")):
+        if not path.is_file() or path.suffix in {".pyc", ".so"}:
+            continue
+        scanned.append(path)
+        if CREW_LIST_COMMAND in path.read_text(encoding="utf-8", errors="replace"):
+            offenders.append(f"{path.relative_to(ROOT)}: {CREW_LIST_COMMAND}")
+    # The instrument check: the scan must have read the sources it reports on,
+    # and the pattern must be able to match the shape an answer takes. A scan
+    # that matched nothing because it read nothing is not a clean scan.
+    assert len(scanned) > 1, scanned
+    assert CREW_LIST_COMMAND in "reckon crew list --project <project>"
+    assert not offenders, "\n".join(offenders)
