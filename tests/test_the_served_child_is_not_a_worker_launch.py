@@ -9,9 +9,10 @@ paused gate must not stop plan reads.
 A crew worker launch is what :func:`reckon._backends.launch_plan` compiles.
 
 These tests capture the child's argv by standing in for ``subprocess.Popen`` so
-no process is started, then assert two things: the argv is the interpreter with
-the served-child program, and it names no command a crew launch plan builds.
-A later change that points this spawner at a worker launch fails here.
+no process is started, then assert the argv's shape on its own, that its program
+is the module's served-child program, and that neither the argv nor the program
+text names a command a crew launch plan builds. A later change that points this
+spawner at a worker launch fails here.
 """
 
 from __future__ import annotations
@@ -60,21 +61,55 @@ def _worker_commands() -> set[str]:
     return commands
 
 
-def test_the_served_child_starts_the_interpreter_with_its_program(
+def test_the_served_child_starts_the_interpreter_with_a_c_program(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
+    """The argv's shape, asserted without naming the program text.
+
+    The program constant is the only authority for its own text, so an assertion
+    comparing it against itself moves with the code and pins nothing. The shape
+    is asserted here on its own — the running interpreter, ``-c``, a non-empty
+    program, the root — so a change to the executable or the argument layout
+    reddens this case whatever the program text becomes.
+    """
     root = tmp_path / "checkout"
     root.mkdir()
     captured = _capture_spawn(monkeypatch)
 
     served_code.spawn_served_child(root)
 
-    assert captured == [
-        sys.executable,
-        "-c",
-        served_code.SERVED_CHILD_PROGRAM,
-        str(root),
-    ]
+    assert len(captured) == 4, captured
+    assert captured[0] == sys.executable, captured
+    assert captured[1] == "-c", captured
+    assert isinstance(captured[2], str) and captured[2].strip(), captured
+    assert captured[3] == str(root), captured
+
+
+def test_the_served_child_program_is_the_served_child_program(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The program the child runs is the module's own served-child program."""
+    root = tmp_path / "checkout"
+    root.mkdir()
+    captured = _capture_spawn(monkeypatch)
+
+    served_code.spawn_served_child(root)
+
+    assert captured[2] == served_code.SERVED_CHILD_PROGRAM
+
+
+def test_the_served_child_program_names_no_worker_command() -> None:
+    """The program text itself carries no worker command a crew launch builds.
+
+    A change that rewrote the program into a worker invocation reddens here as
+    well as in the argv case, so the guard does not rest on one assertion.
+    """
+    worker_commands = _worker_commands()
+    assert worker_commands, "no worker command compiled from a launch plan"
+    program = served_code.SERVED_CHILD_PROGRAM
+    assert isinstance(program, str) and program.strip()
+    named = {Path(token).name for token in program.split()}
+    assert not (worker_commands & named), worker_commands & named
 
 
 def test_the_served_child_argv_names_no_worker_command(
