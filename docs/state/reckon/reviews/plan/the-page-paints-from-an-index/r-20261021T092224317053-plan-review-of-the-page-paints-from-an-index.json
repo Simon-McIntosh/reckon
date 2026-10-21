@@ -1,0 +1,73 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T09:44:28.534Z",
+  "dispatched_at": "2026-10-21T09:28:02Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-page-paints-from-an-index.html:29",
+      "id": "wiring-1",
+      "reason": "\u00a77 is the plan's one open section; with no declared dependency it can be dispatched and closed against a service that does not carry \u00a72\u2013\u00a76.",
+      "text": "`plan-section-depends-on` carries only `s11: [the-page-paints-from-an-index#s10]`, while \u00a77 (line 187) states it runs \"[o]nce \u00a72 to \u00a76 are merged and the operator restarts the service\" and measures their merged effect, so the plan's own scheduling edge for \u00a77 is absent and the roadmap can order \u00a77 ahead of the code it measures",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-page-paints-from-an-index.html:196",
+      "id": "done_when-1",
+      "reason": "a control that goes green falsifies nothing, leaving \u00a77's only gate unproven exactly as the earlier finding said it was.",
+      "text": "\u00a77's control runs the probe against a temporary `reckon serve` \"started with its file watcher armed before the port binds\", but after \u00a72 landed the watch arms one tree at a time on a reader thread after the socket binds, so that is not a start mode the tree offers \u2014 \u00a72's own landed record makes it a mutation of `_FleetChangeWatch.start` \u2014 and, unlike \u00a72's gate, \u00a77 declares no 5 s-per-tree delay, so on a small temporary project the walk finishes inside the 5 s budget and the port gate passes in the control rather than failing",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-page-paints-from-an-index.html:197",
+      "id": "evidence_paths-1",
+      "reason": "\u00a77's deliverable is its timing report, so leaving it off the plan's evidence tree leaves the plan's only cold-start measurement with no record a later reader can open.",
+      "text": "\u00a77's only write path is \"the report under the session's reports directory\" (line 197) and the section names no evidence anchor, while every landed section records under docs/evidence/ (e.g. \u00a72's `/reckon/evidence/archive/the-page-paints-from-an-index-landed.html`)",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-page-paints-from-an-index.html:236",
+      "id": "reasoning-1",
+      "reason": "the deliverable must either carry north stars from the discovery payload in the merge, or drop the key from the kept set and from the test's literal oracle, and as written the plan's stated remedy for that key cannot hold.",
+      "text": "\u00a710's deliverable includes north stars in the set a revalidation keeps \"until a discovery response replaces it\", and line 242's literal oracle asserts the key, but `mergeDerived` (docs/ui/state-loader.js:503\u2013519) never assigns `north_stars` \u2014 only the fallback branch (state-loader.js:691) ever sets it from a payload \u2014 so on the index path \u00a710 writes about, the key is always empty and there is nothing to keep and nothing that replaces it",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c61a0b9a4211b02e06208735482919d4d8389f09dd4fc206b8ae3b599ca56d79",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 50,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T092224317053-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "f9cd792b27dff96fdcf95f3f569b0adda8d9360d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a710's citation of `the-site-answers-fast-and-agrees` \u00a724 resolves (docs/plans/the-site-answers-fast-and-agrees.html:364), and every cited symbol exists: `derivedBlocks` docs/ui/state-loader.js:316, `mergeDerived` :484 and :503, `watchProjectStateChanges` :709, `refreshProjectState` docs/ui/shell.jsx:154.",
+    "done_when": "a finding \u2014 \u00a77's newly added negative control falsifies only the port clause, and the pre-fix state it names is reachable only by a source mutation \u00a72's own landed record documents, not by \"started with its file watcher armed\".",
+    "evidence_paths": "a finding \u2014 \u00a77's sole write path is \"the report under the session's reports directory\" (line 197) with no evidence anchor, so \u00a77's deliverable is not on the plan's durable evidence tree.",
+    "naming": "pass \u2014 `DERIVED_STATE_KEYS`, `reckon:derived` and the kept-key names describe the mechanism; no plan labels, ticket numbers or version tags reach a symbol or a comment.",
+    "reasoning": "a finding \u2014 \u00a710 names north stars among the blocks a revalidation keeps and the merge replaces, but `mergeDerived` never writes `north_stars`, so on the index path the key is always empty and cannot be replaced by the merge.",
+    "single_goal": "pass \u2014 \u00a710's three behaviours each carry their own test and their own negative control (lines 242\u2013244), and \u00a77 carries one measure, a cold-start timing report.",
+    "wiring": "a finding \u2014 \u00a77's done-when measures the merged \u00a72\u2013\u00a76 service after an operator restart, but `plan-section-depends-on` (line 29) declares only `s11 \u2192 s10`, so \u00a77's dependency on \u00a72\u2013\u00a76 exists only as prose."
+  },
+  "section_digests": {
+    "_document": "5bedd7f41d8b5b370882135e798f35d56d6e6348c4003130ade8574bbf365128",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "d5979dcab388fefafdda05549fa75a8e93611673a4df8b9cc498853ecbfd9df4",
+    "s11": "bb32b98b9a0a5070d5ec6b5387862bef5af3ba37b5956ac7c9d734723c2ac9fa",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "c87461c42b8243cf084b4c4f778220f82e2559a255005203adbb131892cb620f",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T09:47:37.305412+00:00"
+}
