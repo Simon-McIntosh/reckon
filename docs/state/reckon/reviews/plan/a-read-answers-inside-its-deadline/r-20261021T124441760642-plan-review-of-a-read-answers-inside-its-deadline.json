@@ -1,0 +1,103 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T13:06:16.048Z",
+  "dispatched_at": "2026-10-21T12:46:33Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-answers-inside-its-deadline.html:310",
+      "id": "evidence_paths-1",
+      "reason": "the deliverable, the gate and both negative controls are self-contained and the node needs none of those figures to do its work or to judge its delta, so naming the artifact would add provenance a coordinator can check but would change no node's instruction.",
+      "text": "\u00a748's Why rests on a `cProfile` pass cited only as \"the evidence\" (\"This section leaves it alone, but the evidence reports its share\"), with no path for the 67.15 s profile, its dump, or the run that took it \u2014 its four load-bearing figures (67.15 s at `24f4416db`, 7,123 rows compacted, 456,336 `json.loads` over 21.2 s, `_path_exists` 21,349 calls) cannot be opened or re-counted by a later reader",
+      "type": "evidence_paths",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "bf37c2e2ecf0e950d813f90bdc95abbe70d4081eaf34174d226b1f584e0f3035",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 371,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "evidence_paths-1",
+      "reason": "the node needs none of the profile figures to do or judge its work; the profile log is kept at ~/.cache/reckon-read-deadline/runs-view-profile-24f4416db.log and will be cited with its path in the section's landing evidence",
+      "when": "2026-10-21T13:10:24.673305+00:00"
+    }
+  ],
+  "responses": {
+    "evidence_paths-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "the node needs none of the profile figures to do or judge its work; the profile log is kept at ~/.cache/reckon-read-deadline/runs-view-profile-24f4416db.log and will be cited with its path in the section's landing evidence",
+      "when": "2026-10-21T13:10:24.673305+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-read-answers-inside-its-deadline.v371.json",
+  "review_run_id": "r-20261021T124441760642-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "e55491b1abab6ca40ba9d57e226f4872d2c7db5b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_path_exists` at `reckon/crew/query.py:86`, `_compact_row`'s checks ahead of the filter/sort/limit at `reckon/crew/query.py:577-604`, `_ledger_session` at `reckon/crew/resumption.py:792` (\"near line 791\"), `resolve_session`, `runs_view`, `_compact_row`, `serve_crew_view` (`reckon/mcp_views.py:3646` reached from `:3856`), `ledger.load`, `ledger.runs` and `read_records` all resolve, commit `24f4416db` resolves, and all three named gate test files exist.",
+    "done_when": "pass \u2014 each bullet is countable and falsifiable (at most one `ledger.load` call with `limit=5`, at most 3 `_path_exists` calls per returned row, field-for-field equality with the base rows, a `resumable`-filtered view matching base, and the `source=\"live\"` arm), the fixture's 50+ promoted rows and 3 session-less live pointers make the load-count assertion fail at base (base counts 1 committed-row read plus 3 per-live-row loads against 1), and the two declared negative controls falsify a different half each \u2014 reinstating the pre-limit path computation takes `_path_exists` to roughly 30 calls per returned row against the bound of 3, and reinstating the row-less resolve takes 3 loads against the bound of 1.",
+    "evidence_paths": "a finding \u2014 \u00a748's gate and timing logs go \"under the run directory\" and the evidence fragment is a durable repository path, but the `cProfile` pass the whole Why rests on is cited as \"the evidence\" with no path, so no reader can open the 67.15 s profile at `24f4416db` or re-count its 21,349 `_path_exists` calls; the finding is emitted with a `no` verdict because the deliverable needs none of those figures.",
+    "naming": "pass \u2014 the new test file and the evidence fragment name the mechanism (`test_a_runs_view_checks_only_the_rows_it_returns.py`, `a-runs-view-checks-only-the-rows-it-returns.html`) with no plan label, stage name, ticket number or version tag, and the section's Snapshot text names no plan label beyond the plan's own slug, which the repo's evidence-path convention requires.",
+    "reasoning": "pass \u2014 all three checks hold. The stated root cause is the one the code shows: a live row's `resolve_session` is called with `record=record` and `ledger_row=None` at `reckon/crew/query.py:290-296`, so `_ledger_session` reaches `ledger.load` once per such live row, and `_compact_row`'s path checks (`reckon/crew/query.py:288`, `:302`, `:335`) all precede the filter/sort/limit at `:577-604`. The mechanism produces the done-when: the rows the ledger arm already reads come from the same `data[\"runs\"]` list `_ledger_session` searches (`reckon/ledger.py:3640`, `reckon/crew/resumption.py:818`), so resolving a live row's session from them by run id reproduces the base answer exactly, and deferring the path fields past the limit reduces `_path_exists` to the per-returned-row bound. It runs on the real code path: the production caller is `mcp_views.serve_crew_view` (`reckon/mcp_views.py:3646`), which calls `crew_runs_view` at `reckon/mcp_views.py:3856`.",
+    "single_goal": "pass \u2014 the section carries one verdict over one artifact set (`runs_view`/`_compact_row` in `reckon/crew/query.py`, plus `resumption.py`), and after this round each half has its own counted assertion and its own negative control, so the verdict names which half landed; the earlier `single_goal-1` decline is therefore answered rather than repeated.",
+    "wiring": "pass \u2014 \u00a748 declares no `plan-section-depends-on` edge, but its only ordering premise is \u00a747, which landed, and no other implementable sibling writes its files (\u00a76 writes the run directory, \u00a731 `reckon/metadata_index.py` and `reckon/serve.py`, \u00a742 no product file, \u00a744 `reckon/crew/recovery_watch.py` and `reckon/crew/recovery_review_subject.py`), so no undispatched pair shares `reckon/crew/query.py` or `reckon/crew/resumption.py`."
+  },
+  "section_digests": {
+    "_document": "eac6e3db52dd440fcd727d619dba4f0a4189e18883d8c4d213abd37a6847d2fd",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "d3590301de308bed778201f244069e2c946fb1524000fca6c2c21eb1d1e32c43",
+    "s16": "faeb73699035587893b0ae1563a46b0d61c35dde8373141647c50f58c69963f2",
+    "s17": "f649ccf93ef083c2d57c5ede67cab122341f047a11766a076640e84b74d90f16",
+    "s18": "4e73e33e2ec0959879778a588e5dc669255a6790901271f2352c9d6ce92a1443",
+    "s19": "f6e2a8c3d1c90f4194ec9891635cef181cf62c62a5dbb39efd4c9832ac5d1e9b",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s20": "81e1ff125ddfc6955aa9bfbaae255b04b8bd03b75e9a4bbaec4a6e2de4790a39",
+    "s21": "12ee0e1852da5baa065bbe019bd803267f1817e4aa5fa5fcd12ec142ffba5f0f",
+    "s22": "6266f82976abf2a572694b2f91bf0143ff9a02ea484166e79b8197bde4e1a5e6",
+    "s23": "0c162cc0de7beec03e05834230443e4e755382e4c7b1cde4be476a6a17d232ec",
+    "s24": "c08bde5fe4a48fc01b81a4cf328439fde17d29607f5771497a07ae74c8f83498",
+    "s25": "218e76e29eb13021f7d92088d935b4d098aa0929c73ec1f5f4ee4fc8967328e1",
+    "s26": "25e5304fe5780aa9410db57be3ff538d9960379c8f31845f209abd225091913f",
+    "s27": "04e4a0f145492c1a1dcbcf8f220b8763fdd72fbbd2c5427deb9710071ac0aef7",
+    "s28": "1fc6c5bf6e9e33762ef98caf30043fbf50b550f14d9cd8ee7ffccfef1f87d788",
+    "s29": "c7daac1687ec68b3aca76f6a759088af2970e8407f09323f1863751a3e3f742c",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s30": "14d7046dd05d2fbc6e10d2973ae13a14f0de51e4f89a0043ba18dc8ea580a78c",
+    "s31": "f024ee9fae5586904388ab26af5c52e149d3fc1f6a2e1fa26deef66da3342a01",
+    "s32": "2ed1e8f3800b7b3cca94facebaee24b564589e1cc39cb70b5d7dd0bc442acfbd",
+    "s33": "dd8616bb906c189bff978509b84e4ff9d9859288d67a5b278f250297610a5e45",
+    "s34": "82ac81d2c333301a0d2b732ee3c2ea47ae1caad1871dc21a4bb4e414e9e2132a",
+    "s35": "e2eddc28bd105b77de69e0a1057d6e9c0e5d327ab9dfa86369a1ddf2748ba822",
+    "s36": "8316aeeca4ed3e2dd546bcdd830c2d56e6341602d206f1dc2dad036571e74ee0",
+    "s37": "3a8ec34741c39fe5a544b73ff1df299235678d20e7a9f5b7f83798b93b8e18a2",
+    "s38": "2897b3cfdcb3efba9e3770053ca56a86f80850af59215cf46087eed8e6c932e7",
+    "s39": "648430c7255e99dcbc17d608a00851a467da38d5f7a507a7cf8d9bc9d3bdb2b5",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s40": "3953543f0553a542e95031e2665f14e157e954fabe989d920000e51ea1d62910",
+    "s41": "25f9e4792f91c3ee0a8a50920d369ef1b32b66939244372cafe3597db90b6ba9",
+    "s42": "4f2a1b6cfd6ebd5a76b5a485edcc21a5b03f79edc0b6bc320fd1f8741f7cfc16",
+    "s43": "20488876f6fee281483b103736526b1ed884896959898015942c2b0c5f3a5807",
+    "s44": "fd45e6dda26f7661fdd05339cbf90e6cc27121e07ca066bd8ccf33c2978c3566",
+    "s45": "2d725b9f769ce58f93d2ac83120cf78d1cae45a0b024cc46e2206e1053421de7",
+    "s46": "c0eb5c1abb5629416d6958dd82219a9366a9fa65a1ac7e0e79234dcc3cca7a82",
+    "s47": "b9673bc3595a0781959ee9d7120eab676b69101328fbb3fe059b8a15331948d3",
+    "s48": "3dc6b1cf84a68a0fc706cf2bd753c957f5ce9c0b66cd1e7bd68a300054788133",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s6": "63f2d766e38f196e33466c5a1f516b8a14f321ba0512be8e473824c797411ac9",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T13:10:10.879399+00:00"
+}
