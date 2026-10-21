@@ -1,0 +1,73 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/promotion.py:1350",
+    "reckon/crew/promotion.py:1200",
+    "reckon/crew/promotion.py:1277",
+    "reckon/capabilities.py:253",
+    "reckon/capabilities.py:646",
+    "reckon/calibration.py:118",
+    "reckon/_backends.py:1006",
+    "reckon/mcp_views.py:787",
+    "reckon/crew/dispatch_admission.py:412",
+    "reckon/crew/dispatch_plan.py:656",
+    "reckon/crew/promotion_release.py:764",
+    "reckon/crew/picker/outcomes.py:572",
+    "reckon/ledger.py:3522"
+  ],
+  "completed_at": "2026-10-21T13:37:04.509Z",
+  "dispatched_at": "2026-10-21T13:11:50Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-suite-is-green-at-head/run-record-composition-moves-out-of-the-ledger.html",
+      "line": "42",
+      "severity": "follow-on",
+      "text": "follow-on: the caller list names reckon/calibration.py twice inside one sentence and no second caller follows, so the landed evidence prose reads as if two distinct callers exist where there is one; the sentence is otherwise accurate and no measure depends on it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T120639851822-run-record-composition-moves-out-of-the-ledger/manifest.md",
+      "line": "26",
+      "severity": "follow-on",
+      "text": "follow-on: the manifest discloses under follow_ons that the done-when's set (every tests/ file importing reckon.ledger, 230 files) was narrowed to the 13 files that reference a moved name, and the wider 78-file attempt survives only as a head arm: logs/gate-head.log ends at 14 failed and 851 passed with EXIT=1, while logs/gate-base.log was terminated at 32 per cent with EXIT=143, so those 14 ids carry no base reading. Their failure texts (a retired preflight command answering for crew budget --check, and KeyError 'state' on the picker-assessment path, quoted at logs/gate-head.log:58 and :149) are a pre-existing CLI and state condition with no bearing on a pure code move, so the narrowing does not hold the node; it is recorded because the pair the record declares as baseline_suite and after_suite is narrower than the done-when's stated set."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/tmp/reckon-crew-scratch/r-20261021T120639851822-run-record-composition-moves-out-of-the-ledger/logs/targeted-head.log",
+    "baseline_suite": "/tmp/reckon-crew-scratch/r-20261021T120639851822-run-record-composition-moves-out-of-the-ledger/logs/targeted-base.log",
+    "negative_control": "/tmp/reckon-crew-scratch/r-20261021T120639851822-run-record-composition-moves-out-of-the-ledger/logs/negative-control.log"
+  },
+  "item_verdicts": {
+    "diff": "Read both committed commits against 38d4c39f; 405ba3f88 is the move and 72d9cdeb1 files the landing fragment, and a line-set comparison of the whole diff shows every non-blank line removed from reckon/ledger.py reappears verbatim somewhere in the change and the only new content is the new module's docstring, the two deferred import blocks and their comments.",
+    "done_when": "The done_when names tests/test_every_module_fits_a_worker_window.py plus both modules' head token figures by reckon.crew.routing._tokens_for_bytes; the manifest records the two-arm run and its result, and I reproduced the instrument's three figures from the commit blobs (base ledger 51,666; head ledger 42,735; head run_record 9,665).",
+    "goal": "The node goal is to move the run-record composition family out of reckon/ledger.py into reckon/run_record.py so ledger.py fits the worker-window bound; reckon/run_record.py:1-11 declares that family and reckon/ledger.py:3689-3708 re-exports all 19 moved names, with reckon/ledger.py measuring 42,735 estimated tokens against the 45,000 the plan names.",
+    "manifest": "Read; it records both arms running to their summary lines, states head adds no failure over base, names its logs and its negative control, and discloses the test-set narrowing under follow_ons.",
+    "write_paths": "The source prompt's FENCE - SCOPE block grants reckon/ledger.py, reckon/run_record.py, tests/test_calibration.py, tests/test_capabilities.py, the landing fragment and the figures directory; the diff touches three of those (reckon/ledger.py, reckon/run_record.py, the fragment) and nothing else."
+  },
+  "justifications": {
+    "durability": "the diff adds no assertion, which is right for a pure move, and the guards are pre-existing and independent of any value a test supplies: tests/test_every_module_fits_a_worker_window.py:69 reddens when the family returns to reckon/ledger.py, which logs/negative-control.log demonstrates, while tests/test_calibration.py:281 would raise AttributeError if the re-export block at reckon/ledger.py:3689 were dropped.",
+    "evidence": "logs/targeted-base.log ends at 1 failed and 260 passed in 320.32s and logs/targeted-head.log at 1 failed and 260 passed in 425.73s with the same id, declared complete in the manifest's baseline_suite and after_suite, and logs/negative-control.log shows the width test naming reckon/ledger.py again at 51,666 with EXIT=1; the declared pair is narrower than the done-when's 230-file set, which the manifest discloses at follow_ons.",
+    "fit": "reckon/run_record.py:1-11 states the module's purpose in the surrounding idiom and its two deferred imports carry reasoned noqa codes, the changed files leave ruff check and ruff format --check clean and raise no F821 under the declared rule set, and no changed path, symbol or comment carries a plan label or a version, with the one prose defect recorded below.",
+    "goal_fidelity": "reckon/run_record.py:1-11 states the family's purpose and reckon/ledger.py:3689-3708 re-exports all 19 moved names, so every existing caller still resolves, and the width the goal targets is met at 42,735 estimated tokens against the 45,000 the plan names.",
+    "reuse": "a search over reckon/ for definitions of build_record, per_run_budget, measured_throughput, backend_budget_group, measurement_exclusion_reason and unmeasured_clone_report returns only reckon/run_record.py, so the addition extends the family's owner rather than forking a capability, and reckon/run_store.py owns the separate durable run-file store.",
+    "scope_discipline": "every path in the diff (reckon/ledger.py, reckon/run_record.py, the landing fragment) is inside the source prompt's FENCE - SCOPE grant, and the two permitted test files were left untouched because tests/test_calibration.py:281 and tests/test_capabilities.py:795 patch a name their subjects read through the ledger namespace."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to move the run-record composition family out of reckon/ledger.py into reckon/run_record.py so ledger.py fits the worker-window bound; reckon/run_record.py:1-11 declares that family and reckon/ledger.py:3689-3708 re-exports all 19 moved names, with reckon/ledger.py measuring 42,735 estimated tokens against the 45,000 the plan names.\nVERDICT done_when: The done_when names tests/test_every_module_fits_a_worker_window.py plus both modules' head token figures by reckon.crew.routing._tokens_for_bytes; the manifest records the two-arm run and its result, and I reproduced the instrument's three figures from the commit blobs (base ledger 51,666; head ledger 42,735; head run_record 9,665).\nVERDICT write_paths: The source prompt's FENCE - SCOPE block grants reckon/ledger.py, reckon/run_record.py, tests/test_calibration.py, tests/test_capabilities.py, the landing fragment and the figures directory; the diff touches three of those (reckon/ledger.py, reckon/run_record.py, the fragment) and nothing else.\nVERDICT manifest: Read; it records both arms running to their summary lines, states head adds no failure over base, names its logs and its negative control, and discloses the test-set narrowing under follow_ons.\nVERDICT diff: Read both committed commits against 38d4c39f; 405ba3f88 is the move and 72d9cdeb1 files the landing fragment, and a line-set comparison of the whole diff shows every non-blank line removed from reckon/ledger.py reappears verbatim somewhere in the change and the only new content is the new module's docstring, the two deferred import blocks and their comments.\nCALL_SITES: reckon/crew/promotion.py:1350, reckon/crew/promotion.py:1200, reckon/crew/promotion.py:1277, reckon/capabilities.py:253, reckon/capabilities.py:646, reckon/calibration.py:118, reckon/_backends.py:1006, reckon/mcp_views.py:787, reckon/crew/dispatch_admission.py:412, reckon/crew/dispatch_plan.py:656, reckon/crew/promotion_release.py:764, reckon/crew/picker/outcomes.py:572, reckon/ledger.py:3522\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/run_record.py:1-11 states the family's purpose and reckon/ledger.py:3689-3708 re-exports all 19 moved names, so every existing caller still resolves, and the width the goal targets is met at 42,735 estimated tokens against the 45,000 the plan names.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/targeted-base.log ends at 1 failed and 260 passed in 320.32s and logs/targeted-head.log at 1 failed and 260 passed in 425.73s with the same id, declared complete in the manifest's baseline_suite and after_suite, and logs/negative-control.log shows the width test naming reckon/ledger.py again at 51,666 with EXIT=1; the declared pair is narrower than the done-when's 230-file set, which the manifest discloses at follow_ons.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (reckon/ledger.py, reckon/run_record.py, the landing fragment) is inside the source prompt's FENCE - SCOPE grant, and the two permitted test files were left untouched because tests/test_calibration.py:281 and tests/test_capabilities.py:795 patch a name their subjects read through the ledger namespace.\nSCORE durability: 18\nJUSTIFICATION durability: the diff adds no assertion, which is right for a pure move, and the guards are pre-existing and independent of any value a test supplies: tests/test_every_module_fits_a_worker_window.py:69 reddens when the family returns to reckon/ledger.py, and tests/test_calibration.py:281 would raise AttributeError if the re-export block at reckon/ledger.py:3689 were dropped.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/run_record.py:1-11 states the module's purpose in the surrounding idiom and its two deferred imports carry reasoned noqa codes, and the changed files leave ruff check and ruff format --check clean, with the one prose defect recorded below.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search over reckon/ for definitions of build_record, per_run_budget, measured_throughput, backend_budget_group, measurement_exclusion_reason and unmeasured_clone_report returns only reckon/run_record.py, so the addition extends the family's owner rather than forking a capability, and reckon/run_store.py owns the separate durable run-file store.\nFINDING docs/evidence/fragments/the-suite-is-green-at-head/run-record-composition-moves-out-of-the-ledger.html:42 follow-on: the caller list names reckon/calibration.py twice inside one sentence, so the landed evidence prose reads as if two distinct callers exist where there is one.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T120639851822-run-record-composition-moves-out-of-the-ledger/manifest.md:26 follow-on: the manifest discloses that the done-when's 230-file set was narrowed to 13 files, and the wider 78-file attempt exists only as a head arm because logs/gate-base.log was terminated at 32 per cent with EXIT=143, leaving its 14 head failures without a base reading.\n",
+  "review_run_id": "r-20261021T131003637176-review-of-run-record-composition-moves-out-of-the-ledger-72d9cdeb11e5",
+  "reviewed_base_sha": "38d4c39fe72ffc7c93d668a12408f251214ddd53",
+  "reviewed_head_sha": "72d9cdeb11e50d113821c13bdb36e4a3efa58e58",
+  "reviewed_run_id": "r-20261021T120639851822-run-record-composition-moves-out-of-the-ledger",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T13:38:39.562099+00:00",
+  "total": 113
+}
