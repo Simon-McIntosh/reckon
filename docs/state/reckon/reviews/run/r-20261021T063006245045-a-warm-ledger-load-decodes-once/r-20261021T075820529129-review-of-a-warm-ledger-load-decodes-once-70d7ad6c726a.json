@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/query.py:557 (runs_view -> ledger.runs -> read_records -> load)",
+    "reckon/mcp_views.py:1624 (_cached_attempts -> ledger.load)",
+    "reckon/serve.py:744 (ledger.load headers_only)",
+    "reckon/serve.py:838 (ledger.runs)",
+    "reckon/capabilities.py:752 (ledger.load)"
+  ],
+  "completed_at": "2026-10-21T08:28:23.405Z",
+  "dispatched_at": "2026-10-21T08:00:06Z",
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": 1353,
+      "severity": "follow-on",
+      "text": "dict(row) is a shallow copy, so the row's nested values, the commits and changed_paths lists and any nested mapping, are shared with the cache entry and with every other caller's row, and a caller that mutates a nested value corrupts the process-wide reuse for every later read while the docstring that opens at ledger.py:1329 says the reuse is never handed out."
+    },
+    {
+      "file": "measure_warm_read.py",
+      "line": 27,
+      "severity": "follow-on",
+      "text": "the timing probe reads entry.tottime, an attribute the profiler entry does not carry, so both arms crashed in the node's own scaffolding right after the first roadmap call returned ok=False and never reached the second call's timing or the crew runs-view timing, which means the missing done-when figure is partly an instrument defect."
+    },
+    {
+      "file": "docs/evidence/fragments/a-read-answers-inside-its-deadline/a-warm-ledger-load-decodes-once.html",
+      "line": 12,
+      "severity": "follow-on",
+      "text": "the landing fragment's plan-verdict meta says passed while its own prose records the warm-read timing and decode share as not obtained, so a reader who scans verdicts reads a pass on the clause carrying the section's headline claim."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": 1273,
+      "severity": "follow-on",
+      "text": "the module already exceeded the worker-window bound at base, 51,665 estimated tokens against a 50,000 bound, and the added lines take it to 52,456, deepening the repo-wide failure of tests/test_every_module_fits_a_worker_window.py that this node's own gate carries, though the plan's write paths sanction extending this file."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit by commit against base 33158f8b9; 6b4f1aa82 is the decode reuse in reckon/ledger.py, 70d7ad6c7 is the 28-line landing fragment, and the 86 added lines of reckon/ledger.py are the whole change.",
+    "done_when": "read at the reviewed run's prompt.txt FENCE-EVIDENCE; it names the seven-file gate, the two decode-count conditions and the base/head warm-roadmap timing with its cProfile decode share; the recorded gate logs hold the first two and the third has no figure, both arms' timing logs ending in the probe's own AttributeError instead.",
+    "goal": "the node's goal is to reuse decoded run-ledger payloads within a process so a warm ledger.load decodes an unchanged index once; reckon/ledger.py:1295 _decoded_payload holds each decoded row against the index's own stored stamp and reckon/ledger.py:1316 _index_payload consumes it, so what landed is the deliverable section 45 states.",
+    "manifest": "read at the run directory; it records the three-test file at 3 passed EXIT=0, the head gate at 1 failed 118 passed against base 1 failed 115 passed with the same single failing id, the decode counts 8 then 0 then 1, and the timing clause under follow_ons and blockers rather than as a figure.",
+    "write_paths": "the four declared paths are reckon/ledger.py, tests/test_a_warm_ledger_load_decodes_once.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/a-warm-ledger-load-decodes-once.html and a figures directory; all three paths in the diff (git diff --stat 33158f8b9 70d7ad6c7) are inside them and the figures directory is unused."
+  },
+  "justifications": {
+    "durability": "the declared negative control at negative-control.log reinstates the regression by replacing ledger._decoded_payload with a pass-through and all three tests fail with EXIT=1, so the assertions do guard the change; the copies property is asserted only for a top-level key at tests/test_a_warm_ledger_load_decodes_once.py:126.",
+    "evidence": "the gate the done_when names ran and is logged at gate-head.log and gate-base.log with their EXIT lines, but the done_when's third clause, the base and head warm-roadmap timing with its decode share against the 1.33 s figure, has no figure in any log.",
+    "fit": "the addition follows the module's own identity-keyed cache at reckon/ledger.py:2715 and its stamp-keyed lru_cache at reckon/ledger.py:222, and introduces no name the repository's naming rules forbid.",
+    "goal_fidelity": "reckon/ledger.py:1355 and 1369 route every aggregate row and every record row through _decoded_payload, so a warm load over an unchanged index re-parses nothing, which is what the goal states.",
+    "reuse": "the search of reckon/ledger.py for an existing decoded-payload reuse found _INDEX_REGION at ledger.py:1444, a region-scoped whole-read reuse, _identity_catalogue at ledger.py:222 and _RESOLVED_FLIGHT_CACHE at ledger.py:2715, none of which owns per-payload decode reuse, so this extends the module's stamp-keyed-reuse idiom rather than duplicating an owner.",
+    "scope_discipline": "every path in the diff, reckon/ledger.py, tests/test_a_warm_ledger_load_decodes_once.py and the plan evidence fragment, is inside the declared four, and nothing else was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to reuse decoded run-ledger payloads within a process so a warm ledger.load decodes an unchanged index once; reckon/ledger.py:1295 _decoded_payload holds each decoded row against the index's own stored stamp and reckon/ledger.py:1316 _index_payload consumes it, so what landed is the deliverable section 45 states.\nVERDICT done_when: read at the reviewed run's prompt.txt FENCE-EVIDENCE; it names the seven-file gate, the two decode-count conditions and the base/head warm-roadmap timing with its cProfile decode share; the recorded gate logs hold the first two and the third has no figure, both arms' timing logs ending in the probe's own AttributeError instead.\nVERDICT write_paths: the four declared paths are reckon/ledger.py, tests/test_a_warm_ledger_load_decodes_once.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/a-warm-ledger-load-decodes-once.html and a figures directory; all three paths in the diff (git diff --stat 33158f8b9 70d7ad6c7) are inside them and the figures directory is unused.\nVERDICT manifest: read at the run directory; it records the three-test file at 3 passed EXIT=0, the head gate at 1 failed 118 passed against base 1 failed 115 passed with the same single failing id, the decode counts 8 then 0 then 1, and the timing clause under follow_ons and blockers rather than as a figure.\nVERDICT diff: read commit by commit against base 33158f8b9; 6b4f1aa82 is the decode reuse in reckon/ledger.py, 70d7ad6c7 is the 28-line landing fragment, and the 86 added lines of reckon/ledger.py are the whole change.\nCALL_SITES: reckon/crew/query.py:557 (runs_view -> ledger.runs -> read_records -> load), reckon/mcp_views.py:1624 (_cached_attempts -> ledger.load), reckon/serve.py:744 (ledger.load headers_only), reckon/serve.py:838 (ledger.runs), reckon/capabilities.py:752 (ledger.load)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/ledger.py:1355 and 1369 route every aggregate row and every record row through _decoded_payload, so a warm load over an unchanged index re-parses nothing, which is what the goal states.\nSCORE evidence: 11\nJUSTIFICATION evidence: the gate the done_when names ran and is logged at gate-head.log and gate-base.log with their EXIT lines, but the done_when's third clause, the base and head warm-roadmap timing with its decode share against the 1.33 s figure, has no figure in any log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff, reckon/ledger.py, tests/test_a_warm_ledger_load_decodes_once.py and the plan evidence fragment, is inside the declared four, and nothing else was touched.\nSCORE durability: 17\nJUSTIFICATION durability: the declared negative control at negative-control.log reinstates the regression by replacing ledger._decoded_payload with a pass-through and all three tests fail with EXIT=1, so the assertions do guard the change; the copies property is asserted only for a top-level key at tests/test_a_warm_ledger_load_decodes_once.py:126.\nSCORE fit: 18\nJUSTIFICATION fit: the addition follows the module's own identity-keyed cache at reckon/ledger.py:2715 and its stamp-keyed lru_cache at reckon/ledger.py:222, and introduces no name the repository's naming rules forbid.\nSCORE reuse: 18\nJUSTIFICATION reuse: the search of reckon/ledger.py for an existing decoded-payload reuse found _INDEX_REGION at ledger.py:1444, a region-scoped whole-read reuse, _identity_catalogue at ledger.py:222 and _RESOLVED_FLIGHT_CACHE at ledger.py:2715, none of which owns per-payload decode reuse, so this extends the module's stamp-keyed-reuse idiom rather than duplicating an owner.\nFINDING reckon/ledger.py:1353 follow-on: dict(row) is a shallow copy, so the row's nested values, the commits and changed_paths lists and any nested mapping, are shared with the cache entry and with every other caller's row, and a caller that mutates a nested value corrupts the process-wide reuse for every later read while the docstring that opens at ledger.py:1329 says the reuse is never handed out.\nFINDING measure_warm_read.py:27 follow-on: the timing probe reads entry.tottime, an attribute the profiler entry does not carry, so both arms crashed in the node's own scaffolding right after the first roadmap call returned ok=False and never reached the second call's timing or the crew runs-view timing, which means the missing done-when figure is partly an instrument defect.\nFINDING docs/evidence/fragments/a-read-answers-inside-its-deadline/a-warm-ledger-load-decodes-once.html:12 follow-on: the landing fragment's plan-verdict meta says passed while its own prose records the warm-read timing and decode share as not obtained, so a reader who scans verdicts reads a pass on the clause carrying the section's headline claim.\nFINDING reckon/ledger.py:1273 follow-on: the module already exceeded the worker-window bound at base, 51,665 estimated tokens against a 50,000 bound, and the added lines take it to 52,456, deepening the repo-wide failure of tests/test_every_module_fits_a_worker_window.py that this node's own gate carries, though the plan's write paths sanction extending this file.",
+  "review_run_id": "r-20261021T075820529129-review-of-a-warm-ledger-load-decodes-once-70d7ad6c726a",
+  "reviewed_base_sha": "33158f8b9ef8e1969ff2c75eb17400ab0a0fd891",
+  "reviewed_head_sha": "70d7ad6c726ac7c5316838b91cd305c205c8ae8e",
+  "reviewed_run_id": "r-20261021T063006245045-a-warm-ledger-load-decodes-once",
+  "scores": {
+    "durability": 17,
+    "evidence": 11,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T08:32:12.502007+00:00",
+  "total": 103
+}
