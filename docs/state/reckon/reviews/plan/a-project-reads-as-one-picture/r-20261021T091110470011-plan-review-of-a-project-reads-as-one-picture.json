@@ -1,0 +1,68 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T09:27:11.249Z",
+  "dispatched_at": "2026-10-21T09:15:51Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-project-reads-as-one-picture.html:84",
+      "id": "reasoning-1",
+      "reason": "either \u00a73 must declare the ranked section rows it requires (and \u00a72's \"Nothing else is added\" must yield to it) or both done-whens must be restated at plan granularity, and one of the two nodes would otherwise report green on a measure it never met.",
+      "text": "\u00a73 measures \"the ranked order puts the section with the largest downstream reach first\" and writes its placing signal into \"the existing `reason` field of `immediate_roadmap` rows \u2026 one vocabulary for plan rows and section rows alike\", but at the base revision the `immediate_roadmap` rows are plan rows built from the `ready` list (`reckon/roadmap.py:3542-3560`), and the only per-section rows are `row[\"section_readiness\"]` entries of `{section, ready, blockers}` (`reckon/roadmap.py:3378-3394`) with no `reason` field and no rank; \u00a72, the section \u00a73 cites as the source of section awareness, closes with \"Nothing else is added\" beyond a `sections` list on `critical_path`/`open_paths` and the existing `unlocks`, so no section in the plan declares who produces a ranked section list \u2014 which \u00a77:111 also consumes (\"the ten highest-ranked ready sections with their `reason`\", \"the three ready sections with the largest reach\") \u2014 leaving the implementing node either to invent a surface no section declares or to write a measure it cannot satisfy",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "4d3653d817a99fa656913a1c721bcf660cfb5528b58173f2864ccd3a7f7851aa",
+  "plan_slug": "a-project-reads-as-one-picture",
+  "plan_version": 7,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-21T09:28:10.577090+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T09:28:10.577090+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-project-reads-as-one-picture.v7.json",
+  "review_run_id": "r-20261021T091110470011-plan-review-of-a-project-reads-as-one-picture",
+  "reviewed_blob_sha": "2e8db09ffb1dea276d7ab069a02b42c0a90848ae",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every code anchor cited by the in-scope sections resolves at the line named or near it (table above), including `reckon roadmap --brief`'s host command and the dropped-`external-data`/`flat-priority-signal` references.",
+    "done_when": "pass \u2014 every in-scope section names a control that must fail on the unfixed code (s2/s3/s4 base commit, s5 the declared-edge fixture emitting nothing, s7 the base plus a changed-edge arm), and s7 states the parity test is a drift guard rather than the control.",
+    "evidence_paths": "pass \u2014 gate logs and the per-mount counts land on the plan's cumulative record `docs/evidence/archive/a-project-reads-as-one-picture-landed.html`, which exists and resolves; no in-scope section writes evidence to a scratch or node-local path.",
+    "naming": "pass \u2014 the new symbols the in-scope sections introduce (`undeclared-wait`, `overlapping-scope`, `run-blocked`, `held-path`, `project_brief`) describe the mechanism; no plan label, stage name, ticket number or version tag reaches them, and the two \"first planned \u2026 is dropped\" sentences are decisions in plan prose, not code comments.",
+    "reasoning": "a finding \u2014 \u00a73's done-when ranks a section first and \u00a77's brief lists the ten highest-ranked ready sections, but the mechanism \u00a73 states extends `priority` over `immediate_roadmap` plan rows and writes into a `reason` key that section rows do not have.",
+    "single_goal": "pass \u2014 \u00a72 lifts section edges and exposes them, \u00a73 reweights the ranking, \u00a74 seats runs on their section, \u00a75 emits two wiring findings, \u00a77 composes one brief; each closes on one verdict.",
+    "wiring": "pass \u2014 the changed map at line 25 gives s3:[s2], s5:[s2,s4], s7:[s2,s3,s4,s5] and s8:[s2,s3,s4,s5,s7], each matching what the section's own text reads: \u00a75 consumes \u00a74's run classification and \u00a72's edges, and \u00a77 composes from \u00a72 to \u00a75 as it states."
+  },
+  "section_digests": {
+    "_document": "f178febf5be7d8d1fe4dc94b58f60952703743e4b0253df8b9434c84afce2640",
+    "s1": "1956dcaef74ad7d3216608fe69c2e7baa2a9e32d702ef86431dc746f15c3878a",
+    "s10": "e102e1c4c48bcc4635b2e41c4a84e2b36433f78cee863762cad68b3deae2cf75",
+    "s11": "ff19dc90f42b226ca45a5aaaf02a9894b54846500c87597775cb2806fc9b6156",
+    "s12": "039fc9469fcdd80b1d5482629a5dcefc71359e7124fbbad20e0227170c2760dc",
+    "s13": "95e233ad4cbbcd9c2cf975b7cb717f3f0eec9093cbeade0f4f268890aaff8d73",
+    "s2": "6020099c5e6b89bc36de67d74e1b3742eac734f14eececcaa280b3c92f25484d",
+    "s3": "42c7982f0304108811204d23a211377fce5b769691fdc31a6929125a6ff8ffe1",
+    "s4": "389898eb9ae606e5b51a4f3a7bfafd20cdd843ae6612eb3884809786e45217a6",
+    "s5": "e13040e31816bf168d9b0b3f3a1245e7fa9b90c30cdf82db44726a02a764b6d9",
+    "s6": "d0f702b85752e3605cfbc815d2de3035b6d1e8e89fb584b661e8571aba7aa175",
+    "s7": "c25621fc2a6853cc8c2e67926aff417db8561541991a94b193caac1579580aaa",
+    "s8": "1f13b98a4d7476b083792c060d8da48918e0ca44b3b27c910d2cfb7ae1aa69d3",
+    "s9": "a65c8523c1a05e7389c35e43a8737757ab2c60d08633460c1648c40a88138892"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T09:28:03.046343+00:00"
+}
