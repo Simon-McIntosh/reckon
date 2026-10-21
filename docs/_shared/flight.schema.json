@@ -781,6 +781,107 @@
             "title": "DimensionFloor",
             "type": "object"
         },
+        "DomainConfig": {
+            "additionalProperties": false,
+            "description": "The repository's domain rules, carried by reckon and never supplied by it. Invariants are rules a result must satisfy; review checks are questions a reviewer must answer about a node they apply to; model paths name where the repository's models live.",
+            "properties": {
+                "invariants": {
+                    "description": "Rules a result must satisfy. Each names the write paths it applies to and may carry a command whose zero exit means the rule holds.",
+                    "items": {
+                        "$ref": "#/$defs/DomainInvariant"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "model_paths": {
+                    "description": "Globs naming where the repository's models live, matched against a node's write paths so a node that touches the modelling surface reads matches here.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
+                "review_checks": {
+                    "description": "Questions a reviewer must answer about any node they apply to. They join the review's checklist rather than being scored as a dimension of their own.",
+                    "items": {
+                        "$ref": "#/$defs/DomainReviewCheck"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                }
+            },
+            "title": "DomainConfig",
+            "type": "object"
+        },
+        "DomainInvariant": {
+            "additionalProperties": false,
+            "description": "One rule a result must satisfy, scoped to the paths it governs.",
+            "properties": {
+                "applies_to": {
+                    "description": "Path globs the invariant applies to. A node whose write paths match any of them carries the rule.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "check": {
+                    "description": "Optional command whose zero exit means the rule holds. Run at promotion beside the project's suite command.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "id": {
+                    "description": "The invariant's short identifier, unique within its project.",
+                    "type": "string"
+                },
+                "rule": {
+                    "description": "The rule in one sentence.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "id",
+                "rule",
+                "applies_to"
+            ],
+            "title": "DomainInvariant",
+            "type": "object"
+        },
+        "DomainReviewCheck": {
+            "additionalProperties": false,
+            "description": "One question a reviewer must answer about a node it applies to, joined to the review's checklist rather than scored as a dimension.",
+            "properties": {
+                "applies_to": {
+                    "description": "Path globs the check applies to. A review of a node whose write paths match any of them carries a verdict line for the check.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "id": {
+                    "description": "The check's short identifier, unique within its project.",
+                    "type": "string"
+                },
+                "question": {
+                    "description": "The question the reviewer answers.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "id",
+                "question",
+                "applies_to"
+            ],
+            "title": "DomainReviewCheck",
+            "type": "object"
+        },
         "EffortSpelling": {
             "additionalProperties": false,
             "description": "One effort level and its declared display suffix.",
@@ -992,6 +1093,17 @@
                         "string",
                         "null"
                     ]
+                },
+                "domain": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/DomainConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "The repository's own domain rules, declared once so a brief and a review read them rather than rediscovering them. Reckon carries these rules and never supplies one, so a project that declares no block keeps today's behaviour."
                 },
                 "fences": {
                     "anyOf": [
@@ -2940,6 +3052,17 @@
                 "string",
                 "null"
             ]
+        },
+        "domain": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/DomainConfig"
+                },
+                {
+                    "type": "null"
+                }
+            ],
+            "description": "The repository's own domain rules, declared once so a brief and a review read them rather than rediscovering them. Reckon carries these rules and never supplies one, so a project that declares no block keeps today's behaviour."
         },
         "fences": {
             "anyOf": [

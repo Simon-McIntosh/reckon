@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:work-is-checked-against-its-domain">
+  <meta name="plan-verifies" content="reckon:work-is-checked-against-its-domain#s3">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-21">
+  <meta name="plan-tags" content="flight-config,domain-rules,schema">
+  <title>A repository declares its domain rules once, in the flight config | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="domain-rules-in-flight" data-reckon="landed" data-when="2026-10-21">
+  <h2 id="domain-rules-in-flight-title">A repository declares its domain rules once, in the flight config.</h2>
+  <p id="domain-rules-in-flight-what"><strong>What changed.</strong> The per-project
+  flight layer gained a typed <code>domain</code> block carrying the repository's own
+  rules: <code>invariants</code> (each an <code>id</code>, the <code>rule</code> in one
+  sentence, <code>applies_to</code> path globs and an optional
+  <code>check</code> command), <code>review_checks</code> (each an <code>id</code>, the
+  <code>question</code> and <code>applies_to</code>) and <code>model_paths</code>. The
+  block is modelled in <code>reckon/schema/flight.yaml</code> and reaches the tree through
+  the existing generator, so <code>reckon/_flight_schema.py</code> and
+  <code>docs/_shared/flight.schema.json</code> are regenerated and the standing drift test
+  in <code>tests/test_flight.py</code> covers them. <code>reckon/crew/domain_rules.py</code>
+  exposes one public function, <code>rules_for(project, node)</code>, which resolves the
+  project's flight config and returns the invariants, review checks and matched model-path
+  globs whose <code>applies_to</code> reaches the node's declared write paths. A node that
+  writes outside every declared glob carries nothing; a project that declares no block
+  returns an empty <code>DomainRules</code> and keeps today's behaviour. The reader parses the
+  block through the generated model (<code>DomainConfig</code> and its entry types), so a
+  field the schema renames fails loudly at the reader rather than silently matching
+  nothing.</p>
+  <p id="domain-rules-in-flight-measure"><strong>Measure.</strong> Logs are under the run
+  directory (paths below are absolute on the fleet node). Head arm: the gate command named in
+  the manifest's <code>tests</code>, run at the node head, <code>136 passed</code> in
+  <code>tests/test_domain_rules.py tests/test_flight.py tests/test_flight_lanes.py tests/test_budget_lift.py</code>,
+  <code>EXIT=0</code> (<code>logs/gate-head.log</code>). Negative control — the declared
+  mutation, the <code>domain</code> slot dropped from <code>reckon/schema/flight.yaml</code>
+  and regenerated, run in the worktree: <code>8 failed, 1 passed</code>, the
+  refusals naming <code>domain: Extra inputs are not permitted</code>, <code>EXIT=1</code>
+  (<code>logs/negative-control.log</code>). The one passing test is
+  <code>test_rules_for_is_empty_for_a_project_without_the_block</code>, which declares no
+  block and so cannot fail on a tree that drops it. Matcher-branch arms — each of the glob
+  matcher's two optional branches deleted in turn, the whole test file run for each: the
+  basename arm and the wildcard-free directory-prefix arm each <code>1 failed</code>, on
+  <code>test_rules_for_matches_a_bare_basename_pattern</code> and
+  <code>test_rules_for_matches_a_wildcard_free_directory_prefix</code> respectively,
+  <code>EXIT=1</code> each (<code>logs/branch-mutations.log</code>). Base arm: the module is
+  new in this node, so against a base-revision scratch tree the test file cannot import it —
+  <code>ModuleNotFoundError: No module named 'reckon.crew.domain_rules'</code>,
+  <code>EXIT=2</code> (<code>logs/base-arm.log</code>, with <code>measurement_module</code>
+  and <code>measurement_cwd</code> in the manifest). For a brand-new module an import
+  failure at base is the honest base arm; the measure is the declared negative control
+  above. No figure:
+  the done-when names none, and the relationship is a two-line schema block, not a spatial
+  one. <code>ruff check</code> and <code>ruff format --check</code> add no findings on the
+  changed hand-written paths (<code>All checks passed!</code>, <code>2 files already
+  formatted</code>, <code>logs/ruff.log</code>).</p>
+</article>
+</body>
+</html>
