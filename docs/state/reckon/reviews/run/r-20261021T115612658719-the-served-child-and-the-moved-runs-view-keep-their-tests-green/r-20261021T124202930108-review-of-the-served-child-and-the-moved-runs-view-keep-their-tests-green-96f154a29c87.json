@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite failure_ids at 785188d01 are tests/test_mcp_crew_runs_run_id.py::test_run_id_reaches_runs_view, tests/test_the_fleet_gate_holds_dispatch.py::test_launch_callers_reach_the_shared_gate, tests/test_structural_invariants.py::test_only_the_shared_parser_calls_fromisoformat and tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window; after_suite failure_ids at 96f154a29 are the last two, both of which are in the base set, so the difference is empty.",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/mcp.py:1961",
+    "reckon/mcp.py:2191",
+    "reckon/mcp_views.py:3708",
+    "reckon/mcp_views.py:3856",
+    "reckon/served_code.py:1806",
+    "reckon/served_code.py:1851",
+    "reckon/mcp.py:569"
+  ],
+  "completed_at": "2026-10-21T13:02:31.491Z",
+  "dispatched_at": "2026-10-21T12:43:51Z",
+  "findings": [
+    {
+      "file": "tests/test_the_served_child_is_not_a_worker_launch.py",
+      "line": "72",
+      "text": "follow-on: this assertion's expected program is served_code.SERVED_CHILD_PROGRAM (line 75), the same module attribute the code under test interpolates, so the two sides move together on the program text \u2014 a change to the child's program string passes this assertion and only a change to the argv shape or to a worker command reddens it; the property the node added \u2014 that the child is not a worker launch \u2014 is carried by the independent assertion at line 96, so the coupling does not leave the change unguarded."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T115612658719-the-served-child-and-the-moved-runs-view-keep-their-tests-green/logs/head_arm.txt",
+      "line": "4",
+      "text": "follow-on: the head arm log's command header lists tests/test_the_served_child_is_not_a_worker_launch.py twice while the manifest's after_suite command lists it once; pytest dedupes the repeated path so the 120-passed figure is unaffected, but the log and the receipt describe the same run differently and a reader reconciling them meets a discrepancy that is not a real difference."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "VERDICT call_sites: reckon/mcp.py:1961 (_crew) reaches reckon/mcp.py:2191 (serve_crew_view), which at reckon/mcp_views.py:3708 binds and at :3856 calls reckon.crew.query.runs_view, the name the repointed spy patches; reckon/served_code.py:1806 and :1851 are the renamed attribute's assignment and its call inside CurrentCodeServer._child_for.",
+    "diff": "VERDICT diff: read 785188d01..96f154a29, one commit; reckon/served_code.py +2/-2 renames only the injected spawner attribute, tests/test_mcp_crew_runs_run_id.py:68 repoints the spy, and the new file adds the argv assertions.",
+    "done_when": "VERDICT done_when: \u00a714's measure names both red ids, the new argv test, a zero-added-failure gate and a clean ruff; head_arm.txt records 2 failed/120 passed against base_arm.txt's 4 failed/116 passed (zero added), I re-ran tests/test_the_served_child_is_not_a_worker_launch.py at head (2 passed) and ruff check plus ruff format --check on the gate's command.",
+    "goal": "VERDICT goal: the node goal is to make the two tests this plan's surface broke pass without a census exemption, as \u00a714 specifies; the landed rename removes the false positive and tests/test_the_fleet_gate_holds_dispatch.py is untouched.",
+    "manifest": "VERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T115612658719-the-served-child-and-the-moved-runs-view-keep-their-tests-green/manifest.md; status complete, commits 96f154a29, baseline_suite 4 failures at 785188d01, after_suite 2 failures at 96f154a29, negative_control_log named as a bare path.",
+    "write_paths": "VERDICT write_paths: the manifest declares reckon/served_code.py, tests/test_mcp_crew_runs_run_id.py, tests/test_the_served_child_is_not_a_worker_launch.py and the fragment; git show --stat 96f154a29 changes exactly those four and nothing else."
+  },
+  "justifications": {
+    "durability": "The guard for the product change fires under the declared mutation: logs/negative_control.txt restores _spawn and reddens tests/test_the_fleet_gate_holds_dispatch.py:787 with AssertionError: ('reckon/served_code.py', '_child_for'), and the added file's independent assertion at tests/test_the_served_child_is_not_a_worker_launch.py:96 reddens when the argv names a worker command.",
+    "evidence": "The pytest arm is recorded (logs/base_arm.txt '4 failed, 116 passed ... EXIT=1' at 785188d01 versus logs/head_arm.txt '2 failed, 120 passed ... EXIT=1' at 96f154a29).",
+    "fit": "The rename touches only the attribute and its two uses (reckon/served_code.py:1806 and :1851), the new module follows the sibling tests' idiom of typed functions with a monkeypatch fixture, and no plan, stage or version label appears in any name or comment.",
+    "goal_fidelity": "The goal is \u00a714's deliverable: both red ids pass at head (logs/head_arm.txt at 96f154a29 lists neither, base_arm.txt at 785188d01 lists both) and no census exemption was taken, since tests/test_the_fleet_gate_holds_dispatch.py:788 still expects exactly the three guarded spawners and that file is not in the diff.",
+    "reuse": "tests/test_the_served_child_is_not_a_worker_launch.py:50 compiles worker commands through _backends.launch_plan, the existing owner of worker argv, rather than re-listing a command set the test derives for itself, and the diff adds no production capability to fork.",
+    "scope_discipline": "git show --stat 96f154a29 lists four files \u2014 reckon/served_code.py, tests/test_mcp_crew_runs_run_id.py, tests/test_the_served_child_is_not_a_worker_launch.py and the evidence fragment \u2014 every one a declared write path, with no figure directory created."
+  },
+  "node": "review-of-the-served-child-and-the-moved-runs-view-keep-their-tests-green-96f154a29c87",
+  "node:reviewed": "the-served-child-and-the-moved-runs-view-keep-their-tests-green",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the two tests this plan's surface broke pass without a census exemption, as \u00a714 specifies; the landed rename removes the false positive and tests/test_the_fleet_gate_holds_dispatch.py is untouched.\nVERDICT done_when: \u00a714's measure names both red ids, the new argv test, a zero-added-failure gate and a clean ruff; head_arm.txt records 2 failed/120 passed against base_arm.txt's 4 failed/116 passed (zero added), I re-ran tests/test_the_served_child_is_not_a_worker_launch.py at head (2 passed) and ruff check plus ruff format --check on the gate's command.\nVERDICT write_paths: the manifest declares reckon/served_code.py, tests/test_mcp_crew_runs_run_id.py, tests/test_the_served_child_is_not_a_worker_launch.py and the fragment; git show --stat 96f154a29 changes exactly those four and nothing else.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T115612658719-the-served-child-and-the-moved-runs-view-keep-their-tests-green/manifest.md; status complete, commits 96f154a29, baseline_suite 4 failures at 785188d01, after_suite 2 failures at 96f154a29, negative_control_log named as a bare path.\nVERDICT diff: read 785188d01..96f154a29, one commit; reckon/served_code.py +2/-2 renames only the injected spawner attribute, tests/test_mcp_crew_runs_run_id.py:68 repoints the spy, and the new file adds the argv assertions.\nVERDICT call_sites: reckon/mcp.py:1961 (_crew) reaches reckon/mcp.py:2191 (serve_crew_view), which at reckon/mcp_views.py:3708 binds and at :3856 calls reckon.crew.query.runs_view, the name the repointed spy patches; reckon/served_code.py:1806 and :1851 are the renamed attribute's assignment and its call inside CurrentCodeServer._child_for.\nCALL_SITES: reckon/mcp.py:1961, reckon/mcp.py:2191, reckon/mcp_views.py:3708, reckon/mcp_views.py:3856, reckon/served_code.py:1806, reckon/served_code.py:1851, reckon/mcp.py:569\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: The goal is \u00a714's deliverable: both red ids pass at head (logs/head_arm.txt at 96f154a29 lists neither) and no census exemption was taken, since tests/test_the_fleet_gate_holds_dispatch.py:788 still expects exactly the three guarded spawners and that file is not in the diff.\nSCORE evidence: 16\nJUSTIFICATION evidence: The pytest arm is recorded (logs/base_arm.txt '4 failed, 116 passed ... EXIT=1' at 785188d01 versus logs/head_arm.txt '2 failed, 120 passed ... EXIT=1' at 96f154a29).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 96f154a29 lists four files, every one a declared write path, with no figure directory created and no census file touched.\nSCORE durability: 16\nJUSTIFICATION durability: The guard for the product change fires under the declared mutation: logs/negative_control.txt restores _spawn and reddens tests/test_the_fleet_gate_holds_dispatch.py:787 with AssertionError: ('reckon/served_code.py', '_child_for'), and the added file's independent assertion at tests/test_the_served_child_is_not_a_worker_launch.py:96 reddens when the argv names a worker command.\nSCORE fit: 20\nJUSTIFICATION fit: The rename touches only the attribute and its two uses (reckon/served_code.py:1806 and :1851), the new module follows the sibling tests' idiom of typed functions with a monkeypatch fixture, and no plan, stage or version label appears in any name or comment.\nSCORE reuse: 20\nJUSTIFICATION reuse: tests/test_the_served_child_is_not_a_worker_launch.py:50 compiles worker commands through _backends.launch_plan, the existing owner of worker argv, rather than re-listing a command set the test derives for itself, and the diff adds no production capability to fork.\nFINDING tests/test_the_served_child_is_not_a_worker_launch.py:72 follow-on: this assertion's expected program is served_code.SERVED_CHILD_PROGRAM (line 75), the same module attribute the code under test interpolates, so the two sides move together on the program text \u2014 a change to the child's program string passes this assertion and only a change to the argv shape or to a worker command reddens it; the property the node added \u2014 that the child is not a worker launch \u2014 is carried by the independent assertion at line 96, so the coupling does not leave the change unguarded.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T115612658719-the-served-child-and-the-moved-runs-view-keep-their-tests-green/logs/head_arm.txt:4 follow-on: the head arm log's command header lists tests/test_the_served_child_is_not_a_worker_launch.py twice while the manifest's after_suite command lists it once; pytest dedupes the repeated path so the 120-passed figure is unaffected, but the log and the receipt describe the same run differently.",
+  "review_run_id": "r-20261021T124202930108-review-of-the-served-child-and-the-moved-runs-view-keep-their-tests-green-96f154a29c87",
+  "reviewed_base_sha": "785188d01faed654aef3b671b1f9452abbd96368",
+  "reviewed_head_sha": "96f154a29c87749c509dd0f4a4eec79b655c793f",
+  "reviewed_run_id": "r-20261021T115612658719-the-served-child-and-the-moved-runs-view-keep-their-tests-green",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T13:05:00+00:00",
+  "total": 112
+}
