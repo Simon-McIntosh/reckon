@@ -3048,6 +3048,11 @@ reckon/crew/dispatch.py:4535: TypeError
     <p><code>test_the_stated_command_prints_the_same_seconds_in_two_zones</code> now accepts two readings within 60 seconds of each other (<code>TOLERATED_DRIFT_SECONDS</code>) and still fails on a zone offset of 3,600 seconds. Merged at <code>b7ce7fc21</code> (head <code>2f70f6df1</code>). The test passes 20 of 20 in the foreground, and the negative control that adds 3,600 to one zone's reading fails it with <code>assert 3600 &lt;= 60</code>. Reviewed 111/120 twice. The first review widened the tolerance from one second and asked for every cited figure to have its log. The second found the plan text still saying one second, which is now reconciled.</p>
   </section>
 
+  <section id="s31">
+    <h2>§31 — review.py fits a worker window again, landed</h2>
+    <p>The committed review-record store family moved from <code>reckon/crew/review.py</code> into <code>reckon/crew/review_records.py</code>, from <code>_staging_copies_of_record</code> through <code>_indexed_head_matches</code>. Names other modules import from <code>review.py</code> stay importable there as re-exports. Merged at <code>9d0ebf5dd</code> (head <code>deb49233c</code>). Measured at the merged head by <code>reckon.crew.routing._tokens_for_bytes</code>: <code>review.py</code> 41,357 estimated tokens (52,989 at base) and <code>review_records.py</code> 12,512, so the width test no longer names <code>review.py</code>. The negative control restores <code>review.py</code> in a scratch copy, and the width test names it again.</p><p>Reviewed 108/120. Its two follow-ons were recorded figures. The fragment named <code>reckon/ledger.py</code> at 52,989, which is <code>review.py</code>'s base figure, corrected by the coordinator to 51,666. The manifest carried only one module's size, and both are recorded here. Population at merge (run <code>r-20261021T121650771512-population-sg31</code>, 146 files importing either module, exclusive <code>all_debug</code> node, follower environment cleared, base <code>62be8cc36</code> vs candidate <code>f7bf15ef6</code>): 6 failed / 1187 passed in both arms, the same six ids, so no added failure.</p>
+  </section>
+
 </main>
 </body>
 </html>
