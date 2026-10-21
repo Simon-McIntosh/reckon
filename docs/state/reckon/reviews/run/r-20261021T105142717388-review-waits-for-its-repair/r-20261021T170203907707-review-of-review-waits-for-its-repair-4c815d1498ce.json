@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_repair_dispatch.py:677",
+    "reckon/crew/recovery_review_acceptance.py:534",
+    "reckon/crew/recovery_review_dispatch.py:2180",
+    "reckon/crew/recovery_review_acceptance.py:498",
+    "reckon/crew/recovery_watch.py:3016",
+    "reckon/crew_dispatch_commands.py:2652"
+  ],
+  "completed_at": "2026-10-21T17:28:57.643Z",
+  "dispatched_at": "2026-10-21T17:03:51Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T105142717388-review-waits-for-its-repair/manifest.md",
+      "line": "1",
+      "severity": "blocking",
+      "text": "blocking: the source manifest fails its own write-time audit. `reckon crew check --manifest --run r-20261021T105142717388-review-waits-for-its-repair` returns ok:false, naming (a) a missing negative_control_log though the node's write paths include a test file and it declares the mutation 'remove the review_lifecycle read from dispatch_review_for_run', (b) baseline_suite as not a flat record (no command, no completed), (c) the gate log logs/gate-followon2.log and three other test_logs as carrying no literal command near their head and/or no terminating EXIT=<n> line, and (d) the commits line citing '1de59a176a4e34a0d0b8d5b0d9ad5bb7b9c2bb19' \u2014 40 hex chars that `git cat-file -e` rejects (exit 1) \u2014 where the real commit is 1de59a176a861cc9a1becfc79d04f93835134519. A record the promotion gate refuses cannot land the node however sound the gained commit is, and the fabricated sha is exactly the class of citation the run's own rules forbid."
+    },
+    {
+      "file": "tests/test_a_review_waits_for_its_repair.py",
+      "line": "362",
+      "severity": "follow-on",
+      "text": "follow-on: the new comment is self-contradictory. It states that the resumed path's report carries no fold field, then says 'a regression that folded here would leave report.get(\"folded_findings\") holding when it should fail. A user of the test is told the assertion reads the store for a reason the sentence does not support, and the key it names (in_flight.get) was deleted by this same commit, so the comment describes code that is no longer present."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 1de59a176: the single gained commit 4c815d149 rewrites the in-flight arm of test_the_repair_round_folds_its_findings_and_the_review_proceeds (tests/test_a_review_waits_for_its_repair.py:360-372), replacing `assert not in_flight.get(\"folded_findings\")` with a store read through review_module.stored_record and repair_module.blocking_finding_dispositions, and asserting the disposition is \"open\"; one file, +19/-1.",
+    "done_when": "the source done-when names tests/test_a_review_waits_for_its_repair.py passing with the gate log showing the new tests failing on base as the negative control; the source manifest's after_suite records logs/gate-followon2.log at revision 4c815d1498ce, 182 passed, EXIT=0, and its negative_control_note names logs/negative-control-followon2.log at EXIT=1 with the fold test failing \u2014 both logs read directly.",
+    "goal": "the source node goal is to refuse a review dispatch while the run's newest review holds an undisposed blocking finding, read through review_lifecycle; the commit this review gained since the last review is 4c815d149, which touches only tests/test_a_review_waits_for_its_repair.py, and the production guard it protects at reckon/crew/recovery_review_dispatch.py:2104 _open_review_refusal is unchanged by it.",
+    "manifest": "read; the source manifest records status complete at 4c815d149 with its gate and negative-control logs, but it fails its own write-time audit (reckon crew check --manifest --run r-20261021T105142717388-review-waits-for-its-repair returns ok:false): negative_control_log absent, baseline_suite not a flat record, four test logs without a head command or a final EXIT= line, and the commits line citing a sha that resolves to no commit object.",
+    "write_paths": "the source node's declared fence is seven paths (four product modules, the test module, the landing fragment, the figure directory); the gained commit touches exactly tests/test_a_review_waits_for_its_repair.py, inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_review_waits_for_its_repair.py:372 asserts the disposition read back from the store is \"open\" during the resumed round, an independent read of what the code wrote, and logs/negative-control-followon2.log shows it reddening with 'folded' when in-flight folding is reinstated.",
+    "evidence": "the gate ran at the landed revision 4c815d1498ce (logs/gate-followon2.log, 182 passed, EXIT=0) and its negative control at logs/negative-control-followon2.log (EXIT=1), but the source manifest fails its own write-time audit (ok:false), so the recorded result is not promotion-admissible as it stands.",
+    "fit": "the change follows the module's store-read idiom via review_module.stored_record and repair_module.blocking_finding_dispositions, but the comment at tests/test_a_review_waits_for_its_repair.py:362-364 is self-contradictory.",
+    "goal_fidelity": "the gained commit is a test-strengthening for the node's own guard, and the guard it protects at reckon/crew/recovery_review_dispatch.py:2134-2141 reads review_lifecycle.lifecycle and repair.blocking_finding_dispositions exactly as the node goal states.",
+    "reuse": "the gained commit adds no definition and reuses the existing review_module.stored_record and repair_module.blocking_finding_dispositions readers rather than forking a capability.",
+    "scope_discipline": "the 1de59a176..4c815d149 diff touches only tests/test_a_review_waits_for_its_repair.py, which is inside the source node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to refuse a review dispatch while the run's newest review holds an undisposed blocking finding, read through review_lifecycle; this review covers only the one commit the run gained since it was last reviewed (4c815d149), which touches tests/test_a_review_waits_for_its_repair.py and leaves the production guard at reckon/crew/recovery_review_dispatch.py:2104 unchanged.\nVERDICT done_when: the source done-when names tests/test_a_review_waits_for_its_repair.py passing with the base arm failing as the negative control; the source manifest's after_suite records logs/gate-followon2.log at revision 4c815d1498ce, 182 passed, EXIT=0, and negative_control-followon2.log at EXIT=1, both read directly.\nVERDICT write_paths: the source node's declared fence is seven paths; the gained commit touches exactly tests/test_a_review_waits_for_its_repair.py, inside them.\nVERDICT manifest: read; the source manifest records status complete at 4c815d149 with its gate and negative-control logs, but it fails its own write-time audit (ok:false) \u2014 negative_control_log absent, baseline_suite not a flat record, and the commits line citing a sha that resolves to no commit object.\nVERDICT diff: read commit by commit against 1de59a176: 4c815d149 rewrites the in-flight arm of test_the_repair_round_folds_its_findings_and_the_review_proceeds (tests/test_a_review_waits_for_its_repair.py:360-372), replacing `assert not in_flight.get(\"folded_findings\")` with a store read through review_module.stored_record and repair_module.blocking_finding_dispositions; one file, +19/-1.\nCALL_SITES: reckon/crew/recovery_repair_dispatch.py:677, reckon/crew/recovery_review_acceptance.py:534, reckon/crew/recovery_review_acceptance.py:498, reckon/crew/recovery_watch.py:3016, reckon/crew_dispatch_commands.py:2652\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the gained commit is a test-strengthening for the node's own guard, and the guard it protects at reckon/crew/recovery_review_dispatch.py:2134-2141 reads review_lifecycle.lifecycle and repair.blocking_finding_dispositions exactly as the node goal states.\nSCORE evidence: 13\nJUSTIFICATION evidence: the gate ran at the landed revision 4c815d1498ce (logs/gate-followon2.log, 182 passed, EXIT=0) and its negative control at logs/negative-control-followon2.log (EXIT=1), but the source manifest fails its own write-time audit (ok:false), so the recorded result is not promotion-admissible as it stands.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the 1de59a176..4c815d149 diff touches only tests/test_a_review_waits_for_its_repair.py, which is inside the source node's declared write paths.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_review_waits_for_its_repair.py:372 asserts the store's disposition is \"open\" during the resumed round, an independent read of what the code wrote, and logs/negative-control-followon2.log shows it reddening with 'folded' when in-flight folding is reinstated.\nSCORE fit: 16\nJUSTIFICATION fit: the change follows the module's store-read idiom via review_module.stored_record and repair_module.blocking_finding_dispositions, but the comment at tests/test_a_review_waits_for_its_repair.py:362-364 is self-contradictory.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained commit adds no definition and reuses the existing review_module.stored_record and repair_module.blocking_finding_dispositions readers rather than forking a capability.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T105142717388-review-waits-for-its-repair/manifest.md:1 blocking: the source manifest fails its own write-time audit.\nFINDING tests/test_a_review_waits_for_its_repair.py:362 follow-on: the new comment is self-contradictory and names a key the commit deleted.\n",
+  "review_run_id": "r-20261021T170203907707-review-of-review-waits-for-its-repair-4c815d1498ce",
+  "reviewed_base_sha": "1de59a176a861cc9a1becfc79d04f93835134519",
+  "reviewed_head_sha": "4c815d1498ce973ac19d876115f8ca50f0e6922e",
+  "reviewed_run_id": "r-20261021T105142717388-review-waits-for-its-repair",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "review",
+  "scores": {
+    "durability": 20,
+    "evidence": 13,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T17:36:30.530561+00:00",
+  "total": 107
+}

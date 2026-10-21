@@ -26,7 +26,7 @@
   <title>Work Is Checked Against Its Domain | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="15">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -110,13 +110,16 @@
     <div class="r-comment-body"><p>§3 landed: a typed domain block in the flight schema, read by one <code>rules_for</code> (run <code>domain-rules-in-flight</code>, head <code>4b8d295d1</code>); gate 136 passed; negative control 8 of 9 red. <a href="/reckon/evidence/archive/work-is-checked-against-its-domain-landed.html#s3">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261021T112625211050-domain-rules-in-flight" data-who="reckon-build" data-when="2026-10-21T13:40:25Z">
-    <div class="r-comment-body"><p>A repository declares its domain rules once in the flight config&#x27;s typed `domain` block (invariants with id/rule/applies_to/optional check, review_checks with id/question/applies_to, model_paths), and one module `reckon/crew/domain_rules.py` answers which rules a node&#x27;s write paths touch via `rules_for(project, node)`; head gate 136 passed, and dropping the domain block from the schema is the negative control.</p></div>
+    <div class="r-comment-body"><p>A repository declares its domain rules once in the flight config's typed `domain` block (invariants with id/rule/applies_to/optional check, review_checks with id/question/applies_to, model_paths), and one module `reckon/crew/domain_rules.py` answers which rules a node's write paths touch via `rules_for(project, node)`; head gate 136 passed, and dropping the domain block from the schema is the negative control.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261021T115211619347-review-of-review-waits-for-its-repair-492418fba425" data-who="reckon-build" data-when="2026-10-21T12:16:58.672Z">
     <div class="r-comment-body"><p>independent review of run r-20261021T105142717388-review-waits-for-its-repair at head 492418fb against base ac17ed13: scores goal_fidelity 19, evidence 16, scope_discipline 19, durability 18, fit 18, reuse 16; two follow-on findings (the dispose-command pair at reckon/crew/recovery_review_dispatch.py:2089 duplicates reckon/crew/obligations.py:1218, and the repair path at reckon/crew/recovery_repair_dispatch.py:813 never writes the disposition the new guard reads, so an automatic repair round's re-review is refused until a coordinator disposes by hand)</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261021T135355553303-review-of-review-waits-for-its-repair-1de59a176a86" data-who="reckon-build" data-when="2026-10-21T14:17:39.862Z">
     <div class="r-comment-body"><p>review-of-review-waits-for-its-repair at 1de59a176 — parsed review record scoring goal_fidelity 18, evidence 15, scope_discipline 20, durability 14, fit 18, reuse 19, with two follow-on findings (an inert in-flight assertion in the new test, and an after_suite evidence log carrying no revision header or EXIT= line); added_failure_count 0 derived from the reviewed run's baseline_suite (negative-control.log, 1 failure, EXIT=1) and after_suite (gate-followon.log, 0 failures, EXIT=0).</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261021T170203907707-review-of-review-waits-for-its-repair-4c815d1498ce" data-who="reckon-build" data-when="2026-10-21T17:28:57.643Z">
+    <div class="r-comment-body"><p>Independent review of r-20261021T105142717388-review-waits-for-its-repair over the delta 1de59a176..4c815d149 (tests/test_a_review_waits_for_its_repair.py): parsed record at review-records/, reviewed_base_sha 1de59a176a861cc9a1becfc79d04f93835134519, reviewed_head_sha 4c815d1498ce973ac19d876115f8ca50f0e6922e, scores goal_fidelity 18 evidence 13 scope_discipline 20 durability 20 fit 16 reuse 20, added_failure_count 0, two findings (one blocking on the source manifest&#x27;s failed write-time audit, one follow-on on a contradictory test comment).</p></div>
 </div>
 </section>
 </main>
