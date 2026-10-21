@@ -74,7 +74,6 @@ class Rig:
         self.stamp = "1" * 64
         monkeypatch.setattr(served_code, "SERVED_CHILD_PROGRAM", _DYING_CHILD)
         monkeypatch.setattr(mcp_module, "_current_code_server", lambda: self.server)
-        monkeypatch.setattr(mcp_module, "_SERVE_ON_CURRENT_CODE", set())
         monkeypatch.setattr(mcp_module, "_moved_checkout_state", self._state)
         monkeypatch.setattr(
             mcp_module,
