@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-21T02:17:50.393Z",
+  "dispatched_at": "2026-10-21T02:03:06Z",
+  "findings": [
+    {
+      "file": "tests/test_a_read_only_codex_worker_runs_inside_the_fence.py",
+      "line": "246",
+      "severity": "follow-on",
+      "text": "follow-on: test_every_add_dir_is_bound_writable_or_outside_every_sealed_path is a second copy, verbatim in assertion and name, of tests/test_a_fenced_codex_review_names_only_writable_roots.py:186, the file that owns that rule, and the new copy is the weaker of the two: its local _sealed_destinations at :69-70 reads only --ro-bind destinations while the owner's copy also collects --tmpfs paths, so a path the argv masks with --tmpfs and also names writable would redden the owner's assertion and pass this one; the genuine addition is the fixture's ambient node-tmp root, which belongs as an added case beside the owner."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T003049346140-a-read-only-codex-worker-runs-inside-the-fence/manifest.md",
+      "line": "47",
+      "severity": "follow-on",
+      "text": "follow-on: the follow_ons bullet cites logs/head_suite3.txt as holding the stopped widened-population attempt, but head_suite3.txt is the completed narrow arm (1 failed, 122 passed in 181.59s, EXIT=1) and no log in the run directory records the 116-file arm or its 4%-after-ten-minutes claim, so a reader checking whether the widened population was measured is pointed at a finished run and the unmeasured claim carries no receipt."
+    },
+    {
+      "file": "reckon/_backends.py",
+      "line": "1320",
+      "severity": "follow-on",
+      "text": "follow-on: the exclude_slash_tmp override is conditional on the read-only tier, so the sibling branch at :1319-1320 still returns --sandbox workspace-write with no override; codex's own workspace-write policy adds the node temp root and protects a .git inside every root it holds, which is the mechanism this node proved, so a fenced codex launch at the workspace-write tier meets the same /tmp/.git refusal on a sealed /tmp; no role or host config in ~/.config/reckon declares such a run today, so the gap is latent rather than live."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a codex worker at the read-only tier runs its shell commands inside the fence; the landed pair \u2014 fence_writable_roots appending node_tmp_seal_root (reckon/_worker_fence.py:1304-1307) and the read-only tier's exclude_slash_tmp override (reckon/_backends.py:1304-1316) \u2014 with the head live launch whose pwd printed the run directory and wrote fence-probe.txt (logs/live_head_final.txt) satisfies it.\nVERDICT done_when: the done-when's five items are met \u2014 the composed-argv pair (logs/argv_base.txt, logs/argv_head.txt) shows --add-dir /tmp bound-writable False sealed True at base and only the run scratch beneath the seal at head; the live arms (logs/live_base2.txt, logs/live_base_override.txt, logs/live_base_override_no_tmp.txt, logs/live_head_final.txt) show the refusal, the two hand-edited arms and head; the new test asserts the seal property and reddens on reversion; both gate arms and the ruff delta are logged.\nVERDICT write_paths: the source manifest declares reckon/_worker_fence.py, reckon/_backends.py, the new test file and the evidence fragment (plus a figures directory, unused); git diff fccdd3136f1e5f9e0f880d7e86806d9551a01120..b82a93f51 touches exactly those four paths and nothing else.\nVERDICT manifest: read at the reviewed head; it states status complete, names all four changed paths, records both gate arms, the negative control and eleven logs under its run directory; its follow_ons bullet at :47 mis-cites logs/head_suite3.txt as a stopped attempt when that file is the completed narrow arm, and its baseline_suite/after_suite carry prose summaries rather than the declared JSON shape though reckon crew check --manifest accepts the record.\nVERDICT diff: read commit by commit against fccdd3136f1e5f9e0f880d7e86806d9551a01120; 6388c9278 fixes the fence rule and adds three tests, ce4f91be8 adds the codex config override and the fourth test, b82a93f51 rewrites only the evidence fragment, +376/-10 across four files, all inside the declared scope.\nCALL_SITES: reckon/_backends.py:1244 (_CodexDialect.argv calls the changed _sandbox_flags at :1298), reckon/_backends.py:2235 (launch_plan composes the dialect's writable roots through fence_writable_roots), reckon/_worker_fence.py:1523 (fence_argv's own grant loop)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: a head read-only codex launch runs pwd and writes fence-probe.txt inside the fence (logs/live_head_final.txt), which is the failure the goal names.\nSCORE evidence: 17\nJUSTIFICATION evidence: both gate arms are logged and reconcile \u2014 logs/base_suite3.txt reads 1 failed, 118 passed and logs/head_suite3.txt reads 1 failed, 122 passed with the same id \u2014 but the unmeasured-population claim cites logs/head_suite3.txt wrongly at manifest.md:47.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in git diff fccdd3136f1e5f9e0f880d7e86806d9551a01120..b82a93f51 lies inside the declared write paths and the worktree is clean.\nSCORE durability: 18\nJUSTIFICATION durability: reverting both halves reddens three named tests at EXIT=1 (logs/negative_control3.txt, 3 failed 1 passed), and test_no_add_dir_names_a_path_at_or_above_a_node_tmp_seal (tests/test_a_read_only_codex_worker_runs_inside_the_fence.py:191-206) compares the argv against _worker_fence.node_tmp_seal_root() rather than against a value the test passed in.\nSCORE fit: 17\nJUSTIFICATION fit: the change extends the existing seams in house style (reckon/_worker_fence.py:1304-1307, reckon/_backends.py:1304-1316) and adds no banned name, though tests/test_a_read_only_codex_worker_runs_inside_the_fence.py:86 keeps a changelog-style docstring.\nSCORE reuse: 17\nJUSTIFICATION reuse: the fix extends the owners in place \u2014 fence_writable_roots and _CodexDialect._sandbox_flags \u2014 and forks nothing, the one duplication being the weaker test copy at tests/test_a_read_only_codex_worker_runs_inside_the_fence.py:246.\nFINDING tests/test_a_read_only_codex_worker_runs_inside_the_fence.py:246 follow-on: test_every_add_dir_is_bound_writable_or_outside_every_sealed_path is a second copy, verbatim in assertion and name, of tests/test_a_fenced_codex_review_names_only_writable_roots.py:186, the file that owns that rule, and the new copy is the weaker of the two: its local _sealed_destinations at :69-70 reads only --ro-bind destinations while the owner's copy also collects --tmpfs paths, so a path the argv masks with --tmpfs and also names writable would redden the owner's assertion and pass this one.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T003049346140-a-read-only-codex-worker-runs-inside-the-fence/manifest.md:47 follow-on: the follow_ons bullet cites logs/head_suite3.txt as holding the stopped widened-population attempt, but head_suite3.txt is the completed narrow arm (1 failed, 122 passed in 181.59s, EXIT=1) and no log in the run directory records the 116-file arm or its 4%-after-ten-minutes claim.\nFINDING reckon/_backends.py:1320 follow-on: the exclude_slash_tmp override is conditional on the read-only tier, so the sibling branch at :1319-1320 still returns --sandbox workspace-write with no override, and a fenced codex launch at that tier meets the same /tmp/.git refusal on a sealed /tmp; no role or host config declares such a run today, so the gap is latent rather than live.",
+  "review_run_id": "r-20261021T020202432137-review-of-a-read-only-codex-worker-runs-inside-the-fence-b82a93f51e20",
+  "reviewed_base_sha": "fccdd3136f1e5f9e0f880d7e86806d9551a01120",
+  "reviewed_head_sha": "b82a93f51e20e253ba011a55ada5ec866e596f27",
+  "reviewed_run_id": "r-20261021T003049346140-a-read-only-codex-worker-runs-inside-the-fence",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T02:43:01.527278+00:00",
+  "total": 106
+}
