@@ -260,6 +260,32 @@ def _server_log_path() -> Path:
     return log_path()
 
 
+#: Attribute a server object carries its first-resolved served log path on. The
+#: name is namespaced so it cannot collide with anything else set on a server.
+_SERVER_LOG_PATH_ATTR = "_reckon_served_log_path"
+
+
+def _served_log_path(server: object) -> Path:
+    """The served log path ``server`` resolved at its first request, kept.
+
+    A server resolves its log path once, the first time it handles a request,
+    and keeps the result on itself. Every access line and every bound check
+    made for that server's requests then uses the kept path, so a home that
+    moves after the first request — a test's teardown restoring the environment
+    while a handler thread is still open — cannot send a later line or a
+    rotation to a different home. The path is resolved per server object rather
+    than per process, so a bare ``ThreadingHTTPServer`` a test builds around
+    ``serve.Handler`` keeps its own, exactly as the served entry point does;
+    ``Handler`` reaches its server as ``self.server``.
+    """
+
+    kept = getattr(server, _SERVER_LOG_PATH_ATTR, None)
+    if kept is None:
+        kept = _server_log_path()
+        setattr(server, _SERVER_LOG_PATH_ATTR, kept)
+    return kept
+
+
 def _write_access_line(line: str, path: Path | None = None) -> None:
     """Append one access line to the served log, exclusive with any rotation.
 
@@ -2229,7 +2255,10 @@ class Handler(BaseHTTPRequestHandler):
 
     def log_message(self, fmt: str, *args) -> None:
         ts = datetime.now().strftime("%H:%M:%S")
-        _write_access_line(f"[{ts}] {self.address_string()} {fmt % args}")
+        _write_access_line(
+            f"[{ts}] {self.address_string()} {fmt % args}",
+            _served_log_path(self.server),
+        )
 
     # ── Request duration: the access line and the Server-Timing header ────
 
@@ -2238,7 +2267,7 @@ class Handler(BaseHTTPRequestHandler):
 
         self._request_started = time.perf_counter()
         self._response_status: int | None = None
-        _bound_server_log()
+        _bound_server_log(_served_log_path(self.server))
         try:
             super().handle_one_request()
         finally:
