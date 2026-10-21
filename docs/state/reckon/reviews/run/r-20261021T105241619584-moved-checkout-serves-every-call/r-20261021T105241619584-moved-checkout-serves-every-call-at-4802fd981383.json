@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-10-21T10:54:54Z",
+  "findings": [
+    {
+      "line": 77,
+      "path": "tests/test_a_dying_child_is_backed_off.py",
+      "severity": "follow-on",
+      "text": "the gained commit deletes this file's monkeypatch reset of the deleted _SERVE_ON_CURRENT_CODE, but the file is not one of the node's granted write paths (five declared, plus tests/test_a_slow_child_never_forces_a_reconnect.py which the resume granted by name), so the change is outside the exclusive scope; it is nonetheless entailed by the ordered deletion, because monkeypatch.setattr with raising=True would raise AttributeError at rig setup for every case in the file."
+    },
+    {
+      "line": 205,
+      "path": "tests/test_an_added_parameter_needs_no_reconnect.py",
+      "severity": "follow-on",
+      "text": "the gained commit deletes this file's _SERVE_ON_CURRENT_CODE reset at :205 (Rig) and :278 (CheckoutRig) although the file is outside the granted write paths; as above the edit is entailed by deleting the symbol, not a discretionary change."
+    },
+    {
+      "line": 234,
+      "path": "tests/test_a_moved_checkout_serves_every_call.py",
+      "severity": "follow-on",
+      "text": "rig.child_stamp() reads CurrentCodeServer.current_stamp(), which returns the stamp the rig itself handed to server.warm(self.stamp) at tests/test_a_moved_checkout_serves_every_call.py:197, so it resolves to the rig's own constant; the assertion at :231 is therefore the same comparison as the `== rig.stamp` it replaced, and the assertion at :234 (repeated at :322) compares two rig constants through an accessor and holds under every reachable state, so neither can catch a wrong stamp, and the fragment's claim that the stamps are read 'from the server that started the child rather than from a constant the case injected' overstates the guard."
+    },
+    {
+      "line": 575,
+      "path": "reckon/mcp.py",
+      "severity": "follow-on",
+      "text": "_raised_under_the_current_code returns {} when _stale_code_response returns None, and _moved_checkout_state() is recomputed on every call (reckon/mcp.py:299), so a tree that becomes untrusted between the guard's own state read and this one makes the raise path answer with an empty dict and swallow the exception the caller used to see raised; re-raising when the refusal is None is the shape that keeps the failure."
+    },
+    {
+      "line": 282,
+      "path": "tests/test_a_moved_checkout_serves_every_call.py",
+      "severity": "follow-on",
+      "text": "the case added by this run for the narrowed catch is not in the base arm: base-gate.log ran 34 cases (5 failed, 29 passed) and gate.log runs 35 (1 failed, 34 passed), so the case guarding the change's headline behaviour has no recorded failure on the pre-change tree, and the manifest states this in negative_control_note rather than measuring it."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261021T105241619584-moved-checkout-serves-every-call-at-4802fd981383",
+  "reviewed_base_sha": "7b05ec1298102fbb7723114c571e967a431b6277",
+  "reviewed_head_sha": "4802fd981383cf45c5a57509ac0a7b28773eb694",
+  "reviewed_run_id": "r-20261021T105241619584-moved-checkout-serves-every-call",
+  "scores": {
+    "durability": 13,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "subject": "run",
+  "text": "VERDICT goal: the node goal is to serve every MCP call on the current code once the checkout has moved and is trusted, not only calls that failed; the gained commits strengthen that goal by removing the tool-history record entirely so routing is decided per call (reckon/mcp.py:686-696), and by narrowing the raise catch at reckon/mcp.py:701 so only a cold-child raise becomes the refusal.\nVERDICT done_when: the done_when names four behaviours plus the unmoved-checkout control and the done-when's own six-file gate judged by failure delta; the manifest's `tests` line is that literal command, tests/test_a_moved_checkout_serves_every_call.py now holds eight cases (the eighth at :282 covering the narrowed catch), and gate.log records the run at the reviewed head with EXIT=1.\nVERDICT write_paths: the declared scope is five paths (reckon/mcp.py; tests/test_a_moved_checkout_serves_every_call.py; tests/test_mcp_server_serves_current_code.py; the evidence fragment; the figures dir) plus tests/test_a_slow_child_never_forces_a_reconnect.py granted at the reopen; the gained diff changes six files and tests/test_a_dying_child_is_backed_off.py and tests/test_an_added_parameter_needs_no_reconnect.py are not among the granted set.\nVERDICT manifest: read; it records status complete, ten commits, the gate's 1 failed/34 passed at 4802fd981 with EXIT=1 against base-gate.log's 5 failed/29 passed, negative_control_log base-gate.log, and three follow_ons including the pre-existing test_one_check_trusts_a_moved_checkout failure and the imprecision of the refusal text on the raise path; baseline_suite and after_suite are null, so the delta is read from the manifest's tests line and the two gate logs.\nVERDICT diff: read commit by commit against 7b05ec1298102fbb7723114c571e967a431b6277 - 40b175299 deletes _SERVE_ON_CURRENT_CODE and its comment (reckon/mcp.py:613) with its three rig resets, makes _raised_under_the_current_code delegate to _stale_code_response and narrow the catch to `probe is None`, 40493c4ec replaces the stamp assertions with rig.child_stamp() and adds the warm-fallback-raise case, and 4802fd981 is the evidence fragment and docstring rewrite; removing the two `if not routed:` re-attempts is semantically neutral because _answer_from_child returns None whenever probe is None (reckon/mcp.py:641).\nCALL_SITES: reckon/mcp.py:3177 (_refuse_when_stale wrapping read_plan), reckon/mcp.py:3188 (edit_plan), reckon/mcp.py:3194 (roadmap), reckon/mcp.py:3200 (audit), reckon/mcp.py:3211 (crew)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp.py:686-696 now routes every warm-child call from the tree's state with the tool-history record deleted, and reckon/mcp.py:701 keeps a warm-child fallback raise as the call's own failure instead of a false refusal.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate.log at the reviewed head records 1 failed and 34 passed with EXIT=1 against base-gate.log's 5 failed and 29 passed, but the base arm ran 34 cases and the case added by this run is the 35th, so the added case has no recorded base failure ids.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: two of the six changed files (tests/test_a_dying_child_is_backed_off.py:77, tests/test_an_added_parameter_needs_no_reconnect.py:205) sit outside the five declared write paths and the one path granted at the reopen.\nSCORE durability: 13\nJUSTIFICATION durability: the four pre-change guards still redden at base (base-gate.log), but the assertion at tests/test_a_moved_checkout_serves_every_call.py:234 resolves to the rig's own constant through CurrentCodeServer.current_stamp and cannot fail, and the case at :282 that guards the narrowed catch is absent from the base arm.\nSCORE fit: 17\nJUSTIFICATION fit: the rewritten guard docstring at reckon/mcp.py:653-675 states the mechanism it implements and the new helpers keep the module's private-helper-with-docstring idiom, with no plan label, version token or banned name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the refusal builder _stale_code_response at reckon/mcp.py:498 is the owner for this answer and _raised_under_the_current_code at reckon/mcp.py:574 now extends it, so the duplicate dict the prior review found is gone; the search over reckon/ for other refusal builders found _unanswered_on_current_code (reckon/mcp.py:539) and _write_may_have_landed (reckon/mcp.py:578), both distinct answers.\nFINDING tests/test_a_dying_child_is_backed_off.py:77 follow-on: the gained commit deletes this file's monkeypatch reset of the deleted _SERVE_ON_CURRENT_CODE although the file is not one of the node's granted write paths, so the change is outside the exclusive scope; it is entailed by the ordered deletion because monkeypatch.setattr would raise AttributeError at rig setup for every case in the file.\nFINDING tests/test_an_added_parameter_needs_no_reconnect.py:205 follow-on: the same out-of-scope deletion recurs here at :205 (Rig) and :278 (CheckoutRig), equally entailed by removing the symbol.\nFINDING tests/test_a_moved_checkout_serves_every_call.py:234 follow-on: rig.child_stamp() returns the stamp the rig handed to server.warm(self.stamp) at :197, so the assertion at :231 is the same comparison as the `== rig.stamp` it replaced and the one at :234 (repeated at :322) compares two rig constants and cannot fail under any reachable state.\nFINDING reckon/mcp.py:575 follow-on: a None from _stale_code_response - reachable because _moved_checkout_state() recomputes at reckon/mcp.py:299 and the tree can move between the guard's read and this one - makes the raise path return an empty dict and swallow the exception instead of raising it.\nFINDING tests/test_a_moved_checkout_serves_every_call.py:282 follow-on: the case added for the narrowed catch is not in the base arm, so the change's headline behaviour has no recorded failure on the pre-change tree.\n",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T17:28:06.360024+00:00",
+  "total": 97
+}
