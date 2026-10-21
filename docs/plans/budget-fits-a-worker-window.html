@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="budget-fits-a-worker-window">
   <meta name="plan-title" content="Budget Fits A Worker Window">
   <meta name="plan-summary" content="reckon/budget.py is 51,533 tokens against the 50,000-token worker-window bound; its pace and lift family moves out so it fits with room to grow.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="mid">
   <meta name="plan-effort-hours" content="2.25">
   <meta name="plan-capability-version" content="1.0">
@@ -25,7 +25,7 @@
   <title>Budget Fits A Worker Window | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="10">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -74,10 +74,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-bfw-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-21" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-bfw-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-21" data-recommends-skill="" data-resolved-at="2026-10-21T06:09:43+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Split budget.py once lane-and-model-routing §46 has merged</h4>
     <div class="r-fu-body"><p>The plan is written. §2 dispatches once lane-and-model-routing §46 has merged, which its coordinator will announce.</p></div>
     <pre class="r-fu-prompt">/reckon-build budget-fits-a-worker-window §2</pre>
+    <p class="r-fu-outcome">done - no followup: budget.py is at 36,942 tokens, under the worker-window bound, after the pace and lift family moved to reckon/pace_report.py at merge 99ef1a95c; lane-and-model-routing section 48 now builds on the smaller file</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -88,7 +89,7 @@
     <div class="r-comment-body"><p>Independent review of the pace and lift move (budget-pace-moves-out) at head 39c4c6744 from base c7210260: a faithful move — reckon/pace_report.py defines all 28 moved functions, reckon/crew/budget_lift.py:665 carries _credit_lift_verdict, and reckon/budget.py:75-81 re-exports the names; every moved function body is identical to its base once the added function-level imports are stripped; scores goal_fidelity 20, evidence 16, scope_discipline 17, durability 14, fit 18, reuse 20; added_failure_count 0; three follow-on findings (prose arm records, a non-discriminating negative control, an untested import direction).</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261021T042124492563-budget-pace-moves-out" data-who="reckon-build" data-when="2026-10-21T06:04:58Z">
-    <div class="r-comment-body"><p>The pace report, the pace row and the pace hold (group_pace, pace_row, pace_hold, _pace_releases_at), the seven lift-reading helpers and the credit-lift verdict leave reckon/budget.py for reckon/pace_report.py, with _credit_lift_verdict in reckon/crew/budget_lift.py; reckon.budget re-exports the moved public names at module level, so preflight&#x27;s bare-name calls and a patch installed on reckon.budget still steer the call. Measured by reckon.crew.routing._tokens_for_bytes: reckon/budget.py 56,488 to 36,942, reckon/pace_report.py 20,502, reckon/crew/budget_lift.py 15,174, all inside the 45,000/40,000/40,000 bounds; the width test&#x27;s offender set at head is the base arm&#x27;s less reckon/budget.py, and the gate adds zero failures.</p></div>
+    <div class="r-comment-body"><p>The pace report, the pace row and the pace hold (group_pace, pace_row, pace_hold, _pace_releases_at), the seven lift-reading helpers and the credit-lift verdict leave reckon/budget.py for reckon/pace_report.py, with _credit_lift_verdict in reckon/crew/budget_lift.py; reckon.budget re-exports the moved public names at module level, so preflight's bare-name calls and a patch installed on reckon.budget still steer the call. Measured by reckon.crew.routing._tokens_for_bytes: reckon/budget.py 56,488 to 36,942, reckon/pace_report.py 20,502, reckon/crew/budget_lift.py 15,174, all inside the 45,000/40,000/40,000 bounds; the width test's offender set at head is the base arm's less reckon/budget.py, and the gate adds zero failures.</p></div>
 </div>
 </section>
 </main>
