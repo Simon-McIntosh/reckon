@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T07:29:13.541Z",
+  "dispatched_at": "2026-10-21T07:16:08Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-page-paints-from-an-index.html:257",
+      "id": "done_when-1",
+      "reason": "as written the crew case is unimplementable inside the node's fence, so \u00a711 would either fail its own done-when or need `tests/test_spa_derived_flow.py` (and a fake-timer path) added to its write paths.",
+      "text": "\u00a711's crew case (\"a poll showing a changed run phase fetches `/_schedule` once ... after a minute fetches once ... the newly working run's bar then draws in flight\") requires both a poll cadence and a render, and neither is reachable from \u00a711's declared write paths: `tests/test_page_paints_from_the_index.py` runs `docs/ui/state-loader.js` under bare `node` with no React at all, and the only harness that renders `docs/ui/crew.jsx` is `tests/test_spa_derived_flow.py`, which is \u00a710's write path and is not listed in \u00a711 \u2014 and whose prelude stubs `useEffect`, `useState` and `setInterval` to no-ops, so it cannot drive a 3 s or 60 s cadence without being extended",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-page-paints-from-an-index.html:257",
+      "id": "done_when-2",
+      "reason": "a hard gate the mechanism cannot satisfy regardless of implementation needs its threshold restated (exclude the load request and count change events from the stream, or compare against windows+loads), otherwise the section is scored red on correct work.",
+      "text": "the coordinator clause \"counts `/_index/power_convertor` requests in the served log over 30 minutes ... and the section holds only if the `/_index` count does not exceed [the settle windows that held a `change` event]\" compares two quantities that cannot be equal on a correct implementation: the crew view's own first paint fetches `/_index` before `/_discover` (\u00a74), and that request sits behind no change event, so a quiet 30 minutes reads \u22651 against 0 settle windows and the section fails however well it was built; the second quantity is also not in the log the clause names, because a change stream is one logged request, not one line per event",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "4bf74a0f4a669c4d28c0eb9b5b821e7252cfbbf43226674dbc3f68524b7b15c1",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 46,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T071420764949-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "cc35d857be720a7f8128519fe438cbf32705cfc4",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_attach_schedule_for_read` resolves at `reckon/serve.py:1777` (swallows a crew-row failure and returns 200 with `schedule` null and `schedule_error`, as the bullet claims), the shell's 3 s `/crew` poll resolves at `docs/ui/shell.jsx:298`, and `tests/test_every_module_fits_a_worker_window.py` exists with `BOUND = 50_000` against `reckon/serve.py`'s measured 46,049 estimated tokens.",
+    "done_when": "a finding \u2014 \u00a711's crew case asserts a render and drives the shell's poll and minute timer, but no declared write path hosts a harness that can run it.",
+    "evidence_paths": "pass \u2014 \u00a711 places every log under the run directory, and its acceptance count is read from the served request log rather than a scratch path.",
+    "naming": "pass \u2014 no plan label, stage name or ticket number reaches \u00a711's new symbols; `DERIVED_STATE_KEYS`, `/_schedule/<project>` and `reckon:derived` name the mechanism.",
+    "reasoning": "pass \u2014 all three checks hold. The root cause matches the cited code: `docs/ui/state-loader.js:747-758` dispatches `reckon-fleet` and then calls `refetchDerived()` on every `fleet` event, and `_attach_schedule_for_read` builds the schedule from live crew rows, so the plan's claim that fleet events are today the only path a run change reaches the derived flow is supported by what it cites. Each bullet's mechanism is capable of its measure, and the caller is named and real: the `/_crew` poll at `docs/ui/shell.jsx:298` returns rows carrying `project`, `plan` and `phase` (`reckon/serve.py:805-826`), so the crew view can indeed see a run-set or phase change and drive the `/_index`-free `/_schedule` fetch.",
+    "single_goal": "pass \u2014 \u00a711's three bullets are one behaviour (route, its two consumers, removal of the fleet-driven refetch) and each now carries its own control.",
+    "wiring": "pass \u2014 \u00a711 declares `depends-on the-page-paints-from-an-index#s10` (`plan-section-depends-on`), which matches its prose \"Build it after \u00a710, which writes the same files\"."
+  },
+  "section_digests": {
+    "_document": "5bedd7f41d8b5b370882135e798f35d56d6e6348c4003130ade8574bbf365128",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "a087a6a31d13a36855df8324fb8b7f11c311397453714adca011bd4ce7869312",
+    "s11": "9ac817574ece238472433c85c65a4f6f22d434e1837a242f448f38d6d172de76",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "768d4a5e4156b059d51137b95683149be313a7d4ce026b0836f872b4f4056507",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T07:31:42.257590+00:00"
+}
