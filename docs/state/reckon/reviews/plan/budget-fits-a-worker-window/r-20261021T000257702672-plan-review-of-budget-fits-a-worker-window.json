@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T00:38:42.461Z",
+  "dispatched_at": "2026-10-21T00:25:01Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/budget-fits-a-worker-window.html:69",
+      "id": "wiring-1",
+      "reason": "\u00a748 is declared `implementable` and its only dependency (\u00a746) is also `implementable`, so nothing stops a coordinator dispatching \u00a748 concurrently with this \u00a72 and two nodes writing the same two modules; the sequencing this plan depends on must be an edge in lane-and-model-routing, not a sentence here.",
+      "text": "\u00a72 closes \"Lane-and-model-routing \u00a748 dispatches after this section merges\", but lane-and-model-routing \u00a748's own `plan-section-depends-on` is `{\"s48\":[\"lane-and-model-routing#s46\"]}` with no edge on `budget-fits-a-worker-window#s2`, and \u00a748's declared write paths include `reckon/budget.py` and `reckon/crew/budget_lift.py`, both of which \u00a72 writes",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/budget-fits-a-worker-window.html:63",
+      "id": "reasoning-1",
+      "reason": "the node whose premise is \"a module this size cannot be handed whole to a local-lane worker\" is asked to hold that module plus three more source files plus 151,384 tokens of gate tests, so the plan should name how the gate is staged or scoped rather than assert it fits one window.",
+      "text": "\u00a72 grants its write paths \"all inside one local-lane window\" and its gate runs 16 test files at base and head, but measured at `f5e88d284` the four source files in scope are 226,914 tokens and the 16 gate test files are a further 151,384, totalling 378,298 against the 230,144-token window \u00a71 itself states",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/budget-fits-a-worker-window.html:49",
+      "id": "anchors_resolve-1",
+      "reason": "the plan's own \u00a72 explains it gives names rather than line numbers \"because \u00a746 shifts the lines\", yet its cut invalidates two line citations in a peer plan and a followup should repoint those anchors in lane-and-model-routing in the same wave.",
+      "text": "\u00a72 moves `_credit_lift_verdict` out of `reckon/budget.py`, and lane-and-model-routing \u00a749 cites it as `reckon/budget.py:1269` and \u00a747 (declared `done`) cites `budget.decide` as `reckon/budget.py:1344`; after this cut both citations point at the wrong code",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/budget-fits-a-worker-window.html:55",
+      "id": "anchors_resolve-2",
+      "reason": "a worker measuring \"by that test's\" function resolves the import in one step and the named file makes the measure reproducible, so only the possessive is imprecise, not the gate.",
+      "text": "the done-when measures \"by that test's `_tokens_for_bytes`\", but that function is not the test's own: `tests/test_every_module_fits_a_worker_window.py:20` imports it `from reckon.crew.routing import _tokens_for_bytes`, where it is defined at `reckon/crew/routing.py:2957`",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "ebd42e44c04ba1637f0935b3e6f5cd72597ca6a78e24498f31af980b5deee598",
+  "plan_slug": "budget-fits-a-worker-window",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T000257702672-plan-review-of-budget-fits-a-worker-window",
+  "reviewed_blob_sha": "1384052d06763fcfb7f3a0e6467641d4c2c09552",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 every anchor this plan names resolves (`f5e88d284`, `6ebe65ba4`, `lane-and-model-routing#s46`, `lane-and-model-routing#s48`, `every-module-fits-a-worker-window` \u00a78, all 16 gate test files, all 15 named symbols), but the cut breaks two line-number citations in a peer plan that \u00a72 does not record.",
+    "done_when": "pass \u2014 \u00a72's measures are all falsifiable against one named instrument (the width test at the node's head) and the section names a negative control that restores base content in a scratch copy.",
+    "evidence_paths": "pass \u2014 \u00a72 names no scratchpad or node-local path for evidence; the only scratch tree named is the negative control's mutation copy, which is a control rather than a stored artifact.",
+    "naming": "pass \u2014 `reckon/budget_pace.py` and `reckon/crew/budget_lift.py` are named by capability, the moved names carry no stage or ticket marker, and the followup id `f-bfw-001` is plan-native data rather than a label reaching code.",
+    "reasoning": "a finding \u2014 \u00a72's mechanism (one worker, one local-lane window) is not capable of the gate \u00a72 itself asserts, by \u00a71's own 230,144-token window bound.",
+    "single_goal": "pass \u2014 \u00a72 carries one deliverable, the pace and lift family leaving `budget.py`; every other condition is an acceptance condition on that move.",
+    "wiring": "a finding \u2014 \u00a72's \"Sequence\" asserts lane-and-model-routing \u00a748 dispatches after this section merges, but lane-and-model-routing \u00a748 declares only `{\"s48\":[\"lane-and-model-routing#s46\"]}`, so the ordering \u00a72 relies on is stated in prose and wired nowhere."
+  },
+  "section_digests": {
+    "_document": "1614740484dbfd4e03e69ff83d11c72be04e1fae29d5472772ec27bb7860cffd",
+    "s1": "f92e2e387471ebdbaf23002560f3c0badee086acf1f20ea972d643203872575d",
+    "s2": "0e38e16e554788f2eac0fc49b48c6fcb5d5d0f7edd439ddd4ceca01cf3315be9"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T00:41:09.460139+00:00"
+}
