@@ -31,12 +31,21 @@
         <code>survived</code> block now carries a <code>judgements</code> map,
         naming a binary path <code>blob_identity</code> rather than reporting an
         empty marker count.</p>
-      <p>Gate: 49 passed at head <code>45f5c6e4c</code> against 45 passed and 4
+      <p>The refusal names the path and says what was compared: a path whose
+        merged blob differs from the head's and does not decode as text is
+        refused with "the merge's content is not the head's and is not text, so
+        the change could not be compared line by line". A text path whose merged
+        copy is present but no longer carries the line the change introduced is
+        refused by the marker comparison itself.</p>
+      <p>Gate: 49 passed at head <code>8aac40ee3</code> against 45 passed and 4
         failed at base <code>e1772180f</code>, where the four failures are the
         new binary-landing tests raising <code>UnicodeDecodeError</code> &mdash; a
         delta of zero added failures. The declared mutation reads the binary
         path through the text git call again and turns all four red with
-        <code>UnicodeDecodeError</code>.</p>
+        <code>UnicodeDecodeError</code>. A second, independent mutation skips
+        the introduced-line comparison; the present-text-path case then fails
+        with <code>DID NOT RAISE MergeError</code>, which is what shows that
+        case reaches the marker check rather than an absent-path refusal.</p>
     </section>
   </main>
 </body>
