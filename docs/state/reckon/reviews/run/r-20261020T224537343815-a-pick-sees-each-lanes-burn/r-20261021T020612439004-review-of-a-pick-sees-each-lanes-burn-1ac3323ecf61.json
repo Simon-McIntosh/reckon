@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/budget.py:933",
+    "reckon/budget.py:1193",
+    "reckon/crew/picker/snapshot.py:1441"
+  ],
+  "completed_at": "2026-10-21T02:16:22.213Z",
+  "dispatched_at": "2026-10-21T02:07:37Z",
+  "findings": [
+    {
+      "file": "tests/test_a_pick_sees_each_lanes_burn.py",
+      "line": "136",
+      "severity": "follow-on",
+      "text": "follow-on: the listing arm claims to report only \"a file naming no run at all, which no peer produces\", but reckon/_store.py:508 writes every live pointer through a sibling temporary named .<name>.<pid>.<token>.tmp in that same directory, so a peer's in-flight pointer write can appear in the after-listing as an entry that names no run (read after the rename it raises OSError and _named_run_id returns None), which is the residual false positive the commit set out to remove."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261021T020612439004-review-of-a-pick-sees-each-lanes-burn-1ac3323ecf61",
+  "reviewed_base_sha": "ca990de38db33251b838da7d199b87e49ca6d0d2",
+  "reviewed_head_sha": "1ac3323ecf6110ed5d88bfa1e7f25619f666c5af",
+  "reviewed_run_id": "r-20261020T224537343815-a-pick-sees-each-lanes-burn",
+  "rubric": "VERDICT goal: the source node's goal is a per-lane burn block derived in reckon/budget.py and rendered by the picker; the two commits gained since the previous review repair that block's path -- one window-length table and a stronger real-home guard -- read at reckon/budget.py:810 (_window_key) and tests/test_a_pick_sees_each_lanes_burn.py:115 (_writes_into_the_live_home).\nVERDICT done_when: the source node's done-when (prompt.txt:102) requires the new test file, the picker/flight gate and \u00a746's cases to add no failure against a base arm, ruff clean with its log, and both negative controls; head-arm.log ends \"11 failed, 462 passed\" at 505f9cf06 against base-arm.log's \"11 failed, 449 passed\" at 7643c16f, and I diffed the FAILED id lines of the two logs myself: identical, eleven each, so the change adds none.\nVERDICT write_paths: the manifest declares ten write paths; the commits gained since the previous review touch exactly three of them -- reckon/budget.py, tests/test_a_pick_sees_each_lanes_burn.py and docs/evidence/fragments/lane-and-model-routing/a-pick-sees-each-lanes-burn.html -- and nothing else.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T224537343815-a-pick-sees-each-lanes-burn/manifest.md; status complete, seven commits ca82461a5..1ac3323ec, both arms and the negative-control and sampled-run logs named, after_suite revision 505f9cf06 recorded honestly as the head the code arm ran at.\nVERDICT diff: read commit by commit against ca990de38: 505f9cf06 deletes NAMED_WINDOW_MINUTES and _window_key's fallback_minutes in favour of the module's WINDOW_MINUTES_CLOCK and rebuilds the real-home guard as a two-arm helper with two new cases; 1ac3323ec rewrites the fragment's window, measure, guard, arms and ruff paragraphs.\nCALL_SITES: reckon/budget.py:933 (_group_points calls _window_key, the changed resolver), reckon/budget.py:1193 (burn_blocks calls burn_block), reckon/crew/picker/snapshot.py:1441 (the picker scan's only production producer, budget.burn_blocks).\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/budget.py:807 defines the module's one length-to-window table and _window_key at budget.py:810 now resolves through it, so a recorded block's window names the same window the published document keys, which is the placement the burn block's rate and even share rest on.\nSCORE evidence: 17\nJUSTIFICATION evidence: head-arm.log's summary reads \"11 failed, 462 passed\" at 505f9cf06 against base-arm.log's \"11 failed, 449 passed\" at 7643c16f and the FAILED id lines are byte-identical on an independent diff, while the head arm was not re-run at the final head 1ac3323ec.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two gained commits touch only reckon/budget.py, tests/test_a_pick_sees_each_lanes_burn.py and the node's evidence fragment, all three inside the declared write paths, and the picker modules and generated schema files are untouched.\nSCORE durability: 17\nJUSTIFICATION durability: the added assertions at tests/test_a_pick_sees_each_lanes_burn.py:181-188 fail if _writes_into_the_live_home reports nothing or reports a peer's well-formed pointer, and the table mapping the refactor now leans on is guarded by test_one_window_carries_both_the_rate_and_the_even_share at tests/test_a_pick_sees_each_lanes_burn.py:375, which reddens at 43.0/12.0 if 10080 resolves to five_hour.\nSCORE fit: 19\nJUSTIFICATION fit: the new helpers at tests/test_a_pick_sees_each_lanes_burn.py:83-147 follow the module's private-helper and docstring idiom and the table comment at reckon/budget.py:4065 states the one-owner rule; no plan or version label appears in any added name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change deletes the duplicate NAMED_WINDOW_MINUTES at the old budget.py:814 and extends the module's existing owner WINDOW_MINUTES_CLOCK at reckon/budget.py:807, and the guard helpers wrap the existing traces_naming at tests/real_home_traces.py:42 rather than forking it.\nFINDING tests/test_a_pick_sees_each_lanes_burn.py:136 follow-on: the listing arm claims to report only \"a file naming no run at all, which no peer produces\", but reckon/_store.py:508 writes every live pointer through a sibling temporary named `.<name>.<pid>.<token>.tmp` in that same directory, so a peer's in-flight pointer write can appear in the after-listing as an entry that names no run (read after the rename it raises OSError and _named_run_id returns None), which is the residual false positive the commit set out to remove.",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T02:18:27.854788+00:00",
+  "total": 111,
+  "verdicts": {
+    "diff": "read commit by commit against ca990de38; 505f9cf06 deletes NAMED_WINDOW_MINUTES and _window_key's fallback_minutes in favour of WINDOW_MINUTES_CLOCK and rebuilds the real-home guard as a two-arm helper with two new cases; 1ac3323ec rewrites the fragment",
+    "done_when": "the source node's done-when requires the new test file, the picker/flight gate and the section's cases to add no failure against a base arm, ruff clean with its log, and both negative controls; head-arm.log ends \"11 failed, 462 passed\" at 505f9cf06 against base-arm.log's \"11 failed, 449 passed\" at 7643c16f and the FAILED id lines diff identically, eleven each",
+    "goal": "the source node's goal is a per-lane burn block derived in reckon/budget.py and rendered by the picker; the two commits gained since the previous review repair that block's path -- one window-length table and a stronger real-home guard -- read at reckon/budget.py:810 (_window_key) and tests/test_a_pick_sees_each_lanes_burn.py:115 (_writes_into_the_live_home)",
+    "manifest": "read; status complete, seven commits ca82461a5..1ac3323ec, both arms and the negative-control and sampled-run logs named, after_suite revision 505f9cf06 recorded as the head the code arm ran at",
+    "write_paths": "the manifest declares ten write paths; the two commits gained since the previous review touch exactly three of them -- reckon/budget.py, tests/test_a_pick_sees_each_lanes_burn.py and docs/evidence/fragments/lane-and-model-routing/a-pick-sees-each-lanes-burn.html -- and nothing else"
+  }
+}
