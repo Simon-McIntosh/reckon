@@ -1,0 +1,104 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T06:27:25.330Z",
+  "dispatched_at": "2026-10-21T06:14:42Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/work-is-checked-against-its-domain/r-20261021T055938924015-plan-review-of-work-is-checked-against-its-domain/plan.html:69",
+      "id": "reasoning-1",
+      "reason": "the plan must name `crew dispose --run <id>` (or define the run-review answer path \u00a72 implies) before a node wires the refusal's remedy, otherwise the refusal cannot be lifted by the command it names.",
+      "text": "\u00a72 says the refusal \"names each finding and the `crew review --answer` command for it\" and that answering \"with `--acted` naming the repair commit or `--declined` with a reason\" lifts it, but the subject is a *node's* stored review, and `crew review --answer` cannot address one: it requires `--plan PLAN` and refuses a code subject (`reckon/crew_dispatch_commands.py:2479`, `:2484`), reading the plan's own review record through `plan_review.read_plan_review` (`reckon/crew_dispatch_commands.py:2503`) with the invocation built by `plan_review.answer_invocation(project, plan_slug, finding_id)` (`reckon/crew/plan_review.py:182`). A run review's finding is retired by `reckon crew dispose --project P --run <id> --finding <index> --kind folded --node <n>` or `--kind exempted --reason <r>` (`reckon/crew_run_commands.py:485`), which is the writer obligations.py pairs with its own duty row (`reckon/crew/obligations.py:1215`). The flags are wrong in the same place: `--acted` is a boolean flag, not one that names a commit (`reckon/crew_dispatch_commands.py:2363`). Since \u00a72's done-when requires \"The same fixture with the finding answered dispatches\", a node implementing \u00a72 as written would wire a refusal whose named remedy fails, and the first node dispatched (f-wicd-001 recommends \u00a72) would build the dead route.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/work-is-checked-against-its-domain/r-20261021T055938924015-plan-review-of-work-is-checked-against-its-domain/plan.html:164",
+      "id": "reasoning-2",
+      "reason": "the node must either add a section-tag field to the plan format and say so in \u00a73, or re-key the model-building lint to a carrier that exists (plan tags or a section attribute), which changes the mechanism \u00a76 asserts.",
+      "text": "\u00a76's done-when lints \"A brief whose plan section is tagged as model-building\", but the plan format carries no section-level tag: the section attributes are `data-id`, `data-status`, `data-effort-hours`, `data-links` and the capability set (`PLAN-FORMAT.md:223`, and the sections in this plan at :33 and :65), with no `data-tags` and no section-tag concept anywhere in the parser (`reckon/_plan_html.py` parses `section` records without one). \u00a74's own matching rule reads \"its write paths or its plan's tags\", i.e. the plan-level `plan-tags` meta (\u00a73 at :96 vs :115), so the plan names two different tag carriers and only the plan-level one exists. \u00a76's measure therefore cannot be satisfied without a format change the plan does not declare.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/work-is-checked-against-its-domain/r-20261021T055938924015-plan-review-of-work-is-checked-against-its-domain/plan.html:86",
+      "id": "anchors_resolve-1",
+      "reason": "it fixes where the field-level validation is written and whether \u00a73 must also author the schema, rather than implying an existing one to extend.",
+      "text": "\u00a73 says the new `domain` block is \"validated by the published schema\", but no schema for the project resource is published: the repository ships `docs/_shared/plan.schema.json` and `docs/_shared/flight.schema.json` only, and the project resource is read by `_read_project_json` (`reckon/project_state.py:449`), which checks the envelope's `project`/`data` identity and validates nothing, with no `Project` model in `reckon/_schema.py` (the imported names at `reckon/project_state.py:36` are sprint and rollup types). A node following \u00a73 would look for a schema to extend and find none, and \u00a73's done-when (\"a malformed entry \u2026 is refused naming the field\") rests on a validation path that does not exist yet.",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "3ddc4e7fbdc140f5c927d0a6b8e3b4f237028335baeaad8e93b892f516ae8932",
+  "plan_slug": "work-is-checked-against-its-domain",
+  "plan_version": 0,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-21T06:32:22.823688+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-21T06:32:32.187537+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "",
+      "when": "2026-10-21T06:32:40.983853+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T06:32:40.983853+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T06:32:22.823688+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T06:32:32.187537+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-work-is-checked-against-its-domain.v0.json",
+  "review_run_id": "r-20261021T055938924015-plan-review-of-work-is-checked-against-its-domain",
+  "reviewed_blob_sha": "a9cbc9af7a997c11af2fc6e59dd862159a9ca978",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a73 cites \"the published schema\" for the project resource, which resolves to no artifact.",
+    "done_when": "pass \u2014 each section names an arm that can fail: \u00a72 carries a base-arm control (\"On the base commit the first fixture dispatches a review, and the test fails there\"), \u00a74 its explicit negative control (\"Without the declaration the same fixture promotes; that is the negative control\"), \u00a77 the sound-record control, and \u00a73/\u00a75/\u00a76 the absent-declaration arms (an empty `domain`, six-dimension scoring, the un-tagged brief). These are controls on the measure, not assertions that hold however the code behaves.",
+    "evidence_paths": "pass \u2014 no section sends evidence to a session scratchpad or a node-local temporary path; \u00a77 names the landed record for each replayed result, which is a repository-durable document rather than a scratch location, and the section's own miss becomes a section here.",
+    "naming": "pass \u2014 the new vocabulary (`domain`, `invariants`, `review_checks`, `applies_to`, `inputs`, `compares_with`, `none-exists`, `repair-owed`) names mechanisms, and the plan carries no ticket numbers, stage labels or changelog prose into them.",
+    "reasoning": "findings \u2014 \u00a72 names an answer command that cannot retire a node review's finding, and \u00a76's lint keys off a section tag the plan format does not carry.",
+    "single_goal": "pass \u2014 \u00a74 reads the one declared block at two consumption points (brief composition and the promotion guard), which is one mechanism with one verdict; \u00a73's doc updates (PLAN-FORMAT.md, the reckon-sync skill) ride with the same deliverable they document.",
+    "wiring": "pass \u2014 every `plan-section-depends-on` edge (s4\u2192s3, s5\u2192s3, s7\u2192{s2,s4,s5,s6}) names a section that exists (s2\u2013s7 in the snapshot), and the graph agrees with followup f-wicd-001's ordering sentence (\"\u00a72, \u00a73 and \u00a76 can start at once. \u00a74 and \u00a75 read the block \u00a73 defines, and \u00a77 replays the cases once the rest land\"), with s4/s5\u2192s3 giving \u00a73 the transitive position \u00a77 needs."
+  },
+  "section_digests": {
+    "_document": "d9ac8dec26b264677afd3500f4c31387d9361cad1110b7f412cda641c1c98291",
+    "s1": "096b2231b1cf1ab1c4476bbab2ea39d0ee87ea2bbfae045a542369206b4fbbf2",
+    "s2": "8acee4c0158de7778039dc76d9f2dbeb8fdb3650e8d02f4ecbd5d246390561cf",
+    "s3": "7f679c5756dc2e8842130e0c656500a3fb1e6ccad02722786e4303220ebb03a1",
+    "s4": "e74f329529380bbaf295b2babbb6cd4b9e344a7aede802fc39917c93816c5b30",
+    "s5": "bdf6cf1da1a57d6786b7992b575720a6bc7fbf78532279f096b5297afd89303e",
+    "s6": "c145df853f339e9e3b8ba7166cdc2f4554f85c076ccabd5fcc14a6e863beb944",
+    "s7": "e879ff4b66f35787cadc9a3ead8f3ddc9dcf6aa3c1bf041c072563cae4170875"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T06:32:17.675091+00:00"
+}
