@@ -26,7 +26,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="365">
+<meta name="plan-version" content="366">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -1155,7 +1155,10 @@
     <div class="r-comment-body"><p>§46 landed at <code>670332edb</code>: one warm roadmap call now checks each covered directory once instead of three times. Warm in-process roadmap reads went from 22.1 and 19.4 s to 5.68 and 6.34 s. <a href="/reckon/evidence/archive/a-read-answers-inside-its-deadline-landed.html#s46">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s47" data-id="c-run-r-20261021T111652283665-review-of-a-ledger-row-answers-its-own-session-ca0f06df65e2" data-who="reckon-build" data-when="2026-10-21T11:37:05.126Z">
-    <div class="r-comment-body"><p>reviewed head ca0f06df65e21132bc171c4202d5d4c0fa5bfc6a against base 36bbac34495757e103efacd7bc0573383298ba26; scores goal_fidelity 20, evidence 18, scope_discipline 19, durability 18, fit 19, reuse 20; added_failure_count 0; one follow-on finding on the new test&#x27;s session-equality assertion.</p></div>
+    <div class="r-comment-body"><p>reviewed head ca0f06df65e21132bc171c4202d5d4c0fa5bfc6a against base 36bbac34495757e103efacd7bc0573383298ba26; scores goal_fidelity 20, evidence 18, scope_discipline 19, durability 18, fit 19, reuse 20; added_failure_count 0; one follow-on finding on the new test's session-equality assertion.</p></div>
+</div>
+<div class="r-comment" data-section="s47" data-id="c-run-r-20261021T094057408357-a-ledger-row-answers-its-own-session" data-who="reckon-build" data-when="2026-10-21T10:57:21Z">
+    <div class="r-comment-body"><p>A ledger row&#x27;s session is answered from the committed row runs_view already holds: resolve_session takes a new ledger_row keyword and _compact_row supplies the row for ledger-sourced rows, so one runs_view over a 52-row synthetic ledger called ledger.load 53 times at base and calls it once at head, with every row keeping its base session_id and session_source; the negative control restores the count to 53.</p></div>
 </div>
 </section>
 </main>
