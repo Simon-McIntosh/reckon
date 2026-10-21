@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-page-paints-from-an-index">
+  <meta name="plan-title" content="The flow refreshes from its own route">
+  <meta name="plan-summary" content="GET /_schedule/<project> answers a project's schedule alone, built per request from the stored inventory and the live crew rows; the crew view's own poll refetches it when the run set or a phase has moved and at least once a minute; and a fleet event no longer refetches the project's derived state while a change event still does.">
+  <meta name="plan-evidence-for" content="reckon:the-page-paints-from-an-index">
+  <meta name="plan-verifies" content="reckon:the-page-paints-from-an-index#s11">
+  <meta name="plan-commits" content="457cdbe4e,140ce22d7">
+  <meta name="plan-recorded-at" content="2026-10-21">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="spa,schedule,crew,derived-state,polling">
+  <title>The flow refreshes from its own route — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-flow-refreshes-from-its-own-route" data-reckon="landed" data-when="2026-10-21">
+  <h2>The flow refreshes from its own route</h2>
+
+  <p id="the-flow-refreshes-from-its-own-route-what">The derived flow's bars are placed
+  relative to the instant the flow's own comment describes — the in-flight bar's done
+  share sits at <em>now</em> — so a flow built once at page load drifts away from the
+  fleet it draws as the minutes pass, and one refreshed only when a project document
+  changes stays frozen for as long as nobody writes. The refresh had no route of its own:
+  it rode on <code>/_discover/&lt;project&gt;</code>, which rebuilds the whole derived
+  payload for a caller that already holds the inventory and the live run rows. This node
+  gives the flow a route that answers the schedule alone, and moves the refetch from the
+  event that says nothing about this project's documents to the poll that does.</p>
+
+  <p id="the-flow-refreshes-from-its-own-route-route"><code>GET
+  /_schedule/&lt;project&gt;</code> answers <code>{project, schedule,
+  schedule_error?}</code>. It is built the way discovery builds it — the same stored
+  inventory, the same live crew rows, the same derivation — and differs only in that
+  every request anchors its own walk at that request's instant. A crew-row read that
+  fails costs the schedule and nothing else: the stored inventory is already in hand, so
+  the route keeps its 200 and serves a null schedule beside the error, as discovery does.
+  A missing or malformed project name answers 400 and an unmounted project 404, both
+  before any tree read.</p>
+
+  <p id="the-flow-refreshes-from-its-own-route-anchor">Three route cases serve a
+  temporary project in-process with the clock frozen at a supplied instant, so the anchor
+  is checkable rather than asserted: an in-flight bar's done share, read back as
+  <code>reference + split</code> hours, equals the first request's instant and then the
+  second's, seven minutes later. The control builds both answers at the first instant, and
+  its second answer provably lacks the second instant — so the arm's pass is about the
+  per-request anchor and not about a route that happens to place bars somewhere.</p>
+
+  <p id="the-flow-refreshes-from-its-own-route-live">A run that appears between two
+  requests is the case the route exists for. Its plan's bar is <code>predicted</code>
+  before the run lands and <code>in-flight</code> after, which is the same bar read twice
+  with only the crew rows moving; a schedule built before the run went live keeps the bar
+  predicted, and that schedule is the control. A failure arm patches the crew-row read to
+  raise, and the route answers <code>schedule: null</code> with
+  <code>schedule_error: "RuntimeError: crew rows unavailable"</code>; the control lets the
+  same failure through and answers 500, so the failure arm's 200 is a decision the route
+  makes and not a route that never reaches the code.</p>
+
+  <p id="the-flow-refreshes-from-its-own-route-poll">The crew view owns the fetch.
+  <code>docs/ui/state-loader.js</code> holds <code>scheduleRunSignature</code>,
+  <code>scheduleFetchDue</code> and <code>refreshSchedule</code>: the signature is each run's
+  identity, project and phase, sorted; the due test is a moved signature or a minute
+  elapsed since the last fetch, whichever comes first; and the fetch replaces
+  <code>window.STATE.schedule</code>, or — when the route answers a null schedule beside
+  an error and one is already on screen — marks the held schedule stale with that error,
+  which is §10's rule applied to this route. Discovery's null schedule keeps its own
+  anchor for the merge that cannot build one.</p>
+
+  <p id="the-flow-refreshes-from-its-own-route-loader">A node loader case drives the real
+  clock and the real <code>state-loader.js</code> against a recording fetch: the first
+  poll for a view with nothing built fetches once, a poll showing the same runs inside the
+  minute fetches nothing, a poll showing a run whose phase moved fetches once, and a
+  further unchanged poll after the minute fetches once more. The fetched schedule is
+  installed on <code>window.STATE.schedule</code>, and the control — the same poll with
+  the fetch removed — leaves the schedule the view already held, at the reference
+  discovery served. A render case then draws the replaced schedule and reads the newly
+  working run's plan's bar as <code>in-flight</code>, with the earlier schedule as the
+  control, so the replacement is shown to reach the picture.</p>
+
+  <p id="the-flow-refreshes-from-its-own-route-shell"><code>docs/ui/shell.jsx</code> calls the fetch
+  inside the poll it already makes, and only while the crew view is the visible one; the
+  project is read from <code>window.STATE</code> and the view through a ref, so the poll
+  effect keeps no dependency on either. A served-page case in a browser counts the
+  requests a real page makes: on the crew view, a run whose phase moves between two polls
+  produces exactly one further <code>/_schedule</code> request and a later unchanged poll
+  produces none; and the same page, the same poll, on a route that draws no flow makes no
+  schedule request at all while the poll itself still runs several times. Removing the
+  shell's call reddens the first case with zero requests and fifteen polls.</p>
+
+  <p id="the-flow-refreshes-from-its-own-route-fleet">A <code>fleet</code> event no longer
+  refetches the project's derived state. Those events carry no owning project, so the
+  server publishes them on every open stream, and with many mounts and live crews they
+  arrive constantly while speaking about nothing this project holds. The event still
+  reaches a view computing that key through <code>reckon-fleet</code>, and a
+  <code>change</code> event still revalidates — once per settle window. The node loader
+  case that reads the stream asserts one fleet dispatch and zero refetches within the
+  settle window, then asserts a change event still refreshes exactly once, so the first
+  assertion is about the fleet event and not about a listener that stopped answering.</p>
+
+  <p id="the-flow-refreshes-from-its-own-route-held">The served-page revalidation case
+  that already proved the derived blocks survive an index revalidation used to assert the
+  checks and crew routes were <em>attempted</em>. That is satisfied by a preload that
+  holds a request open, so an edit that answered one of them would have left the case
+  green. Its preload now counts answered responses separately from attempted ones, and the
+  case requires at least one attempt and zero answers on each route: answering
+  <code>/_checks</code> reddens it, and the declared control does exactly that.</p>
+
+  <p id="the-flow-refreshes-from-its-own-route-scope">Nothing outside the schedule path
+  changed. <code>reckon/serve.py</code> gains one handler beside the discovery route and
+  reuses <code>_served_result</code> and <code>_attach_schedule_for_read</code>, so the
+  schedule a browser draws and the schedule an agent reads from discovery remain one
+  computation; the module stays within the window bound the module-size test checks. The
+  loader loses one call and gains three functions; the shell keeps one poll.</p>
+
+  <p id="the-flow-refreshes-from-its-own-route-negative">The declared control is applied as
+  one edit set and kept as a log: restore the derived refetch on fleet events, remove the
+  poll-driven schedule fetch, remove the shell's call, answer <code>/_checks</code> in the
+  served case, and build both schedule answers at one instant. Five cases redden, each one
+  its own mutation's, and the log ends <code>EXIT=1</code>; the log is the evidence and the
+  tree is identical to the head revision after the mutations are reversed.</p>
+</article>
+</body>
+</html>
