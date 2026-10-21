@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-title" content="The suite clears the follower environment it inherits">
+  <meta name="plan-summary" content="An autouse fixture in tests/conftest.py removes the four follower-session variables a crew host exports, so the follower tests stop failing when the suite runs inside a crew-host session.">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s33">
+  <meta name="plan-recorded-at" content="2026-10-21">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,follower,tests,isolation,evidence">
+  <title>The suite clears the follower environment it inherits | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-suite-clears-the-follower-environment" data-reckon="landed" data-when="2026-10-21">
+  <h2>The suite clears the follower environment it inherits</h2>
+
+  <p>A crew-host session exports four variables into every process it starts, the
+  test suite included: <code>RECKON_SESSION_HOST_SETTLE</code>,
+  <code>RECKON_FOLLOWER_OWNER</code>, <code>RECKON_FOLLOWER_IMAGE_COMMIT</code> and
+  <code>RECKON_FOLLOWER_SOURCE_ROOT</code>. Follower and session code reads them to
+  decide whether this process runs under a live host, which process owns a follower,
+  and which commit and source tree the running image carries. A test that drives a
+  follower therefore inherits a state it never set and reads the host that ran the
+  <code>suite</code> as its own session.</p>
+
+  <h3 id="the-suite-clears-the-follower-environment-defect">The defect reproduces</h3>
+  <p>Run from a crew-host session, the three files that exercise dispatch, session
+  delivery and reload fail in bulk. At the base revision
+  <code>da1a110ab13de2c3f5b38a38fb807c35cbad06ae</code>, with the four variables set
+  exactly as a crew host sets them, that run reported <strong>32 failed, 17
+  passed</strong> (<code>EXIT=1</code>) over the same three files.</p>
+
+  <h3 id="the-suite-clears-the-follower-environment-fix">The fix and its guard</h3>
+  <p>An autouse fixture <code>without_the_follower_session</code> in
+  <code>tests/conftest.py</code> deletes the four variables for every test. A test
+  whose subject <em>is</em> that state still sets the variable it means through
+  <code>monkeypatch</code>, which runs after the fixture and keeps its value.</p>
+  <p><code>tests/test_the_suite_clears_the_follower_environment.py</code> pins the
+  behaviour: it runs the three affected files as a subprocess with the four set
+  exactly as a crew host sets them and requires them green, and it asserts the
+  running suite process carries none of the four.</p>
+
+  <h3 id="the-suite-clears-the-follower-environment-guard">The guard fires</h3>
+  <p>Removing the fixture and re-running the new test file turns it red
+  (<code>EXIT=1</code>): the subprocess over the three files reports <strong>32 failed,
+  17 passed</strong> again, and the failing id
+  <code>test_the_affected_files_pass_with_a_crew_host_session_set</code> is one the
+  armed head does not fail. With the fixture it reports <strong>49 passed</strong>
+  (<code>EXIT=0</code>).</p>
+
+  <h3 id="the-suite-clears-the-follower-environment-measure">The measure</h3>
+  <p>Two gate arms at head <code>bf1e00cb</code> over the 29 test files carrying a
+  failing id in the inherited-environment population, plus the new test file, run
+  <code>-n 8</code> from a checkout under the run's scratch tree: one arm with the four
+  variables set with values a crew host supplies (5 failed, 408 passed), one with them
+  cleared (3 failed, 410 passed). Both arms fail the same three tests at head
+  (<code>test_preflight_hold_and_clear_result_have_matching_exit_codes</code>,
+  <code>test_crew_watch_sheds_identity_before_its_first_sweep</code>,
+  <code>test_a_clean_moved_checkout_answers_on_the_current_code</code>), which fail with
+  the variables cleared and are not this node's.</p>
+  <p><code>reckon.crew.review.added_failures_from_gate_logs</code> then
+  <code>base=cleared, head=set</code> derives two ids, both follower tests failing in
+  the set arm only. Run five times alone in <code>each</code> environment they fail in
+  <em>both</em>, in no consistent direction — the pane test fails its second run under
+  either environment, and the freshness test fails four of five with the variables
+  cleared against none of five with them set — which is the signature of a timing
+  dependence on machine warm-up rather than a dependence on the four variables. Both were already in the inherited-environment
+  failing population at the base revision the population was taken from.</p>
+</article>
+</body>
+</html>
