@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:3016",
+    "reckon/crew/recovery_review_acceptance.py:498",
+    "reckon/crew_dispatch_commands.py:2652"
+  ],
+  "completed_at": "2026-10-21T12:16:58.672Z",
+  "dispatched_at": "2026-10-21T11:54:08Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "2089",
+      "severity": "follow-on",
+      "text": "follow-on: _finding_dispose_commands renders the same crew dispose --kind folded|exempted command pair, with near-identical placeholder prose, that reckon/crew/obligations.py:1218,1228 already renders for a sub-floor duty; the two spell the flag and the placeholders independently, so a change to the CLI option or the wording leaves one of them promising a command the other no longer accepts \u2014 the refusal's own claim to print 'the command that lifts the refusal' has no shared source with the CLI."
+    },
+    {
+      "file": "reckon/crew/recovery_repair_dispatch.py",
+      "line": "813",
+      "severity": "follow-on",
+      "text": "follow-on: the landed guard reads the run review's dispositions, but the repair path that answers those findings never writes one \u2014 only crew dispose does (reckon/crew_run_commands.py:711 is the sole caller of review_dispositions.record_finding_disposition) \u2014 so an automatic repair round leaves the reviewed run's earlier review reading open and its re-review at the repaired head is refused until a coordinator disposes by hand. The live plan's \u00a72 states this remedy ('the repair path records each of them as folded into that round') and it is not implemented in the reviewed tree; the fix belongs in reckon/crew/recovery_repair_dispatch.py, outside this node's fence."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/recovery_watch.py:3016, reckon/crew/recovery_review_acceptance.py:498, reckon/crew_dispatch_commands.py:2652",
+    "diff": "read commit by commit against ac17ed13: 37abd242 adds _undisposed_blocking_findings, _finding_place, _finding_dispose_commands, _open_review_refusal and the refusal call at the head of dispatch_review_for_run plus the test module; 492418fb adds the fragment.",
+    "done_when": "the done_when names tests/test_a_review_waits_for_its_repair.py and the seven-file focused gate; the manifest's after_suite records gate-head.log 52 passed EXIT=0 and its baseline_suite records negative-control.log 1 failed EXIT=1, where the refusal test is the failure \u2014 both logs read at the head and at the base source.",
+    "goal": "the node goal is to refuse a review dispatch while the run's newest review holds an undisposed blocking finding, read through review_lifecycle; reckon/crew/recovery_review_dispatch.py:2113 _open_review_refusal does that at the head of dispatch_review_for_run, reading lifecycle() through reckon/crew/review_lifecycle.py:265 and enumerating findings through repair.blocking_finding_dispositions.",
+    "manifest": "read; it records status complete at 492418fb, commits 37abd242+492418fb, baseline_suite (negative-control.log, 1 failure, EXIT=1), after_suite (gate-head.log, 0 failures, EXIT=0) and 3 new tests, and it claims ruff-clean in its checkpoint line without a log.",
+    "write_paths": "the declared fence is reckon/crew/recovery_review_dispatch.py, tests/test_a_review_waits_for_its_repair.py, the evidence fragment and a figures directory; the ac17ed13..492418fb diff touches exactly the first three and nothing else."
+  },
+  "justifications": {
+    "durability": "reinstating the regression \u2014 restoring reckon/crew/recovery_review_dispatch.py to its base revision with the new tests in place \u2014 makes tests/test_a_review_waits_for_its_repair.py:252 fail (negative-control.log, EXIT=1), and test_the_refusal_lifts_when_the_review_is_no_longer_open proves the refusal reads review_lifecycle's _run_open rather than a second derivation.",
+    "evidence": "the gate the done_when names ran and its result is recorded \u2014 gate-head.log 52 passed EXIT=0 and negative-control.log 1 failed EXIT=1 at tests/test_a_review_waits_for_its_repair.py:252 \u2014 but the done_when's ruff-clean arm is claimed in the manifest checkpoint with no log, so I re-ran ruff myself on the two changed paths rather than read a recorded result.",
+    "fit": "the new names are mechanism-descriptive (reckon/crew/recovery_review_dispatch.py:2113 _open_review_refusal, :2075 _undisposed_blocking_findings), carry no plan or ticket identifier, and the module's local-import and refusal-dict idiom is followed.",
+    "goal_fidelity": "reckon/crew/recovery_review_dispatch.py:2113 refuses a round whose newest review reads open, names every undisposed finding with its dispose command, composes nothing, and leaves plan reviews and review nodes alone, which is the goal exactly.",
+    "reuse": "the change extends the owners the plan named \u2014 review_lifecycle.lifecycle, repair.blocking_finding_dispositions, review.stored_records_for_run and _record_review_dispatch \u2014 so no derivation is forked, though reckon/crew/recovery_review_dispatch.py:2089 renders the same folded/exempted dispose command pair that reckon/crew/obligations.py:1218 already renders for a duty.",
+    "scope_discipline": "every path in the ac17ed13..492418fb diff is inside the fence declared at prompt.txt (reckon/crew/recovery_review_dispatch.py, the test module, the landing fragment), and the change carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to refuse a review dispatch while the run's newest review holds an undisposed blocking finding, read through review_lifecycle; reckon/crew/recovery_review_dispatch.py:2113 _open_review_refusal does that at the head of dispatch_review_for_run, reading lifecycle() through reckon/crew/review_lifecycle.py:265 and enumerating findings through repair.blocking_finding_dispositions.\nVERDICT done_when: the done_when names tests/test_a_review_waits_for_its_repair.py and the seven-file focused gate; the manifest's after_suite records gate-head.log 52 passed EXIT=0 and its baseline_suite records negative-control.log 1 failed EXIT=1, where the refusal test is the failure \u2014 both logs read at the head and at the base source.\nVERDICT write_paths: the declared fence is reckon/crew/recovery_review_dispatch.py, tests/test_a_review_waits_for_its_repair.py, the evidence fragment and a figures directory; the ac17ed13..492418fb diff touches exactly the first three and nothing else.\nVERDICT manifest: read; it records status complete at 492418fb, commits 37abd242+492418fb, baseline_suite (negative-control.log, 1 failure, EXIT=1), after_suite (gate-head.log, 0 failures, EXIT=0) and 3 new tests, and it claims ruff-clean in its checkpoint line without a log.\nVERDICT diff: read commit by commit against ac17ed13: 37abd242 adds _undisposed_blocking_findings, _finding_place, _finding_dispose_commands, _open_review_refusal and the refusal call at the head of dispatch_review_for_run plus the test module; 492418fb adds the fragment.\nCALL_SITES: reckon/crew/recovery_watch.py:3016, reckon/crew/recovery_review_acceptance.py:498, reckon/crew_dispatch_commands.py:2652\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_dispatch.py:2113 refuses a round whose newest review reads open, names every undisposed finding with its dispose command, composes nothing, and leaves plan reviews and review nodes alone, which is the goal exactly.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate the done_when names ran and its result is recorded \u2014 gate-head.log 52 passed EXIT=0 and negative-control.log 1 failed EXIT=1 at tests/test_a_review_waits_for_its_repair.py:252 \u2014 but the done_when's ruff-clean arm is claimed in the manifest checkpoint with no log, so I re-ran ruff myself on the two changed paths rather than read a recorded result.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the ac17ed13..492418fb diff is inside the fence declared at prompt.txt (reckon/crew/recovery_review_dispatch.py, the test module, the landing fragment), and the change carries nothing the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the regression \u2014 restoring reckon/crew/recovery_review_dispatch.py to its base revision with the new tests in place \u2014 makes tests/test_a_review_waits_for_its_repair.py:252 fail (negative-control.log, EXIT=1), and test_the_refusal_lifts_when_the_review_is_no_longer_open proves the refusal reads review_lifecycle's _run_open rather than a second derivation.\nSCORE fit: 18\nJUSTIFICATION fit: the new names are mechanism-descriptive (reckon/crew/recovery_review_dispatch.py:2113 _open_review_refusal, :2075 _undisposed_blocking_findings), carry no plan or ticket identifier, and the module's local-import and refusal-dict idiom is followed.\nSCORE reuse: 16\nJUSTIFICATION reuse: the change extends the owners the plan named \u2014 review_lifecycle.lifecycle, repair.blocking_finding_dispositions, review.stored_records_for_run and _record_review_dispatch \u2014 so no derivation is forked, though reckon/crew/recovery_review_dispatch.py:2089 renders the same folded/exempted dispose command pair that reckon/crew/obligations.py:1218 already renders for a duty.\nFINDING reckon/crew/recovery_review_dispatch.py:2089 follow-on: _finding_dispose_commands renders the same crew dispose --kind folded|exempted command pair, with near-identical placeholder prose, that reckon/crew/obligations.py:1218,1228 already renders for a sub-floor duty; the two spell the flag and the placeholders independently, so a change to the CLI option or the wording leaves one of them promising a command the other no longer accepts \u2014 the refusal's own claim to print 'the command that lifts the refusal' has no shared source with the CLI.\nFINDING reckon/crew/recovery_repair_dispatch.py:813 follow-on: the landed guard reads the run review's dispositions, but the repair path that answers those findings never writes one \u2014 only crew dispose does (reckon/crew_run_commands.py:711 is the sole caller of review_dispositions.record_finding_disposition) \u2014 so an automatic repair round leaves the reviewed run's earlier review reading open and its re-review at the repaired head is refused until a coordinator disposes by hand. The live plan's \u00a72 states this remedy ('the repair path records each of them as folded into that round') and it is not implemented in the reviewed tree; the fix belongs in reckon/crew/recovery_repair_dispatch.py, outside this node's fence.\n",
+  "review_run_id": "r-20261021T115211619347-review-of-review-waits-for-its-repair-492418fba425",
+  "reviewed_base_sha": "ac17ed130e1aa4f9b8c12643dfb41404fd4c2869",
+  "reviewed_head_sha": "492418fba42567c6377dcc0ffa58bfe68fc857e1",
+  "reviewed_run_id": "r-20261021T105142717388-review-waits-for-its-repair",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T12:18:45.100751+00:00",
+  "total": 106
+}
