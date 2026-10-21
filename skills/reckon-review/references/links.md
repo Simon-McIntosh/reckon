@@ -55,17 +55,16 @@ A relationship list is rewritten whole, without the removed ref:
 
 ```json
 {"op": "set", "path": "depends_on", "value": ["other-plan"]}
+{"op": "set", "path": "after", "value": ["other-plan#s3"]}
 {"op": "set", "path": "section_depends_on.s5", "value": ["other-plan#s3"]}
 {"op": "gate", "id": "g-<slug>-<n>", "section": "s5", "gated_sections": ["s5"], "measure": "...", "required_evidence": "other-plan#s3"}
 {"op": "pass", "id": "g-<slug>-<n>", "evidence": "<landed record anchor or commit>"}
 {"op": "fail", "id": "g-<slug>-<n>", "evidence": "<why the measure cannot be met>"}
 ```
 
-`blocks`, `informs`, `evidence_for`, `verifies` and `supersedes` take the same
-whole-list `set`. `after` has no `edit_plan` op in either mode yet
-(`a-project-reads-as-one-picture`). Until it lands, propose the change and apply
-it as an announced direct edit of the `plan-after` meta, per the bypass rule in
-the repository's `AGENTS.md`.
+`blocks`, `after`, `informs`, `evidence_for`, `verifies` and `supersedes` take
+the same whole-list `set`, validated against the same ref grammar — a bare slug
+is local, `project:slug` is external; a malformed ref is refused and named.
 
 ## Authority
 

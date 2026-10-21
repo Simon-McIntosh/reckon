@@ -2402,6 +2402,7 @@ _PLAN_SET_TOP = frozenset(
         "slug",
         "depends_on",
         "blocks",
+        "after",
         "informs",
         "evidence_for",
         "verifies",
