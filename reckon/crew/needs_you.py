@@ -98,6 +98,85 @@ def _created_seconds(pointer: Mapping[str, Any], *, moment: float) -> float:
     return moment if stamp is None else stamp.timestamp()
 
 
+def _snapshots(project: str, *, moment: float) -> dict[str, dict[str, Any]]:
+    """Every live pointer of the project as its own watch snapshot, by run id."""
+    from reckon.crew import recovery as recovery_module
+    from reckon.crew import runs as runs_module
+
+    stall_seconds = recovery_module.parse_duration(
+        recovery_module.DEFAULT_WATCH_STALL_WINDOW
+    )
+    snapshots: dict[str, dict[str, Any]] = {}
+    for pointer in runs_module._list_live_records(project=project):
+        run_id = str(pointer.get("run_id") or "")
+        if not run_id:
+            continue
+        snapshots[run_id] = recovery_module._watch_snapshot(
+            pointer, moment=moment, stall_seconds=stall_seconds
+        )
+    return snapshots
+
+
+def needs_you_rows(
+    project: str,
+    *,
+    session: str | None,
+    moment: float | None = None,
+) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    """The rows that need the coordinator, beside the counters that count them.
+
+    Both halves come from the fleet partition the pane's own counter reads:
+    ownership through :func:`reckon.crew.recovery_watch._partition_session_rows`
+    and the working, blocked and unpromoted tallies through
+    :func:`reckon.crew.recovery_watch._fleet_counts`, so the line and the
+    counters beside it cannot disagree about which runs they are naming. The
+    states themselves are read from that module's ``FLEET_*`` buckets rather
+    than restated here, and a run whose refusal has been accepted is held out of
+    the blocked bucket exactly as the counter holds it out.
+
+    Returns the rows, and the counters they must agree with.
+    """
+    from reckon.crew import recovery as recovery_module
+
+    at = recovery_module._utc_seconds() if moment is None else float(moment)
+    snapshots = _snapshots(project, moment=at)
+    counts = recovery_module._fleet_counts(snapshots, session=session)
+    own, _peers = recovery_module._partition_session_rows(snapshots.values(), session)
+    blocked_states = frozenset(recovery_module.FLEET_BLOCKED_STATES)
+    unpromoted_states = frozenset(recovery_module.FLEET_UNPROMOTED_STATES)
+    rows: list[dict[str, Any]] = []
+    for snapshot in own:
+        state = str(snapshot.get("state") or "")
+        classification = str(snapshot.get("recovery_classification") or "")
+        if state in blocked_states and classification != "held":
+            kind = "blocked"
+        elif state in unpromoted_states:
+            kind = "unpromoted"
+        else:
+            continue
+        stream = snapshot.get("stall_stream_path")
+        entered = _state_entered_seconds(
+            Path(stream) if stream else None, state, moment=at
+        )
+        if entered is None:
+            entered = _created_seconds(snapshot, moment=at)
+        run_id = str(snapshot.get("run_id") or "")
+        rows.append(
+            {
+                "run_id": run_id,
+                "node": str(snapshot.get("node") or run_id or "unknown"),
+                "state": state,
+                "kind": kind,
+                "age_seconds": max(0.0, at - entered),
+                "reviewed": kind == "unpromoted" and _is_reviewed(project, run_id),
+            }
+        )
+    # Oldest first within a kind, so the run that has needed attention longest
+    # leads its group.
+    rows.sort(key=lambda row: (-float(row["age_seconds"]), str(row["node"])))
+    return rows, counts
+
+
 def _is_reviewed(project: str, run_id: str) -> bool:
     """Whether a review of this run is already stored against its staging store."""
     if not run_id:
@@ -127,56 +206,8 @@ def needs_you(
     owner stays in the counted set, matching the dispatch fence, because absence
     cannot prove it belongs to a peer.
     """
-    from reckon.crew import recovery as recovery_module
-    from reckon.crew import runs as runs_module
-
-    stall_seconds = recovery_module.parse_duration(
-        recovery_module.DEFAULT_WATCH_STALL_WINDOW
-    )
-    at = recovery_module._utc_seconds() if moment is None else float(moment)
-    blocked_states = frozenset(recovery_module.FLEET_BLOCKED_STATES)
-    unpromoted_states = frozenset(recovery_module.FLEET_UNPROMOTED_STATES)
-    working_states = frozenset(recovery_module.FLEET_WORKING_STATES)
-    rows: list[dict[str, Any]] = []
-    working = 0
-    for pointer in runs_module._list_live_records(project=project):
-        owner = str(pointer.get("session") or "")
-        if session is not None and owner and owner != session:
-            continue
-        snapshot = recovery_module._watch_snapshot(
-            pointer, moment=at, stall_seconds=stall_seconds
-        )
-        state = str((snapshot.get("state") and snapshot.get("state")) or "")
-        classification = str(snapshot.get("recovery_classification") or "")
-        if state in blocked_states and classification != "held":
-            kind = "blocked"
-        elif state in unpromoted_states:
-            kind = "unpromoted"
-        else:
-            if state in working_states:
-                working += 1
-            continue
-        stream = snapshot.get("stall_stream_path")
-        entered = _state_entered_seconds(
-            Path(stream) if stream else None, state, moment=at
-        )
-        if entered is None:
-            entered = _created_seconds(pointer, moment=at)
-        run_id = str(snapshot.get("run_id") or "")
-        rows.append(
-            {
-                "run_id": run_id,
-                "node": str(snapshot.get("node") or run_id or "unknown"),
-                "state": state,
-                "kind": kind,
-                "age_seconds": max(0.0, at - entered),
-                "reviewed": kind == "unpromoted" and _is_reviewed(project, run_id),
-            }
-        )
-    # Oldest first within a kind, so the run that has needed attention longest
-    # leads its group.
-    rows.sort(key=lambda row: (-float(row["age_seconds"]), str(row["node"])))
-    return {"working": working, "runs": rows}
+    rows, counts = needs_you_rows(project, session=session, moment=moment)
+    return {"working": int(counts.get("working") or 0), "runs": rows}
 
 
 def needs_you_runs(project: str, *, session: str | None) -> list[dict[str, Any]]:

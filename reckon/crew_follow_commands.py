@@ -2127,10 +2127,16 @@ def _follow_watch_lines(
     # the line is emitted when the set has changed since the last one printed or
     # when the remind interval has elapsed, whichever comes first.
     #
-    # The line is armed by the caller: with no interval asked for, an arming
-    # draws exactly the rows it always drew. A caller that only wants the rows
-    # — a scripted read of a gap, a test driving the generator directly — must
-    # not have its output reshaped by a line it did not ask for.
+    # The interval is the command's: an arming with no --remind carries
+    # needs_you.DEFAULT_REMIND_SECONDS, and --remind overrides it. A caller that
+    # drives this generator directly and passes no interval asks for no standing
+    # line at all, so its rows are exactly the rows it always drew — which is
+    # what a scripted read of a gap and a relayed payload expect of this
+    # generator, both of them reading its output as data.
+    #
+    # The first scan is the baseline rather than news: the fleet as it stands at
+    # arming is what the arming's own closing row already names, so the standing
+    # line is emitted when the set changes from there, and on the cadence.
     needs_remind_seconds = None if remind is None else float(remind)
     needs_scan_seconds = (
         0.0
@@ -2143,7 +2149,8 @@ def _follow_watch_lines(
 
     def _needs_you_events() -> Iterable[dict[str, Any]]:
         nonlocal needs_scanned_at, last_needs_signature, needs_emitted_at
-        if needs_remind_seconds is None:
+        interval = needs_remind_seconds
+        if interval is None:
             return
         moment = clock()
         if (
@@ -2154,11 +2161,12 @@ def _follow_watch_lines(
         needs_scanned_at = moment
         summary = needs_you_module.needs_you(project, session=session)
         signature = needs_you_module.needs_you_signature(summary)
+        if needs_emitted_at is None:
+            last_needs_signature = signature
+            needs_emitted_at = moment
+            return
         changed = signature != last_needs_signature
-        interval = needs_remind_seconds
-        due = (
-            needs_emitted_at is None or moment - needs_emitted_at >= interval
-        )
+        due = moment - needs_emitted_at >= interval
         if not changed and not due:
             return
         last_needs_signature = signature
@@ -3138,6 +3146,24 @@ def crew_host(
     )
 
 
+def _needs_remind_seconds(remind: str | None) -> float:
+    """The standing line's cadence: ``--remind`` when given, ten minutes else.
+
+    The default lives where the option is read, so an arming that passes no flag
+    still carries a cadence, and an operator who wants a different interval
+    overrides it with the flag.
+    """
+    from reckon.crew import needs_you as needs_you_module
+    from reckon.crew import runs as runs_module
+    from reckon.crew.node import parse_duration
+
+    if remind is None:
+        return float(needs_you_module.DEFAULT_REMIND_SECONDS)
+    try:
+        return float(parse_duration(remind))
+    except runs_module.CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
+
 
 @crew.command(name="follow")
 @click.option("--project", required=True, help="Project whose watch stream to follow.")
@@ -3201,11 +3227,10 @@ def crew_host(
     default=None,
     metavar="DURATION",
     help=(
-        "Arm the standing needs-you line: emit it after any change of the set "
-        "and again every DURATION (an integer plus s, m or h, e.g. 10m) even "
-        "when nothing has changed, so a quiet pane reads as a live follower "
-        "rather than a dead one. Omitted, the arming draws only its rows, which "
-        "is what a scripted read of a gap or a relayed payload expects."
+        "Re-emit the standing needs-you line every DURATION (an integer plus s, "
+        "m or h, e.g. 10m) even when nothing has changed, so a quiet pane reads "
+        "as a live follower rather than a dead one. Defaults to ten minutes; "
+        "this overrides that interval."
     ),
 )
 @_ticker_options
@@ -3258,12 +3283,7 @@ def crew_follow(
             lifetime_seconds = float(parse_duration(lifetime))
         except runs_module.CrewError as exc:
             raise click.ClickException(str(exc)) from exc
-    remind_seconds: float | None = None
-    if remind is not None:
-        try:
-            remind_seconds = float(parse_duration(remind))
-        except runs_module.CrewError as exc:
-            raise click.ClickException(str(exc)) from exc
+    remind_seconds = _needs_remind_seconds(remind)
     # The absolute instant this arming ends, in UTC epoch. Fixed here and never
     # rewritten, so a reload continues the original arming rather than granting
     # a fresh lifetime. Held in a local rather than ``os.environ``: the only
