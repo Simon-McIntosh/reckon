@@ -26,7 +26,7 @@
   <title>The Crew Surface Is One Tool And A Few Verbs | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="95">
+<meta name="plan-version" content="96">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -484,7 +484,10 @@
     <div class="r-comment-body"><p>The gained commits since the prior review (458e584b8 test rewrite + 82054cc0c evidence) repair the durability gap that review named — tests/test_ledger.py:2524-2533 now parses the refusal's own list segment (text between "view must be " and the first semicolon) and asserts it equals CREW_VIEWS as a set, with no name missing, none unregistered and no repeat, so a name dropped from the composition reddens even while the explanatory prose still mentions it (negative-control.log drops runs to AssertionError: refusal omits ['runs']); scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 17, fit 19, reuse 20; one follow-on finding — the test reaches the shared composition only through reckon/mcp.py:2165, so the second surface reckon/mcp_views.py:3749 is unguarded against a re-forked literal.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261020T233610350415-cso-unknown-view-names-the-registry" data-who="reckon-build" data-when="2026-10-21T00:50:15Z">
-    <div class="r-comment-body"><p>Composed the unknown-crew-view refusal from CREW_VIEWS in one place: a new crew_view_refusal_detail() in reckon/mcp_views.py names every registered view, serve_crew_view returns it, and reckon/mcp.py&#x27;s own gate on CREW_TOOL_VIEWS reuses the same message; the ledger test parses the refusal&#x27;s list segment and asserts it equals CREW_VIEWS as a set (base arm 2 failed/43 passed EXIT=1 at 001955d96, head 1 failed/44 passed EXIT=1 at 82054cc0c, the ledger test red-to-green and no test added, the sole remaining failure being the pre-existing oversize-module window test on reckon/budget.py, reckon/crew/review.py and reckon/ledger.py), and the negative control — dropping runs from the composed list while CREW_VIEWS stays whole — fails the ledger test naming runs.</p></div>
+    <div class="r-comment-body"><p>Composed the unknown-crew-view refusal from CREW_VIEWS in one place: a new crew_view_refusal_detail() in reckon/mcp_views.py names every registered view, serve_crew_view returns it, and reckon/mcp.py's own gate on CREW_TOOL_VIEWS reuses the same message; the ledger test parses the refusal's list segment and asserts it equals CREW_VIEWS as a set (base arm 2 failed/43 passed EXIT=1 at 001955d96, head 1 failed/44 passed EXIT=1 at 82054cc0c, the ledger test red-to-green and no test added, the sole remaining failure being the pre-existing oversize-module window test on reckon/budget.py, reckon/crew/review.py and reckon/ledger.py), and the negative control — dropping runs from the composed list while CREW_VIEWS stays whole — fails the ledger test naming runs.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261020T233339145168-cso-list-callers-move-to-crew-view" data-who="reckon-build" data-when="2026-10-21T01:24:14Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/the-crew-surface-is-one-tool-and-a-few-verbs/cso-list-callers-move-to-crew-view.html</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261019T220254082188-review-of-cso-budget-family-folds-0274b1227df3" data-who="reckon-build" data-when="2026-10-19T22:24:20.259Z">
     <div class="r-comment-body"><p>Reviewed run r-20261019T202350268699-cso-budget-family-folds at 0274b1227df3acf495023b12695d143ed6c129ab against base 0fa62dca44a63a65382c140c82a003dd7a660e02: the budget fold is complete and its gate is green at both arms with zero added failures, but the run's own manifest and gate logs fail its own `crew check-manifest` audit (ok:false, three findings), so the node cannot promote until the negative_control_log and the two gate-log command headers are repaired.</p></div>
