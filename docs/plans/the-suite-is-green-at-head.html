@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="439">
+<meta name="plan-version" content="440">
 <meta name="plan-modified" content="2026-10-21">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;done&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;implementable&quot;,&quot;s30&quot;:&quot;implementable&quot;,&quot;s31&quot;:&quot;implementable&quot;,&quot;s32&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
@@ -2016,6 +2016,9 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 </div>
 <div class="r-comment" data-section="s27" data-id="c-run-r-20261020T203929222890-the-unattached-session-dispatch-test-passes" data-who="reckon-build" data-when="2026-10-20T22:55:40Z">
     <div class="r-comment-body"><p>§27 landed: the target test passes 5/5 alone at head on an exclusive all_debug compute node (job 1291652) and 5/5 alone on the fleet node; the cause was the test's own teardown releasing the watch seat while the producer rewrote its seat registration in place, and all three teardowns in the file now share one helper that waits for the settled record before releasing.</p></div>
+</div>
+<div class="r-comment" data-section="s27" data-id="c-run-r-20261020T222938458239-review-of-the-unattached-session-dispatch-test-passes-eec91fe30ed2" data-who="reckon-build" data-when="2026-10-20T22:45:24.176Z">
+    <div class="r-comment-body"><p>§27 review delta at eec91fe30 (base e3d86a541): the two sibling teardowns now share the settled-seat helper and the evidence fragment records it; scored 18/14/20/13/18/19 with two blocking findings, both in the fragment - a wrong negative-control job id (1291645 where its own cited log records 1291652) and a malformed `&lt;tr&gt;&lt;tr&gt;` row - plus one follow-on that the sibling reroute is unguarded.</p></div>
 </div>
 </section>
 </main>
