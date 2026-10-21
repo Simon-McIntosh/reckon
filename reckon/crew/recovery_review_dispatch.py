@@ -2076,15 +2076,6 @@ def _undisposed_blocking_findings(
     ]
 
 
-def _finding_place(finding: Mapping[str, Any]) -> str:
-    """Render a finding's position, so a refusal names where to look for it."""
-    path = str(finding.get("file") or "").strip()
-    line = str(finding.get("line") or "").strip()
-    if path and line:
-        return f"{path}:{line}"
-    return path or "the review's findings"
-
-
 def _finding_dispose_commands(project: str, run_id: str, index: int) -> tuple[str, str]:
     """The two commands that answer one blocking finding by its index.
 
@@ -2128,6 +2119,7 @@ def _open_review_refusal(
     project = str(record.get("project") or "")
     if not run_id or not project:
         return None
+    from reckon.crew import repair as repair_module
     from reckon.crew import review_lifecycle as review_lifecycle_module
 
     try:
@@ -2154,12 +2146,15 @@ def _open_review_refusal(
         undisposed = _undisposed_blocking_findings(stored)
         if not undisposed:
             continue
-        rendered = "; ".join(
-            f"{_finding_place(finding)} — dispose it with "
-            f"`{_finding_dispose_commands(project, run_id, index)[0]}` or "
-            f"`{_finding_dispose_commands(project, run_id, index)[1]}`"
-            for index, finding in undisposed
-        )
+        # The finding's place is the repair composer's own rendering of it, so
+        # the refusal and the repair brief name one location the same way; the
+        # fallback covers a finding the reviewer gave no file for.
+        described: list[str] = []
+        for index, finding in undisposed:
+            place = repair_module._finding_location(finding) or "the review's findings"
+            fold, exempt = _finding_dispose_commands(project, run_id, index)
+            described.append(f"{place} — dispose it with `{fold}` or `{exempt}`")
+        rendered = "; ".join(described)
         reason = (
             f"run {run_id!r} cannot be reviewed: its newest review carries "
             f"{len(undisposed)} blocking finding(s) with no disposition, so a "
