@@ -1,0 +1,82 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T07:29:29.765Z",
+  "dispatched_at": "2026-10-21T07:12:45Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-finished-plan-closes.html:136",
+      "id": "wiring-1",
+      "reason": "it would add s5 \u2192 a-finished-plan-closes#s2 to depends-on (or correct the followup's parallelism), since \u00a75 otherwise builds against a \u00a72 deliverable that does not exist yet.",
+      "text": "\u00a75's response must carry \"the plan's closing list from \u00a72\" and its `closable: true` value is \u00a72's readiness predicate, yet `plan-section-depends-on` declares only s4 and s6 and the followup body asserts \"\u00a72, \u00a73 and \u00a75 can start at once\", so a node dispatched to \u00a75 before \u00a72 lands has no closing list to return",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-finished-plan-closes.html:81",
+      "id": "done_when-1",
+      "reason": "it would add the gated-closable fixture and state that the closable branch precedes the deferred fallthrough, which is the case \u00a71's three blocked plans land in and no other node's gate covers.",
+      "text": "\u00a72's done-when fixtures cover a fully-done plan (reads ready today) and an implementable one, but not a closable plan carrying an open execution gate and no open followup, although \u00a72's own text names \"open gates\" in the closing list and \u00a71's blocked population is exactly gated finished work; in that shape the readiness ladder `readiness = \"ready\" if is_ready else \"blocked\" if is_blocked else \"deferred\"` (`reckon/roadmap.py:3269`) with `_dispatchability` (`reckon/roadmap.py:828`) false yields `deferred`, not `closable`",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "0173070edec00164f480629cc955744382af1108dbe110ae0e05a6371cadb8dd",
+  "plan_slug": "a-finished-plan-closes",
+  "plan_version": 1,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-21T07:30:39.458419+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-21T07:30:48.520767+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T07:30:48.520767+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T07:30:39.458419+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-finished-plan-closes.v1.json",
+  "review_run_id": "r-20261021T071141539154-plan-review-of-a-finished-plan-closes",
+  "reviewed_blob_sha": "99551ace6ab524f3e5fbd61bcb26993dcc2f253e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `docs/plans/a-project-reads-as-one-picture.html`, `a-sprint-closes-on-completable-work`, `derived-gate-state` and `reckon/crew/merge.py`-absence claims resolve, and \u00a75's cited write path `section_declarations.<id>` exists (`reckon/_store_section_ops.py:60`, handled at `reckon/_store.py:2661`); the plan carries no hrefs needing the `.html` convention.",
+    "done_when": "a finding \u2014 \u00a72's fixture set omits the closable-plus-open-gate shape \u00a72's own text describes, where the readiness ladder at `reckon/roadmap.py:3422` yields `deferred`, not `closable`.",
+    "evidence_paths": "pass \u2014 the census reads and their output sit on the durable in-repo path `docs/evidence/archive/a-finished-plan-closes-landed.html`, which exists; no section writes to a session scratchpad or node-local temporary directory.",
+    "naming": "pass \u2014 `closable`, `keep_open`, `stale-gate` and `plan-closable` are mechanism names, and no section carries plan labels, ticket numbers or changelog prose.",
+    "reasoning": "pass \u2014 \u00a71's root cause (gates over finished or deferred work, and a readiness derivation with no state for \"finished\") matches the cited census; each of the three reviewed sections' mechanisms can produce its done-when; and each names its code path \u2014 \u00a72/\u00a73 the single-core readiness and gate-blocker derivation (`reckon/roadmap.py:789 split_unpassed_gates`, `reckon/lifecycle.py:52 unpassed_gate_blockers`, derived-gate-state), \u00a75 the `edit_plan` landing beat, whose promoted-run-to-plan binding is durable on the ledger row (`reckon/ledger.py:114`, `reckon/ledger`-absent comment at `:152`, `session`, `plan` fields).",
+    "single_goal": "pass \u2014 each reviewed section has one goal: \u00a72 the closable readiness value and its closing list; \u00a73 the gate-no-longer-blocking rule; \u00a75 the finisher being offered the close.",
+    "wiring": "a finding \u2014 \u00a75 declares no depends-on edge to \u00a72 although its mechanism consumes \u00a72's `closable` predicate and its closing list, and the plan's followup asserts the two run in parallel."
+  },
+  "section_digests": {
+    "_document": "a4ae683796f1cd7d1f79c1a255667e309bf30ed565ec4468724053b7e60a7306",
+    "s1": "1e9dfcb4502718170725c8fe6a094be7008a8414e2b0c4d7396de0b81ce04dab",
+    "s2": "51cdddf8905abc4bde1a315d56019a28cfdeb7360d62cae7a404bab3c21f8bb2",
+    "s3": "7f747d9fb753cd2a2c757406b840cae52e94dc1ed1f966fbeec9b5434825eef2",
+    "s4": "06886da82dec62e1c772f7b868b84778dfd97afe61ca8a9a157b7e8e83b05314",
+    "s5": "60ed34601744bba9cfc6b50a292500b67b21dc5bb3a67796aab3ae4c8c4e7178",
+    "s6": "e70b0feb2c2e3f4e81d0af45dc4b770870c85b2bb2afbf74936d2b8b52a9a982"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T07:30:32.788084+00:00"
+}
