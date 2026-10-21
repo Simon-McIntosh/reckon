@@ -27,6 +27,31 @@ crew_unwatch = tombstone_command("unwatch")
 crew_resume_ready = tombstone_command("resume-ready")
 
 
+def _merge_land_refusal(
+    exc: Exception, *, resume: str | None = None
+) -> tuple[dict[str, Any], int]:
+    """Map an exception raised by the merge step to a land refusal and its exit.
+
+    Both commands that land a head report a merge failure through this one
+    mapping, so a failure is refused the same way wherever it surfaces. A
+    ``merge.MergeError`` is the merge module's own typed refusal and keeps its
+    message verbatim; any other exception escaped the merge step untyped, so
+    the refusal names the exception's type beside its message. ``resume`` is
+    the command that lands the head again, and is absent where the caller is
+    already that command. Both are exit 1: a refused landing, not a landed one.
+    """
+    from reckon.crew import merge as merge_module
+
+    if isinstance(exc, merge_module.MergeError):
+        error = str(exc)
+    else:
+        error = f"{type(exc).__name__}: {exc}"
+    entry: dict[str, Any] = {"ok": False, "error": error}
+    if resume:
+        entry["resume"] = resume
+    return entry, 1
+
+
 @crew.command(name="merge")
 @click.option(
     "--project",
@@ -74,8 +99,9 @@ def crew_merge(project, head, message, body, candidate, pretty):
     except merge.MergePushOutstandingError as exc:
         _emit(exc.report, pretty)
         raise click.exceptions.Exit(merge.PUSH_OUTSTANDING_EXIT) from exc
-    except merge.MergeError as exc:
-        raise click.ClickException(str(exc)) from exc
+    except Exception as exc:
+        entry, _ = _merge_land_refusal(exc)
+        raise click.ClickException(entry["error"]) from exc
     _emit_crew_result(report, pretty)
 
 
@@ -2496,16 +2522,13 @@ def _land_a_promoted_run(
         report["worktree_released"] = False
         report["error"] = str(exc)
         return report, merge_module.PUSH_OUTSTANDING_EXIT
-    except merge_module.MergeError as exc:
-        report["steps"]["land"] = {
-            "ok": False,
-            "error": str(exc),
-            "resume": resume_merge,
-        }
+    except Exception as exc:  # noqa: BLE001 - any failure after promotion is a refused land
+        entry, code = _merge_land_refusal(exc, resume=resume_merge)
+        report["steps"]["land"] = entry
         report["worktree_released"] = bool(
             (promoted.get("release") or {}).get("worktree_released")
         )
-        return report, 1
+        return report, code
     report["steps"]["land"] = {"ok": True, **landed}
     release = release_module._release_after_promotion(
         run_id, record, None, gate=str(gate)

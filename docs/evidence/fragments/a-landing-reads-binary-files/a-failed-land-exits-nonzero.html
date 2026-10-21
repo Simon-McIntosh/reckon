@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-landing-reads-binary-files">
+  <meta name="plan-title" content="A landing reads binary files">
+  <meta name="plan-evidence-for" content="reckon:a-landing-reads-binary-files">
+  <meta name="plan-verifies" content="reckon:a-landing-reads-binary-files#s2">
+  <meta name="plan-recorded-at" content="2026-10-21">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,landing,merge,exit-status">
+  <title>A land step that fails exits non-zero &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A land step that fails exits non-zero</h1>
+
+    <section id="a-failed-land-exits-nonzero-landing">
+      <h2>Landing</h2>
+      <p>At base, a non-<code>MergeError</code> raised inside the
+        <code>crew complete --land</code> merge step escaped the land call: the
+        command printed no JSON report at all and the exception reached the
+        caller. Reproduced at base <code>e3c761311</code> with
+        <code>merge.land_merge</code> patched to raise
+        <code>UnicodeDecodeError</code>: exit code 1, an escaping
+        <code>UnicodeDecodeError</code>, and an empty output stream &mdash; no
+        <code>steps.land</code> entry, so the ledger read as landed while the
+        change reached no reader.</p>
+      <p>One module-level function, <code>_merge_land_refusal</code>, now owns the mapping from a
+        merge failure to a land refusal and its exit status:
+        <code>crew merge</code>'s handler and the promoted-land handler both
+        call it and build no message of their own. A <code>MergeError</code>
+        keeps its message verbatim, as at base; any other exception is refused
+        as <code>&lt;Type&gt;: &lt;message&gt;</code>. The promoted-land
+        refusal carries the <code>reckon crew merge</code> command that resumes
+        the landing and exits 1.</p>
+      <p>Gate: the new test drives both commands through
+        <code>crew complete --land</code> and <code>crew merge</code> against a
+        temporary repository and asserts the failed land step, the named
+        exception and the resume command. The negative control narrows the
+        declared mutation back to <code>MergeError</code> and the first case
+        escapes the land step, which is the red log the manifest names.</p>
+    </section>
+  </main>
+</body>
+</html>
