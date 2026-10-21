@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T20:31:02.582Z",
+  "dispatched_at": "2026-10-21T20:18:59Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-page-paints-from-an-index.html:260",
+      "id": "reasoning-1",
+      "reason": "a node that confirms the defect by the command the Why names gets zero leaked lines and, under the review contract's \"confirm the defect still reproduces before repairing it\", can legitimately stop and report no reproduction; naming the whole-file run (or deleting the single-test attribution) is the correction.",
+      "text": "\u00a712's cause evidence attributes the leak to \"one run of `tests/test_cross_node_writes_refresh_the_index.py::test_an_open_stream_receives_the_added_row_and_stays_open`\", which \"added two `/_changes/sample` lines to the live served log (83 such lines before, 85 after)\", while its own done-when records the opposite for that population: \"Run alone, the single stream test leaked nothing in 6 runs, because its daemon handler dies with the process; the whole file leaked 6 such lines\". Both figures cannot describe the same command, and the section's own explanation (the daemon dies with the process when the test runs alone) makes the single-test attribution the wrong one; the live log today carries 85 `/_changes/sample` lines, so the total is real, but the reproduction the Why names is not the run that produced it",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-page-paints-from-an-index.html:260",
+      "id": "done_when-1",
+      "reason": "the ordering of the over-bound state is what decides whether this control can go red, and the plan must state it (arrange the over-bound state, and lower the bound, only after the binding request) or the node's gate proves nothing.",
+      "text": "\u00a712's case (2) states its precondition as \"the log bound lowered for the test and the first home's log already over it\" without fixing it after the binding request, but the binding request is itself served through `Handler.handle_one_request`, which calls `_bound_server_log()` (reckon/serve.py:2241) before any path is kept; if the bound is lowered and the first home's log put over it before that setup request, the setup request itself rotates the first home's log and publishes the predecessor, so the post-move request finds the fixed server's live file empty and returns False, and the case's assertion (\"leaving its predecessor beside it\") is satisfied by the setup rotation under the control as well \u2014 the control then passes and the case falsifies nothing",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "165bacc7bd64e5ae1abd27787a9fcd551191e079dbac32e60d52569daefd50ec",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 66,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T201731425460-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "eacaf028c1cdcaf6a97092597b304128338f2215",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol `reckon/serve.py` is cited for resolves: `_server_log_path` (255), `_write_access_line` (263), `_bound_server_log` (285), `_config_home` (imported at 84 from `reckon._store`, reached through `reckon.service.log_path`), `Handler.log_message` (2230) and the per-request call at `handle_one_request` (2241); `tests/test_cross_node_writes_refresh_the_index.py` exists and does build a bare `ThreadingHTTPServer` around `serve.Handler` at line 223 (\"near line 206\" names the fixture's body, not the construction line); `tests/test_every_module_fits_a_worker_window.py` exists with `BOUND = 50_000` and an empty allowlist, and `reckon/serve.py` measures 46,662 estimated tokens, so \u00a712's claim that it passes inside the bound holds.",
+    "done_when": "a finding \u2014 \u00a712's case (2) does not fix the order in which the over-bound state is arranged relative to the binding request, whose own bound check runs first.",
+    "evidence_paths": "pass \u2014 \u00a712's gates write under the run directory (`/home/ITER/mcintos/.config/reckon/crew/runs/<run>/`), which survives the run, and the coordinator's population arm writes to a scratch home's `.config/reckon/logs/`; nothing is directed at a node-local temporary path.",
+    "naming": "pass \u2014 \u00a712 carries no plan labels, stage names, ticket numbers or version tags; its heading and symbols are named by mechanism (\"a served log keeps the home it started under\").",
+    "reasoning": "a finding \u2014 the \"Why.\" count (two `/_changes/sample` lines in one run of the single stream test) is contradicted by the same section's own measurement that the single test leaks nothing alone in 6 runs.",
+    "single_goal": "pass \u2014 \u00a712 carries one deliverable (a server object resolves its log path once and keeps it for its requests); the two done-when cases are two observables of that one behaviour, not two deliverables.",
+    "wiring": "pass \u2014 `plan-section-depends-on` carries `s12: [the-page-paints-from-an-index#s11]` and \u00a712's prose states \"This runs after \u00a711, which shares `reckon/serve.py`\"; \u00a712's write paths (`reckon/serve.py` plus a new test) reach no other node's file, and `plan-standalone` declares no inter-plan edge, so no dependency it needs is missing."
+  },
+  "section_digests": {
+    "_document": "cbb39222f06376afb0c7588333fe9bb4bea3e3016d1797a9617e1366a1167036",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "17515cc4d212280b53e77d7279aa81e37c7d58f877ada031f77705b31e53d437",
+    "s11": "bb32b98b9a0a5070d5ec6b5387862bef5af3ba37b5956ac7c9d734723c2ac9fa",
+    "s12": "fa95cc2958842ac8592ab73b6e2265034d99c4344ec9a36d3f4ec68b3e55f79d",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "f22e8b2353f1a35ab1f08b2ffac2d1f0cb4909e18b10d3b7119fc3e4f46fc607",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T20:32:55.560716+00:00"
+}
