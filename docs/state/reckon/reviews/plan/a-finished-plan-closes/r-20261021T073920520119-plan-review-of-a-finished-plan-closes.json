@@ -1,0 +1,122 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T07:51:47.735Z",
+  "dispatched_at": "2026-10-21T07:41:20Z",
+  "findings": [
+    {
+      "anchor": "reckon/roadmap.py:3269",
+      "id": "reuse_search-1",
+      "reason": "naming these four turns \u00a72's \"declares at least one section and none of them is implementable\" into a call to `plan_executable_remainder` (with its `None` sentinel doing \u00a72's legacy carve-out for free) and \u00a73's change into an edit of `unpassed_gate_blockers`, which is the difference between an extension and a parallel derivation.",
+      "text": "the plan cites the ladder line and two plan slugs but not the four readers the design actually rests on: `reckon/_plan_html.py:1051 open_sections` (the one open-section predicate, already used by the terminal guard at `reckon/_store.py:3580` and by roadmap readiness), `reckon/_schema.py` `plan_executable_remainder` (the declared remainder, `None` for an undeclared plan \u2014 exactly the legacy population \u00a72 sets aside), `reckon/lifecycle.py:52 unpassed_gate_blockers` (\u00a73's blocker function, which the plan names only as the slug `derived-gate-state`), and `reckon/roadmap.py` `closure_blockers`",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/roadmap.py:3321",
+      "id": "duplicate_owner-1",
+      "reason": "the author would either widen `closure_blockers` to carry all three obstacle kinds with their clearing ops, or state that the two lists are deliberately distinct and which one a reader should trust.",
+      "text": "\u00a72 adds a closing list that carries deferred sections, open followups and open gates with the op clearing each, but `closure_blockers(plan)` already names the plan-terminal gates holding closure and is already emitted on every roadmap row, so the plan would sit two enumerations of \"why this plan is not closed\" beside each other and drift",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/obligations.py:1247",
+      "id": "thin_wrapper-1",
+      "reason": "the plan must either say how a run-pointer module obtains plan readiness (a new plan-state read inside `obligations()`, with its cost) or drop the row and let the session read the plan's own readiness.",
+      "text": "\u00a75 adds the duty kind `plan-closable`, but `obligations()` derives every existing duty from live run pointers and stored reviews and reads no plan state, and the fact the row carries (`readiness == closable`) is already published on the plan's roadmap row at `reckon/roadmap.py:3326`, so the row is a second surface for one fact with no statement of why the readiness read cannot serve the session",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "a-finished-plan-closes#s2",
+      "id": "interface_budget-1",
+      "reason": "against public_definitions 1958, cli_options 393, mcp_views 16 and refusal_families 23 the plan owes a line per section on what it retires \u2014 at minimum, that the closable plans leave `ready_now` and the ready counts (\u00a72 says so in substance but never as the surface it retires), and that \u00a74's refusal is the existing `_require_every_section_ticked` family extended rather than a new one.",
+      "text": "\u00a72 adds the readiness value `closable`, the `keep_open` plan-state scalar and the closing-list field; \u00a73 adds the `stale-gate` finding kind; \u00a75 adds the `closable` response field and the `plan-closable` duty kind \u2014 five additions to the readers' vocabulary across four sections, and no section names one thing it retires or merges, or says why nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "15bf88b1e33ae0ad160cbc76d664889e311a2ccc21ca2957c8b31aaac149b5b5",
+  "plan_slug": "a-finished-plan-closes",
+  "plan_version": 3,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-1",
+      "reason": "",
+      "when": "2026-10-21T07:53:37.609480+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "duplicate_owner-1",
+      "reason": "",
+      "when": "2026-10-21T07:54:07.788604+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "thin_wrapper-1",
+      "reason": "",
+      "when": "2026-10-21T07:54:36.149517+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "interface_budget-1",
+      "reason": "",
+      "when": "2026-10-21T07:54:56.886237+00:00"
+    }
+  ],
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T07:54:07.788604+00:00"
+    },
+    "interface_budget-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T07:54:56.886237+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T07:53:37.609480+00:00"
+    },
+    "thin_wrapper-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T07:54:36.149517+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-finished-plan-closes.v3.json",
+  "review_run_id": "r-20261021T073920520119-plan-review-of-a-finished-plan-closes",
+  "reviewed_blob_sha": "c00b635e4b9149836a2ac112220c756d21b2bd02",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the design adds one concept and lands each half in the module that already owns it (the readiness ladder, the one blocker function, the close guard list, the obligations surface), rather than adding a module of shallow wrappers.",
+    "duplicate_owner": "a finding \u2014 \u00a72's closing list is a second enumeration of plan-closure obstacles beside `reckon/roadmap.py` `closure_blockers`, which already names the pending plan-terminal gates holding a plan's closure and is already on every roadmap row.",
+    "interface_budget": "a finding \u2014 public_definitions 1958, cli_options 393, mcp_views 16, refusal_families 23; across \u00a72, \u00a73, \u00a74 and \u00a75 the plan adds a readiness value, a `keep_open` plan-state scalar, a `stale-gate` finding kind, a `plan-closable` duty kind and a `closable` response field, and no section names anything it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan cites only the readiness ladder line (`reckon/roadmap.py:3269`) and two prior plan slugs; it does not cite the four existing readers that already answer the questions \u00a72 and \u00a73 ask, and it proposes a second \"what stands between a plan and close\" enumeration without naming `closure_blockers`.",
+    "thin_wrapper": "a finding \u2014 \u00a75's `plan-closable` row re-publishes the fact \u00a72's readiness already carries, through a duty surface whose whole derivation is run pointers, and the plan never says why the existing readiness read cannot carry it."
+  },
+  "section_digests": {
+    "_document": "a4ae683796f1cd7d1f79c1a255667e309bf30ed565ec4468724053b7e60a7306",
+    "s1": "1e9dfcb4502718170725c8fe6a094be7008a8414e2b0c4d7396de0b81ce04dab",
+    "s2": "0500b0b55cad9a48fc0b479bf0ea195f27ee2c3afb19cf17d33d6e5fe04ee60e",
+    "s3": "7f747d9fb753cd2a2c757406b840cae52e94dc1ed1f966fbeec9b5434825eef2",
+    "s4": "06886da82dec62e1c772f7b868b84778dfd97afe61ca8a9a157b7e8e83b05314",
+    "s5": "60ed34601744bba9cfc6b50a292500b67b21dc5bb3a67796aab3ae4c8c4e7178",
+    "s6": "e70b0feb2c2e3f4e81d0af45dc4b770870c85b2bb2afbf74936d2b8b52a9a982"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T07:53:15.909596+00:00"
+}
