@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "Reddens if the composition stops stripping the listing, or if the production heading at reckon/_backends.py:2160 changes while the fixture's spelled heading at :563 does not - the negative control demonstrates the first, so this is an independently sourced assertion rather than one that moves with the code.",
+      "lines": "tests/test_crew_lane_change.py:696-700"
+    },
+    {
+      "failure_condition": "Reddens if the codex dialect stops attaching images on argv (reckon/_backends.py:1244,1280) or attaches a different figure; the count is compared to the literal 2 and the paths to the constants the fixture placed in the node's images list.",
+      "lines": "tests/test_crew_lane_change.py:702-705"
+    },
+    {
+      "failure_condition": "Pass-through guards: redden if the composition drops the brief or the restated time fence, but the expected text is supplied by the fixture's own prompt file at :586, so the assertion confirms the file was carried across rather than that its content was independently derived.",
+      "lines": "tests/test_crew_lane_change.py:694-695"
+    }
+  ],
+  "call_sites": [
+    "reckon/crew_run_commands.py:1808 (the crew lane-change/resume CLI calls change_lane)",
+    "reckon/crew/dispatch_sessions.py:1840 (change_lane composes the new attempt through _backends.launch_plan)",
+    "reckon/_backends.py:2349 (launch_plan applies _prompt_without_figure_listing on every lane before the naming branch)",
+    "reckon/_backends.py:1280 (the codex dialect appending the -i flag; images_on_argv=True at :1244)"
+  ],
+  "completed_at": "2026-10-21T10:39:56.267Z",
+  "dispatched_at": "2026-10-21T10:22:57Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_lane_change.py",
+      "line": 571,
+      "severity": "follow-on",
+      "text": "_stopped_clive_run duplicates the capability the same file already owns in _stopped_figure_run at :415 - both build a stopped run whose recorded prompt file carries the figure listing a fresh dispatch wrote, with the node's figures, a manifest, an exit record and a live pointer - instead of extending the owner with brief/images parameters, so a fixture the file already owns now has a hand-synchronised second copy of about 45 lines."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 637b41da; the single commit 06c59989 appends 153 lines to tests/test_crew_lane_change.py (hunk @@ -550,3 +550,156 @@, additions at :553-705) and adds the 53-line fragment, and changes no existing line of either file.",
+    "done_when": "prompt.txt:96 requires the new test to pass at head and, with the _prompt_without_figure_listing call removed from launch_plan, to fail on the stale listing as the negative control; the manifest points at gate-lane-change-to-codex.log (1 passed in 1.50s, EXIT=0) and negative-control-lane-change-to-codex.log (1 failed in 1.22s, EXIT=1), and I read both.",
+    "goal": "prompt.txt:30 sets the goal as a new test in tests/test_crew_lane_change.py that drives a lane change of a two-figure run from clive onto codex and holds the lane-change prompt file to the brief, the restated fence and no figure listing; the landed test at tests/test_crew_lane_change.py:629 composes a clive run onto codex and asserts exactly those four things plus one -i per figure.",
+    "manifest": "read in full; it names the single commit, the literal gate command and the three logs, and records head 1 passed EXIT=0, the negative control 1 failed EXIT=1 on the listing heading, the whole-file arm 4 failed/3 passed, and a zero ruff delta.",
+    "write_paths": "prompt.txt:69-75 fences the node to tests/test_crew_lane_change.py, docs/evidence/fragments/a-review-can-see-the-figure/the-lane-change-onto-codex-drops-the-listing.html and a docs/figures directory; git show --stat 06c59989 lists exactly the first two, 206 insertions and 0 deletions, and nothing under docs/figures."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261021T102058442528-review-of-the-lane-change-onto-codex-drops-the-listing-06c59989f2a7",
+  "review_text": "VERDICT goal: prompt.txt:30 asks for a new test in tests/test_crew_lane_change.py driving a clive-onto-codex lane change of a two-figure run; tests/test_crew_lane_change.py:629 does exactly that.\nVERDICT done_when: prompt.txt:96 requires the test to pass at head and to fail on the stale listing under the declared mutation; gate-lane-change-to-codex.log ends 1 passed EXIT=0 and negative-control-lane-change-to-codex.log ends 1 failed EXIT=1, both recorded by the manifest.\nVERDICT write_paths: prompt.txt:69-75 declares two files plus a figures directory; git show --stat 06c59989 lists only the two files, 206 insertions and 0 deletions.\nVERDICT manifest: read; it names the commit, the literal gate command, the three logs and the head/negative-control/whole-file results, and claims a zero ruff delta with no log.\nVERDICT diff: read against 637b41da; the commit appends 153 lines to tests/test_crew_lane_change.py and adds the 53-line fragment, modifying nothing else.\nCALL_SITES: reckon/crew_run_commands.py:1808, reckon/crew/dispatch_sessions.py:1840, reckon/_backends.py:1280, reckon/_backends.py:2349\nSCORE goal_fidelity: 20\nSCORE evidence: 16\nSCORE scope_discipline: 20\nSCORE durability: 18\nSCORE fit: 17\nSCORE reuse: 5\nJUSTIFICATION goal_fidelity: tests/test_crew_lane_change.py:629 moves a clive run onto codex and asserts the brief, the restated fence, the absent listing and the argv flags.\nJUSTIFICATION evidence: gate-lane-change-to-codex.log ends 1 passed EXIT=0 and the negative control ends 1 failed EXIT=1 on tests/test_crew_lane_change.py:696, while the ruff delta and the base arm the done_when also names are claimed with no log.\nJUSTIFICATION scope_discipline: every path in git show --stat 06c59989 falls inside the two declared write paths.\nJUSTIFICATION durability: tests/test_crew_lane_change.py:696 is falsified by the declared mutation, while :694-695 and :702-705 are pass-through guards no arm falsified.\nJUSTIFICATION fit: the added constants and helper follow the file's existing idiom at tests/test_crew_lane_change.py:395-415 and carry no plan or version label.\nJUSTIFICATION reuse: tests/test_crew_lane_change.py:571 duplicates the fixture at :415 rather than extending it.\nFINDING tests/test_crew_lane_change.py:571 follow-on: _stopped_clive_run duplicates the stopped-run-with-figure-listing fixture the file already owns at :415 instead of extending it, so a hand-synchronised second copy carries the same capability.",
+  "reviewed_base_sha": "637b41da56a3bea7bab67738c64731c034df46ac",
+  "reviewed_head_sha": "06c59989f2a7360fa5043aa69f85f99aea827e5c",
+  "reviewed_run_id": "r-20261021T095615096117-the-lane-change-onto-codex-drops-the-listing",
+  "score_justifications": {
+    "durability": "tests/test_crew_lane_change.py:696 is falsified by the declared mutation - removing the _prompt_without_figure_listing call reddens it on the stale listing, as the negative control shows - while :694-695 and :702-705 are pass-through guards whose falsification was not demonstrated by any arm.",
+    "evidence": "gate-lane-change-to-codex.log ends '1 passed in 1.50s' / EXIT=0 and negative-control-lane-change-to-codex.log ends '1 failed in 1.22s' / EXIT=1 on tests/test_crew_lane_change.py:696, both under the run directory with a revision and literal command header; the ruff delta the done_when also names (4 and 27 at base and here) and the base arm for the four pre-existing failures are claimed in the manifest with no log recorded.",
+    "fit": "the new constants and helper follow the file's existing spelling and docstring idiom (compare tests/test_crew_lane_change.py:395-415), and no added name encodes a plan, phase or version identifier; the CODEX_ prefix is the one small departure from the sibling constants' bare naming.",
+    "goal_fidelity": "tests/test_crew_lane_change.py:629 builds a clive run via :571, moves it onto codex through dispatch_sessions_module.change_lane and asserts the brief, the restated fence, the absent listing and the argv flags.",
+    "reuse": "tests/test_crew_lane_change.py:571 re-implements the stopped-run-with-figure-listing fixture the same file already owns at :415 without extending it.",
+    "scope_discipline": "every path in git show --stat 06c59989 is one of the two declared write paths, and the diff carries nothing beyond the goal's test and its landing fragment."
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T10:41:16.415052+00:00",
+  "total": 96
+}
