@@ -2,9 +2,13 @@
 
 A session host runs one follower child per project and session. When the
 session's last live run reaches a terminal phase the child prints one idle
-line, ``no live work in <session> since HH:MM``, and leaves; the host stays,
-and the next request for the pair starts a fresh child. The judgement of "no
-live work" is ``_population_has_live_work``'s, not one re-derived here.
+line, ``no live work since HH:MM``, and leaves; the host stays, and the next
+request for the pair starts a fresh child. The judgement of "no live work" is
+``_population_has_live_work``'s, not one re-derived here.
+
+The line names a session only when this pane carries more than its own: a
+session at a terminal knows its own id, so it is named only when the row would
+otherwise be ambiguous about which fleet drained.
 
 Two facts decide the whole design, and both are covered below.
 
@@ -60,7 +64,7 @@ RESTART_BOUND = 20.0
 # measures the follower rather than the grace.
 CHILD_SETTLE_GRACE_SECONDS = "0.5"
 
-SETTLE_LINE = f"no live work in {SESSION} since"
+SETTLE_LINE = "no live work since"
 
 
 def _module():
@@ -171,6 +175,8 @@ def test_a_child_settles_once_its_session_work_drains(home: Path) -> None:
         settles = _settle_events(events)
         assert len(settles) == 1, settles
         assert settles[0]["line"].startswith(SETTLE_LINE), settles[0]["line"]
+        # The pane's own session is not named: the reader is at its terminal.
+        assert SESSION not in settles[0]["line"], settles[0]["line"]
         assert events[-1] is settles[0], "the idle line is the child's last row"
     finally:
         stop.set()
@@ -217,6 +223,33 @@ def test_an_observed_peers_live_run_keeps_the_child_following(home: Path) -> Non
         _write_pointer("r-peer", session=PEER, phase="complete")
         time.sleep(0.5)
         assert _settle_events(events), "the child never settled once every run drained"
+    finally:
+        stop.set()
+        thread.join(5.0)
+
+
+def test_a_settle_names_an_observed_session(home: Path) -> None:
+    """A pane carrying more than its own work names the session it reports on.
+
+    The bare stamp is unambiguous only while the pane watches its own fleet.
+    Observing a peer puts two fleets in view, so the closing row has to say
+    which one drained.
+    """
+    _write_pointer("r-mine", session=SESSION, phase="working")
+    _write_pointer("r-peer", session=PEER, phase="working")
+    events: list[dict] = []
+    stop = threading.Event()
+    thread = _spawn_watch(events, stop, observed=(PEER,))
+    try:
+        time.sleep(0.5)
+        _write_pointer("r-mine", session=SESSION, phase="complete")
+        _write_pointer("r-peer", session=PEER, phase="complete")
+        time.sleep(1.0)
+        settles = _settle_events(events)
+        assert len(settles) == 1, settles
+        line = settles[0]["line"]
+        assert line.startswith(f"no live work in {PEER} since"), line
+        assert SESSION not in line, line
     finally:
         stop.set()
         thread.join(5.0)

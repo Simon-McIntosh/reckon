@@ -1092,30 +1092,46 @@ def _follower_end_event(
 
 
 
-def _follower_settle_line(session: str | None, *, since: float, tail: str) -> str:
+def _follower_settle_line(
+    *, since: float, observed: Iterable[str] = (), tail: str = ""
+) -> str:
     """The one line the pane shows when a session has no work left to watch.
 
     The stamp is the wall clock the reader's own tools print, taken at the
     moment the session's last live run was seen, so ``since`` names when the
-    fleet actually drained rather than when this poll happened to notice.
+    fleet actually drained rather than when this pane happened to notice.
 
-    The tail says what the drain means for a reader: the session's own fleet is
-    drained, or how many runs it still owes the coordinator. It is composed by
-    :func:`reckon.crew.needs_you.drain_tail`, the same derivation the standing
-    needs-you line reads, so the closing row cannot disagree with the line.
+    A session at a terminal already knows its own id, so the bare stamp is the
+    whole of the news. The line names a session only when this pane carries more
+    than its own — the ones it was asked to observe — because then the reader
+    has more than one fleet in view and the row must say which it reports on.
+
+    The tail is composed by :func:`reckon.crew.needs_you.drain_tail`, the same
+    derivation the standing needs-you line reads, and it is empty when that line
+    already said it.
     """
     stamp = time.strftime("%H:%M", time.localtime(since))
-    return f"no live work in {session} since {stamp} · {tail}"
+    names = ", ".join(sorted({str(name) for name in observed if name}))
+    head = f"no live work since {stamp}"
+    if names:
+        head = f"no live work in {names} since {stamp}"
+    return f"{head} · {tail}" if tail else head
 
 
 def _follower_settle_event(
-    project: str, *, session: str | None, since: float
+    project: str,
+    *,
+    session: str | None,
+    since: float,
+    shown: tuple[Any, ...] | None = None,
+    observed: Iterable[str] = (),
 ) -> dict[str, Any]:
     """Build the follower's terminal row for a session whose work drained.
 
     Like the lifetime end row it is about the follower rather than the fleet,
-    so it carries the line to print verbatim; it is the last thing the child
-    emits before it leaves.
+    so it carries the line to print verbatim. ``shown`` is the signature of the
+    set the pane's last needs-you line printed, which the tail compares against
+    so the row repeats nothing that line already said.
     """
     from reckon.crew import needs_you as needs_you_module
 
@@ -1125,9 +1141,9 @@ def _follower_settle_event(
         "session": session or "",
         "run_id": None,
         "line": _follower_settle_line(
-            session,
             since=since,
-            tail=needs_you_module.drain_tail(project, session=session),
+            observed=observed,
+            tail=needs_you_module.drain_tail(project, session=session, shown=shown),
         ),
     }
 
@@ -2128,15 +2144,20 @@ def _follow_watch_lines(
 
     # The standing line's emitter. It is a generator because the caller yields
     # the row to the pane, and it is called wherever ``_tick`` is: the wait pass
-    # is the only place a follower can speak with nothing moving in the stream,
-    # and the cadence is what makes a quiet pane a heartbeat rather than a
-    # silence a dead follower also shows.
+    # is the only place a follower can speak with nothing moving in the stream.
     #
     # The list is scanned on a bounded cadence rather than on every wait pass.
     # The scan is a live-pointer read and the wait pass is fast, so it is
-    # throttled so a follower costs no more than the settle check already does;
-    # the line is emitted when the set has changed since the last one printed or
-    # when the remind interval has elapsed, whichever comes first.
+    # throttled so a follower costs no more than the settle check already does.
+    # The line is emitted when the set has changed since the set last scanned
+    # and on the interval while the set is non-empty, whichever comes first.
+    #
+    # The cadence carries a non-empty set only. An unpromoted or blocked run is
+    # work the coordinator still owes, so repeating it is a reminder; an empty
+    # set is not news, and under a session host it is not even evidence, since
+    # the host restarts a follower that exits and a quiet pane there already
+    # means a quiet fleet. The empty line prints once, when a set the pane has
+    # been shown drains, so a reader told there is work is told it has gone.
     #
     # The interval is the command's: an arming with no --remind carries
     # needs_you.DEFAULT_REMIND_SECONDS, and --remind overrides it. A caller that
@@ -2147,7 +2168,7 @@ def _follow_watch_lines(
     #
     # The first scan is the baseline rather than news: the fleet as it stands at
     # arming is what the arming's own closing row already names, so the standing
-    # line is emitted when the set changes from there, and on the cadence.
+    # line is emitted when the set changes from there.
     needs_remind_seconds = None if remind is None else float(remind)
     needs_scan_seconds = (
         0.0
@@ -2156,10 +2177,15 @@ def _follow_watch_lines(
     )
     needs_scanned_at: float | None = None
     last_needs_signature: tuple | None = None
+    # The set the last standing line printed, which the settle row's tail reads
+    # so the closing row never restates what the pane was just told. ``None``
+    # until a line is shown at all: a pane shown no set has been told nothing.
+    shown_needs_signature: tuple | None = None
     needs_emitted_at: float | None = None
 
     def _needs_you_events() -> Iterable[dict[str, Any]]:
         nonlocal needs_scanned_at, last_needs_signature, needs_emitted_at
+        nonlocal shown_needs_signature
         interval = needs_remind_seconds
         if interval is None:
             return
@@ -2177,10 +2203,14 @@ def _follow_watch_lines(
             needs_emitted_at = moment
             return
         changed = signature != last_needs_signature
-        due = moment - needs_emitted_at >= interval
-        if not changed and not due:
-            return
         last_needs_signature = signature
+        if not signature:
+            # The empty line prints once, when a shown set drains, not per beat.
+            if not (changed and shown_needs_signature):
+                return
+        elif not changed and moment - needs_emitted_at < interval:
+            return
+        shown_needs_signature = signature
         needs_emitted_at = moment
         yield {
             "event": FOLLOWER_NEEDS_YOU_EVENT,
@@ -2812,6 +2842,8 @@ def _follow_watch_lines(
             project,
             session=session,
             since=last_live_at if last_live_at is not None else time.time(),
+            shown=shown_needs_signature,
+            observed=observed_sessions - {None},
         )
         return
 
@@ -3239,9 +3271,9 @@ def _needs_remind_seconds(remind: str | None) -> float:
     metavar="DURATION",
     help=(
         "Re-emit the standing needs-you line every DURATION (an integer plus s, "
-        "m or h, e.g. 10m) even when nothing has changed, so a quiet pane reads "
-        "as a live follower rather than a dead one. Defaults to ten minutes; "
-        "this overrides that interval."
+        "m or h, e.g. 10m) while the session still owes the coordinator a run, "
+        "even when nothing has changed. Defaults to ten minutes; this overrides "
+        "that interval. An empty set is never re-emitted on this cadence."
     ),
 )
 @_ticker_options

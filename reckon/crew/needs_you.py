@@ -29,8 +29,11 @@ from typing import Any
 # landing, where a blocked run may need a repair first.
 NEEDS_YOU_KINDS = ("unpromoted", "blocked")
 
-# The follower re-emits the line on this cadence even when the set is empty, so
-# a quiet pane is a heartbeat rather than a silence a dead follower also shows.
+# The follower re-emits the line on this cadence while the set is non-empty,
+# because an unpromoted or blocked run is work the coordinator still owes.
+# The empty set is deliberately outside the cadence: the follower is restarted
+# by its session host when it exits, so a quiet pane there already means a quiet
+# fleet, and a beat saying so only wakes a reader for nothing.
 DEFAULT_REMIND_SECONDS = 600.0
 
 
@@ -233,28 +236,39 @@ def needs_you_runs(project: str, *, session: str | None) -> list[dict[str, Any]]
 
 
 # The word the drain line carries when the session's own fleet has nothing left
-# for the coordinator. The count is what the line reports otherwise, so a reader
-# learns the size of the queue without the ids the standing line already names.
+# for the coordinator. Nothing outstanding reads as drained rather than as a
+# zero, because a zero is indistinguishable from a count the row failed to take.
 DRAINED_TAIL = "fleet drained"
 
 
-def drain_tail(project: str, *, session: str | None) -> str:
+def drain_tail(
+    project: str,
+    *,
+    session: str | None,
+    shown: tuple[tuple[str, str, str], ...] | None = None,
+) -> str:
     """The tail the follower's settle row gains when the session's work drains.
 
     The settle row says the pane has nothing left to watch, which is exactly the
     moment a coordinator looks up: the row therefore carries what the session
-    still owes it, counted from the same derivation the standing needs-you line
-    prints a moment earlier, so the closing row and the line it followed cannot
-    disagree about what is outstanding. Nothing outstanding reads as drained
-    rather than as a zero, because a zero is indistinguishable from a count the
-    row failed to take.
+    still owes it, from the same derivation the standing needs-you line reads,
+    so the closing row and the line it followed cannot disagree about what is
+    outstanding.
+
+    It carries it only as news. ``shown`` is the signature of the set the pane's
+    last needs-you line printed, and a set that line already named is not
+    printed again: the row is left with no tail at all, because restating a
+    standing fact is what made the pane noise. Runs the pane has not been shown,
+    and every run when no line has been shown yet, are named by their node.
     """
-    count = len(needs_you_runs(project, session=session))
-    if count == 0:
+    rows = needs_you_runs(project, session=session)
+    if not rows:
         return DRAINED_TAIL
-    if count == 1:
-        return "1 run needs the coordinator"
-    return f"{count} runs need the coordinator"
+    signature = needs_you_signature({"runs": rows})
+    if shown is not None and tuple(shown) == signature:
+        return ""
+    names = ", ".join(str(row.get("node") or row.get("run_id") or "") for row in rows)
+    return f"needs you: {names}"
 
 
 def needs_you_signature(summary: Mapping[str, Any]) -> tuple[tuple[str, str, str], ...]:
@@ -285,9 +299,10 @@ def _entry(row: Mapping[str, Any]) -> str:
 def needs_you_line(summary: Mapping[str, Any]) -> str:
     """Compose the one plain-text line, reading fully without colour.
 
-    With nothing outstanding it is the cadence heartbeat, naming the session's
-    own working count so a quiet pane is distinguishable from a dead one. With
-    runs outstanding each group leads with its count and its word.
+    With nothing outstanding it names the session's own working count, which is
+    what the pane says once when a set it had been shown drains. With runs
+    outstanding each group leads with its count and its word. The emitter, not
+    this composer, decides which of the two is news.
     """
     runs: Iterable[Mapping[str, Any]] = summary.get("runs") or ()
     groups: list[str] = []

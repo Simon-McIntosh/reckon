@@ -1,10 +1,12 @@
-"""A follower stands a line naming the runs that need the coordinator, and repeats it.
+"""A follower stands a line naming the runs that need the coordinator.
 
-The pane a coordinator reads is quiet for long stretches, so a follower that has
-died and one watching a healthy idle fleet look the same. The standing line
-answers both: it names every owned run whose state needs action, and it re-emits
-on a cadence whether or not the set is empty, so a silent pane is itself a fact
-about the follower rather than about the fleet.
+The standing line names every owned run whose state needs action, and says so
+again while the work is still owed: an unpromoted or blocked run is something
+the coordinator has not done yet. It says nothing about an empty set -- a pane
+with nothing outstanding is not news, and under a session host, which restarts
+a follower that exits, a quiet pane already means a quiet fleet. The one
+exception is the moment a set the pane was shown full empties: that is worth one
+line, and then silence.
 
 The line is one derivation, in ``reckon/crew/needs_you.py``, because the follower
 prints it while it lives and again as the run it names is delivered; two
@@ -203,6 +205,21 @@ def _wait_for_lines(events: list[dict], count: int, *, bound: float = 5.0) -> li
     return _needs_you_lines(events)
 
 
+def _advance(clock: _Clock, seconds: float, *, step: float = 1.0) -> None:
+    """Move a stepped clock forward, yielding so the follower's passes can run.
+
+    The spans these cases speak in are minutes and the follower's clock is the
+    fake one, so a span is walked in slices: each slice is a moment the
+    follower's cadence can be measured at, and the sleep between slices is only
+    there to let a pass happen.
+    """
+    remaining = float(seconds)
+    while remaining > 0:
+        clock.advance(min(step, remaining))
+        remaining -= step
+        time.sleep(0.005)
+
+
 def _nodes_in_line(line: str) -> set[str]:
     """The node names a composed line prints, read back off the line itself.
 
@@ -279,16 +296,63 @@ def test_the_line_names_your_unpromoted_run_and_repeats(home):
     assert not any("blocked" in line for line in lines), lines
 
 
-def test_a_quiet_pane_still_beats(home):
-    """With nothing needing action the cadence line still appears and says so."""
-    _write_pointer(
-        home, "r-own-work", "own-node", session=SESSION, manifest_status="running"
-    )
+def test_an_empty_set_is_never_announced(home):
+    """An empty set draws no summary line, however long the follower waits.
 
-    lines, _rows = _run_needs_you(home)
+    This is the case the negative control fails: restore the cadence for the
+    empty set and the same 35 minutes emit one line per beat of the interval.
+    """
+    clock = _Clock()
+    events: list[dict] = []
+    stop = threading.Event()
+    thread = _drive_at_own_pace(events, stop, clock, session=SESSION)
+    try:
+        time.sleep(0.2)
+        _advance(clock, 35 * 60, step=10.0)
+        assert _needs_you_lines(events) == [], _needs_you_lines(events)
+    finally:
+        stop.set()
+        thread.join(timeout=2.0)
+        assert not thread.is_alive()
 
-    assert len(lines) >= 2, f"expected the heartbeat to repeat: {lines!r}"
-    assert all(line == "yours: 1 working · nothing needs you" for line in lines), lines
+
+def test_a_draining_set_is_announced_once(home):
+    """A set that empties after the pane was shown it full says so, once.
+
+    The empty line is the follower's answer to a reader who was told there was
+    work: it reports that the work has gone. Nothing follows it, because a
+    quiet fleet under a session host is not a fact the reader must be woken for.
+    """
+    clock = _Clock()
+    events: list[dict] = []
+    stop = threading.Event()
+    thread = _drive_at_own_pace(events, stop, clock, session=SESSION)
+    try:
+        time.sleep(0.2)
+        _write_pointer(
+            home,
+            "r-own",
+            "own-node",
+            session=SESSION,
+            manifest_status="complete",
+        )
+        _advance(clock, 2.0)
+        shown = _wait_for_lines(events, 1)
+        assert shown and "own-node" in shown[0], shown
+
+        crew.pointer_path("r-own").unlink()
+        _advance(clock, 2.0)
+        lines = _wait_for_lines(events, 2)
+        assert len(lines) == 2, lines
+        assert lines[1] == "yours: 0 working · nothing needs you", lines
+
+        # And then nothing, for as long as the fleet stays quiet.
+        _advance(clock, 35 * 60, step=10.0)
+        assert len(_needs_you_lines(events)) == 2, _needs_you_lines(events)
+    finally:
+        stop.set()
+        thread.join(timeout=2.0)
+        assert not thread.is_alive()
 
 
 def test_an_arming_with_no_flag_carries_the_default_cadence(home):
@@ -327,11 +391,12 @@ def test_an_arming_with_no_flag_carries_the_default_cadence(home):
         assert changed, "no line after the set changed"
         assert "own-unpromoted" in changed[0], changed
 
-        # Then nothing moves, and the default cadence beats anyway.
-        clock.advance(need_module.DEFAULT_REMIND_SECONDS + 2.0)
-        beaten = _wait_for_lines(events, 2)
-        assert len(beaten) >= 2, f"the default cadence did not repeat: {beaten!r}"
-        assert "own-unpromoted" in beaten[1], beaten
+        # Then nothing moves, and the default cadence beats anyway: a quarter
+        # of an hour of an unchanged non-empty set is two reminders of it.
+        _advance(clock, 25 * 60, step=10.0)
+        beaten = _needs_you_lines(events)
+        assert len(beaten) == 3, f"the default cadence did not repeat: {beaten!r}"
+        assert all("own-unpromoted" in line for line in beaten), beaten
     finally:
         stop.set()
         thread.join(timeout=2.0)
