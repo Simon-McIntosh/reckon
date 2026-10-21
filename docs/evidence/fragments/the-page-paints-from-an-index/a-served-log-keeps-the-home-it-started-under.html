@@ -27,13 +27,17 @@ temporary home. Case 1: a change stream opened before the move closes after it, 
 home's log carries the closing <code>GET /_changes/sample</code> line while the second home
 holds no log. Case 2: the log bound is lowered and the first home's log pushed past it after
 the binding request and before the move, and one request after the move rotates that log,
-leaving a non-empty predecessor beside it and creating nothing in the second home. Head arm:
-2 passed, <code>EXIT=0</code>
-(<code>logs/gate-files-n4.log</code>, run at <code>91087a8</code> with
-<code>-n 4</code> together with the cross-node suite &mdash; 16 passed). Control: the access
-line's path resolved per line again, and separately the bound check's path resolved per call
-again &mdash; each fails its own case, 2 failed, <code>EXIT=1</code>, and the tree was
-restored by hash comparison (<code>logs/negative-control.log</code>).
+leaving a non-empty predecessor beside it and asking whether the moved-to home's log
+directory holds a predecessor of its own (scoped to the rotation, so an access line landing
+there does not redden this case). Head arm: 2 passed, <code>EXIT=0</code>
+(<code>logs/gate-head.log</code> with <code>-n 4</code> together with the cross-node suite
+and the module-window check). Controls run one at a time, so each red names its own
+mutation: the access line's path resolved per line again fails only case 1
+(<code>logs/negative-control-access.log</code>, 1 failed 1 passed, <code>EXIT=1</code>),
+and the bound check's path resolved per call again fails only case 2
+(<code>logs/negative-control-bound.log</code>, 1 failed 1 passed, <code>EXIT=1</code>). Each
+arm restored the tree to the head's own sha256 and left <code>git status --porcelain</code>
+empty.
 <code>tests/test_every_module_fits_a_worker_window.py</code> passes with
 <code>reckon/serve.py</code> at 47,032 estimated tokens against the 50,000 bound.</p>
 </article>
