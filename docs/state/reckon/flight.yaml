@@ -47,6 +47,16 @@ backends:
   clive:
     session_reuse: false
     lane_document: ~/public/imas-ambix/lane.json
+    # Measured 2026-10-21 on the local lane itself, by the two probe runs
+    # r-20261021T005536425849-clive-opens-probe-image-1 and
+    # r-20261021T005833774995-clive-opens-probe-image-2 as read by
+    # r-20261021T010543780105-clive-image-probe-is-matched: a worker opening a
+    # figure PNG with its Read tool stated every counted claim the figure draws
+    # (13 of 13), and a blank image of the same size drew the answer that it
+    # showed nothing, so the delivery is the pixels rather than the filename.
+    # The lane held one model when this was declared; a model added to it later
+    # needs its own measurement.
+    input_modalities: [text, image]
   codex:
     session_reuse: false
     # Measured 2026-10-16 by run
