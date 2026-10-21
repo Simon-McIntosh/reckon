@@ -1,0 +1,81 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured: the head arm (gate-domain-brief-head.log) records 102 passed EXIT=0 and the base arm (gate-domain-brief-base.log) records 87 passed EXIT=0 at base 229715fe9, so head adds no failure id; the new test file is absent at the base revision, so it is not counted as an added failure.",
+  "backend": "clive",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1807",
+    "reckon/crew/dispatch.py:2121",
+    "reckon/crew/dispatch_plan.py:580",
+    "reckon/crew/dispatch_plan.py:742",
+    "reckon/crew/prompts.py:635",
+    "reckon/crew/promotion.py:502",
+    "reckon/crew/promotion_checks.py:1249",
+    "reckon/crew_run_commands.py:2338"
+  ],
+  "completed_at": "2026-10-21T21:21:20.617Z",
+  "dispatched_at": "2026-10-21T20:59:20Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_plan.py",
+      "line": "580",
+      "severity": "follow-on",
+      "text": "follow-on: this file is not among the write paths recorded on the run's own live pointer (which names reckon/crew/dispatch.py and reckon/crew_run_commands.py but not dispatch_plan.py), so the landed diff carries a file outside the run's recorded scope; the manifest's follow_ons states the record names 'the six earlier files', which misstates what the record names. The change itself is the two-line project threading the coordinator's resume advice granted, so reconciliation of the record belongs to the coordinator."
+    },
+    {
+      "file": "reckon/crew/dispatch_admission.py",
+      "line": "1990",
+      "severity": "follow-on",
+      "text": "follow-on: _brief_domain_block re-implements the capability reckon/crew/prompts.py:360 domain_rules_block adds in the same change -- both call rules_for and render the block for a (project, node) pair -- so the repository now owns two spellings of one capability. It reuses the owner's renderer (render_domain_rules) but does not extend the owner, and the dispatch.py:1807 and dispatch_plan.py:580 call sites could have called domain_rules_block directly."
+    },
+    {
+      "file": "reckon/crew/prompts.py",
+      "line": "402",
+      "severity": "follow-on",
+      "text": "follow-on: render_domain_rules emits the heading alone when the matched rule set holds no invariants and no review checks. DomainRules.__bool__ (reckon/crew/domain_rules.py:48) is true when only model_paths matched, and reckon/_flight_schema.py:731 makes model_paths a legal standalone declaration, so a project declaring model paths but no rules gives every matching node a brief carrying a heading with nothing under it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T170434451667-a-brief-carries-its-domain-rules/gate-domain-brief-base.log",
+      "line": "5",
+      "severity": "follow-on",
+      "text": "follow-on: the done_when asks that the gate log show the brief and refusal tests failing on the base commit, and no log does -- the new test file does not exist at base 229715fe9, so the base arm ran only the 11 pre-existing files it lists (87 passed) and the head's delta is measured as an addition of 15 tests rather than a change from red to green. The coordinator's resume advice substituted the negative control, which does redden: negative-control-domain-brief.log reports 4 failed, 11 passed, EXIT=1 against a tree with _require_domain_invariant_checks's body replaced by an immediate return None."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 229715fe9; b260c32b7 adds the heading, renderer and block into the composed prompt, a5cedef37 adds the replay of a declaration's checks, 41059fb9f threads the project into the stored brief, its digest and the pointer's record, aebf77f2b and 3c3e4c16f are the evidence fragment, and the promotion guard plus its CLI waiver land with them.",
+    "done_when": "the done_when names the heading in the stored brief and its digest, the declaration's checks run at promotion through the existing integration replay under the same bound and log convention, refusal naming the invariant id, waivable only with a stated reason, and the new tests passing with a base-arm failure delta; the manifest records the head gate (102 passed EXIT=0), the base arm (87 passed EXIT=0), ruff clean on the changed paths and the negative control, but no log shows the new tests failing at the base commit because the file is absent there.",
+    "goal": "the node's goal is to carry the domain rules a node touches from its composed brief through to a promotion guard over their declared checks; reckon/crew/prompts.py:357 adds the one heading and reckon/crew/prompts.py:635 composes the block into the prompt, reckon/crew/promotion.py:502 wires the guard that replays each declared check.",
+    "manifest": "read; it states tests/test_domain_rules_reach_the_brief.py ran 15 passed, names gate-domain-brief-head.log and gate-domain-brief-base.log, records the negative control as 4 failed 11 passed, and records blockers: none.",
+    "write_paths": "read the run's live pointer and the dispatch's FENCE SCOPE; the diff against 229715fe9 changes ten files, nine of them within the recorded scope, and reckon/crew/dispatch_plan.py falls outside the pointer's recorded list though the coordinator's resume advice granted it."
+  },
+  "justifications": {
+    "durability": "the negative control reinstates the regression -- _require_domain_invariant_checks's body replaced by an immediate return None -- and tests/test_domain_rules_reach_the_brief.py:247, :280, :313 and :359 redden on it while the other eleven pass, and the brief-half assertions at :168, :173 and :203 read the stored bytes for a heading the code must have written rather than comparing two calls to the same function.",
+    "evidence": "gate-domain-brief-head.log records 102 passed EXIT=0 at head, naming its revision, tree and the worktree-resolved module, and gate-domain-brief-base.log records 87 passed EXIT=0 with the base tree on its module line, but the done_when's sentence asking for the new brief and refusal tests failing at the base commit is unmet because the file does not exist there and the negative control stands in its place.",
+    "fit": "reckon/crew/prompts.py:357 and the new helpers keep the module's existing idiom of a named constant plus a renderer, every name describes its mechanism, and no version, plan or ticket identifier appears in the diff; the only naming-adjacent concern is the bare heading at :402.",
+    "goal_fidelity": "reckon/crew/prompts.py:635 composes the matched rules under DOMAIN_RULES_HEADING for the node's write paths, reckon/crew/dispatch_admission.py:2077 appends the same block to the stored copy its digest covers, and reckon/crew/promotion.py:494 runs each declared check at promotion, so both halves of the goal land.",
+    "reuse": "reckon/crew/promotion_gate.py:870 reuses rerun_gate_at_integrated_revision for the declared checks rather than adding an executor, but reckon/crew/dispatch_admission.py:1990 forks the capability reckon/crew/prompts.py:360 owns, so the addition duplicates rather than extends the owner.",
+    "scope_discipline": "the diff against 229715fe9 touches only the declared product and test paths plus the evidence fragment, but reckon/crew/dispatch_plan.py:580 is absent from the write_paths recorded on the run's live pointer even though the resume advice granted it, and no path outside the grant is touched."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to carry the domain rules a node touches from its composed brief through to a promotion guard over their declared checks; reckon/crew/prompts.py:357 adds the one heading and reckon/crew/prompts.py:635 composes the block into the prompt, reckon/crew/promotion.py:502 wires the guard that replays each declared check.\nVERDICT done_when: the done_when names the heading in the stored brief and its digest, the declaration's checks run at promotion through the existing integration replay under the same bound and log convention, refusal naming the invariant id, waivable only with a stated reason, and the new tests passing with a base-arm failure delta; the manifest records the head gate (102 passed EXIT=0), the base arm (87 passed EXIT=0), ruff clean on the changed paths and the negative control, but no log shows the new tests failing at the manifest's base commit because the file is absent there.\nVERDICT write_paths: read the run's live pointer and the dispatch's FENCE SCOPE; the diff against 229715fe9 changes ten files, nine within the recorded scope, and reckon/crew/dispatch_plan.py falls outside the pointer's recorded list though the coordinator's resume advice granted it.\nVERDICT diff: read commit by commit against 229715fe9; b260c32b7 adds the heading, renderer and block into the composed prompt, a5cedef37 adds the replay of a declaration's checks, 41059fb9f threads the project into the stored brief, its digest and the pointer's record, and the promotion guard plus its CLI waiver land with them.\nCALL_SITES: reckon/crew/dispatch.py:1807, reckon/crew/dispatch.py:2121, reckon/crew/dispatch_plan.py:580, reckon/crew/dispatch_plan.py:742, reckon/crew/prompts.py:635, reckon/crew/promotion.py:502, reckon/crew/promotion_checks.py:1249, reckon/crew_run_commands.py:2338\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/prompts.py:635 composes the matched rules under DOMAIN_RULES_HEADING for the node's write paths, reckon/crew/dispatch_admission.py:2077 appends the same block to the stored copy its digest covers, and reckon/crew/promotion.py:494 runs each declared check at promotion, so both halves of the goal land.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-domain-brief-head.log records 102 passed EXIT=0 at head, naming its revision, tree and the worktree-resolved module, and gate-domain-brief-base.log records 87 passed EXIT=0 with the base tree on its module line, but the done_when's sentence asking for the new brief and refusal tests failing at the base commit is unmet because the file does not exist there and the negative control stands in its place.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: the diff against 229715fe9 touches only the declared product and test paths plus the evidence fragment, but reckon/crew/dispatch_plan.py:580 is absent from the write_paths recorded on the run's live pointer even though the resume advice granted it.\nSCORE durability: 18\nJUSTIFICATION durability: the negative control reinstates the regression -- _require_domain_invariant_checks's body replaced by an immediate return None -- and tests/test_domain_rules_reach_the_brief.py:247, :280, :313 and :359 redden on it while the other eleven pass, and the brief-half assertions at :168, :173 and :203 read the stored bytes for a heading the code must have written.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/prompts.py:357 and the new helpers keep the module's existing idiom of a named constant plus a renderer, every name describes its mechanism, and no version, plan or ticket identifier appears in the diff.\nSCORE reuse: 13\nJUSTIFICATION reuse: reckon/crew/promotion_gate.py:870 reuses rerun_gate_at_integrated_revision for the declared checks rather than adding an executor, but reckon/crew/dispatch_admission.py:1990 forks the capability reckon/crew/prompts.py:360 owns.\nFINDING reckon/crew/dispatch_plan.py:580 follow-on: the file is not among the write paths recorded on the run's own live pointer, so the landed diff carries a file outside the run's recorded scope, and the manifest's follow_ons states the record names 'the six earlier files', which misstates what the record names.\nFINDING reckon/crew/dispatch_admission.py:1990 follow-on: _brief_domain_block re-implements the capability reckon/crew/prompts.py:360 domain_rules_block adds in the same change, so the repository now owns two spellings of one capability.\nFINDING reckon/crew/prompts.py:402 follow-on: render_domain_rules emits the heading alone when the matched rule set holds no invariants, no review checks, or neither, which a model_paths-only declaration reaches.\nFINDING gate-domain-brief-base.log:5 follow-on: no log shows the new brief and refusal tests failing at the base commit because the file is absent at 229715fe9; the negative control (4 failed, 11 passed, EXIT=1) stands in for it.\n",
+  "review_run_id": "r-20261021T205803415483-review-of-a-brief-carries-its-domain-rules-3c3e4c16f207",
+  "reviewed_base_sha": "229715fe9970efa67c6147d8458058537e9aebbc",
+  "reviewed_head_sha": "3c3e4c16f207be95e39b10f0551b6e30dc0273d5",
+  "reviewed_run_id": "r-20261021T170434451667-a-brief-carries-its-domain-rules",
+  "reviewer": "review-of-a-brief-carries-its-domain-rules-3c3e4c16f207",
+  "reviewer_run_id": "r-20261021T205803415483-review-of-a-brief-carries-its-domain-rules-3c3e4c16f207",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 13,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T21:20:00Z",
+  "total": 99
+}
