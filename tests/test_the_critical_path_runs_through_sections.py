@@ -7,6 +7,10 @@ plan whose section another plan waits on reports that other plan among its
 unlocks. The plan itself stays in the ready set, because a section-scoped wait
 holds its section and not the whole plan.
 
+A wait between two sections of one plan is a different case: it sequences that
+plan's own work, so the plan releases nothing by it and must not report itself
+among the plans this plan unlocks.
+
 Every fixture is written into a synthetic docs tree under the test's own
 ``tmp_path``, so no test reads a mounted project's state.
 """
@@ -27,10 +31,22 @@ PROJECT = "sample"
 WAITS_ON_A = "plan-b"
 WAITS_ON_B = "plan-c"
 UPSTREAM = "plan-a"
+SELF_WIRED = "plan-self"
 
 # The effort each section records, and the order the edges force on the path.
-SECTION_HOURS = {"s2": 3.0, "s3": 5.0, "s1": 2.0}
-SUMMED_HOURS = 10.0
+UPSTREAM_HOURS = 3.0
+WAITS_ON_A_HOURS = 5.0
+WAITS_ON_B_HOURS = 2.0
+SUMMED_HOURS = UPSTREAM_HOURS + WAITS_ON_A_HOURS + WAITS_ON_B_HOURS
+
+# The section identities the chain forces, in the order it forces them. Written
+# out here rather than read back off a field a path carries, so a path that
+# reports something else is compared against the fixture, not against itself.
+EXPECTED_SECTIONS = [
+    f"{UPSTREAM}#s2",
+    f"{WAITS_ON_A}#s3",
+    f"{WAITS_ON_B}#s1",
+]
 
 
 @pytest.fixture()
@@ -58,20 +74,23 @@ def _write_plan(
     docs: Path,
     slug: str,
     *,
-    section: str,
+    sections: dict[str, float],
     section_depends_on: dict[str, list[str]] | None = None,
 ) -> Path:
-    """Write one plan holding a single open section of its own."""
+    """Write one plan holding its open sections, each at its own effort."""
 
     def meta(name: str, value: Any) -> str:
         return f'<meta name="{name}" content="{escape(value, quote=True)}">'
 
-    declarations = json.dumps({section: "implementable"}, separators=(",", ":"))
+    declarations = json.dumps(
+        dict.fromkeys(sections, "implementable"), separators=(",", ":")
+    )
     head = [
         '<!doctype html><html lang="en"><head><meta charset="utf-8">',
         f'<meta name="docs-project" content="{PROJECT}">',
         '<meta name="reckon-type" content="plan">',
         meta("plan-slug", slug),
+        '<meta name="plan-title" content="' + slug + '">',
         '<meta name="plan-status" content="active">',
         meta("plan-section-declarations", declarations),
     ]
@@ -83,22 +102,23 @@ def _write_plan(
             )
         )
     head.append(f"<title>{slug}</title></head>")
-    body = (
-        '<body><main class="plan-doc">'
-        f'<h2 id="{section}">Section</h2>'
-        '<section data-reckon="section"'
-        f' data-id="{section}"'
-        f' data-effort-hours="{SECTION_HOURS[section]}"'
-        ' data-capability-version="1.0" data-capability-class="general"'
-        ' data-capability-reasoning="standard"'
-        ' data-capability-verification="standard"'
-        ' data-capability-risk="low"'
-        ' data-status="implementable" data-links=""></section>'
-        "</main></body></html>"
-    )
+    body = ['<body><main class="plan-doc">']
+    for name, hours in sorted(sections.items()):
+        body.append(
+            f'<h2 id="{name}">Section</h2>'
+            '<section data-reckon="section"'
+            f' data-id="{name}"'
+            f' data-effort-hours="{hours}"'
+            ' data-capability-version="1.0" data-capability-class="general"'
+            ' data-capability-reasoning="standard"'
+            ' data-capability-verification="standard"'
+            ' data-capability-risk="low"'
+            ' data-status="implementable" data-links=""></section>'
+        )
+    body.append("</main></body></html>")
     path = docs / "plans" / f"{slug}.html"
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("".join(head) + body, encoding="utf-8")
+    path.write_text("".join(head) + "".join(body), encoding="utf-8")
     return path
 
 
@@ -111,18 +131,36 @@ def three_plan_project(mounted_project):
     """
 
     project, docs = mounted_project
-    _write_plan(docs, UPSTREAM, section="s2")
+    _write_plan(docs, UPSTREAM, sections={"s2": UPSTREAM_HOURS})
     _write_plan(
         docs,
         WAITS_ON_A,
-        section="s3",
+        sections={"s3": WAITS_ON_A_HOURS},
         section_depends_on={"s3": [f"{UPSTREAM}#s2"]},
     )
     _write_plan(
         docs,
         WAITS_ON_B,
-        section="s1",
+        sections={"s1": WAITS_ON_B_HOURS},
         section_depends_on={"s1": [f"{WAITS_ON_A}#s3"]},
+    )
+    return project, docs
+
+
+@pytest.fixture()
+def self_wired_project(mounted_project):
+    """One plan whose second section waits on the first section of that plan.
+
+    Nothing crosses a plan boundary here: the edge sequences the plan's own
+    work, so the plan releases nothing and must not name itself.
+    """
+
+    project, docs = mounted_project
+    _write_plan(
+        docs,
+        SELF_WIRED,
+        sections={"s1": 2.0, "s2": 4.0},
+        section_depends_on={"s2": [f"{SELF_WIRED}#s1"]},
     )
     return project, docs
 
@@ -136,13 +174,7 @@ def test_the_critical_path_names_the_sections_in_the_order_the_edges_force(
 ):
     result = mcp_module._roadmap(three_plan_project[0])
 
-    critical = result["critical_path"]
-
-    assert critical["sections"] == [
-        f"{UPSTREAM}#s2",
-        f"{WAITS_ON_A}#s3",
-        f"{WAITS_ON_B}#s1",
-    ]
+    assert result["critical_path"]["sections"] == EXPECTED_SECTIONS
 
 
 def test_the_critical_path_prices_the_sections_it_crosses(three_plan_project):
@@ -155,10 +187,10 @@ def test_the_critical_path_prices_the_sections_it_crosses(three_plan_project):
     assert critical["length_hours"] == SUMMED_HOURS
 
 
-def test_the_open_paths_carry_the_same_sections(three_plan_project):
+def test_the_open_paths_name_the_same_sections_the_chain_forces(three_plan_project):
     result = mcp_module._roadmap(three_plan_project[0])
 
-    assert result["open_paths"][0]["sections"] == result["critical_path"]["sections"]
+    assert result["open_paths"][0]["sections"] == EXPECTED_SECTIONS
 
 
 def test_the_plan_whose_section_is_waited_on_unlocks_the_waiting_plan(
@@ -177,3 +209,12 @@ def test_a_section_scoped_wait_leaves_the_plan_ready(three_plan_project):
 
     assert rows[WAITS_ON_B]["dependency_ready"] is True
     assert rows[WAITS_ON_B]["blocked_sections"] == ["s1"]
+
+
+def test_a_plan_does_not_unlock_itself_for_its_own_section_wait(self_wired_project):
+    result = mcp_module._roadmap(self_wired_project[0])
+
+    row = _rows(result)[SELF_WIRED]
+
+    assert row["unlocks"] == []
+    assert SELF_WIRED not in row["unlocks"]
