@@ -307,6 +307,30 @@ def without_the_live_claude_session(monkeypatch):
     monkeypatch.delenv("CLAUDE_PID", raising=False)
 
 
+# A crew-host session exports four variables into every process it starts,
+# including the test suite. They tell follower and session code that this
+# process runs under a live host: whether a pane is hosted, which process owns
+# a follower, which commit and source tree the running image carries. A test
+# that drives a follower then inherits a state it never set and behaves as if
+# it shared a session with the host that ran it. Measured at main: 86 tests
+# fail in bulk when the suite runs from a crew-host session. Removed for every
+# test; a test whose subject is that state sets the variable it means through
+# monkeypatch.
+_FOLLOWER_SESSION_ENV = (
+    "RECKON_SESSION_HOST_SETTLE",
+    "RECKON_FOLLOWER_OWNER",
+    "RECKON_FOLLOWER_IMAGE_COMMIT",
+    "RECKON_FOLLOWER_SOURCE_ROOT",
+)
+
+
+@pytest.fixture(autouse=True)
+def without_the_follower_session(monkeypatch):
+    """No test inherits the follower session of the crew host that ran it."""
+    for name in _FOLLOWER_SESSION_ENV:
+        monkeypatch.delenv(name, raising=False)
+
+
 # The picker answers over OpenRouter and authenticates with a live credential.
 # Since routing.picker became ``route`` by default, any dispatch that names no
 # lane asks the live service; the whole suite then depends on an external
