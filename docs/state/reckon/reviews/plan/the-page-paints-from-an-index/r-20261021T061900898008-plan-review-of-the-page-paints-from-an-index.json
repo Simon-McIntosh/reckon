@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T06:33:02.083Z",
+  "dispatched_at": "2026-10-21T06:21:40Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-page-paints-from-an-index.html:242",
+      "id": "done_when-1",
+      "reason": "the assertion must cover the key set the deliverable keeps, otherwise the node is closable on a partial fix of the very flicker it was dispatched for.",
+      "text": "\u00a710's first done-when asserts that only \"the schedule, sprints, endpoints and ready set\" are never empty, while the deliverable at line 236 requires every block `derivedBlocks` returns plus the milestones and north stars and the \"why\" names the timeline, milestones and north stars as emptied by the same path, so a fix that keeps those four keys and still blanks the rest turns this gate green while the symptom the lead reported (\"everything below it jumped\") survives",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-page-paints-from-an-index.html:257",
+      "id": "done_when-2",
+      "reason": "the fleet-event half of \u00a711's deliverable is its main behavioural change, and without a control asserting the old refresh the node cannot show the guard it adds is the thing that suppressed it.",
+      "text": "\u00a711's loader case asserts the absence of a refresh within the settle window on a `fleet` event with no positive control showing the pre-change code refreshed on that event, so the control that would discriminate the change is only the poll case's (which is about a different behaviour), and an absence assertion holds equally when the refetch machinery is broken or the listener never receives the event",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "d33ffa829fd3fe30b02e8fbfdf39405bbf758152e48896001b62a669c89277d5",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 43,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T061900898008-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "bc83b2d6cbc298d87e37564bb6e6fe54c2bd6be5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `derivedBlocks` (state-loader.js:316), `watchProjectStateChanges` (:709), `mergeDerived` (:484), `refreshProjectState`/`loadChecksAfterDerived` (shell.jsx:154/:149), `_attach_schedule_for_read` (serve.py:1777), the `/_index` and `/_checks` routes, `BOUND = 50_000`, and `the-site-answers-fast-and-agrees` \u00a724 all resolve at the reviewed revision.",
+    "done_when": "a finding \u2014 \u00a710's first assertion covers four keys of the key set its deliverable keeps, and \u00a711's one absence assertion carries no control.",
+    "evidence_paths": "pass \u2014 both units land logs under the crew run directory and their gates in repository test files; no session scratchpad, node-local `/tmp` path or ephemeral artefact is named.",
+    "naming": "pass \u2014 the changed units name mechanism (`derivedBlocks`, `/_schedule/<project>`, the stale rule) rather than plan items, and no symbol, filename or comment in them carries a stage label, ticket number or version tag.",
+    "reasoning": "pass \u2014 all three checks hold: the stated causes match the cited code (index-only `assemble` at state-loader.js:557; the merge dispatching no render at :484 with `STATE_DERIVED_READY` consumed only by the checks path), each section's mechanism can satisfy its own measure, and the callers the mechanisms ride on are named.",
+    "single_goal": "pass \u2014 \u00a710 states one deliverable (\"the derived blocks stay on screen until better ones replace them\") carried by three behaviours with one test and one control each, and \u00a711 states one (\"the flow refreshes from its own route\") carried by a route and a poll-driven fetch.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares `s11: [the-page-paints-from-an-index#s10]`, \u00a711's prose repeats \"Build it after \u00a710, which writes the same files\", and every other file the two units write belongs to sections already declared done, so no implementable node is left undeclared."
+  },
+  "section_digests": {
+    "_document": "5bedd7f41d8b5b370882135e798f35d56d6e6348c4003130ade8574bbf365128",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "cc1b2dba3f6b61cae1a4f0fb496d98ba7a10f226a7d8a3168c45d374a2a544ec",
+    "s11": "14e0d392d34309423d1c5b938a089b5e4b50127565aab74e4efb223943f7c10d",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "768d4a5e4156b059d51137b95683149be313a7d4ce026b0836f872b4f4056507",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T06:35:31.690363+00:00"
+}
