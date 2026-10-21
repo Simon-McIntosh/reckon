@@ -982,9 +982,12 @@ def queued_placements(
     queued requests, matching the narrowing the pass applies to its own queue.
 
     A queued request the snapshot does not carry reads no place, so a caller
-    asks only about requests it already holds. ``queued_at`` is required by the
-    ordering; a snapshot with a queued pointer that does not carry one raises
-    there, as it does in the pass.
+    asks only about requests it already holds. A queued pointer without a
+    readable ``queued_at`` also reads no place: the ordering cannot place it, so
+    it is left out of the ordering rather than allowed to take the whole read
+    down. Its run is still listed as queued by every surface that reads the
+    snapshot itself; only its place is withheld, and every other pointer keeps
+    the place the ordering gives it.
     """
     moment = now or _now()
     queued = [
@@ -992,6 +995,7 @@ def queued_placements(
         for pointer in pointers
         if str(pointer.get("phase") or "") == QUEUED_PHASE
         and (not lane or str(pointer.get("backend") or "") == lane)
+        and parse_utc(pointer.get("queued_at")) is not None
     ]
     if not queued:
         return {}
