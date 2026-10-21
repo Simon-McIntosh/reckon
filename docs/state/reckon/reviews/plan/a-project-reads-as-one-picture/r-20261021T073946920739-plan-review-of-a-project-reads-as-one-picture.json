@@ -1,0 +1,150 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T08:24:01.795Z",
+  "dispatched_at": "2026-10-21T08:15:15Z",
+  "findings": [
+    {
+      "anchor": "reckon/roadmap.py:1079",
+      "id": "reuse_search-1",
+      "reason": "\u00a72's scope and its done-when are written against a resolver that does not exist, and an implementer told \"that is the new work\" will fork roadmap's resolution rather than extend it.",
+      "text": "\u00a72 says `plan-section-depends-on` entries \"become edges for the first time, and that is the new work\", but `_section_scoped_edges` already parses every entry through `parse_plan_ref`, resolves the `project:`-qualified form against the named mount, judges satisfaction through `_section_satisfied` and `declared_section_identities`, refuses malformed refs through `section_dependency_refusals`, and emits `dangling-hard-dependency`; the true new work is only lifting the resolved edges into the plan-level closure (`longest_path` at roadmap.py:3426, `unlocks` at roadmap.py:3324), not building resolution; the same omission covers `_plan_section_deps` (roadmap.py:409), `_gate_section_edges` (roadmap.py:302) and `_after_edges` (roadmap.py:987), which are the three edge sources \u00a72 describes as if unbuilt",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/mcp_views.py:1860",
+      "id": "reuse_search-2",
+      "reason": "naming the owner turns \u00a74 into an extension of one classifier instead of a third call site, and removes the wrong premise that parity does not already exist.",
+      "text": "\u00a74 says a section row's runs carry \"one classification each, taken from the same function `crew live` calls\", but names no function: the owner is `partition_live_runs` (reckon/mcp_views.py:1860), which already delegates to `classify_pointer` (reckon/crew/recovery.py) and already asserts in its docstring that \"the roadmap, the sprint view and `recover` cannot disagree\"; \u00a74's premise that the surfaces \"can no longer disagree\" is therefore already true at plan level, and the real delta is extending `_run_row`/`_run_target_plan` from plan to `plan#section`",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/roadmap.py:1079",
+      "id": "duplicate_owner-1",
+      "reason": "four parallel derivations of one roadmap payload is exactly the drift \u00a74's own parity test exists to prevent, and the plan can only hold that test by citing the owners instead of restating their work; note that \u00a75 places no `wiring_findings` reference beside itself at all, unlike \u00a712.",
+      "text": "the plan re-implements, across four sections, facts with existing owners and \u00a75 names none of them: the section-edge resolver (`_section_scoped_edges`, roadmap.py:1079, with `_plan_section_deps` at 409), the ranking order (`priority`, roadmap.py:3514, which already orders by critical membership, sprint position, ROI and `unlocks` and which \u00a73 rewrites rather than extends), the run classifier (`partition_live_runs`, reckon/mcp_views.py:1860), and the findings family (`_finding`, roadmap.py:1213, feeding `wiring_findings` at roadmap.py:3797)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/roadmap.py:3551",
+      "id": "duplicate_owner-2",
+      "reason": "a reader or agent holding the payload cannot tell which `reason` vocabulary a row carries, and \u00a73 should either name one field for both or name and extend the existing one.",
+      "text": "\u00a73 assigns every ranked row a `reason`, but a `reason` field already exists on the same `immediate_roadmap` rows at roadmap.py:3551 with plan-level text (\"critical path\", \"sequenced after \u2026\"), and \u00a72 says section rows are \"served beside the plan rows\", putting two differently-scoped `reason` values in one payload; the census of already-owned `reason` values is roadmap.py:3551 (plan rows) and the proposed \u00a73/\u00a77 section rows",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-project-reads-as-one-picture.html#s7",
+      "id": "interface_budget-1",
+      "reason": "five new interface families across six sections is the surface this item exists to hold to account, and the plan must state in each section's own text what it retires or merges, or why nothing can be.",
+      "text": "with cli_options at 393, mcp_views at 16 and public_definitions at 1958, \u00a77 adds a `reckon brief --project` CLI option, a `reckon.brief.project_brief` public definition and an MCP surface, and names no option, view or definition it retires or merges, nor why nothing can be; \u00a73, \u00a75, \u00a76, \u00a79 and \u00a712 add five wiring-finding codes (`flat-priority-signal`, `undeclared-wait`, `overlapping-scope`, `settled-link`, `redundant-link`) and a new `slug@f-id` ref form and a `descoped` declaration and \u00a74 adds six blocking kinds in the same silence",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b17d4f7c2cdff8816d07e3078d5625f0c05bd031de6cfe29d3ffbfeb1b2a0f73",
+  "plan_slug": "a-project-reads-as-one-picture",
+  "plan_version": 6,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-1",
+      "reason": "",
+      "when": "2026-10-21T08:52:12.427216+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-2",
+      "reason": "",
+      "when": "2026-10-21T08:52:32.276764+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "duplicate_owner-1",
+      "reason": "",
+      "when": "2026-10-21T08:52:50.314840+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "duplicate_owner-2",
+      "reason": "",
+      "when": "2026-10-21T08:54:25.241022+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "interface_budget-1",
+      "reason": "",
+      "when": "2026-10-21T08:54:36.615530+00:00"
+    }
+  ],
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T08:52:50.314840+00:00"
+    },
+    "duplicate_owner-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T08:54:25.241022+00:00"
+    },
+    "interface_budget-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T08:54:36.615530+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T08:52:12.427216+00:00"
+    },
+    "reuse_search-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T08:52:32.276764+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-project-reads-as-one-picture.v6.json",
+  "review_run_id": "r-20261021T073946920739-plan-review-of-a-project-reads-as-one-picture",
+  "reviewed_blob_sha": "1629d6e8eb4a858ea08fcf7f0b50de4ae0d86fe1",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a72 hides the whole graph, its weights, its edges and its derived plan rows behind one function, and \u00a77 states the brief is a composition over the \u00a72\u2013\u00a75 payload rather than a second analyser.",
+    "duplicate_owner": "a finding \u2014 \u00a72, \u00a73, \u00a74 and \u00a75 each re-derive a fact an existing owner already computes (`_section_scoped_edges`, `priority`, `partition_live_runs`, `_finding`) and no section names the owner it extends.",
+    "interface_budget": "a finding \u2014 public_definitions 1958, cli_options 393, mcp_views 16, refusal_families 23; \u00a77 adds a CLI option and an MCP view and \u00a73/\u00a75/\u00a712 add four new wiring-finding codes and \u00a74 adds six blocking kinds without any section naming what it retires, merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a72 adds a section graph over `plan-section-depends-on` while `reckon/roadmap.py` already resolves those entries to per-section blockers with cross-plan satisfaction, refusals and `dangling-hard-dependency` findings, and \u00a72 cites none of that machinery.",
+    "thin_wrapper": "pass \u2014 the two genuinely thin additions, \u00a710's refusal text and \u00a711's `set` clause, extend their owners (`reckon/_store.py` `_PLAN_SET_TOP` and the refusal at line 2738) rather than wrapping them, and \u00a77 justifies its composition explicitly."
+  },
+  "section_digests": {
+    "_document": "f178febf5be7d8d1fe4dc94b58f60952703743e4b0253df8b9434c84afce2640",
+    "s1": "1956dcaef74ad7d3216608fe69c2e7baa2a9e32d702ef86431dc746f15c3878a",
+    "s10": "e102e1c4c48bcc4635b2e41c4a84e2b36433f78cee863762cad68b3deae2cf75",
+    "s11": "ff19dc90f42b226ca45a5aaaf02a9894b54846500c87597775cb2806fc9b6156",
+    "s12": "039fc9469fcdd80b1d5482629a5dcefc71359e7124fbbad20e0227170c2760dc",
+    "s13": "95e233ad4cbbcd9c2cf975b7cb717f3f0eec9093cbeade0f4f268890aaff8d73",
+    "s2": "64f2b4d0c82612bd0bfb9eefcafcd13b92a20df1b1cbe711fd1183f50bf843b1",
+    "s3": "fd80d47dc6527a7a3e24a77d127f2483874d0b64aef17e84da1890a991c5cbbb",
+    "s4": "5681204820c5a325bb74eb0eae7f23e929fcd07085ca0aee87be77107db770fc",
+    "s5": "ff089a567fbe0c1760cd53470a5037aa7b3d1f536103b004db83cb7cda55c12d",
+    "s6": "d0f702b85752e3605cfbc815d2de3035b6d1e8e89fb584b661e8571aba7aa175",
+    "s7": "bfeb444f551da88dcabaeab5e28cda9c2c4c7ba177f07712b9cc5686e41e1103",
+    "s8": "1f13b98a4d7476b083792c060d8da48918e0ca44b3b27c910d2cfb7ae1aa69d3",
+    "s9": "a65c8523c1a05e7389c35e43a8737757ab2c60d08633460c1648c40a88138892"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T08:52:03.269334+00:00"
+}
