@@ -1,0 +1,78 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T14:32:42.871Z",
+  "dispatched_at": "2026-10-21T14:19:07Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-landing-reads-binary-files.html:52",
+      "id": "reasoning-1",
+      "reason": "the function's stated contract (resume command on every refusal) cannot be met at the site the plan names, so either the site is reclassified as a separate non-resume refusal or the shared contract is restated as taking an optional resume, and only the plan can say which.",
+      "text": "\u00a72 names three sites that share one mapping of \"type, message, resume command and exit status\", but the promoted-land site near line 2449 catches `MergeError` from `merge_module.project_repository(project)` (`reckon/crew_run_commands.py:2447-2451`), which is a \"project \u2026 has no registered mount to land a head in\" failure \u2014 not a merge failure \u2014 and its report is written before `resume_merge` exists (built at `reckon/crew_run_commands.py:2455-2472`), so it emits `steps.land` as `ok: false` with an error string and no resume key at all; a worker told that all three sites call one function owning the resume command must either hoist `message`/`resume_merge` above the repository call and thereby add a `resume` key to a path no gate covers, or discover the mismatch mid-implementation",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-reads-binary-files.html:52",
+      "id": "anchors_resolve-1",
+      "reason": "the sentence also names the handler by kind (\"`MergeError` handler\"), the real clause is three lines away, and no node can take the wrong path from it; correcting 74 to 77 changes no work.",
+      "text": "\"crew merge's `MergeError` handler (near line 74)\" resolves to the `MergePushOutstandingError` clause at `reckon/crew_run_commands.py:74`; the `MergeError` clause it names is at 77, and line 74 is the neighbouring handler the same paragraph elsewhere treats as not a refusal",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "f08f0aaff94c708e2e3fdfc3fce5f9fc41b08ef239afd2e712c54741e16ed9e8",
+  "plan_slug": "a-landing-reads-binary-files",
+  "plan_version": 14,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-21T15:18:41.608270+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "",
+      "when": "2026-10-21T15:19:00.492682+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T15:19:00.492682+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T15:18:41.608270+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-landing-reads-binary-files.v14.json",
+  "review_run_id": "r-20261021T141219447929-plan-review-of-a-landing-reads-binary-files",
+  "reviewed_blob_sha": "ef4f63cbaf8f56b8e219572a6f3b49390c683ae1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a72's \"crew merge's `MergeError` handler (near line 74)\" points at the `MergePushOutstandingError` handler, which is the clause at `reckon/crew_run_commands.py:74`; the `MergeError` clause is at 77. Every other changed anchor resolves: `merge.py` `_run` at 108 (`text=True` at 118, no `text` parameter, so \"runs every git call with text=True\" holds), `_show` at 211, its callers at 274/275/306, `rev-parse` at 125/133/345, the `survived` block at 652, `promotion_scope.py` `capture_output=True` without `text=True` at 924, `_write_origin_and_checkout` at `tests/test_one_call_lands_a_run.py:39`, `_complete_land` at 137, `_land_a_promoted_run` at 2394, the handlers at 2449/2475/2485/2524, and the `PUSH_OUTSTANDING_EXIT` pin at `tests/test_a_reviewed_head_lands_without_touching_the_index.py:352`.",
+    "done_when": "pass \u2014 \u00a71 measures `merge.land` (the function `crew complete --land` reaches at `reckon/crew_run_commands.py:2474`, which runs the marker check) rather than `merge.land_merge`, and declares the negative control \"read the binary path through the text `_show` again, and the first case raises `UnicodeDecodeError`\"; \u00a72 declares a base arm recording the unpatched exit status plus the negative control \"narrow the handler back to `MergeError`\". Both controls name the mutation and the case that must fail under it, so neither gate passes on the unfixed code.",
+    "evidence_paths": "pass \u2014 both sections write their evidence fragment under `docs/evidence/fragments/a-landing-reads-binary-files/` (in-repo, durable, matching the directory convention already in `docs/evidence/fragments/`) and place each gate arm's log under the run directory with the plan requiring each arm's log to name its revision and end in `EXIT=`; nothing rests on `/tmp` or a session scratchpad.",
+    "naming": "pass \u2014 the new names describe mechanism (`blob_identity`, `tests/helpers/landing_repository.py`, `tests/test_a_landing_reads_binary_files.py`, `tests/test_a_failed_land_exits_nonzero.py`; the two evidence-fragment filenames name the mechanism, and one of them repeats its section heading verbatim, which is a filename choice rather than a source symbol), and no plan label, stage name, ticket number or version tag enters a symbol, comment or filename; the docstring the plan asks for is to state what \"survived\" means, which is mechanism, not history.",
+    "reasoning": "a finding \u2014 \u00a72's unification claim (\"the mapping from a merge failure to a land refusal: its type, message, resume command and exit status \u2026 at three sites\") does not hold for its first cited promoted-land site, which is a repository-resolution failure carrying no resume command and no merge; the root causes themselves are supported by the cited code (\u00a71's `_run(text=True)` \u2192 `_show` decode is real; \u00a72's handlers at 2449/2485 catch only `MergeError`, and the `pushed_head` binding confirms `MergePushOutstandingError` is a distinct clause), and both mechanisms run on a named production caller (`crew complete --land` \u2192 `_land_a_promoted_run` \u2192 `merge.land`, and `crew merge` \u2192 `land_merge`).",
+    "single_goal": "pass \u2014 \u00a71 carries one verdict (the landing marker check judges a changed path without decoding it), \u00a72 carries one (a land step that fails after promotion reports itself and exits non-zero); the shared-function and harness-relocation requirements in each are means to that measure, not separate deliverables.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares `s2:[\"a-landing-reads-binary-files#s1\"]`, \u00a72's Sequence agrees (\"\u00a72 runs after \u00a71 lands and imports those helpers\"), and the open followup now matches both (\"\u00a71 dispatches first. \u00a72 runs after \u00a71 lands\"); the plan declares itself standalone and no other plan names it as a dependency."
+  },
+  "section_digests": {
+    "_document": "7bb1ca28fd8d819b9ceb9071e32e02ca1fd54ae9ab6eab729c2a0506806c5dce",
+    "s1": "12ec0b13428f8b4ffea5545895de00f2867674f7597e1c73ed686089de58bf0c",
+    "s2": "47dc637e48b72ec5b151881f507f582067f9f4b271c1058bf5af57665e5604b2"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T15:18:29.778283+00:00"
+}
