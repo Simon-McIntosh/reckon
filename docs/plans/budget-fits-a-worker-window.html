@@ -25,7 +25,7 @@
   <title>Budget Fits A Worker Window | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -34,7 +34,7 @@
 <section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section>
     <p><code>tests/test_every_module_fits_a_worker_window.py</code> holds every production module under 50,000 tokens, measured by <code>reckon.crew.routing._tokens_for_bytes</code>, which the test imports. Its allowlist is empty, so an offender fails the test for every node whose gate runs it. A module that size also cannot be handed whole to a local-lane worker, whose usable window is 230,144 tokens and which must also hold the node's tests and brief.</p>
     <p>At <code>f5e88d284</code>, <code>reckon/budget.py</code> is 180,363 bytes, which is 51,533 tokens. It was already 50,293 tokens before <code>6ebe65ba4</code>, which added the purchased-credit lift, so the overflow is accumulated growth rather than one change. The test's two other offenders, <code>reckon/crew/review.py</code> and <code>reckon/ledger.py</code>, are outside this plan.</p>
-    <p>Two lane-and-model-routing sections also edit the file. §46, which shows each metered lane's burn, is already built and lands first. §48, which can make a lane's pace advice rather than a hold, adds to the file and waits for this split. The finished plan for the same test, <a href="/reckon/every-module-fits-a-worker-window">every-module-fits-a-worker-window</a>, set the method, in its §8: move code by capability, never by line count.</p>
+    <p>Two lane-and-model-routing sections also edit the file. §46, which shows each metered lane's burn, has been delivered and is under review, and it merges first. §48, which can make a lane's pace advice rather than a hold, adds to the file and waits for this split. The finished plan for the same test, <a href="/reckon/every-module-fits-a-worker-window">every-module-fits-a-worker-window</a>, set the method, in its §8: move code by capability, never by line count.</p>
 
     <h2 id="s2">§2 — The pace and lift family moves out of budget.py</h2>
 <section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
@@ -48,7 +48,8 @@
     <p><strong>Deliverable.</strong></p>
     <ul>
       <li>The pace functions and the lift-reading helpers move to a new module, <code>reckon/budget_pace.py</code>.</li>
-      <li><code>_credit_lift_verdict</code> and <code>DEFAULT_CREDIT_RESERVE_FRACTION</code> move into <code>reckon/crew/budget_lift.py</code>, which already owns the credits lift form. At <code>f5e88d284</code> that module is 14,536 tokens.</li>
+      <li><code>_credit_lift_verdict</code> moves into <code>reckon/crew/budget_lift.py</code>, which already owns the credits lift form. At <code>f5e88d284</code> that module is 14,536 tokens.</li>
+      <li><code>DEFAULT_CREDIT_RESERVE_FRACTION</code> already has a home: <code>reckon/crew/budget_lift.py:113</code> defines it with the same value and comment. <code>budget.py</code>'s copy is deleted, and <code>reckon.budget</code> re-exports the existing constant, so there is one definition.</li>
       <li><code>decide()</code> imports the verdict lazily, as <code>budget.py</code> already does for <code>budget_lift</code>, so the two modules form no import cycle.</li>
       <li>The burn block §46 adds beside <code>_readings</code> stays where it lands.</li>
       <li>Every moved public name stays importable from <code>reckon.budget</code>, so <code>reckon/crew/budget_group.py</code>, <code>reckon/crew/dispatch.py</code> and the tests that import those names are unchanged.</li>
