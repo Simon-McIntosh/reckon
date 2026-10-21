@@ -1,0 +1,49 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T08:57:52.952Z",
+  "dispatched_at": "2026-10-21T08:40:49Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-page-paints-from-an-index.html:257",
+      "id": "done_when-1",
+      "reason": "as written a node can close on a route that stamps the request instant over any bars at all and shows one fresh bar once, so the property the section exists to add is not guarded; naming a control that freezes the reference, or serves the bars from a cached payload and shows the in-flight assertion go red, is what makes the guard fire.",
+      "text": "the server clause asserts three things and declares one control (\"Its control lets that failure raise, and the failure case answers 500\"), which falsifies only the third; the first (\"anchored at the request's instant\") is unfalsifiable because the payload's `reference` is written by the same code the assertion inspects, and the second (\"a run that becomes live draws its plan's bar in flight on the next request\") is the only part of the clause that exercises the live crew rows distinguishing the route from a cached snapshot, yet it carries no control of its own.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ce4c457475672bbec24e85c2bcc4f7b85a46fdb069355cbd825bf5895350c4a3",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 48,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T083846832931-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "fb8f6b404cabedb40cbfdcf4a9ad8b8c95df4e73",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol and path \u00a711 cites resolves at this revision: `_attach_schedule_for_read` (reckon/serve.py:1777), the shell's 3 s `/crew` poll (docs/ui/shell.jsx:297-315), `watchProjectStateChanges` with its fleet listener and derived refetch (docs/ui/state-loader.js:709-759), the \"built from the live crew rows\" claim (reckon/serve.py:1751-1774 calling `_crew_rows`, reckon/serve.py:762), and the 50,000 estimated-token bound of tests/test_every_module_fits_a_worker_window.py (`BOUND = 50_000`, line 25).",
+    "done_when": "a finding \u2014 \u00a711's server clause (plan.html:257) names one control for three assertions, and the first of the three (\"answers a schedule anchored at the request's instant\") cannot fail as written because `reference` is a stamp the route itself writes into its own payload (`_attach_schedule_for_read`, reckon/serve.py:1777-1793, through `schedule_report`, reckon/schedule.py:1890-1916), so an implementation that stamps the request instant while serving bars computed from anything at all satisfies it.",
+    "evidence_paths": "pass \u2014 \u00a711 puts its evidence on a durable path (\"Every log sits under the run directory and ends in EXIT=\", plan.html:257), names its test files among the write paths, and its coordinator clause reads the served log rather than a session scratchpad.",
+    "naming": "pass \u2014 the new route, the new test file `tests/test_the_flow_refreshes_from_its_own_route.py` and the loader functions are named by what they do; no plan label, stage name, ticket number or version tag reaches a symbol, filename or comment, and \u00a710/\u00a711 appear only as section cross-references in plan prose.",
+    "reasoning": "pass \u2014 all three checks hold. The root cause is what the code states: a fleet event is written on a stream whose own rows did not move (\"One event per key whose version moved, even when this project's own rows are unchanged\", reckon/serve.py:2686-2701), and the loader answers that event with the same refetch a project change asks for (docs/ui/state-loader.js:747-759 calling `refetchDerived`). The mechanism produces the measure: the schedule is attached per request from the live crew rows (reckon/serve.py:1768-1773), and a live pointer classifies as in-flight (`_bar_state` \u2192 `STATE_IN_FLIGHT`, reckon/schedule.py:118). The caller is named: `window.watchProjectStateChanges?.(refreshProjectState)` (docs/ui/shell.jsx:165) and the shell's `/crew` poll (docs/ui/shell.jsx:300) as the call site for the poll-driven fetch. One caveat that does not change the criterion: that poll is mounted once with no dependencies (docs/ui/shell.jsx:297-315) and runs on every route, so \"none while the crew view is closed\" requires the loader-side gate to read the current view at call time; an unconditional call would pass the loader cases and only the browser case would catch it.",
+    "single_goal": "pass \u2014 \u00a711's three bullets are one deliverable: the crew flow's schedule refresh moves off the fleet event onto its own route, driven by the poll the shell already makes, with the fleet event left as the `reckon-fleet` dispatch it already emits (docs/ui/state-loader.js:747-759).",
+    "wiring": "pass \u2014 \u00a711's only declared relationship is the one it needs (`plan-section-depends-on` = `{\"s11\":[\"the-page-paints-from-an-index#s10\"]}`, plan.html:29), matching the section's own sequencing clause \"Build it after \u00a710, which writes the same files\" (plan.html:257); it consumes the landed \u00a73 index and \u00a74 loader and introduces no relationship that points at a node which does not exist."
+  },
+  "section_digests": {
+    "_document": "5bedd7f41d8b5b370882135e798f35d56d6e6348c4003130ade8574bbf365128",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "a087a6a31d13a36855df8324fb8b7f11c311397453714adca011bd4ce7869312",
+    "s11": "361ed517aef8b87b71c9b9acb32b146b5369dcbd7738ff397397aa9e14ccb663",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "768d4a5e4156b059d51137b95683149be313a7d4ce026b0836f872b4f4056507",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T09:00:33.284138+00:00"
+}
