@@ -26,7 +26,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="359">
+<meta name="plan-version" content="360">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -1133,10 +1133,13 @@
     <div class="r-comment-body"><p>A second reader with the same cost, reported by another session. At about 08:00 CEST, <code>crew(view="runs", project="reckon", session=…, limit=10)</code> returned <code>storage-slow</code> with cause <code>computing</code>: 25.2 s of CPU in a 30 s wait, at code stamp <code>f10cf42fa</code>.</p><p>The view reaches the decode through <code>crew/query.runs_view</code> → <code>ledger.runs</code> → <code>read_records</code> → <code>load</code>, so the reuse §45 places inside <code>ledger.load</code> covers it too. The node also times a warm <code>runs</code> view at base and at head.</p></div>
 </div>
 <div class="r-comment" data-section="s45" data-id="c-run-r-20261021T075820529129-review-of-a-warm-ledger-load-decodes-once-70d7ad6c726a" data-who="reckon-build" data-when="2026-10-21T08:28:23.405Z">
-    <div class="r-comment-body"><p>none; this node writes a review record, not a plan change, and its verdicts land on the reviewed run&#x27;s ledger row through the review store</p></div>
+    <div class="r-comment-body"><p>none; this node writes a review record, not a plan change, and its verdicts land on the reviewed run's ledger row through the review store</p></div>
 </div>
 <div class="r-comment" data-section="s46" data-id="c-run-r-20261021T073421033803-review-of-a-warm-read-revalidates-once-0f04bf6de4d8" data-who="reckon-build" data-when="2026-10-21T07:55:08.409Z">
     <div class="r-comment-body"><p>landing: review of r-20261021T063338435157-a-warm-read-revalidates-once at 0f04bf6de4d8 against 22e519727493 — parsed record scores all six dimensions (goal_fidelity 18, evidence 13, scope_discipline 19, durability 18, fit 18, reuse 19), added_failure_count 0 (base and head both fail only test_every_module_fits_a_worker_window), one follow-on finding: §46's fleet-node timing/profile clause is unmeasured.</p></div>
+</div>
+<div class="r-comment" data-section="s46" data-id="c-run-r-20261021T063338435157-a-warm-read-revalidates-once" data-who="reckon-build" data-when="2026-10-21T07:27:02.885Z">
+    <div class="r-comment-body"><p>landing: §46 landed — the discovery region now joins an already-open region and directory identities are observed through it, so one warm roadmap call over the synthetic covered tree checks each covered directory&#x27;s identity once (per-directory count 3 at the base-equivalent scope, 2 with the join alone, 1 at head), the head gate adds zero failures against base, and the negative control raises the count back to 3.</p></div>
 </div>
 </section>
 </main>
