@@ -19,11 +19,11 @@
   <meta name="plan-tags" content="spa,reckon-tooling">
   <meta name="plan-sprint" content="S26">
   <meta name="plan-standalone" content="Builds on the landed discovery repair of a-page-load-reads-each-file-once; no live plan waits on it and it consumes no plan&#x27;s pending evidence.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
   <title>The Page Paints From An Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="64">
+<meta name="plan-version" content="65">
 <meta name="plan-modified" content="2026-10-21">
 <meta name="plan-impl" content="0.86">
 <meta name="plan-section-depends-on" content="{&quot;s11&quot;:[&quot;the-page-paints-from-an-index#s10&quot;],&quot;s7&quot;:[&quot;the-page-paints-from-an-index#s2&quot;,&quot;the-page-paints-from-an-index#s3&quot;,&quot;the-page-paints-from-an-index#s4&quot;,&quot;the-page-paints-from-an-index#s5&quot;,&quot;the-page-paints-from-an-index#s6&quot;],&quot;s12&quot;:[&quot;the-page-paints-from-an-index#s11&quot;]}">
@@ -245,7 +245,7 @@
 <p>The SPA test files show no added failure against base. Every log sits under the run directory and ends in EXIT=, suites run on the fleet allocation and not the login node, and browser tests must run, not skip. Write paths: <code>docs/ui/state-loader.js</code>, <code>docs/ui/shell.jsx</code>, <code>docs/ui/crew.jsx</code>, <code>tests/test_page_paints_from_the_index.py</code> and <code>tests/test_spa_derived_flow.py</code>.</p>
 
     <h2 id="s11">§11 — The flow refreshes from its own route, and a fleet event never revalidates the page</h2>
-<section data-reckon="section" data-id="s11" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s11" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> The server publishes a fleet-scoped result, the rollup over every mount or a velocity key, on every open change stream, because such a result has no owning project. <code>watchProjectStateChanges</code> answers each <code>fleet</code> event by dispatching <code>reckon-fleet</code> on window, and also with the same derived refetch a project change asks for. With 18 mounts and live crews those events arrive constantly: 92 <code>/_index</code> and 94 <code>/_discover</code> requests in 44 minutes on power_convertor's crew view. Most of that work is wasted, but not all of it. The schedule is built from the live crew rows on every discovery read (<code>_attach_schedule_for_read</code> in <code>reckon/serve.py</code>), and these fleet events are today the only path by which a change in the project's runs reaches the derived flow. The crew view's own 3 s poll of <code>/crew</code> (<code>docs/ui/shell.jsx</code>) refreshes the run cards, never the schedule. Stopping the fleet refetch alone would leave the flow stale between the project's document changes.</p>
 <p><strong>Deliverable.</strong></p>
 <ul>
@@ -379,6 +379,9 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261021T152135065060-the-flow-refreshes-from-its-own-route" data-who="reckon-build" data-when="2026-10-21T17:53:31Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/the-page-paints-from-an-index/the-flow-refreshes-from-its-own-route.html</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-10-21T19:45:00Z">
+    <div class="r-comment-body"><p>§11 landed at <code>984885756</code>. The derived flow refreshes its schedule from <code>/_schedule</code> on its own poll, and a fleet event no longer revalidates the page. Live on power_convertor over 30 minutes: 24 <code>/_index</code> requests, one page load plus one per settle window with a change event, against 92 in 44 minutes before; 49 schedule requests within an allowance of 58. <a href="/reckon/evidence/archive/the-page-paints-from-an-index-landed.html#s11">evidence</a></p></div>
 </div>
 </section>
 </main>
