@@ -1,0 +1,65 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp_views.py:serve_crew_view",
+    "reckon/mcp.py:_crew",
+    "reckon/crew_run_commands.py:crew_view",
+    "reckon/budget.py:preflight"
+  ],
+  "completed_at": "2026-10-21T15:04:52.920Z",
+  "dispatched_at": "2026-10-21T14:50:58Z",
+  "emission": [
+    "VERDICT goal: the node goal is to make the parity case drop only the budget view's top-level checked_at and drive the budget clock itself; the commits gained since the prior review add the assertion that the drive moved the pair at tests/test_crew_view_serves_every_view.py:396.",
+    "VERDICT done_when: the done_when names ten runs of the crew view family under -n 12 beside two controls and a confinement case; the manifest records gate-run-01.log..gate-run-10.log each ending '105 passed ... EXIT=0' at 194970022 and both controls red in negative-control.log and negative-control-zero-advance.log.",
+    "VERDICT write_paths: the declared paths are the test file and the evidence fragment plus its figures directory; the diff since 4a246412a touches the first two only.",
+    "VERDICT manifest: read; status complete, the three new commits listed, ten of ten runs at 105 passed, both controls red, ruff clean.",
+    "VERDICT diff: read commit by commit against 4a246412a; e8ae4bafc adds the advance assertion, 194970022 makes its expectation a literal thirty seconds, c2eac5c53 records it in the fragment.",
+    "CALL_SITES: reckon/mcp_views.py:serve_crew_view, reckon/mcp.py:_crew, reckon/crew_run_commands.py:crew_view, reckon/budget.py:preflight",
+    "SCORE goal_fidelity: 19",
+    "JUSTIFICATION goal_fidelity: tests/test_crew_view_serves_every_view.py:396 asserts the two calls of each pair read exactly the driven thirty seconds apart, which is the goal's 'drive the budget clock itself' made unconditional.",
+    "SCORE evidence: 17",
+    "JUSTIFICATION evidence: gate-run-10.log ends '105 passed in 36.25s' with 'EXIT=0' at 194970022 and negative-control-zero-advance.log ends '1 failed, 5 passed in 11.71s' with 'EXIT=1', but five of the ten gate logs carry 'PYTHONPATH_PLACEHOLDER' where the done-when requires the literal command.",
+    "SCORE scope_discipline: 20",
+    "JUSTIFICATION scope_discipline: the diff at 4a246412a..c2eac5c53 changes only tests/test_crew_view_serves_every_view.py and docs/evidence/fragments/the-suite-is-green-at-head/the-view-parity-case-reads-the-budget-at-one-instant.html, both declared.",
+    "SCORE durability: 20",
+    "JUSTIFICATION durability: reinstating the zero advance reddens tests/test_crew_view_serves_every_view.py:396 with 'composed its two surfaces 0:00:00 apart', because the expectation is the literal dt.timedelta(seconds=30) rather than _PARITY_CLOCK_ADVANCE.",
+    "SCORE fit: 19",
+    "JUSTIFICATION fit: _assert_the_pair_reads_the_driven_advance at tests/test_crew_view_serves_every_view.py:377 follows the file's own _hold_the_budget_clock_at idiom and carries no plan, ticket or version label.",
+    "SCORE reuse: 20",
+    "JUSTIFICATION reuse: no owner for a driven-clock advance assertion exists; a search over tests/ and reckon/ for a _now pin or an advance assertion found only this file's own helpers."
+  ],
+  "findings": [
+    {
+      "file": "tests/test_crew_view_serves_every_view.py",
+      "line": 396,
+      "severity": "follow-on",
+      "text": "the gate-log header for five of the ten runs at 194970022 reads '# command: PYTHONPATH_PLACEHOLDER' rather than the literal command the done-when requires, so half the run's gate evidence names no command a later reader can re-run; the manifest's tests: line and the other five logs carry the literal, so the measure is not lost"
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 4a246412a: e8ae4bafc adds _assert_the_pair_reads_the_driven_advance and calls it before the drop, 194970022 fixes its expectation from _PARITY_CLOCK_ADVANCE to a literal thirty seconds, c2eac5c53 adds the fragment prose and the control record; +60/-7 across the two paths.",
+    "done_when": "the done_when names ten runs of the crew view family under -n 12 beside a negative control, a second control on the advance, and a confinement case; the manifest records gate-run-01.log..gate-run-10.log each ending '105 passed ... EXIT=0' at 194970022, negative-control.log at '2 failed, 4 passed' EXIT=1 and negative-control-zero-advance.log at '1 failed, 5 passed' EXIT=1, so the gate asserts the stated measure.",
+    "goal": "the node goal is to make the parity case drop only the budget view's top-level checked_at and drive the budget clock itself; the three commits gained since the prior review add the assertion that the drive moved the pair, at tests/test_crew_view_serves_every_view.py:396, on top of the drive and the scoped drop already landed.",
+    "manifest": "read; status complete, commits f27886f59 4a246412a e8ae4bafc 194970022 c2eac5c53, ten of ten gate runs at 194970022 with 105 passed, both controls red, and ruff clean, all evidenced by the named logs under the run directory.",
+    "write_paths": "the declared paths are tests/test_crew_view_serves_every_view.py, docs/evidence/fragments/the-suite-is-green-at-head/the-view-parity-case-reads-the-budget-at-one-instant.html and the sibling figures directory; the diff since 4a246412a touches the first two only, and the figures directory is correctly unused."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261021T144948205092-review-of-the-view-parity-case-reads-the-budget-at-one-instant-c2eac5c53a4a",
+  "reviewed_base_sha": "4a246412a9e8f2e38cb177bfdcf6759b75717150",
+  "reviewed_head_sha": "c2eac5c53a4a8b5f0da9be9e743f3125d356f7d8",
+  "reviewed_run_id": "r-20261021T130942057343-the-view-parity-case-reads-the-budget-at-one-instant",
+  "scores": {
+    "durability": 20,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T15:22:04.632012+00:00",
+  "total": 115
+}
