@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T17:43:12.648Z",
+  "dispatched_at": "2026-10-21T17:24:45Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-limit-reset-reaches-every-session.html:87",
+      "id": "reasoning-1",
+      "reason": "\u00a73 asserts behaviour the module it names as its only write path does not have, and the node must choose between a digest-tagged line (spoken once, contradicting \u00a73's \"reads the line twice\") and a line outside the gate (contradicting \"the context it already adds\"), a decision the plan does not settle.",
+      "text": "\u00a73 says the reset line goes \"in the context it already adds to each prompt\" and that \"the rule needs no memory of what the hook showed before\" and \"A session prompted twice inside the hour reads the line twice, which costs one line of context and no new state\"; but that context is emitted by `_inject_list`, which returns without emitting when the digest of the injected set matches the digest it recorded in `<session>.obligations` (`reckon/hooks/coordinator_obligations.py:1003` and `:1050`\u2013`:1064`, `duty_digest` at `:500`), and the one non-duty line folded in, the model notices, takes a digest slot (`duty_digest(..., model_notices=notices)`, `:522`) precisely so a repeated line is not spoken again; so a line added the way \u00a73 describes is spoken once and then suppressed, and a line that bypasses the gate is a second emission path the section does not name",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-limit-reset-reaches-every-session.html:74",
+      "id": "done_when-1",
+      "reason": "\u00a72's done-when counts the row and never the word on it, so a node can pass every bullet of \u00a72 while the new row draws with a blank state cell, and the pane-word contract the lift precedent follows is left undefined.",
+      "text": "\u00a72 gives the ticker \"a branch for `limit-reset`\" and builds the row \"as a lift row is\", but the pane's state word is read through `_display_state` (`reckon/crew/ticker.py:744`\u2013`:747`), which maps a state only through `PANE_STATES` and returns `\"\"` otherwise; every state a lift row carries is in that table (`lift-granted`/`lift-in-force` under `working`, `lift-ended` under `landed`), and \u00a72 neither adds `limit-reset's` counterpart nor asserts the word",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-limit-reset-reaches-every-session.html:43",
+      "id": "anchors_resolve-1",
+      "reason": "the pointer resolves to a real, live section and both \u00a76's own text and its followup name the paragraph correctly, so no node is dispatched to the wrong deliverable; the fix is one character.",
+      "text": "the reuse table's Session row says the session host relays the pane line \"and the global instructions say it too (\u00a73)\", but the global-instruction paragraph is \u00a76 (`:105`, followup `f-alrres-007`); \u00a73 is the obligations-hook prompt line",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "2d947909f018cfe9a450586614952f4d88eab0fb4612f8b6a07c079d0d7ce270",
+  "plan_slug": "a-limit-reset-reaches-every-session",
+  "plan_version": 13,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T162202186366-plan-review-of-a-limit-reset-reaches-every-session",
+  "reviewed_blob_sha": "dbe7c5e17f574ab2c9932e8d9b14d5f26181dd05",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 one section pointer in the document's reuse table names \u00a73 where the work it describes is \u00a76 (see FINDING).",
+    "done_when": "a finding \u2014 \u00a72's measure counts the row the pane draws but never covers the state word the pane prints for the new `limit-reset` state, which the pane's word table must carry for the row to read on the pane.",
+    "evidence_paths": "pass \u2014 \u00a71 and \u00a72 put every gate log under the run directory with a revision header and an `EXIT=` last line, and \u00a74/\u00a76 route their evidence to the plan's landing record, which is the repository's durable per-plan record rather than a scratchpad or node-local `/tmp` path.",
+    "naming": "pass \u2014 `limit-reset`, `limit_reset.py`, `limit_reset_watch.py`, `--announce-reset`, `--reset`, `--window`, `--scope` and the test file names all state the mechanism they carry; no plan label, stage name, ticket number or version tag reaches a symbol, and no comment carries changelog prose.",
+    "reasoning": "a finding \u2014 the root cause (\u00a7 \"an operator's early reset leaves the stamp where it was\") is supported by the cited transcript readings, and each section's mechanism reaches a named production caller (\u00a71 the `crew budget` command, \u00a72 the producer poll beside `_sweep_lift_rows` at `reckon/crew/recovery_watch.py:2710` and outside its `if sweep:` gate at :2701, \u00a73 the hook's SessionStart/UserPromptSubmit paths) \u2014 but \u00a73's account of how the hook emits the line contradicts the module it names as its write path (see FINDING).",
+    "single_goal": "pass \u2014 after the split, each section names one deliverable (\u00a73 the hook line, \u00a75 the reach report, \u00a76 the global-instruction paragraph, \u00a73's former extra items now carried by `f-alrres-006` and `f-alrres-007`), so every section closes on one verdict; the residue is cosmetic only (see note in reasoning) \u2014 `f-alrres-003`'s body still reads \"The obligations hook line, the reach report, and then the global instruction\", naming \u00a75's and \u00a76's work, though its recommended invocation is `/reckon-build \u2026 \u00a73` and \u00a73 is the authority the node builds from.",
+    "wiring": "pass \u2014 the section graph (`plan-section-depends-on` s2\u2192s1, s3\u2192s1, s4\u2192s2/s3/s5, s5\u2192s1, s6\u2192s3/s5) matches what each section reads, every one of the seven followups carries a `/reckon-build \u2026 \u00a7N` recommendation, and the first-real-use followup (`f-alrres-005`) is the open followup \u00a74's deferred step needs."
+  },
+  "section_digests": {
+    "_document": "57402c99010a464968fb5af16f879197f50178655a8aa2fba94560d15b58134b",
+    "s1": "baf87d0138fbe63d90de461ca590ce87510e78c52140119a5905ce875b50da49",
+    "s2": "c86d7872229879cfbf165a014f42ead7d6da18f22922c032ed16fccfc9dc5351",
+    "s3": "ce0dbf941c538cfeb1247156bdd687b73f1213a317c644f58bc3ac911d61b743",
+    "s4": "7e261dc6824166853bdbd8ea2fcdca3e0b3849eefa7c9218c5356b800cbb6ed6",
+    "s5": "92fb4014fd0118f16cf83458ec0db9fbc6b7f0bdbb8025721cf36cec8e7d7d38",
+    "s6": "a251812d1c4424307b60c05534931ab571918a32f65a2b7d01d6d255a3c10042"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T17:47:59.353410+00:00"
+}
