@@ -61,7 +61,10 @@ bare brief. Resume is unaffected — <code>_write_resume_prompt</code> writes
 <code>plan.stdin_text</code> to the file the supervisor reads. The repair is
 one line in <code>reckon/crew/dispatch.py</code> after the plan is built
 (<code>prompt_path.write_text(plan.stdin_text or prompt)</code>), a path outside
-this node's fence.
+this node's fence; applied in a scratch mutation of the worktree, it turns that
+failing assertion green (1 passed, <code>EXIT=0</code>), so the repair is
+measured rather than proposed. Both mutations were restored afterwards and the
+tree is clean at the node's head.
 </p>
 </section>
 </body>
