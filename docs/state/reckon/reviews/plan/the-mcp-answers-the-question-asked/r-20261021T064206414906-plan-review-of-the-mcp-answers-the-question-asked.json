@@ -1,0 +1,126 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T06:55:01.955Z",
+  "dispatched_at": "2026-10-21T06:43:11Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-mcp-answers-the-question-asked.html:206",
+      "id": "done_when-1",
+      "reason": "half the node's declared control is unfalsifiable, so \u00a76 could be closed on a test that cannot fail on the code it changes.",
+      "text": "\u00a76's done-when reads \"A test that reads each skill's fast path fails if either still leads with `summary`\", but reckon-roadmap's fast path is the bare default call `roadmap(project=\"<project>\")` (~/.claude/skills/reckon-roadmap/SKILL.md:18) with the word `summary` nowhere in it, so a test reading that fast path passes identically on the base commit and after the change and can never fail; only reckon-status's fast path names a view (`read_plan(project, view=\"summary\")`, ~/.claude/skills/reckon-status/SKILL.md:17), and that is a different tool's view which \u00a76 does not touch",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-mcp-answers-the-question-asked.html:240",
+      "id": "done_when-2",
+      "reason": "the measure can be satisfied by an instrument that sees nothing, so the node's whole verdict rests on an unproven count.",
+      "text": "\u00a78's verdict arm \"plan-HTML and pointer-file fallbacks per coordinator-day down by at least half against \u00a71\" is an absence-shaped measure and the only control \u00a78 declares (\"The census matches one transcript known to contain MCP calls\", line 242) is applied to MCP calls, not to the Bash-fallback parsing the verdict reads; a broken or window-blind fallback parser reports zero fallbacks, which is the largest possible reduction and passes the gate",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-mcp-answers-the-question-asked.html:238",
+      "id": "done_when-3",
+      "reason": "an undefined denominator lets the node pick the one that passes, and the before/after comparison is not reproducible without it.",
+      "text": "\"fallbacks per coordinator-day\" names a unit whose denominator the plan never defines: the evidence record records five sessions across three days (~/.claude and docs/evidence/archive/the-mcp-answers-the-question-asked-landed.html), and dividing \u00a71's totals by three days, by five sessions, or by session-days gives answers that differ by a factor of five, so the \"down by at least half\" verdict moves with the choice",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-mcp-answers-the-question-asked.html:232",
+      "id": "reasoning-1",
+      "reason": "the node must know which before figure its verdict is measured against, and two candidates differ in whether \u00a71's upper-bound regex counts or the census's own run sets the bar.",
+      "text": "\u00a78 states \"Its first run is over \u00a71's window ... That run is the before figure, so the before and after figures come from one instrument\", then sets the done-when's benchmark as \"against \u00a71\" (line 240), whose figures the evidence record itself records as a different one-off instrument's regex counts; the section therefore asserts a one-instrument pair and then reads its verdict off a cross-instrument comparison",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "153e5fe4e2bd2e6c72e6b185f32d9e774a8d6f9652f58e84b094eaa33191680a",
+  "plan_slug": "the-mcp-answers-the-question-asked",
+  "plan_version": 2,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-21T06:56:58.710884+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-2",
+      "reason": "",
+      "when": "2026-10-21T06:57:08.005403+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-3",
+      "reason": "",
+      "when": "2026-10-21T06:57:17.781872+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-21T06:57:26.859987+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T06:56:58.710884+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T06:57:08.005403+00:00"
+    },
+    "done_when-3": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T06:57:17.781872+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T06:57:26.859987+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-mcp-answers-the-question-asked.v2.json",
+  "review_run_id": "r-20261021T064206414906-plan-review-of-the-mcp-answers-the-question-asked",
+  "reviewed_blob_sha": "53ea61a41fe2d42380ff1126fe9dafb8ec6d906e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the plans \u00a71 and \u00a76 cite exist (a-read-answers-inside-its-deadline.html with \u00a745 at line 296 and \u00a746 at line 300; a-project-reads-as-one-picture.html with \u00a73, \u00a74 and \u00a77; every-plan-write-goes-through-edit-plan.html; the-crew-surface-is-one-tool-and-a-few-verbs.html), reckon/mcp_census.py exists and does count connection failures and storage-slow results as \u00a78 claims, and the five transcripts \u00a78 names are listed in the evidence record.",
+    "done_when": "a finding \u2014 \u00a76's declared negative control cannot fail for one of the two skills it names, and \u00a78's reduction verdict has no control over the instrument arm it reads.",
+    "evidence_paths": "pass \u2014 \u00a71's census record is committed at docs/evidence/archive/the-mcp-answers-the-question-asked-landed.html (commit 8d6138532, 7,646 bytes, carrying the script, its inputs and its verbatim output), and each section's other evidence is its own node gate log rather than a scratch path.",
+    "naming": "pass \u2014 the only symbols the plan proposes are `why(ref)` and census counts named by what they measure; no plan label, stage name, ticket number or version tag reaches a symbol or a comment.",
+    "reasoning": "a finding \u2014 \u00a78's done-when benchmarks the after figure against \u00a71's one-off counts while \u00a78's mechanism text says the before and after figures come from one instrument.",
+    "single_goal": "pass \u2014 each section names one deliverable (a size contract, a row shape, a `why(ref)` read, a parity check, the default brief, a cursor, a re-measured census); \u00a78's instrument-versus-verdict split is raised under done_when rather than here.",
+    "wiring": "pass \u2014 every `plan-section-depends-on` edge resolves to a node that exists (s4\u2192a-project-reads-as-one-picture#s2,#s4; s5\u2192#s4; s6\u2192a-project#s7 + this plan #s2; s8\u2192#s2..#s7), and the brief \u00a76 returns is sourced from a-project-reads-as-one-picture \u00a77 (docs/plans/a-project-reads-as-one-picture.html:201), whose payload is a-project \u00a72\u2013\u00a75; the earlier wiring-1 edge question is answered by the cited source, which carries a `reason` field and explicitly not `why` (a-project-reads-as-one-picture.html:118)."
+  },
+  "section_digests": {
+    "_document": "e1c94d9f3b30c8624a6467f53654fb7adcc82487415127ce15d356f2b7b20ff0",
+    "s1": "daef4b527685c5d986aa210cce10bb0f4cd5772ef762521051f5920fcb02c98b",
+    "s2": "3c9f990803be49173055a21624115ad2fa745d64c85e6cbc454190247fc5ae76",
+    "s3": "36009a39196f94f79c16cd66666780ac9814b76e487c5369c7cff2da440addab",
+    "s4": "221109abec0e6ad971f2598420df9fe39c47cd59f78dcb949259c1416f20cd3d",
+    "s5": "37ed23ff36fca5327391f1766c535f577b0889839c61667ddf9dbed5aa431489",
+    "s6": "374c4477a8fe03ea0b0bbc46bc82195d35eeaaa3401d417fd03b2b56ad2b64dc",
+    "s7": "5eb0b734bbb0681ca9102fa9003e11bd7dc5278b1dc26da5685ed959db7cfa4b",
+    "s8": "8171b15aa7ba4b3868263f41df7df1b1c9549a8a830b7c5d42f3cf2916610d53"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T06:56:52.988544+00:00"
+}
