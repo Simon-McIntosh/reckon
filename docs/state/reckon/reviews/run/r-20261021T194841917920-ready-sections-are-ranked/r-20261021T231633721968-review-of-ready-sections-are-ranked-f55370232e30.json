@@ -1,0 +1,78 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms, both flat records in its manifest: baseline_suite (revision ce957c65, EXIT=1, completed true) fails exactly five ids, all in tests/test_ready_sections_are_ranked.py, and after_suite (revision f55370232, EXIT=0, completed true) fails none; the five base-arm failures are the node's own new tests and the head arm adds none, so the added delta is zero.",
+  "backend": "clive",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/serve.py:1729 the roadmap read that projects ready_set_view over build_roadmap",
+    "reckon/mcp_views.py:1120 ready_set_view, which republishes the ready rows",
+    "reckon/mcp_views.py:1129 the loop over immediate_roadmap that copies row fields",
+    "reckon/project_maintenance_commands.py:1498 _print_roadmap_report, which prints order/slug/reason per row",
+    "reckon/roadmap.py:2872 the internal call to _blocked_section_run_seconds feeding the stuck signal"
+  ],
+  "completed_at": "2026-10-21T23:47:20.255Z",
+  "dispatched_at": "2026-10-21T23:17:47Z",
+  "findings": [
+    {
+      "file": "reckon/roadmap.py",
+      "line": "2686",
+      "severity": "follow-on",
+      "text": "_pointer_reports_blocked duplicates the run-classification read owned at reckon/mcp_views.py:1846-1901 rather than extending it: reckon/roadmap.py:2668 _recorded_run_classifications is a second copy of mcp_views._recorded_live_run_classifications (both wrap reckon/crew/runs.py:1928 watch_stream_latest_events), and the resolution body at reckon/roadmap.py:2706-2713 reproduces the recorded-event-first, three-key fallback (recovery_classification, classification, to_state) that mcp_views.py:1888-1901 already applies, identical in shape down to its 'or classified.get(\"classification\")' term. The two can drift, which is exactly what the first review of this run caught (the stuck signal and the in-flight/interrupted partition disagreeing about one run inside one read); the repair aligned them by copying the order rather than by sharing it, so the drift is available again. The addition duplicates the owner."
+    },
+    {
+      "file": "tests/test_ready_sections_are_ranked.py",
+      "line": "240",
+      "severity": "follow-on",
+      "text": "the blocked-run half of the stuck rule is reached by no test: section_is_stuck's second clause (reckon/roadmap_ranking.py:159-172, blocked_run_seconds > 86400), its feeder _blocked_section_run_seconds (reckon/roadmap.py:2720) and _pointer_reports_blocked (reckon/roadmap.py:2686) are referenced nowhere under tests/ (git grep over the reviewed revision finds none), and the plan-row stuck computation (reckon/roadmap.py:3669) is exercised only through the section-row path. A regression that stopped a day-old blocked run from raising its section, or that read the wrong classification key, reddens nothing; the attempts clause is the only one the suite guards, and it is guarded through a monkeypatched section_attempts_by_plan."
+    },
+    {
+      "file": "reckon/roadmap_ranking.py",
+      "line": "270",
+      "severity": "follow-on",
+      "text": "ready_section_reason returns REACH_SIGNAL as its catch-all, so a section row placed by an earlier key term - sprint position or ROI, with no critical-path membership, no stuck signal and no unlocks - is reported as placed by 'reach'. In that case the row's reason names a signal the row does not carry, and the plan's requirement that the reason 'names the signal that placed it' holds only on the fixture, whose every plan is ROI-high and effort-M so those terms are neutral there."
+    },
+    {
+      "file": "reckon/roadmap.py",
+      "line": "3664",
+      "severity": "follow-on",
+      "text": "two enumerations of a plan's ready sections remain. row['ready_sections'] (reckon/roadmap.py:3652) is built from declared_section_identities (reckon/_schema.py:681), which returns every declared identity including a non-implementable declaration, while plan_ready_sections (reckon/roadmap.py:3664-3667) is built from implementable_sections. They agree only where every declared section is declared implementable: a section declared done or blocked and holding no section-scoped blocker is listed in ready_sections and gets no ranked row, and ready_set_view (reckon/mcp_views.py:1120) republishes ready_sections, so a composed client sees a ready section with no rank."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against ce957c65: 855ced47 moves the priority key and the path walk into reckon/roadmap_ranking.py and adds the section rows, b44a798f writes the first landing fragment, 3a1ea0b8 reworks the ranking onto one shared key over both populations, and f5537023 updates the fragment for the repair; four paths, all inside the declared scope.",
+    "done_when": "the done_when names a fixture where every plan is ROI-high and effort-M, the largest-reach section leads and every section row's reason names its signal; tests/test_ready_sections_are_ranked.py:192-255 assert that order on the mixed_project fixture, whose hub#s1 release of two sections sits off the critical path, and the reviewed manifest's baseline_suite (five failures, EXIT=1) and after_suite (103 passed, EXIT=0) log both arms with their revisions.",
+    "goal": "the node's goal is one ranked row per ready section in immediate_roadmap carrying ref plan#sN, its plan named, and the placing signal in the existing reason field; reckon/roadmap.py:3782-3815 builds those rows and reckon/roadmap.py:3819-3830 ranks the plan rows and the section rows in one sort by the shared key in reckon/roadmap_ranking.py:243.",
+    "manifest": "read; it records status complete, the four commits, a literal tests command, baseline_suite and after_suite as flat records each naming its revision, tree, command and EXIT line, the negative-control log, and a follow_ons entry for the undrawn figure.",
+    "write_paths": "the dispatch declares six exclusive paths; the diff against ce957c65 touches four of them - reckon/roadmap.py, reckon/roadmap_ranking.py, tests/test_ready_sections_are_ranked.py and docs/evidence/fragments/a-project-reads-as-one-picture/ready-sections-are-ranked.html - and nothing outside them, while tests/roadmap_fixtures.py and the figures directory are declared and unused."
+  },
+  "justifications": {
+    "durability": "tests/test_ready_sections_are_ranked.py:205, :225 and :255 name a code change that reddens them (deleting the reach term, the critical-path term or the stuck term from the key each asserts reverses the asserted order), but the blocked-run clause of section_is_stuck (reckon/roadmap_ranking.py:159-172) and its feeder reckon/roadmap.py:2720 are reached by no test, so that half of the stuck rule is unguarded.",
+    "evidence": "the reviewed manifest's baseline_suite (revision ce957c65, EXIT=1) fails the five tests/test_ready_sections_are_ranked.py ids and after_suite (revision f55370232, EXIT=0) fails none, both logs headed with revision, tree and literal command, so the done_when's base arm and head arm are recorded runs rather than claims.",
+    "fit": "the new module follows the split the dispatch mandated and the rank helpers take mechanism names, but reckon/roadmap.py:83-92 imports private siblings (_EFFORT_UNIT, _lift_section_edges, _section_rank_hours) across the new boundary and reckon/roadmap.py:3787 respells the section node inline as f'{plan_slug}#{section}' where reckon/roadmap_ranking.py:66 _section_node is the owner of that grammar.",
+    "goal_fidelity": "reckon/roadmap.py:3782-3815 emits one row per ready section with ref plan#sN, its plan and a reason from ready_section_reason, and reckon/roadmap.py:3819-3830 interleaves them with the plan rows in one sort, so the section rows are ranked beside the plan rows rather than appended as a second block.",
+    "reuse": "the ranking additions extend their owner - reckon/roadmap_ranking.py:243 _priority_key is the moved priority closure and reckon/roadmap.py:3666 now consumes the plan row's own implementable_sections and blocked_sections rather than re-deriving them - but reckon/roadmap.py:2686 _pointer_reports_blocked and its reader reckon/roadmap.py:2668 duplicate the classification read owned at reckon/mcp_views.py:1846-1901 without extending it, so the dimension is held at the duplication cap.",
+    "scope_discipline": "every path in the diff against ce957c65 is one of the dispatch's declared write paths, including the split to reckon/roadmap_ranking.py the dispatch mandates at about 46,000 of the 50,000-token module bound."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is one ranked row per ready section in immediate_roadmap carrying ref plan#sN, its plan named, and the placing signal in the existing reason field; reckon/roadmap.py:3782-3815 builds those rows and reckon/roadmap.py:3819-3830 ranks the plan rows and the section rows in one sort by the shared key in reckon/roadmap_ranking.py:243.\nVERDICT done_when: the done_when names a fixture where every plan is ROI-high and effort-M, the largest-reach section leads and every section row's reason names its signal; tests/test_ready_sections_are_ranked.py:192-255 assert that order on the mixed_project fixture, whose hub#s1 release of two sections sits off the critical path, and the reviewed manifest's baseline_suite (five failures, EXIT=1) and after_suite (103 passed, EXIT=0) log both arms with their revisions.\nVERDICT write_paths: the dispatch declares six exclusive paths; the diff against ce957c65 touches four of them - reckon/roadmap.py, reckon/roadmap_ranking.py, tests/test_ready_sections_are_ranked.py and docs/evidence/fragments/a-project-reads-as-one-picture/ready-sections-are-ranked.html - and nothing outside them, while tests/roadmap_fixtures.py and the figures directory are declared and unused.\nVERDICT manifest: read; it records status complete, the four commits, a literal tests command, baseline_suite and after_suite as flat records each naming its revision, tree, command and EXIT line, the negative-control log, and a follow_ons entry for the undrawn figure.\nVERDICT diff: read commit by commit against ce957c65: 855ced47 moves the priority key and the path walk into reckon/roadmap_ranking.py and adds the section rows, b44a798f writes the first landing fragment, 3a1ea0b8 reworks the ranking onto one shared key over both populations, and f5537023 updates the fragment for the repair; four paths, all inside the declared scope.\nCALL_SITES: reckon/serve.py:1729, reckon/mcp_views.py:1120, reckon/mcp_views.py:1129, reckon/project_maintenance_commands.py:1498, reckon/roadmap.py:2872\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/roadmap.py:3782-3815 emits one row per ready section with ref plan#sN, its plan and a reason from ready_section_reason, and reckon/roadmap.py:3819-3830 interleaves them with the plan rows in one sort, so the section rows are ranked beside the plan rows rather than appended as a second block.\nSCORE evidence: 18\nJUSTIFICATION evidence: the reviewed manifest's baseline_suite (revision ce957c65, EXIT=1) fails the five tests/test_ready_sections_are_ranked.py ids and after_suite (revision f55370232, EXIT=0) fails none, both logs headed with revision, tree and literal command, so the done_when's base arm and head arm are recorded runs rather than claims.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff against ce957c65 is one of the dispatch's declared write paths, including the split to reckon/roadmap_ranking.py the dispatch mandates at about 46,000 of the 50,000-token module bound.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_ready_sections_are_ranked.py:205, :225 and :255 name a code change that reddens them (deleting the reach term, the critical-path term or the stuck term from the key each asserts reverses the asserted order), but the blocked-run clause of section_is_stuck (reckon/roadmap_ranking.py:159-172) and its feeder reckon/roadmap.py:2720 are reached by no test, so that half of the stuck rule is unguarded.\nSCORE fit: 16\nJUSTIFICATION fit: the new module follows the split the dispatch mandated and the rank helpers take mechanism names, but reckon/roadmap.py:83-92 imports private siblings across the new boundary and reckon/roadmap.py:3787 respells the section node inline as f'{plan_slug}#{section}' where reckon/roadmap_ranking.py:66 _section_node is the owner of that grammar.\nSCORE reuse: 5\nJUSTIFICATION reuse: the ranking additions extend their owner - reckon/roadmap_ranking.py:243 _priority_key is the moved priority closure and reckon/roadmap.py:3666 now consumes the plan row's own implementable_sections and blocked_sections - but reckon/roadmap.py:2686 _pointer_reports_blocked and its reader reckon/roadmap.py:2668 duplicate the classification read owned at reckon/mcp_views.py:1846-1901 without extending it, so the dimension is held at the duplication cap.\nFINDING reckon/roadmap.py:2686 follow-on: _pointer_reports_blocked duplicates the run-classification read owned at reckon/mcp_views.py:1846-1901 rather than extending it: reckon/roadmap.py:2668 _recorded_run_classifications is a second copy of mcp_views._recorded_live_run_classifications, and the resolution body at reckon/roadmap.py:2706-2713 reproduces the recorded-event-first, three-key fallback that mcp_views.py:1888-1901 already applies; the two can drift, which the first review of this run already caught.\nFINDING tests/test_ready_sections_are_ranked.py:240 follow-on: the blocked-run half of the stuck rule is reached by no test: section_is_stuck's second clause (reckon/roadmap_ranking.py:159-172), its feeder _blocked_section_run_seconds (reckon/roadmap.py:2720) and _pointer_reports_blocked (reckon/roadmap.py:2686) are referenced nowhere under tests/, and the plan-row stuck computation (reckon/roadmap.py:3669) is exercised only through the section-row path.\nFINDING reckon/roadmap_ranking.py:270 follow-on: ready_section_reason returns REACH_SIGNAL as its catch-all, so a section row placed by sprint position or ROI, releasing nothing and neither on the path nor stuck, reports its reason as 'reach' - a signal the row does not carry.\nFINDING reckon/roadmap.py:3664 follow-on: two enumerations of a plan's ready sections remain - row['ready_sections'] (reckon/roadmap.py:3652, from declared_section_identities (reckon/_schema.py:681), which includes non-implementable declarations) and plan_ready_sections (reckon/roadmap.py:3664-3667, from implementable_sections) - so a section declared done or blocked with no section-scoped blocker is listed in ready_sections and carries no ranked row, and ready_set_view (reckon/mcp_views.py:1120) republishes ready_sections.\n",
+  "review_run_id": "r-20261021T231633721968-review-of-ready-sections-are-ranked-f55370232e30",
+  "reviewed_base_sha": "ce957c65fdc58020382e720eb98b0ea5257a1ab4",
+  "reviewed_head_sha": "f55370232e302adbb8b5c8d13587ad7aea7505d9",
+  "reviewed_run_id": "r-20261021T194841917920-ready-sections-are-ranked",
+  "reviewer": "review-of-ready-sections-are-ranked-f55370232e30",
+  "reviewer_run_id": "r-20261021T231633721968-review-of-ready-sections-are-ranked-f55370232e30",
+  "scores": {
+    "durability": 13,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T23:49:14.224702+00:00",
+  "total": 89
+}
