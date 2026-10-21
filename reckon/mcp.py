@@ -63,6 +63,7 @@ from reckon import (
 # substitute the ledger a view reads, so the module object must stay reachable
 # from here even though this file no longer calls it directly.
 from reckon import ledger as ledger_module  # noqa: F401
+from reckon import metadata_index
 from reckon._schema import (
     PlanState,
     gen_json_schema,
@@ -1699,6 +1700,29 @@ _OP_VOCAB = {
 
 
 def _roadmap(
+    project: str,
+    checkout_path: str | None = None,
+    sprint: str | None = None,
+    max_paths: int = 5,
+    view: Literal["summary", "detail", "raw"] | None = None,
+    cursor: str | None = None,
+    limit: int | None = None,
+) -> dict[str, Any]:
+    """Enter one covered-tree region for the whole read, then answer."""
+
+    with metadata_index.discovery_file_scope():
+        return _roadmap_scoped(
+            project,
+            checkout_path=checkout_path,
+            sprint=sprint,
+            max_paths=max_paths,
+            view=view,
+            cursor=cursor,
+            limit=limit,
+        )
+
+
+def _roadmap_scoped(
     project: str,
     checkout_path: str | None = None,
     sprint: str | None = None,
