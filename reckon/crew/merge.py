@@ -208,12 +208,98 @@ def _commit_tree(repo: Path, tree: str, parents: list[str], message: str) -> str
 _MARKER_MIN_LENGTH = 8
 
 
-def _show(repo: Path, revision: str, path: str) -> str | None:
-    """Return the text of ``path`` at ``revision``, or None when it is absent."""
-    result = _run(repo, "show", f"{revision}:{path}")
+def _show_bytes(repo: Path, revision: str, path: str) -> bytes | None:
+    """Return the bytes of ``path`` at ``revision``, or None when it is absent.
+
+    The content is returned undecoded, because a changed path may be a binary
+    blob and decoding it as text is exactly what a landing must not do before it
+    takes a reading. A content read is the one git call that bypasses
+    :func:`_run`; every other call stays a text run.
+    """
+    result = subprocess.run(
+        ["git", "-C", str(repo), "show", f"{revision}:{path}"],
+        capture_output=True,
+        check=False,
+    )
     if result.returncode != 0:
         return None
     return result.stdout
+
+
+def _decode_text(data: bytes | None) -> str | None:
+    """Return ``data`` as text, or None when it is not text.
+
+    Content is text when it holds no NUL byte — git's own marker for binary —
+    and decodes as UTF-8. Anything else is a blob whose lines carry no meaning
+    the marker comparison could read, so it is compared by identity instead.
+    """
+    if data is None or b"\0" in data:
+        return None
+    try:
+        return data.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+
+
+def _blob_id(repo: Path, revision: str, path: str) -> str | None:
+    """Return ``path``'s blob id at ``revision``, or None when it is absent.
+
+    ``git rev-parse <revision>:<path>`` answers from the object database and
+    prints the object's name, so it resolves a binary path as readily as a text
+    content — ``rev-parse`` names an object rather than reading its bytes — and
+    resolves an absent path to nothing.
+    """
+    result = _run(repo, "rev-parse", "--verify", "--quiet", f"{revision}:{path}")
+    answer = result.stdout.strip()
+    if result.returncode != 0 or not answer:
+        return None
+    return answer
+
+
+def _read_path(
+    repo: Path, revision: str, path: str, *, matches: str | None = None
+) -> dict[str, object]:
+    """Read ``path`` at ``revision`` and say whether it is the change's own.
+
+    This is the one place the landing decides how a changed path is read, so
+    :func:`change_markers` and :func:`surviving_change_refusals` call it rather
+    than each reaching for a git call of its own. A reading carries:
+
+    * ``present`` — whether ``path`` exists at ``revision``;
+    * ``blob`` — its object id there, which names a binary blob as readily as a
+      text one and decodes neither;
+    * ``identical`` — whether ``blob`` equals ``matches``, the head's blob id;
+    * ``text`` — the content decoded when it is text, and None when it is
+      binary or was not read.
+
+    ``matches`` carries the head's blob id, and it is what makes "survived" mean
+    the same thing for every kind of change:
+
+    * a path whose blob equals the head's survived, whether it is text or
+      binary, and its content is not read at all — identical blobs carry the
+      change by construction, so a binary path costs a decode it never needs;
+    * a path whose blob differs was altered by the merge, so its content is read
+      and returned as ``text`` (None when it is binary), which is where the
+      marker comparison runs for a text path and where an altered binary path
+      is refused;
+    * with ``matches`` None, as when the head's markers are first computed, the
+      content is read to become the reading's ``text``.
+    """
+    blob = _blob_id(repo, revision, path)
+    reading: dict[str, object] = {
+        "present": blob is not None,
+        "blob": blob,
+        "identical": False,
+        "text": None,
+    }
+    if blob is None:
+        return reading
+    if matches is not None:
+        reading["identical"] = blob == matches
+        if reading["identical"]:
+            return reading
+    reading["text"] = _decode_text(_show_bytes(repo, revision, path))
+    return reading
 
 
 def _marker_lines(text: str) -> list[str]:
@@ -267,25 +353,45 @@ def change_markers(repo: Path, base: str, head: str) -> dict[str, dict[str, obje
     once in the base copy: a line that appeared twice there is still present in
     the merged result, so requiring its absence would refuse a landing that
     behaved correctly.
+
+    A path whose head copy is binary carries no lines — its blob id is recorded
+    instead, and the landing finds that same blob to rule the change survived.
     """
     base = _merge_base(repo, base, head)
     markers: dict[str, dict[str, object]] = {}
     for _status, path in _changed_paths(repo, base, head):
-        before = _show(repo, base, path)
-        after = _show(repo, head, path)
-        if after is None:
-            markers[path] = {"deleted": True, "introduced": [], "removed": []}
+        head_reading = _read_path(repo, head, path)
+        if not head_reading["present"]:
+            markers[path] = {
+                "deleted": True,
+                "binary": False,
+                "blob": None,
+                "introduced": [],
+                "removed": [],
+            }
             continue
-        base_copy = before or ""
+        head_text = head_reading["text"]
+        if head_text is None:
+            markers[path] = {
+                "deleted": False,
+                "binary": True,
+                "blob": head_reading["blob"],
+                "introduced": [],
+                "removed": [],
+            }
+            continue
+        base_text = _read_path(repo, base, path)["text"] or ""
         markers[path] = {
             "deleted": False,
+            "binary": False,
+            "blob": head_reading["blob"],
             "introduced": [
-                line for line in _marker_lines(after) if line not in base_copy
+                line for line in _marker_lines(head_text) if line not in base_text
             ],
             "removed": [
                 line
-                for line in _marker_lines(base_copy)
-                if line not in after and base_copy.count(line) == 1
+                for line in _marker_lines(base_text)
+                if line not in head_text and base_text.count(line) == 1
             ],
         }
     return markers
@@ -296,23 +402,48 @@ def surviving_change_refusals(
 ) -> list[str]:
     """Return one refusal for each path whose change did not survive ``revision``.
 
+    Each path is read through :func:`_read_path` against the head's own blob id.
+    A path whose blob at ``revision`` equals the head's survived, whether it is
+    text or binary, and its content is never read. A path whose
+    blob differs was altered by the merge: a binary one is refused as an altered
+    binary file, and a text one is compared by the markers it was expected to
+    carry.
+
+    Each path that survives has its judgement recorded on its marker record
+    under ``judgement`` — ``blob_identity`` when the blob matched and the
+    content went unread, ``markers`` when the content was compared, and
+    ``absent`` for a deleted path the merge correctly left gone — so the landing
+    can report how each change was judged rather than only a marker count.
+
     A seam rather than a branch: the whole decision about whether a merge kept
-    the reviewed change is here, so a caller can present the landing over a
+    a reviewed change is here, so a caller can present the landing over a
     dropped resolution and see this one refusal rather than a branch's worth of
     conflict markers written into the checkout.
     """
     refusals: list[str] = []
     for path, expected in markers.items():
-        content = _show(repo, revision, path)
+        reading = _read_path(repo, revision, path, matches=expected.get("blob"))
         if expected.get("deleted"):
-            if content is not None:
+            if reading["present"]:
                 refusals.append(
                     f"{path}: the change deleted it and the merge has it back"
                 )
+            else:
+                expected["judgement"] = "absent"
             continue
-        if content is None:
+        if not reading["present"]:
             refusals.append(f"{path}: the change wrote it and the merge dropped it")
             continue
+        if reading["identical"]:
+            expected["judgement"] = "blob_identity"
+            continue
+        if expected.get("binary") or reading["text"] is None:
+            refusals.append(
+                f"{path}: the merge altered a binary file the change carried"
+            )
+            continue
+        expected["judgement"] = "markers"
+        content = reading["text"]
         missing = [line for line in expected["introduced"] if line not in content]
         if missing:
             refusals.append(
@@ -618,7 +749,11 @@ def land(
     A head already in ``HEAD`` is a landing whose push is outstanding: it is
     pushed rather than merged a second time, and no marker is re-checked,
     because the change is already on the branch. The report carries a
-    ``survived`` block naming the changed paths and the markers the check read.
+    ``survived`` block naming the changed paths, the markers the check read, and
+    each path's ``judgements`` — ``blob_identity`` for a path the merge carried
+    unchanged, ``markers`` for a text path compared line by line, and ``absent``
+    for a deletion the merge left gone — so a landing whose only change is
+    binary reports the blob it checked rather than an empty marker count.
     """
     repo = Path(repo)
     head_sha = _rev_parse(repo, str(head))
@@ -656,5 +791,8 @@ def land(
             len(expected["introduced"]) + len(expected["removed"])
             for expected in markers.values()
         ),
+        "judgements": {
+            path: markers[path].get("judgement") for path in sorted(markers)
+        },
     }
     return report
