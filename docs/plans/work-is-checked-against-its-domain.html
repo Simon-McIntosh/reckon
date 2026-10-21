@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="scoring-should-stop-a-promotion">
-  <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;work-is-checked-against-its-domain#s3&quot;], &quot;s5&quot;: [&quot;work-is-checked-against-its-domain#s3&quot;], &quot;s7&quot;: [&quot;work-is-checked-against-its-domain#s2&quot;, &quot;work-is-checked-against-its-domain#s4&quot;, &quot;work-is-checked-against-its-domain#s5&quot;, &quot;work-is-checked-against-its-domain#s6&quot;]}">
+  <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;work-is-checked-against-its-domain#s3&quot;],&quot;s5&quot;:[&quot;work-is-checked-against-its-domain#s3&quot;],&quot;s7&quot;:[&quot;work-is-checked-against-its-domain#s2&quot;,&quot;work-is-checked-against-its-domain#s4&quot;,&quot;work-is-checked-against-its-domain#s5&quot;,&quot;work-is-checked-against-its-domain#s6&quot;],&quot;s6&quot;:[&quot;work-is-checked-against-its-domain#s3&quot;]}">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
   <title>Work Is Checked Against Its Domain | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="3">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -94,7 +94,11 @@
       <code>_read_project_json</code> in <code>reckon/project_state.py</code> checks the envelope's
       identity and validates nothing else. This section therefore adds a typed model for the block
       in <code>reckon/_schema.py</code>, validates the block on read, and publishes it beside
-      <code>plan.schema.json</code> under <code>docs/_shared/</code>. The block has three lists.
+      <code>plan.schema.json</code> under <code>docs/_shared/</code>. <code>PLAN-FORMAT.md</code> still calls
+      this resource "identity and presentation only", although it already carries <code>scope</code>,
+      <code>north_stars</code>, <code>pending_plan_limit</code> and <code>schedule_horizon_sprints</code>.
+      This section corrects that clause, in the same commit, to list what the resource holds,
+      <code>domain</code> included. The block has three lists.
     </p>
     <p>
       <code>invariants</code> are rules a result must satisfy. Each entry has an <code>id</code>,
@@ -210,7 +214,7 @@
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-wicd-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-21" data-recommends-skill="/reckon-build work-is-checked-against-its-domain §2" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Refuse a review round while a blocking finding is unanswered</h4>
-    <div class="r-fu-body"><p>§2, §3 and §6 can start at once. §4 and §5 read the block §3 defines, and §7 replays the cases once the rest land.</p></div>
+    <div class="r-fu-body"><p>§2 and §3 can start at once. §4, §5 and §6 read the block §3 defines, and §7 replays the cases once the rest land.</p></div>
     <pre class="r-fu-prompt">/reckon-build work-is-checked-against-its-domain §2</pre>
     </article>
 </section>

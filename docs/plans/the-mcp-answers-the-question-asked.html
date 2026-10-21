@@ -26,7 +26,7 @@
   <title>The MCP Answers the Question Asked | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="3">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -200,9 +200,11 @@
     </p>
     <p>
       <strong>Done when:</strong> a default <code>roadmap</code> call on the fixture returns the brief
-      within its contract, a call naming <code>summary</code> is unchanged, and both skills' fast paths
-      name the brief. A test that reads each skill's fast path fails if either still leads with
-      <code>summary</code>.
+      within its contract, and a call naming <code>summary</code> is unchanged. The fast path of
+      <code>reckon-roadmap</code> and of <code>reckon-status</code> each names the brief as the first
+      read. A test reads both fast paths and asserts that each names the brief before any other
+      <code>roadmap</code> or <code>read_plan</code> view. On the base commit neither fast path mentions
+      a brief, so the test fails there for both skills.
     </p>
 
     <h2 id="s7">§7 — A read can ask what changed</h2>
@@ -234,12 +236,17 @@
       comparison, and a difference between the two is explained in the gate log.
     </p>
     <p>
-      <strong>Done when:</strong> the census over a three-day window that starts after §2 to §7 land
-      shows plan-HTML and pointer-file fallbacks per coordinator-day down by at least half against
-      §1, and fewer than 5 % of <code>roadmap</code> results not ok. A shortfall is recorded with the
-      transcripts' own account of why each fallback happened, and each cause becomes a section here.
-      The census matches one transcript known to contain MCP calls before it reports any absence, as
-      the positive control.
+      <strong>Done when:</strong> the census's own run over a three-day window that starts after §2
+      to §7 land shows plan-HTML and pointer-file fallbacks per coordinator session-day down by at
+      least half against the census's own run over §1's window, and fewer than 5 % of
+      <code>roadmap</code> results not ok. A coordinator session-day is one distinct pair of a
+      session id and a calendar day (UTC) on which that session made at least one reckon MCP call or
+      one fallback command; both runs divide by that count. §1's one-off figures are context only,
+      never the bar. A shortfall is recorded with the transcripts' own account of why each fallback
+      happened, and each cause becomes a section here. Two controls guard the instrument. A synthetic
+      transcript carrying known commands of every fallback class must be counted exactly, and the
+      census's run over §1's window must report a non-zero count for every class §1 found, so that
+      a parser that sees nothing cannot pass as a reduction.
     </p>
 
 

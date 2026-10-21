@@ -25,6 +25,8 @@
   <title>A Finished Plan Closes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
   <main class="plan-doc">
@@ -64,8 +66,11 @@
     <h2 id="s2">§2 — A plan with nothing left to build reads closable</h2>
 <section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p>
-      Readiness gains the value <code>closable</code>. A plan reads closable when it has no
-      implementable section, so every section is done, descoped or deferred. A closable plan leaves
+      Readiness gains the value <code>closable</code>. A plan reads closable when it declares at least
+      one section and none of them is implementable, so every section is done, descoped or deferred.
+      A plan that declares no sections keeps today's readiness; that is the legacy population §1 sets
+      aside. A coordinator who keeps a finished plan open records why with <code>set keep_open</code>,
+      a one-sentence reason that the closing list and §5's obligation row both read. A closable plan leaves
       <code>ready_now</code>, the ready counts and the critical path. The roadmap lists it under
       <code>closable</code> with what still stands between it and <code>close</code>: deferred
       sections, open followups and open gates. Each item carries the op that clears it, and the list
@@ -75,7 +80,8 @@
     <p>
       <strong>Done when:</strong> a fixture plan with every section done reads <code>closable</code>,
       is absent from <code>ready_now</code>, and lists the <code>close</code> op. A fixture with one
-      implementable section still reads <code>ready</code>; that is the control. On the base commit
+      implementable section still reads <code>ready</code>, and a fixture with no section
+      declarations keeps its current readiness; those are the controls. On the base commit
       the first fixture reads <code>ready</code>, and the test fails there. The census in §6 counts
       the closable plans per mount.
     </p>
@@ -84,8 +90,10 @@
 <section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p>
       A closed gate never blocks, whatever its verdict: <code>failed</code> is an outcome to record,
-      not work to wait for. An open gate whose gated sections are all done or descoped no longer
-      contributes to the plan's blocking. It raises a <code>stale-gate</code> finding that names the
+      not work to wait for. An open gate whose gated sections are all done, descoped or deferred no
+      longer contributes to the plan's blocking: deferred work is held by its deferral, and the gate
+      travels with the section until it is undeferred. When the gated sections are all done or
+      descoped, the gate also raises a <code>stale-gate</code> finding that names the
       gate, its sections and the op that closes it with a verdict. An open gate on an implementable
       section blocks exactly as it does today. The derivation stays in the one blocker function that
       <code>derived-gate-state</code> landed; this changes which gates it counts, not where it is
@@ -94,8 +102,10 @@
     <p>
       <strong>Done when:</strong> a fixture plan with an open gate on a done section is not blocked
       and raises <code>stale-gate</code>. A fixture with a closed gate with verdict
-      <code>failed</code> on a deferred section is not blocked. A fixture with an open gate on an
-      implementable section is still blocked; that is the control. On the base commit the first two
+      <code>failed</code> on a deferred section is not blocked. A fixture with an open gate on a
+      deferred section is not blocked and raises no <code>stale-gate</code>; that is the shape of two
+      of §1's three blocked plans. A fixture with an open gate on an
+      implementable section is still blocked; that is the control. On the base commit the first three
       fixtures read blocked, and the test fails there.
     </p>
 
@@ -122,17 +132,23 @@
     <h2 id="s5">§5 — The node that finishes a plan offers its close</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p>
-      When <code>crew complete</code> or <code>crew land</code> moves a plan's last implementable
-      section to done, its response carries <code>closable: true</code> and the plan's closing list
-      from §2. The coordinator's obligations gain a <code>plan-closable</code> row. That row clears when
-      the plan is closed, or when the coordinator records a reason to keep it open, so the session
-      that finished the work is the one asked to close it.
+      Neither <code>crew complete</code> nor <code>crew land</code> writes section declarations. A section
+      moves to done through the <code>edit_plan</code> landing beat
+      (<code>set section_declarations.&lt;id&gt;</code>), so that write is where a finish is seen. When it
+      leaves the plan with no implementable section, its response carries <code>closable: true</code>
+      and the plan's closing list from §2. The obligation is derived from plan state rather than
+      from that one response. Every session with a promoted run on a closable plan gets a
+      <code>plan-closable</code> row, which clears when the plan is closed or a <code>keep_open</code>
+      reason is recorded. The session that finished the work is therefore asked to close it, even if
+      it missed the write's response.
     </p>
     <p>
-      <strong>Done when:</strong> a fixture landing that ticks a plan's last implementable section
-      returns <code>closable: true</code> and raises <code>plan-closable</code> for that session, and
-      a landing that leaves an implementable section returns neither; that is the control. The row
-      clears on <code>close</code> and on a recorded keep-open reason.
+      <strong>Done when:</strong> a fixture <code>edit_plan</code> write that ticks a plan's last
+      implementable section returns <code>closable: true</code>, and a session with a promoted run on
+      that plan reads <code>plan-closable</code> in its obligations. A write that leaves an
+      implementable section returns neither; that is the control. The row clears on
+      <code>close</code> and on a recorded <code>keep_open</code> reason. On the base commit the write
+      returns no <code>closable</code>, and the test fails there.
     </p>
 
     <h2 id="s6">§6 — Every finished plan is closed or kept open for a stated reason</h2>
@@ -151,13 +167,13 @@
     </p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
+<h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-afpc-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-21" data-recommends-skill="/reckon-build a-finished-plan-closes §2" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Give a finished plan the readiness closable</h4>
     <div class="r-fu-body"><p>§2, §3 and §5 can start at once. §4 waits on the descoped declaration in a-project-reads-as-one-picture §9, and §6 runs once the rest land.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-finished-plan-closes §2</pre>
     </article>
-    </section>
+</section>
   </main>
 </body>
 </html>
