@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T21:19:52.891Z",
+  "dispatched_at": "2026-10-21T21:02:27Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-limit-reset-reaches-every-session.html:100",
+      "id": "done_when-1",
+      "reason": "a node built exactly as written lands a red vocabulary test it was told would pass unchanged, and its only ways out are to edit two files outside its granted write scope or to report a blocker, so the plan must name those two files in s2's write paths and state that the pane word set grows to eight (including the `DISPLAY_HUE` entries), or drop the new word and route the reset row through an existing one.",
+      "text": "s2's done-when requires that \"The test files importing `reckon/crew/ticker.py`, `reckon/crew/lift_watch.py` or `reckon/crew/recovery_watch.py`, plus the new file, add no failure against a base arm\" \u2014 reproduced: the three vocabulary tests pass at base (`60afc276e4`, 13 passed) and the assertion `set(ticker.PANE_STATES) == WORDS` fails the moment the word `reset` is added, with no `\"reset\"` entry in `DISPLAY_HUE` for either theme \u2014 but the same section adds the pane word `reset` to `PANE_STATES` (`:86`) and two ticker-importing tests pin the current vocabulary at exactly seven words: `tests/test_the_pane_speaks_seven_words.py:20` asserts `set(ticker.PANE_STATES) == WORDS`, `tests/test_ticker_row_is_one_transition.py:400`\u2013`:414` asserts `set(ticker_module.PANE_STATES) == {\"queued\",\"working\",\"waiting\",\"halted\",\"delivered\",\"landed\",\"dropped\"}` and, in the same test, `ticker_module._state_hue(theme, word) != \"dim\"` for every pane word in both themes, which requires a new `\"reset\"` entry in `DISPLAY_HUE` (`reckon/crew/ticker.py:188`\u2013`:207`); neither test file is in s2's write paths (`reckon/crew/lift_watch.py`, `reckon/crew/recovery_watch.py`, `reckon/crew/ticker.py` and the new test), and s2 never mentions the vocabulary growing to eight",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-limit-reset-reaches-every-session.html:86",
+      "id": "anchors_resolve-1",
+      "reason": "the citation is one name too wide, but both files that actually read `LIFT_STATES` are named and both do pass unchanged under a wider set, so the conclusion the sentence supports is unaffected.",
+      "text": "s2 says \"The tests that read `LIFT_STATES` (`tests/test_follower_names_a_lift.py`, `tests/test_a_standing_lift_survives_a_follower_reload.py` and `tests/test_a_released_run_row_is_never_blank.py`) pass unchanged\", but `tests/test_follower_names_a_lift.py` reads no `LIFT_STATES`: it asserts against `lift_watch.LIFT_GRANTED`, `lift_watch.LIFT_IN_FORCE` and `lift_watch.LIFT_ENDED` and never imports the ticker's set (the two files that do read it are `tests/test_a_standing_lift_survives_a_follower_reload.py:316` and `tests/test_a_released_run_row_is_never_blank.py:41`)",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "4e939f3f0b8c80cb59e7e68d5454f18f2040ee8b64be30edf4899313940df658",
+  "plan_slug": "a-limit-reset-reaches-every-session",
+  "plan_version": 27,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T204249000403-plan-review-of-a-limit-reset-reaches-every-session",
+  "reviewed_blob_sha": "f1038a92ee4604db7c6fb4c330bc9603e4d8aec4",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 one of the three tests s2 cites as reading `LIFT_STATES` reads no such name.",
+    "done_when": "a finding \u2014 s2's done-when requires every test file importing `reckon/crew/ticker.py` to add no failure against a base arm, but two such files pin the pane's seven-word vocabulary and s2 adds an eighth word to `PANE_STATES`.",
+    "evidence_paths": "pass \u2014 s2's gate logs go under the run directory on s1's stated terms (\"Every log is under the run directory, starts with its revision and the literal command, and ends in `EXIT=`); nothing is written to a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 `limit-reset`, `reset` and `limit` name mechanisms, and no plan label, stage name, ticket number or version tag reaches a symbol or comment.",
+    "reasoning": "pass \u2014 the caller chain is named and real (`_sweep_reset_rows` in the clock-driven block guarded by `WATCHER_SWEEP_INTERVAL_SECONDS` at `reckon/crew/recovery_watch.py:2721`, inside `watch_ticker`, reached from the crew watch iterator at `reckon/crew/recovery_watch.py:2860` with `transitions=True`; the pane route through `LIFT_STATES` at `reckon/crew/ticker.py:1680` into `_feed_lift`; `take_lift_claim` supplied by the follower at `reckon/crew_follow_commands.py:1505`), and the mechanism-versus-done-when conflict is reported under done_when rather than repeated here.",
+    "single_goal": "pass \u2014 s2 carries one deliverable, \"every pane draws a limit reset once\", and its edits to three modules all serve that one measure.",
+    "wiring": "pass \u2014 s2 declares `depends-on` `s1`, which is the record and the `budget_reset.recent_resets` reader it consumes, and `s4` and `s6` both declare `s2`; no relationship points at a wrong node."
+  },
+  "section_digests": {
+    "_document": "66d46f9aba483c7c35ecaae0cbd5a12473ca51794d03a3d1a6814a472d204267",
+    "s1": "94def7b6fb41cc276c0577018bcc106bab7eaaa9d39a5df760e2d77ee1a7595d",
+    "s2": "73a8c746ea3b28491e5c1820eb0d70f6ababce66a89f4216e5279c0e8d6d2437",
+    "s3": "a481ce43e07f6167db0a1f56a9c3a147b001b2973383c03f33151bc407e5cb4a",
+    "s4": "136bf6f43df2d99c1f758324927ab05eabd9aec938251a8d408a96c67841f596",
+    "s5": "7c0dc3556a9d6a54cf58532f9b8aa1054d9bd3725c15c82e0aa9da736a5e9309",
+    "s6": "c8ff3c099e9d217a97c0f6232689f76a21d7c9cc4b1a7d5ced6db85300180b0a",
+    "s7": "b35e0e8820af110a5858364a331330a3a6c886f10fe5701e5471afe28563c83f"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T21:23:09.922704+00:00"
+}
