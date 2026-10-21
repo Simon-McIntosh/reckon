@@ -1,0 +1,81 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T06:11:43.830Z",
+  "dispatched_at": "2026-10-21T05:51:39Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-page-paints-from-an-index.html:196",
+      "id": "done_when-1",
+      "reason": "\u00a77 is the plan's last open node and a control is available (measure the same probe with the watch armed before the port binds, as \u00a72's own control does), so the node would be dispatched with a gate whose discrimination is unproven.",
+      "text": "\u00a77's done-when states a hard threshold (every `/_index` answers 200 in under 1 s in both passes, the port accepts within 5 s) but names no negative control, unlike every other node in this plan, so nothing in the node shows the gate can fail",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-page-paints-from-an-index.html:234",
+      "id": "single_goal-1",
+      "reason": "the node cannot be closed on one verdict; the plan should split \u00a710 or declare a control per deliverable.",
+      "text": "\u00a710's three deliverable bullets are three separately-gated behaviours across three source files, and its single declared negative control (\"restores the wholesale replacement of `window.STATE` on revalidation\") falsifies only the first, so the stale-schedule behaviour and the re-render behaviour would be closed on a gate that proves neither",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-page-paints-from-an-index.html:201",
+      "id": "anchors_resolve-1",
+      "reason": "\u00a78 is landed and the premise stands; the correction is a citation edit to a done section, not a change to work a later node does.",
+      "text": "\u00a78 cites the MCP/CLI `discover_plans` callers as `reckon/mcp.py` line 1250 and `reckon/mcp_views.py` line 1985; at `8945ecb16` line 1250 is a `return data, version` and line 1985 is a resource-model branch, and the plan's own comment correction (`reckon/mcp.py:1646`, `reckon/mcp_views.py:2454-2458`) lands on a row-building `except` clause and `_followup_record` respectively, so no citation in the plan leads a reader to the caller it names",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/the-page-paints-from-an-index.html:244",
+      "id": "reasoning-1",
+      "reason": "as written the change would leave the crew view's derived flow \u2014 the very surface \u00a710 exists to keep on screen \u2014 stale between the project's own document changes, which \u00a711's request-count measure would score as success.",
+      "text": "\u00a711's premise, that a fleet event costs an `/_index` and `/_discover` pair \"for a page whose own payloads have not changed\", is false for the payload's schedule: `_attach_schedule_for_read` builds it from live crew rows (`schedule_report(project, inventory, _crew_rows(mounts, project), ...)`, `reckon/serve.py:1765-1772`) and attaches it per request rather than caching it, so the schedule changes whenever crew runs change, while the fleet-scoped rollup is the only wake those changes reach the page through; \u00a711's fix removes the loader's only refresh path for it (crew.jsx reads `window.STATE.schedule`, and no view-level `reckon-fleet` listener carries the schedule)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-page-paints-from-an-index.html:231",
+      "id": "reasoning-2",
+      "reason": "deliverable 3's stated contrast (\"re-renders when the derived merge lands, not at the next crew poll\") rests on that claim, so a builder following it cannot tell whether the merge already re-renders and may add a second render path (or skip the work as already satisfied).",
+      "text": "\u00a710's fourth cause (\"Nothing re-renders on that [the derived merge]\") is contradicted by the cited file: `refreshProjectState` calls `loadChecksAfterDerived`, which awaits `window.STATE_DERIVED_READY` and then `loadDocumentChecks`, whose success path dispatches `reckon:checks` (`docs/ui/state-loader.js:253`), an event `shell.jsx:168` answers with `bumpInv`, so a render does follow the merge after one `/_checks` round trip",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "533def2c5a70d1adb40ce8590e6e848ce3897d708fbf8a13650789d0511f889a",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 41,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T055007796787-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "22584fc1efd1443b558faee8c191e9ae74f8cd8a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a78's line citations do not resolve, and neither does the correction a comment records for them.",
+    "done_when": "a finding \u2014 \u00a77 is the plan's remaining open, unbuilt node and declares no negative control for its cold-start timing gate.",
+    "evidence_paths": "pass \u2014 the gate logs and reports the plan names sit under the run directory or the session reports directory on the configuration home, and the landed records sit under `docs/evidence/`, none in a node-local temporary path.",
+    "naming": "pass \u2014 \u00a710 and \u00a711 name only symbols that exist in the tree (`derivedBlocks`, `mergeDerived`, `revalidateProjectState`, `refreshProjectState`, `watchProjectStateChanges`, `window.STATE_DERIVED_READY`) and the test files they name exist; no plan label, ticket number or version tag reaches a symbol or a comment.",
+    "reasoning": "two findings \u2014 \u00a711's premise that a fleet event answers a payload \"whose own payloads have not changed\" is not true of the discovery payload's schedule, and \u00a710's claim that nothing re-renders after the derived merge is contradicted by the shell's checks path.",
+    "single_goal": "a finding \u2014 \u00a710 carries three deliverables (keep the derived blocks across a revalidation; keep a schedule that discovery nulls and mark it stale; re-render on the derived merge) behind one negative control that only falsifies the first.",
+    "wiring": "pass \u2014 `plan-section-depends-on` carries `s11 -> the-page-paints-from-an-index#s10`, the only relationship declared, and it resolves to the section that exists; \u00a711's prose (\"Build it after \u00a710, which writes the same files\") agrees with the declaration, and \u00a710's own prerequisite (\u00a74) is already declared done."
+  },
+  "section_digests": {
+    "_document": "5a7d1d20b536302640ab3178228421aa22535c0239529eb368b3f2319ac74184",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "3a75cfc450507439011dfbb2a0d1ca5990269c4463cc751ffa118752ccf2f91e",
+    "s11": "18b3ad7628562bee6c20026552a6fb5434d3ca0bfc0b9aa88a5f086ca42c6c16",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "768d4a5e4156b059d51137b95683149be313a7d4ce026b0836f872b4f4056507",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T06:14:59.475190+00:00"
+}
