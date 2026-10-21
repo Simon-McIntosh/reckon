@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/mcp.py:1950 (mcp roadmap tool -> _roadmap)",
+    "reckon/mcp.py:1829 (portfolio '*' loop -> _roadmap)",
+    "reckon/project_maintenance_commands.py:1532 (CLI 'roadmap' -> _roadmap)",
+    "reckon/serve.py:1418, reckon/serve.py:1422 (discover_plans -> discovery_file_scope)",
+    "reckon/metadata_index.py:404 (_reuse_covered -> covered_dir_identity)",
+    "reckon/metadata_index.py:497 (build_index -> covered_dir_identity)",
+    "reckon/metadata_index.py:788 (_record_covered_shape -> covered_dir_identity)"
+  ],
+  "completed_at": "2026-10-21T07:55:08.409Z",
+  "dispatched_at": "2026-10-21T07:35:15Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-read-answers-inside-its-deadline/a-warm-read-revalidates-once.html",
+      "line": 58,
+      "severity": "follow-on",
+      "text": "The warm-roadmap timing and cProfile attribution the section's Done-when paragraph and the coordinator's note require (base and head warm roadmap on the fleet node, plus a warm crew(view=\"runs\") timing) were not obtained: no base arm of reckon.mcp._roadmap(project=\"reckon\") returned, its log closing EXIT=143 after repeated 10 s Git history/last-modified timeouts against the shared main checkout. The section's own test measure (each covered directory's identity checked at most once) is met and recorded, but the read-time reduction the section exists to demonstrate is unmeasured, and the residual attribution the following section takes as input is absent. Promote on the mechanics; a separate quiet-window node must still run the timing clause."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "The production call sites are reckon/mcp.py:1950 and :1829, reckon/project_maintenance_commands.py:1532, reckon/serve.py:1418/1422, and the three metadata_index readers at :404, :497 and :788; none is a test file.",
+    "diff": "Read commit by commit against 22e519727493: two commits, 4975079ad (perf: join the region, add covered_dir_identity, enter the scope in mcp._roadmap) and 0f04bf6de (docs: the landing fragment); no second context manager, no change to serve.py.",
+    "done_when": "The done_when names tests/test_a_warm_read_revalidates_once.py holding two clauses; that file's tests at lines 179 and 192 assert max_per_directory <= 1 and a 12->13 plan count across two calls, and the manifest records the run (gate-head.log 49 passed / 1 failed).",
+    "goal": "The node's goal (plan a-read-answers-inside-its-deadline s46) is that one read checks each covered directory's identity at most once; reckon/metadata_index.py:168 adds covered_dir_identity, which returns the first identity observed inside discovery_file_scope, and the three readers at lines 404, 497 and 788 now go through it.",
+    "manifest": "Read; it states gate-head.log and gate-base.log results (1 pre-existing failure, test_every_module_fits_a_worker_window, at both arms), a negative_control_log path, and a follow_ons note that the fleet-node timing did not complete.",
+    "write_paths": "Declared write paths were reckon/metadata_index.py, reckon/serve.py, reckon/mcp.py and tests/test_a_warm_read_revalidates_once.py; every source path in the diff (reckon/metadata_index.py, reckon/mcp.py, the new test, the evidence fragment) is inside them and reckon/serve.py was correctly left unchanged."
+  },
+  "justifications": {
+    "durability": "tests/test_a_warm_read_revalidates_once.py:189 fails on the reinstated regression: the negative-control run (logs/negative-control.log) restores the replacing scope and the count returns to 3, reddening that id while the head arm passes it.",
+    "evidence": "The gate at logs/gate-head.log asserts the identity count via tests/test_a_warm_read_revalidates_once.py:189, but the timing/profile clause of the section's Done-when paragraph is unrecorded (docs/evidence/fragments/a-read-answers-inside-its-deadline/a-warm-read-revalidates-once.html:58).",
+    "fit": "reckon/metadata_index.py:168 mirrors the existing covered_stat idiom and the surrounding region docstrings, and both commits carry conventional subjects with bodies and no plan or ticket identifiers.",
+    "goal_fidelity": "reckon/metadata_index.py:168-188 makes one warm read observe each covered directory once, reducing the counted identity checks from 3 to 1 per directory (logs/dircheck-counts-head.txt).",
+    "reuse": "covered_dir_identity extends the module's own _dir_identity (reckon/metadata_index.py:794) and reuses the region established by discovery_file_scope, adding no forked capability.",
+    "scope_discipline": "Every path in the diff (reckon/metadata_index.py, reckon/mcp.py, the new test, the evidence fragment) is inside the declared write paths, and reckon/serve.py needed no change."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that one warm read checks each covered directory's identity at most once; reckon/metadata_index.py:168 adds covered_dir_identity and lines 404/497/788 route the three readers through it.\nVERDICT done_when: the done_when is tests/test_a_warm_read_revalidates_once.py holding an at-most-once identity count and a cross-call freshness check; both exist at lines 189 and 199-200 and the manifest records the run.\nVERDICT write_paths: the declared paths are reckon/metadata_index.py, reckon/serve.py, reckon/mcp.py and the new test; every changed source path is inside them and serve.py was correctly untouched.\nVERDICT manifest: read; it reports the head and base gate results, the negative control, and that the fleet-node timing clause did not complete.\nVERDICT diff: read commit by commit against 22e519727493; two commits, the perf change and the landing fragment, with no second context manager and no serve.py change.\nCALL_SITES: reckon/mcp.py:1950, reckon/mcp.py:1829, reckon/project_maintenance_commands.py:1532, reckon/serve.py:1418, reckon/serve.py:1422, reckon/metadata_index.py:404, reckon/metadata_index.py:497, reckon/metadata_index.py:788\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/metadata_index.py:168 makes one warm read observe each covered directory once, dropping the counted checks from 3 to 1 per directory.\nSCORE evidence: 13\nJUSTIFICATION evidence: tests/test_a_warm_read_revalidates_once.py:189 asserts the measure and logs/gate-head.log records it, but the timing clause at the fragment's line 58 is unmeasured.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths and reckon/serve.py was left unchanged.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_warm_read_revalidates_once.py:189 reddens on the reinstated regression shown in logs/negative-control.log.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/metadata_index.py:168 mirrors the surrounding covered_stat region idiom, and the commits carry conventional subjects with bodies.\nSCORE reuse: 19\nJUSTIFICATION reuse: covered_dir_identity extends this module's own _dir_identity at reckon/metadata_index.py:794 rather than forking a capability.\nFINDING docs/evidence/fragments/a-read-answers-inside-its-deadline/a-warm-read-revalidates-once.html:58 follow-on: the fleet-node warm-roadmap timing and cProfile attribution the section's Done-when paragraph requires were not obtained, so the read-time reduction is unmeasured and the following section's residual attribution is absent.\n",
+  "review_run_id": "r-20261021T073421033803-review-of-a-warm-read-revalidates-once-0f04bf6de4d8",
+  "reviewed_base_sha": "22e519727493651b7edf3c9c1b5ba5deb9f62779",
+  "reviewed_head_sha": "0f04bf6de4d8f2d8f35c0b1217d7112cdb06eb85",
+  "reviewed_run_id": "r-20261021T063338435157-a-warm-read-revalidates-once",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T07:59:59.431268+00:00",
+  "total": 105
+}
