@@ -26,7 +26,7 @@
   <title>A Limit Reset Reaches Every Session | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="19">
+<meta name="plan-version" content="21">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -38,8 +38,8 @@
       <thead><tr><th>Layer</th><th>Lift today</th><th>Limit reset here</th></tr></thead>
       <tbody>
         <tr><td>Record</td><td><code>&lt;config-home&gt;/budget-lifts.json</code>, written by <code>reckon crew budget --lift</code> (<code>reckon/crew/budget_lift.py</code>)</td><td><code>&lt;config-home&gt;/limit-resets.json</code>, written by <code>reckon crew budget --announce-reset</code> (§1)</td></tr>
-        <tr><td>Producer</td><td><code>lift_watch.sweep</code>, called from <code>_sweep_lift_rows</code> in <code>reckon/crew/recovery_watch.py</code> on every poll, appends <code>lift-granted</code>, <code>lift-ended</code> and baseline <code>lift-in-force</code> rows to each project's stream</td><td>A sibling sweep at the same call appends one <code>limit-reset</code> row per reset (§2)</td></tr>
-        <tr><td>Pane</td><td>The row policy in <code>reckon/crew/ticker.py</code> draws a lift row once per pane through the shared claim <code>take_lift_claim</code> (an exclusive create under <code>&lt;crew-home&gt;/watch/lifts/</code>)</td><td>The same claim, keyed on the reset's id, draws it once per pane (§2)</td></tr>
+        <tr><td>Producer</td><td><code>lift_watch.sweep</code>, called from <code>_sweep_lift_rows</code> in <code>reckon/crew/recovery_watch.py</code> when the crew home's change token moves (inside the poll's <code>if sweep:</code> gate), appends <code>lift-granted</code>, <code>lift-ended</code> and baseline <code>lift-in-force</code> rows to each project's stream</td><td>A sibling sweep beside it, but outside that gate, appends one <code>limit-reset</code> row per reset once its time has passed, so a reset scheduled for later is announced on the clock (§2)</td></tr>
+        <tr><td>Pane</td><td>The row policy in <code>reckon/crew/ticker.py</code> draws a lift row once per pane through a claim callback, <code>PaneRowPath._lift_claim</code>. The follower supplies it as <code>take_lift_claim</code>, defined in <code>reckon/crew_follow_commands.py</code>: an exclusive create under <code>&lt;crew-home&gt;/watch/lifts/</code>, keyed on any id and transition word.</td><td>The ticker's new branch calls the same callback with the reset's id and the transition <code>limit-reset</code>, so the follower module itself does not change (§2)</td></tr>
         <tr><td>Session</td><td>The session host relays the pane line as a notification</td><td>Unchanged; the line says what to do (§2), and the global instructions say it too (§6)</td></tr>
       </tbody>
     </table>
