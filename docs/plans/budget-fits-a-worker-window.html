@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="budget-fits-a-worker-window">
+  <meta name="plan-title" content="Budget Fits A Worker Window">
+  <meta name="plan-summary" content="reckon/budget.py is 51,533 tokens against the 50,000-token worker-window bound; its pace and lift family moves out so it fits with room to grow.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="mid">
+  <meta name="plan-effort-hours" content="2.25">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="standard">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S25">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-informs" content="lane-and-model-routing">
+  <meta name="plan-section-depends-on" content="{&quot;s2&quot;:[&quot;lane-and-model-routing#s46&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
+  <title>Budget Fits A Worker Window | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: one module is over the bound, and the next lane change adds to it</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p><code>tests/test_every_module_fits_a_worker_window.py</code> holds every production module under 50,000 tokens, measured by its own <code>_tokens_for_bytes</code>. Its allowlist is empty, so an offender fails the test for every node whose gate runs it. A module that size also cannot be handed whole to a local-lane worker, whose usable window is 230,144 tokens and which must also hold the node's tests and brief.</p>
+    <p>At <code>f5e88d284</code>, <code>reckon/budget.py</code> is 180,363 bytes, which is 51,533 tokens. It was already 50,293 tokens before <code>6ebe65ba4</code>, which added the purchased-credit lift, so the overflow is accumulated growth rather than one change. The test's two other offenders, <code>reckon/crew/review.py</code> and <code>reckon/ledger.py</code>, are outside this plan.</p>
+    <p>Two lane-and-model-routing sections also edit the file. §46, which shows each metered lane's burn, is already built and lands first. §48, which can make a lane's pace advice rather than a hold, adds to the file and waits for this split. The finished plan for the same test, <a href="/reckon/every-module-fits-a-worker-window">every-module-fits-a-worker-window</a>, set the method, in its §8: move code by capability, never by line count.</p>
+
+    <h2 id="s2">§2 — The pace and lift family moves out of budget.py</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p><strong>The cut.</strong> At <code>f5e88d284</code>, the pace and lift family is about 9,900 tokens of <code>budget.py</code>. Names are given here rather than line numbers, because §46 shifts the lines. The family is:</p>
+    <ul>
+      <li>the pace functions: <code>group_pace</code>, <code>pace_hold</code>, <code>pace_row</code> and <code>_pace_releases_at</code>;</li>
+      <li>the lift-reading helpers: <code>_other_session_lift</code>, <code>_lift_label</code>, <code>_lift_resolved_config</code>, <code>_lift_history</code>, <code>_record_lift_reading</code>, <code>_reading_lift_entry</code> and <code>_lift_order</code>;</li>
+      <li>the credit-lift verdict, <code>_credit_lift_verdict</code>, with <code>DEFAULT_CREDIT_RESERVE_FRACTION</code>.</li>
+    </ul>
+    <p>Moving it leaves <code>budget.py</code> near 41,600 tokens, which leaves room for §48.</p>
+    <p><strong>Deliverable.</strong></p>
+    <ul>
+      <li>The pace functions and the lift-reading helpers move to a new module, <code>reckon/budget_pace.py</code>.</li>
+      <li><code>_credit_lift_verdict</code> and <code>DEFAULT_CREDIT_RESERVE_FRACTION</code> move into <code>reckon/crew/budget_lift.py</code>, which already owns the credits lift form. At <code>f5e88d284</code> that module is 14,536 tokens.</li>
+      <li><code>decide()</code> imports the verdict lazily, as <code>budget.py</code> already does for <code>budget_lift</code>, so the two modules form no import cycle.</li>
+      <li>The burn block §46 adds beside <code>_readings</code> stays where it lands.</li>
+      <li>Every moved public name stays importable from <code>reckon.budget</code>, so <code>reckon/crew/budget_group.py</code>, <code>reckon/crew/dispatch.py</code> and the tests that import those names are unchanged.</li>
+      <li>A test that monkeypatches a <code>reckon.budget</code> helper which moved code now reads from its own module is repointed at that module. It is never weakened.</li>
+    </ul>
+    <p><strong>Done when</strong> <code>tests/test_every_module_fits_a_worker_window.py</code>, run at the node's head, no longer names <code>reckon/budget.py</code>, and the file measures at most 45,000 tokens by that test's <code>_tokens_for_bytes</code>. Neither <code>reckon/budget_pace.py</code> nor <code>reckon/crew/budget_lift.py</code> measures over 40,000. The test's remaining offenders are exactly the base arm's, less <code>budget.py</code>.</p>
+    <p>The gate also runs, at base and at head, every test file that reaches a moved name, and adds no failure:</p>
+    <ul>
+      <li><code>tests/test_preflight_pace.py</code>, <code>tests/test_preflight_runs_remaining.py</code>, <code>tests/test_pace_reads_the_lift.py</code>, <code>tests/test_pace_hold_releases_at.py</code>, <code>tests/test_a_paced_window_reanchors_at_lift_end.py</code>;</li>
+      <li><code>tests/test_budget_window_length.py</code>, <code>tests/test_budget_lift.py</code>, <code>tests/test_reserved_lane_window_reading.py</code>, <code>tests/test_budget_group_declaration.py</code>, <code>tests/test_a_lift_reaches_every_budget_row.py</code>, <code>tests/test_burn_waits_for_a_readable_span.py</code>, <code>tests/test_codex_banked_reset.py</code>;</li>
+      <li><code>tests/test_picker.py</code>, <code>tests/test_picker_lanes.py</code>, <code>tests/test_picker_latency.py</code>, <code>tests/test_picker_reserved_lanes.py</code>.</li>
+    </ul>
+    <p>Negative control: put <code>budget.py</code> back to its base content in a scratch copy, and the width test names it again. <code>ruff check</code> and <code>ruff format --check</code> findings on each changed path do not exceed base.</p>
+    <p><strong>Write paths</strong>, all inside one local-lane window:</p>
+    <ul>
+      <li><code>reckon/budget.py</code>, <code>reckon/budget_pace.py</code> and <code>reckon/crew/budget_lift.py</code>;</li>
+      <li>the five test files that reach moved names most often: <code>tests/test_preflight_pace.py</code>, <code>tests/test_preflight_runs_remaining.py</code>, <code>tests/test_pace_reads_the_lift.py</code>, <code>tests/test_pace_hold_releases_at.py</code> and <code>tests/test_a_paced_window_reanchors_at_lift_end.py</code>.</li>
+    </ul>
+    <p>Any other test in the gate that the move breaks is granted from the failure ids the worker reports, not fenced up front.</p>
+    <p><strong>Sequence.</strong> This section dispatches after lane-and-model-routing §46 merges, because both write <code>budget.py</code>. Lane-and-model-routing §48 dispatches after this section merges, and builds on the smaller file.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-bfw-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-21">
+        <h4 class="r-fu-title">Split budget.py once lane-and-model-routing §46 has merged</h4>
+        <div class="r-fu-body"><p>The plan is written. §2 dispatches once lane-and-model-routing §46 has merged, which its coordinator will announce.</p></div>
+        <pre class="r-fu-prompt">/reckon-build budget-fits-a-worker-window §2</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
