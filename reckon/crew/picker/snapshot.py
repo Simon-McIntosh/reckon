@@ -15,6 +15,7 @@ from typing import Any
 from reckon import budget, capabilities, capability, flight, ledger
 from reckon._timestamps import parse_utc
 from reckon.crew import (
+    budget_group,
     budget_lift,
     budget_reset,
     dispatch_picker,
@@ -1267,6 +1268,27 @@ def _reserved_five_hour_utilisation(
     return float(used) * 100.0
 
 
+def _group_name(group: Any, config: Mapping[str, Any] | None) -> str | None:
+    """A view group row's declared name.
+
+    A group row names itself where the composer resolved one. A row that does
+    not is matched to the declaration by its members, so a row carrying only
+    members and an allowance still reaches the burn block derived for the
+    wallet those members share.
+    """
+
+    if not isinstance(group, Mapping):
+        return None
+    declared_name = group.get("group")
+    if declared_name:
+        return str(declared_name)
+    members = tuple(str(member) for member in (group.get("members") or ()))
+    for name, declared_members in budget_group.declared_groups(config).items():
+        if tuple(declared_members) == members:
+            return str(name)
+    return None
+
+
 def candidates(
     request: PickRequest,
     config: dict[str, Any],
@@ -1411,6 +1433,21 @@ def candidates(
     group_by_backend = {
         member: group for group in view["groups"] for member in group["members"]
     }
+    # Each metered lane's burn is derived once, for every group the view names,
+    # rather than per candidate: the readings behind it are the project's
+    # recorded series, and reading them once per model would re-scan the same
+    # stores for each model sharing one account. A candidate is handed its
+    # group's block below, so no figure is computed in the picker.
+    burn_by_group = budget.burn_blocks(
+        request.project,
+        config=config,
+        groups=[
+            name
+            for name in (_group_name(group, config) for group in view["groups"])
+            if name
+        ],
+        now=now,
+    )
     # A review never runs on a backend the flight configuration withdraws from
     # review routing, so the candidate is removed here rather than offered for
     # Jev to weigh: an exclusion is a rule about what cannot run, not a
@@ -1665,6 +1702,11 @@ def candidates(
                 budget_age_s=budget_age_s,
                 context=context_block,
                 prior_outcomes=prior_block,
+                burn=(
+                    None
+                    if local or group is None
+                    else burn_by_group.get(_group_name(group, config) or "")
+                ),
             )
         )
     return result

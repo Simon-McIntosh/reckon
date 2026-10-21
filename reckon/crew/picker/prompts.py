@@ -57,6 +57,28 @@ _GLOSSARY: dict[str, str] = {
     "pace_allowance": (
         "The fraction of a metered lane's window a job of this size may spend."
     ),
+    "burn": (
+        "A metered lane's own burn block. window_rate_pct_per_hour is the "
+        "window's utilisation change per hour over the trailing three hours, "
+        "read from the lane's recorded readings rather than averaged over the "
+        "whole window, so it describes what the lane is spending now and is "
+        "present in a window too young for burn_multiple; null when fewer than "
+        "two readings lie at least half an hour apart. window_even_share_pct is "
+        "the even pace for the coming period -- the window's remaining "
+        "percentage over the hours to its reset -- given as a reference to weigh "
+        "against the node's priority and difficulty, never applied as a limit. "
+        "Under a credits lift the block also carries credit_pool_remaining and "
+        "credit_pool_cap (the lift's dispatch stop less the credits drawn since "
+        "grant, and its cap), credit_rate_per_hour (the balance's fall per hour "
+        "over the same trailing span) and credit_even_share (the pool's even "
+        "pace to the lift's end); those four are absent with no credits lift. "
+        "runway_hours is the credit pool over the credit rate under a lift, and "
+        "the window's remainder over its own rate without one; null when the "
+        "rate behind it is null or zero. A lane whose burn is racing ahead of "
+        "its even share will exhaust before its reset, and a credits-lifted "
+        "lane's pool is spent by priority: it is a budget for the work that "
+        "needs the lane, not an even pace to the reset."
+    ),
     "budget_source": (
         "Where a budget reading came from: a document reading is taken from the "
         "published paid-lanes document, an account-surface reading describes now, "
@@ -272,6 +294,10 @@ def _candidate_state(candidate: Any) -> dict[str, Any]:
         "utilisation_pct": candidate.utilisation_pct,
         "burn_multiple": candidate.burn_multiple,
         "pace_allowance": candidate.pace_allowance,
+        # The burn block is rendered only on a metered lane, the way suits is
+        # rendered only where one is declared: a lane with no account window has
+        # no burn, and a candidate carrying no block adds nothing to the state.
+        **({"burn": candidate.burn} if getattr(candidate, "burn", None) else {}),
         "days_to_reset": candidate.days_to_reset,
         "resets_at": candidate.resets_at,
         "worker_slots": candidate.worker_slots,

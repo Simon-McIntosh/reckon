@@ -343,6 +343,17 @@ slots:
     range: integer
     minimum_value: 1
 
+  budget_period_hours:
+    description: >-
+      The period, in hours, a metered lane's even share is quoted for. It is
+      the window's remaining percentage spread over the hours to its reset and
+      read as the spend the coming period may afford, or a credits lift's pool
+      spread over the hours to the lift's end. A reference the router weighs
+      against the node's priority and difficulty, never a limit applied to the
+      lane. A non-positive or unreadable value falls back to the shipped figure.
+    range: float
+    minimum_value: 0
+
   gates:
     range: GateConfig
 
@@ -1109,6 +1120,7 @@ classes:
     slots:
       - picker
       - prior_outcome_threshold
+      - budget_period_hours
 
   ReviewConfig:
     description: >-

@@ -230,6 +230,7 @@ class RoutingConfig(ConfiguredBaseModel):
     """
     picker: PickerMode | None = Field(default=None, description="""Record the picker selection in shadow mode, or route dispatch by it. A per-dispatch route override takes precedence over this layered value.""")
     prior_outcome_threshold: int | None = Field(default=None, description="""How many of a lane model candidate's own recorded outcomes it must carry before it stands on them alone. Below this figure the candidate also carries a prior block: the tallies of runs recorded under the same lane and model key with an earlier model id, so a key re-pointed to a new generation starts from its key's record rather than from nothing. At or above it the candidate carries no prior block, so a candidate with enough history of its own renders exactly as it did before prior blocks existed.""", ge=1)
+    budget_period_hours: float | None = Field(default=None, description="""The period, in hours, a metered lane's even share is quoted for. It is the window's remaining percentage spread over the hours to its reset and read as the spend the coming period may afford, or a credits lift's pool spread over the hours to the lift's end. A reference the router weighs against the node's priority and difficulty, never a limit applied to the lane. A non-positive or unreadable value falls back to the shipped figure.""", ge=0)
 
 
 class ReviewConfig(ConfiguredBaseModel):

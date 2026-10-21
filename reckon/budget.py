@@ -572,6 +572,7 @@ def _readings(
     root: str | Path | None = None,
     config: Mapping[str, Any] | None = None,
     records: Iterable[Mapping[str, Any]] | None = None,
+    history: bool = True,
 ) -> list[_Reading]:
     """Collect every recorded budget block for a project, from both homes.
 
@@ -643,6 +644,13 @@ def _readings(
                 covered_backends=_declared_coverage(budget),
             )
         )
+    if not history:
+        # A caller reading a lane's current spending rate wants the readings
+        # that are still moving, and the live pointers already carry them. The
+        # ledger holds only completed runs, whose stamps are hours behind the
+        # trailing window, and reading it here would cost the picker a second
+        # decode of a store it has already read once for the same pick.
+        return found
     try:
         data, _version = (
             ledger.load(project, root)
@@ -772,6 +780,425 @@ def latest_recorded(
         if reading.when > current.when:
             best[reading.backend] = reading
     return _RecordedReadings(best, unattributed=unattributed)
+
+
+# ── Burn ────────────────────────────────────────────────────────────────────
+#
+# A lane's row already carries its window ceiling, its whole-window burn average
+# and its reset. None of those says how fast the lane is spending now, nor what
+# it can afford over the hours ahead, so a router weighing priority against
+# availability has no figure for either. The burn block is that figure: it reads
+# the lane's own recorded readings as a series, so the rate describes what the
+# account did rather than what one window's average says it did.
+
+#: The trailing span a lane's current rate is measured over. A short span tracks
+#: what the lane is doing now; a whole-window average would repeat the figure
+#: ``burn_multiple`` already carries, and is what a lane's ceiling was raised
+#: ahead of on 2026-10-20 while it spent several times its even pace.
+BURN_TRAILING_HOURS = 3.0
+
+#: The least span two readings must lie apart before their difference is a rate
+#: rather than noise between two observations of the same moment. Two points
+#: closer than this are one sample, not a trend.
+BURN_MIN_SPAN_MINUTES = 30.0
+
+#: The period the even shares are quoted for, in hours, when no layer declares
+#: ``routing.budget_period_hours``.
+DEFAULT_BUDGET_PERIOD_HOURS = 6.0
+
+
+def _window_key(block: Mapping[str, Any]) -> str | None:
+    """The metered window one recorded block's utilisation belongs to.
+
+    A recorded block's utilisation is the binding window -- whichever window it
+    reported was furthest through when the probe answered -- so the block's own
+    tags name it. A dialect that names the period says it, and one that reports
+    only the position names the length instead, which resolves through
+    ``WINDOW_MINUTES_CLOCK`` to the name the published headroom document keys
+    the same window by. A length outside that map keeps its own key rather than
+    borrowing a name it does not measure.
+    """
+    named = block.get("rate_limit_type")
+    if isinstance(named, str) and named in WINDOW_MINUTES_CLOCK.values():
+        return named
+    minutes = _numeric(block.get("rate_limit_period_minutes"))
+    if minutes is None:
+        return None
+    return WINDOW_MINUTES_CLOCK.get(int(minutes), f"{int(minutes)}m")
+
+
+def _selected_window(points: Iterable[_BurnPoint]) -> str | None:
+    """The window a lane's rate and even share are both read on.
+
+    The newest recorded reading that places a window chooses it: that is the
+    window the lane was up against when it last ran, and the one its remainder
+    is a statement about. A series that places no window leaves the choice to
+    the published document.
+    """
+    return next(
+        (
+            point.window
+            for point in reversed(list(points))
+            if point.utilisation_pct is not None and point.window is not None
+        ),
+        None,
+    )
+
+
+def _on_one_window(points: Iterable[_BurnPoint], window: str) -> list[_BurnPoint]:
+    """Drop the utilisation of every reading taken on another window.
+
+    The credit balance is window-independent and stays, so a point that cannot
+    place this window still dates a credit fall.
+    """
+    return [
+        point
+        if point.utilisation_pct is None or point.window == window
+        else replace(point, utilisation_pct=None)
+        for point in points
+    ]
+
+
+def budget_period_hours(config: Mapping[str, Any] | None) -> float:
+    """The period a lane's even share is quoted for, in hours.
+
+    A non-positive or unreadable declaration falls back to the shipped figure
+    rather than dividing by it, so a misconfigured layer cannot make the even
+    share infinite.
+    """
+    declared = ((config or {}).get("routing") or {}).get("budget_period_hours")
+    if (
+        isinstance(declared, (int, float))
+        and not isinstance(declared, bool)
+        and declared > 0
+    ):
+        return float(declared)
+    return DEFAULT_BUDGET_PERIOD_HOURS
+
+
+@dataclass(frozen=True)
+class _BurnPoint:
+    """One lane reading: when it was taken, and what it measured."""
+
+    when: datetime
+    utilisation_pct: float | None = None
+    credit_balance: float | None = None
+    resets_at: datetime | None = None
+    window: str | None = None
+
+
+def _numeric(value: Any) -> float | None:
+    """A finite number from a recorded block, or None for anything else."""
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return float(value)
+    return None
+
+
+def _round_or_none(value: float | None, digits: int = 4) -> float | None:
+    return None if value is None else round(value, digits)
+
+
+def _group_points(
+    readings: Iterable[_Reading], members: Iterable[str]
+) -> list[_BurnPoint]:
+    """The group's own recorded readings, oldest first.
+
+    Only readings that describe one of the group's members are read, because a
+    lane's account is shared by its members alone and another group's spend is
+    not this lane's. A reading with no utilisation still carries its balance, so
+    it can date a credit fall even while it cannot place a window.
+    """
+    names = tuple(members)
+    points: list[_BurnPoint] = []
+    for reading in readings:
+        if reading.backend is None:
+            continue
+        if not any(reading.applies_to(name) for name in names):
+            continue
+        block = reading.budget
+        credits = block.get("credits")
+        resets_at = block.get("resets_at")
+        points.append(
+            _BurnPoint(
+                when=reading.when,
+                utilisation_pct=_numeric(block.get("utilisation_pct")),
+                credit_balance=(
+                    _numeric(credits.get("balance"))
+                    if isinstance(credits, Mapping)
+                    else None
+                ),
+                resets_at=(
+                    _parse_stamp(resets_at) if isinstance(resets_at, str) else None
+                ),
+                window=_window_key(block),
+            )
+        )
+    points.sort(key=lambda point: point.when)
+    return points
+
+
+def _trailing_rate(
+    points: Sequence[_BurnPoint],
+    attribute: str,
+    *,
+    now: datetime,
+    falling: bool = False,
+) -> float | None:
+    """The change per hour in ``attribute`` over the trailing span, or None.
+
+    The rate is the difference between the oldest and newest readings inside the
+    trailing span, divided by the hours between them. It is None when either end
+    is unreadable or the two lie closer together than the minimum span, because
+    two observations of one moment cannot show a rate however far apart their
+    values read.
+    """
+    horizon = now - timedelta(hours=BURN_TRAILING_HOURS)
+    window = [
+        point
+        for point in points
+        if horizon <= point.when <= now and getattr(point, attribute) is not None
+    ]
+    if len(window) < 2:
+        return None
+    span_hours = (window[-1].when - window[0].when).total_seconds() / 3600.0
+    if span_hours * 60.0 < BURN_MIN_SPAN_MINUTES:
+        return None
+    change = getattr(window[-1], attribute) - getattr(window[0], attribute)
+    return (-change if falling else change) / span_hours
+
+
+def _published_point(
+    config: Mapping[str, Any] | None,
+    group: str,
+    *,
+    now: datetime,
+    window: str | None = None,
+) -> _BurnPoint | None:
+    """The group's freshest published window reading, as one burn point.
+
+    The headroom document carries only the newest observation of each window, so
+    it can add the current point to the series but never the series itself: a
+    lane that has not run since the document was published would otherwise have
+    no reading for now, and a lane whose readings all predate the trailing span
+    would report no rate at all. Its utilisation is a fraction, where a recorded
+    block's is a percentage.
+    """
+    from reckon.crew import budget_lift as budget_lift_module
+
+    payloads = budget_lift_module.published_readings(config, group=str(group), now=now)
+    if not payloads:
+        return None
+    payload = payloads[0]
+    when = _parse_stamp(payload.get("observed_at"))
+    if when is None:
+        return None
+    candidates = [
+        (str(period), value)
+        for period, value in payload.items()
+        if isinstance(value, Mapping) and _numeric(value.get("utilisation")) is not None
+    ]
+    if not candidates:
+        return None
+    if window is None:
+        period, value = candidates[0]
+    else:
+        chosen = next((item for item in candidates if item[0] == window), None)
+        if chosen is None:
+            return None
+        period, value = chosen
+    resets_at = value.get("resets_at")
+    return _BurnPoint(
+        when=when,
+        utilisation_pct=_numeric(value.get("utilisation")) * 100.0,
+        resets_at=(_parse_stamp(resets_at) if isinstance(resets_at, str) else None),
+        window=period,
+    )
+
+
+def _even_share(
+    remaining: float | None, hours: float | None, period_hours: float
+) -> float | None:
+    """The even pace for the coming period, or None where it cannot be read."""
+    if remaining is None or hours is None or hours <= 0:
+        return None
+    return remaining * period_hours / hours
+
+
+def _credit_lift_block(
+    config: Mapping[str, Any] | None, group: str, *, now: datetime
+) -> tuple[Mapping[str, Any], Mapping[str, Any]] | None:
+    """The credits lift in force on ``group``, with its summary block.
+
+    Resolved through the same group block a dispatch takes, so a lift the
+    picker reports is a lift dispatch would honour, and a group under no lift
+    reports none.
+    """
+    resolved = budget_group.effective_block(
+        config, str(group), readings=None, now=now, session=None
+    )
+    credit = resolved.get("credit_lift")
+    if not isinstance(credit, Mapping):
+        return None
+    summary = resolved.get("lift")
+    return credit, summary if isinstance(summary, Mapping) else {}
+
+
+def burn_block(
+    project: str,
+    group: str,
+    *,
+    config: Mapping[str, Any] | None = None,
+    now: datetime | None = None,
+    readings: Iterable[_Reading] | None = None,
+) -> dict[str, Any]:
+    """One lane's burn: what it spends now, what it may afford, and its runway.
+
+    ``window_rate_pct_per_hour`` is the window's own utilisation change per hour
+    over the trailing span, read from the lane's recorded readings as a series.
+    It is not ``burn_multiple``, which is the whole window's average and reads
+    null in a young window: a lane that spent 4% then 20% two hours later is
+    spending 8 points an hour whether the window is two percent through or half
+    spent, and that is the figure a router needs. It is None when fewer than two
+    readable readings lie at least the minimum span apart.
+
+    ``window_even_share_pct`` is the even pace for the coming period -- the
+    window's remaining percentage over the hours to its reset, quoted for
+    ``routing.budget_period_hours``. It is a reference a router weighs, never a
+    limit applied to the lane.
+
+    Under a credits lift the block also carries the lift's pool, its cap, the
+    balance's fall per hour and the even share of that pool, and
+    ``runway_hours`` is the pool over the credit rate. Without a lift the four
+    credit fields are absent and the runway is the window's remainder over its
+    own rate. The runway is None whenever the rate behind it is None or zero.
+    A window rate or a credit rate a thin sample cannot support is null rather
+    than absent, so a reader tells an unmeasurable figure from one with no lift
+    behind it.
+    """
+    moment = _now(now)
+    period_hours = budget_period_hours(config)
+    members = tuple(budget_group.declared_groups(config).get(str(group), ()))
+    collected = _readings(project, config=config) if readings is None else readings
+    points = _group_points(collected, members)
+    # A rate and a remainder are comparable only on one window, so the window
+    # the newest recorded reading places governs both: the recorded series is
+    # read on that window alone and the document is asked for that window by
+    # name rather than for whichever figure it happens to list first. A series
+    # that places no window takes the published document's, so a lane whose
+    # readings carry no window still reports one window's figures rather than
+    # a mixture.
+    window = _selected_window(points)
+    # The published headroom document supplies the current point where no run
+    # recorded. It is added only when it carries an observation no recorded
+    # reading already places at that moment, so one moment is never counted
+    # twice and two points never share a timestamp.
+    published = _published_point(config, group, now=moment, window=window)
+    if window is None and published is not None:
+        window = published.window
+    if window is not None:
+        points = _on_one_window(points, window)
+    if (
+        published is not None
+        and published.utilisation_pct is not None
+        and all(point.when != published.when for point in points)
+    ):
+        points = sorted([*points, published], key=lambda point: point.when)
+
+    newest = next(
+        (point for point in reversed(points) if point.utilisation_pct is not None),
+        None,
+    )
+    hours_to_reset = (
+        (newest.resets_at - moment).total_seconds() / 3600.0
+        if newest is not None and newest.resets_at is not None
+        else None
+    )
+    remaining_pct = (
+        max(0.0, 100.0 - newest.utilisation_pct) if newest is not None else None
+    )
+    window_rate = _trailing_rate(points, "utilisation_pct", now=moment)
+
+    block: dict[str, Any] = {
+        "window_rate_pct_per_hour": _round_or_none(window_rate),
+        "window_even_share_pct": _round_or_none(
+            _even_share(remaining_pct, hours_to_reset, period_hours)
+        ),
+    }
+
+    runway_hours: float | None = None
+    lift = _credit_lift_block(config, group, now=moment)
+    if lift is not None:
+        credit, summary = lift
+        cap = _numeric(credit.get("cap"))
+        at_grant = _numeric(credit.get("balance_at_grant"))
+        reserve = _numeric(credit.get("reserve_fraction"))
+        if reserve is None:
+            reserve = DEFAULT_CREDIT_RESERVE_FRACTION
+        balance = next(
+            (
+                point.credit_balance
+                for point in reversed(points)
+                if point.credit_balance is not None
+            ),
+            None,
+        )
+        drawable = cap * (1.0 - reserve) if cap is not None else None
+        drawn = (
+            max(0.0, at_grant - balance)
+            if at_grant is not None and balance is not None
+            else None
+        )
+        pool = drawable - drawn if drawable is not None and drawn is not None else None
+        credit_rate = _trailing_rate(points, "credit_balance", now=moment, falling=True)
+        ends_in_hours = _numeric(summary.get("remaining_seconds"))
+        ends_in_hours = ends_in_hours / 3600.0 if ends_in_hours is not None else None
+        block["credit_pool_remaining"] = _round_or_none(pool, 2)
+        block["credit_pool_cap"] = _round_or_none(cap, 2)
+        block["credit_rate_per_hour"] = _round_or_none(credit_rate, 2)
+        block["credit_even_share"] = _round_or_none(
+            _even_share(pool, ends_in_hours, period_hours), 2
+        )
+        if pool is not None and credit_rate:
+            runway_hours = pool / credit_rate
+    elif remaining_pct is not None and window_rate:
+        runway_hours = remaining_pct / window_rate
+
+    block["runway_hours"] = _round_or_none(runway_hours, 4)
+    return block
+
+
+def burn_blocks(
+    project: str,
+    *,
+    config: Mapping[str, Any] | None = None,
+    groups: Iterable[str],
+    now: datetime | None = None,
+    readings: Iterable[_Reading] | None = None,
+) -> dict[str, dict[str, Any]]:
+    """Each named budget group's burn block, from one collection of readings.
+
+    One collection serves every group because the readings are the project's
+    recorded series and reading them per group would re-scan the same stores for
+    each lane on the same account. The collection is the live pointers only: a
+    pick already read the ledger once for the same scan, and this derivation
+    must not read it again.
+    """
+    moment = _now(now)
+    collected = (
+        list(_readings(project, config=config, history=False))
+        if readings is None
+        else list(readings)
+    )
+    return {
+        str(group): burn_block(
+            project,
+            str(group),
+            config=config,
+            now=moment,
+            readings=collected,
+        )
+        for group in groups
+    }
 
 
 # ── State ───────────────────────────────────────────────────────────────────
@@ -3635,12 +4062,15 @@ def pace_row(
     return row
 
 
-# The window lengths a lane receipt names, mapped to the clock a group's pace
-# reads. A receipt identifies its windows by length in minutes rather than by
-# name, so this map is what lets a recorded receipt and a stream-carried event
-# speak one vocabulary. A length the map does not name is skipped rather than
-# guessed onto a clock: a window nobody can name is not a reading this reader
-# may place.
+# The window lengths a lane names, mapped to the clock a group's pace reads and
+# to the name a published headroom document keys the same window by. Receipts
+# and recorded budget blocks identify their windows by length in minutes rather
+# than by name, so this is the one table that lets a recorded receipt, a
+# stream-carried event and a published figure speak one vocabulary; a caller
+# that needs a window's name resolves it here rather than keeping a second map
+# that can drift from this one. A length the map does not name is skipped rather
+# than guessed onto a clock: a window nobody can name is not a reading this
+# reader may place.
 WINDOW_MINUTES_CLOCK = {300: CLOCK_FIVE_HOUR, 10080: CLOCK_SEVEN_DAY}
 
 
