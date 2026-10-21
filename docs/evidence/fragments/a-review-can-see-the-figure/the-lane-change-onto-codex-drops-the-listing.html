@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+<head>
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="doc">
+</head>
+<body>
+<section id="the-lane-change-onto-codex-drops-the-listing">
+<h2 id="the-lane-change-onto-codex-drops-the-listing-landed">A lane change onto codex drops the stale figure listing and carries the figures on argv</h2>
+<p id="the-lane-change-onto-codex-drops-the-listing-landing">
+A run whose prompt file already carries the figure listing a fresh dispatch
+wrote can be moved onto a lane that attaches figures on a flag of its own. The
+codex dialect reads each figure from <code>-i &lt;path&gt;</code>, so a listing
+left in the prose is a second copy of the same files. The prompt file the
+lane-change composition writes is therefore asserted to carry the brief and the
+fence restated for the new attempt, to contain neither the listing heading nor
+either figure path line, and the composed argv to carry exactly one
+<code>-i</code> per declared figure.
+</p>
+<p id="the-lane-change-onto-codex-drops-the-listing-evidence">
+<code>tests/test_crew_lane_change.py::test_a_lane_change_onto_codex_attaches_the_figures_and_drops_the_listing</code>
+builds a run record in a temporary directory whose recorded prompt file carries
+a brief, a <code>FENCE — TIME</code> block and the fresh-dispatch listing —
+heading plus one <code>- &lt;png&gt;</code> line per figure — then calls
+<code>change_lane</code> from clive onto a codex lane. The heading is spelled in
+the fixture rather than imported from <code>reckon/_backends.py</code>, so a
+change to the production heading surfaces as the fixture's own listing
+surviving the composition rather than both sides moving together. The test
+reads nothing outside its temporary directory; the worker fence is left off so
+no harness home outside the run is touched.
+</p>
+<p id="the-lane-change-onto-codex-drops-the-listing-measure">
+Head gate at revision <code>637b41da</code>: <code>1 passed</code>,
+<code>EXIT=0</code>. The declared mutation — the
+<code>_prompt_without_figure_listing</code> call removed from
+<code>launch_plan</code> — leaves the stale listing in the file the worker
+reads, <code>1 failed</code>, <code>EXIT=1</code>, failing on the listing
+heading with the two figure paths quoted beneath it; neither of those ids fails
+at head. The mutation was applied in a scratch copy of the tree under
+<code>$TMPDIR</code> rather than to the tracked module, so the run under test
+is the scratch module and the head tree is untouched. The same file's other
+cases are unchanged: 4 failed (the cases that still drive the retired
+redispatch verb), 3 passed. <code>ruff check</code> and
+<code>ruff format --check</code> add no findings on the changed file against
+base (4 and 27 reported lines at base, 4 and 27 here).
+</p>
+<p id="the-lane-change-onto-codex-drops-the-listing-scope">
+This gate measures only this node's own change; verifying the merged result
+belongs to a separately dispatched test node.
+</p>
+</section>
+</body>
+</html>
