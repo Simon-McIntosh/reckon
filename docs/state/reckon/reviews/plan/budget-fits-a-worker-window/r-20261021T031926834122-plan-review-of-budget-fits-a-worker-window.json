@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T03:32:37.690Z",
+  "dispatched_at": "2026-10-21T03:20:48Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/budget-fits-a-worker-window.html:56",
+      "id": "reasoning-1",
+      "reason": "implementing \u00a72 as written breaks the cited method, while following \u00a78 produces a different import structure in the produced module, so the plan must say which governs rather than leave the worker with two contradictory authorities.",
+      "text": "\u00a72 states \"The import runs one way at module level. `reckon/pace_report.py` imports `reckon.budget`\", but \u00a78 of `every-module-fits-a-worker-window`, which line 37 cites as the method this split follows, states \"A produced module never imports the original at module level. An unavoidable back-reference uses the function-level import this codebase already uses for cycles\"",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/budget-fits-a-worker-window.html:50",
+      "id": "reasoning-2",
+      "reason": "the misnamed owner moves nothing, since the helpers still land in `pace_report.py` and the worker resolves the real import from the source, so only the rationale sentence is wrong.",
+      "text": "\u00a72 says \"The lift-reading helpers read the lift lifecycle that `reckon/crew/lift_watch.py` owns\"; at `76946f9a9` the helpers read `reckon.crew.budget_lift` (`budget.py:3495-3510`: `budget_lift.SESSION_PREFIX`, `budget_lift.list_lifts`, `budget_lift.effective_budget`), `budget.py` never references `lift_watch`, and `lift_watch.py`'s own docstring names `budget_lift.end_cause` as the resolver it reads through",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "8fe497424b33e664934d3eddcf15fbe9cab08d02f4930f553c7bff230b90d8e7",
+  "plan_slug": "budget-fits-a-worker-window",
+  "plan_version": 4,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T031926834122-plan-review-of-budget-fits-a-worker-window",
+  "reviewed_blob_sha": "f253a8e98ed8010454746cc6f53cf5b9ae5af963",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `f5e88d284`, `76946f9a9` and `6ebe65ba4` resolve and are ancestors of HEAD; `reckon/crew/budget_lift.py:113` carries `DEFAULT_CREDIT_RESERVE_FRACTION` with its comment; the extensionless sibling link resolves as `every-module-fits-a-worker-window.html` and its \u00a78 resolves.",
+    "done_when": "pass \u2014 \u00a72 names a measurable bound (`tests/test_every_module_fits_a_worker_window.py` no longer names `reckon/budget.py`, at most 45,000 tokens, `pace_report.py` and `budget_lift.py` at most 40,000) and a declared negative control: revert `budget.py` to its base content and the width test names it again.",
+    "evidence_paths": "pass \u2014 the plan places no evidence in a scratch or node-local path; the gate logs land on the run's own evidence directory under the dispatch contract.",
+    "naming": "pass \u2014 `reckon/pace_report.py` names the capability it adds, and no plan label, ticket number or version tag reaches a symbol or a comment.",
+    "reasoning": "two findings \u2014 \u00a72's stated import direction contradicts \u00a78 of the method it cites, and \u00a72 attributes the lift lifecycle to `lift_watch.py` rather than to `budget_lift.py`.",
+    "single_goal": "pass \u2014 \u00a72 carries one deliverable, moving the pace and lift family out of `budget.py`; \u00a71 is the done why.",
+    "wiring": "pass \u2014 `plan-section-depends-on` names `{\"s2\":[\"lane-and-model-routing#s46\"]}` and `plan-informs` names `lane-and-model-routing`, and lane-and-model-routing's own `s48` declares `[\"lane-and-model-routing#s46\",\"budget-fits-a-worker-window#s2\"]`, which is what \u00a72 line 73 asserts."
+  },
+  "section_digests": {
+    "_document": "1614740484dbfd4e03e69ff83d11c72be04e1fae29d5472772ec27bb7860cffd",
+    "s1": "91f7e14a7481fa744ec22eb7e159bd794bd7321583546aa5c1a8d090384d75c7",
+    "s2": "dabece39d7b0046ac4521d7b2c22d7bc44e3549d2c81eae68869b8c5e1600a26"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T03:40:39.199592+00:00"
+}
