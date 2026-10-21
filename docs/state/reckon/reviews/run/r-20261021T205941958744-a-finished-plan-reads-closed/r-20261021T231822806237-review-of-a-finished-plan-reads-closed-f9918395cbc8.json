@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-21T23:37:34.074Z",
+  "dispatched_at": "2026-10-21T23:19:38Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T205941958744-a-finished-plan-reads-closed/branch-narrowing.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the header declares the run at revision 25a6464fe5c5f3599a75721becc3fc748a972b57, but the run collected test ids parametrised over TERMINAL_STATUSES (test_a_write_on_a_closed_plan_reads_closed[abandoned] and six siblings) and that parametrisation does not exist at 25a6464fe - it lands in bde91922d. The declared revision cannot carry the test file the arm ran, so the header does not identify the tree the demonstration came from."
+    },
+    {
+      "file": "docs/evidence/fragments/a-finished-plan-closes/a-finished-plan-reads-closed.html",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "follow-on: the sentence reports baseline_suite.log as the same suites run at the base revision, but that arm is a scratch tree of the base module with the head test modules: baseline_suite.log:1-5 names revision c5f72a43bba and tree /tmp/reckon-crew-scratch/.../baseline-arm, and tests/test_a_finishing_write_offers_its_close.py at c5f72a43bba carries no parametrisation, so the four suites were not run at that revision. The manifest records the construction accurately under measurement_module, so the fragment overstates what its own log shows; a reader reconciling the header against c5f72a43bba finds the parametrised tests absent."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal reads 'Return readiness closed on a declaration write to a plan whose status is already terminal' (prompt.txt:30), and the two commits gained since the prior review - 25a6464fe..f9918395c - repair that change's two recorded follow-ons: the closed case is now parametrised over the owner's terminal set and a real base arm is logged.\nVERDICT done_when: the done_when (prompt.txt:97) requires the new cases to pass and the gate log to show the closed case failing on the base commit; the manifest records after_suite 37 passed exit 0 (head_suite.log) and baseline_suite 7 failed exit 1 (baseline_suite.log), whose failure text is 'assert None == \"closed\"' on all seven terminal parametrisations.\nVERDICT write_paths: the source node's declared paths are reckon/mcp_deadlines.py, tests/test_a_finishing_write_offers_its_close.py, docs/evidence/fragments/a-finished-plan-closes/a-finished-plan-reads-closed.html and a figures directory (prompt.txt:70-73); the reviewed window touches only the test file and the fragment, both inside them, and writes no figure.\nVERDICT manifest: read; status complete, recording the head gate 37 passed exit 0, the base arm 7 failed exit 1, the declared mutation 7 failed exit 1 and the branch-narrowing arm 5 failed exit 1, with measurement_module and measurement_cwd naming the scratch baseline-arm tree.\nVERDICT diff: read commit by commit over 25a6464fe..f9918395c; bde91922d parametrises the closed case over sorted(TERMINAL_STATUSES) imported from reckon.lifecycle and f9918395c rewrites the fragment's gate and control paragraphs, 11 insertions against 5 deletions across exactly two files.\nCALL_SITES: reckon/mcp_edit_plan.py:1711\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_finishing_write_offers_its_close.py:161 parametrises the closed case over sorted(TERMINAL_STATUSES), which is the goal's terminal set read from its owner rather than a list written in the test.\nSCORE evidence: 17\nJUSTIFICATION evidence: the manifest's after_suite and baseline_suite both carry a completed log with a header, command and EXIT line (baseline_suite.log:1-5, 'EXIT=1'), but the base arm's declared revision c5f72a43bba cannot carry the parametrised test it ran and the fragment at line 21 reports that arm as run at the base revision.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 25a6464fe..f9918395c changes only tests/test_a_finishing_write_offers_its_close.py and docs/evidence/fragments/a-finished-plan-closes/a-finished-plan-reads-closed.html, both inside the source node's declared write paths, with no unrelated edit.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_finishing_write_offers_its_close.py:183 asserts the literal 'closed' independent of the terminal_status it was handed, and reinstating the regression reddens it - branch-narrowing.log: '5 failed, 7 passed', EXIT=1, on exactly the five statuses dropped by the narrowing.\nSCORE fit: 17\nJUSTIFICATION fit: the parametrisation follows the module's pytest idiom and imports the owner's set, but the evidence fragment at line 21 describes its base arm with a revision claim the log it cites does not support.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module; tests/test_a_finishing_write_offers_its_close.py:30 imports TERMINAL_STATUSES from its owner reckon/lifecycle.py:9 rather than restating it; the fragment reports the helper reading status through the existing _resolve_html_file.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T205941958744-a-finished-plan-reads-closed/branch-narrowing.log:1 follow-on: the header names revision 25a6464fe, but the run collected parametrised test ids that only the bde91922d parametrisation creates, so the declared revision cannot carry the test file the arm ran.\nFINDING docs/evidence/fragments/a-finished-plan-closes/a-finished-plan-reads-closed.html:21 follow-on: the fragment reports baseline_suite.log as the same suites run at the base revision, while the arm is a scratch tree of the base module with head test modules and the revision its header names carries no parametrised test.\n",
+  "review_run_id": "r-20261021T231822806237-review-of-a-finished-plan-reads-closed-f9918395cbc8",
+  "reviewed_base_sha": "25a6464fe5c5f3599a75721becc3fc748a972b57",
+  "reviewed_head_sha": "f9918395cbc8dd9accf61fd3036cc5a580fd50de",
+  "reviewed_run_id": "r-20261021T205941958744-a-finished-plan-reads-closed",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T23:38:15.419967+00:00",
+  "total": 112
+}
