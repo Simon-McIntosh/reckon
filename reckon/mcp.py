@@ -685,9 +685,9 @@ def _refuse_when_stale(tool: Callable[..., Any], *, name: str) -> Callable[..., 
     succeeded on the stale image runs on the current code like one that failed.
     A read the child does not answer falls back to the image; a write never
     does, because it may have landed, and its timeout names the re-read to make
-    first. A failure
-    embedded in an otherwise successful answer, naming a schema or a
-    configuration error, is answered on the current code like a failed one. The
+    first. A failure embedded in an otherwise successful answer, naming a
+    schema or a configuration error, is answered on the current code like a
+    failed one. The
     child's verdict decides whether a changed signature is compatible — an
     added optional parameter is served with a ``schema_note``, and only a
     change the client's calls cannot survive is refused, with a reconnect as
