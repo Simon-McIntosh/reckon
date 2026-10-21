@@ -31,6 +31,8 @@ import sys
 import time
 from pathlib import Path
 
+import pytest
+
 from reckon import mcp as mcp_module
 from reckon import served_code
 
@@ -41,6 +43,7 @@ _FAKE_CHILD = r"""
 import json, os, sys
 
 cold = os.environ.get("FAKE_CHILD_COLD") == "1"
+silent = os.environ.get("FAKE_CHILD_SILENT") == "1"
 answer = json.loads(os.environ["FAKE_CHILD_ANSWER"])
 
 for line in sys.stdin:
@@ -59,6 +62,10 @@ for line in sys.stdin:
             continue
         reply = {"id": ident, "op": "probe", "params": {}, "required": {}}
     else:
+        if silent:
+            # Warm, but it never answers a call: a child the guard has asked
+            # and has no answer from.
+            continue
         reply = {"id": ident, "op": "call", "reached": True, "answer": answer}
     sys.stdout.write(json.dumps(reply) + "\n")
     sys.stdout.flush()
@@ -68,13 +75,16 @@ for line in sys.stdin:
 class Spawner:
     """The spawn hook a rig is built with: counts children, starts the fake."""
 
-    def __init__(self, *, answer: dict | None = None, cold: bool = False) -> None:
+    def __init__(
+        self, *, answer: dict | None = None, cold: bool = False, silent: bool = False
+    ) -> None:
         self.count = 0
         self.children: list[subprocess.Popen] = []
         self.answer = json.dumps(
             {"ok": True, "served_by": "current code"} if answer is None else answer
         )
         self.cold = cold
+        self.silent = silent
 
     def __call__(self, root: Path) -> subprocess.Popen:
         self.count += 1
@@ -82,6 +92,7 @@ class Spawner:
             **os.environ,
             "FAKE_CHILD_ANSWER": self.answer,
             "FAKE_CHILD_COLD": "1" if self.cold else "0",
+            "FAKE_CHILD_SILENT": "1" if self.silent else "0",
         }
         process = subprocess.Popen(
             [sys.executable, "-c", _FAKE_CHILD],
@@ -125,18 +136,22 @@ class Rig:
         cold: bool = False,
         moved: bool = True,
         timeout_s: float = 1.0,
+        silent: bool = False,
     ) -> None:
         self.root = tmp_path / "temporary-tree"
         self.root.mkdir()
-        self.spawner = Spawner(answer=answer, cold=cold)
+        self.spawner = Spawner(answer=answer, cold=cold, silent=silent)
         self.server = served_code.CurrentCodeServer(
             self.root, spawn=self.spawner, timeout_s=timeout_s
         )
+        #: The stamp of the code the tree now holds, and of the image this
+        #: process started with. They differ, so an answer carrying the wrong
+        #: one of the two is a failure and not a coincidence.
         self.stamp = "1" * 64
+        self.image_stamp = "0" * 64
         self.moved = moved
         monkeypatch.setattr(mcp_module, "_current_code_server", lambda: self.server)
         monkeypatch.setattr(mcp_module, "_moved_checkout_state", self._state)
-        monkeypatch.setattr(mcp_module, "_SERVE_ON_CURRENT_CODE", set())
         monkeypatch.setattr(
             mcp_module,
             "_REGISTERED_TOOL_PARAMS",
@@ -148,7 +163,7 @@ class Rig:
             moved=self.moved,
             trusted=True,
             detail="",
-            running_stamp="0" * 64,
+            running_stamp=self.image_stamp,
             disk_stamp=self.stamp,
         )
 
@@ -185,6 +200,15 @@ class Rig:
             time.sleep(0.02)
         return False
 
+    def child_stamp(self) -> str | None:
+        """The stamp the live child was started for, read from the server.
+
+        Read from the object that decided it rather than from a constant this
+        case injected, so an answer stamped with the image's code — or with
+        nothing — fails here.
+        """
+        return self.server.current_stamp()
+
 
 def call(guarded, **kwargs) -> dict:
     result = asyncio.run(guarded(**kwargs))
@@ -205,8 +229,11 @@ def test_a_successful_call_is_served_by_the_current_code(tmp_path, monkeypatch):
         assert result.get("served_by") == "current code", (
             f"a successful call on a moved checkout is served by the child: {result!r}"
         )
-        assert result.get("served_by_code_stamp") == rig.stamp, (
+        assert result.get("served_by_code_stamp") == rig.child_stamp(), (
             f"the answer carries the stamp of the code that served it: {result!r}"
+        )
+        assert rig.child_stamp() != rig.image_stamp, (
+            f"the child answers for the moved tree, not the running image: {result!r}"
         )
         assert image == [], (
             f"the image never answers a call the warm child serves: {image!r}"
@@ -253,6 +280,29 @@ def test_a_raised_failure_while_the_child_is_cold_carries_the_remedy(
         rig.server.stop()
 
 
+def test_a_raise_after_the_warm_child_fell_back_stays_the_calls_own_failure(
+    tmp_path, monkeypatch
+):
+    """A raise from an image call the guard never routed is not a refusal.
+
+    The child is warm — it answered its probe — and made no answer to this
+    call, so the image ran it and raised. The refusal says the current code
+    failed the call too; that would be false here, because the current code was
+    never asked to take the call over. So the failure stands as the call's own.
+    """
+    rig = Rig(tmp_path, monkeypatch, silent=True, timeout_s=0.3)
+    guarded, image = rig.tool("roadmap", raises=RuntimeError("config unreadable"))
+    try:
+        assert rig.warm(), "the child must answer its probe"
+        with pytest.raises(RuntimeError) as raised:
+            call(guarded, project="reckon")
+
+        assert "config unreadable" in str(raised.value), raised.value
+        assert image, "the image runs the call the warm child did not answer"
+    finally:
+        rig.server.stop()
+
+
 def test_the_first_write_of_a_tool_is_served_by_the_warm_child(tmp_path, monkeypatch):
     """A write is routed on its first call, not only after the tool has failed."""
     rig = Rig(tmp_path, monkeypatch)
@@ -267,8 +317,11 @@ def test_the_first_write_of_a_tool_is_served_by_the_warm_child(tmp_path, monkeyp
         assert result.get("served_by") == "current code", (
             f"the first write of a tool is served by the warm child: {result!r}"
         )
-        assert result.get("served_by_code_stamp") == rig.stamp, (
+        assert result.get("served_by_code_stamp") == rig.child_stamp(), (
             f"a write carries the stamp of the code that served it: {result!r}"
+        )
+        assert rig.child_stamp() != rig.image_stamp, (
+            f"the child answers for the moved tree, not the running image: {result!r}"
         )
         assert image == [], (
             f"the image never runs a write the warm child answers: {image!r}"
@@ -299,6 +352,10 @@ def test_an_embedded_schema_failure_is_not_passed_off_as_an_answer(
         assert result.get("error") == "ValidationError", result
         assert result.get("detail") == _SCHEMA_ERROR, result
         assert result.get("code_stamp_now") == rig.stamp, result
+        assert result.get("code_stamp_at_start") == rig.image_stamp, result
+        assert rig.stamp != rig.image_stamp, (
+            f"the two stamps are distinct, so the pair above pins both: {result!r}"
+        )
         assert "current_code_note" in result, result
     finally:
         rig.server.stop()
