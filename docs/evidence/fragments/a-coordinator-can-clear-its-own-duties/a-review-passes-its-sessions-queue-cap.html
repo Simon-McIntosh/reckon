@@ -6,8 +6,9 @@
   allowance of queued runs, and no longer counts a queued review toward that allowance:
   the cap counts and bounds the session's queued non-review runs, so a review is neither
   refused at the cap nor allowed to shrink the room left for implementation. The predicate
-  is <code>reckon.crew.queue_order.pointer_is_review</code>, which reads the role from the
-  record root and from the node — the two places the dispatch writes it. In
+  is the repository's own <code>reckon.crew.recovery_review_delivery._is_review_run</code>,
+  which reads the role from the record root and from the node and also accepts a minted
+  review node id. In
   <code>reckon/crew/queue_order.py</code>, <code>admission_order</code> selects a session's
   next launch with <code>_next_to_launch</code>: the oldest queued review if the session
   holds one, else the oldest row. A review of a delivered run is what lets a run land, so
@@ -26,16 +27,16 @@
   <table>
     <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
     <tbody>
-      <tr><td>head (this change, working tree)</td>
-        <td><code>fd27ce72</code> + change</td>
-        <td><strong>61 passed</strong>, exit 0</td></tr>
+      <tr><td>head (this change)</td>
+        <td><code>ac662708c</code></td>
+        <td><strong>62 passed</strong>, exit 0</td></tr>
       <tr><td>base (new test file copied in)</td>
         <td><code>fd27ce72</code></td>
-        <td><strong>5 failed</strong>, exit 1 — the review is refused <code>QueueFull</code>,
+        <td><strong>6 failed</strong>, exit 1 — the review is refused <code>QueueFull</code>,
           and the review does not precede the earlier implementation</td></tr>
       <tr><td>negative control (cap check restored for reviews)</td>
-        <td>mutated head</td>
-        <td><strong>2 failed</strong>, exit 1 — the review-queued case raises
+        <td>mutated head <code>ac662708c</code></td>
+        <td><strong>3 failed</strong>, exit 1 — both review-at-cap cases raise
           <code>QueueFull</code>; the implementation case fails at its setup for the same
           reason</td></tr>
     </tbody>
@@ -48,6 +49,10 @@
     implementation dispatch is then still refused <code>QueueFull</code> (held 2, cap 2),
     which is the control; a queued review does not reduce that allowance, so a session
     holding one review still admits its full allowance of two implementations.</li>
+    <li><strong>A minted id names a review by itself.</strong> A request carrying no role
+    at all, whose node id is the <code>review-of-…</code> the review dispatch mints, is
+    still exempt from the cap — the owner predicate reads the role or the minted id, and
+    this case exercises the second alone.</li>
     <li><strong>The review launches first.</strong> With one implementation queued 30
     minutes ago and another 10 minutes ago in one session, a review queued one minute ago is
     first in <code>admission_order</code>; the two implementations keep their join order
@@ -55,10 +60,11 @@
     still leads — the oldest row, not the review, sets the clock, so the exemption cannot
     mask a starved implementation.</li>
     <li><strong>The negative control.</strong> Restoring the cap check for reviews
-    (<code>if held &gt;= cap</code> rather than <code>if not pointer_is_review(record) and
-    held &gt;= cap</code>) turns the review-queued case red: the review dispatch raises
+    (<code>if held &gt;= cap</code> rather than <code>if not _is_review_run(record) and
+    held &gt;= cap</code>) turns three cases red: both review-at-cap cases raise
     <code>QueueFull: session coordinator already holds 2 queued runs, at its cap of 2</code>
-    — exactly the refusal this node removes.</li>
+    — exactly the refusal this node removes — and the implementation control fails at its
+    own setup, for the same reason.</li>
     <li><strong>What is not measured here.</strong> This gate measures this node's own
     change. <code>tests/test_queue_order.py</code> is held by another run and was not
     edited; its four cases pass unchanged, so the ordering change did not break them.
