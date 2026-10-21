@@ -188,6 +188,7 @@ def test_a_ref_carrying_a_section_reports_the_section(wired_project):
 
 CRITICAL_PATH_KEYS = {
     "plans",
+    "sections",
     "length_hours",
     "length_unit",
     "worker_hours",

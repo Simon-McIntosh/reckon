@@ -137,6 +137,9 @@ def test_roadmap_returns_ready_work_and_hourly_critical_path() -> None:
     assert [item["slug"] for item in result["ready_now"]] == ["foundation"]
     assert result["critical_path"] == {
         "plans": ["foundation", "integration", "release"],
+        # These plans wire to each other at the plan level and declare no
+        # section map, so the path crosses no section and the list is empty.
+        "sections": [],
         # No plan declares wall-clock, so elapsed falls back to the serial
         # assumption and matches the labour total.
         "length_hours": 7.0,

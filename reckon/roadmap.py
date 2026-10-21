@@ -3766,6 +3766,10 @@ def _build_roadmap(
         uncalibrated = _uncalibrated_plans(plans, path_plans)
         entry: dict[str, Any] = {
             "plans": path_plans,
+            # The sections the path runs through, beside the plans it names. The
+            # key is always present, empty when the path crosses no section, so a
+            # reader relies on its shape rather than probing for it.
+            "sections": path_sections,
             # Elapsed time to walk the path, each plan fanning out as far
             # as it supports; worker-hours is the labour the same path
             # costs and is reported beside it, never in place of it.
@@ -3799,11 +3803,6 @@ def _build_roadmap(
                 ]
             ],
         }
-        # The sections the path runs through, beside the plans it names. A path
-        # that runs wholly through plans carries no such list, so the shape
-        # every existing summary reports is unchanged for it.
-        if path_sections:
-            entry["sections"] = path_sections
         open_paths.append(entry)
     # The critical path carries the shape every reader has always seen plus the
     # sections the path runs through, so a summary that never leaves the plan
@@ -3813,6 +3812,7 @@ def _build_roadmap(
         if open_paths
         else {
             "plans": [],
+            "sections": [],
             "length_hours": 0.0,
             "length_unit": "elapsed-hours",
             "worker_hours": 0.0,
