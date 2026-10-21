@@ -70,6 +70,18 @@ def _sealed_destinations(fence: list[str]) -> set[str]:
     return {destination for _source, destination in _bind_pairs(fence, "--ro-bind")}
 
 
+_LIVE_SANDBOX_FLAGS = _backends._CodexDialect._sandbox_flags
+
+
+def _base_sandbox_flags(dialect: object, tier: str | None) -> list[str]:
+    """The rule before the change: no node-tmp exclusion on the read-only tier."""
+    flags = list(_LIVE_SANDBOX_FLAGS(dialect, tier))  # type: ignore[arg-type]
+    if tier == _backends.READ_ONLY:
+        at = flags.index("-c")
+        del flags[at : at + 2]
+    return flags
+
+
 def _base_fence_writable_roots(writable_directories: Iterable[str]) -> list[Path]:
     """The rule before the fix: only the shared delivery stores are consulted."""
     sealed = _worker_fence.shared_store_seal_roots()
@@ -163,6 +175,9 @@ def reverted(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(
             _worker_fence, "fence_writable_roots", _base_fence_writable_roots
         )
+        monkeypatch.setattr(
+            _backends._CodexDialect, "_sandbox_flags", _base_sandbox_flags
+        )
 
 
 def _compose(
@@ -188,6 +203,28 @@ def test_no_add_dir_names_a_path_at_or_above_a_node_tmp_seal(
     ]
     assert not offenders, (
         f"the launch names {offenders} writable, but the fence seals {seal} read-only"
+    )
+
+
+def test_the_read_only_tier_excludes_the_node_temp_root_from_the_codex_sandbox(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, reverted: None
+) -> None:
+    """Codex's own policy would add the node temp root back as a writable root.
+
+    ``workspace-write`` adds the node's own temporary directory to the writable
+    set by default and protects a ``.git`` inside every root it holds, so it
+    creates a mount point there whatever roots reckon hands it — and the fence
+    seals that path read-only, which makes every command in the run fail. The
+    dialect must therefore tell codex to exclude it.
+    """
+    _fixture, argv = _compose(tmp_path, monkeypatch)
+
+    overrides = [
+        argv[index + 1] for index, word in enumerate(argv) if word in {"-c", "--config"}
+    ]
+    assert "sandbox_workspace_write.exclude_slash_tmp=true" in overrides, (
+        "the read-only tier must exclude the node temp root from codex's "
+        f"writable set; the launch carries {overrides} as config overrides"
     )
 
 
