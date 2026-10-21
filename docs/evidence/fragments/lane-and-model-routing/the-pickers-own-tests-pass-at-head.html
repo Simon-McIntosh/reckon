@@ -108,13 +108,60 @@
 
   <ul>
     <li><strong>Base arm</strong> at <code>4d09842e3b791ced527c46fa1d18684090b2679c</code>, from a clean extraction of the base into a scratch tree: <strong>11 failed, 368 passed in 305.08s</strong>, <code>EXIT=1</code>. The eleven ids are the ten this node owns plus the module-window bound.</li>
-    <li><strong>Head arm</strong> at <code>858cc0884</code>: <strong>1 failed, 1 error, 378 passed in 445.02s</strong>, <code>EXIT=1</code>. The single failure is <code>tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window</code>, which is out of this node's scope. The single error is a teardown abort in <code>tests/test_a_pick_sees_each_lanes_burn.py</code>: its autouse isolation guard refuses because a concurrent peer crew run (<code>r-20261020T233736121764-srtj-refine-sheet-lineage</code>) wrote a live-pointer temp file into the shared crew home while the arm ran. The guard is right to refuse, and the same revision raised no such error in an earlier uncontended arm of the identical command, so the contention is fleet-level and outside this node's change.</li>
+    <li><strong>Head arm</strong> at <code>df6f00480</code>, re-run for the repair round below: <strong>1 failed, 379 passed in 539.71s</strong>, <code>EXIT=1</code>. The single failure is <code>tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window</code>, which is out of this node's scope; there is no error in this arm. An earlier arm at <code>591c15f66</code> did carry one teardown error in <code>tests/test_a_pick_sees_each_lanes_burn.py</code>: its autouse isolation guard refuses a live-pointer temp file a concurrent peer crew run (<code>r-20261020T233736121764-srtj-refine-sheet-lineage</code>) wrote into the shared crew home while that arm ran. The guard is right to refuse and the re-run raised no such error, so the contention was fleet-level and outside this node's change.</li>
     <li>Each of the ten base failure ids appears in the head log as <code>PASSED</code> under the same id, so no repair is a deletion or a skip. The one id that does not is the module-window bound, which the head arm is expected to fail.</li>
     <li><strong>Negative control.</strong> With the <code>snapshot.py</code> repair reverted over the head tree, <code>tests/test_pick_candidates_one_pass.py::test_candidates_iterates_the_records_once</code> fails again with <code>AssertionError: assert 2 == 1</code>, <code>EXIT=1</code>. The log is in the run directory.</li>
     <li><strong>Lint and format delta.</strong> <code>ruff check</code> on the four staged paths reports three <code>SIM300</code> findings at head and the same three at the base blobs — all pre-existing in <code>tests/test_jev_prompt_carries_what_it_weighs.py</code> and none added. <code>ruff format --check</code> reports all four files already formatted in both arms.</li>
   </ul>
 
-  <p>This gate measures only this node's own change; verifying the merged result belongs to a separately dispatched test node.</p>
+  <figure>
+    <img src="/reckon/figures/lane-and-model-routing/the-pickers-own-tests-pass-at-head/arm_outcomes.svg"
+         alt="Two horizontal bars over the forty-eight-file picker population, 368 passing, 10 of this node's picker tests failing and 1 out-of-scope bound failing at the base revision 4d09842e; 379 passing with none of the ten failing and the same 1 out-of-scope bound failing at the head df6f0048.">
+    <figcaption>Outcome of the same population in each arm. At the base revision the ten picker tests this node owns fail beside the module-window bound; at this head all ten pass under the same ids and only the out-of-scope bound is left. Counts are the arms' own pytest summaries; the generator is
+    <code>docs/figures/lane-and-model-routing/the-pickers-own-tests-pass-at-head/arm_outcomes.py</code>.</figcaption>
+  </figure>
+
+<p>This gate measures only this node's own change; verifying the merged result belongs to a separately dispatched test node.</p>
+  </section>
+
+  <section id="the-pickers-own-tests-pass-at-head-repair">
+  <h3>The repair round: four findings, and the check each answer is shown to have teeth against</h3>
+
+  <p>An independent review raised four findings, all on the shape of the evidence rather than on the picker code: a gate log whose header disagreed with itself, a recorded suite block that hid an error, a golden comparison that could not fail on the figures it was re-frozen for, and a table lookup keyed by the same helper that built the table. Each is answered below, and each answer's check is exercised in both directions in the repair-round control log, where every control fails on the state the finding names and passes on the state this run leaves.</p>
+
+  <table>
+    <thead>
+      <tr><th>Finding</th><th>What it named</th><th>Answer</th><th>Control (both directions)</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>fccc4162265</code></td>
+        <td>The head arm's log carried two revision stamps &mdash; its first line named <code>858cc0884</code> and its third <code>591c15f66</code> &mdash; so the log alone could not say which revision it measured. The first line had been stamped after the run rather than at it.</td>
+        <td>The arm runner now writes its first line from the tree at run time, and the arm was re-run at <code>df6f00480</code>, so the log names one revision throughout.</td>
+        <td>A check that every gate log names exactly one revision passes on all five logs and fails on the pre-repair two-stamp shape.</td>
+      </tr>
+      <tr>
+        <td><code>f70dbed5af1</code></td>
+        <td>The recorded <code>after_suite</code> block carried <code>failure_count 1</code> and no error field, while the log printed <code>1 failed, 378 passed, 1 error</code>; a reader consulting the block alone read the arm as clean apart from the module-window bound.</td>
+        <td>The recorded blocks now carry <code>passed</code>, <code>error_count</code> and <code>error_ids</code> beside the failures, and both blocks reconcile with the log each names. The re-run arm raises no error, and the earlier arm's teardown error remains recorded under <code>follow_ons</code>.</td>
+        <td>A reconciliation check passes on both recorded blocks and fails on the pre-repair block, whose missing fields are named.</td>
+      </tr>
+      <tr>
+        <td><code>f65d1d78ecc</code></td>
+        <td>The golden bytes were emitted from the tree's own render, so the byte comparison could not fail on any of the four figures the re-freeze was updated to accept; the gap was this change alone.</td>
+        <td>The four figures are now asserted from the fixture and the landed changes that moved them: the node's urgency block, the local lane's next queue position, and the candidate and return-time tables keyed by lane, model and backend.</td>
+        <td>Over a clean extraction of this head, a shifted queue position is re-frozen into the golden bytes, as a bad re-freeze would commit it: the byte comparison passes and the fixture-sourced assertion fails with <code>assert 2 == 1</code>.</td>
+      </tr>
+      <tr>
+        <td><code>fca6fb4b5e4</code></td>
+        <td>The return-time key was derived with the same production helper that builds the table, so a wrong key derivation would still have found its block.</td>
+        <td>Both lookups now assert the derived key equals the fixture's own lane, model and backend spelled out (<code>f:m:clive</code>, <code>local:m:codex</code>), beside the lookup they serve.</td>
+        <td>With the lane dropped from the key so the table and every lookup share one wrong key, the six staleness tests fail on the literal assertion (<code>assert 'm:codex' == 'local:m:codex'</code>); with those assertions removed the same wrong keying is invisible and all ten tests pass.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Neither answering change alters the picker's behaviour: the two test-side answers assert against the fixture rather than against a second render, and the two record-side answers re-state what each log already printed. All four controls and the runs behind them are in <code>repair-controls.log</code> in the run directory.</p>
   </section>
 </article>
 </body>
