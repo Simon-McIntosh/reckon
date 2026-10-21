@@ -351,6 +351,63 @@ def _negative_control_declaration(node: TaskNode) -> str:
     return NEGATIVE_CONTROL_DECLARATION_HEADER + rule + "  " + declaration + "\n"
 
 
+# The one heading the repository's declared domain rules are carried under.
+# It is a constant so a reader, a test and a reviewer all name the same
+# heading, and so the brief a run stored can be searched for it.
+DOMAIN_RULES_HEADING = "DOMAIN RULES — declared for the paths this node writes"
+
+
+def domain_rules_block(
+    *,
+    project: str,
+    node: TaskNode,
+    project_path: str | None = None,
+    host_path: str | None = None,
+    shipped_path: str | None = None,
+    checkout_path: str | None = None,
+) -> str:
+    """Render the domain rules one node touches, under the fixed heading.
+
+    The match is taken from the one module that answers it, so the brief, the
+    review and the promotion checks cannot disagree about which rules a node
+    touches. A node that matches nothing, and a project that declares no
+    ``domain`` block, both render the empty string, which leaves every
+    repository that has not opted in reading exactly as it did before.
+    """
+    from reckon.crew.domain_rules import rules_for
+
+    if not project:
+        return ""
+    rules = rules_for(
+        project,
+        node,
+        project_path=project_path,
+        host_path=host_path,
+        shipped_path=shipped_path,
+        checkout_path=checkout_path,
+    )
+    return render_domain_rules(rules)
+
+
+def render_domain_rules(rules: object) -> str:
+    """Render one matched rule set under the heading, or nothing.
+
+    Split from the matcher so a caller that has already matched the rules — the
+    brief's own composer, which needs the invariant ids as well as the text —
+    renders them through this function rather than a second spelling of the
+    heading.
+    """
+    if not rules:
+        return ""
+    lines = [DOMAIN_RULES_HEADING]
+    for invariant in rules.invariants:
+        lines.append(f"  {invariant.id}: {invariant.rule}")
+        if invariant.check:
+            lines.append(f"    check: {invariant.check}")
+    lines.extend(f"  {check.id}: {check.question}" for check in rules.review_checks)
+    return "\n".join(lines)
+
+
 # This portion is deliberately constant for every worker, regardless of the
 # project, node, role, or delivery configuration.  Its declared length is the
 # boundary where per-node material may begin.
@@ -570,6 +627,14 @@ def compose_prompt(
         task_authority = f"BRIEF\n{brief}"
     else:
         task_authority = plan_pointer
+    # The repository's declared rules for the paths this node writes follow its
+    # authority text, under one fixed heading. Composition is idempotent: a
+    # caller that already composed the block into its brief text — which is what
+    # ``_brief_text`` does when it is handed a project — is not given it twice,
+    # so the prompt and the brief carry the same bytes.
+    domain_block = domain_rules_block(project=project, node=node)
+    if domain_block and DOMAIN_RULES_HEADING not in task_authority:
+        task_authority = f"{task_authority}\n\n{domain_block}"
     # The landing carrier follows the plan, not the brief: a node naming a plan
     # lands on its section however it was briefed, and only a brief with no
     # plan behind it lands on the run's own record.

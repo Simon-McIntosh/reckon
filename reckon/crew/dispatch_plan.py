@@ -92,6 +92,7 @@ class DispatchPlan:
     execution_fit: capability.ExecutionFit
     token_budget: int | None = None
     local: bool = False
+    project: str = ""
     warnings: list[str] = field(default_factory=list)
     done_when_warnings: list[dict[str, str]] = field(default_factory=list)
     competence: dict[str, Any] | None = None
@@ -151,7 +152,7 @@ class DispatchPlan:
                 None if self.lane_allowance is None else dict(self.lane_allowance)
             ),
             "node": self.node.as_dict(),
-            "brief": _brief_record(self.node),
+            "brief": _brief_record(self.node, project=self.project),
             "orchestrator_lane_stop": (
                 None
                 if self.orchestrator_lane_stop is None
@@ -822,7 +823,10 @@ def plan_dispatch(
             # pointer, and the source path a coordinator handed in may be a
             # scratch file no longer on disk. At first dispatch no copy exists
             # yet, so the source is read.
-            node.brief_sha256 = _brief_digest(node.brief_path or node.brief)
+            node.brief_sha256 = _brief_digest(
+                node.brief_path or node.brief,
+                block=_brief_domain_block(node, project),
+            )
         if not node.plan.strip():
             # A brief alone names no committed plan section, so the gates that
             # join a node to a base blob and a stored review have nothing to
@@ -986,6 +990,7 @@ def plan_dispatch(
         launch=str(launch_kind),
         backend_settings=backend,
         node=node,
+        project=project,
         budget_ceiling=budget_ceiling,
         token_budget=default_token_budget,
         validation=verdict,
@@ -1591,6 +1596,7 @@ from .dispatch_admission import (  # noqa: E402
     ORCHESTRATOR_LANE_DECLARATION_KEY,
     _LANE_GATE_WAITING_STATES,
     _brief_digest,
+    _brief_domain_block,
     _brief_record,
     _dispatch_fleet_gate,
     _dispatch_health_review,

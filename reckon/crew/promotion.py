@@ -254,6 +254,7 @@ def complete(
     unplanned_reason: str = "",
     dry_run: bool = False,
     promoted_by: str = "",
+    domain_waiver: str = "",
 ) -> dict[str, Any]:
     """Promote a run, or finish cleanup when its record already landed.
 
@@ -490,6 +491,22 @@ def complete(
                 require_gate_check=require_gate_check,
             )
 
+        def _domain_gate() -> dict[str, Any] | None:
+            """Run the repository's declared invariants against the tree shipping.
+
+            The node's own write paths decide which of the repository's declared
+            rules apply, through the one module that answers that, so a node
+            whose paths match no rule runs nothing here.
+            """
+            node_record = record.get("node")
+            return _require_domain_invariant_checks(
+                run_id,
+                landing_project,
+                node_record if isinstance(node_record, Mapping) else {},
+                repository=resolved.get("root", root) or record.get("repo"),
+                waiver_reason=domain_waiver,
+            )
+
         (
             root,
             overridden_worktree_changes,
@@ -509,6 +526,7 @@ def complete(
             resume_waived,
             landing,
             _png_twin_absent,
+            _domain_checks,
         ) = _require_independently(
             [
                 _repository_root,
@@ -584,6 +602,13 @@ def complete(
                 # and the page renders the SVG while the copy drifts. The same
                 # finding reaches the worker through `crew check --manifest`.
                 lambda: _require_no_png_twin_of_an_svg(run_id, record),
+                # The repository declares, beside each domain rule, the check
+                # whose zero exit means the rule holds. They are replayed
+                # against the tree that ships through the same integration
+                # replay as the project's suite command, so a result that
+                # breaks a declared rule is refused at promotion rather than
+                # only carried in the brief.
+                _domain_gate,
             ]
         )
         suite_delta = _evaluate_suite_delta(
@@ -2155,6 +2180,7 @@ from reckon.crew.promotion_checks import (
     _refuse_commits_for_a_shadow,
     _require_brief_owner,
     _require_declared_negative_control,
+    _require_domain_invariant_checks,
     _require_gate_check_precondition,
     _require_impl_moved,
     _require_independently,

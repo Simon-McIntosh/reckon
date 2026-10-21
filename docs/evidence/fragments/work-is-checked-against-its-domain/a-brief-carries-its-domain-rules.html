@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>a-brief-carries-its-domain-rules — landed record</title>
+</head>
+<body>
+<main>
+<h2 id="a-brief-carries-its-domain-rules-heading">A brief carries its domain rules, and promotion runs their checks</h2>
+<p id="a-brief-carries-its-domain-rules-what">The rules a repository declares once are rendered into the composed prompt under one
+fixed heading, and each invariant carrying a check command is replayed at promotion through the
+existing integration replay — the same <code>sh -c</code> execution under one bound, with the
+output kept in the run directory, that the project's suite command goes through. The heading is
+composed once and handed to three places, so one document is what the worker reads, what the run's
+stored copy holds, and what the digest a promotion cites covers: the prompt
+(<code>prompts.compose_prompt</code>), the stored brief and its digest
+(<code>dispatch_admission._brief_text</code>, <code>_store_brief</code>, <code>_brief_digest</code>)
+and the pointer's brief record (<code>_brief_record</code>, which names the matched invariant and
+review-check ids beside the digest). Surfaces are
+<code>prompts.domain_rules_block</code> and <code>prompts.render_domain_rules</code>,
+<code>promotion_gate.replay_domain_invariant_checks</code>,
+<code>promotion_gate.domain_check_refusal_text</code> and the
+<code>promotion_checks._require_domain_invariant_checks</code> guard wired into the promotion's
+guard list, waivable from the command line through <code>--waive-domain-check REASON</code>. Nothing
+runs for a project that declares no <code>domain</code> block.</p>
+<p id="a-brief-carries-its-domain-rules-measure">Measure: <code>tests/test_domain_rules_reach_the_brief.py</code> — 15 passed. A fixture node
+writing <code>models/**</code> carries <code>convergence</code> and <code>docs/**</code> carries
+neither; the stored copy carries the heading once and the digest taken over it differs from the
+digest of the bare source, so a rule declared later re-keys the brief; a brief whose own bytes
+already carry the heading is stored and hashed unchanged rather than doubled; a check exiting
+non-zero refuses with the invariant id in the refusal text and writes
+<code>domain-check-convergence.log</code>; a check exiting zero returns no refusal; a check that
+sleeps 30 s at a 1 s bound is refused rather than hung, proved by the test completing and its log
+carrying the cut-short line; a project declaring no <code>domain</code> block and a node matching
+no rule both run nothing.</p>
+<p id="a-brief-carries-its-domain-rules-gate">Gate: the 12 declared files, run in place at head
+(<code>gate-domain-brief-head.log</code>) — <strong>102 passed, EXIT=0</strong>; the base arm over
+the 11 of them that exist at revision <code>229715fe9</code>
+(<code>gate-domain-brief-base.log</code>) — <strong>87 passed, EXIT=0</strong>. The new test file is
+absent at the base revision, so the head's delta is its 15 tests and no file gains a failure id.
+<code>ruff check</code> and <code>ruff format --check</code> add no finding on the changed paths:
+the lint findings and the three format diffs that remain in
+<code>reckon/crew/{promotion,promotion_checks,promotion_gate}.py</code> are byte-identical to the
+base revision's.</p>
+<p id="a-brief-carries-its-domain-rules-control">Negative control
+(<code>negative-control-domain-brief.log</code>): dropping the <code>domain</code> declaration makes
+the brief carry no heading and the node promote — <code>test_a_project_declaring_nothing_carries_no_rule_heading</code>
+and <code>test_a_project_without_the_block_runs_nothing</code> pass. Against a tree with the guard
+removed the control is red, which is the point: the same file reports <strong>4 failed, 11
+passed</strong>, the four being the refusal and waiver tests that only a live guard can satisfy.</p>
+</main>
+</body>
+</html>
