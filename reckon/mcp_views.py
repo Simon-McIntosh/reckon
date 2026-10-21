@@ -3609,6 +3609,7 @@ CREW_VIEWS: tuple[str, ...] = (
     "directory",
     "fleet",
     "runs",
+    "forgotten",
     "obligations",
     "models",
     "velocity",
@@ -3639,7 +3640,8 @@ def crew_view_refusal_detail() -> str:
         "per-dimension review view, velocity is the delivery-rate view, and fleet "
         "is the cross-project view; plan-review reads a plan review and its "
         "unanswered findings; findings reads stored review findings grouped by "
-        "the repository path they name"
+        "the repository path they name; forgotten is the terminal unpromoted "
+        "runs whose session nobody has followed or dispatched for"
     )
 
 
@@ -4023,6 +4025,15 @@ def serve_crew_view(
                 "session": session,
                 "watcher": project_watch_visibility(project, session=session),
                 "runs": runs,
+            }
+        if view == "forgotten":
+            from reckon.crew import forgotten_runs as forgotten_module
+
+            return {
+                "ok": True,
+                "project": project,
+                "view": view,
+                **forgotten_module.forgotten_runs_view(project),
             }
         if view == "drain":
             return {

@@ -96,6 +96,7 @@ class CrewArgs(BaseModel):
         "directory",
         "fleet",
         "runs",
+        "forgotten",
         "obligations",
         "models",
         "velocity",
