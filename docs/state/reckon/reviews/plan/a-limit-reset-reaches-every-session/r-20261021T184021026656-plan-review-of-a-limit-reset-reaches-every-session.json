@@ -1,0 +1,114 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T18:53:48.993Z",
+  "dispatched_at": "2026-10-21T18:41:28Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-limit-reset-reaches-every-session.html:47",
+      "id": "reuse_search-1",
+      "reason": "the plan must either cite this existing detection as the reset signal (auto-announcing from a reading the sweep already consumes) or state why a reading-based detection is insufficient where the announcement is not, because the honest change may be to extend `budget_lift._reset_observed` rather than to add a manual announcement path beside it.",
+      "text": "the plan's premise (\"an operator's early reset leaves that stamp where it was, so the stamp cannot announce it \u2026 only an announcement can carry that\") is stated as if no detection exists, but `reckon/crew/budget_lift.py:1126 _reset_observed` already detects an early limit reset from the published window readings, three ways, one of which is explicitly \"an early reset that left the stamp in place\" (`budget_lift.py:1137`, utilisation falling below the grant figure) and another a fall between two consecutive readings (`budget_lift.py:1158-1163`); and `end_cause` already derives `END_RESET` for a lift that ends that way",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-limit-reset-reaches-every-session.html:66",
+      "id": "reuse_search-2",
+      "reason": "extending the existing clock cadence removes the plan's invented \"rereads the document only when it changes, keeps due instants in memory\" design, which is the most intricate part of \u00a72 and the most likely to be rebuilt wrongly.",
+      "text": "\u00a72 justifies running its sweep outside the `if sweep:` change gate as if a clock-driven sweep were new, but `reckon/crew/recovery_watch.py:2711-2742` already carries exactly that pattern (\"Two sweeps act on the clock rather than on a document, so they ride their own cadence instead of the change gate\"), gated on `WATCHER_SWEEP_INTERVAL_SECONDS` at `recovery_watch.py:2720-2721`, and already hosts three best-effort sweeps (`sweep_unfollowed_sessions`, `_stop_delivered_recovery`, `model_catalogue.check_model_catalogue`); the plan neither names that block nor says why a fourth cadence sweep there is not the extension",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-limit-reset-reaches-every-session.html:83",
+      "id": "reuse_search-3",
+      "reason": "naming the existing coverage tells the worker which claim and pane invariants are already asserted, so the new test adds only what differs (the clock trigger and the reset row word).",
+      "text": "\u00a72 introduces a second sweep module beside `lift_watch` and a new test file `tests/test_a_limit_reset_reaches_every_pane.py` without citing the existing lift-broadcast coverage it parallels: `tests/test_a_lift_is_drawn_once_per_pane.py`, `tests/test_a_pane_draws_a_lift_once_per_host.py`, `tests/test_a_standing_lift_is_announced_once.py`, `tests/test_a_lift_claim_key_names_a_real_host.py`, `tests/test_a_lift_survives_reset_jitter.py`, `tests/test_a_reset_moves_the_window.py`; the once-per-pane rule and the claim-key shape are already measured here, so the new suite should be named as an extension of them rather than standing alone",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-limit-reset-reaches-every-session.html:51",
+      "id": "deep_module-1",
+      "reason": "the plan should place the sweep beside the record (as `lift_watch` sits beside `budget_lift`) so one module pair owns the mechanism, rather than spreading it over five files.",
+      "text": "the change has no single owner of the broadcast: the record in `reckon/crew/limit_reset.py`, the sweep in `reckon/crew/limit_reset_watch.py`, the pane rule in `reckon/crew/ticker.py`, the prompt line in `reckon/hooks/coordinator_obligations.py` and the flag in `reckon/crew_run_commands.py`; each piece is thin and its interface is nearly as large as the behaviour it holds, so no module a reader can open answers \"what does a limit-reset broadcast do\"",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-limit-reset-reaches-every-session.html:66",
+      "id": "thin_wrapper-1",
+      "reason": "extending `lift_watch.sweep` to two document families deletes a module, its memory design and its append path, which is the larger half of \u00a72.",
+      "text": "`limit_reset_watch.py` is proposed as a \"sibling of `lift_watch.sweep`\", but `reckon/crew/lift_watch.py:65 sweep` already performs the identical sequence the reset sweep needs: read the document (`lift_watch.py:96`), build the in-force set, hold memory across polls via `seen` (`lift_watch.py:111-128`), build a row through `recovery_watch._watch_transition` (`lift_watch.py:207-221`) and append it through `_append_rows` (`lift_watch.py:148-162`); the plan does not say why `lift_watch.sweep` cannot take a second row family (a reset is a lift-shaped row with a clock trigger and no end)",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-limit-reset-reaches-every-session.html:87",
+      "id": "thin_wrapper-2",
+      "reason": "either `duty_digest` and `_work_lines` are extended for run-less items or \u00a73 must carry the reset on its own gate; \"joins the existing set\" is currently not true of the code.",
+      "text": "\u00a73 states the reset line \"joins the set the hook already injects through `_inject_list`\" \u2014 the digest that gates re-emission is `reckon/hooks/coordinator_obligations.py:500 duty_digest`, documented and implemented \"over the `(kind, run_id)` pairs\" (`coordinator_obligations.py:506-523`), and the line renderer `_work_lines` formats every item as `- [kind] run_id (node, age old): next_command` (`coordinator_obligations.py:652-658`); a reset line carries no `run_id`, so it does not fit either, and the plan does not name the extension",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-limit-reset-reaches-every-session.html:51",
+      "id": "duplicate_owner-1",
+      "reason": "the plan's stated reuse is impossible as written, so either the document helpers are generalised in the owner first (a new \u00a71 deliverable) or \u00a71 must own a second document module honestly rather than claiming to have reused one.",
+      "text": "\u00a71 says the new store reuses `budget_lift`'s \"document helpers rather than copying them\", but the write helper cannot be reused: `reckon/crew/budget_lift.py:260 _write_document` hardcodes the record key, writing `{\"version\": next_version, \"lifts\": [...]}` at `budget_lift.py:269`, and the reader hardcodes it too (`budget_lift.py:252` reads `payload.get(\"lifts\")`), so a `resets` document cannot pass through either; the owner to extend is `reckon/crew/budget_lift.py`'s document layer (make the record key and leaf a parameter) or `reckon/_store.py`, which already owns `write_json_atomically` (`reckon/_store.py:606`)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-limit-reset-reaches-every-session.html:51",
+      "id": "duplicate_owner-2",
+      "reason": "a reader who must find \"the reset record\" now has three candidates and no guidance, and the naming rule against a parallel family beside an original applies; the plan should name the relationship to `budget_reset.py` explicitly.",
+      "text": "a third reset-named store and module are introduced beside two existing owners of \"reset\": `reckon/crew/budget_reset.py` owns a durable reset store at `<crew-home>/budget-resets.json` (`budget_reset.py:35`, `budget_reset.py:60-62`), and `reckon/crew/budget_lift.py` owns `budget-lifts.json` (`budget_lift.py:84`, `budget_lift.py:161-163`); the plan adds `<config-home>/limit-resets.json` and `limit_reset.py`, so three modules now carry a \"reset\" record in two different homes with no note on which is canonical",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-limit-reset-reaches-every-session.html:101",
+      "id": "duplicate_owner-3",
+      "reason": "naming `follower_registration.list_followers` as the mechanism to extend or consume turns \u00a75's report into a filter over an existing enumeration instead of a second liveness derivation.",
+      "text": "\u00a75's reach report needs \"the sessions holding a live follower registration\", a liveness verdict already owned by `reckon/crew/follower_registration.py`: `_follower_liveness` (`follower_registration.py:518`), `follower_state` (`follower_registration.py:676`) and `list_followers` (`follower_registration.py:687`, which already returns `{\"project, session, **liveness}` per registration); the plan names only the consumers (\"written by the follower, read by the obligations hook\") and not the owner, so the report risks re-deriving liveness",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-limit-reset-reaches-every-session.html:52",
+      "id": "interface_budget-1",
+      "reason": "the section must name what it retires or merges (or why nothing can be): reusing `--clock`/`--from`/`--session` for the reset record and disambiguating `--announce-reset` from `--reset` is a surface decision \u00a71 currently leaves open.",
+      "text": "\u00a71 and \u00a75 add `reckon crew budget --announce-reset` and its option family (`--reason`, `--window`, `--at`, `--scope`) with no statement of what it retires or merges; three of the proposed options already exist on the same command \u2014 `--clock` (`reckon/crew_run_commands.py:3113`, choices `five_hour`/`seven_day`), `--from` (`crew_run_commands.py:3098`, \"an ISO-8601 time or a duration from now\"), and `--session`/`--global` (`crew_run_commands.py:3093`/`:3087`) \u2014 and the new flag would sit beside the existing `--reset` (`crew_run_commands.py:3036`), which already names a reset action on the same command; the plan also adds a public module and a \"refused without `--reason`\" path without accounting for either family",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "d7a4acf671b279006a32af4cede023a9bd89dd72191e8fe6313211ea2bdd4d66",
+  "plan_slug": "a-limit-reset-reaches-every-session",
+  "plan_version": 22,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T184021026656-plan-review-of-a-limit-reset-reaches-every-session",
+  "reviewed_blob_sha": "fab8d4e9c90470a9351a1720f82c8533ee0071b0",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the broadcast is spread across two new modules and four edited files, each a shallow slice (store, sweep, ticker branch, hook line, CLI flag), with no single module hiding the record, the sweep and the pane's once-only rule.",
+    "duplicate_owner": "a finding \u2014 \u00a71's claim to reuse `budget_lift`'s document helpers cannot hold (`_write_document` hardcodes the `lifts` key), and \u00a75's reach report duplicates follower liveness owned by `reckon/crew/follower_registration.py`.",
+    "interface_budget": "a finding \u2014 public_definitions 1976, cli_options 394, mcp_views 19, refusal_families 23; \u00a71/\u00a75 add `--announce-reset` and its option family without naming what it retires or merges, or why nothing can be, and three of the options it proposes already exist on the same command.",
+    "reuse_search": "a finding \u2014 the plan introduces a limit-reset store, sweep, ticker branch and hook line without citing `reckon/crew/budget_lift.py`, which already detects an early limit reset from window readings, nor the clock-driven sweep cadence already in `reckon/crew/recovery_watch.py`.",
+    "thin_wrapper": "a finding \u2014 `limit_reset_watch.py` is a thin sibling of `lift_watch.sweep`, which already does document-read \u2192 in-force \u2192 memory \u2192 row \u2192 append, and the hook line is said to join `_inject_list` although the digest it is gated on is over `(kind, run_id)` pairs a reset line does not carry."
+  },
+  "section_digests": {
+    "_document": "fcef1dad0bd962410879a5b60ca18feb4a624760fc1c67b83b2453dae21ee728",
+    "s1": "baf87d0138fbe63d90de461ca590ce87510e78c52140119a5905ce875b50da49",
+    "s2": "489f178fad5c3397749e3f34d28f0ae89e228c66b7acfa09a07841614c1ad026",
+    "s3": "038ca137a06a54351755b0ab4ef61b492b094afa3d4c00afa37d3f1cc9358217",
+    "s4": "7e261dc6824166853bdbd8ea2fcdca3e0b3849eefa7c9218c5356b800cbb6ed6",
+    "s5": "92fb4014fd0118f16cf83458ec0db9fbc6b7f0bdbb8025721cf36cec8e7d7d38",
+    "s6": "a251812d1c4424307b60c05534931ab571918a32f65a2b7d01d6d255a3c10042"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T18:59:14.301516+00:00"
+}
