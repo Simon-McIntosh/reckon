@@ -222,6 +222,7 @@ class FlightConfig(ConfiguredBaseModel):
     worktree: WorktreeConfig | None = Field(default=None)
     summary: SummaryConfig | None = Field(default=None)
     ticker: TickerConfig | None = Field(default=None, description="""The follower pane's own memory of what it has rendered. A reader tracking a fleet across re-arms wants the rows it just saw restored rather than an empty pane; these bounds decide how much of the view comes back.""")
+    domain: DomainConfig | None = Field(default=None, description="""The repository's own domain rules, declared once so a brief and a review read them rather than rediscovering them. Reckon carries these rules and never supplies one, so a project that declares no block keeps today's behaviour.""")
 
 
 class RoutingConfig(ConfiguredBaseModel):
@@ -721,6 +722,34 @@ class TickerConfig(ConfiguredBaseModel):
         return v
 
 
+class DomainConfig(ConfiguredBaseModel):
+    """
+    The repository's domain rules, carried by reckon and never supplied by it. Invariants are rules a result must satisfy; review checks are questions a reviewer must answer about a node they apply to; model paths name where the repository's models live.
+    """
+    invariants: list[DomainInvariant] | None = Field(default=None, description="""Rules a result must satisfy. Each names the write paths it applies to and may carry a command whose zero exit means the rule holds.""")
+    review_checks: list[DomainReviewCheck] | None = Field(default=None, description="""Questions a reviewer must answer about any node they apply to. They join the review's checklist rather than being scored as a dimension of their own.""")
+    model_paths: list[str] | None = Field(default=None, description="""Globs naming where the repository's models live, matched against a node's write paths so a node that touches the modelling surface reads matches here.""")
+
+
+class DomainInvariant(ConfiguredBaseModel):
+    """
+    One rule a result must satisfy, scoped to the paths it governs.
+    """
+    id: str = Field(default=..., description="""The invariant's short identifier, unique within its project.""")
+    rule: str = Field(default=..., description="""The rule in one sentence.""")
+    applies_to: list[str] = Field(default=..., description="""Path globs the invariant applies to. A node whose write paths match any of them carries the rule.""")
+    check: str | None = Field(default=None, description="""Optional command whose zero exit means the rule holds. Run at promotion beside the project's suite command.""")
+
+
+class DomainReviewCheck(ConfiguredBaseModel):
+    """
+    One question a reviewer must answer about a node it applies to, joined to the review's checklist rather than scored as a dimension.
+    """
+    id: str = Field(default=..., description="""The check's short identifier, unique within its project.""")
+    question: str = Field(default=..., description="""The question the reviewer answers.""")
+    applies_to: list[str] = Field(default=..., description="""Path globs the check applies to. A review of a node whose write paths match any of them carries a verdict line for the check.""")
+
+
 # Model rebuild
 # see https://pydantic-docs.helpmanual.io/usage/models/#rebuilding-a-model
 FlightConfig.model_rebuild()
@@ -754,3 +783,6 @@ FenceConfig.model_rebuild()
 WorktreeConfig.model_rebuild()
 SummaryConfig.model_rebuild()
 TickerConfig.model_rebuild()
+DomainConfig.model_rebuild()
+DomainInvariant.model_rebuild()
+DomainReviewCheck.model_rebuild()
