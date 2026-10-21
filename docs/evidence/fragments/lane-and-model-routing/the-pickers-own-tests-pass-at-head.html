@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="lane-and-model-routing">
+  <meta name="plan-title" content="The picker's own tests pass at head">
+  <meta name="plan-summary" content="Ten picker tests failed at the dispatched base in four groups. The second ledger walk is folded into the pick's single pass; two test groups are updated to the shapes landed changes superseded (the urgency field and the option-keyed pick tables); the golden rendered state is re-frozen. Head fails nothing but the module-window bound, and each of the ten base ids passes under the same id.">
+  <meta name="plan-evidence-for" content="reckon:lane-and-model-routing">
+  <meta name="plan-verifies" content="reckon:lane-and-model-routing#s50">
+  <meta name="plan-recorded-at" content="2026-10-21">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="picker,tests,golden-state,ledger">
+  <title>The picker's own tests pass at head — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-pickers-own-tests-pass-at-head" data-reckon="landed" data-when="2026-10-21">
+  <h2>The picker's own tests pass at head</h2>
+
+  <p>At the dispatched base <code>4d09842e3b791ced527c46fa1d18684090b2679c</code>, the picker's test population reproduced eleven failures in a clean extraction of the base: the ten this node owns, in four groups, plus <code>tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window</code>, which belongs to the module-size work and is out of this node's scope. The population is every file under <code>tests/</code> importing <code>reckon.crew.picker.snapshot</code> or <code>reckon.crew.picker.prompts</code> (resolved by AST over the import statements, forty-seven files) plus the module-window file, forty-eight in all.</p>
+
+  <section id="the-pickers-own-tests-pass-at-head-groups">
+  <h3>Four groups, each reproduced at the base and each traced to the change that turned it red</h3>
+
+  <p>Every group was confirmed by reproduction before repair, and each introducing commit was found by reading history (<code>git log -S</code> on the symbol the assertion reads, and the diff that touched the lines), never by bisecting.</p>
+
+  <table>
+    <thead>
+      <tr><th>Group</th><th>Base failure ids (as pytest prints them)</th><th>Reproduction at base</th><th>Change that turned it red</th><th>Repair</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>The ledger walked twice</td>
+        <td><code>tests/test_pick_candidates_one_pass.py::test_candidates_iterates_the_records_once</code></td>
+        <td><code>AssertionError: assert 2 == 1</code></td>
+        <td><code>90ee4ee1a</code> — <em>feat(crew): offer a reserved lane to the picker only on a policy's terms</em> added a <code>sum(&hellip; for row in rows)</code> attempt count to <code>candidates</code>, beside the scan's own walk</td>
+        <td>Code: the count is folded into the scan's existing pass</td>
+      </tr>
+      <tr>
+        <td>The unweighed <code>urgency</code> field</td>
+        <td><code>tests/test_jev_prompt_carries_what_it_weighs.py::test_rendered_state_is_one_json_object</code>, <code>&hellip;::test_hostile_text_stays_a_string_and_cannot_add_structure</code></td>
+        <td><code>Extra items in the left set: 'urgency'</code></td>
+        <td><code>e26d6b51b</code> — <em>feat(crew): carry dispatch urgency into routing</em> added <code>node.urgency</code> to the rendered state and named <code>node.urgency.seconds_to_due</code> in the instructions</td>
+        <td>Test: the expected node field set gains <code>urgency</code></td>
+      </tr>
+      <tr>
+        <td>The golden rendered state</td>
+        <td><code>tests/test_picker_helpers_have_one_owner.py::test_rendered_state_matches_the_base_revision_bytes</code></td>
+        <td>The frozen bytes did not equal the tree's render (the field moves in the table below)</td>
+        <td><code>e26d6b51b</code> and <code>2fb4fedd7</code> — see the field table below</td>
+        <td>Test: the bytes are re-emitted from the head tree over the frozen fixture</td>
+      </tr>
+      <tr>
+        <td>The bare-backend return-time key</td>
+        <td>six ids in <code>tests/test_one_staleness_rule.py</code>: <code>&hellip;::test_a_document_reading_beyond_the_flight_shelf_reads_fresh_on_both</code>, <code>&hellip;::test_a_document_reading_past_its_own_shelf_reads_stale_on_both</code>, <code>&hellip;::test_a_ledger_reading_past_the_flight_shelf_reads_stale_on_both</code>, <code>&hellip;::test_an_account_surface_reading_is_fresh_at_100s_on_both</code>, <code>&hellip;::test_an_account_surface_reading_ages_past_the_flight_shelf_on_both</code>, <code>&hellip;::test_a_reaged_account_surface_reading_does_not_exclude_at_the_ceiling</code></td>
+        <td><code>KeyError: 'codex'</code> in the test's own <code>_candidate_and_return_time</code> helper, at <code>blocks["codex"]</code></td>
+        <td><code>2fb4fedd7</code> — <em>fix(picker): re-land each lane model's own row in the pick state</em> keys <code>return_times</code> by <code>option_key(candidate)</code> (<code>&lt;lane&gt;:&lt;model&gt;...:&lt;backend&gt;</code>) rather than by <code>str(backend)</code>. The same keying first landed at <code>06eeb6623</code>, was withdrawn at <code>adb4fa48f</code>, and re-landed at <code>2fb4fedd7</code>, which is the state at head</td>
+        <td>Test: the block is read through <code>option_key</code></td>
+      </tr>
+    </tbody>
+  </table>
+  </section>
+
+  <section id="the-pickers-own-tests-pass-at-head-field-moves">
+  <h3>Every rendered-state field whose bytes moved, and the landed change that moved it</h3>
+
+  <p>The frozen golden bytes predated four landed changes, so they described a state the head's code no longer renders. Diffing the fixture's render field by field against the frozen bytes gives exactly these moves and no others; the render itself is byte-identical between the base tree and the head tree over this fixture, so the golden was stale rather than the code newly drifted.</p>
+
+  <table>
+    <thead>
+      <tr><th>Field (fixture path)</th><th>Move (golden &rarr; head render)</th><th>Landed change that moved it</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>node.urgency</code></td>
+        <td>absent &rarr; present (the block carries the due instant and the remaining seconds, both null when the node declares no deadline)</td>
+        <td><code>e26d6b51b</code> — dispatch urgency reached routing</td>
+      </tr>
+      <tr>
+        <td><code>local_lane.queue_position</code></td>
+        <td>absent &rarr; present (<code>1</code> for the frozen load: the published waiting count <code>0</code> plus one)</td>
+        <td><code>e26d6b51b</code> — added with the urgency field so a pick can set the queue position against the deadline; its render was later made conditional on a known waiting count by <code>1217f68ad</code></td>
+      </tr>
+      <tr>
+        <td><code>candidates.&lt;name&gt;</code></td>
+        <td>keyed by the bare backend (<code>clive</code>, <code>amine</code>) &rarr; keyed by the option key (<code>f:m:clive</code>, <code>f:m:amine</code>)</td>
+        <td><code>2fb4fedd7</code> — the re-land that keys the pick state's tables by each option's lane, model and backend</td>
+      </tr>
+      <tr>
+        <td><code>return_times.&lt;name&gt;</code></td>
+        <td>same rekeying as <code>candidates</code></td>
+        <td><code>2fb4fedd7</code> — one block per offered model instead of one per backend, so a lane offering several models keeps all of them</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Every other figure in the fixture is byte-identical to the base revision's render, including the <code>lanes</code> block and the <code>serving_lanes</code> fact the frozen bytes already carried.</p>
+  </section>
+
+  <section id="the-pickers-own-tests-pass-at-head-arms">
+  <h3>The two arms, and the negative control</h3>
+
+  <p>Both arms ran in the foreground with <code>-rA</code> over the forty-eight-file population; both logs are in the run directory.</p>
+
+  <ul>
+    <li><strong>Base arm</strong> at <code>4d09842e3b791ced527c46fa1d18684090b2679c</code>, from a clean extraction of the base into a scratch tree: <strong>11 failed, 368 passed in 305.08s</strong>, <code>EXIT=1</code>. The eleven ids are the ten this node owns plus the module-window bound.</li>
+    <li><strong>Head arm</strong> at <code>858cc0884</code>: <strong>1 failed, 378 passed</strong>, <code>EXIT=1</code>. The single failure is <code>tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window</code>, which is out of this node's scope.</li>
+    <li>Each of the ten base failure ids appears in the head log as <code>PASSED</code> under the same id, so no repair is a deletion or a skip. The one id that does not is the module-window bound, which the head arm is expected to fail.</li>
+    <li><strong>Negative control.</strong> With the <code>snapshot.py</code> repair reverted over the head tree, <code>tests/test_pick_candidates_one_pass.py::test_candidates_iterates_the_records_once</code> fails again with <code>AssertionError: assert 2 == 1</code>, <code>EXIT=1</code>. The log is in the run directory.</li>
+    <li><strong>Lint and format delta.</strong> <code>ruff check</code> on the four staged paths reports three <code>SIM300</code> findings at head and the same three at the base blobs — all pre-existing in <code>tests/test_jev_prompt_carries_what_it_weighs.py</code> and none added. <code>ruff format --check</code> reports all four files already formatted in both arms.</li>
+  </ul>
+
+  <p>This gate measures only this node's own change; verifying the merged result belongs to a separately dispatched test node.</p>
+  </section>
+</article>
+</body>
+</html>
