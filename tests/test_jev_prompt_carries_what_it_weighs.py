@@ -36,6 +36,13 @@ NODE_FIELDS = {
     "serving_lanes",
     "serving_lane_count",
     "hold_waits_for",
+    # The dispatch deadline the routing judgment is asked to weigh: the node's
+    # ``urgency`` carries the due instant and its remaining seconds, so a pick
+    # can set a lane's expected wait against the time the node has left. It was
+    # added to the rendered state when dispatch urgency reached routing, and the
+    # instructions name ``node.urgency.seconds_to_due`` as a weighed fact, so the
+    # field belongs in the set a drop would fail.
+    "urgency",
 }
 
 #: The candidate facts the routing instructions tell Jev to weigh. A field

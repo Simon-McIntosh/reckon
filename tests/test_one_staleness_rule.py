@@ -74,7 +74,18 @@ def _node() -> TaskNode:
 
 
 def _candidate_and_return_time(report, config, repo, moment):
-    """Both surfaces' view of one composed report, for the codex backend."""
+    """Both surfaces' view of one composed report, for the codex backend.
+
+    The return-time blocks are keyed by each offered option's own key -- its
+    lane, model and backend -- so this reads the codex candidate's block through
+    ``lane_context.option_key`` rather than by the bare backend name. A lane
+    offering several models would otherwise lose every block but one.
+
+    The key the lookup uses is asserted against the fixture's own lane, model
+    and backend spelled out, so a wrong derivation cannot quietly read the
+    block it happens to build: the table and this key would otherwise come from
+    the one helper, and every test here would pass under any keying at all.
+    """
 
     request = PickRequest(project="reckon", node=_node(), session="s")
     candidates = snapshot.candidates(
@@ -95,7 +106,11 @@ def _candidate_and_return_time(report, config, repo, moment):
         config=config,
         now=moment,
     )
-    return candidate, blocks["codex"]
+    key = lane_context.option_key(candidate)
+    # The fixture serves codex as the local backend, so the option's lane is
+    # ``local``; its model is ``m`` and its backend ``codex``.
+    assert key == "local:m:codex", key
+    return candidate, blocks[key]
 
 
 def _document(now: datetime, *, age_seconds: float, shelf_seconds: int = 900) -> dict:
