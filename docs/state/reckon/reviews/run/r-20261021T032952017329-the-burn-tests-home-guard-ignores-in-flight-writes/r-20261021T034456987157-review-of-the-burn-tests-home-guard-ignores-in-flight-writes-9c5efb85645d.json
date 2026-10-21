@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-21T03:59:36.214Z",
+  "dispatched_at": "2026-10-21T03:47:07Z",
+  "findings": [
+    {
+      "file": "tests/test_a_pick_sees_each_lanes_burn.py",
+      "line": "125",
+      "severity": "follow-on",
+      "text": "follow-on: `_store_temporary` re-implements the store's temporary-name predicate rather than extending an owner; the identical expression `entry.name.startswith(\".\") and entry.name.endswith(\".tmp\")` already stands at tests/test_runs_pointer_writer_reuses_the_store.py:80 and tests/test_supervisor_write_reuses_the_store.py:85, and no shared owner exists (reckon/_store.py creates the temporary at :508 but exposes no predicate for recognising it). This is the third copy of one idiom; a fourth test needing it will copy it again. Not blocking: the one-line body is correct and matches the store's own naming, and there is no obvious shared home for it today."
+    },
+    {
+      "file": "tests/test_a_pick_sees_each_lanes_burn.py",
+      "line": "150",
+      "severity": "follow-on",
+      "text": "follow-on: excluding every name of the store's temporary form from the listing arm also exempts a genuine leak written under that name, so a case that wrote `.<name>.<pid>.<token>.tmp` into the real live-pointer directory and left it there is now unreported by the listing arm. The narrowing is the necessary cost of the fix (the store publishes pointers through exactly this name), and the needle arm at :159 still reports such a file when it carries a minted id, so the residual is small; recorded because it is a real reduction in the arm's coverage rather than a defect in the change."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the burn test's listing arm skip an entry named in the store's temporary form; tests/test_a_pick_sees_each_lanes_burn.py:147-151 filters the appeared set through the new `_store_temporary` predicate before deciding whether a name runs, so a peer's in-flight pointer write is no longer reported as a stray.\nVERDICT done_when: the done_when's two cases both landed and both were shown to redden \u2014 tests/test_a_pick_sees_each_lanes_burn.py:209 stands a temporary alone and requires the guard to pass, :237 places one beside a stray and requires the stray to still be reported \u2014 and the gate's own log records 15 passed, EXIT=0, with the negative control (filter removed) at 2 failed, 13 passed, EXIT=1.\nVERDICT write_paths: the manifest declares tests/test_a_pick_sees_each_lanes_burn.py, the evidence fragment and a figure directory; `git show --name-only 9c5efb856` touches the test file and docs/evidence/fragments/lane-and-model-routing/the-burn-tests-home-guard-ignores-in-flight-writes.html, both inside the declared set, and writes no figure, matching the prompt's statement that the node writes no figure.\nVERDICT manifest: read at head; status complete, checkpoint names the patched guard and commit 9c5efb856, tests: carries the literal pytest command, test_logs names four logs, negative_control_log is a bare path; baseline_suite and after_suite are empty because the node ran unarmed, so no base/after delta is asserted rather than one being missing.\nVERDICT diff: read against d29118417; one commit, two files, +83/-2, and the test change is the `_store_temporary` predicate, the listing-comprehension filter, and the two new cases, with the needle arm and the stray refusal untouched at :192-206 and :159; the retained `_named_run_id` retry loop is unchanged.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_pick_sees_each_lanes_burn.py:125 matches the store's own temporary name (reckon/_store.py:508, `.{path.name}.{pid}.{token}.tmp`) and :150 applies it in the listing arm, which is precisely the goal.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate log gate-pytest-rA.log ends `15 passed` / `EXIT=0`, the pre-repair log repro-before-fix.log ends `2 failed, 13 passed` / `EXIT=1` on the two new cases, and the negative control negative-control-filter-*removed*.log ends `2 failed, 13 passed` / `EXIT=1` \u2014 though baseline_suite/after_suite are empty, so the added-failure figure is derived as zero from an unarmed run rather than from a measured base/after pair.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git show --name-only 9c5efb85645d11a0bbf4bbbb97bf4bcb1e982938` lists exactly tests/test_a_pick_sees_each_lanes_burn.py and the declared evidence fragment, with no source file touched.\nSCORE durability: 18\nJUSTIFICATION durability: removing the filter reddens both new cases (negative-control-filter-removed.log), the in-flight case at tests/test_a_pick_sees_each_lanes_burn.py:232 inverting to a reported stray, and the stray-beside-temporary case at :259 reddens independently, so the guard is exercised in both the passing and the failing direction.\nSCORE fit: 16\nJUSTIFICATION fit: `_store_temporary` at tests/test_a_pick_sees_each_lanes_burn.py:115 is mechanism-named in the file's own docstring-heavy idiom and introduces no plan, stage or ticket label.\nSCORE reuse: 8\nJUSTIFICATION reuse: the added `_store_temporary` is a third copy of the store-temporary predicate already written at tests/test_runs_pointer_writer_reuses_the_store.py:80 and tests/test_supervisor_write_reuses_the_store.py:85; a search over reckon/ and tests/ for a temporary-name predicate found no owner to extend, so the addition duplicates rather than extends.\nFINDING tests/test_a_pick_sees_each_lanes_burn.py:125 follow-on: `_store_temporary` duplicates the store-temporary predicate already written at tests/test_runs_pointer_writer_reuses_the_store.py:80 and tests/test_supervisor_write_reuses_the_store.py:85 with no owner to extend, making the idiom's third copy.\nFINDING tests/test_a_pick_sees_each_lanes_burn.py:150 follow-on: filtering the listing arm by the store's temporary form also exempts a real leak written under that name, a small but real reduction in the arm's coverage that the needle arm at :159 only partly recovers.\n",
+  "review_run_id": "r-20261021T034456987157-review-of-the-burn-tests-home-guard-ignores-in-flight-writes-9c5efb85645d",
+  "reviewed_base_sha": "d291184170a7433444907b7f8164a925679bc5a9",
+  "reviewed_head_sha": "9c5efb85645d11a0bbf4bbbb97bf4bcb1e982938",
+  "reviewed_run_id": "r-20261021T032952017329-the-burn-tests-home-guard-ignores-in-flight-writes",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 8,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T04:12:43.477106+00:00",
+  "total": 101
+}
