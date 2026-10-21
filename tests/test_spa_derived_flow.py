@@ -204,3 +204,53 @@ def test_sprint_chain_figure_uses_shared_schedule_far_end() -> None:
     assert "derivedFlowChainHours(projectPlans" in source
     assert "window.ReckonCrewSchedule.farEnd" in source
     assert "chain <strong>{Math.round(chainHours)}h</strong>" in source
+
+
+def test_a_stale_schedule_draws_its_bars_and_the_line_that_ages_them() -> None:
+    """A kept schedule is drawn, with one line naming why it is stale.
+
+    The loader keeps the last schedule that was served when a discovery cannot
+    build one, and marks it stale with that failure. The flow must still draw
+    the bars — an emptied flow is what the keeping exists to prevent — and one
+    line above them must say what failed and when the schedule was last served,
+    so the age of the picture is readable rather than implied.
+    """
+
+    plans, runs = _fixture()
+    served = schedule_report("reckon", plans, runs, reference=REFERENCE)
+    stale = {
+        **served,
+        "stale": True,
+        "stale_error": "RuntimeError: crew rows unavailable",
+    }
+    probe = """
+window.STATE = { project: "reckon", inventory: plans, schedule: STALE_SCHEDULE };
+const flow = window.__derivedFlowTest.DerivedFlow({ runs, project: "reckon" });
+const bars = findAll(flow, node => hasClass(node, "r-derived-flow-bar"));
+const staleNodes = findAll(flow, node => hasClass(node, "r-derived-flow-stale"));
+const staleText = JSON.stringify(staleNodes.map(node => node.children));
+delete window.STATE;
+return { barCount: bars.length, staleCount: staleNodes.length, staleText };
+"""
+    result = _run_probe(
+        plans=plans,
+        runs=runs,
+        probe=probe.replace("STALE_SCHEDULE", json.dumps(stale)),
+    )
+    assert result["barCount"] == len(served["bars"])
+    assert result["staleCount"] == 1, (
+        "the stale schedule was drawn without the line that ages it"
+    )
+    assert "crew rows unavailable" in result["staleText"]
+    # The stamp is the instant the schedule was served, not the current clock.
+    assert "2026-09-04T04:00:00Z" in result["staleText"]
+
+    # A schedule that is not stale draws no such line: the control for the
+    # assertion above, so it cannot be satisfied by a line always drawn.
+    fresh = _run_probe(
+        plans=plans,
+        runs=runs,
+        probe=probe.replace("STALE_SCHEDULE", json.dumps(served)),
+    )
+    assert fresh["barCount"] == len(served["bars"])
+    assert fresh["staleCount"] == 0

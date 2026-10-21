@@ -106,10 +106,58 @@ INDEX_ROWS = [
     },
 ]
 
-# The same rows plus what the index deliberately does not carry: the effective
-# status each row derives once blockers are known, and the ready set. The plan
-# rows repeat impl, which both payloads carry, so the merge leaves the bars the
-# first paint drew where they were.
+#: The schedule a discovery serves, and the one a later discovery serves: the
+#: far bound and the reference move, so a schedule kept through a revalidation
+#: and one replaced by the merge are distinguishable by value and not only by
+#: object identity.
+SCHEDULE_FIRST = {
+    "reference": "2026-01-10T00:00:00+00:00",
+    "low": -4,
+    "high": 8,
+    "lane_count": 1,
+    "item_count": 1,
+    "bars": [
+        {
+            "nav_key": "alpha",
+            "lane": 0,
+            "start": -2,
+            "end": 4,
+            "split": 0,
+            "state": "predicted",
+            "wall_hours": 6,
+        }
+    ],
+}
+
+# The same schedule, served later, with its far bound and its reference moved.
+SCHEDULE_REPLACEMENT = {
+    **SCHEDULE_FIRST,
+    "reference": "2026-01-10T00:05:00+00:00",
+    "high": 12,
+}
+
+#: The keys a revalidation must keep, written out as literals rather than read
+#: back off the loader, so a key dropped from its list fails the case.
+DERIVED_STATE_KEYS = [
+    "sprints",
+    "active_sprint_id",
+    "active_sprints",
+    "active_sprint_conflict",
+    "sprint",
+    "ready_set",
+    "endpoints",
+    "source_format",
+    "resource_versions",
+    "blockers",
+    "timeline",
+    "schedule",
+    "milestones",
+]
+
+#: The same rows plus what the index deliberately does not carry: the effective
+#: status each row derives once blockers are known, and the ready set. The plan
+#: rows repeat impl, which both payloads carry, so the merge leaves the bars the
+#: first paint drew where they were.
 DISCOVERY = {
     "source_format": "distributed",
     "active_sprint_id": "focus",
@@ -118,6 +166,8 @@ DISCOVERY = {
     "north_stars": [{"id": "north"}],
     "timeline": [{"id": "t1"}],
     "blockers": [{"slug": "alpha"}],
+    "endpoints": [{"project": "sample", "slug": "alpha"}],
+    "schedule": SCHEDULE_FIRST,
     "ready_set": {"ready": ["beta"], "total": 1},
     "resource_versions": {"project:project": 3},
     "inventory": [
@@ -175,6 +225,14 @@ DISCOVERY_WITH_ARRIVAL = {
     ],
 }
 
+#: Discovery with its schedule withheld: the read could not build one, so it
+#: serves null with the failure beside it and the schedule on screen is kept.
+DISCOVERY_WITHOUT_SCHEDULE = {
+    **DISCOVERY,
+    "schedule": None,
+    "schedule_error": "RuntimeError: crew rows unavailable",
+}
+
 #: The order the index listed the rows in, which the merge must not change.
 INDEX_ORDER = ["alpha", "beta", "evidence:gate", "figure:plot.png"]
 
@@ -184,7 +242,14 @@ const PROJECT = __PROJECT__;
 const LOADER_PATH = __LOADER__;
 const READY_TIMEOUT_MS = __TIMEOUT__;
 const DATA = __DATA__;
-global.window = { location: { pathname: "/" + PROJECT + "/" } };
+const dispatched = [];
+global.CustomEvent = global.CustomEvent || class {
+  constructor(type, init) { this.type = type; Object.assign(this, init || {}); }
+};
+global.window = {
+  location: { pathname: "/" + PROJECT + "/" },
+  dispatchEvent: event => { dispatched.push(event.type); return true; },
+};
 global.document = { querySelector: () => ({ content: PROJECT }) };
 const requested = [];
 const ok = (payload) => ({ ok: true, status: 200, json: async () => payload });
@@ -241,10 +306,52 @@ _DISCOVERY_ANSWERS = """
   }
 """
 
+# /_discover answers after a delay, and answers a different payload on the
+# second call. The delay is what puts a window between the index landing and
+# the merge, which is the window the revalidation must keep its blocks through;
+# the replacement payload is what makes the merge distinguishable from the
+# blocks that were kept.
+_DISCOVERY_DELAYED_THEN_REPLACED = """
+  if (url === "/_index/sample") {
+    requested.push(url);
+    return ok(DATA.index);
+  }
+  if (url === "/_discover/sample") {
+    requested.push(url);
+    const seen = requested.filter(item => item === "/_discover/sample").length;
+    const payload = seen > 1 ? DATA.discovery_replacement : DATA.discovery;
+    return new Promise(resolve => setTimeout(() => resolve(ok(payload)), 120));
+  }
+"""
+
 _DISCOVERY_ANSWERS_WITH_ARRIVAL = """
   if (url === "/_discover/sample") {
     requested.push(url);
     return ok(DATA.discovery_arrival);
+  }
+"""
+
+# The same delay, with the second discovery's schedule withheld: the read could
+# not build one, so it serves null with the failure beside it.
+_DISCOVERY_DELAYED_THEN_WITHHELD = """
+  if (url === "/_index/sample") {
+    requested.push(url);
+    return ok(DATA.index);
+  }
+  if (url === "/_discover/sample") {
+    requested.push(url);
+    const seen = requested.filter(item => item === "/_discover/sample").length;
+    const payload = seen > 1 ? DATA.discovery_without_schedule : DATA.discovery;
+    return new Promise(resolve => setTimeout(() => resolve(ok(payload)), 120));
+  }
+"""
+
+# /_checks is held unanswered: the render that follows the merge cannot be the
+# one the checks path used to deliver, so the merge is what asked for it.
+_CHECKS_NEVER = """
+  if (url === "/_checks/sample") {
+    requested.push(url);
+    return never();
   }
 """
 
@@ -275,6 +382,11 @@ def _run_node(behaviour: str, body: str) -> dict:
                     "index": INDEX_ROWS,
                     "discovery": DISCOVERY,
                     "discovery_arrival": DISCOVERY_WITH_ARRIVAL,
+                    "discovery_replacement": {
+                        **DISCOVERY,
+                        "schedule": SCHEDULE_REPLACEMENT,
+                    },
+                    "discovery_without_schedule": DISCOVERY_WITHOUT_SCHEDULE,
                 }
             ),
         )
@@ -335,7 +447,11 @@ window.STATE_READY.then(async state => {{
     # its impl, while the evidence and figure rows carry none. This is the
     # first-paint contract — the bars do not wait for the discovery merge.
     assert paint["impl"][:2] == [0.4, 0.9]
-    assert paint["impl"][:2] == [r["impl"] for r in INDEX_ROWS if r["type"] == "plan"]
+    # Written as a literal, not read back off INDEX_ROWS: an assertion whose two
+    # sides are both derived from the fixture the test itself hands the loader
+    # moves with the fixture and holds whatever the loader does. The literal
+    # above and this one agree, and both go red if the first paint drops impl.
+    assert paint["impl"][2:] == [None, None]
 
 
 def test_derived_fields_merge_into_the_rows_already_on_screen() -> None:
@@ -464,6 +580,12 @@ def _get(port: int, path: str) -> tuple[int, object]:
         connection.close()
 
 
+def _live_threads() -> set[int]:
+    """The idents of the threads running at the moment of the call."""
+
+    return {thread.ident for thread in threading.enumerate() if thread.ident is not None}
+
+
 def _title(rows: list[dict], slug: str) -> str:
     return next(row["title"] for row in rows if row["slug"] == slug)
 
@@ -525,6 +647,7 @@ def test_a_reported_change_refreshes_the_served_index(
     # handler outlives the test and can call into whatever the next test has
     # patched; non-daemonic handler threads are joined when the server closes.
     server.daemon_threads = False
+    threads_before = _live_threads()
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     stream = _ChangeStream(server.server_port, PROJECT)
@@ -548,6 +671,16 @@ def test_a_reported_change_refreshes_the_served_index(
 
     assert status == 200
     assert _title(rows, "alpha") == "Alpha renamed"
+
+    # A change-stream handler thread must end with the test that opened the
+    # stream. The declared control for this guard reverts the close below; the
+    # leak it repairs is a thread-timing race, so the guard reads the thread
+    # roster rather than waiting for the leaked handler to reach a later test.
+    assert _live_threads() - threads_before == set(), (
+        "a change-stream handler thread outlived its test: the stream's close "
+        "left the socket the handler is waiting on open, so the server's "
+        "handler never saw EOF and is still in its change-stream wait"
+    )
 
 
 def test_two_change_streams_recompute_discovery_once(
@@ -587,6 +720,7 @@ def test_two_change_streams_recompute_discovery_once(
     # handler outlives the test and can call into whatever the next test has
     # patched; non-daemonic handler threads are joined when the server closes.
     server.daemon_threads = False
+    threads_before = _live_threads()
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     streams = [_ChangeStream(server.server_port, PROJECT) for _ in range(2)]
@@ -610,6 +744,16 @@ def test_two_change_streams_recompute_discovery_once(
     assert len(scans) - baseline == 1, (
         f"{len(scans) - baseline} rediscoveries for one reported change "
         "across two open streams"
+    )
+
+    # A change-stream handler thread must end with the test that opened the
+    # stream. The declared control for this guard reverts the close below; the
+    # leak it repairs is a thread-timing race, so the guard reads the thread
+    # roster rather than waiting for the leaked handler to reach a later test.
+    assert _live_threads() - threads_before == set(), (
+        "a change-stream handler thread outlived its test: the stream's close "
+        "left the socket the handler is waiting on open, so the server's "
+        "handler never saw EOF and is still in its change-stream wait"
     )
 
 
@@ -757,3 +901,150 @@ window.STATE_READY.then(async state => {{
     assert observed["plans_keys"] == INDEX_ORDER
     # The derived fields still landed on the rows the index did carry.
     assert observed["after"]["effective_status"][:2] == ["blocked", "ready"]
+
+
+# ─── A revalidation keeps the derived blocks until better ones replace them ──
+
+
+_KEYS_BODY = """
+window.STATE_READY.then(async state => {
+  clearTimeout(watchdog);
+  // The first paint's merge has landed: every derived block is on screen.
+  await window.STATE_DERIVED_READY;
+  const keys = window.DERIVED_STATE_KEYS.slice();
+  const held = {};
+  for (const key of keys) held[key] = window.STATE[key];
+  // A revalidation, as a change event asks for: the index answers at once and
+  // discovery follows after a delay.
+  await window.revalidateProjectState();
+  const afterIndex = {};
+  for (const key of keys) afterIndex[key] = window.STATE[key];
+  await window.STATE_DERIVED_READY;
+  const afterMerge = {};
+  for (const key of keys) afterMerge[key] = window.STATE[key];
+  console.log(JSON.stringify({
+    resolved: true,
+    timeout: false,
+    keys,
+    held,
+    after_index: afterIndex,
+    after_merge: afterMerge,
+  }));
+});
+"""
+
+
+def test_a_revalidation_keeps_the_derived_blocks_until_the_merge_replaces_them() -> None:
+    """The index carries no derived state, so a revalidation must not empty it.
+
+    The page on screen already holds a schedule, sprints, a ready set and the
+    rest. A revalidation reads the index, which carries rows alone, and only
+    then a discovery response that carries the blocks. Between the two the kept
+    set stays exactly as it was: what the reader is looking at is replaced by
+    better blocks, never emptied while the better ones are on their way.
+    """
+
+    observed = _run_node(
+        _DISCOVERY_DELAYED_THEN_REPLACED,
+        _KEYS_BODY,
+    )
+
+    assert observed["resolved"] is True, observed
+    assert observed["keys"] == DERIVED_STATE_KEYS
+    for key in DERIVED_STATE_KEYS:
+        assert observed["after_index"][key] == observed["held"][key], (
+            f"{key} was emptied by the revalidation's index instead of being "
+            f"kept until the merge: {observed['held'][key]!r} -> "
+            f"{observed['after_index'][key]!r}"
+        )
+    # The merge is what replaced them, and the replacement is a different
+    # schedule from the one kept, so the assertion above cannot be satisfied by
+    # a merge that changed nothing.
+    assert observed["held"]["schedule"] == SCHEDULE_FIRST
+    assert observed["after_merge"]["schedule"] == SCHEDULE_REPLACEMENT
+
+
+_STALE_BODY = """
+window.STATE_READY.then(async state => {
+  clearTimeout(watchdog);
+  await window.STATE_DERIVED_READY;
+  const held = window.STATE.schedule;
+  await window.revalidateProjectState();
+  await window.STATE_DERIVED_READY;
+  const after = window.STATE.schedule;
+  console.log(JSON.stringify({
+    resolved: true,
+    timeout: false,
+    held_high: held && held.high,
+    held_bars: held && held.bars,
+    after_high: after && after.high,
+    after_bars: after && after.bars,
+    after_stale: after && after.stale,
+    after_stale_error: after && after.stale_error,
+    after_reference: after && after.reference,
+  }));
+});
+"""
+
+
+def test_a_null_schedule_with_an_error_keeps_the_one_on_screen_stale() -> None:
+    """A discovery that could not build a schedule says so; it does not blank it.
+
+    The read serves ``schedule`` null with ``schedule_error`` beside it. The
+    blocks already on screen are the last ones actually served, so the schedule
+    is kept and marked stale with that error rather than replaced by a null the
+    surface would draw as "no schedule payload served".
+    """
+
+    observed = _run_node(_DISCOVERY_DELAYED_THEN_WITHHELD, _STALE_BODY)
+
+    assert observed["resolved"] is True, observed
+    assert observed["held_high"] == SCHEDULE_FIRST["high"]
+    # The schedule itself is kept, bars and all, rather than replaced by null.
+    assert observed["after_high"] == SCHEDULE_FIRST["high"]
+    assert observed["after_bars"] == SCHEDULE_FIRST["bars"]
+    assert observed["after_reference"] == SCHEDULE_FIRST["reference"]
+    # And it is marked stale with the error the discovery served.
+    assert observed["after_stale"] is True
+    assert observed["after_stale_error"] == DISCOVERY_WITHOUT_SCHEDULE["schedule_error"]
+
+
+_DERIVED_EVENT_BODY = """
+window.STATE_READY.then(async state => {
+  clearTimeout(watchdog);
+  await window.STATE_DERIVED_READY;
+  console.log(JSON.stringify({
+    resolved: true,
+    timeout: false,
+    derived_events: dispatched.filter(name => name === "reckon:derived").length,
+    dispatched: dispatched.slice(),
+    requested: requested.slice(),
+  }));
+});
+"""
+
+
+def test_the_merge_announces_itself_with_a_derived_event() -> None:
+    """The shell repaints on the merge, with /_checks held unanswered.
+
+    The merge used to reach the surface only through the checks path: the shell
+    asked /_checks once derived state settled and answered that with a render.
+    The merge now dispatches ``reckon:derived`` when it lands, so the flow
+    returns without that round trip — which is why /_checks is left unanswered
+    here, and why the case asserts the checks route was never asked at all.
+    """
+
+    observed = _run_node(
+        _INDEX_ANSWERS + _DISCOVERY_ANSWERS + _CHECKS_NEVER,
+        _DERIVED_EVENT_BODY,
+    )
+
+    assert observed["resolved"] is True, observed
+    assert observed["derived_events"] == 1, (
+        "the merge did not announce itself exactly once: "
+        f"{observed['dispatched']}"
+    )
+    # Nothing but the index and the discovery answered, so the event cannot be
+    # a side effect of the checks path.
+    assert observed["requested"] == [INDEX_ENDPOINT, DISCOVERY_ENDPOINT]
+
