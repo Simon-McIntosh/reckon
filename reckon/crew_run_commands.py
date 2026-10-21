@@ -603,6 +603,14 @@ def _reviewed_head_from_run_records(project: str, reviewed_run_id: str) -> str:
     "findings rows print it.",
 )
 @click.option(
+    "--rubric",
+    "review_rubric",
+    default=None,
+    help="Review rubric the finding belongs to. Omit to answer the run's text "
+    "review, which is the behaviour of every earlier call; name figure to "
+    "answer a finding on the run's figure review.",
+)
+@click.option(
     "--kind",
     required=True,
     help="Disposition kind: folded with --node, or exempted with --reason.",
@@ -624,6 +632,7 @@ def crew_dispose(
     reviewed_run_id,
     dimension,
     finding_index,
+    review_rubric,
     kind,
     node_id,
     reason,
@@ -650,6 +659,13 @@ def crew_dispose(
     same reading and the same file carry both. A run with no live pointer, the
     review is answered from its own records rather than from the directory the
     operator stands in; see :func:`_reviewed_head_from_run_records`.
+
+    A run may be reviewed under more than one rubric, and a figure review is
+    stored beside the run's text review rather than in place of it.
+    ``--rubric figure`` answers a finding on the run's figure review: the
+    record read, rewritten and read back for the receipt is the figure record,
+    and a run carrying no figure review is refused naming that absence.
+    Omitted, the verb answers the run's text review exactly as before.
     """
     from reckon.crew import obligations as obligations_module
     from reckon.crew import recovery, review_dispositions, runs
@@ -671,6 +687,19 @@ def crew_dispose(
             "answers one review finding, whether a sub-floor dimension or an "
             "index must be named to answer it"
         )
+    rubric = str(review_rubric or "").strip().lower() or None
+    if rubric is not None and rubric != review_module.FIGURE_REVIEW_RUBRIC:
+        raise click.ClickException(
+            f"unknown review rubric {review_rubric!r}; the one rubric a "
+            f"disposition may name is {review_module.FIGURE_REVIEW_RUBRIC!r}, "
+            "and omitting --rubric answers the run's text review"
+        )
+    if rubric and named_dimension:
+        raise click.ClickException(
+            "a figure review scores no dimensions, so --dimension names one it "
+            "does not carry; name one of its findings with --finding, or omit "
+            "--rubric to answer a dimension of the run's text review"
+        )
 
     # A code review scores no dimensions, so its only disposition space is its
     # findings: a dimension named against one is refused by name rather than
@@ -683,7 +712,21 @@ def crew_dispose(
             "which is the only space a code review's entries live in"
         )
 
-    if code_key:
+    if rubric:
+        # A figure review is stored beside the run's text review under the
+        # rubric's own name, and the by-head readers below select text records
+        # only, so the figure record is read through the store's rubric-keyed
+        # selection: it is the file the writer rewrites and the receipt reads.
+        _figure_path, figure_record = review_module.stored_record(
+            project, reviewed_run_id, rubric=rubric
+        )
+        if figure_record is None:
+            raise click.ClickException(
+                f"run {reviewed_run_id!r} carries no figure review record in "
+                f"project {project!r} to record a disposition against"
+            )
+        stored = figure_record
+    elif code_key:
         # A code review is keyed by the neighbourhood it read rather than by a
         # revision, so its record is resolved through the store's own path
         # builder and read directly; no head or run pointer is consulted.
@@ -761,11 +804,15 @@ def crew_dispose(
                 node=node_id,
                 reason=reason,
                 reviewed_head_sha=reviewed_head_sha,
+                rubric=rubric,
             )
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
     record = review_dispositions.stored_record_for_disposition(
-        project, reviewed_run_id, reviewed_head_sha=reviewed_head_sha
+        project,
+        reviewed_run_id,
+        reviewed_head_sha=reviewed_head_sha,
+        rubric=rubric,
     )
     if finding_index is None:
         dispositions = (record or {}).get(

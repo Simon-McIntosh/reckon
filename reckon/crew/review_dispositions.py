@@ -324,6 +324,7 @@ def stored_record_for_disposition(
     *,
     base_dir: str | Path | None = None,
     reviewed_head_sha: str | None = None,
+    rubric: str | None = None,
 ) -> dict[str, Any] | None:
     """The stored record a disposition rewrites, whatever kind the run names.
 
@@ -333,6 +334,11 @@ def stored_record_for_disposition(
     names rather than selecting the family itself. A run that names no code
     review is read through :func:`reckon.crew.review.stored_record`, the
     selection every run-review reader shares.
+
+    ``rubric`` names the review family the record belongs to: omitted reads the
+    run's text review, and a named rubric reads that family's own record, so a
+    caller answering a finding on a figure review reads back the record its
+    disposition was written to rather than the text review stored beside it.
     """
     if code_review_identity(run_id):
         _path, record = code_review_record_for_run(project, run_id, base_dir=base_dir)
@@ -342,6 +348,7 @@ def stored_record_for_disposition(
         run_id,
         base_dir=base_dir,
         reviewed_head_sha=reviewed_head_sha,
+        rubric=rubric,
     )
     return record
 
@@ -396,6 +403,7 @@ def record_finding_disposition(
     reason: str | None = None,
     base_dir: str | Path | None = None,
     reviewed_head_sha: str | None = None,
+    rubric: str | None = None,
 ) -> Path:
     """Record the disposition one stored finding carries, and return its path.
 
@@ -414,6 +422,13 @@ def record_finding_disposition(
     The record selected and rewritten is the same one the dimension disposition
     rewrites, so a head-keyed review keeps its own file and a disposition
     recorded against one revision never speaks for another.
+
+    ``rubric`` selects the review family the finding belongs to: omitted reads
+    the run's text review, and a named rubric reads that family's own record, so
+    a finding a figure review raised is answered on the figure record and not on
+    the text review stored beside it. The index is counted against the selected
+    record's own findings, so the index a caller sees printed for a rubric is the
+    index this writer keys against.
     """
     if (
         not isinstance(finding_index, int)
@@ -440,6 +455,7 @@ def record_finding_disposition(
         reviewed_run_id,
         base_dir=base_dir,
         reviewed_head_sha=reviewed_head_sha,
+        rubric=rubric,
     )
     if record is None or path is None:
         raise ValueError(
