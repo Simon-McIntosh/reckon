@@ -1,0 +1,103 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T08:30:25.785Z",
+  "dispatched_at": "2026-10-21T08:19:11Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-finished-plan-closes.html:72",
+      "id": "reasoning-1",
+      "reason": "the node dispatched to \u00a73 would edit a function that lacks the declarations its rule turns on, and would have to move or re-signature it before its own done-when fixtures could pass.",
+      "text": "\u00a73 says \"The change is one edit to the blocker function ... `unpassed_gate_blockers` in `reckon/lifecycle.py`\", but that function is `unpassed_gate_blockers(gates: list[dict[str, Any]])` (`reckon/lifecycle.py:52`) and takes only gate rows, none of which carries its gated section's declaration, so it cannot decide \"an open gate whose gated sections are all done, descoped or deferred\"; that decision lives in `split_unpassed_gates` (`reckon/roadmap.py:807`), which holds `implementable_sections(plan[\"section_declarations\"])` and returns the plan-holding half of the split, and it is the function every consumer reaches (`reckon/roadmap.py:3200`, `reckon/mcp_views.py:2504`, `reckon/serve.py:1924`)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-finished-plan-closes.html:72",
+      "id": "anchors_resolve-1",
+      "reason": "\u00a73's \"every reader of gate blocking already calls it\" is the premise of its single-edit argument, and a caller that does not resolve leaves that premise unverifiable.",
+      "text": "\u00a73 names \"the MCP through `_plan_gate_blockers` in `reckon/mcp_views.py`\"; no such symbol exists (`grep -rn _plan_gate reckon/` returns nothing), and the MCP reader that does exist, `_section_gate_blockers` (`reckon/mcp_views.py:2504`), reports only the section-scoped half of `split_unpassed_gates` and not the plan-holding half \u00a73's rule concerns",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-finished-plan-closes.html:68",
+      "id": "reasoning-2",
+      "reason": "the fixture's stated base arm is its negative control, so a node would encode `deferred` as the base and then contend with a base that returns `blocked` when its test runs.",
+      "text": "\u00a72's second done-when fixture (\"every section done, an open execution gate and no open followup ... where the base reads it `deferred`\") asserts a base reading the ladder cannot produce: with every section done there is no implementable section, so `split_unpassed_gates` returns the open gate in the plan-holding list (`reckon/roadmap.py:812-813`), `is_blocked` is then true and readiness reads `blocked` (`reckon/roadmap.py:3261-3269`) \u2014 the same shape \u00a71 itself describes as \"`blocked` at 100 %\", not deferred",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ec04ba4b3886b5e878bcdc91754d845d138c6dd9e6ddc502cd673b0b2b69d7a6",
+  "plan_slug": "a-finished-plan-closes",
+  "plan_version": 4,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-21T08:39:26.810862+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "",
+      "when": "2026-10-21T08:39:51.520611+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-21T08:40:12.179334+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T08:39:51.520611+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T08:39:26.810862+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T08:40:12.179334+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-finished-plan-closes.v4.json",
+  "review_run_id": "r-20261021T080404425247-plan-review-of-a-finished-plan-closes",
+  "reviewed_blob_sha": "8fc2103239385aba96eb5ad905f62f024369b66d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a73 cites a caller in `reckon/mcp_views.py` that no longer exists; every other symbol, file and section named across s2\u2013s5 resolves.",
+    "done_when": "a finding \u2014 \u00a72's second fixture states its base arm reads `deferred`, a reading no code path produces; each of s2, s3, s4, s5 otherwise names a control and a base arm that fails.",
+    "evidence_paths": "pass \u2014 the census evidence is on `docs/evidence/archive/a-finished-plan-closes-landed.html` (present), and each section's gate is a pytest fixture under `tests/`, neither a scratchpad nor a node-local temporary path.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches a symbol, filename or comment in s2\u2013s5; the only plan names in the prose name other plans, which prose may do.",
+    "reasoning": "a finding \u2014 \u00a73 places its rule in a function that cannot see the input the rule needs, so the stated mechanism does not run on the stated path.",
+    "single_goal": "pass \u2014 \u00a72 (s2) carries the closable readiness plus the closure_blockers widening as one change to the same payload, \u00a73\u2013\u00a75 each name one deliverable, and \u00a76 one.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares s4\u2192`a-project-reads-as-one-picture#s9`, s5\u2192`a-finished-plan-closes#s2` and s6\u2192s2,s3,s4,s5; every declared edge resolves, and the cited plan/section anchors (`a-project-reads-as-one-picture` \u00a77 and \u00a79, `a-sprint-closes-on-completable-work`, `docs/evidence/archive/a-finished-plan-closes-landed.html`) all exist."
+  },
+  "section_digests": {
+    "_document": "a4ae683796f1cd7d1f79c1a255667e309bf30ed565ec4468724053b7e60a7306",
+    "s1": "1e9dfcb4502718170725c8fe6a094be7008a8414e2b0c4d7396de0b81ce04dab",
+    "s2": "6079bab93e338ffdb598eb64305b56150e961ffb55b6b17edc4a24c2925a728e",
+    "s3": "1ba373272e04253356df57b19eef68573acfee1e95e387ea7eff9c2bf305c154",
+    "s4": "1df36730914802cdf8e709b01c5f54eabac4b98f4e2300d731e4af0610418147",
+    "s5": "4060f5077ce6aada3abd8600dd95d99101462cba15260f20910a58337fb685c8",
+    "s6": "94a8098fad6e6e0e94b30b6aa3b5479453e35e2f7ef9f3c088ea41be599f8353"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T08:39:13.245844+00:00"
+}
