@@ -733,6 +733,12 @@ FOLLOWER_END_EVENT = "follower-end"
 FOLLOWER_SETTLE_EVENT = "follower-settle"
 
 
+# The standing line: it names the session's runs that need the coordinator, and
+# repeats on a cadence whether or not the set is empty so a quiet pane is a
+# heartbeat rather than a silence a dead follower also shows.
+FOLLOWER_NEEDS_YOU_EVENT = "follow.needs-you"
+
+
 # How long a follower's population must hold no unfinished run before the pane
 # settles. A dispatch asks its session's host for a follower before it
 # publishes the run's pointer, and an admission handover -- the queued
@@ -921,46 +927,19 @@ def _ticker_layout_signature() -> str:
 
 
 
-def _needs_you_runs(project: str, *, session: str | None) -> list[dict[str, str]]:
+def _needs_you_runs(project: str, *, session: str | None) -> list[dict[str, Any]]:
     """List the owning session's runs whose state needs the coordinator now.
 
-    Read at the moment the follower ends rather than accumulated from the
-    stream. The line's job is to name what is outstanding as the pane goes
-    dark, and a run falls into a needs-action state whether or not a producer
-    ever wrote a transition for it — a run that finished while no producer was
-    up would otherwise be named by nobody.
+    The list itself is :func:`reckon.crew.needs_you.needs_you`'s, so the row the
+    pane prints at the end of an arming names exactly the runs the standing line
+    names while it lives. Read at the moment the follower ends rather than
+    accumulated from the stream: a run falls into a needs-action state whether or
+    not a producer ever wrote a transition for it, and a run that finished while
+    no producer was up would otherwise be named by nobody.
     """
-    from reckon.crew import recovery as recovery_module
-    from reckon.crew import runs as runs_module
+    from reckon.crew import needs_you as needs_you_module
 
-    stall_seconds = recovery_module.parse_duration(
-        recovery_module.DEFAULT_WATCH_STALL_WINDOW
-    )
-    moment = recovery_module._utc_seconds()
-    blocked_states = recovery_module.FLEET_BLOCKED_STATES
-    unpromoted_states = recovery_module.FLEET_UNPROMOTED_STATES
-    wanted = frozenset((*blocked_states, *unpromoted_states))
-    rows: list[dict[str, str]] = []
-    for pointer in runs_module._list_live_records(project=project):
-        owner = str(pointer.get("session") or "")
-        # A pointer with no recorded owner stays in the counted set, matching
-        # the dispatch fence: absence cannot prove it belongs to a peer.
-        if session is not None and owner and owner != session:
-            continue
-        snapshot = recovery_module._watch_snapshot(
-            pointer, moment=moment, stall_seconds=stall_seconds
-        )
-        state = str(snapshot.get("state") or "")
-        if state not in wanted:
-            continue
-        rows.append(
-            {
-                "run_id": str(snapshot.get("run_id") or ""),
-                "node": str(snapshot.get("node") or ""),
-                "state": state,
-            }
-        )
-    return rows
+    return needs_you_module.needs_you_runs(project, session=session)
 
 
 
@@ -1785,6 +1764,7 @@ def _follow_watch_lines(
     reloaded_in_place: bool = False,
     settle: bool = False,
     settle_interval: float | None = None,
+    remind: float | None = None,
 ):
     """Yield this follower's transitions for as long as its session lives.
 
@@ -1832,6 +1812,7 @@ def _follow_watch_lines(
     the follower a reader must act on.
     """
     from reckon.crew import follow_checkpoint, runs
+    from reckon.crew import needs_you as needs_you_module
     from reckon.flight import FlightConfigError
 
     selected_runs = tuple(run_ids)
@@ -2134,6 +2115,70 @@ def _follow_watch_lines(
         _check_settle()
         _renew_producer_lease()
 
+    # The standing line's emitter. It is a generator because the caller yields
+    # the row to the pane, and it is called wherever ``_tick`` is: the wait pass
+    # is the only place a follower can speak with nothing moving in the stream,
+    # and the cadence is what makes a quiet pane a heartbeat rather than a
+    # silence a dead follower also shows.
+    #
+    # The list is scanned on a bounded cadence rather than on every wait pass.
+    # The scan is a live-pointer read and the wait pass is fast, so it is
+    # throttled so a follower costs no more than the settle check already does;
+    # the line is emitted when the set has changed since the last one printed or
+    # when the remind interval has elapsed, whichever comes first.
+    #
+    # The interval is the command's: an arming with no --remind carries
+    # needs_you.DEFAULT_REMIND_SECONDS, and --remind overrides it. A caller that
+    # drives this generator directly and passes no interval asks for no standing
+    # line at all, so its rows are exactly the rows it always drew — which is
+    # what a scripted read of a gap and a relayed payload expect of this
+    # generator, both of them reading its output as data.
+    #
+    # The first scan is the baseline rather than news: the fleet as it stands at
+    # arming is what the arming's own closing row already names, so the standing
+    # line is emitted when the set changes from there, and on the cadence.
+    needs_remind_seconds = None if remind is None else float(remind)
+    needs_scan_seconds = (
+        0.0
+        if needs_remind_seconds is None
+        else min(max(0.0, needs_remind_seconds), FOLLOWER_SETTLE_SAMPLE_SECONDS)
+    )
+    needs_scanned_at: float | None = None
+    last_needs_signature: tuple | None = None
+    needs_emitted_at: float | None = None
+
+    def _needs_you_events() -> Iterable[dict[str, Any]]:
+        nonlocal needs_scanned_at, last_needs_signature, needs_emitted_at
+        interval = needs_remind_seconds
+        if interval is None:
+            return
+        moment = clock()
+        if (
+            needs_scanned_at is not None
+            and moment - needs_scanned_at < needs_scan_seconds
+        ):
+            return
+        needs_scanned_at = moment
+        summary = needs_you_module.needs_you(project, session=session)
+        signature = needs_you_module.needs_you_signature(summary)
+        if needs_emitted_at is None:
+            last_needs_signature = signature
+            needs_emitted_at = moment
+            return
+        changed = signature != last_needs_signature
+        due = moment - needs_emitted_at >= interval
+        if not changed and not due:
+            return
+        last_needs_signature = signature
+        needs_emitted_at = moment
+        yield {
+            "event": FOLLOWER_NEEDS_YOU_EVENT,
+            "project": project,
+            "session": session or "",
+            "run_id": None,
+            "line": needs_you_module.needs_you_line(summary),
+        }
+
     from reckon.crew.resumption import DEFAULT_SWEEP_SECONDS
 
     cadence = DEFAULT_SWEEP_SECONDS if sweep_interval is None else float(sweep_interval)
@@ -2422,6 +2467,8 @@ def _follow_watch_lines(
             # reader is waiting for.
             _sweep_on_cadence()
             _tick()
+            for event in _needs_you_events():
+                yield event
             sleeper(poll_interval)
             continue
         producer_reload_failure_reported = False
@@ -2660,6 +2707,8 @@ def _follow_watch_lines(
             if _stopped():
                 return
             _tick()
+            for event in _needs_you_events():
+                yield event
             if _producer_reload_pending():
                 # A deferred mismatch is re-read on the wait pass rather than
                 # only on attach: the producer's reload window can close while
@@ -2699,6 +2748,8 @@ def _follow_watch_lines(
                         offset=stream.tell(),
                         identity=stream_file_identity,
                     )
+                    for event in _needs_you_events():
+                        yield event
                     if lifetime_elapsed or consumer_gone or settled:
                         break
                     _sweep_on_cadence()
@@ -2717,6 +2768,8 @@ def _follow_watch_lines(
                     offset=stream.tell(),
                     identity=stream_file_identity,
                 )
+                for event in _needs_you_events():
+                    yield event
                 if _producer_reload_pending():
                     # The idle wait pass is where a deferred mismatch is
                     # re-read: the producer's reload window can close while the
@@ -3093,6 +3146,24 @@ def crew_host(
     )
 
 
+def _needs_remind_seconds(remind: str | None) -> float:
+    """The standing line's cadence: ``--remind`` when given, ten minutes else.
+
+    The default lives where the option is read, so an arming that passes no flag
+    still carries a cadence, and an operator who wants a different interval
+    overrides it with the flag.
+    """
+    from reckon.crew import needs_you as needs_you_module
+    from reckon.crew import runs as runs_module
+    from reckon.crew.node import parse_duration
+
+    if remind is None:
+        return float(needs_you_module.DEFAULT_REMIND_SECONDS)
+    try:
+        return float(parse_duration(remind))
+    except runs_module.CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
+
 
 @crew.command(name="follow")
 @click.option("--project", required=True, help="Project whose watch stream to follow.")
@@ -3151,6 +3222,17 @@ def crew_host(
         "discovering the end when the host kills the pane."
     ),
 )
+@click.option(
+    "--remind",
+    default=None,
+    metavar="DURATION",
+    help=(
+        "Re-emit the standing needs-you line every DURATION (an integer plus s, "
+        "m or h, e.g. 10m) even when nothing has changed, so a quiet pane reads "
+        "as a live follower rather than a dead one. Defaults to ten minutes; "
+        "this overrides that interval."
+    ),
+)
 @_ticker_options
 def crew_follow(
     project,
@@ -3161,9 +3243,10 @@ def crew_follow(
     json_output,
     pretty,
     lifetime,
-    width,
-    theme,
-    no_color,
+    remind=None,
+    width=0,
+    theme=None,
+    no_color=False,
 ):
     """Follow one session's live runs without acquiring the project watcher seat.
 
@@ -3200,6 +3283,7 @@ def crew_follow(
             lifetime_seconds = float(parse_duration(lifetime))
         except runs_module.CrewError as exc:
             raise click.ClickException(str(exc)) from exc
+    remind_seconds = _needs_remind_seconds(remind)
     # The absolute instant this arming ends, in UTC epoch. Fixed here and never
     # rewritten, so a reload continues the original arming rather than granting
     # a fresh lifetime. Held in a local rather than ``os.environ``: the only
@@ -3359,6 +3443,7 @@ def crew_follow(
             registration=registration,
             reloaded_in_place=reloaded_in_place,
             settle=settle,
+            remind=remind_seconds,
         ):
             # An attach event carries the states the pane already showed, so the
             # grid is seeded from the same remembered map the follower filtered
@@ -3378,6 +3463,17 @@ def crew_follow(
                 # the settle status so its host does not restart it.
                 if event.get("event") == FOLLOWER_SETTLE_EVENT:
                     settled = True
+                if json_output:
+                    _emit_crew_result(event, pretty, observation=True)
+                else:
+                    _echo_follow_line(str(event.get("line") or ""))
+                continue
+            if event.get("event") == FOLLOWER_NEEDS_YOU_EVENT:
+                # The standing line is about the pane rather than any one run,
+                # so it is printed as it was composed rather than rendered as a
+                # fleet row. It is never written to the pane history: it is a
+                # repetition of a standing fact, not a transition, and replaying
+                # it on a re-arm would draw the same list several times.
                 if json_output:
                     _emit_crew_result(event, pretty, observation=True)
                 else:
