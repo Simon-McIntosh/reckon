@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:3016",
+    "reckon/crew_dispatch_commands.py:2652",
+    "reckon/crew/recovery_review_acceptance.py:498",
+    "reckon/crew/recovery_review_acceptance.py:534",
+    "reckon/crew/obligations.py:1240",
+    "reckon/crew/obligation_snapshot.py:974"
+  ],
+  "completed_at": "2026-10-21T18:57:15.715Z",
+  "dispatched_at": "2026-10-21T18:37:48Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "2079",
+      "severity": "follow-on",
+      "text": "follow-on: _finding_place (reckon/crew/recovery_review_dispatch.py:2079-2086) re-implements a capability the repository already owns. reckon/crew/repair.py:441 _finding_location returns the same \"file:line\", falling back to the bare file name, and this module already imports repair as repair_module in _undisposed_blocking_findings at line 2056, so the only difference is the empty-file fallback string \"the review's findings\". The owner is reckon/crew/repair.py:441; the addition duplicates it rather than extending or wrapping it, and a future change to how a finding's position is spelled would have to be made in two places."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against ac17ed130: 37abd242f adds the refusal guard, a2ab0640d moves the dispose rendering into review_dispositions.dispose_commands with obligations delegating, 28efb60cc adds the landed-round fold, 492418fba and 1de59a176 are the landing fragment, 4c815d149 and 860563698 strengthen the in-flight assertion and its comment \u2014 six files, +680/-29, all inside the declared fence.",
+    "done_when": "the done-when names tests/test_a_review_waits_for_its_repair.py plus six neighbouring test modules judged by failure delta against the base revision; the manifest's after_suite records logs/gate-head.log at revision 860563698f54, 2 failed / 186 passed, EXIT=1, whose two failure ids both appear in the base arm's four at logs/gate-base.log (4 failed / 184 passed, EXIT=1), so head adds none, and the declared negative control is logs/negative-control-round4.log (1 failed / 3 passed, EXIT=1).",
+    "goal": "the source node goal is to refuse a review dispatch while the run's newest review holds an undisposed blocking finding, read through review_lifecycle; the landed change adds reckon/crew/recovery_review_dispatch.py:2104 _open_review_refusal, called as the first statement of dispatch_review_for_run at line 2190, which reads review_lifecycle_module.lifecycle at line 2148 and enumerates findings through repair_module.blocking_finding_dispositions at line 2070 \u2014 exactly the goal.",
+    "manifest": "read; it reads status complete with the seven commits, a flat baseline_suite and after_suite carrying command/completed/failure_ids, a bare negative_control_log path, and three test_logs, and `reckon crew check --manifest --run r-20261021T105142717388-review-waits-for-its-repair` returns ok true with no findings.",
+    "write_paths": "the dispatch fence names tests/test_a_review_waits_for_its_repair.py, and resume-1 advice (resume-1-advice.txt) extended it with resume-1/copies of three source modules; the diff touches exactly reckon/crew/recovery_review_dispatch.py, recovery_repair_dispatch.py, review_dispositions.py, obligations.py, the test module and the landing fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_a_review_waits_for_its_repair.py:278 asserts the refusal and :288 that no worktree was composed, :310 and :330 that disposing the finding or closing the review lifts it, and :368 reads the store back through blocking_finding_dispositions requiring \"open\" and :377/:383 require the landed fold; logs/negative-control-round4.log (EXIT=1) shows the refusal test reddening when the review_lifecycle read is removed, and the in-flight assertion reddens with \"folded\" when in-flight folding is reinstated.",
+    "evidence": "the gate in the manifest's after_suite is a 27-file superset of the done-when's 7-file set, recorded with revision 860563698f54, its literal command and EXIT=1 at logs/gate-head.log whose two failing ids both appear in the base arm's four at logs/gate-base.log, so added_failure_count is 0; the landing fragment's measure line cites a superseded head's 182-pass figure (logs/gate-followon.log at 4c815d149) rather than that final gate.",
+    "fit": "reckon/crew/recovery_review_dispatch.py:2169 uses the module's existing refusal idiom (_record_review_dispatch(status=\"refused\") plus {\"dispatched\": False, \"refused\": True, \"reason\": ...}) already at lines 1952 and 2001, commit subjects are conventional with bodies, and no plan or ticket identifier appears in any added symbol, file or comment.",
+    "goal_fidelity": "reckon/crew/recovery_review_dispatch.py:2104 _open_review_refusal reads review_lifecycle_module.lifecycle at line 2148 and returns before anything is composed (line 2190), and reckon/crew/recovery_repair_dispatch.py:512 _fold_a_landed_round closes the loop, so the landed change does exactly what the node goal and the plan section 2 rule state.",
+    "reuse": "reckon/crew/recovery_review_dispatch.py:2079 _finding_place re-implements the capability reckon/crew/repair.py:441 _finding_location already owns, in a module that already imports repair, while the rest of the change de-duplicates correctly at reckon/crew/review_dispositions.py:489 dispose_commands.",
+    "scope_discipline": "the six paths in ac17ed130..860563698 are the four product modules named by the dispatch fence plus the resume-1 extension, the test module and its assertion that the shared dispose renderer leaves the duty row's output unchanged, all inside the declared write paths with nothing outside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node goal is to refuse a review dispatch while the run's newest review holds an undisposed blocking finding, read through review_lifecycle; reckon/crew/recovery_review_dispatch.py:2104 _open_review_refusal, called first in dispatch_review_for_run at line 2190, reads review_lifecycle_module.lifecycle at line 2148 and repair_module.blocking_finding_dispositions at line 2070, so the goal is met.\nVERDICT done_when: the done-when names tests/test_a_review_waits_for_its_repair.py judged by failure delta against the base revision; the manifest's after_suite records logs/gate-head.log at revision 860563698f54 (2 failed / 186 passed, EXIT=1), over a 27-file superset of the seven named, whose two failure ids both appear in logs/gate-base.log's four (4 failed / 184 passed, EXIT=1), and its declared negative control logs/negative-control-round4.log reads EXIT=1 with one failure.\nVERDICT write_paths: the declared fence is the node's test module plus the three source modules added by the resume-1 advice, and every path in the ac17ed130..860563698 diff is inside it.\nVERDICT manifest: read; it reads status complete with its commits, flat baseline_suite and after_suite records carrying command and completed, a bare negative_control_log path and three test_logs, and `crew check --manifest` returns ok true.\nVERDICT diff: read commit by commit against ac17ed130 \u2014 the refusal guard, the single dispose rendering with obligations unchanged, the landed-round fold, the landing fragment, and two test-strengthening commits; six files, +680/-29, none outside the fence.\nCALL_SITES: reckon/crew/recovery_watch.py:3016, reckon/crew_dispatch_commands.py:2652, reckon/crew/recovery_review_acceptance.py:498, reckon/crew/recovery_review_acceptance.py:534, reckon/crew/obligations.py:1240, reckon/crew/obligation_snapshot.py:974\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_dispatch.py:2148 reads review_lifecycle_module.lifecycle and line 2190 refuses before composing, and reckon/crew/recovery_repair_dispatch.py:512 folds a landed round so the refusal cannot stall the automatic loop.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/gate-head.log records revision 860563698f54 with its command and EXIT=1 over a superset of the named set, its two failure ids both in logs/gate-base.log's four so head adds none, though the fragment's measure line cites a superseded head's 182-pass figure.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all six paths in ac17ed130..860563698 are inside the declared fence, the three source modules having been added to it by resume-1-advice.txt.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_review_waits_for_its_repair.py:278 asserts the refusal, :288 that nothing was composed, :310 and :330 that the refusal lifts, and :368 reads the store back requiring \"open\", with logs/negative-control-round4.log reddening the refusal test at EXIT=1 when the review_lifecycle read is removed.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/recovery_review_dispatch.py:2169 follows the module's existing refusal idiom at lines 1952 and 2001, with conventional commit subjects and bodies and no plan identifier in any added symbol.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/recovery_review_dispatch.py:2079 _finding_place re-implements reckon/crew/repair.py:441 _finding_location in a module that already imports repair, though the dispose_commands change at reckon/crew/review_dispositions.py:489 correctly de-duplicates two callers.\nFINDING reckon/crew/recovery_review_dispatch.py:2079 follow-on: _finding_place re-implements the capability reckon/crew/repair.py:441 _finding_location owns, differing only in its empty-file fallback, in a module already importing repair.\n",
+  "review_run_id": "r-20261021T183616757907-review-of-review-waits-for-its-repair-860563698f54",
+  "reviewed_base_sha": "ac17ed130e1aa4f9b8c12643dfb41404fd4c2869",
+  "reviewed_head_sha": "860563698f545e2646653d8ac68fe66703afe785",
+  "reviewed_run_id": "r-20261021T105142717388-review-waits-for-its-repair",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "review",
+  "scores": {
+    "durability": 20,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T19:06:45.237378+00:00",
+  "total": 99
+}
