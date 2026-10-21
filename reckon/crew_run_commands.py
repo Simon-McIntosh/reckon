@@ -632,11 +632,11 @@ def crew_dispose(
     reviewed_run_id,
     dimension,
     finding_index,
-    review_rubric,
     kind,
     node_id,
     reason,
     pretty,
+    review_rubric=None,
 ):
     """Record the disposition one sub-floor review dimension or review finding carries.
 
@@ -665,7 +665,10 @@ def crew_dispose(
     ``--rubric figure`` answers a finding on the run's figure review: the
     record read, rewritten and read back for the receipt is the figure record,
     and a run carrying no figure review is refused naming that absence.
-    Omitted, the verb answers the run's text review exactly as before.
+    Omitted, the verb answers the run's text review exactly as before. The
+    parameter is last and defaults, so a caller reaching the callback without
+    naming a rubric answers the text review rather than failing on an argument
+    it never had to know about.
     """
     from reckon.crew import obligations as obligations_module
     from reckon.crew import recovery, review_dispositions, runs
