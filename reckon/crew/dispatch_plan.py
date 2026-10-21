@@ -31,9 +31,6 @@ from reckon.crew import (
 from reckon.crew import (
     prescription as prescription_module,
 )
-from reckon._plan_html import (
-    _record_field,
-)
 from reckon.crew.node import (
     _SAFE_ID,
     BudgetHold,
@@ -57,7 +54,6 @@ from reckon.crew.routing import (
     _agent_configuration,
     _competence_verdict,
     _fleet_script,
-    _section_record,
     require_plan_reviewed,
     require_plan_section_visible,
     resolve_dispatch_authority,
@@ -258,13 +254,13 @@ def _section_estimate_hours(
     repo: str | Path | None,
     authority: Mapping[str, Any] | None,
 ) -> float | None:
-    """Return the hours a node's named plan section declares in its record.
+    """Return the hours a node's named plan section declares.
 
-    The resolution mirrors the read the section's routing read performs: the
-    plan resource is resolved through the project's docs mount and the
-    section's typed record supplies ``effort_hours``. Anything that goes wrong
-    answers with nothing rather than raising, because an advisory estimate
-    that could refuse a dispatch would be a gate nobody asked for.
+    Only the plan's location is resolved here; the section's declared effort is
+    read the way the picker reads it, so the two agree on what a section of a
+    plan costs. Anything that goes wrong answers with nothing rather than
+    raising, because an advisory estimate that could refuse a dispatch would be
+    a gate nobody asked for.
     """
     from reckon.resources import (
         ResourceCollision,
@@ -285,7 +281,13 @@ def _section_estimate_hours(
         )
         if resource is None:
             return None
-        record, _project = _section_record(resource.path, node.section)
+        # The section record and its finite-positive test are the picker's own
+        # read, reused rather than restated, so one section's declared effort
+        # is charged the same way whether the picker sizes a node or this
+        # advisory does.
+        from reckon.crew.picker import _section_effort_hours
+
+        return _section_effort_hours(resource.path, node.section)
     except (
         CrewError,
         ledger.LedgerError,
@@ -296,13 +298,6 @@ def _section_estimate_hours(
         ValueError,
     ):
         return None
-    try:
-        hours = float(_record_field(record, "effort_hours"))
-    except (TypeError, ValueError):
-        return None
-    if math.isfinite(hours) and hours > 0:
-        return hours
-    return None
 
 
 def _estimate_hours(

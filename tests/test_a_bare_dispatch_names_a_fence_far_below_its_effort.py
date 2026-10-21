@@ -27,6 +27,7 @@ from click.testing import CliRunner
 
 from reckon import capabilities, flight
 from reckon import cli as cli_module
+from reckon.crew import picker
 
 # A plan whose total effort is twenty hours while one of its sections declares
 # a quarter of an hour. The pair is what tells a section's own figure apart
@@ -308,6 +309,27 @@ def test_a_node_with_no_estimate_carries_no_line(
     ]
 
     document = _document(_dispatch(plan_repo, arguments))
+
+    assert not _fence_lines(document), document.get("warnings")
+
+
+def test_the_sections_effort_is_read_the_way_the_picker_reads_it(
+    plan_repo: Path, crew_home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The section's effort is the picker's own read of the record.
+
+    The advisory holds no second opinion about what a section costs: it asks
+    the read the picker sizes nodes with, so the two cannot drift. Replacing
+    that read with one that answers nothing leaves the six-hour case with
+    nothing to compare the fence against.
+    """
+    monkeypatch.setattr(picker, "_section_effort_hours", lambda *_args, **_kwargs: None)
+
+    result = _dispatch(
+        plan_repo, _arguments(plan_repo, node_id="shared-read", section="s1")
+    )
+
+    document = _document(result)
 
     assert not _fence_lines(document), document.get("warnings")
 
