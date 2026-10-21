@@ -1,0 +1,84 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived, not a measured delta: the reviewed manifest records baseline_suite null and after_suite null, so no base arm was logged and the reviewed run's own suites cannot yield a delta; the head arm it does log (gate.log) ends '102 passed' with no FAILED line and EXIT=0, so no failure id can be added under any baseline. The four new tests are absent at the base revision and are not counted.",
+  "backend": "clive",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/mcp_views.py:1120",
+    "reckon/serve.py:1729",
+    "reckon/mcp_views.py:1129",
+    "reckon/mcp_views.py:1887",
+    "reckon/project_maintenance_commands.py:1498"
+  ],
+  "completed_at": "2026-10-21T22:02:29.009Z",
+  "dispatched_at": "2026-10-21T21:28:10Z",
+  "findings": [
+    {
+      "file": "reckon/roadmap.py",
+      "line": "3645",
+      "severity": "follow-on",
+      "text": "plan_ready_sections re-derives a plan's ready sections from implementable_sections minus a locally built section_holds set, while the same file already owns that derivation at reckon/roadmap.py:3589-3629, which fills the plan row's ready_sections from section_blockers; the two enumerations differ (the new one excludes gate-gated sections and all sections that are not implementable declarations), so on a plan carrying both a section dependency and a gate hold the row's ready_sections lists a section for which no ranked row is emitted; the addition should extend the existing split rather than answer the same question a second way; ready_set_view (reckon/mcp_views.py:1120) republishes ready_sections, so the disagreement reaches a composed client."
+    },
+    {
+      "file": "reckon/roadmap.py",
+      "line": "2667",
+      "severity": "follow-on",
+      "text": "_pointer_reports_blocked resolves a run's state by calling classify_pointer and reading only its classification key, while the classifier's owner in the roadmap read path, reckon/mcp_views.py:1894-1901, prefers the recorded watcher event for the run and falls back across recovery_classification, classification and to_state; a pointer whose state is recorded under another of those names, or overridden by a watcher event, is read as not blocked here and as classified there, so the stuck signal and the in-flight/interrupted partition can disagree about one run inside the same read."
+    },
+    {
+      "file": "tests/test_ready_sections_are_ranked.py",
+      "line": "185",
+      "severity": "follow-on",
+      "text": "the assertion that the largest-reach section leads is satisfied by critical-path membership rather than by reach - wide#s1 costs 30h and heads the fixture's longest path (wide#s1 -> waiter-a#s1, 31h), so it carries the critical-path term and would still sort first with the reach term deleted from _priority_key; the test therefore does not guard the signal its name claims, and reach is guarded only by the wide#s3-before-wide#s2 comparison at :208."
+    },
+    {
+      "file": "reckon/roadmap.py",
+      "line": "3809",
+      "severity": "follow-on",
+      "text": "the section rows are appended to immediate_roadmap after the plan rows and numbered from len(immediate)+1, so the order field places every section behind every plan and the two populations are sorted by plan_ranking_key and section_ranking_key separately rather than by one shared ordering; the plan's 'ranked by the extended key beside the plan rows' is only realised as a second block, and no test in the diff distinguishes the two readings because every fixture plan is ROI-high and effort-M."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T194841917920-ready-sections-are-ranked/manifest.md",
+      "line": "15",
+      "severity": "follow-on",
+      "text": "the tests field carries four test names rather than the literal gate command the manifest contract asks for, and the manifest records neither baseline_suite nor after_suite, so the base arm the done_when names ('the gate log shows the tests failing on the base commit') is nowhere logged as a run - the negative control substitutes by holding the append out, which is not the same evidence and is what leaves added_failure_count underivable from the reviewed run's own suites."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against ce957c65; 855ced47 is the implementation and b44a798f the landing record, four paths changed, all inside the declared scope.",
+    "done_when": "the gate log records 102 passed EXIT=0 over the fixture the done_when names and negative-control.log records the four new tests failing EXIT=1 when the section rows are held out, but no base-commit arm is logged and the reviewed manifest's baseline_suite and after_suite are both null.",
+    "goal": "the node's goal is to rank ready sections in the immediate roadmap by section-aware critical path, reach and stuck signals; reckon/roadmap.py:3758 appends one row per ready section to immediate_roadmap carrying ref plan#sN, its plan, its own remaining effort and a reason naming the placing signal, ranked by the extended key in reckon/roadmap_ranking.py:243.",
+    "manifest": "read; it reports 102 passed EXIT=0 over the eleven roadmap files, the negative control, two commits and a follow_ons entry for the undrawn figure.",
+    "write_paths": "the dispatch declares six exclusive paths; every path in the diff (reckon/roadmap.py, reckon/roadmap_ranking.py, tests/test_ready_sections_are_ranked.py, the landing fragment) is inside them, and the declared figures directory is unused."
+  },
+  "justifications": {
+    "durability": "tests/test_ready_sections_are_ranked.py:208 fails if the reach term leaves the key and :223 fails if the stuck term leaves it, but :185 is satisfied by critical-path membership (wide#s1 heads the 31h path) and the blocked_run_seconds branch of section_is_stuck has no test.",
+    "evidence": "gate.log records 102 passed EXIT=0 and negative-control.log records four failures EXIT=1, but the reviewed manifest's tests field (manifest.md:15) carries test names rather than the gate command and its baseline_suite and after_suite are null, so the base-arm delta the done_when names is unlogged.",
+    "fit": "the split follows the module's own idiom and the new names are mechanism names (CRITICAL_PATH_SIGNAL, STUCK_ATTEMPT_THRESHOLD), though reckon/roadmap.py:83 imports private siblings (_EFFORT_UNIT, _lift_section_edges) and a literal em dash was rewritten as \\u2014.",
+    "goal_fidelity": "reckon/roadmap.py:3758 emits the section rows with ref, plan and a reason naming critical path, reach or stuck, but reckon/roadmap.py:3809 appends them after every plan row, so 'ranked by the extended key beside the plan rows' lands only as a second sorted block.",
+    "reuse": "reckon/roadmap.py:3645 re-derives a plan's ready sections without extending the split already owned at reckon/roadmap.py:3589-3629, and reckon/roadmap.py:2667 reads a run's state narrower than its owner reckon/mcp_views.py:1894-1901.",
+    "scope_discipline": "every path in the diff against ce957c65 is one of the dispatch's declared write paths, including the module split the dispatch itself mandated to keep reckon/roadmap.py inside its bound."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to rank ready sections in the immediate roadmap by section-aware critical path, reach and stuck signals; reckon/roadmap.py:3758 appends one row per ready section to immediate_roadmap carrying ref plan#sN, its plan, its own remaining effort and a reason naming the placing signal, ranked by the extended key in reckon/roadmap_ranking.py:243.\nVERDICT done_when: the gate log records 102 passed EXIT=0 over the fixture the done_when names and negative-control.log records the four new tests failing EXIT=1 when the section rows are held out, but no base-commit arm is logged and the reviewed manifest's baseline_suite and after_suite are both null.\nVERDICT write_paths: the dispatch declares six exclusive paths; every path in the diff (reckon/roadmap.py, reckon/roadmap_ranking.py, tests/test_ready_sections_are_ranked.py, the landing fragment) is inside them, and the declared figures directory is unused.\nVERDICT manifest: read; it reports 102 passed EXIT=0 over the eleven roadmap files, the negative control, two commits and a follow_ons entry for the undrawn figure.\nVERDICT diff: read commit by commit against ce957c65; 855ced47 is the implementation and b44a798f the landing record, four paths changed, all inside the declared scope.\nCALL_SITES: reckon/mcp_views.py:1120 ready_set_view, reckon/serve.py:1729 the ready-set handler that projects it, reckon/mcp_views.py:1129 the immediate_roadmap rows it reads, reckon/mcp_views.py:1887 partition_live_runs, reckon/project_maintenance_commands.py:1498 _print_roadmap_report\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/roadmap.py:3758 emits the section rows with ref, plan and a reason naming critical path, reach or stuck, but reckon/roadmap.py:3809 appends them after every plan row, so 'ranked by the extended key beside the plan rows' lands only as a second sorted block.\nSCORE evidence: 14\nJUSTIFICATION evidence: gate.log records 102 passed EXIT=0 and negative-control.log records four failures EXIT=1, but the reviewed manifest's tests field (manifest.md:15) carries test names rather than the gate command and its baseline_suite and after_suite are null, so the base-arm delta the done_when names is unlogged.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff against ce957c65 is one of the dispatch's declared write paths, including the module split the dispatch itself mandated to keep reckon/roadmap.py inside its bound.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_ready_sections_are_ranked.py:208 fails if the reach term leaves the key and :223 fails if the stuck term leaves it, but :185 is satisfied by critical-path membership (wide#s1 heads the 31h path) and the blocked_run_seconds branch of section_is_stuck has no test.\nSCORE fit: 17\nJUSTIFICATION fit: the split follows the module's own idiom and the new names are mechanism names (CRITICAL_PATH_SIGNAL, STUCK_ATTEMPT_THRESHOLD), though reckon/roadmap.py:83 imports private siblings (_EFFORT_UNIT, _lift_section_edges) and a literal em dash was rewritten as \\u2014.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/roadmap.py:3645 re-derives a plan's ready sections without extending the split already owned at reckon/roadmap.py:3589-3629, and reckon/roadmap.py:2667 reads a run's state narrower than its owner reckon/mcp_views.py:1894-1901.\nFINDING reckon/roadmap.py:3645 follow-on: plan_ready_sections re-derives a plan's ready sections from implementable_sections minus a locally built section_holds set, while the same file already owns that derivation at reckon/roadmap.py:3589-3629, which fills the plan row's ready_sections from section_blockers; the two enumerations differ (the new one excludes gate-gated sections and all sections that are not implementable declarations), so on a plan carrying both a section dependency and a gate hold the row's ready_sections lists a section for which no ranked row is emitted; the addition should extend the existing split rather than answer the same question a second way; ready_set_view (reckon/mcp_views.py:1120) republishes ready_sections, so the disagreement reaches a composed client.\nFINDING reckon/roadmap.py:2667 follow-on: _pointer_reports_blocked resolves a run's state by calling classify_pointer and reading only its classification key, while the classifier's owner in the roadmap read path, reckon/mcp_views.py:1894-1901, prefers the recorded watcher event for the run and falls back across recovery_classification, classification and to_state; a pointer whose state is recorded under another of those names, or overridden by a watcher event, is read as not blocked here and as classified there, so the stuck signal and the in-flight/interrupted partition can disagree about one run inside the same read.\nFINDING tests/test_ready_sections_are_ranked.py:185 follow-on: the assertion that the largest-reach section leads is satisfied by critical-path membership rather than by reach - wide#s1 costs 30h and heads the fixture's longest path (wide#s1 -> waiter-a#s1, 31h), so it carries the critical-path term and would still sort first with the reach term deleted from _priority_key; the test therefore does not guard the signal its name claims, and reach is guarded only by the wide#s3-before-wide#s2 comparison at :208.\nFINDING reckon/roadmap.py:3809 follow-on: the section rows are appended to immediate_roadmap after the plan rows and numbered from len(immediate)+1, so the order field places every section behind every plan and the two populations are sorted by plan_ranking_key and section_ranking_key separately rather than by one shared ordering; the plan's 'ranked by the extended key beside the plan rows' is only realised as a second block, and no test in the diff distinguishes the two readings because every fixture plan is ROI-high and effort-M.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T194841917920-ready-sections-are-ranked/manifest.md:15 follow-on: the tests field carries four test names rather than the literal gate command the manifest contract asks for, and the manifest records neither baseline_suite nor after_suite, so the base arm the done_when names ('the gate log shows the tests failing on the base commit') is nowhere logged as a run - the negative control substitutes by holding the append out, which is not the same evidence and is what leaves added_failure_count underivable from the reviewed run's own suites.\n",
+  "review_run_id": "r-20261021T212708581358-review-of-ready-sections-are-ranked-b44a798f29c5",
+  "reviewed_base_sha": "ce957c65fdc58020382e720eb98b0ea5257a1ab4",
+  "reviewed_head_sha": "b44a798f29c55dfbf9331bc7695ff8951e9afc47",
+  "reviewed_run_id": "r-20261021T194841917920-ready-sections-are-ranked",
+  "reviewer": "review-of-ready-sections-are-ranked-b44a798f29c5",
+  "reviewer_run_id": "r-20261021T212708581358-review-of-ready-sections-are-ranked-b44a798f29c5",
+  "scores": {
+    "durability": 14,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T22:00:00Z",
+  "total": 85
+}
