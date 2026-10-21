@@ -27,15 +27,24 @@ from reckon.crew.picker.types import Candidate
 NOW = datetime(2026, 10, 2, 2, 1, 0, tzinfo=UTC)
 
 #: The picker state rendered by this head's code for the fixture built below,
-#: committed verbatim as a test fixture. It extends the reviewed run's base
-#: revision (``4e2f6823c``) bytes with the ``lanes`` block that states each
-#: lane's pressure once and the ``serving_lanes`` fact that names how many lanes
-#: can serve the node, so it was regenerated from the head tree over the same
-#: frozen fixture (ledger rows, profile-cache directory, lane document and
-#: live-worker list all fixed); every other figure is byte-identical to the
-#: base. The bytes were produced by running the tree's own code, never
-#: transcribed by hand.
-GOLDEN_STATE = r"""{"node":{"role":"implement","spec_level":"guided","capability":{},"goal":"g","done_when":"d","estimated_context":0,"estimated_hours":null,"estimated_hours_source":null,"attempts":0,"write_path_count":0,"negative_control_declared":false,"serving_lanes":["f"],"serving_lane_count":1,"hold_waits_for":"the f lane, the only lane that can serve this node"},"orchestrator_comment":"one owner","candidates":{"clive":{"backend":"clive","lane":"f","model":"m","availability":"served","utilisation_pct":null,"burn_multiple":null,"pace_allowance":null,"days_to_reset":null,"resets_at":null,"worker_slots":null,"congestion":null,"outcomes":{"passed":0,"failed":0,"not-run":0,"unknown":0},"context":null,"budget_source":null,"budget_age_s":null,"stale":null,"reset_available":null},"amine":{"backend":"amine","lane":"f","model":"m","availability":"served","utilisation_pct":null,"burn_multiple":null,"pace_allowance":null,"days_to_reset":null,"resets_at":null,"worker_slots":null,"congestion":null,"outcomes":{"passed":0,"failed":0,"not-run":0,"unknown":0},"context":null,"budget_source":null,"budget_age_s":null,"stale":null,"reset_available":null}},"return_times":{"clive":{"p50_s":300,"p90_s":500,"runs":3,"size_key":"time_budget","size_bucket":"30m_to_60m","budget_source":null,"budget_age_s":null,"stale":false},"amine":{"p50_s":null,"p90_s":null,"runs":null,"size_key":"time_budget","size_bucket":"30m_to_60m","budget_source":null,"budget_age_s":null,"stale":false}},"lanes":{"f":{"availability":"served","utilisation_pct":null,"burn_multiple":null,"pace_allowance":null,"resets_at":null,"days_to_reset":null,"worker_slots":null,"congestion":null,"reset_available":null}},"local_lane":{"admission":"admitting","expected_wait_s":null,"expected_wait_profile_age_s":null,"running":2,"waiting":0,"headroom":14,"worker_slots":53,"tokens_per_second":89.425,"read_at":"2026-10-02T02:01:00+00:00"}}"""
+#: committed verbatim as a test fixture. The bytes were produced by running the
+#: tree's own code over the frozen fixture (ledger rows, profile-cache
+#: directory, lane document and live-worker list all fixed), never transcribed
+#: by hand. Four landed changes moved figures the base revision rendered here:
+#:
+#: * ``node.urgency`` now carries the dispatch deadline and its remaining
+#:   seconds, so a pick can weigh the time a node has left against a lane's
+#:   expected wait.
+#: * ``local_lane.queue_position`` now states the next estimated position from
+#:   the published waiting count.
+#: * ``candidates`` is now keyed by each offered option's own key --
+#:   ``<lane>:<model>:<backend>`` -- rather than by the bare backend name.
+#: * ``return_times`` is keyed the same way, so a lane offering several models
+#:   keeps one block per model instead of losing all but one.
+#:
+#: Every other figure is byte-identical to the base revision's render; the
+#: ``lanes`` block and ``serving_lanes`` fact remain as they were.
+GOLDEN_STATE = r"""{"node":{"role":"implement","spec_level":"guided","capability":{},"goal":"g","done_when":"d","urgency":{"due":null,"seconds_to_due":null,"reason":null},"estimated_context":0,"estimated_hours":null,"estimated_hours_source":null,"attempts":0,"write_path_count":0,"negative_control_declared":false,"serving_lanes":["f"],"serving_lane_count":1,"hold_waits_for":"the f lane, the only lane that can serve this node"},"orchestrator_comment":"one owner","candidates":{"f:m:clive":{"backend":"clive","lane":"f","model":"m","availability":"served","utilisation_pct":null,"burn_multiple":null,"pace_allowance":null,"days_to_reset":null,"resets_at":null,"worker_slots":null,"congestion":null,"outcomes":{"passed":0,"failed":0,"not-run":0,"unknown":0},"context":null,"budget_source":null,"budget_age_s":null,"stale":null,"reset_available":null},"f:m:amine":{"backend":"amine","lane":"f","model":"m","availability":"served","utilisation_pct":null,"burn_multiple":null,"pace_allowance":null,"days_to_reset":null,"resets_at":null,"worker_slots":null,"congestion":null,"outcomes":{"passed":0,"failed":0,"not-run":0,"unknown":0},"context":null,"budget_source":null,"budget_age_s":null,"stale":null,"reset_available":null}},"return_times":{"f:m:clive":{"p50_s":300,"p90_s":500,"runs":3,"size_key":"time_budget","size_bucket":"30m_to_60m","budget_source":null,"budget_age_s":null,"stale":false},"f:m:amine":{"p50_s":null,"p90_s":null,"runs":null,"size_key":"time_budget","size_bucket":"30m_to_60m","budget_source":null,"budget_age_s":null,"stale":false}},"lanes":{"f":{"availability":"served","utilisation_pct":null,"burn_multiple":null,"pace_allowance":null,"resets_at":null,"days_to_reset":null,"worker_slots":null,"congestion":null,"reset_available":null}},"local_lane":{"admission":"admitting","expected_wait_s":null,"expected_wait_profile_age_s":null,"running":2,"waiting":0,"queue_position":1,"headroom":14,"worker_slots":53,"tokens_per_second":89.425,"read_at":"2026-10-02T02:01:00+00:00"}}"""
 
 #: Helper names that must not be re-defined inside the picker package, each
 #: mapped to the one function in run_time_profile that owns its behaviour.
@@ -215,8 +224,10 @@ def test_rendered_state_matches_the_base_revision_bytes(tmp_path, monkeypatch):
     assert rendered == GOLDEN_STATE, (
         "the rendered picker state changed from the base revision's bytes"
     )
+    # ``return_times`` is keyed by each option's own key, so the clive block is
+    # read through the same helper the questions use rather than by backend name.
     payload = json.loads(rendered)
-    block = payload["return_times"]["clive"]
+    block = payload["return_times"][lane_context.option_key(_candidate("clive"))]
     # The figures the base rendered as integers stay integers.
     assert block["p50_s"] == 300 and isinstance(block["p50_s"], int)
     assert block["p90_s"] == 500 and isinstance(block["p90_s"], int)
