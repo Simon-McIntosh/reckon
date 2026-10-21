@@ -633,12 +633,16 @@ def test_resume_reopens_a_complete_run_and_grants_its_path(
         "reckon/crew/runs.py",
         "reckon/crew/claims.py",
     ]
-    assert "status: blocked" in manifest.read_text()
-    assert (
-        manifest.with_name("manifest.md.asdelivered")
-        .read_text()
-        .endswith("status: complete\n")
-    )
+    # The reopen continues the run rather than ruling on it, so no verdict of
+    # its own is on the manifest: a status word here would be an outcome no
+    # attempt reached, and the resumed worker's first edit would then be read
+    # against it.
+    assert "status: in-progress\n" in manifest.read_text()
+    assert "status: blocked" not in manifest.read_text()
+    delivered = sorted(manifest.parent.glob("manifest.md.attempt-*.asdelivered"))
+    assert [path.read_text() for path in delivered] == [
+        "node: reopen-fixture\nstatus: complete\n"
+    ]
 
 
 def test_resume_backend_carries_the_selected_model(
