@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T06:50:58.746Z",
+  "dispatched_at": "2026-10-21T06:38:08Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-page-paints-from-an-index.html:242",
+      "id": "done_when-1",
+      "reason": "a node handed this measure must either write the second key list the wording forbids or silently widen the loader's public surface, and neither is authorised by the plan.",
+      "text": "\u00a710's first done-when requires the test to read the kept key set \"from `derivedBlocks` in the test, not written out\", but `derivedBlocks` is a closure-local `const` inside `window.revalidateProjectState` (docs/ui/state-loader.js:316) and the module exports only `loadDocumentChecks`, `revalidateProjectState`, `STATE_READY`, `watchProjectStateChanges` and `revealArrivals` (`window.` assignments at :219, :263, :704, :709, :766), so no test harness can reach it \u2014 including the loader harness that `eval`s only this file (tests/test_page_paints_from_the_index.py:184-197)",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-page-paints-from-an-index.html:244",
+      "id": "done_when-2",
+      "reason": "the measure has no instrument until someone builds a counting or real renderer for shell.jsx, and that unnamed step is the whole cost of the case.",
+      "text": "\u00a710's third case asserts \"the page renders once `window.STATE_DERIVED_READY` resolves\", but neither harness in the declared write paths can observe a render: the loader harness runs state-loader.js under `node` with no React at all, and the SPA harness stubs `useState`/`useEffect` as noops and loads only crew.jsx and sprint.jsx (tests/test_spa_derived_flow.py:13-32), not the shell where the render is bumped",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-page-paints-from-an-index.html:257",
+      "id": "done_when-3",
+      "reason": "as written no arm of \u00a711 shows the route's failure path swallows into a 200 rather than the read answering 500, so the node cannot demonstrate its guard fires.",
+      "text": "\u00a711's server case for the new `/_schedule/<project>` route names three assertions and no negative control, unlike \u00a710's third case and unlike \u00a724 of the-site-answers-fast-and-agrees, which guards the same swallow with \"the negative control puts the attach back inside the handler's error path, and the first case answers 500\"",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ba46d20ff3ee4500f8e79d39c0ad7f33fc0b69de5620d74782fb564abd89b328",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 44,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T063722440145-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "59e1ff97d267d58381d66a61e4c3e82d904ba1d9",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 docs/ui/state-loader.js (watchProjectStateChanges:709, revalidateProjectState:263, mergeDerived:484, derivedBlocks:316), docs/ui/shell.jsx (refreshProjectState:154, loadChecksAfterDerived:149), docs/ui/crew.jsx (DerivedFlow \"in flight\" key:81), reckon/serve.py (_attach_schedule_for_read:1777, called from the discovery read at :3332, building its schedule from `_crew_rows`), the-site-answers-fast-and-agrees \u00a724 (exists, and states the null-schedule/schedule_error rule \u00a710 line 233 cites), tests/test_spa_derived_flow.py, tests/test_page_paints_from_the_index.py, and the 50,000-token bound with an empty ALLOWLIST in tests/test_every_module_fits_a_worker_window.py all resolve; `derivedBlocks` exists as a symbol but is unreachable from a test, which is the finding below rather than an unresolvable anchor.",
+    "done_when": "a finding \u2014 \u00a710's first measure asks the test to read the kept key set \"from `derivedBlocks`\" (line 242), a symbol no test can reach, and \u00a711's server case for the new `/_schedule` route (line 257) declares three assertions and no negative control.",
+    "evidence_paths": "pass \u2014 \u00a710 line 246 and \u00a711 line 257 write every log under the run directory with a trailing `EXIT=`, and run suites on the fleet allocation, not a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 \u00a710 and \u00a711 name mechanisms and existing symbols (`derivedBlocks`, `mergeDerived`, `_attach_schedule_for_read`, `/_schedule`), and carry no plan label, ticket number or version tag into a symbol, a file name or a comment the node will write.",
+    "reasoning": "pass \u2014 all three checks hold for both units. Root cause matches the cited code: revalidation assembles state from index rows alone (state-loader.js:550, :558 \u2192 `assemble` with `disc:null, idx:{}` \u2192 `derivedBlocks` yields a null schedule, empty sprints/ready set/endpoints/timeline), `refreshProjectState` bumps the render before the merge (shell.jsx:154-157), `mergeDerived` writes in place with no render (state-loader.js:484-534) and the next render comes only through `loadChecksAfterDerived` \u2192 `/_checks` \u2192 `reckon:checks` (shell.jsx:149-172), exactly as \u00a710 line 231 states; \u00a711's premise is verified in the code \u2014 the fleet listener does call the same `refetchDerived` as a change event (state-loader.js:747-759) and the schedule is rebuilt from live crew rows on every discovery read (`_attach_schedule_for_read` \u2192 `_crew_rows`), so stopping the fleet refetch alone would leave the flow stale, as \u00a711 line 250 says; and the mechanism runs on the real path with its caller named \u2014 the shell's single `/crew` poll (shell.jsx:298-316) hands `runs` to `CrewView` (shell.jsx:505), which renders `DerivedFlow` (crew.jsx:370) with the server-stated `state === \"in-flight\"` bar (crew.jsx:110).",
+    "single_goal": "pass \u2014 \u00a710 names one deliverable (the derived blocks survive revalidation until better ones replace them) and \u00a711 one (the flow refreshes from its own schedule route), each behaviour carrying its own case and (for \u00a710, and for two of \u00a711's three arms) its own control.",
+    "wiring": "pass \u2014 s11's single declared dependency (`s11 \u2192 the-page-paints-from-an-index#s10`) resolves to an implementable section and matches \u00a711's own line 257 \"Build it after \u00a710, which writes the same files\"; \u00a710 needs no new edge for its landed prerequisites (\u00a74/\u00a75)."
+  },
+  "section_digests": {
+    "_document": "5bedd7f41d8b5b370882135e798f35d56d6e6348c4003130ade8574bbf365128",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "30b6b66402e0a417c5459f9e43c5a74c9bcd6a37f14fe5ff445bc87f4d3f1561",
+    "s11": "e6f10301c2bc69c022ee92f01451e33103b2020e74297abbf6d7a3d0addf68e5",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "768d4a5e4156b059d51137b95683149be313a7d4ce026b0836f872b4f4056507",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T06:53:07.397596+00:00"
+}
