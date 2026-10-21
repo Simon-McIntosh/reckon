@@ -364,6 +364,11 @@ EXIT=0</pre>
     <p>The follower's settle row keeps its text (<code>no live work in</code>, the session, <code>since</code>, the stamp) as a prefix and gains a tail: that the owning session's fleet is drained, or how many runs need the coordinator, counted by <code>reckon/crew/needs_you.py</code>, once per drain. Merged at <code>9a29d32c4</code> (head <code>afbabe876</code>). Reviewed 111/120, with one follow-on answered: the width test was red in both arms only on <code>reckon/ledger.py</code>, since fixed by suite-green §32.</p><p>Stacked population at merge with suite-green §30 (run <code>r-20261021T154622944493-population-mon8-sg30</code>, 82 files, exclusive <code>all_debug</code> node, follower environment cleared, base <code>532f84928</code> vs candidate <code>d75598730</code>): base 4 failed / 907 passed, candidate 3 failed / 910 passed, no id added; the budget-view parity case that failed at base passes at the candidate.</p>
   </section>
 
+  <section id="s10">
+    <h2>§10 — a run nobody will come back to is reported, landed</h2>
+    <p>A crew read view, <code>forgotten</code>, derived in <code>reckon/crew/forgotten_runs.py</code>, lists terminal unpromoted runs whose owning session has had no live follower and no dispatch for six hours, with each run's age and recover action. It does not reuse the dispatch fence's <code>overdue_unreconciled_runs</code>, limits nothing, and no dispatch module names it. The crew tool's view list advertises it, an accepted out-of-fence commit required by the crew-view parity test. Merged at <code>76c89bfd8</code> (head <code>84e23103f</code>). Reviewed 105/120, then 114/120 after a repair round added a case for an already-promoted run.</p><p>Stacked whole-suite population at merge (run <code>r-20261021T180007503078-population-m10-sg33</code>, all 1,452 test files in three chunks per arm, six exclusive <code>all_debug</code> jobs, follower environment cleared, base <code>15bd830f3</code> vs candidate <code>08de800bf</code>): base 101 failing ids, candidate 105. Six ids were added, none attributable to the merge. Four browser-driven tests in <code>tests/test_build.py</code> fail 5 of 5 alone at base as well, and two <code>tests/test_capability.py</code> cases pass 5 of 5 alone in both arms. Two base failures pass at the candidate.</p>
+  </section>
+
 </main>
 </body>
 </html>
