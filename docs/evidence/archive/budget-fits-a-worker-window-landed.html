@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="budget-fits-a-worker-window-landed">
+  <meta name="plan-title" content="Budget Fits A Worker Window — landed record">
+  <meta name="plan-summary" content="Closure synthesis for Budget Fits A Worker Window: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="budget-fits-a-worker-window">
+  <meta name="plan-verdict" content="qualified">
+  <title>Budget Fits A Worker Window — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>Budget Fits A Worker Window — landed record</h1>
+  <p>Closure synthesis for Budget Fits A Worker Window: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s2">
+    <h2>§2 — the pace and lift family moves out of budget.py</h2>
+    <p>Run <code>r-20261021T042124492563-budget-pace-moves-out</code> moved the pace and lift family and its 17 private helpers into a new module, <code>reckon/pace_report.py</code>. <code>_credit_lift_verdict</code> moved into <code>reckon/crew/budget_lift.py</code>.</p>
+<p>Sizes by <code>reckon.crew.routing._tokens_for_bytes</code>:</p>
+<table>
+<thead><tr><th>Module</th><th>Tokens</th></tr></thead>
+<tbody>
+<tr><td><code>reckon/budget.py</code></td><td>36,942, down from 56,488 at <code>76946f9a9</code></td></tr>
+<tr><td><code>reckon/pace_report.py</code></td><td>20,502</td></tr>
+<tr><td><code>reckon/crew/budget_lift.py</code></td><td>15,174</td></tr>
+</tbody>
+</table>
+<p>The width test no longer names <code>budget.py</code>. Its remaining offenders are the base arm's: <code>crew/review.py</code> and <code>ledger.py</code>.</p>
+<p><strong>Imports.</strong> Importing either module first in a fresh interpreter succeeds. <code>pace_report.py</code> has no module-level import of <code>reckon.budget</code>.</p>
+<p><strong>Gate.</strong> Across the 16-file population, base and head both fail the same 10 ids, so the split adds none. Two gate tests were repointed and granted from their failure ids: <code>test_a_lift_reaches_every_budget_row.py</code> and <code>test_budget_window_length.py</code>. The four picker tests that patch <code>snapshot.budget.group_pace</code> pass unedited. The gate logs were copied from node-local scratch into the run directory.</p>
+<p><strong>Review.</strong> 105/120, with three follow-ons. One is open: no test yet guards the import direction.</p>
+  </section>
+
+</main>
+</body>
+</html>
