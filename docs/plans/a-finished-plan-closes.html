@@ -25,7 +25,7 @@
   <title>A Finished Plan Closes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="15">
+<meta name="plan-version" content="16">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -124,6 +124,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-21T15:25:00Z">
     <div class="r-comment-body"><p>§3 landed: closed gates and gates over finished or deferred sections stop holding, in <code>split_unpassed_gates</code> (run <code>finished-work-gates-release</code>, head <code>8bb5124eb</code>); gate 114 passed; negative control 6 of 7 red; review 108/120. <a href="/reckon/evidence/archive/a-finished-plan-closes-landed.html#s3">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261021T130648677198-finished-work-gates-release" data-who="reckon-build" data-when="2026-10-21T14:32:33Z">
+    <div class="r-comment-body"><p>§3 landed in two commits: split_unpassed_gates in reckon/roadmap.py now holds a gate only over the sections a plan still declares implementable (b38b00b23), and drops a settled gate before asking what remains an unpassed hold, so a closed gate holds neither the plan nor a section whatever its verdict, live or finished (73d06200b). A plan that persisted no section classification keeps its prior reading. New gate tests/test_gates_on_finished_work_release.py passes 7/7; the full seven-module gate reads 114 passed, exit 0, against 6 failed, 1 passed, exit 1 under the declared mutation.</p></div>
 </div>
 </section>
 </main>
