@@ -790,15 +790,23 @@ def execution_gates(plan: dict[str, Any]) -> list[dict[str, Any]]:
 def split_unpassed_gates(
     plan: Mapping[str, Any],
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    """Split a plan's unpassed execution gates by what they hold.
+    """Split a plan's unpassed execution gates by the work they still hold.
 
-    A gate that names sections holds only those sections, so long as the plan
-    declares at least one implementable section none of its unpassed gates
-    names -- there is still work the gate leaves reachable. When every
-    implementable section is named by an unpassed gate, or the plan declares no
-    implementable section at all, the gates hold the whole plan because no
+    A gate holds a section only while that section is still implementable: a
+    gate whose named sections are all done, descoped or deferred holds nothing,
+    because the declaration already carries the section and a gate over it is an
+    outcome to record rather than work to wait for. A gate that names
+    implementable sections holds those sections, so long as the plan declares at
+    least one implementable section none of its unpassed gates names -- there is
+    still work the gate leaves reachable. When every implementable section is
+    named by an unpassed gate, or the plan declares no implementable section at
+    all, the gates that name reachable work hold the whole plan because no
     section is left to carry it. A gate that names no sections always holds the
     plan.
+
+    A plan that classified no sections tells this split nothing about which of
+    them a gate still holds, so it keeps the reading an undeclared plan had
+    before declarations were consulted at all: every unpassed gate holds it.
 
     Both lists carry the row shape :func:`unpassed_gate_blockers` produces, so a
     caller reports the first into the plan's blocker list and
@@ -806,15 +814,29 @@ def split_unpassed_gates(
     """
 
     gates = unpassed_gate_blockers(execution_gates(plan))
-    declared = set(implementable_sections(plan.get("section_declarations")))
-    named = {
-        str(section) for gate in gates for section in gate.get("gated_sections") or []
-    }
-    if not declared - named:
+    declarations = plan.get("section_declarations")
+    if not isinstance(declarations, Mapping) or not declarations:
         return gates, []
-    plan_holding = [gate for gate in gates if not gate.get("gated_sections")]
-    section_holding = [gate for gate in gates if gate.get("gated_sections")]
-    return plan_holding, section_holding
+    declared = set(implementable_sections(declarations))
+    naming = [gate for gate in gates if _names_implementable(gate, declared)]
+    named = {
+        str(section) for gate in naming for section in gate.get("gated_sections") or []
+    }
+    if declared - named:
+        plan_holding = [gate for gate in gates if not gate.get("gated_sections")]
+        return plan_holding, naming
+    plan_holding = [
+        gate
+        for gate in gates
+        if not gate.get("gated_sections") or _names_implementable(gate, declared)
+    ]
+    return plan_holding, []
+
+
+def _names_implementable(gate: Mapping[str, Any], declared: set[str]) -> bool:
+    """Whether a gate still names a section the plan declares implementable."""
+
+    return any(str(section) in declared for section in gate.get("gated_sections") or [])
 
 
 def is_closable(plan: Mapping[str, Any]) -> bool:
