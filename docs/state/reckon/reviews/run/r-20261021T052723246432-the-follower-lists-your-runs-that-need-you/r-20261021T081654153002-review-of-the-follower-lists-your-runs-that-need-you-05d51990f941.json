@@ -1,0 +1,72 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_a_pane_settles_when_no_work_is_live.py::test_the_real_follower_settles_when_the_host_advertises_it"
+  ],
+  "added_failures_note": "from the reviewed run's own arm logs: logs/base-arm.log (revision eca5c58dc8) fails 3 ids and logs/head-arm.log (revision 19746f319) fails 4; the set difference is the single id above, which passes 5 of 5 alone runs in both arms (logs/alone-base.log, logs/alone-head3.log).",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:1077",
+    "reckon/crew_follow_commands.py:2162",
+    "reckon/crew_follow_commands.py:2179",
+    "reckon/crew_follow_commands.py:3286",
+    "reckon/cli.py:353"
+  ],
+  "completed_at": "2026-10-21T08:39:33.142Z",
+  "dispatched_at": "2026-10-21T08:21:03Z",
+  "findings": [
+    {
+      "file": "reckon/crew/needs_you.py",
+      "line": 162,
+      "severity": "blocking",
+      "text": "the age fallback now reads a field the snapshot does not carry, so it silently reports zero. `entered = _created_seconds(snapshot, moment=at)` is handed the watch snapshot, but `_created_seconds` reads `pointer.get(\"created_at\")` (reckon/crew/needs_you.py:97) and `_compute_watch_snapshot` returns an explicit dict with no `created_at` key (reckon/crew/recovery_watch.py:1214-1310), so the stamp is always absent and the fallback returns `moment`, giving age_seconds 0.0. The base revision passed the pointer (`entered = _created_seconds(pointer, moment=at)` before 19746f319) and read the real creation instant, so this is a regression in the reviewed diff. It is reachable exactly for the population the module exists to name: `_state_entered_seconds` returns None whenever the run has no stream (reckon/crew/recovery_watch.py:1196-1198 leaves stall_stream_path None) or no transition to its current state, and a stalled run has no `blocked` transition to find \u2014 which the module's own docstring anticipates, as a run may be in a needs-action state whether or not a producer ever wrote a transition for it. The effects: the pane prints `fsa-repair 0m` for a run that has been blocked for hours, and the oldest-first sort at reckon/crew/needs_you.py:176 orders by that same broken number, so the row that most needs attention sinks to the bottom of its group."
+    },
+    {
+      "file": "reckon/crew/needs_you.py",
+      "line": 101,
+      "severity": "follow-on",
+      "text": "`_snapshots` duplicates a mapping the repository already builds. reckon/crew/recovery_watch.py:2211-2229 (`_live_project_session_counts`) lists the same live pointers, reduces each through the same `_watch_snapshot` over the same `parse_duration(DEFAULT_WATCH_STALL_WINDOW)`, and keys them by the same stringified run id, then hands them straight to `_fleet_counts`; the added helper is that expression minus the counting. It does not extend that owner, and the owner could be rewritten onto it as `_fleet_counts(_snapshots(...), session=...)`, so the two are free to drift on the run-id keying and the stall window. Not blocking: the behaviour matches today, and the searched neighbour is the only other expression of this map in reckon/crew."
+    },
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": 2141,
+      "severity": "follow-on",
+      "text": "the new default arms the emitter on every follower in the fleet, and the one id the population gained at head is the only end-to-end test of a real follower process. `needs_scan_seconds` is min(interval, FOLLOWER_SETTLE_SAMPLE_SECONDS=1.0) (reckon/crew_follow_commands.py:2141-2145), so an armed follower now composes the needs-you summary from the project's live pointers once a second where it previously did nothing; logs/head-arm.log fails tests/test_a_pane_settles_when_no_work_is_live.py::test_the_real_follower_settles_when_the_host_advertises_it on its 20 s settle timeout while logs/alone-base.log and logs/alone-head3.log pass it 5 of 5 alone in both arms, and the head arm took 401 s against the base arm's 254 s. Attribution to load is plausible but unproven from two arms that ran at different times on a shared node; what is not in doubt is that the change adds per-second work to every follower and no arm measured that cost. Worth a follow-on: re-run the two arms interleaved, or move the scan behind the change check."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 8d89d9673; 19746f319 resolves the cadence to the ten-minute default, rebuilds the derivation on the shared partition and counter, and makes the first scan a baseline, and 05d51990f changes only the landing fragment's prose.",
+    "done_when": "the done_when names tests/test_follow_needs_you_line.py and tests/test_every_module_fits_a_worker_window.py; logs/head-needs-you.log records 6 passed at 19746f319 with a bare EXIT=0, and the population logs record 3 failed/694 passed at base against 4 failed/699 passed at head.",
+    "goal": "the node goal is the plan section 7 standing line; reckon/crew/needs_you.py:120-176 derives the owning session's blocked and unpromoted runs into rows and composes the line, and reckon/crew_follow_commands.py:2147-2180 emits it from inside the generator.",
+    "manifest": "read; it states the focused gate at 6 passed, names logs/head-needs-you.log, records both negative controls at EXIT=1, and its tests: line is the logs' own `# command:` header rather than a template.",
+    "write_paths": "read the manifest's declared paths; the diff's four changed files are reckon/crew/needs_you.py, reckon/crew_follow_commands.py, tests/test_follow_needs_you_line.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/the-follower-lists-your-runs-that-need-you.html, all inside them."
+  },
+  "justifications": {
+    "durability": "logs/needs-you-default-control.log reddens only because the added case drives the follower on a stepped clock, but the pointer-to-snapshot change at reckon/crew/needs_you.py:162 is guarded by no case at all.",
+    "evidence": "logs/head-needs-you.log ends in a bare EXIT=0 over 6 passed and logs/negative-control.log and logs/needs-you-default-control.log end EXIT=1, so the gate is a receipt rather than a claim, though no arm exercises the created_at fallback the diff changed.",
+    "fit": "reckon/crew/needs_you.py:120 follows the module's delegation idiom and its docstring anchors, reckon/crew/recovery_watch.py:270 and :1381, both exist as named.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:2147-2180 resolves the interval to needs_you.DEFAULT_REMIND_SECONDS and yields the line on change and on cadence as plan section 7 asks, though the age it prints falls to 0m on the fallback path at reckon/crew/needs_you.py:162.",
+    "reuse": "reckon/crew/needs_you.py:101 builds the run-id-keyed snapshot map that reckon/crew/recovery_watch.py:2223-2229 already builds inline for its counts, so the addition leaves two expressions of one mapping to drift.",
+    "scope_discipline": "every path the diff touches is one of the manifest's declared write paths and the change carries no figure, dependency or unrelated edit."
+  },
+  "node": "review-of-the-follower-lists-your-runs-that-need-you-05d51990f941",
+  "node:reviewed": "the-follower-lists-your-runs-that-need-you",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is the plan section 7 standing line; reckon/crew/needs_you.py:120-176 derives the owning session's blocked and unpromoted runs into rows and composes the line, and reckon/crew_follow_commands.py:2147-2180 emits it from inside the generator.\nVERDICT done_when: the done_when names tests/test_follow_needs_you_line.py and tests/test_every_module_fits_a_worker_window.py; logs/head-needs-you.log records 6 passed at 19746f319 with a bare EXIT=0, and the run logs record the follower-touching population at 3 failed/694 passed (base) against 4 failed/699 passed (head).\nVERDICT write_paths: read the manifest's declared paths; the diff's four changed files are reckon/crew/needs_you.py, reckon/crew_follow_commands.py, tests/test_follow_needs_you_line.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/the-follower-lists-your-runs-that-need-you.html, all inside them.\nVERDICT manifest: read; it states the focused gate at 6 passed, names logs/head-needs-you.log, records both negative controls at EXIT=1, and its tests: line is the logs' own `# command:` header rather than a template.\nVERDICT diff: read commit by commit against 8d89d9673; 19746f319 resolves the cadence to the ten-minute default, rebuilds the derivation on the shared partition and counter, and makes the first scan a baseline, and 05d51990f changes only the landing fragment's prose.\nCALL_SITES: reckon/crew_follow_commands.py:1077, reckon/crew_follow_commands.py:2162, reckon/crew_follow_commands.py:2179, reckon/crew_follow_commands.py:3286, reckon/cli.py:353\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:2147-2180 resolves the interval to needs_you.DEFAULT_REMIND_SECONDS and yields the line on change and on cadence as plan section 7 asks, though the age it prints falls to 0m on the fallback path at reckon/crew/needs_you.py:162.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/head-needs-you.log ends in a bare EXIT=0 over 6 passed and logs/negative-control.log and logs/needs-you-default-control.log end EXIT=1, so the gate is a receipt rather than a claim, though no arm exercises the created_at fallback the diff changed.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: evidence: every path the diff touches is one of the manifest's declared write paths and the change carries no figure, dependency or unrelated edit.\nSCORE durability: 14\nJUSTIFICATION durability: logs/needs-you-default-control.log reddens only because the added case drives the follower on a stepped clock, but the pointer-to-snapshot change at reckon/crew/needs_you.py:162 is guarded by no case at all.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/needs_you.py:120 follows the module's delegation idiom and its docstring anchors, reckon/crew/recovery_watch.py:270 and :1381, both exist as named.\nSCORE reuse: 14\nJUSTIFICATION reuse: reckon/crew/needs_you.py:101 builds the run-id-keyed snapshot map that reckon/crew/recovery_watch.py:2223-2229 already builds inline for its counts, so the addition leaves two expressions of one mapping to drift.\nFINDING reckon/crew/needs_you.py:162 blocking: `entered = _created_seconds(snapshot, moment=at)` hands the watch snapshot to a helper that reads `created_at` (reckon/crew/needs_you.py:97) while `_compute_watch_snapshot` returns a dict carrying no such key (reckon/crew/recovery_watch.py:1214-1310), so the fallback returns `moment` and a run whose current state has no stream transition reports 0m and sorts last, where the base revision read the pointer's real creation instant.\nFINDING reckon/crew/needs_you.py:101 follow-on: `_snapshots` duplicates the snapshot map `_live_project_session_counts` builds inline at reckon/crew/recovery_watch.py:2223-2229 rather than extending that owner, leaving the run-id keying and stall window to drift.\nFINDING reckon/crew_follow_commands.py:2141 follow-on: the default-armed emitter scans the project's live pointers once a second in every follower (min(cadence, FOLLOWER_SETTLE_SAMPLE_SECONDS)), and the one id the population gained at head is the only end-to-end real-follower test, which timed out at 20 s in logs/head-arm.log while passing 5 of 5 alone in both arms.\n",
+  "review_run_id": "r-20261021T081654153002-review-of-the-follower-lists-your-runs-that-need-you-05d51990f941",
+  "reviewed_base_sha": "8d89d9673f29f39adae3bb1db7925f85c45d4abe",
+  "reviewed_head_sha": "05d51990f9414bb035c8a64b9342d2f8bea6cf4f",
+  "reviewed_run_id": "r-20261021T052723246432-the-follower-lists-your-runs-that-need-you",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T08:52:00+00:00",
+  "total": 98
+}
