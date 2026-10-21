@@ -1,0 +1,44 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T18:34:27.917Z",
+  "dispatched_at": "2026-10-21T18:25:42Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-limit-reset-reaches-every-session.html:24",
+      "id": "wiring-1",
+      "reason": "a coordinator following \u00a76 as written can land the global instruction while the row it names is emitted by no code, failing \u00a76's own done-when and telling every session to act on a row that never appears.",
+      "text": "`plan-section-depends-on` lists `\"s6\":[\"\u2026#s3\",\"\u2026#s5\"]`, but \u00a76's paragraph instructs sessions about \"A reckon monitor row reading `usage limit reset`\" (line 105) and its done-when requires \"every command and row word it names exists on reckon's main\" \u2014 that row word is created by \u00a72's detail line (\"usage limit reset (window \u2026)\", line 71); \u00a72 is not declared and is not reachable transitively from s3 or s5 (both descend from s1), and \u00a76's own gating sentence says only \"Once \u00a73 and \u00a75 are on main\"",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "d7a4acf671b279006a32af4cede023a9bd89dd72191e8fe6313211ea2bdd4d66",
+  "plan_slug": "a-limit-reset-reaches-every-session",
+  "plan_version": 21,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T181805063601-plan-review-of-a-limit-reset-reaches-every-session",
+  "reviewed_blob_sha": "57c37375d7908f936726cf99e6e55a98b08e217e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the reuse table's targets resolve against the code: `_sweep_lift_rows` is called inside the `if sweep:` gate at `reckon/crew/recovery_watch.py:2702`, `PaneRowPath._lift_claim` exists at `reckon/crew/ticker.py:1842` and is fed by `take_lift_claim` at `reckon/crew_follow_commands.py:1417`, the lift document is `budget_lift.LIFTS_LEAF` at `reckon/crew/budget_lift.py:84`, and both plans named in `plan-standalone` exist under `docs/plans/`.",
+    "done_when": "pass \u2014 each implementable section names a negative control that must redden (the ten-minute dedupe rule removed, the pane claim removed and the sweep gated on document change, the 60-minute horizon dropped, the claim directory listed before the announcement, stale registrations treated as live), and \u00a76's word-existence check fails when a named command or row word is absent from main.",
+    "evidence_paths": "pass \u2014 \u00a71 writes every gate log under the run directory and \u00a72\u2013\u00a75 inherit the same terms; \u00a76's evidence is a named commit on the dotfiles primary branch recorded in the landing record, not a scratch path.",
+    "naming": "pass \u2014 no plan labels, stage names or version tags reach the new modules, tests or symbols; `reckon/crew/limit_reset.py`, `reckon/crew/limit_reset_watch.py` and the test filenames are named by the mechanism they carry.",
+    "reasoning": "pass \u2014 the corrected reuse table matches the code on all three counts (the lift sweep is change-gated, not per-poll; the claim callback is the ticker's `_lift_claim`, supplied by the follower as `take_lift_claim`; the row reaches the ticker with no state filter, since `_follow_selects` admits every fleet transition, so \u00a72's claim that the follower module does not change holds), and the transcript fields the plan cites to reject detection (`quotaLimits`, `resetsAt`, `usageLimitNote`) are present in this workstation's transcripts.",
+    "single_goal": "pass \u2014 one deliverable per section; \u00a73's prompt line and \u00a76's global instruction are separate sections with separate gates, which is the split the earlier read asked for.",
+    "wiring": "a finding \u2014 the declared `plan-section-depends-on` gives s6 only s3 and s5, but \u00a76's paragraph and its done-when both require the pane row word `usage limit reset`, which \u00a72 creates."
+  },
+  "section_digests": {
+    "_document": "fcef1dad0bd962410879a5b60ca18feb4a624760fc1c67b83b2453dae21ee728",
+    "s1": "baf87d0138fbe63d90de461ca590ce87510e78c52140119a5905ce875b50da49",
+    "s2": "489f178fad5c3397749e3f34d28f0ae89e228c66b7acfa09a07841614c1ad026",
+    "s3": "038ca137a06a54351755b0ab4ef61b492b094afa3d4c00afa37d3f1cc9358217",
+    "s4": "7e261dc6824166853bdbd8ea2fcdca3e0b3849eefa7c9218c5356b800cbb6ed6",
+    "s5": "92fb4014fd0118f16cf83458ec0db9fbc6b7f0bdbb8025721cf36cec8e7d7d38",
+    "s6": "a251812d1c4424307b60c05534931ab571918a32f65a2b7d01d6d255a3c10042"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T18:37:25.900969+00:00"
+}
