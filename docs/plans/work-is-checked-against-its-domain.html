@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="plan">
   <meta name="plan-slug" content="work-is-checked-against-its-domain">
   <meta name="plan-title" content="Work Is Checked Against Its Domain">
-  <meta name="plan-summary" content="Reviews grade the brief, briefs omit the repository's rules and the reflex reviews unrepaired heads; declare domain rules once and check nodes against them.">
+  <meta name="plan-summary" content="Reviews grade the brief, briefs omit the repository&#x27;s rules and the reflex reviews unrepaired heads; declare domain rules once and check nodes against them.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="14.75">
@@ -26,6 +26,8 @@
   <title>Work Is Checked Against Its Domain | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
   <main class="plan-doc">
@@ -65,17 +67,21 @@
 <section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p>
       Before a review is dispatched for a node, by the reflex or by hand, the node's newest stored
-      review is read. If it carries blocking findings that are not yet answered, acted on or
-      declined, the dispatch is refused with <code>repair-owed</code>. The refusal names each finding
-      and the <code>crew review --answer</code> command for it. The coordinator's obligations show a
-      <code>repair-owed</code> entry in place of <code>review-missing</code>. Answering the findings,
-      with <code>--acted</code> naming the repair commit or <code>--declined</code> with a reason,
-      lifts the refusal. The next round then reviews the repair rather than repeating the last one.
+      review is read. If it carries blocking findings that are not yet disposed, the dispatch is
+      refused with <code>repair-owed</code>. A run review's finding is retired by
+      <code>crew dispose --project P --run &lt;id&gt; --finding &lt;index&gt;</code>, with
+      <code>--kind folded --node &lt;n&gt;</code> when a repair node took it or <code>--kind exempted
+      --reason &lt;r&gt;</code> when it is declined. That is the writer the obligations already pair
+      with their duty row; <code>crew review --answer</code> addresses plan reviews only and cannot
+      retire it. The refusal names each finding and the <code>crew dispose</code> command for it, and
+      the coordinator's obligations show a <code>repair-owed</code> entry in place of
+      <code>review-missing</code>. Disposing the findings lifts the refusal, and the next round then
+      reviews the repair rather than repeating the last one.
     </p>
     <p>
       <strong>Done when:</strong> a fixture run whose previous review has one unanswered blocking
       finding is refused by the reflex with <code>repair-owed</code>, and no review run is created.
-      The same fixture with the finding answered dispatches. On the base commit the first fixture
+      The same fixture with the finding disposed through <code>crew dispose</code> dispatches. On the base commit the first fixture
       dispatches a review, and the test fails there. The obligations test reads
       <code>repair-owed</code> for the first fixture.
     </p>
@@ -84,7 +90,11 @@
 <section data-reckon="section" data-id="s3" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p>
       The project resource (<code>docs/state/&lt;project&gt;/project.json</code>) gains an optional
-      <code>domain</code> block, validated by the published schema. It has two lists.
+      <code>domain</code> block. No schema for the project resource exists today:
+      <code>_read_project_json</code> in <code>reckon/project_state.py</code> checks the envelope's
+      identity and validates nothing else. This section therefore adds a typed model for the block
+      in <code>reckon/_schema.py</code>, validates the block on read, and publishes it beside
+      <code>plan.schema.json</code> under <code>docs/_shared/</code>. The block has three lists.
     </p>
     <p>
       <code>invariants</code> are rules a result must satisfy. Each entry has an <code>id</code>,
@@ -97,6 +107,11 @@
       from the coordinators above are the limit behaviour at DC and at high frequency, whether both
       sides of a comparison pass through the same measurement operator, whether a perturbation grows,
       and whether a measurement of the modelled quantity already exists.
+    </p>
+    <p>
+      <code>model_paths</code> is a list of path globs naming where the repository's models live.
+      A node whose write paths match one is a model-building node for the purposes of §6. The plan
+      format has no section-level tags, so the write paths are the carrier that exists.
     </p>
     <p>
       <code>reckon project domain --project</code> and the project read in the MCP return the block.
@@ -155,15 +170,18 @@
       so a fit is not started on constants nobody holds. A brief for a node that builds or calibrates
       a model also states <code>compares_with</code>: the measurement or reference the result will be
       checked against, or <code>none-exists</code> with the search that established it. Dispatch
-      lints a model-building node that states neither. This is the
+      lints a model-building node, one whose write paths match the project's
+      <code>domain.model_paths</code> from §3, that states neither. This is the
       "is there a measurement of this?" question the coordinators said would have saved two node
       rounds.
     </p>
     <p>
       <strong>Done when:</strong> a fixture brief naming a missing input path is refused at dispatch
-      with the path, and the same brief with the file present dispatches. A brief whose plan section
-      is tagged as model-building and which states neither <code>compares_with</code> nor
-      <code>none-exists</code> receives a lint warning, and one that states either receives none.
+      with the path, and the same brief with the file present dispatches. A brief whose write paths
+      match a declared <code>model_paths</code> glob and which states neither
+      <code>compares_with</code> nor <code>none-exists</code> receives a lint warning, and one that
+      states either receives none. A project that declares no <code>model_paths</code> is never
+      linted, which is the negative control.
     </p>
 
     <h2 id="s7">§7 — The checks find the faults that got through, on the work they missed</h2>
@@ -189,13 +207,13 @@
 
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
+<h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-wicd-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-21" data-recommends-skill="/reckon-build work-is-checked-against-its-domain §2" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Refuse a review round while a blocking finding is unanswered</h4>
     <div class="r-fu-body"><p>§2, §3 and §6 can start at once. §4 and §5 read the block §3 defines, and §7 replays the cases once the rest land.</p></div>
     <pre class="r-fu-prompt">/reckon-build work-is-checked-against-its-domain §2</pre>
     </article>
-    </section>
+</section>
   </main>
 </body>
 </html>

@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-project-reads-as-one-picture-landed">
+  <meta name="plan-title" content="A Project Reads as One Picture — landed record">
+  <meta name="plan-summary" content="Baseline: power_convertor&#x27;s roadmap at plan granularity against the section graph its own plan metadata declares, 2026-10-21.">
+  <meta name="plan-evidence-for" content="a-project-reads-as-one-picture">
+  <meta name="plan-verifies" content="a-project-reads-as-one-picture#s1">
+  <title>A Project Reads as One Picture — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Project Reads as One Picture — landed record</h1>
+  <section id="s1">
+   <h2>§1 — The plan-level roadmap against the declared section graph</h2>
+   <p>Measured on 2026-10-21 at about 07:40 local time against <code>power_convertor</code> at <code>7b793eaa7923aba802816da673fa21764fb2b534</code>. <code>reckon roadmap --project power_convertor --json-output</code> wrote a 214,910-byte report. The same call through MCP with <code>view="detail"</code> was refused with <code>response_over_budget</code> at 141,346 characters against an 80,000 ceiling. The report gives 17 plans, 6 completed and 9 pending; lifecycle completion 35.3 % and implementation 76.4 %; 8 plans ready, 0 blocked, 1 deferred; every <code>unlocks</code> empty; and a critical path of <code>coil-supply-report-rebuild</code> alone at 35 h, with five single-plan open paths.</p>
+   <p>The prototype below reads only each plan's <code>plan-section-declarations</code>, its section elements' <code>data-effort-hours</code> and its <code>plan-section-depends-on</code>. From those it builds the open-section graph and its effort-weighted longest chain. Counted separately with the same parse: 30 open sections, 16 cross-plan section edges (14 of them into open sections), and 11 open sections waiting on another open section.</p>
+   <p>The reason the edges vanish is in <code>reckon/roadmap.py</code> at the base revision. Plan-level <code>depends_on</code> refs (around line 2878) and gate edges (around line 2957) are added to <code>dependents</code>, which feeds <code>unlocks</code> and the critical path. <code>plan-section-depends-on</code> entries feed only the per-plan <code>section_readiness</code> rows (around line 3399) and never reach the graph. Every cross-plan edge in <code>power_convertor</code> is of that third kind.</p>
+   <h3>Output</h3>
+   <pre>open sections: 30  cross-plan edges: 16
+
+CRITICAL PATH (effort-weighted, sections):
+  iter-switched-terminal-transients#s6               8.0h  §6 — The integrated simulation along the scenarios
+  coil-supply-report-rebuild#s4                     10.0h  §4 — The coil set through its worst windows: ripple, edges, resonances
+  coil-supply-report-rebuild#s8                      5.0h  §8 — The report completed on the coil-set results
+  total 23.0 worker-hours
+
+TOP OPEN SECTIONS by downstream reach (sections they transitively unblock):
+  quench-detection-converter-pickup#s4             unblocks  5  chain  21.0h  READY  §4 — The CS co-wound tape
+  iter-switched-terminal-transients#s6             unblocks  4  chain  23.0h  READY  §6 — The integrated simulation along the scenarios
+  coil-circuit-playback-figures#s8                 unblocks  3  chain  21.0h  READY  §8 — The fast-discharge commutation circuit from IDM, and the FDU fron
+  coil-supply-report-rebuild#s9                    unblocks  2  chain  19.0h  READY  §9 — What a disruption induces on the coils: a major disruption and a 
+  coil-supply-report-rebuild#s5                    unblocks  2  chain  17.0h  waits  §5 — Fast discharge of every circuit on the current FDU
+  tf-cold-test-validation#s7                       unblocks  2  chain  17.0h  READY  §7 — The whole discharge replayed, and the voltage to ground
+  coil-circuit-playback-figures#s3                 unblocks  2  chain  13.0h  waits  §3 — Normal operation: PF2 and PF1 through 105069/3
+  tf-co-wound-tape-validation#s2                   unblocks  2  chain   8.5h  READY  §2 — A sectioned TF winding
+  coil-supply-report-rebuild#s4                    unblocks  1  chain  15.0h  waits  §4 — The coil set through its worst windows: ripple, edges, resonances
+  tf-cold-test-validation#s11                      unblocks  1  chain  12.0h  waits  §11 — Current controllers for the next TF and the PF1 tests
+  coil-supply-report-rebuild#s6                    unblocks  1  chain  11.0h  waits  §6 — Whether disruptions must be run to qualify the FDUs, and the case
+  tf-cold-test-validation#s13                      unblocks  1  chain   9.0h  READY  §13 — The FDR&#x27;s transient inductance: the method on the cold test, the
+  quench-detection-converter-pickup#s5             unblocks  1  chain   7.5h  waits  §5 — The pickup in the figures and the scorecard
+  tf-cold-test-validation#s12                      unblocks  1  chain   6.0h  READY  §12 — Detection margins on the measured front end
+  tf-co-wound-tape-validation#s3                   unblocks  1  chain   4.5h  waits  §3 — The TF tape against TF07 and TF17
+  shared-coil-supply-model#s6                      unblocks  0  chain   8.0h  READY  §6 — The studies call the shared model
+  shared-coil-supply-model#s4                      unblocks  0  chain   8.0h  READY  §4 — Every ITER supply as a composed circuit, the VS1 line included
+  iter-dummy-load-validation#s5                    unblocks  0  chain   5.0h  READY  §5 — The converter identified from the recorder, and carried into the 
+  coil-supply-report-rebuild#s8                    unblocks  0  chain   5.0h  waits  §8 — The report completed on the coil-set results
+  coil-circuit-playback-figures#s6                 unblocks  0  chain   4.0h  waits  §6 — The proposed filters on PF2
+  jt60sa-coil-circuit-model#s6                     unblocks  0  chain   4.0h  READY  §6 — The coil ripple lines with the converter sources
+  jt60sa-coil-circuit-model#s15                    unblocks  0  chain   4.0h  READY  §15 — The 2023 pulses, with the filter, the new grounding and the plas
+  tf-cold-test-validation#s9                       unblocks  0  chain   3.0h  waits  §9 — What transfers to the ITER model, and to whom
+  jt60sa-coil-circuit-model#s10                    unblocks  0  chain   3.0h  READY  §10 — Wall resolution at the converter harmonics
+  shared-coil-supply-model#s8                      unblocks  0  chain   3.0h  READY  §8 — The TF supply
+  jt60sa-coil-circuit-model#s16                    unblocks  0  chain   3.0h  READY  §16 — Whether the windings&#x27; distributed capacitance explains the risin
+  iter-dummy-load-validation#s4                    unblocks  0  chain   3.0h  READY  §4 — Scoring the frozen prediction
+  iter-switched-terminal-transients#s13            unblocks  0  chain   2.0h  READY  §13 — The stray-sensitivity record republished on the hand-capacitance
+  iter-dummy-load-validation#s1                    unblocks  0  chain   1.0h  READY  §1 — What the recorder files must carry, asked for now
+  tf-co-wound-tape-validation#s4                   unblocks  0  chain   0.5h  waits  §4 — Carry the verdict to the CS result
+</pre>
+   <h3>Script</h3>
+   <pre>&quot;&quot;&quot;Prototype: cross-plan section-level critical path for one project.&quot;&quot;&quot;
+import html, json, re, sys
+from pathlib import Path
+
+plans_dir = Path(sys.argv[1])
+meta_re = lambda name: re.compile(r&#x27;&lt;meta name=&quot;%s&quot; content=&quot;([^&quot;]*)&quot;&#x27; % name)
+sec_re = re.compile(r&#x27;&lt;section data-reckon=&quot;section&quot;([^&gt;]*)&gt;&#x27;)
+attr = lambda s, a: (re.search(r&#x27;%s=&quot;([^&quot;]*)&quot;&#x27; % a, s) or [None, None])[1]
+title_re = re.compile(r&#x27;&lt;h2[^&gt;]*&gt;(.*?)&lt;/h2&gt;&#x27;, re.S)
+
+nodes, edges, plan_meta = {}, [], {}
+for f in sorted(plans_dir.glob(&quot;*.html&quot;)):
+    text = f.read_text()
+    slug = f.stem
+    def m(name):
+        hit = meta_re(name).search(text)
+        return html.unescape(hit.group(1)) if hit else None
+    status = m(&quot;plan-status&quot;)
+    plan_meta[slug] = {&quot;status&quot;: status, &quot;sprint&quot;: m(&quot;plan-sprint&quot;)}
+    decl = json.loads(m(&quot;plan-section-declarations&quot;) or &quot;{}&quot;)
+    for hit in sec_re.finditer(text):
+        a = hit.group(1); sid = attr(a, &quot;data-id&quot;)
+        h2 = re.search(r&#x27;&lt;h2 id=&quot;%s&quot;[^&gt;]*&gt;(.*?)&lt;/h2&gt;&#x27; % sid, text, re.S)
+        name = html.unescape(re.sub(r&quot;&lt;[^&gt;]+&gt;&quot;, &quot;&quot;, h2.group(1)).strip()) if h2 else &quot;&quot;
+        done = decl.get(sid) == &quot;done&quot; or attr(a, &quot;data-status&quot;) == &quot;done&quot; or status in (&quot;done&quot;, &quot;shipped&quot;, &quot;archived&quot;, &quot;superseded&quot;)
+        nodes[f&quot;{slug}#{sid}&quot;] = {&quot;effort&quot;: float(attr(a, &quot;data-effort-hours&quot;) or 0), &quot;done&quot;: done,
+                                  &quot;decl&quot;: decl.get(sid), &quot;title&quot;: name[:70], &quot;sprint&quot;: plan_meta[slug][&quot;sprint&quot;]}
+    deps = json.loads(m(&quot;plan-section-depends-on&quot;) or &quot;{}&quot;)
+    for src, targets in (deps.items() if isinstance(deps, dict) else []):
+        for t in targets if isinstance(targets, list) else [targets]:
+            t = t if &quot;#&quot; in t else f&quot;{slug}#{t}&quot;
+            edges.append((t, f&quot;{slug}#{src}&quot;))
+
+open_nodes = {k for k, v in nodes.items() if not v[&quot;done&quot;]}
+succ, pred = {}, {}
+for a, b in edges:
+    if b in open_nodes and (a in open_nodes or a not in nodes):
+        succ.setdefault(a, set()).add(b); pred.setdefault(b, set()).add(a)
+memo = {}
+def longest(n):  # longest remaining chain starting at n (inclusive)
+    if n in memo: return memo[n]
+    best = (0.0, [])
+    for s in succ.get(n, ()):
+        cand = longest(s)
+        if cand[0] &gt; best[0]: best = cand
+    w = nodes.get(n, {}).get(&quot;effort&quot;, 0) if n in open_nodes else 0
+    memo[n] = (w + best[0], [n] + best[1]); return memo[n]
+def downstream(n, seen=None):
+    seen = set() if seen is None else seen
+    for s in succ.get(n, ()):
+        if s not in seen: seen.add(s); downstream(s, seen)
+    return seen
+roots = sorted(open_nodes, key=lambda n: -longest(n)[0])
+print(&quot;open sections:&quot;, len(open_nodes), &quot; cross-plan edges:&quot;, sum(1 for a,b in edges if a.split(&#x27;#&#x27;)[0]!=b.split(&#x27;#&#x27;)[0]))
+print(&quot;\nCRITICAL PATH (effort-weighted, sections):&quot;)
+L, path = longest(roots[0])
+for n in path: print(f&quot;  {n:48s} {nodes[n][&#x27;effort&#x27;]:5.1f}h  {nodes[n][&#x27;title&#x27;]}&quot;)
+print(f&quot;  total {L:.1f} worker-hours&quot;)
+print(&quot;\nTOP OPEN SECTIONS by downstream reach (sections they transitively unblock):&quot;)
+rank = sorted(open_nodes, key=lambda n: (-len(downstream(n)), -longest(n)[0]))
+for n in rank:
+    ready = all(p not in open_nodes for p in pred.get(n, ()))
+    print(f&quot;  {n:48s} unblocks {len(downstream(n)):2d}  chain {longest(n)[0]:5.1f}h  {&#x27;READY &#x27; if ready else &#x27;waits &#x27;} {nodes[n][&#x27;title&#x27;]}&quot;)
+</pre>
+  </section>
+ </main>
+</body>
+</html>

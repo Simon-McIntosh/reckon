@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-mcp-answers-the-question-asked-landed">
+  <meta name="plan-title" content="The MCP Answers the Question Asked — landed record">
+  <meta name="plan-summary" content="Baseline census of reckon MCP outcomes and hand fallbacks in five power_convertor coordinator transcripts, 2026-10-18 to 2026-10-21.">
+  <meta name="plan-evidence-for" content="the-mcp-answers-the-question-asked">
+  <meta name="plan-verifies" content="the-mcp-answers-the-question-asked#s1">
+  <title>The MCP Answers the Question Asked — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>The MCP Answers the Question Asked — landed record</h1>
+  <section id="s1">
+   <h2>§1 — The baseline census</h2>
+   <p>Measured on 2026-10-21 at about 07:50 local time by session <code>efd0ee8c-9d4e-4fa3-a440-ac05791d4758</code>. The input was the five Claude Code transcripts under <code>~/.claude/projects/-home-ITER-mcintos-Code-power-convertor/</code> modified in the three days before the run: sessions <code>83d14db1</code> (488 MB), <code>e1b445e1</code> (57 MB), <code>fb12eff1</code> (53 MB), <code>e28a3130</code> (29 MB) and <code>a2286ca9</code> (25 MB). The script streams each record, maps every <code>tool_use</code> id to its tool, classifies each reckon MCP result by the <code>error</code> code in its first 4,000 characters, and matches Bash commands against four fallback patterns.</p>
+   <p>The fallback counts are regex matches on command text, so they are upper bounds. A command that merely names <code>crew.json</code> while staging it, for example, counts as a pointer read. The positive control is that the same parser found 707 reckon MCP calls in these transcripts, so an absence elsewhere is not a parsing failure. §8 re-runs this same window through the extended <code>reckon/mcp_census.py</code>, so that the before and after figures come from one instrument; the figures below are the one-off script's, kept for comparison.</p>
+   <h3>Output</h3>
+   <pre>reckon MCP calls: 707  results: 693
+    312  edit_plan:-
+     94  read_plan:version
+     61  crew:obligations
+     60  read_plan:summary
+     37  crew:plan-review
+     36  crew:live
+     13  roadmap:-
+     12  crew:scopes
+     10  read_plan:raw
+      8  crew:resume
+      7  roadmap:summary
+      7  read_plan:schema
+      7  read_plan:section
+      6  read_plan:-
+      5  roadmap:detail
+      5  crew:directory
+      4  crew:budget
+      4  crew:velocity
+      4  crew:lanes
+      3  crew:models
+      2  crew:flight
+      2  roadmap:raw
+      1  crew:findings
+      1  crew:records
+      1  read_plan:detail
+outcomes:
+    606  ok  (87.4%)
+     36  stale_server_code  (5.2%)
+     12  is_error  (1.7%)
+     10  op_error  (1.4%)
+      9  storage-slow  (1.3%)
+      7  text_edit_error  (1.0%)
+      5  response_over_budget  (0.7%)
+      3  version_conflict  (0.4%)
+      2  invalid_view  (0.3%)
+      1  crew_error  (0.1%)
+      1  budget-hold  (0.1%)
+      1  missing_session  (0.1%)
+non-ok by tool:
+     22  edit_plan  stale_server_code
+     10  edit_plan  op_error
+      7  edit_plan  text_edit_error
+      6  crew  stale_server_code
+      6  crew  is_error
+      5  read_plan  stale_server_code
+      4  roadmap  storage-slow
+      3  roadmap  stale_server_code
+      3  read_plan  is_error
+      3  crew  storage-slow
+      3  edit_plan  version_conflict
+      3  roadmap  is_error
+      2  crew  invalid_view
+      2  crew  response_over_budget
+      2  read_plan  response_over_budget
+fallback Bash commands:
+    588  read crew json/pointers
+    348  parse plan html
+    204  cli roadmap/status
+     81  cli crew read
+</pre>
+   <h3>Script</h3>
+   <pre>&quot;&quot;&quot;Census reckon MCP call outcomes and CLI/HTML fallbacks in session transcripts.&quot;&quot;&quot;
+import json, re, sys
+from collections import Counter
+calls, outcomes, fallbacks = Counter(), Counter(), Counter()
+per_tool_bad = Counter()
+ERR = re.compile(r&#x27;&quot;error&quot;\s*:\s*&quot;([a-z_\-]+)&quot;|\\&quot;error\\&quot;\s*:\s*\\&quot;([a-z_\-]+)\\&quot;&#x27;)
+FALLBACK = {
+    &quot;cli roadmap/status&quot;: re.compile(r&quot;reckon (roadmap|status|audit)\b&quot;),
+    &quot;cli crew read&quot;: re.compile(r&quot;reckon crew (list|live|runs|show|observe|scopes|obligations|status)\b&quot;),
+    &quot;parse plan html&quot;: re.compile(r&quot;(python|grep|sed|awk|rg)[^\n]*docs/(plans|sprints)/[^\s]*\.html&quot;),
+    &quot;read crew json/pointers&quot;: re.compile(r&quot;(crew\.json|crew/live/|crew/runs/[^ ]*/manifest)&quot;),
+}
+for path in sys.argv[1:]:
+    names = {}
+    with open(path, errors=&quot;replace&quot;) as fh:
+        for line in fh:
+            if &#x27;&quot;tool_use&quot;&#x27; not in line and &#x27;&quot;tool_result&quot;&#x27; not in line:
+                continue
+            try:
+                rec = json.loads(line)
+            except Exception:
+                continue
+            content = (rec.get(&quot;message&quot;) or {}).get(&quot;content&quot;)
+            if not isinstance(content, list):
+                continue
+            for block in content:
+                if not isinstance(block, dict):
+                    continue
+                if block.get(&quot;type&quot;) == &quot;tool_use&quot;:
+                    name = block.get(&quot;name&quot;, &quot;&quot;)
+                    names[block.get(&quot;id&quot;)] = name
+                    if name.startswith(&quot;mcp__reckon__&quot;):
+                        view = (block.get(&quot;input&quot;) or {}).get(&quot;view&quot;) or (block.get(&quot;input&quot;) or {}).get(&quot;action&quot;) or &quot;-&quot;
+                        calls[(name[13:], view)] += 1
+                    elif name == &quot;Bash&quot;:
+                        cmd = (block.get(&quot;input&quot;) or {}).get(&quot;command&quot;, &quot;&quot;)
+                        for label, rx in FALLBACK.items():
+                            if rx.search(cmd):
+                                fallbacks[label] += 1
+                elif block.get(&quot;type&quot;) == &quot;tool_result&quot;:
+                    name = names.get(block.get(&quot;tool_use_id&quot;), &quot;&quot;)
+                    if not name.startswith(&quot;mcp__reckon__&quot;):
+                        continue
+                    text = json.dumps(block.get(&quot;content&quot;))[:4000]
+                    m = ERR.search(text)
+                    kind = (m.group(1) or m.group(2)) if m else (&quot;is_error&quot; if block.get(&quot;is_error&quot;) else &quot;ok&quot;)
+                    outcomes[kind] += 1
+                    if kind != &quot;ok&quot;:
+                        per_tool_bad[(name[13:], kind)] += 1
+total = sum(outcomes.values())
+print(&quot;reckon MCP calls:&quot;, sum(calls.values()), &quot; results:&quot;, total)
+for (tool, view), n in calls.most_common(25):
+    print(f&quot;  {n:5d}  {tool}:{view}&quot;)
+print(&quot;outcomes:&quot;)
+for k, n in outcomes.most_common():
+    print(f&quot;  {n:5d}  {k}  ({100*n/max(total,1):.1f}%)&quot;)
+print(&quot;non-ok by tool:&quot;)
+for (tool, kind), n in per_tool_bad.most_common(15):
+    print(f&quot;  {n:5d}  {tool}  {kind}&quot;)
+print(&quot;fallback Bash commands:&quot;)
+for k, n in fallbacks.most_common():
+    print(f&quot;  {n:5d}  {k}&quot;)
+</pre>
+  </section>
+ </main>
+</body>
+</html>

@@ -21,11 +21,13 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-after" content="a-read-answers-inside-its-deadline">
-  <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;a-project-reads-as-one-picture#s2&quot;, &quot;a-project-reads-as-one-picture#s4&quot;], &quot;s6&quot;: [&quot;a-project-reads-as-one-picture#s7&quot;, &quot;the-mcp-answers-the-question-asked#s2&quot;], &quot;s8&quot;: [&quot;the-mcp-answers-the-question-asked#s2&quot;, &quot;the-mcp-answers-the-question-asked#s3&quot;, &quot;the-mcp-answers-the-question-asked#s4&quot;, &quot;the-mcp-answers-the-question-asked#s5&quot;, &quot;the-mcp-answers-the-question-asked#s6&quot;, &quot;the-mcp-answers-the-question-asked#s7&quot;]}">
+  <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;a-project-reads-as-one-picture#s2&quot;,&quot;a-project-reads-as-one-picture#s4&quot;],&quot;s6&quot;:[&quot;a-project-reads-as-one-picture#s7&quot;,&quot;the-mcp-answers-the-question-asked#s2&quot;],&quot;s8&quot;:[&quot;the-mcp-answers-the-question-asked#s2&quot;,&quot;the-mcp-answers-the-question-asked#s3&quot;,&quot;the-mcp-answers-the-question-asked#s4&quot;,&quot;the-mcp-answers-the-question-asked#s5&quot;,&quot;the-mcp-answers-the-question-asked#s6&quot;,&quot;the-mcp-answers-the-question-asked#s7&quot;],&quot;s5&quot;:[&quot;a-project-reads-as-one-picture#s4&quot;]}">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>The MCP Answers the Question Asked | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="2">
+<meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
   <main class="plan-doc">
@@ -43,7 +45,8 @@
     </p>
     <p>
       A census of the five <code>power_convertor</code> coordinator transcripts over the three days
-      to 2026-10-21 measures the gap. The script's output is kept with the evidence for this section.
+      to 2026-10-21 measures the gap. The script, its input transcripts and its verbatim output are in
+      <code>docs/evidence/archive/the-mcp-answers-the-question-asked-landed.html</code>.
     </p>
     <table>
       <thead><tr><th>Measure</th><th>Count</th></tr></thead>
@@ -159,7 +162,10 @@
     <h2 id="s5">§5 — One derivation per fact, held by a parity check</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p>
-      Four facts are served by more than one derivation today, and the copies disagree:
+      Three facts are served by more than one derivation today, and the copies disagree. A run's
+      classification is the fourth; <code>a-project-reads-as-one-picture</code> §4 gives it one
+      derivation and a parity test between the roadmap and <code>crew live</code>, and this section
+      extends that same test rather than building a second one. The four facts are:
     </p>
     <ul>
       <li>a run's classification;</li>
@@ -174,8 +180,9 @@
       without failing.
     </p>
     <p>
-      <strong>Done when:</strong> the parity test builds one fixture with runs in every
-      classification and sections in every declaration, and asserts that <code>roadmap</code>,
+      <strong>Done when:</strong> the parity test from <code>a-project-reads-as-one-picture</code> §4
+      is extended to one fixture with runs in every classification and sections in every
+      declaration, and asserts that <code>roadmap</code>,
       <code>crew live</code>, <code>read_plan</code> and the <code>/_discover</code> payload agree on all
       four facts. It is run against the base commit first, and the disagreements it finds there are
       listed in the gate log as the negative control.
@@ -187,7 +194,8 @@
       <code>roadmap(project)</code> with no view returns the project brief that
       <code>a-project-reads-as-one-picture</code> §7 composes: text first, typed rows behind it. The
       existing <code>summary</code>, <code>detail</code> and <code>raw</code> views remain for callers
-      that name them. The <code>reckon-roadmap</code> and <code>reckon-status</code> skills lead with
+      that name them. Each ranked row in the brief carries the ranking's own <code>reason</code> field;
+      the brief does not call §4's <code>why(ref)</code>, so this section does not wait on §4. The <code>reckon-roadmap</code> and <code>reckon-status</code> skills lead with
       the brief and describe the other views as drill-downs.
     </p>
     <p>
@@ -220,8 +228,10 @@
       <code>reckon/mcp_census.py</code> already counts MCP connection failures and
       <code>storage-slow</code> results. It gains three counts: per-tool and per-view outcomes,
       Bash fallbacks by class (pointer and crew JSON reads, plan HTML parsing, CLI reads), and
-      fallbacks per coordinator-day, all over the same explicit window. The census in §1 is the
-      before figure.
+      fallbacks per coordinator-day, all over the same explicit window. Its first run is over §1's
+      window and the five transcripts the evidence record names. That run is the before figure, so
+      the before and after figures come from one instrument; §1's one-off counts stay beside it for
+      comparison, and a difference between the two is explained in the gate log.
     </p>
     <p>
       <strong>Done when:</strong> the census over a three-day window that starts after §2 to §7 land
@@ -234,13 +244,13 @@
 
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
+<h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-mcpq-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-21" data-recommends-skill="/reckon-build the-mcp-answers-the-question-asked §2" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Give every view a size contract it meets by shape</h4>
     <div class="r-fu-body"><p>§2, §3, §5 and §7 can start at once. §4 waits on the section graph and run placement in a-project-reads-as-one-picture §2 and §4, and §6 on its brief in §7.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-mcp-answers-the-question-asked §2</pre>
     </article>
-    </section>
+</section>
   </main>
 </body>
 </html>
