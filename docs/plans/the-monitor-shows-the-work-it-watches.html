@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="451">
+<meta name="plan-version" content="453">
 <meta name="plan-modified" content="2026-10-21">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -177,13 +177,18 @@
     produces exactly one further drain line saying the fleet is drained. The drain line is the follower's
     existing settle row (<code>_follower_settle_line</code> in
     <code>reckon/crew_follow_commands.py</code>, which reads <code>no live work in &lt;session&gt;
-    since HH:MM</code> and already fires once per drain, scoped to its own session). That text stays
-    as it is, because <code>tests/test_a_pane_settles_when_no_work_is_live.py</code> and
-    <code>tests/test_a_pane_does_not_settle_during_admission.py</code> assert it. The row gains a
-    tail: that the fleet is drained, or how many runs need the coordinator, counted by §7's
-    derivation. <code>tests/test_every_module_fits_a_worker_window.py</code> passes at head. The write
-    paths are <code>reckon/crew_follow_commands.py</code>, <code>reckon/crew/needs_you.py</code> and
-    <code>tests/test_follow_drain_line.py</code>. It builds after §7, which creates the module.</p>
+    since HH:MM</code> and already fires once per drain, scoped to its own session). The row's
+    <code>line</code> keeps that text as its prefix and gains a tail after it: that the fleet is
+    drained, or how many runs need the coordinator, counted by §7's derivation. The prefix is what
+    <code>tests/test_a_pane_settles_when_no_work_is_live.py</code> matches, so that file is unchanged.
+    <code>tests/test_a_pane_does_not_settle_during_admission.py</code> asserts the whole line by
+    equality (line 340), so its expected text gains the tail for its fixture. The negative control
+    is executed and logged: with the tail withheld, the first case fails because the line names no
+    run that needs the coordinator. <code>tests/test_every_module_fits_a_worker_window.py</code>
+    passes at head. The write paths are <code>reckon/crew_follow_commands.py</code>,
+    <code>reckon/crew/needs_you.py</code>, <code>tests/test_follow_drain_line.py</code> and
+    <code>tests/test_a_pane_does_not_settle_during_admission.py</code>. It builds after §7, which
+    creates the module.</p>
 
     <h2 id="s9">§9 — Observing another session is read-only</h2>
 <section data-reckon="section" data-id="s9" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
@@ -258,8 +263,11 @@
     dispatch for seven hours. One is running and owned by that same session. The view lists
     exactly the second, with its age and recover action. The derivation called with an eight-hour
     threshold lists nothing. The negative control is executed and logged: with the follower-liveness condition
-    removed, the first pointer is listed too and the test fails. No dispatch path consults the list,
-    asserted by the test grepping <code>reckon/crew/dispatch.py</code> for the new function's name.
+    removed, the first pointer is listed too and the test fails. No dispatch path consults the list:
+    the test reads every module under <code>reckon/crew/</code> whose name begins
+    <code>dispatch</code> and finds none naming the new function or module, and as its positive
+    control it reads <code>reckon/crew/forgotten_runs.py</code> with the same instrument and finds the
+    function's name there, so the absence is a reading rather than a failed search.
     <code>tests/test_crew_view_serves_every_view.py</code>,
     <code>tests/test_mcp_vocabulary_is_complete.py</code> and <code>tests/test_ledger.py</code>, which
     walk every read view, add no failure against base. The write paths are
