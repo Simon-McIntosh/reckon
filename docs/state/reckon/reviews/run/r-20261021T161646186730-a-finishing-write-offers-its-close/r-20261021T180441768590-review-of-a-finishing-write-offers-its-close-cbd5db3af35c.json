@@ -1,0 +1,70 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp.py:3133 registers _edit_plan_touch via _deadline_tool, reaching reckon/mcp_edit_plan.py:1709",
+    "reckon/mcp_edit_plan.py:1712 calls _plan_readiness_fields",
+    "reckon/mcp.py:1725 _roadmap_scoped, the assembled roadmap the helper consumes"
+  ],
+  "completed_at": "2026-10-21T18:26:34.253Z",
+  "dispatched_at": "2026-10-21T18:07:23Z",
+  "findings": [
+    {
+      "file": "reckon/mcp_deadlines.py",
+      "line": "641",
+      "severity": "follow-on",
+      "text": "follow-on: _plan_readiness_fields reaches the roadmap through the private reckon.mcp._roadmap_scoped imported inside the function, while the node's done_when names the roadmap's public entry points in reckon/roadmap.py; a rename or signature change of that private helper leaves the readiness fields detached, and the only thing that would notice is this node's own test, which is a cross-module coupling the fence did not require."
+    },
+    {
+      "file": "reckon/mcp_deadlines.py",
+      "line": "659",
+      "severity": "follow-on",
+      "text": "follow-on: the row lookup requires the plan to appear in the roadmap report's pending_work, which reckon/roadmap.py:3300 skips for any plan whose status is terminal, so a declaration write on a shipped or done plan returns readiness null with readiness_error reading 'the roadmap carries no row for <project>:<slug>' \u2014 an error naming a roadmap defect where the roadmap is behaving correctly."
+    },
+    {
+      "file": "reckon/mcp_edit_plan.py",
+      "line": "1712",
+      "severity": "follow-on",
+      "text": "follow-on: every state-mode write that addresses a section declaration now runs a full portfolio roadmap scan through _roadmap_scoped on the MCP write path, with no bound and no cache, so the cost of one section tick scales with the whole project's plan graph; the plan chose this read deliberately, so the finding records the unbounded cost rather than the design."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T161646186730-a-finishing-write-offers-its-close/gate_head.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T161646186730-a-finishing-write-offers-its-close/gate_base.log"
+  },
+  "item_verdicts": {
+    "call_sites": "3 production call sites verified",
+    "diff": "Read commit by commit: 0d523f4a0 lands the helper, the predicate and 3 test cases; 81476a599 keys the predicate on DECLARATIONS_PATH_HEAD and adds the forced-read-failure case; cbd5db3af rewrites only the landing fragment to match the re-run counts.",
+    "done_when": "Read the done_when in the source prompt; the gate it names ran at head (36 passed, EXIT=0) and on the base revision (3 failed, 1 passed), and the helper sits beside _review_owed_fields as the measure requires, but the measure's stipulation that readiness be read through a public reckon/roadmap.py entry point is met only indirectly via reckon.mcp._roadmap_scoped.",
+    "goal": "Goal is 'return a plan's readiness and closure blockers on the edit_plan write that changes its section declarations'; reckon/mcp_edit_plan.py:1020-1031 gates on the declaration path head and :1709-1712 attaches reckon/mcp_deadlines.py:617-666's fields, so the goal is met.",
+    "manifest": "Read; it states commits 0d523f4a0, 81476a599 and cbd5db3af, records the gate at 36 passed EXIT=0 with the base arm at 3 failed 1 passed, and names gate_head.log, gate_base.log and negative_control.log, all three of which are on disk with the header and EXIT line the contract requires.",
+    "write_paths": "Read the source prompt's fence; git diff 7195cfc05..cbd5db3af changes four files and every one is inside the declared five paths, with docs/figures absent."
+  },
+  "justifications": {
+    "durability": "tests/test_a_finishing_write_offers_its_close.py:133,157,192-197 assert against independent literals and a re-read of the plan file, and negative_control.log records 3 failed 1 passed with the readiness fields dropped, so the assertions redden on the regression they name.",
+    "evidence": "gate_head.log records the verbatim gate command, rev 81476a599, '36 passed' and EXIT=0; gate_base.log records the base arm at 7195cfc05 with the landing case red (KeyError: 'readiness'), so the done_when's base-arm claim is a receipt, not an assertion.",
+    "fit": "reckon/mcp_deadlines.py:617 mirrors the shape of _review_owed_fields above it at :614, but reaches the roadmap by importing the private reckon.mcp._roadmap_scoped inside the function rather than a public roadmap entry point.",
+    "goal_fidelity": "reckon/mcp_edit_plan.py:1709-1712 attaches readiness and closure_blockers to the state-mode declaration write, and reckon/mcp_deadlines.py:661-665 returns both keys, which is the node goal; only a terminal-status plan misses (reckon/roadmap.py:3300).",
+    "reuse": "reckon/roadmap.py:3440-3461; the helper reads the roadmap's own readiness ladder and closure_blockers row rather than recomputing them, and _changes_section_declarations reuses DECLARATIONS_PATH_HEAD; searched reckon/roadmap.py, reckon/_store_section_ops.py, reckon/serve.py and reckon/mcp_views.py for an existing owner.",
+    "scope_discipline": "git diff 7195cfc05..cbd5db3af touches only reckon/mcp_edit_plan.py, reckon/mcp_deadlines.py, tests/test_a_finishing_write_offers_its_close.py and the declared landing fragment, and leaves reckon/roadmap.py and reckon/crew/obligations.py unedited."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to return a plan's readiness and closure blockers on the edit_plan write that changes its section declarations; reckon/mcp_edit_plan.py:1020-1031 gates on the declaration path head and :1709-1712 attaches the fields reckon/mcp_deadlines.py:617-666 builds.\nVERDICT done_when: the done_when names the five-file gate plus a base-arm failure; gate_head.log records 36 passed EXIT=0 at rev 81476a599 and gate_base.log records 3 failed 1 passed at 7195cfc05, though the measure's public roadmap.py entry point is reached only via the private reckon.mcp._roadmap_scoped.\nVERDICT write_paths: read the source prompt's fence of five paths; git diff 7195cfc05..cbd5db3af changes four files, all inside it, and writes no figure.\nVERDICT manifest: read; it records commits 0d523f4a0, 81476a599 and cbd5db3af, the 36-passed EXIT=0 gate, the 3-failed base arm and the mutation log, and each named log is present with its revision header and EXIT line.\nVERDICT diff: read all three commits against 7195cfc05; the change adds _plan_readiness_fields in reckon/mcp_deadlines.py, _changes_section_declarations plus its call site in reckon/mcp_edit_plan.py, 4 test cases and the landing fragment, and touches nothing else.\nCALL_SITES: reckon/mcp.py:3133 registering the edit_plan tool, reckon/mcp_edit_plan.py:1712 calling _plan_readiness_fields, reckon/mcp.py:1725 _roadmap_scoped\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp_edit_plan.py:1709-1712 attaches readiness and closure_blockers to the state-mode declaration write, and reckon/mcp_deadlines.py:661-665 returns both keys, which is the node goal; only a terminal-status plan misses (reckon/roadmap.py:3300).\nSCORE evidence: 18\nJUSTIFICATION evidence: gate_head.log records the verbatim gate command, rev 81476a599, '36 passed' and EXIT=0; gate_base.log records the base arm at 7195cfc05 with the landing case red on KeyError: 'readiness', so the done_when's base-arm claim is a receipt rather than an assertion.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 7195cfc05..cbd5db3af touches only reckon/mcp_edit_plan.py, reckon/mcp_deadlines.py, tests/test_a_finishing_write_offers_its_close.py and the declared landing fragment, leaving reckon/roadmap.py and reckon/crew/obligations.py unedited.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_finishing_write_offers_its_close.py:133,157,192-197 assert against independent literals and a re-read of the plan file, and negative_control.log records 3 failed 1 passed with the readiness fields dropped, so the assertions redden on the regression they name.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/mcp_deadlines.py:617 mirrors the shape of _review_owed_fields above it at :614, but reaches the roadmap by importing the private reckon.mcp._roadmap_scoped inside the function rather than a public roadmap entry point.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/roadmap.py:3440-3461 already owns the readiness ladder and closure_blockers and the helper reads that row rather than recomputing it, while _changes_section_declarations reuses DECLARATIONS_PATH_HEAD; searching reckon/roadmap.py, reckon/_store_section_ops.py, reckon/serve.py and reckon/mcp_views.py found no forked capability.\nFINDING reckon/mcp_deadlines.py:641 follow-on: reaches the roadmap through the private reckon.mcp._roadmap_scoped rather than a public entry point, so a rename there detaches the readiness fields with only this node's own test noticing.\nFINDING reckon/mcp_deadlines.py:659 follow-on: a plan absent from pending_work, which reckon/roadmap.py:3300 does for every terminal-status plan, returns readiness null with a readiness_error naming a roadmap defect where the roadmap is correct.\nFINDING reckon/mcp_edit_plan.py:1712 follow-on: every declaration write now runs a full portfolio roadmap scan on the MCP write path with no bound or cache, so one section tick costs the whole project's plan graph.",
+  "review_run_id": "r-20261021T180441768590-review-of-a-finishing-write-offers-its-close-cbd5db3af35c",
+  "reviewed_base_sha": "7195cfc0521738eff7be6813300ab2352314308b",
+  "reviewed_head_sha": "cbd5db3af35cdb69c04f13cc0ce6d1eb950ab6e2",
+  "reviewed_run_id": "r-20261021T161646186730-a-finishing-write-offers-its-close",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T18:28:41.127844+00:00",
+  "total": 113
+}
