@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s47">
+  <title>A ledger row answers its own session | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-ledger-row-answers-its-own-session-landing" data-node="a-ledger-row-answers-its-own-session" data-reckon="landed" data-when="2026-10-21">
+  <h2>A ledger row answers its own session</h2>
+  <p><code>_compact_row</code> discarded the committed row it held and asked <code>resolve_session</code> for the run by id, so the ledger source loaded the whole ledger to find the same row again — one load per promoted row, quadratic in the ledger's size. <code>resolve_session</code> now takes the row the caller already holds as <code>ledger_row</code> and the ledger source reads the session from it. Source order and answer shape are unchanged (pointer, then stream, then ledger, with <code>source</code> naming the one that answered), and a caller that holds no row still loads, so every other ledger caller is untouched.</p>
+  <p>Measured on a synthetic ledger of 52 promoted rows, 51 of them carrying a <code>session_id</code>, counted with a wrapper over <code>ledger.load</code>: one <code>runs_view</code> with the ledger as its source made <strong>53</strong> loads at base and <strong>1</strong> here. Every row kept its base answer — <code>session_id</code> and <code>session_id_source</code> equal what the resolver returns for the same run with no row supplied — and the row recording no session still reports the absence naming all three sources. The negative control passes <code>record=None</code> again for ledger rows and the count returns to 53, over a run whose log ends in a non-zero <code>EXIT=</code> with that test failing.</p>
+  <p>The gate arm adds one failure at head that is not this node's to repair: <code>tests/test_crew_runs_by_run_id.py::test_one_run_read_opens_a_fixed_small_number_of_files</code> asserts a positive control that the full non-indexed walk opens more than 100 files, and the per-row reopen it counted is exactly what this change removes. The control held at base — the assertion it now fails is that the count exceeds 100 — and reads 1 here, because the read makes one load instead of one per row. Re-founding that control is outside this node's write scope and is recorded as a follow-on.</p>
+</article>
+</body>
+</html>
