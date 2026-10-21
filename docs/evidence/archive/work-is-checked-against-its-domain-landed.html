@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-is-checked-against-its-domain-landed">
+  <meta name="plan-title" content="Work Is Checked Against Its Domain — landed record">
+  <meta name="plan-summary" content="Closure synthesis for Work Is Checked Against Its Domain: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="work-is-checked-against-its-domain">
+  <meta name="plan-verdict" content="qualified">
+  <title>Work Is Checked Against Its Domain — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>Work Is Checked Against Its Domain — landed record</h1>
+  <p>Closure synthesis for Work Is Checked Against Its Domain: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s3">
+    <h2>§3 — a repository declares its domain rules once</h2>
+    <p>Landed from run <code>r-20261021T112625211050-domain-rules-in-flight</code> at head <code>4b8d295d1</code>, after three repair rounds. <code>reckon/schema/flight.yaml</code> gains a typed <code>domain</code> slot (<code>DomainConfig</code>, <code>DomainInvariant</code>, <code>DomainReviewCheck</code>, and <code>model_paths</code>), regenerated into <code>reckon/_flight_schema.py</code> and <code>docs/_shared/flight.schema.json</code>, so the existing generator and drift test cover it. The new <code>reckon/crew/domain_rules.py</code> exposes one function, <code>rules_for(project, node)</code>, which reads the block through the validated model and matches <code>applies_to</code> and <code>model_paths</code> globs against a node's write paths. Fixtures reach both the bare-basename branch and the wildcard-free prefix branch.</p><p>Gate: <code>tests/test_domain_rules.py</code> with the flight and budget tests, 136 passed, exit 0 (<code>logs/gate-head.log</code>). The negative control, the domain slot dropped from the schema and regenerated, fails 8 of the 9 new tests (<code>logs/negative-control.log</code>); the one that passes declares no block. Each glob branch deleted in turn fails its fixture (<code>logs/branch-mutations.log</code>). The base arm is an import failure, because the module is new. The second round's advice asked for more and pushed the worker to weaken the reader to raw keys, which the third round reverted. Reviews scored 104, 103 and 106 of 120. The last finding, a timing figure in the manifest, was corrected by the coordinator with the as-delivered manifest kept.</p>
+  </section>
+
+</main>
+</body>
+</html>
