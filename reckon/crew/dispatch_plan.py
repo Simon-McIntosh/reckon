@@ -319,20 +319,50 @@ def _estimate_hours(
     )
 
 
-def _role_budget_key(overlay: Mapping[str, Any], role: str, spec_level: str) -> str:
-    """Return the dotted key a role's overlay declares its time budget under."""
+def _budget_seconds(value: Any) -> float | None:
+    """The seconds a flight layer declares under ``time_budget``, else None."""
+    if value is None or value == "":
+        return None
+    try:
+        return float(parse_duration(str(value)))
+    except (CrewError, TypeError, ValueError):
+        return None
+
+
+def _role_budget_layers(
+    overlay: Mapping[str, Any], role: str, spec_level: str
+) -> list[tuple[str, Any]]:
+    """Every time budget a role's overlay declares, with the key declaring it.
+
+    The entries are in the order ``_effective_backend`` applies them — the
+    role's own figure, then its per-spec-level overlay, then its
+    per-capability-class overlays — so a later entry is the one that survives
+    an earlier one.
+    """
+    layers: list[tuple[str, Any]] = []
     if overlay.get("time_budget"):
-        return f"roles.{role}.time_budget"
-    level = (overlay.get("by_spec_level") or {}).get(spec_level)
+        layers.append((f"roles.{role}.time_budget", overlay.get("time_budget")))
+    by_level = overlay.get("by_spec_level")
+    level = by_level.get(spec_level) if isinstance(by_level, Mapping) else None
     if isinstance(level, Mapping) and level.get("time_budget"):
-        return f"roles.{role}.by_spec_level.{spec_level}.time_budget"
-    by_class = overlay.get("by_capability_class") or {}
+        layers.append(
+            (
+                f"roles.{role}.by_spec_level.{spec_level}.time_budget",
+                level.get("time_budget"),
+            )
+        )
+    by_class = overlay.get("by_capability_class")
     if isinstance(by_class, Mapping):
         for class_name in sorted(str(name) for name in by_class):
             entry = by_class[class_name]
             if isinstance(entry, Mapping) and entry.get("time_budget"):
-                return f"roles.{role}.by_capability_class.{class_name}.time_budget"
-    return ""
+                layers.append(
+                    (
+                        f"roles.{role}.by_capability_class.{class_name}.time_budget",
+                        entry.get("time_budget"),
+                    )
+                )
+    return layers
 
 
 def _time_budget_layer_key(
@@ -341,33 +371,49 @@ def _time_budget_layer_key(
     *,
     backend_name: str,
     node: TaskNode,
+    budget: str,
 ) -> str:
-    """Return the flight key that supplied the resolved time budget.
+    """Return the key declaring ``budget``, the figure this run resolved.
 
-    The value is re-read from the layers in the order ``_effective_backend``
-    applies them — a selected lane model's declared keys last, then the role's
-    own overlays, then the backend's own declaration, then the fence — so the
-    key a reader can edit is the one named.
+    Every layer that declares a time budget is listed in the order
+    ``_effective_backend`` applies them, and the last one whose declared figure
+    is this run's own is named, because a later layer overwrites an earlier.
+    Naming the layer a value came from rather than the first key holding any
+    budget is what keeps a reader from editing a layer that supplied nothing.
     """
+    seconds = _budget_seconds(budget)
+    if seconds is None:
+        return ""
+    declared: list[tuple[str, Any]] = []
+    fences = config.get("fences")
+    if isinstance(fences, Mapping) and fences.get("time_budget"):
+        declared.append(("fences.time_budget", fences.get("time_budget")))
+    backend_layer = (config.get("backends") or {}).get(backend_name)
+    if isinstance(backend_layer, Mapping) and backend_layer.get("time_budget"):
+        declared.append(
+            (f"backends.{backend_name}.time_budget", backend_layer.get("time_budget"))
+        )
+    role = str(node.role or "")
+    overlay = (config.get("roles") or {}).get(role)
+    if isinstance(overlay, Mapping):
+        declared += _role_budget_layers(overlay, role, str(node.spec_level or ""))
     lane_name = str(backend.get("lane") or "")
     model_key = str(backend.get("model_key") or "")
     if lane_name and model_key:
         lane = (config.get("lanes") or {}).get(lane_name) or {}
         declared_model = (lane.get("models") or {}).get(model_key) or {}
         if isinstance(declared_model, Mapping) and declared_model.get("time_budget"):
-            return f"lanes.{lane_name}.models.{model_key}.time_budget"
-    role = str(node.role or "")
-    overlay = (config.get("roles") or {}).get(role)
-    if isinstance(overlay, Mapping):
-        key = _role_budget_key(overlay, role, str(node.spec_level or ""))
-        if key:
-            return key
-    declared_backend = (config.get("backends") or {}).get(backend_name) or {}
-    if isinstance(declared_backend, Mapping) and declared_backend.get("time_budget"):
-        return f"backends.{backend_name}.time_budget"
-    if (config.get("fences") or {}).get("time_budget"):
-        return "fences.time_budget"
-    return ""
+            declared.append(
+                (
+                    f"lanes.{lane_name}.models.{model_key}.time_budget",
+                    declared_model.get("time_budget"),
+                )
+            )
+    named = ""
+    for key, value in declared:
+        if _budget_seconds(value) == seconds:
+            named = key
+    return named
 
 
 def _default_fence_under_estimate_warning(
@@ -403,7 +449,7 @@ def _default_fence_under_estimate_warning(
     if seconds * FENCE_ESTIMATE_SHARE >= hours * 3600:
         return None
     layer = _time_budget_layer_key(
-        config, backend, backend_name=backend_name, node=node
+        config, backend, backend_name=backend_name, node=node, budget=default_budget
     )
     from_where = f" from {layer}" if layer else ""
     return (

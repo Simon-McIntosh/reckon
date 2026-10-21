@@ -27,7 +27,8 @@ from click.testing import CliRunner
 
 from reckon import capabilities, flight
 from reckon import cli as cli_module
-from reckon.crew import picker
+from reckon.crew import dispatch_plan, picker
+from reckon.crew.node import TaskNode
 
 # A plan whose total effort is twenty hours while one of its sections declares
 # a quarter of an hour. The pair is what tells a section's own figure apart
@@ -311,6 +312,82 @@ def test_a_node_with_no_estimate_carries_no_line(
     document = _document(_dispatch(plan_repo, arguments))
 
     assert not _fence_lines(document), document.get("warnings")
+
+
+def test_two_role_layers_name_the_one_the_fence_came_from(
+    plan_repo: Path, crew_home: Path
+) -> None:
+    """A later role layer overwrites an earlier one, and is the one named.
+
+    The role declares a budget of its own and a different one for this node's
+    spec level; the resolved fence is the spec level's, so naming the role's
+    own figure would send a reader to edit a layer that supplied nothing.
+    """
+    (crew_home / "flight.yaml").write_text(
+        FLIGHT_LAYER
+        + "roles:\n"
+        + "  implement:\n"
+        + "    time_budget: 1h\n"
+        + "    by_spec_level:\n"
+        + "      guided:\n"
+        + "        time_budget: 8m\n",
+        encoding="utf-8",
+    )
+
+    result = _dispatch(
+        plan_repo, _arguments(plan_repo, node_id="two-layers", section="s1")
+    )
+
+    document = _document(result)
+    line = _fence_lines(document)[0]
+
+    assert "8m" in line
+    assert "roles.implement.by_spec_level.guided.time_budget" in line
+    assert "roles.implement.time_budget" not in line
+
+
+def test_a_budget_layer_is_named_by_the_figure_it_declares() -> None:
+    """Every named key is one whose own declared figure is this run's fence.
+
+    The role declares a budget of its own, two more under capability classes —
+    the first of the two declaring a figure the run did not resolve to — and a
+    spec level under it. A read that takes the first key holding any budget, or
+    the first class alphabetically, names a layer that supplied nothing.
+    """
+    config = {
+        "fences": {"time_budget": "8m"},
+        "roles": {
+            "implement": {
+                "time_budget": "2h",
+                "by_spec_level": {"guided": {"time_budget": "30m"}},
+                "by_capability_class": {
+                    "alpha": {"time_budget": "1h"},
+                    "zeta": {"time_budget": "8m"},
+                },
+            }
+        },
+    }
+    node = TaskNode(
+        id="a-layer-read", goal="read a layer", plan="a-plan", spec_level="guided"
+    )
+    read = dispatch_plan._time_budget_layer_key
+
+    # Each layer in turn is named only by the figure it actually declares.
+    assert read(config, {}, backend_name="worker", node=node, budget="8m") == (
+        "roles.implement.by_capability_class.zeta.time_budget"
+    )
+    assert read(config, {}, backend_name="worker", node=node, budget="30m") == (
+        "roles.implement.by_spec_level.guided.time_budget"
+    )
+    # Two layers declare an hour: the later one is the layer that supplies it.
+    assert read(config, {}, backend_name="worker", node=node, budget="1h") == (
+        "roles.implement.by_capability_class.alpha.time_budget"
+    )
+    assert read(config, {}, backend_name="worker", node=node, budget="2h") == (
+        "roles.implement.time_budget"
+    )
+    # A fence no layer declares is named by no key, never by the first one held.
+    assert read(config, {}, backend_name="worker", node=node, budget="5s") == ""
 
 
 def test_the_sections_effort_is_read_the_way_the_picker_reads_it(
