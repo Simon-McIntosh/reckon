@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: the reviewed manifest's after_suite records 29 passed EXIT=0 at revision 19eea9741198255ebabeb4ceddba67b7c20d9232, matching logs/gate.log (header line 1 names that revision on a verified tree, summary line '29 passed in 35.00s', last line EXIT=0). The reviewed manifest records no separately run baseline_suite and explains the base arm was not run, so no baseline failing-id set exists to fall back on; after minus base is empty because the after arm records zero failures. The two cases the reviewed commits gain are reddened by their own mutations in logs/negative-control.log (mutation 7 -> test_only_this_projects_runs_make_the_schedule_due; mutation 8 -> test_a_withheld_schedule_keeps_the_one_on_screen_and_marks_it_stale), which is the control direction and not an added failure.",
+  "call_site_count": 5,
+  "call_sites": [
+    "docs/ui/shell.jsx:322",
+    "docs/ui/shell.jsx:325",
+    "docs/ui/state-loader.js:307",
+    "docs/ui/state-loader.js:315",
+    "reckon/serve.py:763"
+  ],
+  "commits_reviewed": [
+    "b77b51371",
+    "64d2a446f",
+    "19eea9741"
+  ],
+  "completed_at": "2026-10-21T18:21:05.986Z",
+  "dispatched_at": "2026-10-21T17:59:36Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T152135065060-the-flow-refreshes-from-its-own-route/manifest.md",
+      "line": "30",
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest's negative_control_note calls the control log 'the run taken at the committed head', but logs/negative-control.log's header line 1 names revision 64d2a446f5555582eb318907b1484a0778773c10, one commit before the reviewed head 19eea9741. The intervening commit is docs-only, so the control's coverage of the code under test is unchanged, but the record overstates the revision the control ran at."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against c8b8fd834: b77b51371 (project parameter on scheduleRunSignature/scheduleFetchDue and the one-line scope filter), 64d2a446f (one-line test-message style change), 19eea9741 (docs-only evidence fragment); the production change is two signature extensions plus a one-line predicate, no new definition.",
+    "done_when": "The reviewed node's done-when is the plan s11 measure reproduced at prompt.txt:104-105, recorded at logs/gate.log (header revision 19eea9741, summary line '29 passed in 35.00s', last line EXIT=0) and at logs/negative-control.log ('9 failed, 20 passed', reverse applied to 8 sites, REVERSE_EXIT=0, EXIT=1); the two cases the gained commits add are each reddened by their own mutation in that control log.",
+    "goal": "The review node's goal is to attach an independent review covering only the commits r-20261021T152135065060 gained since it was reviewed; git log c8b8fd834..19eea9741 in the reviewed worktree shows exactly three gained commits (b77b51371, 64d2a446f, 19eea9741) touching exactly the four named paths, and the worktree at 19eea9741 has an empty git status with its head matching the tree.",
+    "manifest": "Read; status complete, seven commits named, after_suite recorded as 29 passed EXIT=0 at 19eea9741, negative_control_log given as a bare path, and the two unmeasured items (no base arm; docs/ui/crew.jsx untouched though granted) stated rather than hidden.",
+    "write_paths": "The reviewed manifest declares nine write paths; git diff --stat c8b8fd834..19eea9741 changes exactly four of them (the evidence fragment, docs/ui/shell.jsx, docs/ui/state-loader.js, tests/test_page_paints_from_the_index.py) and nothing else, every changed path whose diff I read inside the declared nine."
+  },
+  "justifications": {
+    "durability": "The two gained cases are each reddened by their own mutation in logs/negative-control.log (mutation 7 -> test_only_this_projects_runs_make_the_schedule_due at tests/test_page_paints_from_the_index.py:1811; mutation 8 -> test_a_withheld_schedule_keeps_the_one_on_screen_and_marks_it_stale at :1872), and each reads an independent source (the recording fetch counter at :1766, the fixture literal at :1873) rather than the value handed in, so reinstating the regression reddens it.",
+    "evidence": "logs/gate.log runs the named four-file gate at the reviewed head revision and ends '29 passed in 35.00s' / EXIT=0, and logs/negative-control.log ends EXIT=1 with 9 failing ids and REVERSE_EXIT=0, so the measure is recorded rather than claimed; the deductions are the unrun base arm and the control log's header revision of 64d2a446f.",
+    "fit": "The change follows the surrounding idiom: docs/ui/state-loader.js:302-308 keeps the module's default-parameter style, docs/ui/shell.jsx:322 keeps the existing optional-call form, and a read of the gained diff finds no plan label, ticket id, version suffix or author attribution in the new names or comments.",
+    "goal_fidelity": "docs/ui/state-loader.js:293 filters the run signature to '(run && run.project) === project' and docs/ui/shell.jsx:322 supplies window.STATE.project, which closes the prior review's project-scope follow-on against the fleet-wide /crew rows built at reckon/serve.py:806 and is exercised by tests/test_page_paints_from_the_index.py:1806.",
+    "reuse": "No definition is added - scheduleRunSignature and scheduleFetchDue gain a parameter and a one-line inline predicate at docs/ui/state-loader.js:293 - so the added-definition cap does not apply; the capability 'select this project's runs' is already owned at docs/ui/crew.jsx:219 and docs/ui/crew.jsx:325 (crewRunsForVisibleProjects) but is component-scoped there, and the change extends scheduleRunSignature rather than adding a competing owner.",
+    "scope_discipline": "git diff c8b8fd834..19eea9741 touches exactly docs/evidence/fragments/the-page-paints-from-an-index/the-flow-refreshes-from-its-own-route.html, docs/ui/shell.jsx, docs/ui/state-loader.js and tests/test_page_paints_from_the_index.py, all inside the reviewed manifest's nine declared write paths, with no plan, index or sprint state in the diff."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The review node's goal is to attach an independent review covering only the commits r-20261021T152135065060 gained since it was reviewed; git log c8b8fd834..19eea9741 in the reviewed worktree shows exactly three gained commits (b77b51371, 64d2a446f, 19eea9741) touching exactly the four named paths, and the worktree at 19eea9741 has an empty git status with its head matching the tree.\nVERDICT done_when: The reviewed node's done-when is the plan s11 measure reproduced at prompt.txt:104-105, recorded at logs/gate.log (header revision 19eea9741, summary line '29 passed in 35.00s', last line EXIT=0) and at logs/negative-control.log ('9 failed, 20 passed', reverse applied to 8 sites, REVERSE_EXIT=0, EXIT=1); the two cases the gained commits add are each reddened by their own mutation in that control log.\nVERDICT write_paths: The reviewed manifest declares nine write paths; git diff --stat c8b8fd834..19eea9741 changes exactly four of them (the evidence fragment, docs/ui/shell.jsx, docs/ui/state-loader.js, tests/test_page_paints_from_the_index.py) and nothing else, every changed path whose diff I read inside the declared nine.\nVERDICT manifest: Read; status complete, seven commits named, after_suite recorded as 29 passed EXIT=0 at 19eea9741, negative_control_log given as a bare path, and the two unmeasured items (no base arm; docs/ui/crew.jsx untouched though granted) stated rather than hidden.\nVERDICT diff: Read commit by commit against c8b8fd834: b77b51371 (project parameter on scheduleRunSignature/scheduleFetchDue and the one-line scope filter), 64d2a446f (one-line test-message style change), 19eea9741 (docs-only evidence fragment); the production change is two signature extensions plus a one-line predicate, no new definition.\nCALL_SITES: docs/ui/shell.jsx:322, docs/ui/shell.jsx:325, docs/ui/state-loader.js:307, docs/ui/state-loader.js:315, reckon/serve.py:763\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: docs/ui/state-loader.js:293 filters the run signature to '(run && run.project) === project' and docs/ui/shell.jsx:322 supplies window.STATE.project, which closes the prior review's project-scope follow-on against the fleet-wide /crew rows built at reckon/serve.py:806 and is exercised by tests/test_page_paints_from_the_index.py:1806.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/gate.log runs the named four-file gate at the reviewed head revision and ends '29 passed in 35.00s' / EXIT=0, and logs/negative-control.log ends EXIT=1 with 9 failing ids and REVERSE_EXIT=0, so the measure is recorded rather than claimed; the deductions are the unrun base arm and the control log's header revision of 64d2a446f.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff c8b8fd834..19eea9741 touches exactly docs/evidence/fragments/the-page-paints-from-an-index/the-flow-refreshes-from-its-own-route.html, docs/ui/shell.jsx, docs/ui/state-loader.js and tests/test_page_paints_from_the_index.py, all inside the reviewed manifest's nine declared write paths, with no plan, index or sprint state in the diff.\nSCORE durability: 19\nJUSTIFICATION durability: The two gained cases are each reddened by their own mutation in logs/negative-control.log (mutation 7 -> test_only_this_projects_runs_make_the_schedule_due at tests/test_page_paints_from_the_index.py:1811; mutation 8 -> test_a_withheld_schedule_keeps_the_one_on_screen_and_marks_it_stale at :1872), and each reads an independent source (the recording fetch counter at :1766, the fixture literal at :1873) rather than the value handed in, so reinstating the regression reddens it.\nSCORE fit: 19\nJUSTIFICATION fit: The change follows the surrounding idiom: docs/ui/state-loader.js:302-308 keeps the module's default-parameter style, docs/ui/shell.jsx:322 keeps the existing optional-call form, and a read of the gained diff finds no plan label, ticket id, version suffix or author attribution in the new names or comments.\nSCORE reuse: 17\nJUSTIFICATION reuse: No definition is added - scheduleRunSignature and scheduleFetchDue gain a parameter and a one-line inline predicate at docs/ui/state-loader.js:293 - so the added-definition cap does not apply; the capability 'select this project's runs' is already owned at docs/ui/crew.jsx:219 and docs/ui/crew.jsx:325 (crewRunsForVisibleProjects) but is component-scoped there, and the change extends scheduleRunSignature rather than adding a competing owner.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T152135065060-the-flow-refreshes-from-its-own-route/manifest.md:30 follow-on: the manifest's negative_control_note says 'This log is the run taken at the committed head', but logs/negative-control.log's header names revision 64d2a446f5555582eb318907b1484a0778773c10, one commit before the reviewed head 19eea9741; the intervening commit is docs-only so the control's coverage of the code under test is unchanged, but the record overstates the revision it ran at.",
+  "review_run_id": "r-20261021T175725461907-review-of-the-flow-refreshes-from-its-own-route-19eea9741198",
+  "reviewed_base_sha": "c8b8fd834efa0660aa3410732206156f33a75937",
+  "reviewed_commit": "19eea9741198255ebabeb4ceddba67b7c20d9232",
+  "reviewed_head_sha": "19eea9741198255ebabeb4ceddba67b7c20d9232",
+  "reviewed_range": "c8b8fd834efa0660aa3410732206156f33a75937..19eea9741198255ebabeb4ceddba67b7c20d9232",
+  "reviewed_run_id": "r-20261021T152135065060-the-flow-refreshes-from-its-own-route",
+  "reviewer_run_id": "r-20261021T175725461907-review-of-the-flow-refreshes-from-its-own-route-19eea9741198",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T18:24:17.291628+00:00",
+  "total": 112
+}
