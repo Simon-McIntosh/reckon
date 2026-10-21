@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/serve.py:2635 _send_project_changes (the thing whose handler thread the guard watches)",
+    "reckon/serve.py:3349 the /_changes/<project> route dispatch"
+  ],
+  "completed_at": "2026-10-21T13:39:08.948Z",
+  "dispatched_at": "2026-10-21T13:23:30Z",
+  "findings": [
+    {
+      "file": "tests/test_page_paints_from_the_index.py",
+      "line": "730",
+      "severity": "follow-on",
+      "text": "follow-on: the guard avoids the server_close() join so a leak reddens instead of stalling, but the leaked handler thread is non-daemon (server.daemon_threads = False at :675), so the interpreter still cannot exit after the assertion fires: logs/guard_control.log records arm 1 as pytest exit=124 under `timeout 90` after printing \"2 failed in 12.45s\", meaning a leak reddens both cases and then hangs the process until the external timeout kills it, so a suite run without such a wrapper would report the failure and then hang rather than end."
+    },
+    {
+      "file": "docs/evidence/fragments/the-page-paints-from-an-index/a-revalidation-keeps-the-derived-blocks.html",
+      "line": "125",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment cites logs/guard_control.log as the control that proves the roster read, but that log carries no revision or tree header (its first line is only a '# command:' line, unlike logs/gate.log's '# rev ... tree ...' header) so a reader cannot establish what revision the control ran at, and its arm 1 exit is 124 rather than a clean pytest failure exit."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified against the production change-stream handler at reckon/serve.py:2635 (_send_project_changes) reached by the /_changes/<project> dispatch at reckon/serve.py:3349; the node's own test files are not counted.",
+    "diff": "read commit by commit against base e3012889c; bb6b86463 replaces the post-join roster read with a pre-join read plus a bounded grace window and a no-join close on leak, and 8bc113d40 rewrites the fragment paragraph to cite logs/guard_control.log, nothing outside those two paths.",
+    "done_when": "the repair round's measure is that the thread-roster guard fails for the leak it names and that its failing run is logged; logs/guard_control.log records the leak reddening both guarded cases with the repair and passing both without it, and logs/gate.log records 15 passed EXIT=0 at head.",
+    "goal": "the node's goal is to keep the derived blocks on screen through a revalidation; the gained commits repair the two blocking findings the prior review stored against tests/test_page_paints_from_the_index.py:680 and the fragment's unfounded control claim.",
+    "manifest": "read; its checkpoint names both gained commits, the head gate at 8bc113d4, the three loader mutations and the guard control, and it states each finding was acted on \u2014 the account matches what the diff and the logs hold.",
+    "write_paths": "the declared scope is docs/ui/state-loader.js, docs/ui/shell.jsx, docs/ui/crew.jsx, tests/test_page_paints_from_the_index.py, tests/test_spa_derived_flow.py and the node's fragment; git diff --stat e3012889c..8bc113d4 changes only the test file and the fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_page_paints_from_the_index.py:741 and :825 now redden under the leak, demonstrated by logs/guard_control.log arm 1 (2 failed) against arm 2 (2 passed with the same leak, the form the prior review rejected at :680), so the guard is a working negative control rather than a vacuous one.",
+    "evidence": "logs/gate.log records 15 passed EXIT=0 at 8bc113d4 and logs/guard_control.log records both arms of the thread guard (arm 1 red under the leak, arm 2 passing, EXIT=1), but that control log carries no revision or tree header and its red arm's recorded pytest exit is 124, so a reader cannot tell from it which revision the control ran at.",
+    "fit": "The added names state the mechanism (_HANDLER_EXIT_GRACE_S, _handlers_left, 'the roster is read before server_close()') and follow the file's existing _live_threads idiom at tests/test_page_paints_from_the_index.py:610, with no plan label, ticket reference or attribution.",
+    "goal_fidelity": "The two gained commits do what they set out: tests/test_page_paints_from_the_index.py:698-732 moves the roster read before server_close() and skips the join when a handler leaked, and docs/evidence/fragments/the-page-paints-from-an-index/a-revalidation-keeps-the-derived-blocks.html:118-129 replaces the unfounded 'the guard's own failing run is logged' claim with where the roster is read and the log that holds the control.",
+    "reuse": "A capability search over tests/ and docs/ui/ for a live-thread roster guard found only tests/conftest.py:767 joined_watch_sweeps and tests/test_a_sweep_thread_ends_with_its_test.py:121, both scoped to threads named reckon-obligations-sweep and unreachable from a server-handler guard, so _handlers_left at tests/test_page_paints_from_the_index.py:622 forks nothing.",
+    "scope_discipline": "git diff --stat e3012889c..8bc113d4 changes exactly tests/test_page_paints_from_the_index.py and the node's own fragment, both inside the declared write paths, and carries nothing the repair does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to keep the derived blocks on screen through a revalidation; the gained commits repair the two blocking findings the prior review stored against tests/test_page_paints_from_the_index.py:680 and the fragment's unfounded control claim.\nVERDICT done_when: the repair round's measure is that the thread-roster guard fails for the leak it names and that its failing run is logged; logs/guard_control.log records the leak reddening both guarded cases with the repair and passing both without it, and logs/gate.log records 15 passed EXIT=0 at head.\nVERDICT write_paths: the declared scope is docs/ui/state-loader.js, docs/ui/shell.jsx, docs/ui/crew.jsx, tests/test_page_paints_from_the_index.py, tests/test_spa_derived_flow.py and the node's fragment; git diff --stat e3012889c..8bc113d4 changes only the test file and the fragment.\nVERDICT manifest: read; its checkpoint names both gained commits, the head gate at 8bc113d4, the three loader mutations and the guard control, and it states each finding was acted on -- the account matches what the diff and the logs hold.\nVERDICT diff: read commit by commit against base e3012889c; bb6b86463 replaces the post-join roster read with a pre-join read plus a bounded grace window and a no-join close on leak, and 8bc113d40 rewrites the fragment paragraph to cite logs/guard_control.log, nothing outside those two paths.\nCALL_SITES: reckon/serve.py:2635 _send_project_changes (the thing whose handler thread the guard watches), reckon/serve.py:3349 the /_changes/<project> route dispatch\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: The two gained commits do what they set out: tests/test_page_paints_from_the_index.py:698-732 moves the roster read before server_close() and skips the join when a handler leaked, and docs/evidence/fragments/the-page-paints-from-an-index/a-revalidation-keeps-the-derived-blocks.html:118-129 replaces the unfounded 'the guard's own failing run is logged' claim with where the roster is read and the log that holds the control.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate.log records 15 passed EXIT=0 at 8bc113d4 and logs/guard_control.log records both arms of the thread guard (arm 1 red under the leak, arm 2 passing, EXIT=1), but that control log carries no revision or tree header and its red arm's recorded pytest exit is 124, so a reader cannot tell from it which revision the control ran at.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat e3012889c..8bc113d4 changes exactly tests/test_page_paints_from_the_index.py and the node's own fragment, both inside the declared write paths, and carries nothing the repair does not imply.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_page_paints_from_the_index.py:741 and :825 now redden under the leak, demonstrated by logs/guard_control.log arm 1 (2 failed) against arm 2 (2 passed with the same leak, the form the prior review rejected at :680), so the guard is a working negative control rather than a vacuous one.\nSCORE fit: 19\nJUSTIFICATION fit: The added names state the mechanism (_HANDLER_EXIT_GRACE_S, _handlers_left, 'the roster is read before server_close()') and follow the file's existing _live_threads idiom at tests/test_page_paints_from_the_index.py:610, with no plan label, ticket reference or attribution.\nSCORE reuse: 19\nJUSTIFICATION reuse: A capability search over tests/ and docs/ui/ for a live-thread roster guard found only tests/conftest.py:767 joined_watch_sweeps and tests/test_a_sweep_thread_ends_with_its_test.py:121, both scoped to threads named reckon-obligations-sweep and unreachable from a server-handler guard, so _handlers_left at tests/test_page_paints_from_the_index.py:622 forks nothing.\nFINDING tests/test_page_paints_from_the_index.py:730 follow-on: the guard avoids the server_close() join so a leak reddens instead of stalling, but the leaked handler thread is non-daemon (server.daemon_threads = False at :675), so the interpreter still cannot exit after the assertion fires: logs/guard_control.log records arm 1 as pytest exit=124 under `timeout 90` after printing \"2 failed in 12.45s\", meaning a leak reddens both cases and then hangs the process until the external timeout kills it, so a suite run without such a wrapper would report the failure and then hang rather than end.\nFINDING docs/evidence/fragments/the-page-paints-from-an-index/a-revalidation-keeps-the-derived-blocks.html:125 follow-on: the fragment cites logs/guard_control.log as the control that proves the roster read, but that log carries no revision or tree header (its first line is only a '# command:' line, unlike logs/gate.log's '# rev ... tree ...' header) so a reader cannot establish what revision the control ran at, and its arm 1 exit is 124 rather than a clean pytest failure exit.\n",
+  "review_run_id": "r-20261021T132224824330-review-of-a-revalidation-keeps-the-derived-blocks-8bc113d4046a",
+  "reviewed_base_sha": "e3012889c5e72c3989648d6e0e7857e895a30140",
+  "reviewed_commits": [
+    "bb6b86463a7690aa4dfbe08f7ae3fe6eed8b90b6",
+    "8bc113d4046aafadfef16b38435e8264698bcad3"
+  ],
+  "reviewed_head_sha": "8bc113d4046aafadfef16b38435e8264698bcad3",
+  "reviewed_run_id": "r-20261021T111749695633-a-revalidation-keeps-the-derived-blocks",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T13:43:02.017627+00:00",
+  "total": 109
+}
