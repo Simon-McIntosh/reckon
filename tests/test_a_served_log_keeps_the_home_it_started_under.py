@@ -250,7 +250,11 @@ def test_a_request_after_the_home_moves_rotates_the_first_home_log(
         "the first home's over-bound log was never rotated after the move; "
         f"predecessor present: {predecessor.exists()}"
     )
-    assert not _log_file(second).exists(), (
-        "the rotation followed the moved home; the operator's log would have "
-        f"been created:\n{chr(10).join(_lines(second))}"
+    # The negative half is scoped to the rotation this case is about: an access
+    # line is case 1's subject, so asserting on any file appearing in the second
+    # home here would make this case red under case 1's mutation as well, and
+    # then neither case's red is attributable to its own mutation.
+    assert not (second / "logs" / (first_log.name + ".1")).exists(), (
+        "the rotation was made against the moved home: the operator's log "
+        "directory would hold a predecessor"
     )
