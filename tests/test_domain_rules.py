@@ -13,7 +13,6 @@ from pathlib import Path
 import pytest
 
 from reckon import flight
-from reckon._flight_schema import DomainConfig
 from reckon.crew.domain_rules import rules_for
 from reckon.flight import FlightConfigError
 
@@ -63,16 +62,15 @@ def test_fixture_domain_block_validates(tmp_path):
     resolved = flight.resolve(project="fixture", project_path=project)
     block = resolved.config.get("domain")
     assert block is not None
-    config = DomainConfig.model_validate(block)
-    assert [invariant.id for invariant in config.invariants] == [
+    assert [entry["id"] for entry in block["invariants"]] == [
         "converged-sections",
         "dc-limit",
     ]
-    assert [check.id for check in config.review_checks] == [
+    assert [entry["id"] for entry in block["review_checks"]] == [
         "same-operator",
         "perturbation-grows",
     ]
-    assert config.model_paths == ["models/**"]
+    assert block["model_paths"] == ["models/**"]
 
 
 def test_missing_rule_is_refused_naming_the_field(tmp_path):
@@ -155,3 +153,52 @@ def test_rules_for_matches_no_write_path_without_globs(tmp_path):
         "fixture", {"write_paths": ["docs/readme.md"]}, project_path=project
     )
     assert not rules
+
+
+def test_rules_for_matches_a_bare_basename_pattern(tmp_path):
+    """A pattern naming no separator reaches a write path by its basename.
+
+    ``divider.py`` matches no path in full and governs no directory, so the
+    only branch that can select it is the basename match; removing that branch
+    leaves the node carrying nothing and fails this test.
+    """
+    project = write_project_layer(
+        tmp_path,
+        """
+domain:
+  invariants:
+    - id: basename-only
+      rule: The divider is checked against its measured prototype.
+      applies_to:
+        - divider.py
+""",
+    )
+    rules = rules_for(
+        "fixture", {"write_paths": ["lib/converters/divider.py"]}, project_path=project
+    )
+    assert [invariant.id for invariant in rules.invariants] == ["basename-only"]
+
+
+def test_rules_for_matches_a_wildcard_free_directory_prefix(tmp_path):
+    """A wildcard-free directory governs the files beneath it.
+
+    ``lib/converters`` carries a separator, so the basename branch cannot
+    select it, and it names no wildcard for the whole-path glob to expand;
+    only the directory-prefix branch can, and removing that branch fails this
+    test.
+    """
+    project = write_project_layer(
+        tmp_path,
+        """
+domain:
+  review_checks:
+    - id: directory-only
+      question: Does the divider's limit behaviour hold at DC?
+      applies_to:
+        - lib/converters
+""",
+    )
+    rules = rules_for(
+        "fixture", {"write_paths": ["lib/converters/divider.py"]}, project_path=project
+    )
+    assert [check.id for check in rules.review_checks] == ["directory-only"]
