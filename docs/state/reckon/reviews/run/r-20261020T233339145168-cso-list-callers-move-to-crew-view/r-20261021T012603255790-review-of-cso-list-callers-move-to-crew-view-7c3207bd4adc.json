@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-21T01:44:31.942Z",
+  "dispatched_at": "2026-10-21T01:27:57Z",
+  "findings": [
+    {
+      "file": "tests/test_crew.py",
+      "line": "1284",
+      "severity": "follow-on",
+      "text": "follow-on: the case kept as phase_only now invokes crew view live --project beta --phase running, and project beta holds one pointer, which is running, so the assertion at line 1296 that the rows are {run-beta-running} holds whether or not --phase is applied; the assertion can no longer fail on a dropped phase filter. The successor's phase narrowing is covered instead at tests/test_read_verbs_retire_behind_crew_view.py:391, whose 'phase' case keeps r-live-working and drops r-live-queued, so this is a weakened case rather than an uncovered filter."
+    },
+    {
+      "file": "tests/test_read_verbs_retire_behind_crew_view.py",
+      "line": "640",
+      "severity": "follow-on",
+      "text": "follow-on: 'assert CREW_LIST_COMMAND in \"reckon crew list --project <project>\"' compares two literals the test itself wrote and holds whatever the code does, so it names no condition under which it fails and is not a guard. The case's real guard is the offenders assertion at line 641, which the declared negative control (logs/negative-control.log) shows is discriminating: restoring the crew answer in reckon/mcp_deadlines.py reddens it naming that file."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to move every reckon caller and citation of crew list to crew view live; reckon/mcp_deadlines.py:184 now answers 'reckon crew view live --project <project>', and git grep over reckon/ at 7c3207bd4 finds no 'reckon crew list' command literal (only bare-name prose).\nVERDICT done_when: \u00a79's Done-when names tests/test_read_verbs_retire_behind_crew_view.py holding base-captured fixtures compared per run id over CLASSIFICATION_FIELDS plus a fixed-name scan of reckon/ with a declared negative control; the manifest records the twelve-file gate command and the control log, and the new file is green when re-run at c279bcd4f (15 passed in 15.43s).\nVERDICT write_paths: read the manifest's declared paths (reckon/mcp_deadlines.py, reckon/crew/AGENTS.md, skills/reckon-build/SKILL.md, five test files, the retire test, and the landing fragment); every path in the diff is inside them.\nVERDICT manifest: read; it records status complete, commits a4119d759..7c3207bd4, the twelve-file pytest command, both arms failing the identical two ids, and negative_control_log pointing at logs/negative-control.log.\nVERDICT diff: read commit by commit against d310113269; four commits over ten files - the caller move, the fixture file, and two docs/plan commits - all inside the declared scope.\nCALL_SITES: reckon/mcp_deadlines.py:406 (_CLI_ANSWER_COMMANDS.get(label)), reckon/mcp.py:134 (re-export of _CLI_ANSWER_COMMANDS)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/mcp_deadlines.py:184 hands the crew remedy 'crew view live' and no 'reckon crew list' command literal remains under reckon/ at 7c3207bd4, though prose citations survive at reckon/mcp_views.py:3667 and reckon/_mcp_tools.py:113 outside this node's fence.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/base-gate.log and logs/head-gate.log fail the identical two ids (test_every_module_fits_a_worker_window and the deadline-store test) over the same twelve files, so the delta is zero, and the negative control at logs/negative-control.log names the file it mutated.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff d310113269..7c3207bd4 touches only the manifest's declared write paths plus the landing fragment under docs/evidence/fragments/, with no file outside the node's fence.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_read_verbs_retire_behind_crew_view.py:615 compares the successor's rows against the literal CREW_LIST_BASE_ROWS and would redden on a dropped classification field, but the phase case at tests/test_crew.py:1284 can no longer fail and line 640 is a tautology.\nSCORE fit: 19\nJUSTIFICATION fit: the added section at tests/test_read_verbs_retire_behind_crew_view.py:351 follows the file's fixture-and-literal idiom and introduces no plan, ticket or version label.\nSCORE reuse: 17\nJUSTIFICATION reuse: the fixture reuses CLASSIFICATION_FIELDS from tests/test_crew_surface_parity.py:31 and the move points callers at the existing crew view projection rather than forking it, though the fixed-name scan at line 627 re-implements the sibling scan at line 327 with a broader glob.\nFINDING tests/test_crew.py:1284 follow-on: the case kept as phase_only now passes --project beta, whose only pointer is running, so its assertion holds whether or not --phase is applied and can no longer fail on a dropped phase filter.\nFINDING tests/test_read_verbs_retire_behind_crew_view.py:640 follow-on: the assertion compares two literals the test itself wrote and holds whatever the code does, so it is not a guard; the offenders assertion at line 641 is the real guard and is negative-controlled.\n",
+  "review_run_id": "r-20261021T012603255790-review-of-cso-list-callers-move-to-crew-view-7c3207bd4adc",
+  "reviewed_base_sha": "d3101132693470e7b23e8a11015353e0022efb89",
+  "reviewed_head_sha": "7c3207bd4adccb967169f0c898ec88dbf5815476",
+  "reviewed_run_id": "r-20261020T233339145168-cso-list-callers-move-to-crew-view",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T01:44:34.502806+00:00",
+  "total": 107
+}
