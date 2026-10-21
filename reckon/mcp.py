@@ -2087,6 +2087,7 @@ def _crew(
     accepted_paths: list[list[str]] | None = None,
     no_impl_change: str | None = None,
     waive_live_run: str | None = None,
+    waive_domain_check: str | None = None,
     plan_link: str | None = None,
     unplanned_reason: str | None = None,
     dimension: str | None = None,
@@ -2224,6 +2225,7 @@ def _crew(
             accepted_paths=accepted_paths,
             no_impl_change=no_impl_change,
             waive_live_run=waive_live_run,
+            waive_domain_check=waive_domain_check,
             plan_link=plan_link,
             unplanned_reason=unplanned_reason,
             dry_run=dry_run,
@@ -2357,6 +2359,7 @@ def _promotion_guards(
             accepted_paths=accepted,
             no_impl_change=str(arguments.get("no_impl_change") or ""),
             live_run_waiver=str(arguments.get("waive_live_run") or ""),
+            domain_waiver=str(arguments.get("waive_domain_check") or ""),
             plan_link=str(arguments.get("plan_link") or ""),
             unplanned_reason=str(arguments.get("unplanned_reason") or ""),
         )

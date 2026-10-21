@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:work-is-checked-against-its-domain">
+  <meta name="plan-verifies" content="reckon:work-is-checked-against-its-domain#s4">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-21">
+  <meta name="plan-tags" content="mcp,crew-tool,promotion,domain-waiver">
+  <title>The crew tool can state a domain-check waiver in its own words | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-crew-tool-passes-the-domain-waiver" data-reckon="landed" data-when="2026-10-21">
+  <h2 id="the-crew-tool-passes-the-domain-waiver-title">The crew tool can state a domain-check waiver in its own words.</h2>
+  <p id="the-crew-tool-passes-the-domain-waiver-what"><strong>What changed.</strong> The
+  promotion verb gained a <code>--waive-domain-check</code> reason, and the crew MCP tool's
+  <code>complete</code> and <code>land</code> actions did not carry it, so every promotion
+  reached through the tool answered <code>crew_error</code> with
+  <code>TypeError: crew_complete() missing 1 required positional argument:
+  'waive_domain_check'</code>. <code>waive_domain_check</code> now travels the same path
+  <code>waive_live_run</code> travels: it is a <code>complete</code> and <code>land</code>
+  entry in <code>_PARAM_MAP</code>, an empty-string default in the <code>complete</code>
+  defaults, a parameter on the crew tool's own signature in
+  <code>reckon/mcp.py</code>, and a <code>domain_waiver</code> argument to the promotion's
+  dry run that composes the guard list on a refusal. No guard, threshold or refusal message
+  moved with it: the tool and the CLI now answer one call identically where the tool
+  previously could not place the call at all.</p>
+  <p id="the-crew-tool-passes-the-domain-waiver-measure"><strong>Measure.</strong> Every log
+  cited here is under the run directory
+  <code>~/.config/reckon/crew/runs/r-20261021T234155275057-the-crew-tool-passes-the-domain-waiver/gate/</code>,
+  and the gate command is the literal text on the manifest's <code>tests</code> line. Base
+  arm at revision <code>641da12bc</code>: <code>4 failed, 64 passed</code>,
+  <code>EXIT=1</code>, the four failures being
+  <code>test_each_action_matches_its_cli_verb[complete]</code>,
+  <code>test_each_action_matches_its_cli_verb[land]</code>,
+  <code>test_the_negative_control_breaks_one_action_only</code> and
+  <code>test_two_commits_reach_the_promotion_as_a_list</code>, each carrying the
+  <code>missing 1 required positional argument</code> refusal above
+  (<code>base.log</code>). Head arm at the node head: <code>68 passed</code>,
+  <code>EXIT=0</code> (<code>head.log</code>) — the same command, the four failures cleared
+  and no failure added, so the delta is four and the added-failure count is zero. Negative
+  control, the declared mutation (the <code>complete</code> parameter map entry removed), run
+  in the worktree: the four crew-tool tests fail again with the missing-argument error while
+  the rest of the file passes (<code>negative-control.log</code>). <code>ruff check</code> and
+  <code>ruff format --check</code> add no findings on the changed paths
+  (<code>ruff.log</code>). No figure: the done-when names none, and the change is a parameter
+  threaded through four call sites rather than a spatial or plotted relationship.</p>
+  <p id="the-crew-tool-passes-the-domain-waiver-scope"><strong>Scope note.</strong>
+  <code>reckon/crew_run_commands.py</code> owns the verb and the option and is held by
+  another node, so it was read and not edited; the wiring here stops at the tool
+  surface. <code>reckon/_mcp_tools.py</code> was named in the brief but carries no
+  <code>waive_live_run</code> field in <code>CrewArgs</code> — the commit that introduced
+  that parameter (<code>d87b44154</code>) touched <code>reckon/mcp.py</code> and
+  <code>reckon/mcp_crew_actions.py</code> only — so carrying
+  <code>waive_domain_check</code> exactly as <code>waive_live_run</code> is carried leaves
+  that file unchanged.</p>
+</article>
+</body>
+</html>
