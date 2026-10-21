@@ -1,0 +1,86 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T10:46:50.516Z",
+  "dispatched_at": "2026-10-21T10:32:45Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-mcp-answers-the-question-asked.html:165",
+      "id": "anchors_resolve-1",
+      "reason": "the node's second assertion names a command that exits with \"no such option\", so a worker must either invent the flag or silently substitute `reckon flight`, and the plan's \"stays strict\" mechanism would go unmeasured.",
+      "text": "\u00a79's mechanism and done-when both rest on `reckon flight --check` (\"refuses unknown keys as today\", \"`reckon flight --check` on the same file still refuses it\"), but `reckon flight` (`reckon/project_setup_commands.py:415`) declares only `--checkout-path`, `--set`, `--probe-auth` and `--pretty`; there is no `--check` flag on that verb anywhere in the tree, so the strict arm of the node's measure cannot be run as written",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-mcp-answers-the-question-asked.html:130",
+      "id": "reasoning-1",
+      "reason": "the section's mechanism and its measure disagree about what the change set contains, so the node is built against one definition (declaration or readiness) and gated against another.",
+      "text": "\u00a77 defines the change set as \"a section's declaration and readiness moved\" read from the plan files' git history, but its first done-when arm asserts the read \"returns exactly the one section whose declaration moved in a commit between the two\"; \u00a75 assigns readiness a derivation from its dependencies, so the same commit that moves one section's declaration also moves the readiness of every section waiting on it, and \u00a77's own mechanism must report those too",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "d31d279b026c9af8e6eb3a3f8661e90aa28be020c5d807d82fd22f18b1ed2d21",
+  "plan_slug": "the-mcp-answers-the-question-asked",
+  "plan_version": 7,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "",
+      "when": "2026-10-21T10:48:00.424113+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-21T10:48:23.390237+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T10:48:00.424113+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T10:48:23.390237+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-mcp-answers-the-question-asked.v7.json",
+  "review_run_id": "r-20261021T100906921478-plan-review-of-the-mcp-answers-the-question-asked",
+  "reviewed_blob_sha": "81410b10cdcf421433622b789a636b97e02d91f5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the code, commit and module anchors resolve (`reckon/mcp_views.py:2406` `paginate`, `:3468` `roadmap_view`, `reckon/mcp_budget.py:28/15` `response_ceiling`/`serialised_characters`, `reckon/velocity.py:361` `_plan_history`, `reckon/mcp.py:595` `_refuse_when_stale` and `:553` `_SERVE_ON_CURRENT_CODE`, `reckon/_flight_schema.py:43` `extra = \"forbid\"`, `c0eb31713` dated 2026-10-21 10:12, the `crew(view=\"flight\")` view at `reckon/mcp_views.py:3600`, and the `~/.config/reckon/crew/watch/<project>-<key>.events` stream on disk), but \u00a79 names a command flag that does not exist.",
+    "done_when": "pass \u2014 each changed node names a base-commit arm that fails on the unfixed code (\u00a72's `roadmap view=detail` over budget, \u00a77's three reads ignoring `since`, \u00a79's load raising `Extra inputs are not permitted`, \u00a710's stale-image call plus raw raise), and \u00a78 names three instrument controls including a synthetic transcript counted exactly.",
+    "evidence_paths": "pass \u2014 the one durable path named in the changed units, `docs/evidence/archive/the-mcp-answers-the-question-asked-landed.html`, exists and holds the census script, inputs and output; the remaining \"gate log\" references are the per-node gate convention.",
+    "naming": "pass \u2014 the new surface names are mechanism words (`view=\"why\"`, `flight_unknown_keys`, `full: true`, `section`), with no plan labels, stage names, ticket numbers or version tags.",
+    "reasoning": "a finding \u2014 \u00a77's stated change set covers declaration *and readiness* moves while its first done-when arm counts exactly one moved section, and a declaration move changes its dependents' readiness.",
+    "single_goal": "pass \u2014 each changed section carries one deliverable (\u00a72 a size contract, \u00a77 a change set on `since`, \u00a79 forward-compatible config reads, \u00a710 all calls served on current code); \u00a710's three clauses are facets of one goal and share one done-when.",
+    "wiring": "pass \u2014 every `plan-section-depends-on` entry resolves to a node that exists, and the changed units' edges match their prose (\u00a74 now declares `#s2`, \u00a77 declares `a-project-reads-as-one-picture#s7` for the brief, \u00a78 declares this plan's \u00a72\u2013\u00a77 for its after window)."
+  },
+  "section_digests": {
+    "_document": "49cac46eaf00468e960aa9edda2615e18d1f192403817a2c9be7b18ebc861a8f",
+    "s1": "daef4b527685c5d986aa210cce10bb0f4cd5772ef762521051f5920fcb02c98b",
+    "s10": "817583319a1fadf8a657b5c2981faadfdd56d0da60ee50bc471c63ca5c29b8cb",
+    "s2": "a0440f416fa80f8451c518eb60d4c1a08c9c1c3370f691c7d170cd70e7ba5758",
+    "s3": "647001e0a60af5feceb57b19761d4ce65f0a71625325a5006e4cb99c4a10aefb",
+    "s4": "3ca97d7774b26b36ca14a01534224ffd077491ba49080047a5b94a7b0e2271fe",
+    "s5": "bdc42e40b84e0fa988f8b3f38a8a495bab1729904d9546f4b6d61792a65b1099",
+    "s6": "72d443bc7a7499a314bb8fb3b01da359881bffc36e31bdbe2f88986736c43444",
+    "s7": "72fc188788a251167b82f60f2e28e9bbdfa44fbff3f33a37e4c000cba41bc6b9",
+    "s8": "27fe0be42478903a55544ca3b72d0fc75b3b096044a368408d31c52ce87bb548",
+    "s9": "722e112976e8dd54afe9ed7f0d4aa6c0e96016495fd781a1baf847ce9d68c8a1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T10:47:45.685703+00:00"
+}
