@@ -1,0 +1,51 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-21T14:39:37.039Z",
+  "dispatched_at": "2026-10-21T14:21:12Z",
+  "findings": [
+    {
+      "line": 295,
+      "path": "tests/test_a_slow_child_never_forces_a_reconnect.py",
+      "severity": "follow-on",
+      "text": "the node rewrote this case although the file is not one of its five declared write paths, so the change was made outside its exclusive scope; the edit was nonetheless required by the write-routing change, since the pre-existing assertion that the image's version_conflict stands is exactly what routing a write away from the image removes."
+    },
+    {
+      "line": 208,
+      "path": "tests/test_a_moved_checkout_serves_every_call.py",
+      "severity": "follow-on",
+      "text": "result.get(\"served_by_code_stamp\") == rig.stamp compares the answer against the stamp the test injected into MovedCheckout at the rig, so it can only redden on a missing field and cannot catch a wrong stamp; the same shape recurs at lines 270 and 301, while the independent assertions at 205 and 297 carry each guard."
+    },
+    {
+      "line": 632,
+      "path": "reckon/mcp.py",
+      "severity": "follow-on",
+      "text": "_SERVE_ON_CURRENT_CODE is now write-only - added to at reckon/mcp.py:668 and read nowhere in reckon/ - so the comment that it survives as the guard's record of which tools the child has run names a record nothing consumes."
+    },
+    {
+      "line": 562,
+      "path": "reckon/mcp.py",
+      "severity": "follow-on",
+      "text": "_raised_under_the_current_code re-derives the refusal answer (error, detail, server_started_at, code_stamp_at_start, code_stamp_now, reconnect) that _stale_code_response at reckon/mcp.py:498 already builds instead of delegating to it; it also routes any exception raised while state.may_load is true to that refusal, including a warm-child read that fell back to the image and raised."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261021T141929240580-review-of-moved-checkout-serves-every-call-7b05ec129810",
+  "reviewed_base_sha": "ac17ed130e1aa4f9b8c12643dfb41404fd4c2869",
+  "reviewed_head_sha": "7b05ec1298102fbb7723114c571e967a431b6277",
+  "reviewed_run_id": "r-20261021T105241619584-moved-checkout-serves-every-call",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 15,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "subject": "run",
+  "text": "VERDICT goal: the node goal is to serve every MCP call on the current code once the checkout has moved and is trusted, not only calls that failed; reckon/mcp.py:711 replaces `elif name in _SERVE_ON_CURRENT_CODE` with `else`, so every call of a warm child is routed (writes on their first call), and reckon/mcp.py:729 answers a raised failure with both stamps and the reconnect remedy.\nVERDICT done_when: the done_when names the four behaviours plus the unmoved-checkout control and the six-file gate judged by failure delta; tests/test_a_moved_checkout_serves_every_call.py:197,218,235,256,283 implement them, and the manifest's `tests` line matches the done_when's command, with gate.log and base-gate.log recorded.\nVERDICT write_paths: the declared scope is five paths (reckon/mcp.py; tests/test_a_moved_checkout_serves_every_call.py; tests/test_mcp_server_serves_current_code.py; the evidence fragment; the figures dir); the diff touches four files and tests/test_a_slow_child_never_forces_a_reconnect.py is not among them.\nVERDICT manifest: read; it records status complete, seven commits, gate.log 1 failed/33 passed (EXIT=1), base-gate.log 5 failed/29 passed (EXIT=1), negative_control_log base-gate.log, and two follow_ons; its baseline_suite and after_suite keys are null, so the failure delta is read from gate.log against base-gate.log.\nVERDICT diff: read commit by commit against ac17ed130 - 0ea4b599f lands the routing, raised-failure and embedded-failure changes in reckon/mcp.py plus the seven-case test file; dea38277b routes writes on their first call and narrows the embedded read to _EMBEDDED_FAILURE_FIELDS/_SCHEMA_ERROR_NAMES; 3b4d8524c updates the slow-child case; a3a9ec22c, f0a43c97f, 9e2b553b1 and 7b05ec129 are the evidence fragment and docstring commits.\nCALL_SITES: reckon/mcp.py:3208 (read_plan), reckon/mcp.py:3219 (edit_plan), reckon/mcp.py:3225 (roadmap), reckon/mcp.py:3231 (audit), reckon/mcp.py:3242 (crew)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/mcp.py:711 routes every call of the warm child, writes included from their first call, and reckon/mcp.py:729 answers a raised failure with both stamps rather than re-raising it raw.\nSCORE evidence: 16\nJUSTIFICATION evidence: the manifest's `tests` line is the done_when's six-file command and gate.log records EXIT=1 with a 0 failure delta against base-gate.log, but the embedded-schema case is asserted only on the cold path at tests/test_a_moved_checkout_serves_every_call.py:283, so the done_when's re-run on current code is exercised through the marked-failure fallback rather than a warm-child re-run.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: three of the four changed files sit inside the requested five, but tests/test_a_slow_child_never_forces_a_reconnect.py is not one of them.\nSCORE durability: 16\nJUSTIFICATION durability: the four new guards redden at base (base-gate.log lists test_a_successful_call_is_served_by_the_current_code, test_a_raised_failure_while_the_child_is_cold_carries_the_remedy, test_the_first_write_of_a_tool_is_served_by_the_warm_child and test_an_embedded_schema_failure_is_not_passed_off_as_an_answer), but the stamp assertions at tests/test_a_moved_checkout_serves_every_call.py:208,270,301 compare the answer to the stamp the test itself injected.\nSCORE fit: 16\nJUSTIFICATION fit: the added helpers follow the module's private-helper-with-docstring idiom and carry no plan label, version token or forbidden name, but reckon/mcp.py:632 _SERVE_ON_CURRENT_CODE is now write-only.\nSCORE reuse: 15\nJUSTIFICATION reuse: no owner exists for the answer a raised call gets - the search over reckon/ found the refusal builders _stale_code_response (reckon/mcp.py:498), _unanswered_on_current_code (reckon/mcp.py:540) and _write_may_have_landed (reckon/mcp.py:593) - but _raised_under_the_current_code at reckon/mcp.py:562 re-derives the six shared keys of _stale_code_response rather than extending it.\nFINDING tests/test_a_slow_child_never_forces_a_reconnect.py:295 follow-on: the node rewrote this case although the file is not one of its five declared write paths, so the change was made outside its exclusive scope; the edit was nonetheless required by the write-routing change, since the pre-existing assertion that the image's version_conflict stands is exactly what routing a write away from the image removes.\nFINDING tests/test_a_moved_checkout_serves_every_call.py:208 follow-on: result.get(\"served_by_code_stamp\") == rig.stamp compares the answer against the stamp the test injected into MovedCheckout, so it can only redden on a missing field and cannot catch a wrong stamp; the same shape recurs at 270 and 301, while the independent assertions at 205 and 297 carry each guard.\nFINDING reckon/mcp.py:632 follow-on: _SERVE_ON_CURRENT_CODE is now write-only - added to at reckon/mcp.py:668 and read nowhere - so the comment that it survives as the guard's record of which tools the child has run names a record nothing consumes.\nFINDING reckon/mcp.py:562 follow-on: _raised_under_the_current_code re-derives the refusal dict (error, detail, server_started_at, code_stamp_at_start, code_stamp_now, reconnect) that _stale_code_response at reckon/mcp.py:498 already builds instead of delegating to it.\n",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T15:28:30.533258+00:00",
+  "total": 94
+}
