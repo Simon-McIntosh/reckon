@@ -1,0 +1,82 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T09:08:53.508Z",
+  "dispatched_at": "2026-10-21T08:50:38Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-finished-plan-closes.html:72",
+      "id": "done_when-1",
+      "reason": "a node implementing the assertion as written either pegs it to a route whose payload has no blocked/not-blocked value (an assertion that cannot fail, the very defect the node exists to exclude) or must substitute the inventory surface the plan never names, so the third leg of the agreement check is either vacuous or unnamed.",
+      "text": "\u00a73's done-when asserts that \"`roadmap`, the `/plan` route in `serve.py` and `read_plan` agree on every fixture, because all three read the one function\", but `GET /plan/<project>/<slug>` returns `_plan_html.parse_plan(pf)` output with no `blocking`, `effective_status` or readiness field (`reckon/serve.py:3108-3111`), so there is nothing in that response for a fixture to agree or disagree with; the serve.py reader of `split_unpassed_gates` is at `reckon/serve.py:1924` inside `_derive_lifecycle` (`reckon/serve.py:1840`), which is reached from plan discovery (`reckon/serve.py:1599`, `1667`) and served on `/state/<project>/index.json`, not the `/plan` route",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-finished-plan-closes.html:72",
+      "id": "reasoning-1",
+      "reason": "\u00a72's closable test runs before the readiness ladder reaches `blocked`, so such a plan reads `closable` with the gate listed in `closure_blockers` either way, and \u00a71's census exercises no section-less gate among the three blocked plans.",
+      "text": "\u00a73 states the no-gated-sections case only for \"a plan that still has implementable work\", leaving unsettled what an open, section-less gate does to a finished plan, where today it holds the plan outright (the function docstring: \"A gate that names no sections always holds the plan\", `reckon/roadmap.py:799`)",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "49ac8d53b819cc1168e5cd782f326af0724e8b8b741f39bab2f0249b646211fa",
+  "plan_slug": "a-finished-plan-closes",
+  "plan_version": 6,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-21T09:13:02.064133+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-21T09:13:11.401159+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T09:13:02.064133+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T09:13:11.401159+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-finished-plan-closes.v6.json",
+  "review_run_id": "r-20261021T084932787462-plan-review-of-a-finished-plan-closes",
+  "reviewed_blob_sha": "b5409f26f5d19c5f51970da2f235d8145cb9081d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `split_unpassed_gates` (`reckon/roadmap.py:789`, body call at 807), the ladder (`reckon/roadmap.py:3200`), `serve.py:1924`, `reckon/mcp_views.py:2490` with `_section_gate_blockers` at `reckon/mcp_views.py:2504`, and `unpassed_gate_blockers(gates)` (`reckon/lifecycle.py:52`) all resolve and carry the shapes \u00a73 states; the `_plan_gate_blockers` symbol the previous review rejected is gone.",
+    "done_when": "a finding \u2014 \u00a73's agreement assertion names the `/plan` route in `serve.py`, which serves raw parsed plan state and carries no blocking or readiness field.",
+    "evidence_paths": "pass \u2014 the census, the roadmap reads and their output sit on the durable, committed path `docs/evidence/archive/a-finished-plan-closes-landed.html`, cited from \u00a71 and the source of the three blocked plans' rows.",
+    "naming": "pass \u2014 \u00a73 introduces no symbol of its own, and every name it uses for the target and its readers is the name the code uses, with no plan label, stage name or ticket number.",
+    "reasoning": "pass \u2014 the stated root cause reproduces (a closed gate with verdict `failed` is unpassed, so it holds: `_gate_verdict` writes `status: \"closed\"`, `verdict: \"failed\"` at `reckon/_store.py:3264`, and `unpassed_gate_blockers` keeps verdicts other than `passed`), and `split_unpassed_gates` is the reader the three blocked plans' `gate_blockers` rows come from, so \u00a73's rules unblock all three \u00a71 shapes (open gate on done `s8`; open gate on deferred `s11`; closed failed gate).",
+    "single_goal": "pass \u2014 \u00a73 carries one deliverable: one edit to `split_unpassed_gates` in `reckon/roadmap.py`.",
+    "wiring": "pass \u2014 \u00a73 needs no declared edge (its mechanism is self-contained), the map resolves s5\u2192s2 for \u00a75's wait on \u00a72's closing list, and s6 holds on s2\u2013s5 through `plan-section-depends-on` in the snapshot's `<meta>` block."
+  },
+  "section_digests": {
+    "_document": "a4ae683796f1cd7d1f79c1a255667e309bf30ed565ec4468724053b7e60a7306",
+    "s1": "1e9dfcb4502718170725c8fe6a094be7008a8414e2b0c4d7396de0b81ce04dab",
+    "s2": "6c44eda16e770936689d05513ebb501b1e2a0f657f06807e53fa716607264744",
+    "s3": "333c3b17728467ca1f4d514192eff294d048f9e59f4eb424f01db93e25138162",
+    "s4": "1df36730914802cdf8e709b01c5f54eabac4b98f4e2300d731e4af0610418147",
+    "s5": "4060f5077ce6aada3abd8600dd95d99101462cba15260f20910a58337fb685c8",
+    "s6": "94a8098fad6e6e0e94b30b6aa3b5479453e35e2f7ef9f3c088ea41be599f8353"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T09:12:57.456521+00:00"
+}
