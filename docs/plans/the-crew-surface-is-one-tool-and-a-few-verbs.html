@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="the-crew-surface-is-one-tool-and-a-few-verbs">
   <meta name="plan-title" content="The Crew Surface Is One Tool And A Few Verbs">
   <meta name="plan-summary" content="80 CLI leaves and 398 options cost coordinators a refusal per guard; the crew MCP tool carries the coordinator&#x27;s verbs and the CLI folds into flags.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="12.0">
   <meta name="plan-capability-version" content="1.0">
@@ -26,7 +26,7 @@
   <title>The Crew Surface Is One Tool And A Few Verbs | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="105">
+<meta name="plan-version" content="106">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -378,10 +378,17 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-cso-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-10-19" data-recommends-skill="/reckon-build the-crew-surface-is-one-tool-and-a-few-verbs" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-cso-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-10-19" data-recommends-skill="/reckon-build the-crew-surface-is-one-tool-and-a-few-verbs" data-resolved-at="2026-10-21T06:03:20+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Land the tombstones and the manifest-reading complete first; §2 and §3 run in parallel</h4>
     <div class="r-fu-body"><p>§2 and §3 share no write path. §4, §6, §7's four nodes, §8 and §9's four nodes then run in order, because each writes <code>reckon/crew_run_commands.py</code> or a test file the next one also writes. §5 waits on §4, §6 and <a href="/reckon/every-plan-write-goes-through-edit-plan#s11">every-plan-write-goes-through-edit-plan §11</a>, which also writes <code>reckon/mcp.py</code>. §10 shares one file with §7's repair-and-check node, <code>reckon/crew/recovery_review_subject.py</code>. That node waits on §5, so §10 runs first, and the repair-and-check node bases on §10's landing.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-crew-surface-is-one-tool-and-a-few-verbs</pre>
+    <p class="r-fu-outcome">All ten sections landed, with no failures added at any node. The crew MCP tool carries the coordinator's write actions, and crew view serves every read view through one function. The verb families fold into a few verbs with tombstones that name runnable successors. Every run verb takes one identity grammar. crew list, crew ledger and crew velocity are retired behind crew view. A reopened run reads as working. Evidence is in the-crew-surface-is-one-tool-and-a-few-verbs-landed.</p>
+    </article>
+<article class="r-fu" data-id="f-cso-close" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-21 06:00" data-recommends-skill="/reckon-build the-crew-surface-is-one-tool-and-a-few-verbs" data-resolved-at="2026-10-21T06:00:00Z" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Close the crew surface plan</h4>
+    <div class="r-fu-body"><p>All ten sections have landed.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-crew-surface-is-one-tool-and-a-few-verbs</pre>
+    <p class="r-fu-outcome">done - no followup: every section landed and the chain closes here</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -578,6 +585,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261021T053808276826-review-of-cso-a-reopened-run-reads-as-working-2667447e2ee4" data-who="reckon-build" data-when="2026-10-21T05:52:38.978Z">
     <div class="r-comment-body"><p>Review of r-20261021T050330997199-cso-a-reopened-run-reads-as-working at reviewed_head 2667447e2 (base a42462b31): the --reopen branch of crew_resume (reckon/crew_run_commands.py:1754-1775) clears the delivered verdict through the existing owner resumption._reset_delivered_manifest_status instead of writing blocked.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-cso-a-reopened-run-reads-as-working" data-who="reckon-build" data-when="2026-10-21T06:00:00Z">
+    <div class="r-comment-body"><p>Corrective node landed at merge <code>14c85cf0b</code>, run <code>r-20261021T050330997199-cso-a-reopened-run-reads-as-working</code>.</p><p>The resume fold's <code>crew resume --reopen</code> wrote <code>status: blocked</code> to get past the resume guards. The resume reset clears only <code>complete</code> and <code>failed</code>, so a reopened run's live worker sat under a false <code>blocked</code>, and coordinators acknowledged the resulting obligation by hand. power_convertor reported it, and <code>cold-test-discharge-replay</code> showed it.</p><p>Reopen now writes no status word. The reset turns the delivered <code>complete</code> into an in-progress status, and the reopen is recorded in <code>reopened.json</code>. The head gate passed 61 of 61, and base fails exactly the four cases that catch the defect. Reviewed 112/120.</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261020T022918727658-review-of-cso-a-review-refusal-names-its-failed-condition-b520f7339a32" data-who="reckon-build" data-when="2026-10-20T02:50:42.805Z">
     <div class="r-comment-body"><p>Independent review of r-20261020T015009269364-cso-a-review-refusal-names-its-failed-condition, read at base 64b0c433ff1217cbfa5d888a28c0def776277bb7 and head b520f7339a327834c35a96ddf6e61ed5b0b75311: goal_fidelity 18, evidence 18, scope_discipline 19, durability 17, fit 16, reuse 17; added_failure_count 0 with an empty id list; no blocking findings and five follow-on findings (condition count in the docstring at recovery_review_delivery.py:365, TypeError on a non-iterable absent at recovery_review_subject.py:1067, Path-vs-str path key at recovery_review_delivery.py:474, the untested "record cannot be read" arm at tests/test_a_review_refusal_names_its_failed_condition.py:56, and the now-unreferenced _read_complete_review at recovery_review_delivery.py:347). Record: review-records/r-20261020T015009269364-cso-a-review-refusal-names-its-failed-condition.at-b520f7339a327834c35a96ddf6e61ed5b0b75311.json</p></div>
