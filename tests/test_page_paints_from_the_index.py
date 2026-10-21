@@ -1865,8 +1865,7 @@ def test_a_withheld_schedule_keeps_the_one_on_screen_and_marks_it_stale() -> Non
     # The request was made, so the answer under test is the route's own.
     assert observed["schedule_requests"] == 1, observed
     assert observed["same_object"] is True, (
-        "the schedule on screen was replaced by the withheld answer: "
-        f"{observed}"
+        f"the schedule on screen was replaced by the withheld answer: {observed}"
     )
     assert observed["returned_same"] is True, observed
     assert observed["bars"] == observed["held_bars"], observed
