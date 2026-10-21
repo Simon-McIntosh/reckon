@@ -39,11 +39,14 @@ AFFECTED_FILES = (
 )
 
 # The inner run gets its own worker pool, basetemp and timeout so it never
-# shares pytest's three-slot basetemp with the outer run and stays inside the
-# outer 300-second per-test bound.
-_INNER_WORKERS = 4
-_INNER_TIMEOUT_S = 240
-_SUBPROCESS_TIMEOUT_S = 280
+# shares pytest's three-slot basetemp with the outer run. The three files carry
+# several tests that sleep tens of seconds apiece, so the pool is wide enough to
+# overlap them: at eight workers the inner run takes about eighty seconds on an
+# idle node, which leaves room for the slowdown of running it inside a busy
+# outer suite and still finish inside the outer 300-second per-test bound.
+_INNER_WORKERS = 8
+_INNER_TIMEOUT_S = 275
+_SUBPROCESS_TIMEOUT_S = 285
 
 
 def _crew_host_environment() -> dict[str, str]:
