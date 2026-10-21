@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="The loader names every derived block once as window.DERIVED_STATE_KEYS and carries each one across an index revalidation until the discovery merge replaces it; a discovery that builds no schedule keeps the one on screen, marked stale with the failure that stopped it; and the merge announces itself as reckon:derived, which the shell answers with a render.">
   <meta name="plan-evidence-for" content="reckon:the-page-paints-from-an-index">
   <meta name="plan-verifies" content="reckon:the-page-paints-from-an-index#s10">
-  <meta name="plan-commits" content="460427a10,89327f8ef">
+  <meta name="plan-commits" content="460427a10,89327f8ef,b5d266e47">
   <meta name="plan-recorded-at" content="2026-10-21">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-tags" content="spa,state-loader,revalidation,derived-state,staleness">
@@ -62,9 +62,10 @@
   <h3 id="a-revalidation-keeps-the-derived-blocks-evidence">Evidence</h3>
 
   <p>Gate at <code>460427a10</code>+<code>89327f8ef</code> over the two SPA test files:
-  <strong>14 passed, EXIT=0</strong> against <strong>10 passed, EXIT=0</strong> for those two
+  <strong>15 passed, EXIT=0</strong> against <strong>10 passed, EXIT=0</strong> for those two
   files at <code>79ca80dc0</code>: every case this node adds passes, and no base case broke.
-  Three new loader cases and one render case carry the measure:</p>
+  The browser case runs rather than skips. Three new loader cases, one render case and one
+  served-page case carry the measure:</p>
 
   <ul>
     <li id="a-revalidation-keeps-the-derived-blocks-t1">A page whose discovery carries a
@@ -91,6 +92,17 @@
     <code>tests/test_spa_derived_flow.py</code> renders a stale schedule and asserts both
     the bars and the stale line are drawn, then renders the fresh schedule and asserts no
     stale line, as its own control.</li>
+
+    <li id="a-revalidation-keeps-the-derived-blocks-t5">A real served page runs the
+    shipped shell, crew view and loader. Its index and discovery answers are the fixtures,
+    the discovery is delayed 400 ms, and the drawn flow is sampled every 4 ms across a
+    revalidation: every sample must hold the flow, none may show the unavailable branch,
+    and <code>window.STATE</code> must carry a schedule in all of them. The page then
+    answers a discovery with a null schedule and its failure and the bars stay up with the
+    failure named above them. <strong>Negative control:</strong> restoring the wholesale
+    replacement of <code>window.STATE</code> puts the unavailable branch on screen in
+    22 of 22 samples and leaves the flow missing after the merge, against 0 of 21 at head
+    — the same mutation fails this case and the loader case together.</li>
   </ul>
 
   <p id="a-revalidation-keeps-the-derived-blocks-findings">Two findings stored by an
@@ -102,14 +114,14 @@
   the same set afterwards, so a change-stream handler thread that outlives its test is a
   failure rather than an invisible leak. The guard's own failing run is logged.</p>
 
-  <p id="a-revalidation-keeps-the-derived-blocks-open">One part of the declared measure is
-  not delivered: the served-page browser case that delays <code>/_discover</code>, holds
-  <code>/_checks</code> unanswered, and asserts the derived flow is drawn after the merge.
-  A draft of it observed no fetch on the served <code>#crew</code> route and was withdrawn
-  so the suite stayed green; the loader case at
-  <a href="#a-revalidation-keeps-the-derived-blocks-t3">t3</a> covers the same mechanism
-  below the browser boundary. It is carried as a follow-on rather than reported as done.
-  </p>
+  <p id="a-revalidation-keeps-the-derived-blocks-open">The form this took, and why. The
+  first draft delayed <code>/_discover</code> and held <code>/_checks</code> unanswered on
+  a page served straight from the tree, and observed no fetch at all: the served page's
+  own <code>/_index/reckon</code> never resolved in this harness, so the shell sat on its
+  loading state and never reached the crew view. The delivered case answers the index and
+  the discovery from fixtures instead, which leaves the shell, the crew view and the
+  loader exactly as served, and samples the drawn flow across the revalidation rather
+  than holding a route unanswered.</p>
 </article>
 </body>
 </html>
