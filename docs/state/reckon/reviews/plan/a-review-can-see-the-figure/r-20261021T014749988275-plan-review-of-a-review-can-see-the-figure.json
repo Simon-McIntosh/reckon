@@ -1,0 +1,68 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T01:55:38.967Z",
+  "dispatched_at": "2026-10-21T01:48:59Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-review-can-see-the-figure.html:266",
+      "id": "done_when-1",
+      "reason": "`tests/test_launch_plan_attaches_images.py::test_a_lane_that_cannot_carry_the_figure_refuses_by_name` is parametrised over CLIVE and asserts `pytest.raises(BackendError)`, and \u00a714 makes clive name the path instead of refusing, so that case reddens while the file is not in \u00a714's write paths and the node cannot repair it in scope.",
+      "text": "\u00a714's done-when requires \"the test files importing `reckon/_backends.py` show no added failure against base",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-review-can-see-the-figure.html:264",
+      "id": "reasoning-1",
+      "reason": "a worker reading \"the dialect names it\" looks at the argv method, finds no prompt there, and must guess where the naming is composed; the plan should name the site (`launch_plan`, whose write path `reckon/_backends.py` it already holds).",
+      "text": "\u00a714 says \"the claude-family dialect names each attached image path in the worker's prompt\", but `reckon/_backends.py:1044` sets `stdin_prompt = True` and `launch_plan` carries the prompt separately as `prompt`/`stdin_text` (`reckon/_backends.py:2111`, `:2267`), so `_ClaudeDialect.argv` is handed no prompt and the named mechanism site does not exist",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-review-can-see-the-figure.html:46",
+      "id": "anchors_resolve-1",
+      "reason": "the claim it supports (the codex subcommand takes `-i`) is true and no node acts on that line; it is a stale citation to correct in passing, not a mechanism the plan depends on.",
+      "text": "the intro cites `reckon/_backends.py:1220` as where \"the codex dialect composes `codex exec`\", but line 1220 is the budget record's `detail` field and the composition is at line 1243 (`argv = [command, \"exec\", \"--json\", ...]`), so the anchor does not resolve to what it names",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "7f56e205d99b0fbf42ff1b537d5e0f806db2e2b47942e121baf0706847f613ad",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 80,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T014749988275-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "213571c8ae7b3fe235e9400f90155f6b60bc7406",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the document intro cites `reckon/_backends.py:1220` for the `codex exec` composition, and that line is budget code; the composition is at `reckon/_backends.py:1243`.",
+    "done_when": "a finding \u2014 \u00a714's done-when asserts the `reckon/_backends.py` importers add no failure, but the change necessarily reddens a test outside \u00a714's write paths.",
+    "evidence_paths": "pass \u2014 \u00a714 writes its logs under the run directory, which survives the run, and names no scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 \u00a714 introduces no plan label, stage name, ticket number or version tag into a symbol, filename or comment; the new test name is behavioural.",
+    "reasoning": "a finding \u2014 \u00a714 places the image-naming in the dialect, but the clive/claude harness receives its prompt on stdin from `launch_plan`, so the dialect is not a site that composes a prompt and the caller that must gain the naming is not named.",
+    "single_goal": "pass \u2014 \u00a714 carries one capability (the local lane can be handed a figure); the prompt-naming and the declaration are gated together by the \u00a712-candidate clause, so neither half closes on its own verdict.",
+    "wiring": "pass \u2014 the added `plan-section-depends-on` entry names `a-review-can-see-the-figure#s13`, which resolves to the \u00a713 section in this plan; \u00a714's other needs (\u00a710's run-local PNGs, \u00a712's candidate selection) are already declared `done`, so their omission from the edge changes no routing."
+  },
+  "section_digests": {
+    "_document": "de2379117993ebb60cc7c918670f6820f1f513433b043f571605b56b8447a70e",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s10": "aee314dbe26192cd678dc467a9b229b8cb46873cacefcd4ce369fcbe469a1e37",
+    "s11": "22d519df0a82a0edfb23ceef10d63c14a08f3d8d656ce95a4cd03e5049d4e228",
+    "s12": "234f9999257c9e64bf69518cdf0b98e319850465374deeac091e90b1ed118647",
+    "s13": "d2f0977c2749f5e1d4e28f3962e8b01a182615a0a75edb530e5e4fde18d9a123",
+    "s14": "ee04449290fc54143a46b3441d2d9b8826b1922ba0c44c1470cc2057d2ede623",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "ce9705dbaad70ab2b3a9425eead9900cc284deb7f1d5ecacb553d3745679b3d7",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a",
+    "s8": "2c200fdd964f328342811e9362e4cd14da60f3c8352368899ccf87797d9e7f5b",
+    "s9": "b62ffeb55dd71d5f62b49f372e069f227a57c7caec9c6c3b45f81a945d284e11"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T01:59:13.640850+00:00"
+}
