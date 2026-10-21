@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s47">
+  <title>A ledger row answers its own session | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-ledger-row-answers-its-own-session-landing" data-node="a-ledger-row-answers-its-own-session" data-reckon="landed" data-when="2026-10-21">
+  <h2>A ledger row answers its own session</h2>
+  <p><code>_compact_row</code> discarded the committed row it held and asked <code>resolve_session</code> for the run by id, so the ledger source loaded the whole ledger to find the same row again — one load per promoted row, quadratic in the ledger's size. <code>resolve_session</code> now takes the row the caller already holds as <code>ledger_row</code> and the ledger source reads the session from it. Source order and answer shape are unchanged (pointer, then stream, then ledger, with <code>source</code> naming the one that answered), and a caller that holds no row still loads, so every other ledger caller is untouched.</p>
+  <p>Measured on a synthetic ledger of 52 promoted rows, 51 of them carrying a <code>session_id</code>, counted with a wrapper over <code>ledger.load</code>: one <code>runs_view</code> with the ledger as its source made <strong>53</strong> loads at base and <strong>1</strong> here. Every row kept its base answer — <code>session_id</code> and <code>session_id_source</code> equal what the resolver returns for the same run with no row supplied — and the row recording no session still reports the absence naming all three sources. The negative control passes <code>record=None</code> again for ledger rows and the count returns to 53, over a run whose log ends in a non-zero <code>EXIT=</code> with that test failing.</p>
+  <p>The gate arm first added one failure at head that carries the same shape the change removes: <code>tests/test_crew_runs_by_run_id.py::test_one_run_read_opens_a_fixed_small_number_of_files</code> founded its positive control on a full walk whose open count came from the per-row reopen, so the control measured the defect rather than the instrument. It held at base, when the walk loaded the ledger once per row, and read <code>{'n': 1}</code> here against its <code>&gt; 100</code> bound — one load for the whole walk, which is the property this section establishes. That file was outside this node's write scope, so the finding was reported rather than repaired; the scope was then granted and the control re-founded on a read whose open count does not depend on the reopen.</p>
+  <p>The re-founded control patches the ledger read to its non-indexed form and walks the same fixture, which now also carries <strong>150</strong> run documents of their own: that read opens the aggregate and one file per run document — <strong>151</strong> files measured — while a one-run read opens <strong>2</strong> through the source read and <strong>1</strong> through the index. The control is asserted against the fixture's own document count rather than a literal, so it stays tied to the population it counts, and the real assertions are unchanged: one run read stays within <code>MAX_OPEN_FILES</code>, both non-indexed and indexed. The final gate arm at revision <code>6e28aa82</code> adds no failure against the base arm — the three remaining failures are red at base and unrelated to this node: <code>reckon.mcp</code> has no attribute <code>crew_runs_view</code>; <code>reckon/served_code.py::_child_for</code> spawns a child without <code>_require_fleet_gate_open</code>; and <code>reckon/crew/review.py</code> and <code>reckon/ledger.py</code> exceed the module-size bound. The final arm runs 383 tests to 3 failures where the base arm ran them to 4; the three are the same ids at both revisions, so this change adds none.</p>
+</article>
+</body>
+</html>

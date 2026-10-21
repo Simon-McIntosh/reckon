@@ -789,22 +789,35 @@ def _stream_session(record: Mapping[str, Any]) -> str:
     return ""
 
 
-def _ledger_session(run_id: str, *, project: str, root: Any) -> str:
+def _ledger_session(
+    run_id: str,
+    *,
+    project: str,
+    root: Any,
+    row: Mapping[str, Any] | None = None,
+) -> str:
     """The session the promoted row recorded, or empty.
 
     A promoted run has no pointer and no live stream to consult, and its
     session may still be resumable — so the committed row is the third source
     rather than the end of the search.
+
+    A caller that already holds the run's committed row hands it in, so the
+    ledger is not loaded again to find the row it just read. A caller holding
+    only a run id still pays that load, which is what every other ledger source
+    caller does.
     """
+    if row is not None:
+        return str(row.get("session_id") or "").strip()
     if not project:
         return ""
     try:
         data, _version = ledger.load(project, root=root)
     except Exception:  # noqa: BLE001 - an unreadable ledger answers nothing
         return ""
-    for row in reversed(data.get("runs") or []):
-        if str(row.get("run_id") or "") == run_id:
-            return str(row.get("session_id") or "").strip()
+    for candidate in reversed(data.get("runs") or []):
+        if str(candidate.get("run_id") or "") == run_id:
+            return str(candidate.get("session_id") or "").strip()
     return ""
 
 
@@ -812,6 +825,7 @@ def resolve_session(
     run_id: str,
     *,
     record: Mapping[str, Any] | None = None,
+    ledger_row: Mapping[str, Any] | None = None,
     project: str = "",
     root: Any = None,
 ) -> dict[str, Any]:
@@ -819,8 +833,14 @@ def resolve_session(
 
     Every surface that reports a session asks this, so two surfaces asked about
     the same run cannot disagree. The sources are consulted in order — live
-    pointer, the run's own stream, the promoted ledger row — and the answer
-    carries the one that supplied it.
+    pointer, then stream, then ledger — and the answer carries the one that
+    supplied it.
+
+    ``ledger_row`` is the committed row the caller already holds for this run,
+    which the ledger source answers from directly instead of loading the ledger
+    to find it again. A caller holding no row states only the run id and the
+    ledger source loads the ledger, so a view compacting every row of a project
+    does not make one load per row.
 
     Where none has an id the answer is a stated absence naming all three as
     consulted, because *not yet observed* and *genuinely absent* are different
@@ -852,7 +872,10 @@ def resolve_session(
     if found:
         return {**answer, "session_id": found, "source": "stream", "resolved": True}
     found = _ledger_session(
-        run_id, project=project, root=root if root is not None else pointer.get("repo")
+        run_id,
+        project=project,
+        root=root if root is not None else pointer.get("repo"),
+        row=ledger_row,
     )
     if found:
         return {**answer, "session_id": found, "source": "ledger", "resolved": True}
