@@ -271,8 +271,7 @@ def test_a_run_whose_outcome_is_already_landed_is_not_forgotten(
         f"the view named {listed}"
     )
     assert RECORDED_RUN not in listed, (
-        "a report-only completion is recorded, not forgotten; "
-        f"the view named {listed}"
+        f"a report-only completion is recorded, not forgotten; the view named {listed}"
     )
     assert FORGOTTEN_RUN in listed, (
         "the settled rows must not take the unfinished one's place; "
