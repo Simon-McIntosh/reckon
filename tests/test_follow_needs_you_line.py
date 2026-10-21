@@ -62,7 +62,7 @@ def home(tmp_path, monkeypatch):
 
 def _write_pointer(
     home: Path,
-    run_id: str,  # noqa: ARG001 - kept for call-site symmetry with the fixtures
+    run_id: str,
     node: str,
     *,
     session: str,
@@ -121,7 +121,9 @@ def _write_stored_review(project: str, run_id: str) -> None:
     (store / f"{run_id}.json").write_text(json.dumps({"verdict": "pass"}))
 
 
-def _drive(events: list[dict], stop: threading.Event, *, session: str) -> threading.Thread:
+def _drive(
+    events: list[dict], stop: threading.Event, *, session: str
+) -> threading.Thread:
     """Consume the follower's watch generator on a thread, ended by ``stop``."""
 
     def run() -> None:
@@ -150,7 +152,9 @@ def _needs_you_lines(events: list[dict]) -> list[str]:
     ]
 
 
-def _run_needs_you(home: Path, *, session: str = SESSION) -> tuple[list[str], list[dict]]:
+def _run_needs_you(
+    home: Path, *, session: str = SESSION
+) -> tuple[list[str], list[dict]]:
     """Drive one follower for the observation window and return its lines and rows.
 
     A live producer is never started: the wait pass composes the standing line
@@ -182,7 +186,9 @@ def test_the_line_names_your_unpromoted_run_and_repeats(home):
             ("completed_unpromoted", _stamp_seconds_ago(HELD_SECONDS)),
         ],
     )
-    _write_pointer(home, "r-own-work", "own-node", session=SESSION, manifest_status="running")
+    _write_pointer(
+        home, "r-own-work", "own-node", session=SESSION, manifest_status="running"
+    )
     _write_pointer(
         home,
         "r-peer-block",
@@ -205,7 +211,9 @@ def test_the_line_names_your_unpromoted_run_and_repeats(home):
 
 def test_a_quiet_pane_still_beats(home):
     """With nothing needing action the cadence line still appears and says so."""
-    _write_pointer(home, "r-own-work", "own-node", session=SESSION, manifest_status="running")
+    _write_pointer(
+        home, "r-own-work", "own-node", session=SESSION, manifest_status="running"
+    )
 
     lines, _rows = _run_needs_you(home)
 
@@ -245,8 +253,12 @@ def test_the_follower_and_the_derivation_name_the_same_runs(home):
         session=SESSION,
         manifest_status="complete",
     )
-    _write_pointer(home, "r-own-work", "own-node", session=SESSION, manifest_status="running")
-    _write_pointer(home, "r-peer-block", "peer-block-node", session=PEER, manifest_status="blocked")
+    _write_pointer(
+        home, "r-own-work", "own-node", session=SESSION, manifest_status="running"
+    )
+    _write_pointer(
+        home, "r-peer-block", "peer-block-node", session=PEER, manifest_status="blocked"
+    )
 
     lines, _rows = _run_needs_you(home)
 
@@ -257,4 +269,6 @@ def test_the_follower_and_the_derivation_name_the_same_runs(home):
         assert all(node in line for line in lines), (node, lines)
     # And the closing row the follower composes uses the same derivation.
     end_needs = follow._needs_you_runs(PROJECT, session=SESSION)
-    assert {str(row["node"]) for row in end_needs} == {str(row["node"]) for row in derived}
+    assert {str(row["node"]) for row in end_needs} == {
+        str(row["node"]) for row in derived
+    }

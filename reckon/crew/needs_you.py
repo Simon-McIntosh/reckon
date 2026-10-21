@@ -20,8 +20,9 @@ window's only warning that the chance to resume has gone.
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any
 
 # The order the line prints its groups in, and the word each group carries.
 # Unpromoted work leads because a delivered run is one promotion away from
@@ -145,7 +146,7 @@ def needs_you(
         snapshot = recovery_module._watch_snapshot(
             pointer, moment=at, stall_seconds=stall_seconds
         )
-        state = str(snapshot.get("state") and snapshot.get("state") or "")
+        state = str((snapshot.get("state") and snapshot.get("state")) or "")
         classification = str(snapshot.get("recovery_classification") or "")
         if state in blocked_states and classification != "held":
             kind = "blocked"
@@ -169,8 +170,7 @@ def needs_you(
                 "state": state,
                 "kind": kind,
                 "age_seconds": max(0.0, at - entered),
-                "reviewed": kind == "unpromoted"
-                and _is_reviewed(project, run_id),
+                "reviewed": kind == "unpromoted" and _is_reviewed(project, run_id),
             }
         )
     # Oldest first within a kind, so the run that has needed attention longest
@@ -192,7 +192,11 @@ def needs_you_signature(summary: Mapping[str, Any]) -> tuple[tuple[str, str, str
     """
     return tuple(
         sorted(
-            (str(row.get("run_id") or ""), str(row.get("kind") or ""), str(row.get("state") or ""))
+            (
+                str(row.get("run_id") or ""),
+                str(row.get("kind") or ""),
+                str(row.get("state") or ""),
+            )
             for row in summary.get("runs") or ()
         )
     )
