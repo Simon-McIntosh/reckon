@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-21T00:13:30.071Z",
+  "dispatched_at": "2026-10-20T23:59:23Z",
+  "findings": [
+    {
+      "file": "tests/test_ledger.py",
+      "line": "2524",
+      "severity": "follow-on",
+      "text": "follow-on: the assertion is written as a substring test, `[name for name in CREW_VIEWS if name not in result[\"detail\"]]`, and nine of the nineteen registry names also occur in the refusal's own explanatory prose that follows the composed list (reckon/mcp_views.py:3637-3642 names lanes, routing, runs, scores, velocity, fleet, plan-review and findings, and 'cross-ledger cost view' contains 'ledger'). So the assertion reddens only for a name absent from the whole detail, not for one dropped from the composed list: deleting 'runs' from line 3635 leaves 'runs is the compact joined view' standing and the test stays green. The negative control chose 'models', which the prose does not repeat, so it exercises exactly the one class the assertion does catch and none of the nine it misses. The planned regression ('a view added to CREW_VIEWS is named without a second edit') is still caught, because a newly registered name appears in no prose; the exposed gap is the drift in the other direction, a name silently dropped from the composed list."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T233610350415-cso-unknown-view-names-the-registry/gate-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head gate log's first line reads `# rev 001955d96 001955d965c1cd88cab944c0ef4ac2e083712057 tree ...`, the base commit, because the head gate ran at 01:44 with the fix still uncommitted and the commit landed at 01:49. The head result is real (1 failed, 44 passed) and the manifest's artifacts repeat it, but the log's own revision header names the base sha, so a reader comparing the log's `# rev` against `reviewed_head_sha` finds them different and cannot tell from the log alone which content was measured. The negative-control log carries the distinguisher ('(worktree files, uncommitted)') that this one omits."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to compose the unknown-crew-view refusal from CREW_VIEWS in one place and have both surfaces reuse it; reckon/mcp_views.py:3627 defines crew_view_refusal_detail(), it composes the accepted list from CREW_VIEWS at :3635, serve_crew_view returns it at :3749, and reckon/mcp.py:2165 reuses it behind its own CREW_TOOL_VIEWS gate at :2161, so the goal is met.\nVERDICT done_when: the done_when names four gate files and requires the ledger test red-at-base green-at-head with nothing else added; the manifest's tests: line is the literal four-target pytest command, gate-base.log records 2 failed/43 passed EXIT=1 and gate-head.log 1 failed/44 passed EXIT=1, and the only head failure (test_every_module_fits_a_worker_window) is also red at base, so the measure is asserted and recorded.\nVERDICT write_paths: the manifest declares reckon/mcp_views.py, reckon/mcp.py, tests/test_ledger.py, the evidence fragment and a figures directory; git show 6b8398d3a --stat touches four files, reckon/mcp.py, reckon/mcp_views.py, tests/test_ledger.py and docs/evidence/fragments/the-crew-surface-is-one-tool-and-a-few-verbs/cso-unknown-view-names-the-registry.html, every one inside the declared set.\nVERDICT manifest: read at the manifest's delivered revision; status complete, commits 6b8398d3ae3bf20a2256a3dd6e1e68adf5a2ac1c, the tests: line a literal command, negative_control_log a single bare path, and no baseline_suite/after_suite JSON in favour of the gate-*.log pair with their summary figures on the artifacts line.\nVERDICT diff: read commit by commit against 001955d965c1cd88cab944c0ef4ac2e083712057; one commit, four files, +33/-24, replacing two identical hand-written refusal prose blocks (reckon/mcp.py:2162 and reckon/mcp_views.py:3746) with one composition and rewriting the ledger test's stale literal into a registry-derived assertion.\nCALL_SITES: reckon/mcp.py:2165 (_crew invalid_view refusal), reckon/mcp_views.py:3749 (serve_crew_view unknown-view refusal)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp_views.py:3635 composes the accepted list from CREW_VIEWS and both reckon/mcp.py:2165 and reckon/mcp_views.py:3749 return that one string, so the refusal names exactly the registered views and no unregistered one.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_ledger.py::test_an_unknown_crew_view_names_every_view_it_has is red at base (gate-base.log:5) and green at head (gate-head.log:8-9) with the four named tests run in the foreground, but gate-head.log:1 names the base revision because the head gate ran before the commit, so the log's revision header does not identify the content it measured.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show 6b8398d3a --stat changes only reckon/mcp.py, reckon/mcp_views.py, tests/test_ledger.py and its own evidence fragment, all inside the manifest's declared write paths, and tests/test_ledger.py changes only the one test.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_ledger.py:2524 reddens when a name is dropped from the composed list only if that name is absent from the whole detail, and nine of nineteen registry names are also carried by the explanation prose at reckon/mcp_views.py:3637-3642, so the assertion is insensitive to dropping any of those nine.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/mcp_views.py:3627 follows the sibling crew_view_names() at :3621 in shape and docstring style, is imported into reckon/mcp.py:92 in the module's existing import block, and introduces no name the repository's naming rules forbid.\nSCORE reuse: 19\nJUSTIFICATION reuse: the added crew_view_refusal_detail() extends the registry owner CREW_VIEWS rather than restating it, and adds no second mechanism; crew_view_names() at reckon/mcp_views.py:3621 returns the same tuple but composes no message, so no existing refusal-detail owner was forked.\nFINDING tests/test_ledger.py:2524 follow-on: the substring assertion is insensitive for the nine CREW_VIEWS names repeated in the refusal's prose, so dropping one of them from the composed list at reckon/mcp_views.py:3635 leaves the test green; the negative control's choice of 'models' avoids that class.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261020T233610350415-cso-unknown-view-names-the-registry/gate-head.log:1 follow-on: the head log's revision header names the base commit 001955d96 because the gate ran before the 6b8398d3a commit, so the receipt's revision pair cannot be confirmed from the log itself; the negative-control log carries the '(worktree files, uncommitted)' note this one omits.\n",
+  "review_run_id": "r-20261020T235834866276-review-of-cso-unknown-view-names-the-registry-6b8398d3ae3b",
+  "reviewed_base_sha": "001955d965c1cd88cab944c0ef4ac2e083712057",
+  "reviewed_head_sha": "6b8398d3ae3bf20a2256a3dd6e1e68adf5a2ac1c",
+  "reviewed_run_id": "r-20261020T233610350415-cso-unknown-view-names-the-registry",
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T00:15:09.264621+00:00",
+  "total": 107
+}
