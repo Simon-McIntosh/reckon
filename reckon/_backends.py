@@ -1317,7 +1317,15 @@ class _CodexDialect(Dialect):
                 "--skip-git-repo-check",
             ]
         if tier == WORKSPACE_WRITE:
-            return ["--sandbox", WORKSPACE_WRITE]
+            # Same policy, same contradiction: workspace-write adds the node
+            # temp root to the writable set and protects a .git inside every
+            # root it holds, and the fence seals that path read-only.
+            return [
+                "--sandbox",
+                WORKSPACE_WRITE,
+                "-c",
+                "sandbox_workspace_write.exclude_slash_tmp=true",
+            ]
         return ["--sandbox", READ_ONLY]
 
     def observe(

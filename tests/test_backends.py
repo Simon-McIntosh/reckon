@@ -117,6 +117,8 @@ def test_read_only_codex_uses_the_delivery_directory_for_a_fresh_launch() -> Non
         "/delivery",
         "--sandbox",
         "workspace-write",
+        "-c",
+        "sandbox_workspace_write.exclude_slash_tmp=true",
         "--skip-git-repo-check",
         "-",
     ]
@@ -141,6 +143,8 @@ def test_read_only_codex_uses_the_delivery_directory_when_resumed() -> None:
         "/redelivery",
         "--sandbox",
         "workspace-write",
+        "-c",
+        "sandbox_workspace_write.exclude_slash_tmp=true",
         "--skip-git-repo-check",
         "resume",
         "S",
@@ -174,6 +178,8 @@ def test_read_only_codex_uses_the_delivery_directory_when_resumed() -> None:
                 "/wt",
                 "--sandbox",
                 "workspace-write",
+                "-c",
+                "sandbox_workspace_write.exclude_slash_tmp=true",
                 "-",
             ],
         ),
@@ -520,9 +526,7 @@ def test_absence_of_a_signal_is_never_read_as_exhaustion() -> None:
 
 def test_known_headroom_answers_the_exhaustion_question() -> None:
     assert (
-        _backends.budget_exhausted(
-            _observe(CLAUDE, "claude-worked-turn.jsonl").budget
-        )
+        _backends.budget_exhausted(_observe(CLAUDE, "claude-worked-turn.jsonl").budget)
         is False
     )
     spent = dict(_backends.unknown_budget(""), headroom="known", utilisation_pct=100.0)

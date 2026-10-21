@@ -52,31 +52,13 @@ def _add_dirs(argv: list[str]) -> list[str]:
     return [argv[index + 1] for index, flag in enumerate(argv) if flag == "--add-dir"]
 
 
-def _bind_pairs(argv: list[str], flag: str) -> list[list[str]]:
-    return [
-        argv[index + 1 : index + 3] for index, word in enumerate(argv) if word == flag
-    ]
-
-
-def _granted_roots(fence: list[str]) -> set[str]:
-    return {
-        source
-        for source, destination in _bind_pairs(fence, "--bind")
-        if source == destination
-    }
-
-
-def _sealed_destinations(fence: list[str]) -> set[str]:
-    return {destination for _source, destination in _bind_pairs(fence, "--ro-bind")}
-
-
 _LIVE_SANDBOX_FLAGS = _backends._CodexDialect._sandbox_flags
 
 
 def _base_sandbox_flags(dialect: object, tier: str | None) -> list[str]:
-    """The rule before the change: no node-tmp exclusion on the read-only tier."""
+    """The rule before the change: no node-tmp exclusion on either sandbox tier."""
     flags = list(_LIVE_SANDBOX_FLAGS(dialect, tier))  # type: ignore[arg-type]
-    if tier == _backends.READ_ONLY:
+    if tier in {_backends.READ_ONLY, _backends.WORKSPACE_WRITE}:
         at = flags.index("-c")
         del flags[at : at + 2]
     return flags
@@ -228,37 +210,48 @@ def test_the_read_only_tier_excludes_the_node_temp_root_from_the_codex_sandbox(
     )
 
 
+def test_the_workspace_write_tier_also_excludes_the_node_temp_root(
+    monkeypatch: pytest.MonkeyPatch, reverted: None
+) -> None:
+    """The same codex policy governs the tier that runs at workspace-write."""
+    plan = _backends.launch_plan(
+        backend_name="b",
+        backend={
+            "launch": "cli",
+            "command": "codex",
+            "dialect": "codex",
+            "sandbox": _backends.WORKSPACE_WRITE,
+        },
+        prompt="p",
+        worktree="/wt",
+        manifest_path="/delivery/manifest.md",
+    )
+    overrides = [
+        plan.argv[index + 1]
+        for index, word in enumerate(plan.argv)
+        if word in {"-c", "--config"}
+    ]
+    assert "sandbox_workspace_write.exclude_slash_tmp=true" in overrides, (
+        "the workspace-write tier must exclude the node temp root too; the "
+        f"launch carries {overrides} as config overrides"
+    )
+
+
 def test_a_root_beneath_the_seal_is_still_handed_and_granted(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The run's own scratch sits beneath the seal and is not collateral."""
     fixture, argv = _compose(tmp_path, monkeypatch)
     fence = argv[: argv.index("--")]
-    granted = _granted_roots(fence)
+    binds = [
+        fence[index + 1 : index + 3]
+        for index, word in enumerate(fence)
+        if word == "--bind"
+    ]
+    granted = {source for source, destination in binds if source == destination}
     add_dirs = {Path(add) for add in _add_dirs(argv)}
 
     assert fixture.scratch.resolve() in add_dirs, (
         "the run's own scratch directory must stay writable beneath the seal"
     )
     assert str(fixture.scratch.resolve()) in granted
-
-
-def test_every_add_dir_is_bound_writable_or_outside_every_sealed_path(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, reverted: None
-) -> None:
-    """What the dialect is told writable, the fence really keeps writable."""
-    _fixture, argv = _compose(tmp_path, monkeypatch)
-    fence = argv[: argv.index("--")]
-    granted = _granted_roots(fence)
-    sealed = _sealed_destinations(fence)
-    add_dirs = [Path(add) for add in _add_dirs(argv)]
-    assert add_dirs, "the launch named no writable root at all"
-
-    for path in add_dirs:
-        within_sealed = any(
-            path == Path(root) or path.is_relative_to(root) for root in sealed
-        )
-        assert str(path) in granted or not within_sealed, (
-            f"{path} is neither bound writable by the fence nor outside every "
-            f"sealed path"
-        )

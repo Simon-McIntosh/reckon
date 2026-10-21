@@ -203,6 +203,59 @@ def test_every_add_dir_is_bound_writable_or_outside_every_sealed_path(
         )
 
 
+def test_the_ambient_node_temp_root_is_withheld(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The declared set names the node's own temp root, and the fence seals it.
+
+    The delivery set adds the ambient temp root, so a launch can carry the
+    node's own temporary directory among its declared roots. The fence seals
+    that whole tree read-only, so handing it to the dialect contradicts the
+    fence in the same way a sealed store does — while a declared root *beneath*
+    it, such as the run's own scratch, stays writable and stays handed.
+    """
+    node_tmp = tmp_path / "node-tmp"
+    node_tmp.mkdir()
+    scratch = node_tmp / "reckon-crew-scratch" / "r1"
+    scratch.mkdir(parents=True)
+    monkeypatch.setattr(_worker_fence, "NODE_TMP_ROOT", node_tmp)
+
+    fixture = Fixture(tmp_path)
+    fixture.isolate(monkeypatch)
+    declared = [str(path) for path in fixture.declared_roots()]
+    plan = _backends.launch_plan(
+        backend_name="codex",
+        backend={
+            "launch": "cli",
+            "command": "codex",
+            "dialect": "codex",
+            "sandbox": _backends.READ_ONLY,
+        },
+        prompt="p",
+        worktree=str(fixture.worktree),
+        manifest_path=str(fixture.manifest),
+        writable_directories=[*declared, str(node_tmp), str(scratch)],
+        fence=True,
+        fence_home=str(fixture.home),
+    )
+
+    fence = _fence_segment(plan.argv)
+    granted = _granted_roots(fence)
+    sealed = _sealed_destinations(fence)
+    add_dirs = [Path(path) for path in _paths_after(plan.argv, "--add-dir")]
+
+    assert node_tmp not in add_dirs, (
+        f"the sealed node temp root was named writable: {add_dirs}"
+    )
+    assert scratch.resolve() in add_dirs, (
+        "a declared root beneath the node temp root must stay handed"
+    )
+    for path in add_dirs:
+        assert str(path) in granted or not _within_any(path, sealed), (
+            f"{path} is neither bound writable by the fence nor outside every sealed path"
+        )
+
+
 def test_the_fences_declared_binds_are_unchanged(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

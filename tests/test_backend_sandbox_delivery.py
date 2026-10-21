@@ -151,6 +151,8 @@ def test_codex_read_only_argv_is_unchanged(tmp_path: Path) -> None:
         str(delivery),
         "--sandbox",
         "workspace-write",
+        "-c",
+        "sandbox_workspace_write.exclude_slash_tmp=true",
         "--skip-git-repo-check",
     ]
     # Every root outside the delivery workspace is admitted as a writable dir,
