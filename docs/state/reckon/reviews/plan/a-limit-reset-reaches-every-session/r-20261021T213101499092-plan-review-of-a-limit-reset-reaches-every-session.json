@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T22:10:20.818Z",
+  "dispatched_at": "2026-10-21T21:53:48Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-limit-reset-reaches-every-session.html:86",
+      "id": "anchors_resolve-1",
+      "reason": "the substance is right (one renderer read sets the stage cell, and a reset row must read `limit` instead), so the miscount leaves the builder with nothing extra to do.",
+      "text": "\"The renderer reads `LIFT_STATES` a third time, to set a row's stage cell to `LIFT_STAGE`\" \u2014 the renderer reads it twice (ticker.py:1680 routing into `_feed_lift`, ticker.py:2342 the stage cell); the stage cell is the second read, and there is no third read anywhere in `reckon/` (only the two test files read it)",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-limit-reset-reaches-every-session.html:86",
+      "id": "reasoning-1",
+      "reason": "the done-when asserts the actual cells (stage `limit`, state `working`) and the renderer change it needs is named separately, so a builder tests against the measurable statement and the gloss costs nothing.",
+      "text": "\"the row reads `limit claude-sub reset`\" describes a cell sequence the renderer never builds (its cells are clock, stage, job, then the state word) and it disagrees with the same section's done-when, which requires the state cell to read `working`",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "abfcb20fe6e0ab522c45883d9064c75bf7d09449fd68275f4198ff6fea84ac39",
+  "plan_slug": "a-limit-reset-reaches-every-session",
+  "plan_version": 28,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T213101499092-plan-review-of-a-limit-reset-reaches-every-session",
+  "reviewed_blob_sha": "79028e827a0593b76c189465126c689e3be93d28",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 every \u00a72 anchor resolves, but the ordinal in \"the renderer reads `LIFT_STATES` a third time\" does not.",
+    "done_when": "pass \u2014 \u00a72's done-when is a runnable test file with three declared negative controls, each of which genuinely falsifies its check.",
+    "evidence_paths": "pass \u2014 gate and base-arm logs go under the run directory on GPFS, and the two arms come from scratch checkouts rather than a session path.",
+    "naming": "pass \u2014 `sweep_resets`, `_sweep_reset_rows`, `limit-reset` and the stage word `limit` are named by mechanism, with no plan labels, ticket numbers or changelog prose.",
+    "reasoning": "a finding \u2014 \u00a72's mechanism produces its done-when and reaches the real code path with its callers named, but one sentence describing the drawn row contradicts the row layout the code builds and \u00a72's own done-when.",
+    "single_goal": "pass \u2014 the producer entry, its call site and the pane's row/stage change are the layers of one behaviour (a reset drawn once per pane) under one gate.",
+    "wiring": "pass \u2014 `plan-section-depends-on` gives s2 its s1 dependency, and s4 and s6 (which consume the reset row and the announcing option) both name s2."
+  },
+  "section_digests": {
+    "_document": "66d46f9aba483c7c35ecaae0cbd5a12473ca51794d03a3d1a6814a472d204267",
+    "s1": "94def7b6fb41cc276c0577018bcc106bab7eaaa9d39a5df760e2d77ee1a7595d",
+    "s2": "844aada0f6b4aae72bc45795e96c553e16bf3ff92f9e2c27666fc952d0187a40",
+    "s3": "a481ce43e07f6167db0a1f56a9c3a147b001b2973383c03f33151bc407e5cb4a",
+    "s4": "136bf6f43df2d99c1f758324927ab05eabd9aec938251a8d408a96c67841f596",
+    "s5": "7c0dc3556a9d6a54cf58532f9b8aa1054d9bd3725c15c82e0aa9da736a5e9309",
+    "s6": "c8ff3c099e9d217a97c0f6232689f76a21d7c9cc4b1a7d5ced6db85300180b0a",
+    "s7": "b35e0e8820af110a5858364a331330a3a6c886f10fe5701e5471afe28563c83f"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T22:12:19.038395+00:00"
+}
