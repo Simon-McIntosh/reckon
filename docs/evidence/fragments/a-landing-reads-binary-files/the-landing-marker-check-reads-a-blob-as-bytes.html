@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-landing-marker-check-reads-a-blob-as-bytes">
+  <meta name="plan-title" content="The landing marker check reads a blob as bytes">
+  <meta name="plan-evidence-for" content="reckon:a-landing-reads-binary-files">
+  <meta name="plan-verifies" content="reckon:a-landing-reads-binary-files#s1">
+  <meta name="plan-recorded-at" content="2026-10-21">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,landing,merge,binary">
+  <title>The landing marker check reads a blob as bytes &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The landing marker check reads a blob as bytes</h1>
+
+    <section id="the-landing-marker-check-reads-a-blob-as-bytes">
+      <h2>Landing</h2>
+      <p>The landing check reads each changed path by blob identity first. A
+        path whose merged blob equals the head's survived without a content
+        read, so a head adding a binary file lands instead of raising
+        <code>UnicodeDecodeError</code>; content is read only when the blobs
+        differ, and decoded only for a text path, so a differing binary path is
+        refused as an altered binary file. One function,
+        <code>_read_path</code>, owns the reading, and <code>change_markers</code>
+        and <code>surviving_change_refusals</code> both call it. The landing's
+        <code>survived</code> block now carries a <code>judgements</code> map,
+        naming a binary path <code>blob_identity</code> rather than reporting an
+        empty marker count.</p>
+      <p>Gate: 49 passed at head <code>45f5c6e4c</code> against 45 passed and 4
+        failed at base <code>e1772180f</code>, where the four failures are the
+        new binary-landing tests raising <code>UnicodeDecodeError</code> &mdash; a
+        delta of zero added failures. The declared mutation reads the binary
+        path through the text git call again and turns all four red with
+        <code>UnicodeDecodeError</code>.</p>
+    </section>
+  </main>
+</body>
+</html>
