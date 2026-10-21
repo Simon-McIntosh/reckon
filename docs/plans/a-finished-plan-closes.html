@@ -25,7 +25,7 @@
   <title>A Finished Plan Closes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -65,111 +65,23 @@
 
     <h2 id="s2">§2 — A plan with nothing left to build reads closable</h2>
 <section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p>
-      Readiness gains the value <code>closable</code>. A plan reads closable when it declares at least
-      one section and none of them is implementable, so every section is done, descoped or deferred.
-      A plan that declares no sections keeps today's readiness; that is the legacy population §1 sets
-      aside. A coordinator who keeps a finished plan open records why with <code>set keep_open</code>,
-      a one-sentence reason that the closing list and §5's obligation row both read. A closable plan leaves
-      <code>ready_now</code>, the ready counts and the critical path. The roadmap lists it under
-      <code>closable</code> with what still stands between it and <code>close</code>: deferred
-      sections, open followups and open gates. Each item carries the op that clears it, and the list
-      ends with the <code>close</code> call itself. Its <code>effective_status</code> never reads
-      <code>blocked</code> on account of work that is finished.
-    </p>
-    <p>
-      <strong>Done when:</strong> a fixture plan with every section done reads <code>closable</code>,
-      is absent from <code>ready_now</code>, and lists the <code>close</code> op. A fixture with one
-      implementable section still reads <code>ready</code>, and a fixture with no section
-      declarations keeps its current readiness; those are the controls. The closable test runs
-      before the readiness ladder falls through to <code>blocked</code> or <code>deferred</code>
-      (<code>reckon/roadmap.py</code>, near line 3269). A fixture with every section done, an open
-      execution gate and no open followup therefore reads <code>closable</code>, with the gate in its
-      closing list, where the base reads it <code>deferred</code>. That is the shape of §1's blocked
-      plans. On the base commit
-      the first fixture reads <code>ready</code>, and the test fails there. The census in §6 counts
-      the closable plans per mount.
-    </p>
+    <p>Readiness gains the value <code>closable</code>, decided by the declared-remainder reader that already exists rather than a new predicate. <code>plan_executable_remainder</code> in <code>reckon/_schema.py</code> returns a plan's implementable remainder, and <code>None</code> for a plan that declares no sections; <code>open_sections</code> in <code>reckon/_plan_html.py</code> is the predicate under it. A plan reads closable when that remainder is empty, so every declared section is done, descoped or deferred. A <code>None</code> keeps today's readiness, which is the legacy population §1 sets aside. The closable test runs before the readiness ladder falls through to <code>blocked</code> or <code>deferred</code> (<code>reckon/roadmap.py</code>, near line 3269).</p><p>What still stands between a closable plan and <code>close</code> is reported by the one enumeration that already exists, <code>closure_blockers</code> in <code>reckon/roadmap.py</code>, which is on every roadmap row. It is widened from plan-terminal gates to every obstacle (deferred sections, open followups, open gates and plan-terminal gates), and each entry carries the op that clears it. A finished plan that should stay open says why the existing way, with a plan-terminal gate whose measure states the reason, so no new keep-open field is added.</p><p>This retires a surface rather than adding one. Closable plans leave <code>ready_now</code>, the ready counts and the critical path, which today carry 13 finished plans as ready work. The new vocabulary is one readiness value.</p><p><strong>Done when:</strong> a fixture plan with every section done reads <code>closable</code>, is absent from <code>ready_now</code>, and its <code>closure_blockers</code> ends with the <code>close</code> op. A fixture with one implementable section still reads <code>ready</code>, and a fixture with no section declarations keeps its current readiness; those are the controls. A fixture with every section done, an open execution gate and no open followup reads <code>closable</code>, with the gate and its <code>pass</code> or <code>fail</code> op in <code>closure_blockers</code>, where the base reads it <code>deferred</code>. On the base commit the first fixture reads <code>ready</code>, and the test fails there.</p>
 
     <h2 id="s3">§3 — A gate on finished work stops holding the plan</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p>
-      A closed gate never blocks, whatever its verdict: <code>failed</code> is an outcome to record,
-      not work to wait for. An open gate whose gated sections are all done, descoped or deferred no
-      longer contributes to the plan's blocking: deferred work is held by its deferral, and the gate
-      travels with the section until it is undeferred. When the gated sections are all done or
-      descoped, the gate also raises a <code>stale-gate</code> finding that names the
-      gate, its sections and the op that closes it with a verdict. An open gate on an implementable
-      section blocks exactly as it does today. The derivation stays in the one blocker function that
-      <code>derived-gate-state</code> landed; this changes which gates it counts, not where it is
-      computed.
-    </p>
-    <p>
-      <strong>Done when:</strong> a fixture plan with an open gate on a done section is not blocked
-      and raises <code>stale-gate</code>. A fixture with a closed gate with verdict
-      <code>failed</code> on a deferred section is not blocked. A fixture with an open gate on a
-      deferred section is not blocked and raises no <code>stale-gate</code>; that is the shape of two
-      of §1's three blocked plans. A fixture with an open gate on an
-      implementable section is still blocked; that is the control. On the base commit the first three
-      fixtures read blocked, and the test fails there.
-    </p>
+    <p>The change is one edit to the blocker function <code>derived-gate-state</code> landed, <code>unpassed_gate_blockers</code> in <code>reckon/lifecycle.py</code>. Every reader of gate blocking already calls it: the roadmap through <code>split_unpassed_gates</code>, and the MCP through <code>_plan_gate_blockers</code> in <code>reckon/mcp_views.py</code>. A closed gate never blocks, whatever its verdict: <code>failed</code> is an outcome to record, not work to wait for. An open gate whose gated sections are all done, descoped or deferred no longer counts toward blocking. Deferred work is held by its deferral, and the gate travels with the section until it is undeferred. An open gate on an implementable section blocks exactly as it does today. No new finding kind is added: a gate over finished work is reported where §2 lists what stands between a plan and <code>close</code>.</p><p><strong>Done when:</strong> a fixture plan with an open gate on a done section is not blocked. A fixture with a closed gate with verdict <code>failed</code> on a deferred section is not blocked. A fixture with an open gate on a deferred section is not blocked; that is the shape of two of §1's three blocked plans. A fixture with an open gate on an implementable section is still blocked; that is the control. On the base commit the first three fixtures read blocked, and the test fails there. <code>roadmap</code> and <code>read_plan</code> agree on every fixture, because both read the one function.</p>
 
     <h2 id="s4">§4 — Deferred work leaves before the plan closes</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p>
-      <code>close</code> still refuses a plan with a deferred section, because closing over open work
-      would hide it. The refusal now names every deferred section and the two ways to clear each one.
-      The first is to descope it with a reason, the declaration <code>a-project-reads-as-one-picture</code>
-      §9 adds. The second is to descope it with <code>moved_to</code> naming the successor plan
-      section that now owns the work. The skill rule that work discovered against a finished plan
-      belongs in a new plan says the same thing; the refusal is where a coordinator reads it.
-      A <code>moved_to</code> ref must resolve, and the successor section shows the move as an
-      incoming link.
-    </p>
-    <p>
-      <strong>Done when:</strong> <code>close</code> on a fixture with two deferred sections is
-      refused, and the refusal names both sections and both remedies. After one is descoped with a
-      reason and the other with a resolving <code>moved_to</code>, <code>close</code> succeeds and the
-      successor section lists the incoming move. A <code>moved_to</code> that does not resolve is
-      refused. On the base commit the refusal names neither remedy, and the test fails there.
-    </p>
+    <p><code>close</code> still refuses a plan with a deferred section, because closing over open work would hide it. The refusal is the existing family, <code>_require_every_section_ticked</code> in <code>reckon/_store.py</code>, which already reports every failing guard through <code>validate_landing_patch(report_all=True)</code>; it is extended, not joined by a new refusal. It now names every deferred section and the two ways to clear each one. The first is to descope it with a reason, using the declaration <code>a-project-reads-as-one-picture</code> §9 adds. The second is to descope it with <code>moved_to</code> naming the successor plan section that now owns the work. The skill rule that work discovered against a finished plan belongs in a new plan says the same thing; the refusal is where a coordinator reads it. A <code>moved_to</code> ref must resolve, and the successor section shows the move as an incoming link.</p><p><strong>Done when:</strong> <code>close</code> on a fixture with two deferred sections is refused, and the refusal names both sections and both remedies. After one is descoped with a reason and the other with a resolving <code>moved_to</code>, <code>close</code> succeeds and the successor section lists the incoming move. A <code>moved_to</code> that does not resolve is refused. On the base commit the refusal names neither remedy, and the test fails there.</p>
 
     <h2 id="s5">§5 — The node that finishes a plan offers its close</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p>
-      Neither <code>crew complete</code> nor <code>crew land</code> writes section declarations. A section
-      moves to done through the <code>edit_plan</code> landing beat
-      (<code>set section_declarations.&lt;id&gt;</code>), so that write is where a finish is seen. When it
-      leaves the plan with no implementable section, its response carries <code>closable: true</code>
-      and the plan's closing list from §2. The obligation is derived from plan state rather than
-      from that one response. Every session with a promoted run on a closable plan gets a
-      <code>plan-closable</code> row, which clears when the plan is closed or a <code>keep_open</code>
-      reason is recorded. The session that finished the work is therefore asked to close it, even if
-      it missed the write's response.
-    </p>
-    <p>
-      <strong>Done when:</strong> a fixture <code>edit_plan</code> write that ticks a plan's last
-      implementable section returns <code>closable: true</code>, and a session with a promoted run on
-      that plan reads <code>plan-closable</code> in its obligations. A write that leaves an
-      implementable section returns neither; that is the control. The row clears on
-      <code>close</code> and on a recorded <code>keep_open</code> reason. On the base commit the write
-      returns no <code>closable</code>, and the test fails there.
-    </p>
+    <p>Neither <code>crew complete</code> nor <code>crew land</code> writes section declarations. A section moves to done through the <code>edit_plan</code> landing beat (<code>set section_declarations.&lt;id&gt;</code>), so that write is where a finish is seen. Its response carries the plan's <code>readiness</code> after the write, read from §2's ladder, together with the plan's <code>closure_blockers</code>. A coordinator ticking the last section therefore sees <code>closable</code> and the close op in the same answer.</p><p>No obligation row is added. <code>obligations()</code> in <code>reckon/crew/obligations.py</code> derives every duty from run pointers and stored reviews and reads no plan state. The fact is already carried by the plan's own readiness, by the brief (<code>a-project-reads-as-one-picture</code> §7) and by §6's census.</p><p><strong>Done when:</strong> a fixture <code>edit_plan</code> write that ticks a plan's last implementable section returns <code>readiness: closable</code> with the plan's <code>closure_blockers</code>. A write that leaves an implementable section returns <code>readiness: ready</code>; that is the control. On the base commit the write returns no readiness, and the test fails there.</p>
 
     <h2 id="s6">§6 — Every finished plan is closed or kept open for a stated reason</h2>
 <section data-reckon="section" data-id="s6" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
-    <p>
-      The census in §1 is re-run with the §2 readiness. Each closable plan goes to the coordinator that
-      owns its project, with its closing list. reckon does not close another project's plans for it:
-      the owner closes each one, or records why it stays open. The before and after counts go to the
-      landed record.
-    </p>
-    <p>
-      <strong>Done when:</strong> the census across every mount reports no plan at 100 % that is
-      neither closed nor carrying a recorded keep-open reason, and no plan reading
-      <code>blocked</code> on a gate over finished work. The first census run, at the base commit, is
-      the control and reports the 21 plans of §1.
-    </p>
+    <p>The census in §1 is re-run with the §2 readiness. Each closable plan goes to the coordinator that owns its project, with its <code>closure_blockers</code>. reckon does not close another project's plans for it. The owner closes each one, or records why it stays open with a plan-terminal gate whose measure states the reason. The before and after counts go to the landed record.</p><p><strong>Done when:</strong> the census across every mount reports no plan at 100 % that is neither closed nor holding a plan-terminal gate that states why, and no plan reading <code>blocked</code> on a gate over finished work. The first census run, at the base commit, is the control and reports the 21 plans of §1.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
