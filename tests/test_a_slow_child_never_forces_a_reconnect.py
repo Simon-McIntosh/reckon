@@ -6,7 +6,9 @@ the reconnect refusal whenever the child made no answer, a loaded node turned
 every failure -- a version conflict whose remedy is to re-read, a storage
 time. It now serves the tree's current code from one persistent child per code
 stamp, warmed by a readiness probe rather than by a caller's call, and a call
-the child does not answer keeps its own result.
+the child does not answer is never re-routed to a refusal where the caller's
+own result will do: a read keeps its own result, and a write the child did not
+answer says it may have landed, naming the read that settles it.
 
 Each case runs the guard in this process against a temporary tree, with a spawn
 hook that launches a fake child the test can slow, silence or stop, monkeypatch
@@ -287,29 +289,40 @@ def _rig(tmp_path, monkeypatch, control: str | None, **config) -> Rig:
     return Rig(tmp_path, monkeypatch, control, **config)
 
 
-# ── case 1: an unanswered child leaves the failure alone ───────────────────
+# ── case 1: an unanswered write says it may have landed ────────────────────
 
 
-def test_a_version_conflict_survives_an_unanswered_child(
-    tmp_path, monkeypatch, control
-):
-    """A retryable failure never becomes a reconnect because the child was slow."""
+def test_an_unanswered_write_says_it_may_have_landed(tmp_path, monkeypatch, control):
+    """A slow child never becomes a reconnect: the write says its fate is unknown.
+
+    The child answers its probe and then never answers the write, so no code
+    that could report on the write ran it. The answer is the honest one — the
+    write may have landed, with the read that settles it and both code stamps —
+    and never a reconnect, which is the remedy this case has always forbidden.
+    The running image's own failure is passed over rather than returned, because
+    the image has not run the write either.
+    """
     rig = _rig(tmp_path, monkeypatch, control, tools={"edit_plan": "silent"})
-    guarded, _ = rig.tool(
+    guarded, image = rig.tool(
         "edit_plan", answer={"ok": False, "error": "version_conflict"}
     )
+    guarded = _wrap_routed(guarded, image, control)
 
     assert rig.warm(), "the child must answer its probe"
     result = call(guarded, project="reckon", slug="p", expected_version=1)
 
-    assert result.get("error") == "version_conflict", (
-        f"a slow child must not replace the call's own result: {result!r}"
+    assert result.get("error") == mcp_module.WRITE_MAY_HAVE_LANDED_ERROR, (
+        f"an unanswered write must say it may have landed: {result!r}"
+    )
+    assert "read_plan" in result.get("detail", ""), (
+        f"the answer names the read that settles the write: {result!r}"
     )
     assert result.get("code_stamp_at_start") != result.get("code_stamp_now"), result
     assert "reconnect" not in result, (
         f"an unanswered child must not force a reconnect: {result!r}"
     )
     assert "stale_server_code" not in json.dumps(result), result
+    assert image == [], f"a routed write is never re-run on the image: {image!r}"
 
 
 # ── case 2: one child per code stamp ───────────────────────────────────────
