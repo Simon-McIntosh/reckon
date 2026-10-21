@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T16:08:14.912Z",
+  "dispatched_at": "2026-10-21T15:53:00Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-limit-reset-reaches-every-session.html:66",
+      "id": "reasoning-1",
+      "reason": "it sends the \u00a72 builder to the wrong call site, so a declared \u00a71 feature (`--at`) lands inert for panes and the section's gate cannot pass as written.",
+      "text": "\u00a72 says the sweep \"is called from the same point of the producer poll as `_sweep_lift_rows` in `reckon/crew/recovery_watch.py`\", and `_sweep_lift_rows` is invoked inside the document-change gate `if sweep:` (recovery_watch.py:2702\u20132710); but \u00a71 gives the record a `--at <ISO-8601>` option, so a reset's moment to fire is a clock instant, not a document write, and once the announcement's single document change has been folded the gate stays shut when `reset_at` passes \u2014 the row is never appended, and \u00a72's own done-when (\"a reset whose `reset_at` is still ahead appends no row until it passes\") is unreachable for that input. The existing code puts its clock-driven sweeps outside that gate for exactly this reason (the comment immediately below the lift call, recovery_watch.py:2714\u20132720, says a gate waiting on a document would never fire).",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-limit-reset-reaches-every-session.html:87",
+      "id": "single_goal-1",
+      "reason": "the hook-context rule and the reach report are unrelated mechanisms reachable by different callers, and only a split lets each gate prove its own claim rather than one verdict covering both.",
+      "text": "\u00a73's deliverable is three things under one node and one gate: the coordinator-obligations-hook line in `reckon/hooks/coordinator_obligations.py`, the `reckon crew budget --announce-reset` reach report, and a paragraph committed to `~/Code/dotfiles/agents/AGENTS.md`; its done-when is two independent tests (the hook's 60-minute horizon, and the reach report's follower-registration listing), so a failure in either reads as a failure of the section.",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-limit-reset-reaches-every-session.html:102",
+      "id": "done_when-1",
+      "reason": "stating the rehearsal's pre-state (zero claims for the rehearsal id before the announcement) is what turns \"exactly one claim\" into a check that can be shown to fire rather than a single observation that happens to hold.",
+      "text": "\u00a74's done-when asserts \"exactly one claim for the pane, and no claim from another session for the rehearsal id\" but declares no negative control, unlike \u00a71, \u00a72 and \u00a73 which each name one.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "04aa2be947f565a7a0c6d516df58ef511138846715259a0057f47cf19e65b7ee",
+  "plan_slug": "a-limit-reset-reaches-every-session",
+  "plan_version": 6,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T155038848774-plan-review-of-a-limit-reset-reaches-every-session",
+  "reviewed_blob_sha": "70b1f8f1febc2c2b0b14b123eb01271ae829fbf9",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited file resolves (`reckon/crew/budget_lift.py`, `reckon/crew/recovery_watch.py`, `reckon/crew/ticker.py`, `reckon/crew/lift_watch.py`, `reckon/crew_run_commands.py`, `reckon/hooks/coordinator_obligations.py`, `tests/test_every_module_fits_a_worker_window.py`) and every cited symbol resolves (`lift_watch.sweep` at lift_watch.py:65, `_sweep_lift_rows` at recovery_watch.py:2515, `_watch_transition` at recovery_watch.py:1828, `take_lift_claim` and `<crew-home>/watch/lifts/` at crew_follow_commands.py:1406/1273); the plan carries no hrefs whose target needs extension resolution.",
+    "done_when": "a finding \u2014 \u00a74's done-when declares no negative control, while \u00a71, \u00a72 and \u00a73 each declare one.",
+    "evidence_paths": "pass \u2014 gate logs are named under the run directory (durable); only the git checkouts (arms) sit under the run's scratch directory, which is the permitted place for a temporary tree, and no evidence path is a bare node-local temporary.",
+    "naming": "pass \u2014 the new modules and paths are named by capability (`limit_reset.py`, `limit_reset_windows.py`-style names are absent; `limit_reset_*` is a mechanism name) and no plan label, stage name, ticket number or version tag appears in any named symbol or path; the prose in \u00a71\u2013\u00a74 describes mechanism, not a changelog.",
+    "reasoning": "a finding \u2014 \u00a72 places the reset sweep at the document-gated lift call point, so a reset that becomes due on the clock after the document has already changed is never announced.",
+    "single_goal": "a finding \u2014 \u00a73 carries two independent code deliverables plus a dotfiles commit under one gate.",
+    "wiring": "pass \u2014 every section dependency (`s2\u2192s1`, `s3\u2192s2`, `s4\u2192s3`) resolves to a section that exists, the two reused plans exist (`docs/plans/a-window-paces-the-lane.html`, `docs/plans/the-monitor-shows-the-work-it-watches.html`), and the mechanisms \u00a72 reuses are landed on the base revision, so no unlanded dependency is missing."
+  },
+  "section_digests": {
+    "_document": "dde08d6312ad629974025a3ce9938f2e8b2d3b4f4b8050eb3c6789e591b04e82",
+    "s1": "baf87d0138fbe63d90de461ca590ce87510e78c52140119a5905ce875b50da49",
+    "s2": "4558aa05c3246106be1a43443a817a26790349d7e91a6e9d7966c1df09fc1e31",
+    "s3": "17976b70ec7cc72a6d8ef239ea24ffe881ef75ccee53cffc5ca76acf7aa17780",
+    "s4": "be94888c6c74709e9e1fd0d7e3b6c31f95f9574d565ac4920087187c891a067a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T16:12:20.249118+00:00"
+}
