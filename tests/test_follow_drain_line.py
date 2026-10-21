@@ -5,8 +5,9 @@ leaves behind is the last thing that pane says. That row already names when the
 session's work stopped; these cases hold it to saying what the reader must do
 about it -- the session's fleet is drained, or the count of runs it still owes
 the coordinator -- counted by the same derivation the standing needs-you line
-reads, so the closing row and the line it closed cannot disagree. The row's
-existing text stays as its prefix: the session, ``since`` and the HH:MM stamp.
+reads, so the closing row and the line it closed cannot disagree. The row leads
+with when it stopped -- ``no live work since`` and the HH:MM stamp -- and names
+a session only when the pane watches more than its own fleet.
 
 Two facts decide the shape of the cases below.
 
@@ -188,8 +189,9 @@ def _wait_until(predicate, *, timeout: float, description: str) -> None:
 class _Arming:
     """One follower generator consumed on a thread, with its own clock."""
 
-    def __init__(self, clock: _Clock):
+    def __init__(self, clock: _Clock, *, remind: float | None = None):
         self.clock = clock
+        self.remind = remind
         self.events: list[dict] = []
         self.stop = threading.Event()
         self.thread: threading.Thread | None = None
@@ -206,6 +208,7 @@ class _Arming:
             sweep=None,
             clock=self.clock,
             settle=True,
+            remind=self.remind,
         )
 
         def run() -> None:
@@ -229,7 +232,14 @@ class _Arming:
         ]
 
 
-def _drain(*, clock: _Clock, wall: _Wall, sighting_wall: float, then) -> list[dict]:
+def _drain(
+    *,
+    clock: _Clock,
+    wall: _Wall,
+    sighting_wall: float,
+    then,
+    remind: float | None = None,
+) -> list[dict]:
     """Arm one follower over the run live, apply ``then``, and let it drain.
 
     The run is already live when this is called, so the pane has work to watch:
@@ -238,7 +248,7 @@ def _drain(*, clock: _Clock, wall: _Wall, sighting_wall: float, then) -> list[di
     differs, so a row printing the later clock could not be naming the sighting.
     """
     wall.value = sighting_wall
-    arming = _Arming(clock).start()
+    arming = _Arming(clock, remind=remind).start()
     try:
         _wait_until(
             lambda: follow_checkpoint.exists(PROJECT, SESSION),
@@ -262,9 +272,9 @@ def _drain(*, clock: _Clock, wall: _Wall, sighting_wall: float, then) -> list[di
         arming.end()
 
 
-def _prefix(session: str, sighting_wall: float) -> str:
+def _prefix(sighting_wall: float) -> str:
     stamp = time.strftime("%H:%M", time.localtime(sighting_wall))
-    return f"no live work in {session} since {stamp}"
+    return f"no live work since {stamp}"
 
 
 def test_a_drain_names_the_run_that_needs_you(
@@ -296,13 +306,15 @@ def test_a_drain_names_the_run_that_needs_you(
         )
         assert len(settles) == 1, settles
         line = settles[0]["line"]
-        prefix = _prefix(SESSION, sighting)
+        prefix = _prefix(sighting)
         assert line.startswith(prefix), line
         tail = line[len(prefix) :]
-        assert "1 run needs the coordinator" in tail, (
-            f"the drained pane names no run that needs the coordinator: {line!r}"
+        # The arming carried no cadence, so no standing line was ever shown:
+        # the set the pane's last needs-you line printed is nothing, and every
+        # run still outstanding is named by this closing row.
+        assert tail == f" · needs you: {RUN_MINE}", (
+            f"the drained pane does not name the run still owed: {line!r}"
         )
-        assert tail.startswith(" · "), line
         # The peer's working run is work this pane was never asked to watch.
         assert PEER not in line and RUN_PEER not in line, line
         # The row and the standing line read one derivation over one fixture.
@@ -319,7 +331,41 @@ def test_a_drain_names_the_run_that_needs_you(
         )
         assert len(settles) == 1, settles
         line = settles[0]["line"]
-        prefix = _prefix(SESSION, sighting + 2 * 3600)
+        prefix = _prefix(sighting + 2 * 3600)
         assert line.startswith(prefix), line
         assert "fleet drained" in line[len(prefix) :], line
         assert needs_you_module.needs_you_runs(PROJECT, session=SESSION) == []
+
+
+def test_a_drain_keeps_silent_about_a_set_the_standing_line_named(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A set the standing line already printed is not restated by the closing row.
+
+    Restating a standing fact is what made the pane noise, and the closing row
+    is the pane's last one: a reader who was already told which runs are owed
+    learns nothing from hearing it again. This arming carries a cadence, so the
+    standing line fires while the pane lives and the closing row has nothing
+    left to add.
+    """
+    sighting = time.time() - 3 * 3600
+    wall = _Wall(sighting)
+    clock = _Clock(2000.0)
+    monkeypatch.setattr(follow_commands, "time", wall)
+    with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
+        assert acquired
+        _run_working(home, RUN_MINE, session=SESSION)
+        crew.list_live(project=PROJECT)
+
+        settles = _drain(
+            clock=clock,
+            wall=wall,
+            sighting_wall=sighting,
+            remind=1.0,
+            then=lambda: _run_unpromoted(home, RUN_MINE, session=SESSION),
+        )
+        assert len(settles) == 1, settles
+        line = settles[0]["line"]
+        assert line == _prefix(sighting), (
+            f"the closing row restated a set the standing line already named: {line!r}"
+        )
