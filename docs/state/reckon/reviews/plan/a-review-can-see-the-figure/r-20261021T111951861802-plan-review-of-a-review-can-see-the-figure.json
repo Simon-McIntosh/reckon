@@ -1,0 +1,55 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T11:55:51.892Z",
+  "dispatched_at": "2026-10-21T11:34:09Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:284",
+      "id": "done_when-1",
+      "reason": "the branch is unreachable, because a head that does not resolve also makes _changed_figure_paths return no images (reckon/crew/recovery_review_dispatch.py:695-702) while the same head mints the review (recovery_review_subject.py:710-761), so no figure review is ever composed without a head, and the clause would be spec text no node acts on.",
+      "text": "\u00a717 writes the rubric suffix \"after the head suffix\" but never states what the mint writes when the head is empty, and its \"read unchanged\" clause then makes such an id resolve to `<source>-figure`, the wrong source this section exists to fix",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "a79ac05dfbdfc0a5df396a25f20623622269ee60c8f5360c12a07140463c197d",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 102,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T111951861802-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "9f0d0183a068a9b7c6f71bef8410b992538f0eed",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every target s17 names resolves at the reviewed revision: round_node_id/round_node_source/round_node_head_suffix at reckon/crew/repair.py:314/331/352, the mint at reckon/crew/recovery_review_subject.py:761-763, _reviewed_run_id_for_node at reckon/crew/dispatch_admission.py:1872, the delivery reader's use of both helpers at reckon/crew/recovery_review_delivery.py:243/289, the session lookup at reckon/crew/dispatch_sessions.py:509, the cited run r-20261021T040948433468-cold-test-detection-margins in the live pointer directory, and tests/test_a_figure_review_node_names_its_reviewed_run.py is correctly marked new because it does not exist.",
+    "done_when": "pass \u2014 s17's done-when is measurable (round_node_source returns s, round_node_head_suffix returns h[:12], _reviewed_run_id_for_node returns the reviewed run against one live pointer, and a dry_run dispatch composes with no `scoped` refusal) and it declares a discriminating negative control.",
+    "evidence_paths": "pass \u2014 s17 requires its logs under the run directory with the revision, the literal command and a closing `EXIT=`, never a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 s17 introduces no plan label, stage name or version tag; the `-figure` token it moves is the value of the `figure` rubric constant (reckon/crew/review.py:276), a data value rather than a plan identifier.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited evidence and the mechanism runs on the real code path with its callers named; I reproduced it: rounding a review id for source 'cold-test-detection-margins' at head '4c65b26cd6d9...' then appending '-figure' gives round_node_source => 'cold-test-detection-margins-4c65b26cd6d9-figure' and round_node_head_suffix => '', which is exactly the bogus source and the empty head that make the admission grant refuse both record paths; the reviewed run's own live pointer carries node.id 'cold-test-detection-margins' with head 4c65b26cd6d9..., so the corrected inverse resolves to that pointer (and to the durable row through the recovered head suffix); only recovery_review_subject.py:763 appends the suffix in non-test source, and no reader parses the id outside the two helpers.",
+    "single_goal": "pass \u2014 s17 carries one deliverable: the round node-id rule owns the rubric suffix and its inverse reads it back, so the mint and every reader agree on the reviewed run.",
+    "wiring": "pass \u2014 the units in scope (_document, s17) declare no dependency or gate they need: s17's defect is independent of s16's host-layer declaration (the node id resolves wrongly with or without an eligible lane) and s16 is done, so no ordering edge is owed."
+  },
+  "section_digests": {
+    "_document": "473088fc15a4af9b2213226620cc077b0fe80bb223b86532a06512b27a48348a",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s10": "aee314dbe26192cd678dc467a9b229b8cb46873cacefcd4ce369fcbe469a1e37",
+    "s11": "22d519df0a82a0edfb23ceef10d63c14a08f3d8d656ce95a4cd03e5049d4e228",
+    "s12": "234f9999257c9e64bf69518cdf0b98e319850465374deeac091e90b1ed118647",
+    "s13": "d2f0977c2749f5e1d4e28f3962e8b01a182615a0a75edb530e5e4fde18d9a123",
+    "s14": "f06507899a512533562b6d0b348e9b18bec6d1667d6e619d05352d7ce535eb7c",
+    "s15": "18683ff3a4d13534aa9e29ac4a495e86d07a452b032538d3ae4b7a47d2a9966b",
+    "s16": "a1648c89c8b99c37facb6da9eb6deca43ba8418449557c78627654670ea39fa1",
+    "s17": "c856114a206af086b77fc4d7b867a4cf4dbafd15fdce96f7d52c4a2a36c1e544",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "ce9705dbaad70ab2b3a9425eead9900cc284deb7f1d5ecacb553d3745679b3d7",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a",
+    "s8": "2c200fdd964f328342811e9362e4cd14da60f3c8352368899ccf87797d9e7f5b",
+    "s9": "b62ffeb55dd71d5f62b49f372e069f227a57c7caec9c6c3b45f81a945d284e11"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T11:59:41.775682+00:00"
+}
