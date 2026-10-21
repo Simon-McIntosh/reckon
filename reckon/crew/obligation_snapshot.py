@@ -1008,6 +1008,10 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
     module = _derivation_module()
     in_flight = state.reviews_in_flight.get(session, set())
     items: list[dict[str, Any]] = []
+    # Read once, for the first queued row this session owns, from the ordering
+    # the admission pass admits by; a session with nothing queued never orders
+    # anything.
+    queued_placements: dict[str, dict[str, int]] | None = None
     for row in state.rows:
         if str(row.get("session") or "") != session:
             continue
@@ -1024,6 +1028,28 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
                     now=state.now,
                     grace=state.grace,
                 )
+            )
+            continue
+        if classification == "queued":
+            # A queued request is listed as waiting by the derivation, so the
+            # slice has to list it too: the row is built through the
+            # derivation's own helper, from the same ordering, which is what
+            # keeps this payload equal to the derivation field for field.
+            if row.get("session_refusal"):
+                items.append(
+                    module._live_item(
+                        row,
+                        kind=module.QUEUED_AWAITING_SESSION_DUTY_KIND,
+                        now=state.now,
+                    )
+                )
+                continue
+            if queued_placements is None:
+                queued_placements = module.queue_admission.queued_placements(
+                    list(state.pointers.values()), now=state.now
+                )
+            items.append(
+                module._queued_item(row, placements=queued_placements, now=state.now)
             )
             continue
         kind = _duty_kind(module, row)

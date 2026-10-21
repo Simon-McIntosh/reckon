@@ -151,21 +151,35 @@ def test_the_refused_request_appears_in_the_sessions_obligations(
 
 
 def test_a_lane_hold_keeps_the_waiting_reading(repository: Path) -> None:
+    """A lane-held request reads as waiting, not as a duty the session owes.
+
+    The lane's own admission pass ends this wait, so the request is listed as
+    waiting — under the kind that carries no bound and no remedy — where a
+    session-side refusal is listed under the kind that names the fix only the
+    session can make.
+    """
     _write_queued("r-lane-held", failure=_lane_hold())
     row = _row(PROJECT, "r-lane-held")
     assert row["classification"] == "queued"
     assert row["next_action"] == "wait for a local lane slot", row["next_action"]
     owed = obligations_module.obligations(PROJECT, SESSION)
-    assert not [
-        item for item in owed["obligations"] if item["run_id"] == "r-lane-held"
-    ], owed["obligations"]
+    listed = [item for item in owed["obligations"] if item["run_id"] == "r-lane-held"]
+    assert len(listed) == 1, owed["obligations"]
+    assert listed[0]["kind"] == obligations_module.QUEUED_RUN_DUTY_KIND, listed[0]
 
 
 def test_the_two_readings_hold_side_by_side(repository: Path) -> None:
+    """One session holding both kinds of queued request reads both, told apart.
+
+    The two are listed under different kinds rather than collapsed into one:
+    the refusal names the command the session must run, while the lane-held
+    request names a wait the session cannot shorten.
+    """
     _write_queued("r-queued-session-refusal", failure=_follower_refusal())
     _write_queued("r-lane-held", failure=_lane_hold())
     owed = obligations_module.obligations(PROJECT, SESSION)
     kinds = {item["run_id"]: item["kind"] for item in owed["obligations"]}
     assert kinds == {
-        "r-queued-session-refusal": obligations_module.QUEUED_AWAITING_SESSION_DUTY_KIND
+        "r-queued-session-refusal": obligations_module.QUEUED_AWAITING_SESSION_DUTY_KIND,
+        "r-lane-held": obligations_module.QUEUED_RUN_DUTY_KIND,
     }, kinds
