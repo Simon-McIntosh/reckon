@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T02:40:32.463Z",
+  "dispatched_at": "2026-10-21T02:32:33Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/budget-fits-a-worker-window.html:50",
+      "id": "reuse_search-1",
+      "reason": "the author must either extend the existing pace owner or state the cycle that forbids it (hosting `group_pace` in `crew/pace.py` would import `reckon.budget` from a module `budget.py` imports at module level), and that sentence decides the new module's path and name.",
+      "text": "the plan names the new module `reckon/budget_pace.py` and cites only `reckon/crew/budget_lift.py` as its search result, but `reckon/crew/pace.py` already owns this domain (`policy`, `GroupReading`, `Allowance`, `allowance_for_group`, `allowances_for_groups`; 2,190 tokens) and is imported by the very file being split at `reckon/budget.py:63` (`from reckon.crew import pace as pace_module`), while `reckon/crew/lift_watch.py` owns the lift lifecycle (`end_cause`, `sweep`, `_default_readings`) that the moved `_lift_history`/`_other_session_lift` helpers read \u2014 a plan adding a pace module without naming the existing pace owner is exactly the reuse gap this item exists to catch",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/budget-fits-a-worker-window.html:58",
+      "id": "deep_module-1",
+      "reason": "the bound must be re-based on the post-\u00a746 tree (either raise 45,000 above 46,564, or widen the cut family to include the burn block that pushed it over), otherwise the first implementation node is unachievable as written.",
+      "text": "the done-when's \"at most 45,000 tokens\" cannot be met from the base the plan sequences itself behind: \u00a72 dispatches after \u00a746, \u00a746's merge `76946f9a9` is an ancestor of HEAD, and \u00a746's burn block grew `budget.py` from 180,363 to 197,708 bytes (51,533 \u2192 56,488 tokens, +4,955); removing the measured 9,924-token family leaves ~46,564 tokens, so the node fails its own done-when on arrival and the \u00a747 arithmetic (\"leaves `budget.py` near 41,600 tokens, which leaves room for \u00a748\") is computed at the pre-\u00a746 base",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/budget-fits-a-worker-window.html:50",
+      "id": "duplicate_owner-1",
+      "reason": "naming the relationship is what stops a later change to `reckon/crew/pace.py` landing without the report, and it is the difference between a module named by what it adds (`pace_report`) and one that reads as a rival owner.",
+      "text": "`reckon/budget_pace.py` becomes a second module in the tree whose name asserts ownership of pace beside `reckon/crew/pace.py`, with no sentence in the section saying which of the two owns a new pace figure or how a reader is to choose between them; the existing owner is `reckon/crew/pace.py` (paces the week's allowance), and the moved family is the report and hold composed over it, so the two are related but not interchangeable",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/budget-fits-a-worker-window.html:55",
+      "id": "thin_wrapper-1",
+      "reason": "the re-export is justified by the 16 test files that call through `reckon.budget`, and the plan already repoints any test whose patch stops biting, so this is a sentence to add in the node's brief, not a design change.",
+      "text": "the plan keeps every moved public name importable from `reckon.budget`, a second name for the same functions; it is justified by real cost (16 test files read them as `budget.<name>`, and 4 of those \u2014 `tests/test_picker.py:77`, `tests/test_picker_lanes.py:288`, `tests/test_picker_latency.py:67`, `tests/test_picker_reserved_lanes.py:170` \u2014 patch `snapshot.budget.group_pace` to steer `budget.preflight`), but the plan does not state the caveat the layer creates: after the move, intra-module calls inside `budget_pace` resolve in the new module's namespace, so a patch installed on `reckon.budget` no longer reaches the moved functions' calls to each other (e.g. `pace_row`'s call to `group_pace`, `reckon/budget.py:4005`)",
+      "type": "thin_wrapper",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "78a0d473452d5cd181f6dfce73be6888f32760c54f15a74caaac7db2ccc23161",
+  "plan_slug": "budget-fits-a-worker-window",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T023107604574-plan-review-of-budget-fits-a-worker-window",
+  "reviewed_blob_sha": "96229396885f953f9616bb726793165a6c6aa057",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the moved family measures 9,924 tokens but the base has grown to 56,488 since \u00a746 merged, so the split lands `budget.py` near 46,564 tokens, over the plan's own 45,000 done-when.",
+    "duplicate_owner": "a finding \u2014 `reckon/budget_pace.py` would be a second module owning the pace vocabulary beside `reckon/crew/pace.py`, the existing owner to extend or to distinguish in the plan's own text.",
+    "interface_budget": "pass \u2014 public_definitions 1957, cli_options 398, mcp_views 16, refusal_families 23; the section moves three public definitions and adds none, and it names what it retires (the duplicate `DEFAULT_CREDIT_RESERVE_FRACTION` at `reckon/budget.py:1693`), adding no CLI option, MCP view or refusal family.",
+    "reuse_search": "a finding \u2014 the plan adds `reckon/budget_pace.py` without citing `reckon/crew/pace.py`, the module that already owns budget-group pace and allowance derivation, nor `reckon/crew/lift_watch.py`, which owns the lift lifecycle the moved reading helpers walk.",
+    "thin_wrapper": "a finding \u2014 the `reckon.budget` re-export is a second name for the same machinery; it is justified by the 16 test files that read the names through `reckon.budget`, but the plan does not state the patch-through caveat it creates."
+  },
+  "section_digests": {
+    "_document": "1614740484dbfd4e03e69ff83d11c72be04e1fae29d5472772ec27bb7860cffd",
+    "s1": "91f7e14a7481fa744ec22eb7e159bd794bd7321583546aa5c1a8d090384d75c7",
+    "s2": "69a83c5d3be870f4841a8e21c51c888cc04ff4781f059a927763b8872dd72fe4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T02:45:05.615010+00:00"
+}
