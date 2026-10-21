@@ -473,6 +473,30 @@ def _horizon_cache(key: str, *, horizon: float) -> dict:
     }
 
 
+def test_one_run_hears_one_advisory_line(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A run that resolves twice says the same sentence once.
+
+    A dispatch that falls back to the caller's own budget resolves the same
+    node a second time under the same run id, so a line already printed for
+    that run would otherwise reach the notice channel twice while the run's
+    result carries it once.
+    """
+    monkeypatch.setattr(dispatch_plan, "_ANNOUNCED_FENCE_WARNINGS", set())
+    line = "node a-run names no --time-budget, so the default fence 8m is short"
+
+    dispatch_plan._announce_fence_warning("a-run", line)
+    dispatch_plan._announce_fence_warning("a-run", line)
+    one_run = capsys.readouterr().err
+
+    dispatch_plan._announce_fence_warning("another-run", line)
+    other_run = capsys.readouterr().err
+
+    assert one_run.splitlines() == [line]
+    assert other_run.splitlines() == [line]
+
+
 def test_the_real_crew_home_is_untouched(
     crew_home: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -461,6 +461,22 @@ def _default_fence_under_estimate_warning(
     )
 
 
+#: One entry per advisory line already printed, keyed by the run it was
+#: printed for. A dispatch that falls back to the caller's own budget resolves
+#: the same node twice under one run id, so without this the same sentence
+#: reaches the notice channel twice for one run.
+_ANNOUNCED_FENCE_WARNINGS: set[tuple[str, str]] = set()
+
+
+def _announce_fence_warning(run_id: str, line: str) -> None:
+    """Print one advisory fence line to the notice channel, once per run."""
+    fingerprint = (str(run_id), line)
+    if fingerprint in _ANNOUNCED_FENCE_WARNINGS:
+        return
+    _ANNOUNCED_FENCE_WARNINGS.add(fingerprint)
+    print(line, file=sys.stderr)
+
+
 def plan_dispatch(
     *,
     node: TaskNode,
@@ -1179,7 +1195,7 @@ def plan_dispatch(
         )
         if fence_warning is not None:
             resolution.warnings.append(fence_warning)
-            print(fence_warning, file=sys.stderr)
+            _announce_fence_warning(resolution.run_id, fence_warning)
     return resolution
 
 
