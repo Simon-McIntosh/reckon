@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T03:15:02.836Z",
+  "dispatched_at": "2026-10-21T03:03:20Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:264",
+      "id": "reasoning-1",
+      "reason": "a node that implements the sentence as a general rule adds a refusal for undeclared codex lanes, reddening the argv tests \u00a72/\u00a76 rest on, and \u00a714 delegates that suite delta to the coordinator at merge rather than running it, so the regression would not be caught by the node's own gate; scoping the rule to a claude-family backend keeps the named mechanism and removes the hazard.",
+      "text": "\u00a714 says \"A backend that declares no image input still refuses an attached image by name, as today\", unqualified, but a codex backend that declares no image input does not refuse today: `_CodexDialect.argv` emits one `-i <path>` per image regardless of any declaration, and that is exactly what `tests/test_launch_plan_attaches_images.py::test_two_figures_emit_two_flags_each_carrying_its_path` asserts against an undeclared codex fixture (`CODEX = {\"launch\": \"cli\", \"command\": \"codex\", \"sandbox\": \"worktree-full\"}`) and what \u00a76's dispatch tests rely on",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "9bec1c8e140e6eb2652c90c37bbb1883a6ec898045a40f52b9026681764b7b9e",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 84,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T030154580702-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "d595de4ba1aa95ecac6c4c5acb36d486a3479ab9",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_refuse_images` (`reckon/_backends.py:1071`), `_ClaudeDialect.argv` (`:1594`), `launch_plan` (`:2107`), `prompt`/`stdin_text` (`:394`, `:2267`), `_backend_settings` (`reckon/crew/dispatch_sessions.py:910`), the imports key tuple at `:976`, `test_a_lane_that_cannot_carry_the_figure_refuses_by_name` (`tests/test_launch_plan_attaches_images.py:105`) and `test_codex_declares_image_input.py` all resolve; \u00a714 carries no hrefs.",
+    "done_when": "pass \u2014 \u00a714's done-when names a measurable negative control (remove the image naming from `launch_plan`, the declared backend's prompt names no image and the test fails) and every clause reads against a file or a resolved config.",
+    "evidence_paths": "pass \u2014 \u00a714's logs are \"written under the run directory, starts with its revision and the literal command, and ends in `EXIT=`\", and its write paths are repository files, not a scratchpad.",
+    "naming": "pass \u2014 no plan label, stage name or ticket number reaches a symbol, file or comment in \u00a714.",
+    "reasoning": "a finding \u2014 \u00a714 states an unqualified rule that contradicts the codex behaviour the plan's own \u00a72 and \u00a76 depend on.",
+    "single_goal": "pass \u2014 the naming mechanism and clive's declaration are one capability: a declaration without the naming makes clive refuse, and the naming without the declaration leaves clive unselected, so neither half closes alone.",
+    "wiring": "pass \u2014 \u00a714 declares depends-on `a-review-can-see-the-figure#s13` and the plan carries `plan-informs scoring-should-stop-a-promotion`; \u00a713 is the evidence \u00a714 rests on and every other plan it cites (\u00a710, \u00a712) is already `done`, so no ordering dependency is missing."
+  },
+  "section_digests": {
+    "_document": "de2379117993ebb60cc7c918670f6820f1f513433b043f571605b56b8447a70e",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s10": "aee314dbe26192cd678dc467a9b229b8cb46873cacefcd4ce369fcbe469a1e37",
+    "s11": "22d519df0a82a0edfb23ceef10d63c14a08f3d8d656ce95a4cd03e5049d4e228",
+    "s12": "234f9999257c9e64bf69518cdf0b98e319850465374deeac091e90b1ed118647",
+    "s13": "d2f0977c2749f5e1d4e28f3962e8b01a182615a0a75edb530e5e4fde18d9a123",
+    "s14": "fa60361eb3885b2ae45cb8659a62c107c5d58db092511a2630d94ccdb1048d7b",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "ce9705dbaad70ab2b3a9425eead9900cc284deb7f1d5ecacb553d3745679b3d7",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a",
+    "s8": "2c200fdd964f328342811e9362e4cd14da60f3c8352368899ccf87797d9e7f5b",
+    "s9": "b62ffeb55dd71d5f62b49f372e069f227a57c7caec9c6c3b45f81a945d284e11"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T03:19:06.897596+00:00"
+}
