@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "after_suite.failure_ids minus baseline_suite.failure_ids is empty: the only head failure, tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window, is also in the base arm's eleven, so this node adds no failure id. The head arm's teardown ERROR in tests/test_a_pick_sees_each_lanes_burn.py is not a FAILED id in either arm; its manifest attribution names a concurrent peer run's live-pointer temp file, and the head log's own traceback names that peer (r-20261020T233736121764-srtj-refine-sheet-lineage), which I read and found consistent.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:318",
+    "reckon/crew/picker/replay.py:58",
+    "reckon/crew/dispatch_picker.py:448"
+  ],
+  "completed_at": "2026-10-21T04:01:01.200Z",
+  "dispatched_at": "2026-10-21T03:39:39Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T023749556714-the-pickers-own-tests-pass-at-head/head-arm.log",
+      "line": "3",
+      "text": "follow-on: the head gate log carries two different revision headers \u2014 its first line names 858cc0884 and its third line names 591c15f66 \u2014 so the log alone cannot say which revision it tested, and a reader must fall back on the manifest's after_suite. The two revisions differ only by a docs fragment (git diff --stat 858cc0884 591c15f66 is one file), so the measurement is unaffected, but a header stamped after the run rather than at it is the shape that makes a gate log unreproducible."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T023749556714-the-pickers-own-tests-pass-at-head/manifest.md",
+      "line": "18",
+      "text": "follow-on: the after_suite block records failure_count 1 and failure_ids [test_every_module_fits_a_worker_window] while the head log its own log_path names prints `1 failed, 378 passed, 1 error`; the teardown error in tests/test_a_pick_sees_each_lanes_burn.py is not a FAILED line so recording it under failure_ids would be wrong, but a reader who consults after_suite and not the log reads the head arm as clean apart from the module-window bound. The error is stated in the artifacts, follow_ons and failure_attribution lines, so the record is not dishonest \u2014 only split across fields."
+    },
+    {
+      "file": "tests/test_picker_helpers_have_one_owner.py",
+      "line": "47",
+      "text": "follow-on: GOLDEN_STATE was re-emitted from the tree's own render, so the comparison at tests/test_picker_helpers_have_one_owner.py:224 cannot fail on any of the four moves it was updated to accept \u2014 the assertion is not independent of the value under test for this change. The plan directs the re-freeze and requires the fragment to list every moved field with the change that moved it, and the fragment does exactly that (node.urgency e26d6b51b; local_lane.queue_position e26d6b51b/1217f68ad; candidates and return_times 2fb4fedd7), so the guard's value for the next regression is real and the gap is this change only."
+    },
+    {
+      "file": "tests/test_one_staleness_rule.py",
+      "line": "104",
+      "text": "follow-on: the lookup key is derived with the same production helper that builds the table (`blocks[lane_context.option_key(candidate)]`, and the same shape at tests/test_picker_helpers_have_one_owner.py:230), so a wrong key derivation would still find its block and the assertion could not see it; the lookup and the production side move together. The table's keying is separately asserted against independent expected keys by tests/test_each_model_of_a_lane_has_its_own_row.py:160, so nothing load-bearing rests on this test."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/picker/__init__.py:318 installs snapshot.candidates as the picker's default snapshotter and reckon/crew/picker/replay.py:58 names it as the replay walker; both are reached from reckon/crew_dispatch_commands.py:927 and reckon/crew/dispatch_picker.py:448.",
+    "diff": "read commit by commit against base 4d09842e3: 8b970de69 folds the attempt tally into the scan, 2064c68a5 updates the prompt and staleness tests, 858cc0884 re-freezes the golden bytes, and 591c15f66 plus db255a6f4 are docs-only fragment commits (git diff --stat 858cc0884 591c15f66 is the fragment alone).",
+    "done_when": "the measure names a clean-extraction base arm showing the ten failure ids, a head arm whose only failure is the module-window test, each base id PASSED at head, both logs in the run directory, the negative control red, and ruff flat; I read both logs and reproduce each part, except that the head arm's summary line also prints `1 error`.",
+    "goal": "the goal is to repair the ten picker tests failing at head, folding the second ledger walk into the pick's single pass and updating what a landed change superseded; the landed change does both, the code fold at reckon/crew/picker/snapshot.py:342 and the three test updates.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T023749556714-the-pickers-own-tests-pass-at-head/manifest.md: status complete, five commits, both arms JSON with revisions, commands and failure ids, the negative control named, and the head arm's teardown error recorded under artifacts, follow_ons and failure_attribution.",
+    "write_paths": "the declared scope is reckon/crew/picker/snapshot.py, tests/test_pick_candidates_one_pass.py, tests/test_jev_prompt_carries_what_it_weighs.py, tests/test_picker_helpers_have_one_owner.py, tests/test_one_staleness_rule.py and the evidence fragment; the diff touches five of those six paths (test_pick_candidates_one_pass.py needed no edit, since group one was repaired in the code) and nothing else."
+  },
+  "justifications": {
+    "durability": "the fix is guarded by tests/test_pick_candidates_one_pass.py:159, which reinstating the regression reddens exactly as the negative control shows (negative-control.log: `AssertionError: assert 2 == 1`, EXIT=1), and its observable equivalence is independently asserted against the per-backend reference readers at tests/test_pick_candidates_one_pass.py:150; the added NODE_FIELDS entry at tests/test_jev_prompt_carries_what_it_weighs.py:125 is a hand-written literal set that reddens if the render drops urgency; the re-frozen golden at tests/test_picker_helpers_have_one_owner.py:224 cannot redden on the change it was re-frozen to bless, and its integer assertions read figures the code derives from a frozen ledger (tests/test_picker_helpers_have_one_owner.py:175), not the candidate object under test.",
+    "evidence": "the done_when names a base arm from a clean extraction, a head arm, both logs in the run directory, and the ten base ids appearing as PASSED at head: I read base-arm.log (11 FAILED ids, exactly the ten plus the module-window bound, revision 4d09842e3 in a /tmp base-extract tree) and head-arm.log line by line (each of the ten ids carries a PASSED line, `1 failed, 378 passed, 1 error`, EXIT=1), and independently reproduced the ruff delta as zero by running ruff check on the base blob; the head log prints a teardown ERROR the manifest's after_suite does not count, and the log carries two revision headers.",
+    "fit": "reckon/crew/picker/snapshot.py:264 adds an optional out-parameter matching the file's existing key_counts/context_out convention, the scan's docstring at line 321 is extended in the same voice as its neighbours, and the changed files carry no plan, phase, version or ticket label.",
+    "goal_fidelity": "the node goal is to repair the ten picker tests that fail at head, folding the second ledger walk into the pick's single pass and updating the tests a landed change superseded: reckon/crew/picker/snapshot.py:342 tallies the attempt count at the head of the scan's existing loop (no second walk of `rows`), tests/test_jev_prompt_carries_what_it_weighs.py:45 adds `urgency` to the expected node field set, tests/test_one_staleness_rule.py:104 reads the return-time block through option_key, and tests/test_picker_helpers_have_one_owner.py:47 re-freezes the golden bytes, so all ten base failure ids pass at head under the same ids.",
+    "reuse": "the scan is the single owner of the row pass and now owns the attempt count too: reckon/crew/picker/snapshot.py:342 is the only tally of the node's rows (the removed inline sum at the old candidates() body has no second implementation elsewhere), and the tests reuse the existing lane_context.option_key owner (reckon/crew/picker/lane_context.py:334) rather than writing a key of its own.",
+    "scope_discipline": "git diff --name-only 4d09842e3 db255a6f4 lists five paths (reckon/crew/picker/snapshot.py, three tests, the evidence fragment), every one inside the six write paths the plan and the manifest's orientation_write_paths declare, with nothing outside them and the declared docs/figures path untouched."
+  },
+  "node": "review-of-the-pickers-own-tests-pass-at-head-db255a6f4a7a",
+  "node:reviewed": "the-pickers-own-tests-pass-at-head",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to repair the ten picker tests failing at head, folding the second ledger walk into the pick's single pass and updating what a landed change superseded; both halves land \u2014 the fold at reckon/crew/picker/snapshot.py:342 and the three test updates.\nVERDICT done_when: the measure names a clean-extraction base arm with the ten failure ids, a head arm failing only the module-window test, each base id PASSED at head, the negative control red and ruff flat; I read base-arm.log and head-arm.log and reproduced each part, except that the head summary line also prints `1 error`.\nVERDICT write_paths: the declared scope is snapshot.py plus four test paths plus the evidence fragment; git diff --name-only 4d09842e3 db255a6f4 touches five of those six paths and nothing else.\nVERDICT manifest: read; status complete, five commits, both arms JSON with revisions and failure ids, the negative control named, and the head arm's teardown error recorded under artifacts, follow_ons and failure_attribution.\nVERDICT diff: read commit by commit against base 4d09842e3: 8b970de69 folds the attempt tally into the scan, 591c15f66 plus db255a6f4 are docs-only fragment commits.\nCALL_SITES: reckon/crew/picker/__init__.py:318, reckon/crew/picker/replay.py:58, reckon/crew/dispatch_picker.py:448\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/picker/snapshot.py:342 tallies the attempt count at the head of the scan's existing loop and tests/test_jev_prompt_carries_what_it_weighs.py:125 asserts the new urgency field, so all ten base failure ids pass at head under the same ids.\nSCORE evidence: 18\nJUSTIFICATION evidence: base-arm.log holds exactly the eleven failure ids at revision 4d09842e3 from a /tmp base-extract tree and head-arm.log:109-487 carries a PASSED line for each of the ten, but the head log's summary prints `1 error` the manifest's after_suite does not count and the log carries two revision headers.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 4d09842e3 db255a6f4 lists five paths, every one inside the six the plan's write paths declare, with nothing outside them.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_pick_candidates_one_pass.py:159 reddens on exactly the reinstated defect, as negative-control.log shows (`assert 2 == 1`, EXIT=1), but the re-frozen golden at tests/test_picker_helpers_have_one_owner.py:224 was produced by the code it judges.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/picker/snapshot.py:264 adds an optional out-parameter matching the file's key_counts/context_out convention and no changed file carries a plan, phase or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/picker/snapshot.py:342 is the only tally of the node's rows, extending the scan that already owned the single pass, and the tests reuse the existing option_key owner at reckon/crew/picker/lane_context.py:334.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T023749556714-the-pickers-own-tests-pass-at-head/head-arm.log:3 follow-on: the head gate log names 858cc0884 on its first line and 591c15f66 on its third, so the log alone cannot say which revision it tested; the two differ only by a docs fragment, so the measurement stands, but a header stamped after the run is the shape that makes a gate log unreproducible.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T023749556714-the-pickers-own-tests-pass-at-head/manifest.md:18 follow-on: after_suite records failure_count 1 and failure_ids [test_every_module_fits_a_worker_window] while its own log_path prints `1 failed, 378 passed, 1 error`; the teardown error is not a FAILED line so it does not belong in failure_ids, but the arm's non-pass is visible only in the artifacts and follow_ons lines.\nFINDING tests/test_picker_helpers_have_one_owner.py:47 follow-on: GOLDEN_STATE was re-emitted from the tree's own render, so the comparison at line 47 cannot fail on the moves it was updated to accept; the plan directs the re-freeze and the fragment lists every moved field with the change that moved it, so the gap is this change only.\nFINDING tests/test_one_staleness_rule.py:104 follow-on: the lookup key is derived with the same option_key helper that builds the table, so a wrong key derivation would still find its block; the keying is separately asserted against independent expected keys at tests/test_each_model_of_a_lane_has_its_own_row.py:160.\n",
+  "review_run_id": "r-20261021T033750321240-review-of-the-pickers-own-tests-pass-at-head-db255a6f4a7a",
+  "reviewed_base_sha": "4d09842e3b791ced527c46fa1d18684090b2679c",
+  "reviewed_head_sha": "db255a6f4a7aa5ed153d3a2617eb6c376137af57",
+  "reviewed_run_id": "r-20261021T023749556714-the-pickers-own-tests-pass-at-head",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T03:58:00+00:00",
+  "total": 115
+}
