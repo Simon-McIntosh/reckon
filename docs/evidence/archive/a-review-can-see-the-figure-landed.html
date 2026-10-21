@@ -141,6 +141,12 @@ emits an image flag</code></pre>
     <p>Declared <code>input_modalities: [text, image]</code> on the clive lane in the host flight layer, dotfiles commit <code>5a301f7</code>. This is a coordinator edit because the dotfiles repository is not a mounted reckon project, so no crew worker can write it. After the edit, <code>reckon flight</code> resolves clive's declaration from the host layer for power_convertor and imas-codex with no warnings, and the figure-review lane candidates for both are <code>['clive']</code>, where before they were empty. Codex stays undeclared on the host layer, so figure reviews outside reckon do not reach the metered lane.</p>
   </section>
 
+  <section id="s15-a-lane-change-onto-codex-drops-the-listing">
+    <h2>§15 — a lane change onto codex drops the figure listing</h2>
+    <p>A test in <code>tests/test_crew_lane_change.py</code> now drives a lane change of a two-figure clive run, whose recorded prompt file carries a figure listing, onto codex. It asserts that the lane-change prompt file carries the brief and the restated fence and no listing, and that the codex argv carries one <code>-i</code> per figure. It builds its run through the file's existing <code>_stopped_figure_run</code> fixture; the first delivery's duplicate fixture was folded into it after review.</p>
+<p>Run <code>r-20261021T095615096117-the-lane-change-onto-codex-drops-the-listing</code>, head <code>3ce6b4aa8</code>, merged as <code>831a33510</code>. Gate: 3 passed with the four cases that fail at base through the retired <code>redispatch</code> verb deselected, and the file's failure ids identical to base. With the <code>_prompt_without_figure_listing</code> call removed from <code>launch_plan</code>, the test fails on the stale listing heading. Re-review scored 111 with no failure added.</p>
+  </section>
+
 </main>
 </body>
 </html>
