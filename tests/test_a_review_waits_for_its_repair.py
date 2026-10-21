@@ -349,14 +349,27 @@ def test_the_repair_round_folds_its_findings_and_the_review_proceeds(
 
     # While the round is in flight nothing is folded: the finding is the work
     # this round was composed for, and folding it now would take the round's own
-    # retry away from it.
+    # retry away from it. The report of a resumed round carries no fold field,
+    # so the assertion reads the store rather than the report: a disposition
+    # recorded on this path is what the next review would see, whether or not
+    # the report mentions it.
     in_flight, resumed = _drive_repair(
         world, runs.read_pointer("r-repaired"), monkeypatch
     )
 
     assert in_flight["resumed"] is True, in_flight.get("reason")
-    assert not in_flight.get("folded_findings"), in_flight
     assert len(resumed) == 1, resumed
+    # The store is read, not the report: the resumed path's report carries no
+    # fold field, so a regression that folded here would leave
+    # report.get("folded_findings") holding when it should fail.
+    _path, in_flight_stored = review_module.stored_record(PROJECT, "r-repaired")
+    assert in_flight_stored is not None
+    (
+        _open_index,
+        _open_finding,
+        in_flight_disposition,
+    ) = repair_module.blocking_finding_dispositions(in_flight_stored)[0]
+    assert in_flight_disposition == "open", in_flight_disposition
 
     # The round lands the head the next review will read, and the reflex then
     # reads the stored review as describing a revision the run has moved past:
