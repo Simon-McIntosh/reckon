@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T05:43:19.988Z",
+  "dispatched_at": "2026-10-21T05:22:36Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:271",
+      "id": "anchors_resolve-1",
+      "reason": "s15 declares depends-on s14, and \u00a714's implementation does create the constant with exactly the single reader \u00a715 describes, so the pointer resolves by the time the node runs; the finding records that \u00a714 must merge as written.",
+      "text": "\u00a715's Change and done-when name a comment above `IMAGE_MODALITY` in `reckon/_backends.py`, but no such constant exists at the reviewed revision d97d6859e; it is introduced only by \u00a714's unmerged implementation",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:273",
+      "id": "done_when-1",
+      "reason": "the guard the section exists for still fires and no wrong verdict follows, so a one-line \"appended once\" clause is a wording improvement rather than a change to what a node must do.",
+      "text": "the lane-change clause is satisfied by a prompt file that names each path twice, because the lane-change prompt is composed from the record's prompt file, which the fresh-dispatch half of this same change has already had a figure listing written into",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "d3c23518a3ed761e42d105c3b6f2f1f3fff71fa6f3e46c3a121e14d3f9deecc6",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 86,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T052030430371-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "5e273f4704a0a18ae74e68a01fcd335e003246ff",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 every `reckon/` anchor in \u00a715 resolves, but `IMAGE_MODALITY` resolves only in \u00a714's unmerged implementation, not at the reviewed revision.",
+    "done_when": "a finding \u2014 \u00a715's done-when is measurable and names a real control (revert the fresh dispatch to the uncomposed prompt and the naming test fails), but its naming assertion (\"names both PNG paths\") is satisfied by a file that names them twice, which is what composing on top of an already-composed prompt produces.",
+    "evidence_paths": "pass \u2014 \u00a715 requires its logs under the run directory, starting with the revision and the literal command and ending in `EXIT=`, with nothing in a scratchpad.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach the symbols or the artifact names \u00a715 creates; `lane-change-<n>-prompt.txt` and `prompt.txt` are existing artifact names.",
+    "reasoning": "pass \u2014 all three checks hold: the root cause is the one the code shows (the process stdin is the prompt file written before composition), the mechanism (write the file from `plan.stdin_text` with the existing fallback) produces the done-when, and the callers are named and real (fresh dispatch `reckon/crew/dispatch.py:2126`, lane change `reckon/crew/dispatch_sessions.py:1918`, resume `reckon/crew/resumption.py:1205`).",
+    "single_goal": "pass \u2014 one deliverable (the run's prompt file carries the composed prompt on every launch path); the `IMAGE_MODALITY` comment correction rides in the same file and is covered by the same done-when.",
+    "wiring": "pass \u2014 `s15` depends-on `s14` is declared and resolves (\u00a714 is the section that introduces `IMAGE_MODALITY` and composes the naming \u00a715 carries to the file), and the plan-level `informs` edge is correct: `scoring-should-stop-a-promotion` \u00a76 declares `depends-on` this plan's `#s10` and `#s12`."
+  },
+  "section_digests": {
+    "_document": "db99e7e8ba0bdba6f31cede33de833186ac9f1f17051db2e5965a4c044ec104d",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s10": "aee314dbe26192cd678dc467a9b229b8cb46873cacefcd4ce369fcbe469a1e37",
+    "s11": "22d519df0a82a0edfb23ceef10d63c14a08f3d8d656ce95a4cd03e5049d4e228",
+    "s12": "234f9999257c9e64bf69518cdf0b98e319850465374deeac091e90b1ed118647",
+    "s13": "d2f0977c2749f5e1d4e28f3962e8b01a182615a0a75edb530e5e4fde18d9a123",
+    "s14": "f06507899a512533562b6d0b348e9b18bec6d1667d6e619d05352d7ce535eb7c",
+    "s15": "7e8d60a801af1dfaaf2fd2cca0da5b618577caeeaf776d6b161fb849e17e68cc",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "ce9705dbaad70ab2b3a9425eead9900cc284deb7f1d5ecacb553d3745679b3d7",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a",
+    "s8": "2c200fdd964f328342811e9362e4cd14da60f3c8352368899ccf87797d9e7f5b",
+    "s9": "b62ffeb55dd71d5f62b49f372e069f227a57c7caec9c6c3b45f81a945d284e11"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T05:54:23.272111+00:00"
+}
