@@ -27,7 +27,6 @@ from reckon.env_duration import read_duration_override
 from reckon.crew.host_lease import LEASE_RENEW_SECONDS as LEASE_RENEW_SECONDS, HostLease as HostLease
 from reckon.crew.node import _TERMINAL_RUN_PHASES as _TERMINAL_RUN_PHASES, DEFAULT_WATCH_STALL_WINDOW as DEFAULT_WATCH_STALL_WINDOW, RUN_DRAIN_DISPOSITIONS as RUN_DRAIN_DISPOSITIONS, CrewError as CrewError, TaskNode as TaskNode, parse_duration as parse_duration
 from reckon.crew.obligation_snapshot import CLI_MODULE_FILES as CLI_MODULE_FILES
-from reckon.crew.queue_order import pointer_is_review as pointer_is_review
 
 
 def accepts_keyword(callable_object: Callable[..., Any], keyword: str) -> bool:
@@ -606,15 +605,17 @@ def queue_dispatch(
                     # afresh rather than reading a pointer that is gone.
             if not requeued:
                 if cap is not None:
+                    from reckon.crew.recovery_review_delivery import _is_review_run
+
                     session = str(record.get("session") or "")
                     held = sum(
                         1
                         for pointer in live
                         if pointer.get("phase") == "queued"
                         and str(pointer.get("session") or "") == session
-                        and not pointer_is_review(pointer)
+                        and not _is_review_run(pointer)
                     )
-                    if not pointer_is_review(record) and held >= cap:
+                    if not _is_review_run(record) and held >= cap:
                         raise QueueFull(session=session, held=held, cap=cap)
                 run_id = str(record["run_id"])
                 with _pointer_lock(run_id):

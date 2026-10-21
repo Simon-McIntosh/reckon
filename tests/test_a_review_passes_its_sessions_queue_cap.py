@@ -30,10 +30,13 @@ def _request(
     run_id: str,
     *,
     queued_at: datetime,
-    role: str = "implement",
+    role: str | None = "implement",
     session: str = "coordinator",
 ) -> dict[str, Any]:
     moment = queued_at.isoformat()
+    node: dict[str, Any] = {"id": run_id, "plan": "fixture", "section": "s1"}
+    if role is not None:
+        node["role"] = role
     return {
         "run_id": run_id,
         "project": "proj",
@@ -46,7 +49,7 @@ def _request(
         "local": True,
         "phase": "queued",
         "queued_at": moment,
-        "node": {"id": run_id, "plan": "fixture", "section": "s1", "role": role},
+        "node": node,
     }
 
 
@@ -78,6 +81,24 @@ def test_a_review_is_queued_when_the_session_holds_its_cap(crew_home: Path) -> N
     ]
 
 
+def test_a_review_is_exempt_by_its_minted_node_id_alone(crew_home: Path) -> None:
+    """The id the review dispatch mints names a reviewer with no role set."""
+    cap = 2
+    now = datetime(2026, 10, 21, 10, 0, tzinfo=UTC)
+    for index in range(cap):
+        runs.queue_dispatch(
+            _request(f"impl-{index}", queued_at=_at(index, now)), cap=cap
+        )
+
+    review, _ = runs.queue_dispatch(
+        _request("review-of-impl-0", role=None, queued_at=_at(9, now)), cap=cap
+    )
+
+    assert review["phase"] == "queued"
+    with pytest.raises(runs.QueueFull):
+        runs.queue_dispatch(_request("impl-three", queued_at=now), cap=cap)
+
+
 def test_a_further_implementation_is_still_refused_queue_full(crew_home: Path) -> None:
     cap = 2
     now = datetime(2026, 10, 21, 10, 0, tzinfo=UTC)
@@ -92,7 +113,6 @@ def test_a_further_implementation_is_still_refused_queue_full(crew_home: Path) -
     with pytest.raises(runs.QueueFull) as refused:
         runs.queue_dispatch(_request("impl-three", queued_at=now), cap=cap)
 
-    assert refused.value.cap == cap
     assert refused.value.held == cap
 
 

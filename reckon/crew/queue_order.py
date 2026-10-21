@@ -9,22 +9,8 @@ from typing import Any
 
 from reckon._timestamps import parse_utc
 from reckon.crew.node import _TERMINAL_RUN_PHASES
-from reckon.crew.recovery_vocabulary import REVIEW_ROLE
 
 STARVATION_AGE_SECONDS = 30 * 60
-
-
-def pointer_is_review(pointer: Mapping[str, Any]) -> bool:
-    """Whether a queued request is a review, which the session cap does not bound.
-
-    The dispatch writes the role on the record root and on its node, so either
-    spelling names a review and a request carrying neither does not.
-    """
-    role = str(pointer.get("role") or "").strip()
-    if not role:
-        node = pointer.get("node")
-        role = str(node.get("role") or "").strip() if isinstance(node, Mapping) else ""
-    return role == REVIEW_ROLE
 
 
 def _next_to_launch(
@@ -36,9 +22,14 @@ def _next_to_launch(
     of the session's queued implementation however long that has waited. The
     oldest row still anchors the session's place in the cross-session order, so
     the review does not make a long-waiting implementation read as fresh.
+
+    Reviewedness is read by the module that owns the definition, imported here
+    because the review-delivery module reads the run commands at import time.
     """
+    from reckon.crew.recovery_review_delivery import _is_review_run
+
     for row in rows:
-        if pointer_is_review(row[2]):
+        if _is_review_run(row[2]):
             return row
     return rows[0]
 
