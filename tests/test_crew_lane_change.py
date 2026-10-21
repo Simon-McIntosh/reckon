@@ -398,6 +398,11 @@ SECOND_IMAGE = "docs/figures/plan-b/node-b/second.svg"
 # The heading a prompt carries when its lane is named its figures. Spelled here
 # rather than imported so the count reads the text a worker is handed.
 FIGURE_LISTING_MARKER = "Figures attached to this node"
+FIGURE_LISTING_HEADING = (
+    f"{FIGURE_LISTING_MARKER}. Open each path below with your own Read tool "
+    "before you judge anything: a verdict formed without looking at them is "
+    "not a verdict."
+)
 
 
 def _clive_lane(command: Path) -> dict:
@@ -412,10 +417,19 @@ def _clive_lane(command: Path) -> dict:
     }
 
 
-def _stopped_figure_run(tmp_path: Path, *, lane: str) -> tuple[str, Path]:
+def _stopped_figure_run(
+    tmp_path: Path,
+    *,
+    lane: str,
+    run_id: str | None = None,
+    brief: str = "carry the two figures through the move",
+    figures: tuple[str, ...] = (FIRST_IMAGE, SECOND_IMAGE),
+    fence: str = "",
+) -> tuple[str, Path]:
     """A clive run as a lane change finds it: ended on this host, its prompt
-    file carrying the listing a fresh dispatch wrote, its figures on the node."""
-    run_id = f"r-lane-figures-{lane}"
+    file carrying the brief, an optional fence and the listing a fresh dispatch
+    wrote, its figures on the node."""
+    run_id = run_id or f"r-lane-figures-{lane}"
     directory = crew.run_dir(run_id)
     directory.mkdir(parents=True, exist_ok=True)
     tree = tmp_path / f"{run_id}-tree"
@@ -424,10 +438,10 @@ def _stopped_figure_run(tmp_path: Path, *, lane: str) -> tuple[str, Path]:
     manifest.write_text(f"node: {run_id}\nstatus: waiting\n", encoding="utf-8")
     prompt_path = directory / "prompt.txt"
     prompt_path.write_text(
-        "carry the two figures through the move\n\n"
-        f"{FIGURE_LISTING_MARKER}. Open each path below with your own Read tool "
-        "before you judge anything: a verdict formed without looking at them is "
-        f"not a verdict.\n- {FIRST_IMAGE}\n- {SECOND_IMAGE}\n",
+        f"{brief}\n\n"
+        + (f"{fence}\n\n" if fence else "")
+        + f"{FIGURE_LISTING_HEADING}\n"
+        + "".join(f"- {figure}\n" for figure in figures),
         encoding="utf-8",
     )
     (directory / recovery.EXIT_RECORD_NAME).write_text(
@@ -460,7 +474,7 @@ def _stopped_figure_run(tmp_path: Path, *, lane: str) -> tuple[str, Path]:
                 "section": "movement",
                 "time_budget": "25m",
                 "write_paths": ["package/target.py"],
-                "images": [FIRST_IMAGE, SECOND_IMAGE],
+                "images": list(figures),
             },
         },
     )
@@ -557,73 +571,14 @@ def test_a_lane_change_names_the_figures_in_the_prompt_file_it_writes(
 CODEX_FIRST_IMAGE = "docs/figures/plan-c/node-c/first.png"
 CODEX_SECOND_IMAGE = "docs/figures/plan-c/node-c/second.png"
 
-# The heading a fresh dispatch writes above its figure listing. Spelled here
-# rather than imported, so a change to the production heading shows up as the
-# fixture's own listing surviving the composition instead of both sides moving
-# together.
-CODEX_FIGURE_HEADING = (
-    "Figures attached to this node. Open each path below with your own Read "
-    "tool before you judge anything: a verdict formed without looking at "
-    "them is not a verdict."
+# The brief and the fence a fresh dispatch had already written into the run's
+# prompt file, ahead of the listing appended to it.
+CODEX_BRIEF = "carry the two figures through the move onto the codex lane"
+CODEX_ATTEMPT_FENCE = (
+    "FENCE — TIME\n"
+    "  Launched 2026-10-21T09:00:00Z UTC; deadline 2026-10-21T09:25:00Z — "
+    "25m from launch."
 )
-
-
-def _stopped_clive_run(tmp_path: Path) -> tuple[str, str]:
-    """A clive run as a move onto codex finds it: ended on this host, its prompt
-    file carrying the brief, a time fence and the listing a fresh dispatch wrote."""
-    run_id = "r-lane-onto-codex"
-    brief = "carry the two figures through the move onto the codex lane"
-    directory = crew.run_dir(run_id)
-    directory.mkdir(parents=True, exist_ok=True)
-    tree = tmp_path / f"{run_id}-tree"
-    tree.mkdir(parents=True, exist_ok=True)
-    manifest = directory / "manifest.md"
-    manifest.write_text(f"node: {run_id}\nstatus: waiting\n", encoding="utf-8")
-    prompt_path = directory / "prompt.txt"
-    prompt_path.write_text(
-        f"{brief}\n\n"
-        "FENCE — TIME\n"
-        "  Launched 2026-10-21T09:00:00Z UTC; deadline 2026-10-21T09:25:00Z — "
-        "25m from launch.\n\n"
-        f"{CODEX_FIGURE_HEADING}\n"
-        f"- {CODEX_FIRST_IMAGE}\n- {CODEX_SECOND_IMAGE}\n",
-        encoding="utf-8",
-    )
-    (directory / recovery.EXIT_RECORD_NAME).write_text(
-        json.dumps({"run_id": run_id, "exit_code": 0}), encoding="utf-8"
-    )
-    crew._write_json(
-        crew.pointer_path(run_id),
-        {
-            "run_id": run_id,
-            "project": "sample",
-            "repo": str(tmp_path / "repo"),
-            "worktree": str(tree),
-            "launch": "cli",
-            "backend": "clive",
-            "dialect": "clive",
-            "role": "implement",
-            "pid": None,
-            "pid_start_time": None,
-            "session_id": "session-on-clive",
-            "session_harness": "clive",
-            "attempt": 1,
-            "base_sha": "HEAD",
-            "log_path": str(directory / "stream.jsonl"),
-            "manifest_path": str(manifest),
-            "prompt_path": str(prompt_path),
-            "phase": "working",
-            "node": {
-                "id": "node-c",
-                "plan": "fixture",
-                "section": "movement",
-                "time_budget": "25m",
-                "write_paths": ["package/target.py"],
-                "images": [CODEX_FIRST_IMAGE, CODEX_SECOND_IMAGE],
-            },
-        },
-    )
-    return run_id, brief
 
 
 def test_a_lane_change_onto_codex_attaches_the_figures_and_drops_the_listing(
@@ -665,7 +620,14 @@ def test_a_lane_change_onto_codex_attaches_the_figures_and_drops_the_listing(
         "roles": {"implement": {}},
         "fences": {"time_budget": "25m", "needs_help_after_failures": 2},
     }
-    run_id, brief = _stopped_clive_run(tmp_path)
+    run_id, _prompt = _stopped_figure_run(
+        tmp_path,
+        lane="clive",
+        run_id="r-lane-onto-codex",
+        brief=CODEX_BRIEF,
+        figures=(CODEX_FIRST_IMAGE, CODEX_SECOND_IMAGE),
+        fence=CODEX_ATTEMPT_FENCE,
+    )
 
     monkeypatch.setattr(
         dispatch_sessions_module,
@@ -691,9 +653,9 @@ def test_a_lane_change_onto_codex_attaches_the_figures_and_drops_the_listing(
     )
 
     written = Path(moved["prompt_path"]).read_text(encoding="utf-8")
-    assert brief in written
+    assert CODEX_BRIEF in written
     assert "FENCE — TIME (resumed attempt)" in written
-    assert CODEX_FIGURE_HEADING not in written
+    assert FIGURE_LISTING_HEADING not in written
     assert f"- {CODEX_FIRST_IMAGE}" not in written
     assert f"- {CODEX_SECOND_IMAGE}" not in written
     assert CODEX_FIRST_IMAGE not in written
