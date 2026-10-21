@@ -34,6 +34,19 @@
   comparing a stored value the two surfaces must still agree on. Scoping the drop
   to one view's own top level removes the composition stamp and nothing else.</p>
 
+  <p><strong>The advance is asserted, not assumed.</strong> Driving a value is
+  not the same as requiring it. With the advance shrunk to zero both calls of a
+  pair read one instant, the two documents agree on an empty margin, and the case
+  passes having compared nothing the budget view could not already answer — the
+  drop it exists to exercise then goes unexercised. The parity case therefore
+  reads the advance back off the pair's own documents before anything is dropped
+  and asserts the budget view composed its two surfaces 30 seconds apart. The
+  expectation is written out rather than taken from the driven constant, because
+  an expectation that moves with the value under test holds at zero as well: the
+  first version of this assertion compared the advance against the very constant
+  the drive uses, and the zero-advance control below is what showed it passing
+  while it should have failed.</p>
+
   <p><strong>New case.</strong>
   <code>tests/test_crew_view_serves_every_view.py::test_only_the_budget_views_own_stamp_is_dropped</code>
   drives the parity case's own filter with a document of each shape: a view other
@@ -45,7 +58,7 @@
   <p id="the-view-parity-case-reads-the-budget-at-one-instant-measure"><strong>Measure.</strong>
   Ten runs of
   <code>PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q -n 12 tests/test_crew_view_serves_every_view.py tests/test_crew_lanes_view.py tests/test_crew_runs_view.py tests/test_crew_velocity_view.py tests/test_mcp_views.py tests/test_read_verbs_retire_behind_crew_view.py</code>
-  at <code>f27886f59</code> in the foreground on the fleet node: <strong>10 of 10
+  at <code>194970022</code> in the foreground on the fleet node: <strong>10 of 10
   passed</strong>, each run <code>105 passed</code> with <code>EXIT=0</code>
   (<code>gate-run-01.log</code> … <code>gate-run-10.log</code> under the run
   directory).</p>
@@ -66,6 +79,20 @@
   with session']</code>, all four vectors, <code>2 failed, 4 passed</code>,
   <code>EXIT=1</code> (<code>negative-control.log</code>). The second failure is
   the confinement case above, which the same mutation drives red.</p>
+
+  <p><strong>Second control: the advance itself.</strong> The second declared
+  mutation sets the advance to zero, so both calls of a pair pin
+  <code>budget._now</code> to one instant. The parity case then fails on the new
+  assertion, naming the pair and the expectation:
+  <code>the budget view with read composed its two surfaces 0:00:00 apart, and
+  the case requires the second call of each pair to read 30 seconds after the
+  first</code> — <code>1 failed, 5 passed</code>, <code>EXIT=1</code>
+  (<code>negative-control-zero-advance.log</code>). The confinement case still
+  passes there, which is the separation worth having: the zero advance leaves the
+  filter's own case green and is caught only by the assertion that the drive
+  moved the pair. This control is what caught the first version of the assertion,
+  which compared the advance against the constant the drive uses and passed at
+  zero; the expectation is now a literal 30 seconds.</p>
 
   <p><strong>Lint.</strong> <code>ruff check</code> and
   <code>ruff format --check</code> add no findings to
