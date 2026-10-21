@@ -290,6 +290,7 @@ def _compact_row(
     session = resolve_session(
         str(record.get("run_id") or ""),
         record=record if source == "live" else None,
+        ledger_row=record if source == "ledger" else None,
         project=project,
         root=checkout_path,
     )
