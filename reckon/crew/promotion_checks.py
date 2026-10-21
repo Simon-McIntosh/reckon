@@ -549,6 +549,181 @@ def _require_no_png_twin_of_an_svg(run_id: str, record: Mapping[str, Any]) -> No
         raise CrewError(f"run {run_id!r} cannot be promoted: " + "; ".join(findings))
 
 
+def _newest_figure_review(project: str, run_id: str) -> Mapping[str, Any] | None:
+    """The run's newest figure review, or ``None`` when it carries none.
+
+    A figure review is a run review filed under the figure rubric, so the
+    store's own rubric-keyed read is the one selection that reaches it: the
+    text-review readers exclude figure records by design, and reading the text
+    selection here would answer with the wrong subject. This returns ``None``
+    both for a run carrying no figure review and for one whose figure review
+    cannot be parsed, so a caller that acts on the absence must ask
+    :func:`_unreadable_figure_review_records` which of the two it holds — the
+    reader refuses to raise a hand-written record met mid-write, and silence
+    collides with the answer for a run that has no figure review at all.
+    """
+    try:
+        return review_module.read_review(
+            project, run_id, rubric=review_module.FIGURE_REVIEW_RUBRIC
+        )
+    except (OSError, ValueError):
+        return None
+
+
+def _figure_review_files(project: str, run_id: str) -> set[Path]:
+    """The files this run's figure review could sit in, named as figure records.
+
+    The two trees the store reads are enumerated by the store's own path rules:
+    the staging store files a figure record under the reviewed run with the
+    rubric in the name, and this project's committed reviews tree files it under
+    the run's own directory. A glob for the run's own name reaches a record
+    whether the store's writer wrote it or a reviewer wrote it by hand, which is
+    the shape the store's content-keyed read exists to serve. The staging store
+    is absent for a project with no store, and the committed tree for a project
+    whose docs directory is not mounted, so each is enumerated only where it
+    resolves.
+    """
+    paths: set[Path] = set()
+    staging = review_module.review_store_root() / project
+    if staging.is_dir():
+        paths.update(
+            path
+            for path in staging.glob(f"{run_id}*.json")
+            if _names_a_figure_record(path)
+        )
+    committed = review_module.committed_review_root(project)
+    if committed is not None:
+        run_directory = committed / review_module.COMMITTED_RUN_DIRNAME / run_id
+        if run_directory.is_dir():
+            paths.update(run_directory.glob("figure.*.json"))
+    return paths
+
+
+def _names_a_figure_record(path: Path) -> bool:
+    """Whether a record file's name marks it as a figure review.
+
+    The store writes the rubric into the name of every figure record — as
+    ``.figure`` before the revision suffix in the staging store and as a
+    ``figure.`` prefix in the committed tree — so the name is the one fact about
+    an unreadable file: its content cannot be consulted to learn which rubric it
+    was filed under.
+    """
+    return f"{review_module.FIGURE_REVIEW_RUBRIC}." in path.name
+
+
+def _unreadable_figure_review_records(
+    project: str, run_id: str
+) -> list[dict[str, str]]:
+    """Name every figure-review file for this run that cannot be read.
+
+    A run carrying no figure review and a run whose figure review cannot be
+    parsed both make the store's reader answer ``None``, and taking the second
+    for the first is a fail-open: the record that could not be read may hold an
+    undisposed blocking finding, and the promotion proceeds on a figure review
+    nobody read. The two are told apart by whether a figure record exists for
+    the run — this enumerates the files that could be one and reports the ones
+    that do not parse — never by catching the reader's error, which cannot say
+    which absence it met.
+
+    The candidates are the files this run's figure review could sit in, plus
+    the files the store met and could not read while reading it: the committed
+    tree answers first and a read that names no revision returns on it alone, so
+    a committed record that does not parse is reported from the store's own
+    account of the read rather than from that could-sit-in enumeration. A file
+    counts only when its name marks it as a figure record, so a text review met
+    mid-write stays outside this guard.
+    """
+    skipped: list[dict[str, str]] = []
+    review_module.stored_record(
+        project, run_id, rubric=review_module.FIGURE_REVIEW_RUBRIC, skipped=skipped
+    )
+    candidates = {Path(entry["path"]) for entry in skipped}
+    candidates.update(_figure_review_files(project, run_id))
+    failures: list[dict[str, str]] = []
+    for path in sorted(candidates, key=str):
+        if not _names_a_figure_record(path):
+            continue
+        try:
+            json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as error:
+            failures.append(
+                {"path": str(path), "error": f"{type(error).__name__}: {error}"}
+            )
+    return failures
+
+
+def _describe_read_failures(failures: Sequence[Mapping[str, str]]) -> str:
+    """Render each unreadable record as the file it sits in and its error."""
+    return "; ".join(f"{entry['path']}: {entry['error']}" for entry in failures)
+
+
+def _describe_blocking_findings(findings: Sequence[Mapping[str, Any]]) -> str:
+    """Render each blocking finding as the figure it concerns and its claim."""
+    rendered = []
+    for finding in findings:
+        path = str(finding.get("file") or "").strip()
+        line = str(finding.get("line") or "").strip()
+        where = f"{path}:{line}" if path and line else path or "<figure unnamed>"
+        rendered.append(f"{where} — {str(finding.get('text') or '').strip()}")
+    return "; ".join(rendered)
+
+
+def _require_no_undisposed_blocking_figure_finding(
+    run_id: str, record: Mapping[str, Any]
+) -> None:
+    """Refuse a promotion whose newest figure review leaves a blocking finding open.
+
+    A figure review protects nothing unless promotion reads it: the other review
+    guards key on a stored record's status and reviewed head, so a figure review
+    carrying a blocking finding satisfies them and the defect it names lands
+    unrepaired. The severity is read through the one owner that decides it
+    (:func:`reckon.crew.repair.blocking_findings`), which is also the list that
+    honours a disposition, so an answered finding no longer refuses and the two
+    readers cannot disagree about which findings became work.
+
+    The refusal names the figure path and the finding's own claim, because a
+    figure defect is fixed by opening the figure: an operator told only that a
+    blocking finding exists has to search the review record to learn which
+    drawing is wrong. A run that carries no figure review is left exactly as it
+    is, and text reviews keep their present behaviour — this guard reads the
+    figure rubric alone.
+
+    A figure review that cannot be read refuses too, naming the record file and
+    the error the store met. The store reports an unreadable record the same way
+    it reports no record at all, so acting on that silence would land a run whose
+    figure review — the one thing that could hold a blocking finding — was never
+    read. The two are told apart by whether a figure record exists for the run,
+    not by catching the read failure.
+    """
+    project = str(record.get("project") or "").strip()
+    if not project:
+        return
+    unreadable = _unreadable_figure_review_records(project, run_id)
+    if unreadable:
+        raise CrewError(
+            f"run {run_id!r} cannot be promoted: it carries a figure review that "
+            f"cannot be read — {_describe_read_failures(unreadable)}. An unreadable "
+            "figure review may hold a blocking finding with no disposition, so the "
+            "run does not land on a reading nobody could complete: repair or remove "
+            "the record, or say why the run may land anyway"
+        )
+    figure = _newest_figure_review(project, run_id)
+    if figure is None:
+        return
+    from reckon.crew import repair as repair_module
+
+    blocking = repair_module.blocking_findings(figure)
+    if not blocking:
+        return
+    raise CrewError(
+        f"run {run_id!r} cannot be promoted: its newest figure review carries "
+        f"{len(blocking)} blocking finding(s) with no disposition: "
+        f"{_describe_blocking_findings(blocking)}. Answer each finding before "
+        "the run lands, so the figure it names is repaired or the reason it is "
+        "not is recorded"
+    )
+
+
 def _require_worker_stopped_before_promotion(
     run_id: str,
     record: Mapping[str, Any],
@@ -1990,6 +2165,7 @@ def _landing_preconditions(
             plan_state=plan_state,
         )
     )
+    attempt(lambda: _require_no_undisposed_blocking_figure_finding(run_id, record))
 
     manifest_path = str(record.get("manifest_path") or "")
     manifest_text: str | None = None
