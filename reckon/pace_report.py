@@ -1269,17 +1269,17 @@ def pace_hold(entry: Mapping[str, Any], role: str | None) -> dict[str, Any]:
 
     The reserve's bookend roles are never held by pace: review and verify are
     the expenditure a spent window is being protected for, so they are admitted
+    at any utilisation and the hold applies only to the roles that spend the
+    window down.
+
     A group whose pace the configuration declares advisory is also never held:
     the pace is reported, not enforced, so the work that spends that wallet is
     admitted at any utilisation the window still has. The ceiling and a credit
     lift's cap are judged elsewhere and are unchanged by the declaration.
 
-    The reserve's bookend roles are never held by pace: review and verify are
-    the expenditure a spent window is being protected for, so they are admitted
-    at any utilisation and the hold applies only to the roles that spend the
-    window down. A group carrying no derived allowance -- an unread window or a
-    reset that cannot be placed -- holds nothing, because absence of a reading
-    is not a measured overspend.
+    A group carrying no derived allowance -- an unread window or a reset that
+    cannot be placed -- holds nothing, because absence of a reading is not a
+    measured overspend.
 
     A held verdict also names ``releases_at``: the instant the hold's own burn
     comparison first admits with the utilisation held fixed, which is almost
