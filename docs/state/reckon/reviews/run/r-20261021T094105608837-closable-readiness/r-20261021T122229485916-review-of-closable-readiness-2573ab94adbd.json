@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run records no baseline_suite and no after_suite arm (both empty at manifest.md:19-20), so the delta is derived from the arm it did write: gate-head-repair-2.log:4-7 records the done_when literal eight-file command at revision 2573ab94adbde7082efdab5cddb460191fb8fb89 reading 116 passed in 38.92s with EXIT=0 and no failing ids. The test file this range touches is byte-identical to the revision the control ran at (git diff 2064793720d512859d87519bde79a5d434f5921b..2573ab94adbde7082efdab5cddb460191fb8fb89 -- tests/test_finished_plan_reads_closable.py prints nothing), so the 3-failed arm in negative-control-head.log is the head arm mutation. With a readable head arm carrying zero failing ids, added_failure_count is 0 and added_failure_ids is empty.",
+  "call_sites": [
+    "reckon/evidence.py:560",
+    "reckon/evidence.py:513",
+    "reckon/resources.py:52"
+  ],
+  "completed_at": "2026-10-21T12:42:03.441Z",
+  "dispatched_at": "2026-10-21T12:23:36Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-finished-plan-closes/closable-readiness.html",
+      "line": "22",
+      "text": "follow-on: the fragment names the third failing case the deferred-and-finished plan where the fixture, the row and the red test it cites are deferred-and-followup (tests/test_finished_plan_reads_closable.py:39, and the FAILED line at negative-control-head.log:54), so a reader matching the fragment's prose against the log it cites is sent to a plan that does not exist."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read the three commits against base 2863b2d6335c73d684889f56fa1072c012bbf4c6 commit by commit; 206479372 rewrites the test module docstring to six plans across five tests and three-of-five failing and rewrites one fragment sentence, 7f6737aed and 2573ab94 each rewrite one fragment sentence, and no executable line or assertion is added or changed.",
+    "done_when": "the done_when names the literal eight-file gate command and requires a plan with every declared section done to read closable, so it leaves ready_now and the critical path, and the test module asserts both cases; the head arm gate-head-repair-2.log:4-7 records that exact command at revision 2573ab94adbde7082efdab5cddb460191fb8fb89 reading 116 passed in 38.92s, EXIT=0, and the tests are untouched by this range.",
+    "goal": "the source goal is to give a plan with no implementable section the readiness closable, with closure_blockers listing every obstacle to close; the three gained commits carry no executable change to reckon/roadmap.py, and the range is the record repair the previous review asked for, with 206479372 restating the test module's plan and test counts and 2573ab94 with 7f6737aed replacing the fragment's unsupported mutation figure with the figure negative-control-head.log records.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T094105608837-closable-readiness/manifest.md; status complete, commits naming nine shas ending at 2573ab94adbde7082efdab5cddb460191fb8fb89, the tests line carrying the literal eight-file command, test_logs naming gate-head-repair-2.log and negative_control_log the bare path to negative-control-head.log, with baseline_suite and after_suite both empty.",
+    "write_paths": "read FENCE - SCOPE in the source run's prompt.txt; the gained commits touch only docs/evidence/fragments/a-finished-plan-closes/closable-readiness.html and tests/test_finished_plan_reads_closable.py, both inside the grant, while reckon/roadmap.py, tests/roadmap_fixtures.py, tests/test_roadmap.py, tests/test_mcp_roadmap.py and the figures directory are declared and untouched by this range."
+  },
+  "justifications": {
+    "durability": "the range adds no assertion, since tests/test_finished_plan_reads_closable.py:5 and :22 are docstring text with no guard, so those counts could drift again; the behaviour they describe is guarded by tests/test_finished_plan_reads_closable.py:157 comparing the full closure_blockers list against a literal, which negative-control-head.log:39-50 shows reddening under the mutation.",
+    "evidence": "gate-head-repair-2.log:4-7 records the done_when's literal command at 2573ab94 reading 116 passed EXIT=0, but manifest.md:19-20 still leave baseline_suite and after_suite empty, so the record carries no base arm.",
+    "fit": "the fragment and the docstring follow the surrounding prose idiom and introduce no plan, sprint or ticket identifier, though docs/evidence/fragments/a-finished-plan-closes/closable-readiness.html:22 names the third failing case the deferred-and-finished plan where the fixture slug is deferred-and-followup.",
+    "goal_fidelity": "docs/evidence/fragments/a-finished-plan-closes/closable-readiness.html:22 now cites what the log shows (3 failed, 2 passed, exit 1) in place of the unsupported two-of-five figure, so the node's landing record matches the artefact it reports.",
+    "reuse": "the gained range adds no definition in either file, since the test-module diff is docstring-only, so it forks nothing, and the readiness decision it documents stays owned by is_closable in reckon/roadmap.py:820 and plan_executable_remainder in reckon/_schema.py, both named in the module docstring.",
+    "scope_discipline": "the gained commits touch only docs/evidence/fragments/a-finished-plan-closes/closable-readiness.html and tests/test_finished_plan_reads_closable.py, both inside the FENCE - SCOPE grant in the source run's prompt.txt."
+  },
+  "node": "review-of-closable-readiness-2573ab94adbd",
+  "node:reviewed": "closable-readiness",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source goal is to give a plan with no implementable section the readiness closable, with closure_blockers listing every obstacle to close; the three gained commits carry no executable change to reckon/roadmap.py, and the range is the record repair the previous review asked for, with 206479372 restating the test module's plan and test counts and 2573ab94 with 7f6737aed replacing the fragment's unsupported mutation figure with the figure negative-control-head.log records.\nVERDICT done_when: the done_when names the literal eight-file gate command and requires a plan with every declared section done to read closable, so it leaves ready_now and the critical path, and the test module asserts both cases; the head arm gate-head-repair-2.log:4-7 records that exact command at revision 2573ab94adbde7082efdab5cddb460191fb8fb89 reading 116 passed in 38.92s, EXIT=0, and the tests are untouched by this range.\nVERDICT write_paths: read FENCE - SCOPE in the source run's prompt.txt; the gained commits touch only docs/evidence/fragments/a-finished-plan-closes/closable-readiness.html and tests/test_finished_plan_reads_closable.py, both inside the grant, while reckon/roadmap.py, tests/roadmap_fixtures.py, tests/test_roadmap.py, tests/test_mcp_roadmap.py and the figures directory are declared and untouched by this range.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T094105608837-closable-readiness/manifest.md; status complete, commits naming nine shas ending at 2573ab94adbde7082efdab5cddb460191fb8fb89, the tests line carrying the literal eight-file command, test_logs naming gate-head-repair-2.log and negative_control_log the bare path to negative-control-head.log, with baseline_suite and after_suite both empty.\nVERDICT diff: read the three commits against base 2863b2d6335c73d684889f56fa1072c012bbf4c6 commit by commit; 206479372 rewrites the test module docstring to six plans across five tests and three-of-five failing and rewrites one fragment sentence, 7f6737aed and 2573ab94 each rewrite one fragment sentence, and no executable line or assertion is added or changed.\nCALL_SITES: reckon/evidence.py:560, reckon/evidence.py:513, reckon/resources.py:52\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/a-finished-plan-closes/closable-readiness.html:22 now cites what the log shows (3 failed, 2 passed, exit 1) in place of the unsupported two-of-five figure, so the node's landing record matches the artefact it reports.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-head-repair-2.log:4-7 records the done_when's literal command at 2573ab94 reading 116 passed EXIT=0, but manifest.md:19-20 still leave baseline_suite and after_suite empty, so the record carries no base arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained commits touch only docs/evidence/fragments/a-finished-plan-closes/closable-readiness.html and tests/test_finished_plan_reads_closable.py, both inside the FENCE - SCOPE grant in the source run's prompt.txt.\nSCORE durability: 17\nJUSTIFICATION durability: the range adds no assertion, since tests/test_finished_plan_reads_closable.py:5 and :22 are docstring text with no guard, so those counts could drift again; the behaviour they describe is guarded by tests/test_finished_plan_reads_closable.py:157 comparing the full closure_blockers list against a literal, which negative-control-head.log:39-50 shows reddening under the mutation.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment and the docstring follow the surrounding prose idiom and introduce no plan, sprint or ticket identifier, though docs/evidence/fragments/a-finished-plan-closes/closable-readiness.html:22 names the third failing case the deferred-and-finished plan where the fixture slug is deferred-and-followup.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained range adds no definition in either file, since the test-module diff is docstring-only, so it forks nothing, and the readiness decision it documents stays owned by is_closable in reckon/roadmap.py:820 and plan_executable_remainder in reckon/_schema.py, both named in the module docstring.\nFINDING docs/evidence/fragments/a-finished-plan-closes/closable-readiness.html:22 follow-on: the fragment names the third failing case the deferred-and-finished plan where the fixture, the row and the red test it cites are deferred-and-followup (tests/test_finished_plan_reads_closable.py:39, and the FAILED line at negative-control-head.log:54), so a reader matching the fragment's prose against the log it cites is sent to a plan that does not exist.",
+  "review_run_id": "r-20261021T122229485916-review-of-closable-readiness-2573ab94adbd",
+  "reviewed_base_sha": "2863b2d6335c73d684889f56fa1072c012bbf4c6",
+  "reviewed_head_sha": "2573ab94adbde7082efdab5cddb460191fb8fb89",
+  "reviewed_run_id": "r-20261021T094105608837-closable-readiness",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T12:43:54.522032+00:00",
+  "total": 109
+}
