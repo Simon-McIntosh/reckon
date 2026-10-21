@@ -1,0 +1,83 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "docs/ui/shell.jsx:155 refreshProjectState awaits window.revalidateProjectState",
+    "docs/ui/shell.jsx:172 the reckon:derived listener with loadChecksAfterDerived at :149",
+    "docs/ui/crew.jsx:88-93 DerivedFlow drawing window.STATE.schedule",
+    "docs/ui/state-loader.js:745 window.STATE_READY on the first revalidateProjectState call"
+  ],
+  "completed_at": "2026-10-21T12:56:03.037Z",
+  "dispatched_at": "2026-10-21T12:34:10Z",
+  "findings": [
+    {
+      "file": "tests/test_page_paints_from_the_index.py",
+      "line": "680",
+      "severity": "blocking",
+      "text": "blocking: the assertion reads the thread roster only after server.server_close() at :670, which joins the non-daemon handler threads (server.daemon_threads = False at :650) before it returns, so a handler that outlived its test would hang that join rather than redden this assertion; a probe of the same configuration measured server_close waiting 2.80s for a lingering handler with zero new threads afterwards, and the copy at :754 has the same shape."
+    },
+    {
+      "file": "docs/evidence/fragments/the-page-paints-from-an-index/a-revalidation-keeps-the-derived-blocks.html",
+      "line": "115",
+      "severity": "blocking",
+      "text": "blocking: the fragment states \"The guard's own failing run is logged\", but no log on disk records a red run for the thread-roster guard \u2014 logs/negative_control.log holds only the three loader mutations and the manifest's test_logs name gate.log, baseline_suite.log and browser_case.log alone \u2014 so the done-when clause that this repair come with its failing run logged is unmet and the landing record claims evidence that does not exist."
+    },
+    {
+      "file": "tests/test_page_paints_from_the_index.py",
+      "line": "1082",
+      "severity": "follow-on",
+      "text": "follow-on: the served-page case's preload answers /_index and /_discover from fixtures and falls through to nativeFetch, so /_checks is answered rather than held unanswered, and the drawn-after-merge assertions at :1195 cannot show the render came from reckon:derived; no test exercises the shell listener added at docs/ui/shell.jsx:172 in a way that reddens if that listener is removed."
+    },
+    {
+      "file": "docs/evidence/fragments/the-page-paints-from-an-index/a-revalidation-keeps-the-derived-blocks.html",
+      "line": "104",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment cites the served-page control as the unavailable branch in 22 of 22 samples against 0 of 21 at head, but the arm recorded in logs/negative_control.log holds only pytest failure ids with no per-sample counts, so those two figures have no instrument on disk a reader can check them against."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against base 79ca80dc0; 460427a10 hoists derivedBlocks to module scope and adds window.DERIVED_STATE_KEYS, the index-path keep loop and the stale rule, 89327f8ef adds the three loader cases, the render case and the two thread-roster assertions, 8e6e77805 adds the evidence fragment, b5d266e47 adds the served-page browser case and e3012889c revises the fragment for it.",
+    "done_when": "the measure names three loader cases, a render case in tests/test_spa_derived_flow.py and a served-page browser case, each with its own negative control, plus the repair of two stored findings; logs/gate.log records 15 passed EXIT=0 at e3012889c against logs/baseline_suite.log's 10 passed EXIT=0, logs/negative_control.log carries three red arms (A 2 failed, B 1 failed, C 1 failed) and logs/browser_case.log records the served-page case running rather than skipping, but the served-page case does not hold /_checks unanswered as the measure requires and the second stored finding's repair has no logged failing run.",
+    "goal": "the goal is that a revalidation keeps the derived blocks on screen until a discovery response replaces them; docs/ui/state-loader.js:591-599 carries every window.DERIVED_STATE_KEYS key off the previous state when the index path installs a new one, :525-529 keeps the last schedule when discovery serves null with a schedule_error and marks it stale, and :546-548 dispatches reckon:derived on the merge which docs/ui/shell.jsx:172 answers, so all three stated behaviours land.",
+    "manifest": "read; it states status complete, five commits, the head gate at e3012889c, the base arm, three mutation arms and the served-page case, and it names the replacement form of that case honestly, but the fragment it points at still claims a logged failing run that no log on disk holds.",
+    "write_paths": "the declared scope is docs/ui/state-loader.js, docs/ui/shell.jsx, docs/ui/crew.jsx, tests/test_page_paints_from_the_index.py, tests/test_spa_derived_flow.py, the node's fragment under docs/evidence/fragments/the-page-paints-from-an-index/ and its figure directory (no figure written); git diff --stat 79ca80dc0..e3012889c changes exactly those six paths and nothing outside them."
+  },
+  "justifications": {
+    "durability": "the keep assertions redden under the logged mutation A (logs/negative_control.log) and the stale and dispatch assertions under B and C, so all three behaviours have a demonstrated guard, but tests/test_page_paints_from_the_index.py:680 cannot fail for the leak it names and the shell's reckon:derived listener at docs/ui/shell.jsx:172 has no test that reddens if it is removed.",
+    "evidence": "logs/gate.log records 15 passed EXIT=0 at e3012889c and logs/negative_control.log records three red arms, so the three loader behaviours are measured, but tests/test_page_paints_from_the_index.py:1072-1082 lets /_checks answer on the served page rather than holding it unanswered as the measure names, and docs/evidence/fragments/the-page-paints-from-an-index/a-revalidation-keeps-the-derived-blocks.html:115 asserts a logged failing run no log contains.",
+    "fit": "the added names state the mechanism (window.DERIVED_STATE_KEYS, reckon:derived, r-derived-flow-stale) and follow the file's existing window.* idiom at docs/ui/state-loader.js:265, and the stale line reuses crewFormatStamp at docs/ui/crew.jsx:92.",
+    "goal_fidelity": "docs/ui/state-loader.js:596 keeps each DERIVED_STATE_KEYS key across the index landing and :525-528 keeps the last schedule marked stale, which is the goal's behaviour, with north stars correctly left out of the set at :265.",
+    "reuse": "a capability search over docs/ui and tests found the per-test thread-lifetime guards at tests/conftest.py:767 (joined_watch_sweeps) and tests/test_a_sweep_thread_ends_with_its_test.py:121, both scoped to the obligation-sweep thread family and neither reachable from a server-handler guard, so _live_threads at tests/test_page_paints_from_the_index.py:586 forks nothing.",
+    "scope_discipline": "every path in git diff --stat 79ca80dc0..e3012889c lies inside the six declared write paths, and the two test-file repairs it also carries are the ones the done-when names."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a revalidation keeps the derived blocks on screen until a discovery response replaces them; docs/ui/state-loader.js:591-599 carries every window.DERIVED_STATE_KEYS key off the previous state when the index path installs a new one, :525-529 keeps the last schedule when discovery serves null with a schedule_error and marks it stale, and :546-548 dispatches reckon:derived on the merge which docs/ui/shell.jsx:172 answers, so all three stated behaviours land.\nVERDICT done_when: the measure names three loader cases, a render case in tests/test_spa_derived_flow.py and a served-page browser case, each with its own negative control, plus the repair of two stored findings; logs/gate.log records 15 passed EXIT=0 at e3012889c against logs/baseline_suite.log's 10 passed EXIT=0, logs/negative_control.log carries three red arms (A 2 failed, B 1 failed, C 1 failed) and logs/browser_case.log records the served-page case running rather than skipping, but the served-page case does not hold /_checks unanswered as the measure requires and the second stored finding's repair has no logged failing run.\nVERDICT write_paths: the declared scope is docs/ui/state-loader.js, docs/ui/shell.jsx, docs/ui/crew.jsx, tests/test_page_paints_from_the_index.py, tests/test_spa_derived_flow.py, the node's fragment under docs/evidence/fragments/the-page-paints-from-an-index/ and its figure directory (no figure written); git diff --stat 79ca80dc0..e3012889c changes exactly those six paths and nothing outside them.\nVERDICT manifest: read; it states status complete, five commits, the head gate at e3012889c, the base arm, three mutation arms and the served-page case, and it names the replacement form of that case honestly, but the fragment it points at still claims a logged failing run that no log on disk holds.\nVERDICT diff: read commit by commit against base 79ca80dc0; 460427a10 hoists derivedBlocks to module scope and adds window.DERIVED_STATE_KEYS, the index-path keep loop and the stale rule, 89327f8ef adds the three loader cases, the render case and the two thread-roster assertions, 8e6e77805 adds the evidence fragment, b5d266e47 adds the served-page browser case and e3012889c revises the fragment for it.\nCALL_SITES: docs/ui/shell.jsx:155 refreshProjectState awaits window.revalidateProjectState, docs/ui/shell.jsx:172 the reckon:derived listener with loadChecksAfterDerived at :149, docs/ui/crew.jsx:88-93 DerivedFlow drawing window.STATE.schedule, docs/ui/state-loader.js:745 window.STATE_READY on the first revalidateProjectState call\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/ui/state-loader.js:596 keeps each DERIVED_STATE_KEYS key across the index landing and :525-528 keeps the last schedule marked stale, which is the goal's behaviour, with north stars correctly left out of the set at :265.\nSCORE evidence: 13\nJUSTIFICATION evidence: logs/gate.log records 15 passed EXIT=0 at e3012889c and logs/negative_control.log records three red arms, so the three loader behaviours are measured, but tests/test_page_paints_from_the_index.py:1072-1082 lets /_checks answer on the served page rather than holding it unanswered as the measure names, and docs/evidence/fragments/the-page-paints-from-an-index/a-revalidation-keeps-the-derived-blocks.html:115 asserts a logged failing run no log contains.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in git diff --stat 79ca80dc0..e3012889c lies inside the six declared write paths, and the two test-file repairs it also carries are the ones the done-when names.\nSCORE durability: 15\nJUSTIFICATION durability: the keep assertions redden under the logged mutation A (logs/negative_control.log) and the stale and dispatch assertions under B and C, so all three behaviours have a demonstrated guard, but tests/test_page_paints_from_the_index.py:680 cannot fail for the leak it names and the shell's reckon:derived listener at docs/ui/shell.jsx:172 has no test that reddens if it is removed.\nSCORE fit: 18\nJUSTIFICATION fit: the added names state the mechanism (window.DERIVED_STATE_KEYS, reckon:derived, r-derived-flow-stale) and follow the file's existing window.* idiom at docs/ui/state-loader.js:265, and the stale line reuses crewFormatStamp at docs/ui/crew.jsx:92.\nSCORE reuse: 18\nJUSTIFICATION reuse: a capability search over docs/ui and tests found the per-test thread-lifetime guards at tests/conftest.py:767 (joined_watch_sweeps) and tests/test_a_sweep_thread_ends_with_its_test.py:121, both scoped to the obligation-sweep thread family and neither reachable from a server-handler guard, so _live_threads at tests/test_page_paints_from_the_index.py:586 forks nothing.\nFINDING tests/test_page_paints_from_the_index.py:680 blocking: the assertion reads the thread roster only after server.server_close() at :670, which joins the non-daemon handler threads (server.daemon_threads = False at :650) before it returns, so a handler that outlived its test would hang that join rather than redden this assertion; a probe of the same configuration measured server_close waiting 2.80s for a lingering handler with zero new threads afterwards, and the copy at :754 has the same shape.\nFINDING docs/evidence/fragments/the-page-paints-from-an-index/a-revalidation-keeps-the-derived-blocks.html:115 blocking: the fragment states \"The guard's own failing run is logged\", but no log on disk records a red run for the thread-roster guard \u2014 logs/negative_control.log holds only the three loader mutations and the manifest's test_logs name gate.log, baseline_suite.log and browser_case.log alone \u2014 so the done-when clause that this repair come with its failing run logged is unmet and the landing record claims evidence that does not exist.\nFINDING tests/test_page_paints_from_the_index.py:1082 follow-on: the served-page case's preload answers /_index and /_discover from fixtures and falls through to nativeFetch, so /_checks is answered rather than held unanswered, and the drawn-after-merge assertions at :1195 cannot show the render came from reckon:derived; no test exercises the shell listener added at docs/ui/shell.jsx:172 in a way that reddens if that listener is removed.\nFINDING docs/evidence/fragments/the-page-paints-from-an-index/a-revalidation-keeps-the-derived-blocks.html:104 follow-on: the fragment cites the served-page control as the unavailable branch in 22 of 22 samples against 0 of 21 at head, but the arm recorded in logs/negative_control.log holds only pytest failure ids with no per-sample counts, so those two figures have no instrument on disk a reader can check them against.",
+  "review_run_id": "r-20261021T123318580520-review-of-a-revalidation-keeps-the-derived-blocks-e3012889c5e7",
+  "reviewed_base_sha": "79ca80dc0c9ab693173431878bdd1844d89d6c44",
+  "reviewed_commits": [
+    "460427a1011008694944d90b72b2cd02241052dc",
+    "89327f8ef82850425e9b24b027a070cf53e02c2b",
+    "8e6e7780511fa2d90470350ac7cf82f0494078de",
+    "b5d266e4709b6bd18d7d212af2593bf641b14bb4",
+    "e3012889c5e72c3989648d6e0e7857e895a30140"
+  ],
+  "reviewed_head_sha": "e3012889c5e72c3989648d6e0e7857e895a30140",
+  "reviewed_run_id": "r-20261021T111749695633-a-revalidation-keeps-the-derived-blocks",
+  "scores": {
+    "durability": 15,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T13:01:17.107936+00:00",
+  "total": 100
+}
