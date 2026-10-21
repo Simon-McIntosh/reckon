@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite failure_ids at 785188d01 are tests/test_mcp_crew_runs_run_id.py::test_run_id_reaches_runs_view, tests/test_the_fleet_gate_holds_dispatch.py::test_launch_callers_reach_the_shared_gate, tests/test_structural_invariants.py::test_only_the_shared_parser_calls_fromisoformat and tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window; after_suite failure_ids at 15d062774 are the last two, both of which are in the base set, so the difference is empty.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/served_code.py:1636",
+    "reckon/served_code.py:1806",
+    "reckon/served_code.py:1851",
+    "reckon/_backends.py:2213"
+  ],
+  "completed_at": "2026-10-21T13:41:55.478Z",
+  "dispatched_at": "2026-10-21T13:23:52Z",
+  "findings": [
+    {
+      "file": "tests/test_the_served_child_is_not_a_worker_launch.py",
+      "line": "110",
+      "text": "follow-on: this case asserts captured[2] == served_code.SERVED_CHILD_PROGRAM, so both sides move with the module constant the code under test interpolates \u2014 a change to the constant's value passes it \u2014 and it is the shape \u00a714 itself asked for ('it asserts that spawn_served_child starts the running interpreter with SERVED_CHILD_PROGRAM'). The property is now carried independently by the shape case at :76-97 (interpreter, -c, non-empty program, root) and the program-text case at :113-124 (which reddens when the constant names a worker command), so the guard no longer rests on this coupled assertion; recorded rather than repaired."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "VERDICT call_sites: the landed change is a test file plus an evidence fragment; the production code it pins is reckon/served_code.py:1636 (the argv [sys.executable, '-c', SERVED_CHILD_PROGRAM, str(root)] the shape case asserts), the default spawner binding at reckon/served_code.py:1806, its call at reckon/served_code.py:1851, and reckon/_backends.py:2213 launch_plan, the worker-command owner the guard derives from.",
+    "diff": "VERDICT diff: read 96f154a29..554731bff commit by commit; 160b75b25 splits the coupled argv assertion into a shape case (lines 76-97) and an identity case (100-110) and adds the program-text case (113-124), 15d062774 widens _worker_commands (50-73) to name the token after '--', and 554731bff records the repair in the evidence fragment.",
+    "done_when": "VERDICT done_when: \u00a714's done-when names both red ids, the new argv test, and a gate adding no failure; logs/base_arm.txt records '4 failed, 116 passed' at 785188d01 and logs/head_arm.txt records '2 failed, 122 passed' at 15d062774, whose two remaining ids (test_only_the_shared_parser_calls_fromisoformat, test_every_module_fits_a_worker_window) are both in the base set, so the gate adds no failure.",
+    "goal": "VERDICT goal: the reviewed node's goal is \u00a714's deliverable, and the commits gained since the last review carry the repair round only \u2014 the two named ids already passed at 96f154a29; tests/test_the_served_child_is_not_a_worker_launch.py:76-142 now holds the argv shape, the program identity against the module constant, and the program-text-not-a-worker-command guards.",
+    "manifest": "VERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T115612658719-the-served-child-and-the-moved-runs-view-keep-their-tests-green/manifest.md; status complete, commits 96f154a29/160b75b25/15d062774/554731bff, after_suite 2 failures at 15d062774, negative_control_log a bare path, follow_ons naming the two base failures in files outside scope.",
+    "write_paths": "VERDICT write_paths: the manifest declares reckon/served_code.py, tests/test_mcp_crew_runs_run_id.py, tests/test_the_served_child_is_not_a_worker_launch.py and the evidence fragment; git diff --stat 96f154a29..554731bff changes only the test file and the fragment, both declared, with no figure directory created."
+  },
+  "justifications": {
+    "after_suite_revision": "logs/head_arm.txt names revision 15d062774 while the reviewed head is 554731bff, which adds only the docs fragment (19 insertions, no code or test file in 554731bff's stat), so the gate receipt describes the code revision it measured.",
+    "durability": "The two new guards fire under their mutations in the run's own negative controls: logs/negative_control_f4f2d56dc0e.txt reddens three cases when spawn_served_child points at claude, and logs/negative_control_program_text.txt reddens tests/test_the_served_child_is_not_a_worker_launch.py:124 when SERVED_CHILD_PROGRAM names a worker command; the residual coupled assertion at :110 is a follow-on that no longer carries the guard. Dock two because that residual assertion remains.",
+    "evidence": "The gate is recorded, not claimed: logs/base_arm.txt ends '4 failed, 116 passed ... EXIT=1' at 785188d01 and logs/head_arm.txt ends '2 failed, 122 passed ... EXIT=1' at 15d062774, and I re-ran tests/test_the_served_child_is_not_a_worker_launch.py from a 554731bff extraction ($TMPDIR/tree-554731bff) and read '4 passed'.",
+    "fit": "The new cases follow the sibling tests' idiom (typed functions, a monkeypatch Popen stand-in at tests/test_the_served_child_is_not_a_worker_launch.py:34), the docstrings explain the mechanism, and no plan, stage, ticket or version label appears in any name or comment.",
+    "goal_fidelity": "The three commits gained since the last review (160b75b25, 15d062774, 554731bff) carry only the repair round for the prior review's two follow-ons: tests/test_the_served_child_is_not_a_worker_launch.py:76-142 splits the coupled argv case into a shape case and a named identity case and adds an independent program-text guard, and the fragment records it; the two named ids already passed at 96f154a29.",
+    "reuse": "tests/test_the_served_child_is_not_a_worker_launch.py:50 builds the worker-command set through reckon/_backends.py:2213 launch_plan, the existing owner of worker argv, rather than re-listing a command set; the diff adds no production capability to fork.",
+    "scope_discipline": "git diff --stat 96f154a29..554731bff changes exactly tests/test_the_served_child_is_not_a_worker_launch.py and docs/evidence/fragments/every-plan-write-goes-through-edit-plan/the-served-child-and-the-moved-runs-view-keep-their-tests-green.html, both declared write paths in the manifest and in plan \u00a714."
+  },
+  "node": "review-of-the-served-child-and-the-moved-runs-view-keep-their-tests-green-554731bffe3b",
+  "node:reviewed": "the-served-child-and-the-moved-runs-view-keep-their-tests-green",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is \u00a714's deliverable, and the commits gained since the last review carry the repair round only; tests/test_the_served_child_is_not_a_worker_launch.py:76-142 now holds the argv shape, the program identity against the module constant, and the program-text-not-a-worker-command guards.\nVERDICT done_when: \u00a714's done-when names both red ids, the new argv test, and a gate adding no failure; logs/base_arm.txt records '4 failed, 116 passed' at 785188d01 and logs/head_arm.txt records '2 failed, 122 passed' at 15d062774, whose two remaining ids are both in the base set, so the gate adds no failure.\nVERDICT write_paths: the manifest declares reckon/served_code.py, tests/test_mcp_crew_runs_run_id.py, tests/test_the_served_child_is_not_a_worker_launch.py and the evidence fragment; git diff --stat 96f154a29..554731bff changes only the test file and the fragment, both declared.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T115612658719-the-served-child-and-the-moved-runs-view-keep-their-tests-green/manifest.md; status complete, commits 96f154a29/160b75b25/15d062774/554731bff, after_suite 2 failures at 15d062774, negative_control_log a bare path.\nVERDICT diff: read 96f154a29..554731bff commit by commit; 160b75b25 splits the coupled argv assertion into a shape case and an identity case and adds the program-text case, 15d062774 widens _worker_commands to name the token after '--', and 554731bff records the repair in the evidence fragment.\nVERDICT call_sites: reckon/served_code.py:1636 builds the argv the shape case asserts, :1806 binds the default spawner, :1851 calls it, and reckon/_backends.py:2213 launch_plan owns the worker commands the guard derives.\nCALL_SITES: reckon/served_code.py:1636, reckon/served_code.py:1806, reckon/served_code.py:1851, reckon/_backends.py:2213\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: The three commits since the last review carry only the repair round for the prior review's two follow-ons and the two named ids already passed at 96f154a29.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/base_arm.txt ends '4 failed, 116 passed ... EXIT=1' at 785188d01 and logs/head_arm.txt ends '2 failed, 122 passed ... EXIT=1' at 15d062774, and I re-ran the test file from a 554731bff extraction and read '4 passed'.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 96f154a29..554731bff changes only tests/test_the_served_child_is_not_a_worker_launch.py and the fragment, both declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: logs/negative_control_f4f2d56dc0e.txt reddens three cases and logs/negative_control_program_text.txt reddens tests/test_the_served_child_is_not_a_worker_launch.py:124, though the coupled assertion at :110 remains a follow-on.\nSCORE fit: 20\nJUSTIFICATION fit: the new cases follow the sibling idiom at tests/test_the_served_child_is_not_a_worker_launch.py:34 and no plan, stage or version label appears in any name or comment.\nSCORE reuse: 20\nJUSTIFICATION reuse: tests/test_the_served_child_is_not_a_worker_launch.py:50 builds the worker-command set through reckon/_backends.py:2213 launch_plan, the existing owner of worker argv, and the diff adds no production capability to fork.\nFINDING tests/test_the_served_child_is_not_a_worker_launch.py:110 follow-on: this case asserts captured[2] == served_code.SERVED_CHILD_PROGRAM, so both sides move with the module constant the code under test interpolates and a change to the constant's value passes it; the property is now carried independently by the shape case at :76-97 and the program-text case at :113-124, so the guard no longer rests on this coupled assertion.",
+  "review_run_id": "r-20261021T132243988003-review-of-the-served-child-and-the-moved-runs-view-keep-their-tests-green-554731bffe3b",
+  "reviewed_base_sha": "96f154a29c87749c509dd0f4a4eec79b655c793f",
+  "reviewed_head_sha": "554731bffe3b8afe5aba59af8c47e38e8a5f444a",
+  "reviewed_run_id": "r-20261021T115612658719-the-served-child-and-the-moved-runs-view-keep-their-tests-green",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T13:35:29+00:00",
+  "total": 116
+}
