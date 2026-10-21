@@ -4,19 +4,24 @@
 run-local PNGs; each launch receives one ``-i <path>`` per recorded image. A
 resume or lane change reads those paths from the run record.
 
-Five properties, each asserted on the argv the launcher would run -- the
-composed plan, never a helper returned by one:
+Each property is asserted on the composed plan the launcher would run, never on
+a helper returned by one:
 
 * a node dispatched with two figures emits one ``-i`` per file on a codex lane;
 * ``crew dispatch --image`` threads the flag through the command to the same
   argv, so the option the delivery probe and the evaluation use is wired;
 * a run whose record carries two figures resumes with both flags;
 * moving such a run to another codex lane keeps both flags in the new argv;
-* the same node on a clive lane is refused, and the refusal names the lane.
+* the same node on a clive lane, which declares image input and carries no
+  image flag, is handed each figure's path in its prompt and nothing on argv;
+* the same node on the claude lane, which shares clive's flag grammar and
+  declares nothing, is refused, and the refusal names the lane.
 
-The declared negative control drops the figures at each ``launch_plan`` call
-site in turn -- at the fresh dispatch the two-flag case fails, at ``resume_plan``
-the resume case fails, and at ``change_lane`` the lane-change case fails.
+Two mutations, each dropping one arm. Dropping the figures at each
+``launch_plan`` call site in turn fails the fresh dispatch, the resume and the
+lane change as before. Removing the image naming from :func:`launch_plan`
+leaves every flag arm unchanged and fails only the clive case -- the
+discrimination sits on the declaration, not on the lane count.
 """
 
 from __future__ import annotations
@@ -106,12 +111,13 @@ NEGATIVE_CONTROL_MUTATION = (
     "drop the images at each launch_plan call site in turn, as before the "
     "change: at the fresh dispatch the two-flag codex case must fail, at "
     "resume_plan the resume case must fail, and at change_lane the lane-change "
-    "case must fail"
+    "case must fail; and remove the image naming from launch_plan, which must "
+    "fail only the clive prompt case"
 )
 
 
-def _backend(bindir: Path, command: str) -> dict:
-    return {
+def _backend(bindir: Path, command: str, modalities: list[str] | None = None) -> dict:
+    settings = {
         "launch": "cli",
         "command": str(bindir / command),
         "sandbox": "worktree-full",
@@ -119,6 +125,9 @@ def _backend(bindir: Path, command: str) -> dict:
         "session_reuse": True,
         "usable_input_window": 512_000,
     }
+    if modalities is not None:
+        settings["input_modalities"] = modalities
+    return settings
 
 
 @pytest.fixture()
@@ -126,7 +135,7 @@ def harness_bin(tmp_path: Path) -> Path:
     """Stub harness executables so dialect resolution never reads the host PATH."""
     bindir = tmp_path / "bin"
     bindir.mkdir()
-    for name in ("codex", "clive"):
+    for name in ("codex", "claude", "clive"):
         stub = bindir / name
         stub.write_text("#!/bin/sh\nexec cat\n", encoding="utf-8")
         stub.chmod(0o755)
@@ -141,7 +150,11 @@ def config(harness_bin: Path) -> dict:
         "backends": {
             "alpha": _backend(harness_bin, "codex"),
             "beta": _backend(harness_bin, "codex"),
-            "clive": _backend(harness_bin, "clive"),
+            # clive speaks claude's flags and declares image input, so a figure
+            # reaches it in the prompt its worker reads. claude shares that flag
+            # grammar and declares nothing, so it keeps refusing by name.
+            "clive": _backend(harness_bin, "clive", ["text", "image"]),
+            "claude": _backend(harness_bin, "claude"),
         },
         "roles": {"implement": {}},
         "budget": {
@@ -227,9 +240,11 @@ class _Recorder:
 
     def __init__(self) -> None:
         self.argv: list[list[str]] = []
+        self.stdin_text: list[str] = []
 
     def __call__(self, plan, *, log_path, stderr_path, prompt_path) -> int:
         self.argv.append([str(token) for token in plan.argv])
+        self.stdin_text.append(str(plan.stdin_text))
         return os.getpid()
 
 
@@ -339,22 +354,56 @@ def test_a_dispatch_of_two_figures_emits_two_flags(
     assert record["node"]["images"] == [path for _, path in expected]
 
 
-def test_a_clive_lane_refuses_the_figures_and_names_the_lane(
+def test_a_clive_lane_is_handed_the_figures_in_the_prompt_its_worker_reads(
     config: dict, repo: Path, tmp_path: Path
 ) -> None:
+    """clive carries no image flag, so the figure travels in the prompt the
+    worker is handed -- and argv stays free of it. Both halves matter: a path
+    that never reaches the worker leaves the figure unopened, and a path on
+    argv would be handed to a harness that rejects it."""
+    _write_figure_sources(repo)
+    recorder = _Recorder()
+    record = dispatch_module.dispatch(
+        node=_node(tmp_path, [FIRST, SECOND]),
+        project=PROJECT,
+        repo=repo,
+        config=config,
+        session="fig-clive",
+        check_budget=False,
+        backend_override="clive",
+        launcher=recorder,
+    )
+    _CREATED_RUN_IDS.add(str(record["run_id"]))
+    directory = crew.run_dir(record["run_id"])
+    recorded = [str(directory / f"image-{index}.png") for index in range(2)]
+
+    for path in recorded:
+        assert path in recorder.stdin_text[0]
+    assert "Read" in recorder.stdin_text[0]
+    assert _image_pairs([str(token) for token in record["argv"]]) == []
+
+
+def test_an_undeclared_lane_refuses_the_figures_and_names_the_lane(
+    config: dict, repo: Path, tmp_path: Path
+) -> None:
+    """The claude lane shares clive's flag grammar and declares no image input,
+    so it refuses by name rather than composing an un-named launch beside it:
+    the declaration is the lane's, and a change keyed on the dialect would move
+    both at once."""
+    _write_figure_sources(repo)
     with pytest.raises(crew.CrewError) as excinfo:
         dispatch_module.dispatch(
             node=_node(tmp_path, [FIRST]),
             project=PROJECT,
             repo=repo,
             config=config,
-            session="fig-clive",
+            session="fig-claude",
             check_budget=False,
-            backend_override="clive",
+            backend_override="claude",
             launcher=_Recorder(),
         )
 
-    assert "clive" in str(excinfo.value)
+    assert "claude" in str(excinfo.value)
 
 
 def test_crew_dispatch_image_reaches_the_argv(
@@ -433,6 +482,24 @@ def test_a_resumed_run_keeps_both_flags(
 
     argv = [str(token) for token in plan.argv]
     assert _image_pairs(argv) == [("-i", FIRST), ("-i", SECOND)], argv
+
+
+def test_a_resumed_clive_run_is_named_its_figures(
+    config: dict, repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The resumed turn reads the composing done here, and the resumed worker
+    reads the file that composition writes, so this pair is the end-to-end
+    delivery a fresh dispatch reaches through the same two steps."""
+    monkeypatch.setattr(sessions_module, "FENCE_WORKERS", True)
+    run_id = "r-fig-resume-clive"
+    _CREATED_RUN_IDS.add(run_id)
+    _stopped_pointer(tmp_path, repo, run_id, backend="clive")
+
+    plan = crew.resume_plan(run_id, "continue", config=config)
+
+    assert FIRST in plan.stdin_text
+    assert SECOND in plan.stdin_text
+    assert _image_pairs([str(token) for token in plan.argv]) == []
 
 
 def test_a_lane_change_keeps_both_flags(
