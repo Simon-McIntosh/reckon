@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-limit-reset-reaches-every-session-landed">
+  <meta name="plan-title" content="A Limit Reset Reaches Every Session — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Limit Reset Reaches Every Session: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-limit-reset-reaches-every-session">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Limit Reset Reaches Every Session — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Limit Reset Reaches Every Session — landed record</h1>
+  <p>Closure synthesis for A Limit Reset Reaches Every Session: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s7">
+    <h2>§7 — why the claude account&#x27;s windows read unknown, found</h2>
+    <p>Investigation run <code>r-20261021T224259832486-why-the-claude-windows-read-unknown</code> at main <code>4348f128</code>, three requests in all, no source changed. Report: <code>~/.config/reckon/crew/reports/reckon/a-limit-reset-reaches-every-session/why-the-claude-windows-read-unknown/report.md</code>, with its reproductions under <code>logs/</code> beside it. At dispatch both <code>claude</code> windows still read <code>unknown</code>.</p><table><thead><tr><th>Fact</th><th>Cause</th><th>Line</th></tr></thead><tbody><tr><td>The reserved probe exits 1</td><td>The configured model <code>claude-sonnet-5-5</code> (<code>backends.claude.model</code> in <code>~/.config/reckon/flight.yaml</code>) is refused for this account, with <code>model_not_found</code> and API status 404. The probe raises with the exit status alone, discarding the stream that named the reason.</td><td><code>reckon/crew/paid_lanes.py:621-622</code></td></tr><tr><td>The account read is refused with 403</td><td>It calls <code>https://claude.ai/api/usage_this_cycle</code>. The same bearer token gets HTTP 200 and both windows from <code>https://api.anthropic.com/api/oauth/usage</code>, the endpoint the installed client uses, with header <code>anthropic-beta: oauth-2025-04-20</code>. That answer reports utilisation as a percentage and <code>resets_at</code> as an ISO string, so the parser must change with the URL.</td><td><code>reckon/_backends.py:719</code>, <code>:779</code></td></tr><tr><td>Nothing attempted since 2026-10-19</td><td>A window never observed is written <code>stale: False</code>, and the timer probes only a stale window. An account whose windows are all unknown can therefore never leave that state.</td><td><code>reckon/crew/paid_lanes.py:363</code>, <code>:846</code>, <code>:872</code></td></tr></tbody></table>
+  </section>
+
+</main>
+</body>
+</html>
