@@ -319,7 +319,7 @@ function App() {
         const runs = Array.isArray(payload?.runs) ? payload.runs : null;
         if (canvasViewRef.current === "crew") {
           const scheduleProject = window.STATE?.project;
-          if (scheduleProject && window.scheduleFetchDue?.(runs)) {
+          if (scheduleProject && window.scheduleFetchDue?.(runs, scheduleProject)) {
             // Before the run list lands, so the render this poll provokes
             // already draws the schedule it just fetched.
             await window.refreshSchedule?.(scheduleProject, runs);

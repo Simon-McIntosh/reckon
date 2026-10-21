@@ -1473,15 +1473,15 @@ window.STATE_READY.then(async () => {
   const verifying = [{ project: "sample", run_id: 41, phase: "completed_unpromoted" }];
   const scheduleRequests = () =>
     requested.filter(url => url === "/_schedule/sample").length;
-  const dueFirst = window.scheduleFetchDue(working, T0);
+  const dueFirst = window.scheduleFetchDue(working, "sample", T0);
   await window.refreshSchedule("sample", working, T0);
   const afterFirst = scheduleRequests();
-  const dueChanged = window.scheduleFetchDue(verifying, T0 + 3000);
+  const dueChanged = window.scheduleFetchDue(verifying, "sample", T0 + 3000);
   await window.refreshSchedule("sample", verifying, T0 + 3000);
   const afterChanged = scheduleRequests();
-  const dueWithin = window.scheduleFetchDue(verifying, T0 + 33000);
+  const dueWithin = window.scheduleFetchDue(verifying, "sample", T0 + 33000);
   const afterWithin = scheduleRequests();
-  const dueAfter = window.scheduleFetchDue(verifying, T0 + 63000);
+  const dueAfter = window.scheduleFetchDue(verifying, "sample", T0 + 63000);
   await window.refreshSchedule("sample", verifying, T0 + 63000);
   const afterMinute = scheduleRequests();
   const served = window.STATE.schedule;
@@ -1720,3 +1720,160 @@ def test_a_route_that_draws_no_flow_asks_for_no_schedule(tmp_path: Path) -> None
         "a route that draws no flow asked for the schedule: "
         f"{served['schedule_requests']} request(s)"
     )
+
+
+#: The route answering a null schedule beside its failure, which is what the
+#: server does when the crew rows cannot be read: the stored inventory is
+#: already in hand, so the read keeps its 200 and loses only the schedule.
+_SCHEDULE_WITHHELD = """
+  if (url === "/_index/sample") {
+    requested.push(url);
+    return ok(DATA.index);
+  }
+  if (url === "/_discover/sample") {
+    requested.push(url);
+    return ok(DATA.discovery);
+  }
+  if (url === "/_schedule/sample") {
+    requested.push(url);
+    return ok({ project: "sample", schedule: null, schedule_error: "RuntimeError: crew rows unavailable" });
+  }
+"""
+
+#: The crew poll answers every mounted project's runs, so the due test is driven
+#: here with a foreign run that moves phase and with this project's own run.
+_SCHEDULE_PROJECT_SCOPE_BODY = """
+window.STATE_READY.then(async () => {
+  clearTimeout(watchdog);
+  await window.STATE_DERIVED_READY;
+  const T0 = 1000000000000;
+  const mine = [{ project: "sample", run_id: 41, phase: "working" }];
+  const foreignWorking = [
+    { project: "sample", run_id: 41, phase: "working" },
+    { project: "other", run_id: 77, phase: "working" },
+  ];
+  const foreignMoved = [
+    { project: "sample", run_id: 41, phase: "working" },
+    { project: "other", run_id: 77, phase: "completed_unpromoted" },
+  ];
+  const mineMoved = [
+    { project: "sample", run_id: 41, phase: "completed_unpromoted" },
+    { project: "other", run_id: 77, phase: "completed_unpromoted" },
+  ];
+  const scheduleRequests = () =>
+    requested.filter(url => url === "/_schedule/sample").length;
+  await window.refreshSchedule("sample", foreignWorking, T0);
+  const afterFirst = scheduleRequests();
+  const dueForeign = window.scheduleFetchDue(foreignMoved, "sample", T0 + 3000);
+  const afterForeign = scheduleRequests();
+  const dueMine = window.scheduleFetchDue(mineMoved, "sample", T0 + 6000);
+  await window.refreshSchedule("sample", mineMoved, T0 + 6000);
+  const afterMine = scheduleRequests();
+  const unscoped = window.scheduleRunSignature(foreignMoved);
+  const scoped = window.scheduleRunSignature(foreignMoved, "sample");
+  console.log(JSON.stringify({
+    resolved: true,
+    timeout: false,
+    after_first: afterFirst,
+    due_foreign: dueForeign,
+    after_foreign: afterForeign,
+    due_mine: dueMine,
+    after_mine: afterMine,
+    unscoped_differs: unscoped !== window.scheduleRunSignature(foreignWorking),
+    scoped_same: scoped === window.scheduleRunSignature(foreignWorking, "sample"),
+    requested: requested.slice(),
+  }));
+});
+"""
+
+
+def test_only_this_projects_runs_make_the_schedule_due() -> None:
+    """The due test reads this project's runs, not every mount's.
+
+    The crew poll answers every mounted project's runs, and the schedule it
+    fetches is one project's. A run of another project that moves phase cannot
+    have moved a bar of this project's flow, so it must cost no request; only a
+    move among this project's own runs makes the schedule due.
+    """
+
+    observed = _run_node(_SCHEDULE_ANSWERS, _SCHEDULE_PROJECT_SCOPE_BODY)
+
+    assert observed["resolved"] is True, observed
+    assert observed["due_foreign"] is False, (
+        "another project's run moving phase made this project's schedule due"
+    )
+    assert observed["after_foreign"] == observed["after_first"], observed
+
+    # The positive control: the same poll shape, with this project's own run
+    # moved, is due and fetches once — so the assertion above is about which
+    # project's runs the due test reads and not about a poll that stopped
+    # asking altogether.
+    assert observed["due_mine"] is True, observed
+    assert observed["after_mine"] == observed["after_foreign"] + 1, observed
+
+    # What the filter does, read directly: the unscoped signature moves when a
+    # foreign run moves and the scoped one does not, so the case above is not
+    # passing because the two run lists happen to agree.
+    assert observed["unscoped_differs"] is True, observed
+    assert observed["scoped_same"] is True, observed
+
+
+#: The route's failure branch: a 200 with a null schedule and its error. The
+#: schedule on screen is the last that was actually served, so it is kept and
+#: marked stale rather than emptied.
+_SCHEDULE_WITHHELD_BODY = """
+window.STATE_READY.then(async () => {
+  clearTimeout(watchdog);
+  await window.STATE_DERIVED_READY;
+  const held = window.STATE.schedule;
+  const heldBars = held.bars.length;
+  held.stale = false;
+  held.stale_error = null;
+  const T0 = 1000000000000;
+  const runs = [{ project: "sample", run_id: 41, phase: "working" }];
+  const returned = await window.refreshSchedule("sample", runs, T0);
+  const kept = window.STATE.schedule;
+  console.log(JSON.stringify({
+    resolved: true,
+    timeout: false,
+    same_object: kept === held,
+    returned_same: returned === held,
+    bars: kept.bars.length,
+    held_bars: heldBars,
+    reference: kept.reference,
+    held_reference: DATA.discovery.schedule.reference,
+    stale: kept.stale === true,
+    stale_error: kept.stale_error,
+    schedule_requests: requested.filter(url => url === "/_schedule/sample").length,
+  }));
+});
+"""
+
+
+def test_a_withheld_schedule_keeps_the_one_on_screen_and_marks_it_stale() -> None:
+    """A route that answers no schedule costs the schedule and not the picture.
+
+    The route answers 200 with a null schedule and the failure beside it when
+    the live crew rows cannot be read. The schedule on screen is the last that
+    was actually served, so the loader keeps it and marks it stale with that
+    error — an emptied flow is what the keeping exists to prevent.
+    """
+
+    observed = _run_node(_SCHEDULE_WITHHELD, _SCHEDULE_WITHHELD_BODY)
+
+    assert observed["resolved"] is True, observed
+    # The request was made, so the answer under test is the route's own.
+    assert observed["schedule_requests"] == 1, observed
+    assert observed["same_object"] is True, (
+        "the schedule on screen was replaced by the withheld answer: "
+        f"{observed}"
+    )
+    assert observed["returned_same"] is True, observed
+    assert observed["bars"] == observed["held_bars"], observed
+    assert observed["stale"] is True, (
+        "the kept schedule was not marked stale, so it reads as current"
+    )
+    assert observed["stale_error"] == "RuntimeError: crew rows unavailable", observed
+    # It is the schedule discovery served, unchanged but for the marking: a
+    # different reference would mean the picture moved for a read that failed.
+    assert observed["reference"] == observed["held_reference"], observed

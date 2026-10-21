@@ -282,33 +282,39 @@ window.DERIVED_STATE_KEYS = Object.freeze([
 // which is the longest a now line may age while the view is open.
 const SCHEDULE_REANCHOR_MS = 60000;
 
-//: The run identity a schedule depends on: which runs are live for the project
-//: and which phase each one is in. Sorted, so the order the route happens to
-//: list them in is not a change.
-window.scheduleRunSignature = function (runs) {
+//: The run identity a schedule depends on: which of this project's own runs are
+//: live and which phase each one is in. Sorted, so the order the route happens
+//: to list them in is not a change. The crew poll answers every mounted
+//: project's runs, so a phase change in another project's run would otherwise
+//: spend a request on a schedule that has not moved; a caller naming no project
+//: keeps every run.
+window.scheduleRunSignature = function (runs, project = null) {
   return (Array.isArray(runs) ? runs : [])
+    .filter(run => !project || (run && run.project) === project)
     .map(run => [
       (run && (run.run_id || run.id)) || "",
-      (run && run.project) || "",
       (run && run.phase) || "",
     ].join(":"))
     .sort()
     .join("|");
 };
 
-window.scheduleFetchDue = function (runs, now = Date.now()) {
+window.scheduleFetchDue = function (runs, project = null, now = Date.now()) {
   const held = window.SCHEDULE_POLL || null;
   // Nothing has been built for this view yet: the schedule on screen, if any,
   // was anchored for a different one and cannot be trusted to this poll.
   if (!held) return true;
-  if (held.signature !== window.scheduleRunSignature(runs)) return true;
+  if (held.signature !== window.scheduleRunSignature(runs, project)) return true;
   return now - held.at >= SCHEDULE_REANCHOR_MS;
 };
 
 window.refreshSchedule = async function (project, runs, now = Date.now()) {
   // The attempt is recorded before the request, so a failing route is retried
   // on the next phase change or minute rather than on every poll.
-  window.SCHEDULE_POLL = { signature: window.scheduleRunSignature(runs), at: now };
+  window.SCHEDULE_POLL = {
+    signature: window.scheduleRunSignature(runs, project),
+    at: now,
+  };
   let payload = null;
   try {
     const response = await fetch(`/_schedule/${project}`, { cache: "no-store" });
