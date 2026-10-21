@@ -1,6 +1,8 @@
 # ruff: noqa: I001, UP035
 from __future__ import annotations
 import json
+import math
+import sys
 import uuid
 from dataclasses import (
     dataclass,
@@ -41,6 +43,7 @@ from reckon.crew.node import (
     gate_population_finding,
     negative_control_finding,
     normalize_section,
+    parse_duration,
     role_may_write_repository_paths,
     validate_node,
 )
@@ -228,6 +231,250 @@ def _backend_serving_picked_model(
         return ledger.backend_serving_model(config, lane=lane, model=model)
     except ValueError as exc:
         raise CrewError(str(exc)) from exc
+
+
+# How many times the estimate a default fence must reach before the dispatch
+# stops mentioning it. A caller who names no --time-budget gets whatever the
+# role overlay resolves, and the shipped implement figure is minutes where a
+# plan section may declare hours, so the two are compared here rather than
+# discovered by a worker stopped with most of its work undone.
+FENCE_ESTIMATE_SHARE = 4.0
+
+
+def _hours_label(hours: float) -> str:
+    """Render hours the way a duration is written: ``6h``, ``0.25h``."""
+    whole = int(hours)
+    return f"{whole}h" if hours == whole else f"{hours:g}h"
+
+
+def _section_estimate_hours(
+    node: TaskNode,
+    *,
+    project: str,
+    repo: str | Path | None,
+    authority: Mapping[str, Any] | None,
+) -> float | None:
+    """Return the hours a node's named plan section declares.
+
+    Only the plan's location is resolved here; the section's declared effort is
+    read the way the picker reads it, so the two agree on what a section of a
+    plan costs. Anything that goes wrong answers with nothing rather than
+    raising, because an advisory estimate that could refuse a dispatch would be
+    a gate nobody asked for.
+    """
+    from reckon.resources import (
+        ResourceCollision,
+        resolve_resource,
+    )
+
+    if not node.section.strip() or not node.plan.strip():
+        return None
+    if repo is None and authority is None:
+        return None
+    try:
+        resolved = dict(
+            authority or resolve_dispatch_authority(project, Path(str(repo)).resolve())
+        )
+        docs_dir = Path(str(resolved["plan"]["docs"])).resolve()
+        resource = resolve_resource(
+            docs_dir, project, node.plan, "plan", include_archived=False
+        )
+        if resource is None:
+            return None
+        # The section record and its finite-positive test are the picker's own
+        # read, reused rather than restated, so one section's declared effort
+        # is charged the same way whether the picker sizes a node or this
+        # advisory does.
+        from reckon.crew.picker import _section_effort_hours
+
+        return _section_effort_hours(resource.path, node.section)
+    except (
+        CrewError,
+        ledger.LedgerError,
+        OSError,
+        ResourceCollision,
+        KeyError,
+        TypeError,
+        ValueError,
+    ):
+        return None
+
+
+def _estimate_hours(
+    node: TaskNode,
+    *,
+    project: str,
+    repo: str | Path | None,
+    authority: Mapping[str, Any] | None,
+) -> float | None:
+    """Return the node's own estimated hours, else its named section's effort."""
+    try:
+        own = float(node.estimated_hours)
+    except (TypeError, ValueError):
+        own = 0.0
+    if math.isfinite(own) and own > 0:
+        return own
+    return _section_estimate_hours(
+        node, project=project, repo=repo, authority=authority
+    )
+
+
+def _budget_seconds(value: Any) -> float | None:
+    """The seconds a flight layer declares under ``time_budget``, else None."""
+    if value is None or value == "":
+        return None
+    try:
+        return float(parse_duration(str(value)))
+    except (CrewError, TypeError, ValueError):
+        return None
+
+
+def _role_budget_layers(
+    overlay: Mapping[str, Any], role: str, spec_level: str
+) -> list[tuple[str, Any]]:
+    """Every time budget a role's overlay declares, with the key declaring it.
+
+    The entries are in the order ``_effective_backend`` applies them — the
+    role's own figure, then its per-spec-level overlay, then its
+    per-capability-class overlays — so a later entry is the one that survives
+    an earlier one.
+    """
+    layers: list[tuple[str, Any]] = []
+    if overlay.get("time_budget"):
+        layers.append((f"roles.{role}.time_budget", overlay.get("time_budget")))
+    by_level = overlay.get("by_spec_level")
+    level = by_level.get(spec_level) if isinstance(by_level, Mapping) else None
+    if isinstance(level, Mapping) and level.get("time_budget"):
+        layers.append(
+            (
+                f"roles.{role}.by_spec_level.{spec_level}.time_budget",
+                level.get("time_budget"),
+            )
+        )
+    by_class = overlay.get("by_capability_class")
+    if isinstance(by_class, Mapping):
+        for class_name in sorted(str(name) for name in by_class):
+            entry = by_class[class_name]
+            if isinstance(entry, Mapping) and entry.get("time_budget"):
+                layers.append(
+                    (
+                        f"roles.{role}.by_capability_class.{class_name}.time_budget",
+                        entry.get("time_budget"),
+                    )
+                )
+    return layers
+
+
+def _time_budget_layer_key(
+    config: Mapping[str, Any],
+    backend: Mapping[str, Any],
+    *,
+    backend_name: str,
+    node: TaskNode,
+    budget: str,
+) -> str:
+    """Return the key declaring ``budget``, the figure this run resolved.
+
+    Every layer that declares a time budget is listed in the order
+    ``_effective_backend`` applies them, and the last one whose declared figure
+    is this run's own is named, because a later layer overwrites an earlier.
+    Naming the layer a value came from rather than the first key holding any
+    budget is what keeps a reader from editing a layer that supplied nothing.
+    """
+    seconds = _budget_seconds(budget)
+    if seconds is None:
+        return ""
+    declared: list[tuple[str, Any]] = []
+    fences = config.get("fences")
+    if isinstance(fences, Mapping) and fences.get("time_budget"):
+        declared.append(("fences.time_budget", fences.get("time_budget")))
+    backend_layer = (config.get("backends") or {}).get(backend_name)
+    if isinstance(backend_layer, Mapping) and backend_layer.get("time_budget"):
+        declared.append(
+            (f"backends.{backend_name}.time_budget", backend_layer.get("time_budget"))
+        )
+    role = str(node.role or "")
+    overlay = (config.get("roles") or {}).get(role)
+    if isinstance(overlay, Mapping):
+        declared += _role_budget_layers(overlay, role, str(node.spec_level or ""))
+    lane_name = str(backend.get("lane") or "")
+    model_key = str(backend.get("model_key") or "")
+    if lane_name and model_key:
+        lane = (config.get("lanes") or {}).get(lane_name) or {}
+        declared_model = (lane.get("models") or {}).get(model_key) or {}
+        if isinstance(declared_model, Mapping) and declared_model.get("time_budget"):
+            declared.append(
+                (
+                    f"lanes.{lane_name}.models.{model_key}.time_budget",
+                    declared_model.get("time_budget"),
+                )
+            )
+    named = ""
+    for key, value in declared:
+        if _budget_seconds(value) == seconds:
+            named = key
+    return named
+
+
+def _default_fence_under_estimate_warning(
+    config: Mapping[str, Any],
+    backend: Mapping[str, Any],
+    *,
+    backend_name: str,
+    node: TaskNode,
+    named_budget: str,
+    default_budget: str,
+    project: str,
+    repo: str | Path | None,
+    authority: Mapping[str, Any] | None,
+) -> str | None:
+    """Warn when a default fence is far below the work the node estimates.
+
+    Nothing is returned unless the caller named no ``--time-budget``, the
+    resolved fence came from a default, and that default is under a quarter of
+    the node's estimate, so the one case with something to say is the one this
+    speaks in. The estimate is the node's own figure, else the hours its named
+    section declares — never the plan's total, which is the same figure for
+    every section of a plan.
+    """
+    if str(named_budget or "").strip() or not str(default_budget or "").strip():
+        return None
+    hours = _estimate_hours(node, project=project, repo=repo, authority=authority)
+    if hours is None:
+        return None
+    try:
+        seconds = parse_duration(str(default_budget))
+    except CrewError:
+        return None
+    if seconds * FENCE_ESTIMATE_SHARE >= hours * 3600:
+        return None
+    layer = _time_budget_layer_key(
+        config, backend, backend_name=backend_name, node=node, budget=default_budget
+    )
+    from_where = f" from {layer}" if layer else ""
+    return (
+        f"node {node.id} names no --time-budget, so the default fence "
+        f"{default_budget}{from_where} is under a quarter of the "
+        f"{_hours_label(hours)} this node estimates; pass --time-budget "
+        f"{_hours_label(float(math.ceil(hours)))} so the run is not stopped "
+        "with most of the work undone"
+    )
+
+
+#: One entry per advisory line already printed, keyed by the run it was
+#: printed for. A dispatch that falls back to the caller's own budget resolves
+#: the same node twice under one run id, so without this the same sentence
+#: reaches the notice channel twice for one run.
+_ANNOUNCED_FENCE_WARNINGS: set[tuple[str, str]] = set()
+
+
+def _announce_fence_warning(run_id: str, line: str) -> None:
+    """Print one advisory fence line to the notice channel, once per run."""
+    fingerprint = (str(run_id), line)
+    if fingerprint in _ANNOUNCED_FENCE_WARNINGS:
+        return
+    _ANNOUNCED_FENCE_WARNINGS.add(fingerprint)
+    print(line, file=sys.stderr)
 
 
 def plan_dispatch(
@@ -469,6 +716,7 @@ def plan_dispatch(
     local_resolved = bool(
         local and local_backend_name and backend_name == local_backend_name
     )
+    named_budget = str(node.time_budget or "")
     default_budget = resolved_time_budget(config, backend)
     budget_ceiling = resolved_time_ceiling(config)
     default_token_budget = _resolved_token_budget(config, backend)
@@ -930,6 +1178,24 @@ def plan_dispatch(
                 "session": session,
                 "session_attached": attached,
             }
+    # Emitted after the competence verdict, and never for a node this dispatch
+    # refuses: a refused node is never launched, so the fence it would have run
+    # under cannot stop anything and the line is advice with no run to advise.
+    if resolution.competence is None or resolution.competence.get("allowed"):
+        fence_warning = _default_fence_under_estimate_warning(
+            config,
+            backend,
+            backend_name=backend_name,
+            node=node,
+            named_budget=named_budget,
+            default_budget=default_budget,
+            project=project,
+            repo=repo,
+            authority=authority,
+        )
+        if fence_warning is not None:
+            resolution.warnings.append(fence_warning)
+            _announce_fence_warning(resolution.run_id, fence_warning)
     return resolution
 
 
