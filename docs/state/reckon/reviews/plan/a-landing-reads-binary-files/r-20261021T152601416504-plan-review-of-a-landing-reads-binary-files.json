@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T15:39:52.561Z",
+  "dispatched_at": "2026-10-21T15:27:58Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-landing-reads-binary-files.html:60",
+      "id": "wiring-1",
+      "reason": "\u00a71 must require the move unconditionally in its own done-when (and exercise it), or \u00a72 must carry the helper path too; otherwise \u00a71 closes green and \u00a72 lands straight into a scope blocker.",
+      "text": "\u00a72 depends on \u00a71 having moved `_complete_land` into `tests/helpers/landing_repository.py`, but that requirement lives only in \u00a72's Sequence: \u00a71's done-when says its new test uses \"the helpers that already exist \u2026 `_write_origin_and_checkout` in `tests/test_one_call_lands_a_run.py` (near line 34)\" and makes any move conditional (\"if a helper must be shared\"), it never names `_complete_land`, and \u00a71's gate proves only the merge.py fix, so it passes whether or not the move happened. \u00a72's own write paths (`reckon/crew_run_commands.py`, `tests/test_a_failed_land_exits_nonzero.py`, the fragment) exclude the helper file and `tests/test_one_call_lands_a_run.py`, so a \u00a72 node dispatched after such a \u00a71 cannot import `_complete_land` and cannot repair it inside its fence.",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "05520065cd3a1d6ea4832174681ba7ae84a08094a56b40349f71a61676662c79",
+  "plan_slug": "a-landing-reads-binary-files",
+  "plan_version": 15,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-21T15:51:05.784794+00:00"
+    }
+  ],
+  "responses": {
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T15:51:05.784794+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-landing-reads-binary-files.v15.json",
+  "review_run_id": "r-20261021T152601416504-plan-review-of-a-landing-reads-binary-files",
+  "reviewed_blob_sha": "6391537b07113d480571cc6e048452a8fb00fc47",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every s2 anchor resolves in the tree at b160fd80c: `_land_a_promoted_run` near 2393 is the `def` at `reckon/crew_run_commands.py:2394`; `crew merge`'s `MergeError` handler near 77 is `reckon/crew_run_commands.py:77`; the non-refusal handlers near 2449, 2475 and 2524 are the three handlers the text names; the handler near 2485 is the promoted-land `MergeError` refusal; `tests/test_a_reviewed_head_lands_without_touching_the_index.py` near line 352 is `assert result.exit_code == merge.PUSH_OUTSTANDING_EXIT`. \u00a71's anchors also resolve (`reckon/crew/merge.py` `_run` 108 with `text=True` at 118, `_show` 211, callers 274/275/306, `rev-parse` at 125/133/345, the `survived` block at 652, and the byte-mode `capture_output=True` pattern in `reckon/crew/promotion_scope.py` near 922).",
+    "done_when": "pass \u2014 each section names a negative control that can fail (\u00a71: re-reading the binary path through the text `_show` raises `UnicodeDecodeError`; \u00a72: narrowing the handler back to `MergeError` lets the case escape the land step), the gate is judged by delta at base and head, and each done-when names its reproducer file and the suites it runs.",
+    "evidence_paths": "pass \u2014 each section writes one cumulative fragment under `docs/evidence/fragments/a-landing-reads-binary-files/`, and gate arms are written under the run directory (`baseline_suite`/`after_suite` log paths), not a scratchpad.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach a symbol, filename or comment; the section titles and the new test filenames name the mechanism (\"a landing reads binary files\", \"a failed land exits nonzero\").",
+    "reasoning": "pass \u2014 the changed claim survives all three checks. The stated root cause matches the cited code: `_land_a_promoted_run` catches `MergePushOutstandingError` (2475) and `MergeError` (2485) around `merge_module.land` at 2474 and nothing else, so a `UnicodeDecodeError` from the marker check escapes. The \"two sites\" narrowing is correct: repo-wide there are exactly four `MergeError` handlers \u2014 77 and 2485 are the two that turn a merge failure into a refusal, 2449 is `project_repository`'s resolution failure with no resume key, and 2524 is the release-step push error \u2014 so no refusal site is missing and no cited site is mischaracterised. The mechanism produces the done-when: a shared refusal function returning `(steps.land, exit_code)`, with `resume` optional, satisfies both callers, because site 77's refusal is a message-only `click.ClickException(str(exc))` with no resume key of its own, and the promoted-land bare `return report, 1` at 2494 becomes the shared exit status. The mechanism runs on the real code path with its callers named: `crew complete --land` reaches it from `reckon/crew_run_commands.py:2380` and `crew merge` from the handler at 77. The plan's honesty about the base observation (\"the command exited 0 \u2026 that observation needs reproducing before it is explained\") checks out: nothing in the CLI entry swallows exceptions, so the base arm is the right instrument for that question.",
+    "single_goal": "pass \u2014 \u00a71 is the marker check reading a blob as bytes; \u00a72 is a post-promotion land failure exiting non-zero and reporting itself; neither carries a second deliverable.",
+    "wiring": "a finding \u2014 \u00a72's done-when imports `_complete_land` from `tests/helpers/landing_repository.py` on the strength of \u00a72's Sequence (\"\u00a71 moves the shared harness \u2026 `_write_origin_and_checkout` and `_complete_land`\"), but \u00a71's own done-when never requires that move and \u00a71's gate cannot fail on it."
+  },
+  "section_digests": {
+    "_document": "7bb1ca28fd8d819b9ceb9071e32e02ca1fd54ae9ab6eab729c2a0506806c5dce",
+    "s1": "12ec0b13428f8b4ffea5545895de00f2867674f7597e1c73ed686089de58bf0c",
+    "s2": "ee84d3cfe290e31bb750ba45a5f81b60b731362af712c49f139a96a91f5960f5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T15:50:50.962418+00:00"
+}
