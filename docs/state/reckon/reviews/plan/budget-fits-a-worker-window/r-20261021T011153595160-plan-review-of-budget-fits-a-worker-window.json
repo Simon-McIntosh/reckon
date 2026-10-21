@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T01:31:06.381Z",
+  "dispatched_at": "2026-10-21T01:13:00Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/budget-fits-a-worker-window.html:52",
+      "id": "anchors_resolve-1",
+      "reason": "both copies hold 0.1, so deleting `budget.py`'s copy and re-exporting the surviving definition is unaffected; the \"comment\" half describes budget_lift's copy alone, and the sentence still carries its justification.",
+      "text": "\u00a72 says `reckon/crew/budget_lift.py:113` defines `DEFAULT_CREDIT_RESERVE_FRACTION` \"with the same value and comment\" as `budget.py`'s copy, but `budget.py:1266` is the bare assignment under the section banner with no comment of its own; only the value matches",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/budget-fits-a-worker-window.html:47",
+      "id": "reasoning-1",
+      "reason": "the done-when's 45,000-token bound and the offender-delta line are both measured at the node's own head, and the plan already reserves about 3,400 tokens of headroom, so a correct cut passes whatever \u00a746 adds; only the pre-\u00a746 prose figure is stale, and it is not the measure.",
+      "text": "\u00a72 derives \"Moving it leaves `budget.py` near 41,600 tokens\" and sizes the fence at \"about 66,000 tokens for the two existing modules\" from `f5e88d284`, but \u00a72 dispatches only after lane-and-model-routing \u00a746 merges, and \u00a746 adds to `budget.py` (lane-and-model-routing \u00a746 is `implementable` and no burn block is present beside `_readings` at this head), so the file the node actually cuts is larger than the 51,533 the arithmetic starts from",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "78a0d473452d5cd181f6dfce73be6888f32760c54f15a74caaac7db2ccc23161",
+  "plan_slug": "budget-fits-a-worker-window",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261021T011153595160-plan-review-of-budget-fits-a-worker-window",
+  "reviewed_blob_sha": "96229396885f953f9616bb726793165a6c6aa057",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 every cited anchor resolves (`f5e88d284`, `6ebe65ba4`, `reckon/crew/budget_lift.py:113`, `reckon/crew/routing.py:2957`, lane-and-model-routing \u00a746/\u00a748, followup `f-lamr-053`), but the new \u00a72 bullet's \"same value and comment\" does not hold of `budget.py`'s copy.",
+    "done_when": "pass \u2014 \u00a72's done-when is measurable and carries a negative control that can fail: at base the width test names `reckon/budget.py` at 51,533 tokens (reproduced), and its ratchet also reads red if an allowlist entry is left behind.",
+    "evidence_paths": "pass \u2014 the plan names no gate or evidence path, so none of them sits on a scratchpad or a node-local temporary directory.",
+    "naming": "pass \u2014 the new module is named for what it holds (`reckon/budget_pace.py`), and no version tag, plan label or ticket number reaches code.",
+    "reasoning": "pass with one noted staleness \u2014 the root cause matches the cited evidence to the token, the named family measures 10,047 tokens so the residual is 41,486 against the 45,000 bound, and every consumer of a moved name is named; \u00a72's residual figure is computed at a revision that predates the section it waits for.",
+    "single_goal": "pass \u2014 \u00a72 carries one deliverable, moving the pace and lift family out of `budget.py`.",
+    "wiring": "pass \u2014 \u00a72's `plan-section-depends-on` names `lane-and-model-routing#s46`, which exists, and lane-and-model-routing's own `plan-section-depends-on` now carries `{\"s48\":[\"lane-and-model-routing#s46\",\"budget-fits-a-worker-window#s2\"]}`, which is exactly the sequence \u00a72 declares."
+  },
+  "section_digests": {
+    "_document": "1614740484dbfd4e03e69ff83d11c72be04e1fae29d5472772ec27bb7860cffd",
+    "s1": "91f7e14a7481fa744ec22eb7e159bd794bd7321583546aa5c1a8d090384d75c7",
+    "s2": "69a83c5d3be870f4841a8e21c51c888cc04ff4781f059a927763b8872dd72fe4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T01:40:41.028962+00:00"
+}
