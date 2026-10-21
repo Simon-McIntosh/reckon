@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="466">
+<meta name="plan-version" content="467">
 <meta name="plan-modified" content="2026-10-21">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;done&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;done&quot;,&quot;s30&quot;:&quot;done&quot;,&quot;s31&quot;:&quot;done&quot;,&quot;s32&quot;:&quot;done&quot;,&quot;s33&quot;:&quot;done&quot;,&quot;s34&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
@@ -2090,6 +2090,9 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 </div>
 <div class="r-comment" data-section="s33" data-id="c-close-s33" data-who="reckon-build" data-when="2026-10-21T19:08:00Z">
     <div class="r-comment-body"><p>§33 landed at <code>590c08b24</code>: the suite clears the four follower variables for every test. Reviewed 112/120. The whole-suite population at merge adds no attributable failure. <a href="/reckon/evidence/archive/the-suite-is-green-at-head-landed.html#s33">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s33" data-id="c-run-r-20261021T155729556226-the-suite-clears-the-follower-environment" data-who="reckon-build" data-when="2026-10-21T17:17:25.038Z">
+    <div class="r-comment-body"><p>The suite now clears the four follower-session variables a crew host exports — an autouse fixture without_the_follower_session in tests/conftest.py deletes RECKON_SESSION_HOST_SETTLE, RECKON_FOLLOWER_OWNER, RECKON_FOLLOWER_IMAGE_COMMIT and RECKON_FOLLOWER_SOURCE_ROOT for every test, pinned by tests/test_the_suite_clears_the_follower_environment.py: the three files that exercise dispatch, session delivery and reload go from 32 failed/17 passed with the four set (EXIT=1) to 49 passed (EXIT=0) with the fixture, the negative control (fixture removed) reproduces the red subprocess run (EXIT=1), and both gate arms at head bf1e00cb derive 2 ids that five runs alone in each environment show failing in both environments (timing flakes, not env-dependent).</p></div>
 </div>
 <div class="r-comment" data-section="s34" data-id="c-run-r-20261021T175532171513-review-of-two-stamp-parsers-go-through-the-shared-parser-94884ba0d79d" data-who="reckon-build" data-when="2026-10-21T18:23:22.294Z">
     <div class="r-comment-body"><p>An independent review of r-20261021T162029131151-two-stamp-parsers-go-through-the-shared-parser at head 94884ba0d records six scores totalling 112, no blocking finding, and one follow-on: the importer-arm logs and the manifest's baseline_suite/after_suite command fields name only the first of the 21 files those arms collected.</p></div>
