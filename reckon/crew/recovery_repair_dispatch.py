@@ -456,6 +456,92 @@ def _repair_resume_advice(
     return "\n".join(parts).strip() + "\n"
 
 
+def _fold_findings_into_round(
+    project: str, run_id: str, *, head: str, node_id: str
+) -> list[int]:
+    """Record each open blocking finding of the round as folded into it.
+
+    The repair the reflex composes *is* the round that answers the review's
+    blocking findings, so each of them is recorded as folded into that round
+    through the same disposition writer ``crew dispose`` takes: the round's node
+    id, and the head the review read. Both records the round stands for are read
+    at that head — the run's text review and, when the run has one, its figure
+    review — and a finding's index is counted against the record it lives on,
+    which is the index the writer keys on and the reader prints.
+
+    A record that cannot be read, or a finding the writer refuses, is left
+    unfolder rather than raising the sweep out: the finding then stays
+    undisposed, which is the direction that keeps a repair taken as an answer it
+    never gave. The indexes folded into the text record are returned in the
+    record's order, so a caller can report what the round answered.
+    """
+    from reckon.crew import repair as repair_module
+    from reckon.crew import review_dispositions as review_dispositions_module
+
+    folded: list[int] = []
+    for rubric in (None, review_module.FIGURE_REVIEW_RUBRIC):
+        try:
+            record = review_module.read_review(
+                project, run_id, reviewed_head_sha=head or None, rubric=rubric
+            )
+        except (OSError, ValueError):
+            continue
+        if record is None:
+            continue
+        blocking = repair_module.blocking_finding_dispositions(record)
+        for index, _finding, disposition_kind in blocking:
+            if disposition_kind != "open":
+                continue
+            try:
+                review_dispositions_module.record_finding_disposition(
+                    project,
+                    run_id,
+                    index,
+                    kind="folded",
+                    node=node_id,
+                    reviewed_head_sha=head or None,
+                    rubric=rubric,
+                )
+            except (OSError, ValueError):
+                continue
+            if rubric is None:
+                folded.append(index)
+    return folded
+
+
+def _fold_a_landed_round(
+    record: Mapping[str, Any], *, project: str, run_id: str
+) -> list[int]:
+    """Fold a round's findings once its repair has moved the run's head.
+
+    This is the moment the round is spent: the reflex reads this run's stored
+    review as describing a revision the run no longer carries, so the commit
+    that answered the round has landed and the review the new head draws must
+    not be refused for findings that round already repaired. Recorded where the
+    reflex itself is what resumed the round — the run's own repair-dispatch
+    record names the round and says it was resumed — so a head moved by anything
+    else leaves the findings undisposed and the refusal standing.
+
+    A round still in flight is never folded here: while the run stands at the
+    head the review read, its findings must keep reading as work, or the reflex
+    could no longer retry a resume whose turn ended without answering it.
+    """
+    durable = _live_pointer_or_absent(run_id) or record
+    recorded = durable.get(REPAIR_DISPATCH_FIELD)
+    if not isinstance(recorded, Mapping):
+        return []
+    if str(recorded.get("status") or "") != "resumed":
+        return []
+    node_id = str(recorded.get("node_id") or "")
+    round_id = str(recorded.get("round_id") or "")
+    head = round_id.rpartition("@")[2] if "@" in round_id else ""
+    if not node_id or not head:
+        return []
+    if review_module.read_review(project, run_id, reviewed_head_sha=head) is None:
+        return []
+    return _fold_findings_into_round(project, run_id, head=head, node_id=node_id)
+
+
 def _promoted_run_ids(project: str) -> set[str]:
     """The run ids the project's ledger holds, or empty when it cannot be read.
 
@@ -659,10 +745,22 @@ def dispatch_repair_for_run(
         return {"run_id": run_id, "dispatched": False, "reason": busy}
     review, review_error = _stored_review(record)
     if review is None or not _review_is_complete(review):
+        # No stored review describes the run's current head, which for a round
+        # this reflex resumed is the round landing: the head moved because its
+        # findings were answered, so they are folded into it here rather than
+        # left to refuse the review the new head draws. The read is taken only
+        # when a review exists at a revision the run has moved past, so a run
+        # with no review at all folds nothing.
+        landed = (
+            _fold_a_landed_round(record, project=project, run_id=run_id)
+            if review is None
+            else []
+        )
         return {
             "run_id": run_id,
             "dispatched": False,
             "review_status": "unreadable" if review_error else "present",
+            "folded_findings": landed,
             "reason": (
                 f"the stored review could not be read: {review_error}"
                 if review_error
