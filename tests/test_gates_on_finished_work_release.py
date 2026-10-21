@@ -1,23 +1,28 @@
 """A gate over finished work stops holding the plan that carries it.
 
 A gate holds a section only while the plan still declares that section
-implementable. Five plans built from the shared inventory builder separate the
-cases, and three readers of the one split are checked against each other.
+implementable, and a settled gate holds nothing at all. Six plans built from the
+shared inventory builder separate the cases, and three readers of the one split
+are checked against each other.
 
 ``open-gate-on-done`` and ``open-gate-on-deferred`` name a section the plan has
 resolved, and ``closed-failed-on-deferred`` is a concluded gate over the same
 resolved section: none of the three holds anything, so its gate appears in
-neither hold list. ``open-gate-on-implementable`` is the control — the section
-it names is still work, so the gate holds the plan and it reads ``blocked``.
-``gate-over-finished-beside-live-work`` keeps an implementable ``s2`` beside a
-gate over a done ``s1``: the gate holds neither the plan nor ``s2``, and ``s2``
-stays ready.
+neither hold list. ``closed-failed-on-implementable`` is the same concluded gate
+over a section that is still work — the verdict records the outcome and the work
+proceeds without it, so it holds nothing either, where an open gate over that
+section would hold it. ``open-gate-on-implementable`` is the control for that:
+the section it names is still work and the gate is open, so it holds the plan
+and the plan reads ``blocked``. ``gate-over-finished-beside-live-work`` keeps an
+implementable ``s2`` beside a gate over a done ``s1``: the gate holds neither
+the plan nor ``s2``, and ``s2`` stays ready.
 
 The declared mutation restores the split's reading of a plan whose implementable
 sections are all inside the unpassed gates' scope, where every unpassed gate
-becomes plan-holding again. Under it the first three plans report their gate in
-``gate_blockers`` and the fifth reports it in ``section_gate_blockers``, so five
-of the six tests fail and only the control passes.
+becomes plan-holding again and no gate is read as settled. Under it the first
+three plans report their gate in ``gate_blockers``, the fourth does too, and the
+sixth reports it in ``section_gate_blockers``, so six of the seven tests fail
+and only the control passes.
 """
 
 from __future__ import annotations
@@ -36,6 +41,7 @@ SPRINT = [
             "open-gate-on-done",
             "closed-failed-on-deferred",
             "open-gate-on-deferred",
+            "closed-failed-on-implementable",
             "open-gate-on-implementable",
             "gate-over-finished-beside-live-work",
         ],
@@ -102,6 +108,18 @@ def _plans() -> list[dict]:
             gates=[_gate("g-live", gated_sections=["s2"])],
         ),
         plan_row(
+            "closed-failed-on-implementable",
+            section_declarations={"s2": "implementable"},
+            gates=[
+                _gate(
+                    "g-settled-live",
+                    gated_sections=["s2"],
+                    status="closed",
+                    verdict="failed",
+                )
+            ],
+        ),
+        plan_row(
             "gate-over-finished-beside-live-work",
             section_declarations={"s1": "done", "s2": "implementable"},
             gates=[_gate("g-finished", gated_sections=["s1"])],
@@ -163,6 +181,20 @@ def test_an_open_gate_over_a_deferred_section_leaves_the_plan_unblocked() -> Non
     assert row["readiness"] == "closable"
     assert row["gate_blockers"] == []
     assert row["section_gate_blockers"] == []
+
+
+def test_a_settled_gate_over_an_implementable_section_holds_nothing() -> None:
+    """A recorded verdict is the plan's outcome, live section or not."""
+
+    result = build_roadmap(PROJECT, _plans(), SPRINT)
+    row = _roadmap_row("closed-failed-on-implementable")
+
+    assert row["readiness"] == "ready"
+    assert row["gate_blockers"] == []
+    assert row["section_gate_blockers"] == []
+    assert "closed-failed-on-implementable" in [
+        ready["slug"] for ready in result["ready_now"]
+    ]
 
 
 def test_an_open_gate_over_an_implementable_section_still_holds_the_plan() -> None:

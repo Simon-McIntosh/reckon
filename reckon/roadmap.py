@@ -93,6 +93,11 @@ _ROI_ORDER = {"high": 0, "mid": 1, "med": 1, "low": 2}
 # fall outside.
 _AUTHORISED_STATUSES = frozenset({"draft", "pending", "active", "in-progress"})
 
+# The status a gate carries once its verdict has been recorded, written by the
+# pass and fail ops together with the verdict. It marks a settled gate, whose
+# outcome the plan already carries, as distinct from one still to be read.
+GATE_STATUS_CLOSED = "closed"
+
 
 class GraphTargetError(ValueError):
     """A graph ship target cannot resolve to one complete dependency closure."""
@@ -792,21 +797,28 @@ def split_unpassed_gates(
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Split a plan's unpassed execution gates by the work they still hold.
 
-    A gate holds a section only while that section is still implementable: a
-    gate whose named sections are all done, descoped or deferred holds nothing,
-    because the declaration already carries the section and a gate over it is an
-    outcome to record rather than work to wait for. A gate that names
-    implementable sections holds those sections, so long as the plan declares at
-    least one implementable section none of its unpassed gates names -- there is
-    still work the gate leaves reachable. When every implementable section is
-    named by an unpassed gate, or the plan declares no implementable section at
-    all, the gates that name reachable work hold the whole plan because no
-    section is left to carry it. A gate that names no sections always holds the
-    plan.
+    A closed gate holds nothing, whatever its verdict: a recorded verdict is the
+    plan's outcome, and a failed one records that the measure will not be met
+    and the work proceeds without it, so a settled gate is never work to wait
+    for. A gate is settled when its status says so, which the pass and fail ops
+    write together with the verdict.
+
+    An open gate holds a section only while that section is still implementable:
+    an open gate whose named sections are all done, descoped or deferred holds
+    nothing, because the declaration already carries the section. An open gate
+    that names implementable sections holds those sections, so long as the plan
+    declares at least one implementable section none of its open gates names --
+    there is still work the gate leaves reachable. When every implementable
+    section is named by an open gate, or the plan declares no implementable
+    section at all, the open gates that name reachable work hold the whole plan
+    because no section is left to carry it. An open gate that names no sections
+    always holds the plan.
 
     A plan that classified no sections tells this split nothing about which of
     them a gate still holds, so it keeps the reading an undeclared plan had
     before declarations were consulted at all: every unpassed gate holds it.
+    That population is the one the readiness ladder sets aside, and it is why
+    the settled-gate reading above sits inside the declaration-aware branch.
 
     Both lists carry the row shape :func:`unpassed_gate_blockers` produces, so a
     caller reports the first into the plan's blocker list and
@@ -817,6 +829,7 @@ def split_unpassed_gates(
     declarations = plan.get("section_declarations")
     if not isinstance(declarations, Mapping) or not declarations:
         return gates, []
+    gates = [gate for gate in gates if not _gate_is_closed(gate)]
     declared = set(implementable_sections(declarations))
     naming = [gate for gate in gates if _names_implementable(gate, declared)]
     named = {
@@ -831,6 +844,16 @@ def split_unpassed_gates(
         if not gate.get("gated_sections") or _names_implementable(gate, declared)
     ]
     return plan_holding, []
+
+
+def _gate_is_closed(gate: Mapping[str, Any]) -> bool:
+    """Whether a gate's status records a verdict the plan has already settled.
+
+    The pass and fail ops set this status together with the verdict, so it is
+    the field that marks a gate as concluded rather than still to be read.
+    """
+
+    return str(gate.get("status") or "").strip().lower() == GATE_STATUS_CLOSED
 
 
 def _names_implementable(gate: Mapping[str, Any], declared: set[str]) -> bool:
