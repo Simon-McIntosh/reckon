@@ -1,0 +1,68 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured: the reviewed manifest's baseline_suite (revision ac67e760, base-gate.log, completed true, 349 passed, EXIT=0) and after_suite (revision a394f696, head-gate.log, completed true, 358 passed, EXIT=0) both record zero failures, and the head arm's nine-test gain over the base is the new file, so no failure was added.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1324",
+    "reckon/crew/dispatch.py:1499",
+    "reckon/crew/recovery_review_dispatch.py:2397",
+    "reckon/crew/dispatch_sessions.py:1708",
+    "reckon/crew_dispatch_commands.py:1738"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-21T17:39:07Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_plan.py",
+      "line": "327",
+      "text": "follow-on: _role_budget_key reads the role layers as roles.<role>.time_budget, then by_spec_level, then by_capability_class, but reckon/crew/routing.py:146 _effective_backend applies them in that order with the later layer overwriting the earlier, so when more than one role layer declares a time_budget the warning names a flight key that did not supply the resolved fence; the by_capability_class branch also returns the first class alphabetically with a time_budget rather than the node's resolved class. No shipped or host flight declares a nested role time_budget today (reckon/schema/flight-defaults.yaml:69 is the only one the fixture exercises), so the mis-naming is latent."
+    },
+    {
+      "file": "reckon/crew/dispatch_plan.py",
+      "line": "254",
+      "text": "follow-on: _section_estimate_hours re-implements the 'read a section record's effort_hours, require it finite and positive, else None' step that reckon/crew/picker/__init__.py:107 _section_effort_hours already owns, appending only the plan-path resolution; the shared record reader (routing.py:248) is reused, so this is a duplicated private wrapper rather than a duplicated mechanism, and the record argument is a Mapping, making the _record_field indirection over record.get do no work."
+    },
+    {
+      "file": "reckon/crew/dispatch_plan.py",
+      "line": "1141",
+      "text": "follow-on: the stderr print sits inside plan_dispatch, which the budget-hold fallback calls a second time after restoring the caller's budget (reckon/crew/dispatch.py:1497-1499), so a dispatch that falls back prints the same advisory line twice on stderr; no dedupe or once-per-dispatch guard exists."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read the four commits against ac67e760: 1a7eef89c adds the warning and its helpers to reckon/crew/dispatch_plan.py, a394f6960 moves the emission after the competence verdict, d5bbf4221 and 72d00db8d write the evidence fragment; no other file is touched.",
+    "done_when": "the done-when names tests/test_a_bare_dispatch_names_a_fence_far_below_its_effort.py and the arm targets; the file's nine cases cover all five \u00a752 cases and the manifest records the fourteen-target head arm (358 passed, EXIT=0) against the base arm (349 passed, EXIT=0), both from named logs, plus the negative control.",
+    "goal": "the node goal is for a dispatch naming no --time-budget to warn, in its result and on stderr, when its default fence is under a quarter of the node's own estimate or its named section's declared effort; reckon/crew/dispatch_plan.py:378 builds that one line and reckon/crew/dispatch_plan.py:1140 appends it to resolution.warnings and prints it to stderr.",
+    "manifest": "read the manifest at the run directory; status complete, four commits (1a7eef89c, d5bbf4221, a394f6960, 72d00db8d), tests line naming the fourteen-target pytest command, baseline_suite and after_suite both carrying revision, command, exit_status, log_path, completed true and failure_count 0, and a follow_ons entry recording the refusal-case judgement.",
+    "write_paths": "the manifest declares reckon/crew/dispatch_plan.py, the new tests/test_a_bare_dispatch_names_a_fence_far_below_its_effort.py and the evidence fragment; git diff --stat ac67e760..72d00db8 changes exactly those three, 621 added lines and none removed, so nothing outside the grant is touched and the declared figures directory is simply unused."
+  },
+  "justifications": {
+    "durability": "tests/test_a_bare_dispatch_names_a_fence_far_below_its_effort.py:208 asserts one fence line naming 6h, 8m and roles.implement.time_budget, an assertion that reddens under the recorded negative control (negative-control.log, EXIT=1, '1 failed') which removes the append and the print; the silent cases at lines 257, 275 and 293 redden if the warning fires on an explicit budget, a short section or an estimate-free node.",
+    "evidence": "the manifest's baseline_suite and after_suite name base-gate.log and head-gate.log at ac67e760 and a394f696, and both logs close with '349 passed' / '358 passed' and a bare EXIT=0, while the arm target list matches every tests/ file that references reckon.crew.dispatch_plan.",
+    "fit": "reckon/crew/dispatch_plan.py:248 and dispatch_plan.py:327 follow the module's idiom of private Mapping-typed helpers with mechanism docstrings, and the added names (_hours_label, FENCE_ESTIMATE_SHARE, _default_fence_under_estimate_warning) carry no plan label, version or ticket reference.",
+    "goal_fidelity": "reckon/crew/dispatch_plan.py:408 warns exactly on default_budget seconds times four being under the estimate in hours, so the quarter-of-the-estimate threshold, the node-own-else-section estimate at dispatch_plan.py:319 and the advisory rather than refusing emission at dispatch_plan.py:1140 all match \u00a752.",
+    "reuse": "the additions extend routing.py:248 _section_record, the section-record owner the plan named, but the parse-and-validate epilogue of reckon/crew/dispatch_plan.py:254 duplicates reckon/crew/picker/__init__.py:107 _section_effort_hours, the repository's existing owner of 'a section's declared hours, or None', rather than calling it.",
+    "scope_discipline": "git diff --stat ac67e760 72d00db8 lists only the three declared write paths (+621, -0), and the added test's own fixture writes live under tmp_path, never the operator's crew home."
+  },
+  "node": "review-of-a-bare-dispatch-names-a-fence-far-below-its-effort-72d00db8d6e0",
+  "node:reviewed": "a-bare-dispatch-names-a-fence-far-below-its-effort",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is for a dispatch naming no --time-budget to warn, in its result and on stderr, when its default fence is under a quarter of the node's own estimate or its named section's declared effort; reckon/crew/dispatch_plan.py:378 builds that one line and reckon/crew/dispatch_plan.py:1140 appends it to resolution.warnings and prints it to stderr.\nVERDICT done_when: the done-when names tests/test_a_bare_dispatch_names_a_fence_far_below_its_effort.py and the arm targets; the file's nine cases cover all five \u00a752 cases and the manifest records the fourteen-target head arm (358 passed, EXIT=0) against the base arm (349 passed, EXIT=0), both from named logs, plus the negative control.\nVERDICT write_paths: the manifest declares reckon/crew/dispatch_plan.py, the new tests/test_a_bare_dispatch_names_a_fence_far_below_its_effort.py and the evidence fragment; git diff --stat ac67e760..72d00db8 changes exactly those three, 621 added lines and none removed, so nothing outside the grant is touched and the declared figures directory is simply unused.\nVERDICT manifest: read the manifest at the run directory; status complete, four commits (1a7eef89c, d5bbf4221, a394f6960, 72d00db8d), tests line naming the fourteen-target pytest command, baseline_suite and after_suite both carrying revision, command, exit_status, log_path, completed true and failure_count 0, and a follow_ons entry recording the refusal-case judgement.\nVERDICT diff: read the four commits against ac67e760: 1a7eef89c adds the warning and its helpers to reckon/crew/dispatch_plan.py, a394f6960 moves the emission after the competence verdict, d5bbf4221 and 72d00db8d write the evidence fragment; no other file is touched.\nCALL_SITES: reckon/crew/dispatch.py:1324, reckon/crew/dispatch.py:1499, reckon/crew/recovery_review_dispatch.py:2397, reckon/crew/dispatch_sessions.py:1708, reckon/crew_dispatch_commands.py:1738\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_plan.py:408 warns exactly on default_budget seconds times four being under the estimate in hours, so the quarter-of-the-estimate threshold, the node-own-else-section estimate at dispatch_plan.py:319 and the advisory rather than refusing emission at dispatch_plan.py:1140 all match \u00a752.\nSCORE evidence: 19\nJUSTIFICATION evidence: the manifest's baseline_suite and after_suite name base-gate.log and head-gate.log at ac67e760 and a394f696{pa-}, and both logs close with '349 passed' / '358 passed' and a bare EXIT=0, while the arm target list matches every tests/ file referencing reckon.crew.dispatch_plan.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff --stat ac67e760 72d00db8 lists only the three declared write paths (+621, -0), and the added test's own fixture writes live under tmp_path, never the operator's crew home.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_bare_dispatch_names_a_fence_far_below_its_effort.py:208 asserts one fence line naming 6h, 8m and roles.implement.time_budget, an assertion that reddens under the recorded negative control (negative-control.log, EXIT=1, '1 failed') which removes the append and the print; the silent cases at lines 257, 275 and 293 redden if the warning fires on an explicit budget, a short section or an estimate-free node.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/dispatch_plan.py:248 and dispatch_plan.py:327 follow the module's idiom of private Mapping-typed helpers with mechanism docstrings, and the added names (_hours_label, FENCE_ESTIMATE_SHARE, _default_fence_under_estimate_warning) carry no plan label, version or ticket reference.\nSCORE reuse: 10\nJUSTIFICATION reuse: the additions extend routing.py:248 _section_record, the section-record owner the plan named, but the parse-and-validate epilogue of reckon/crew/dispatch_plan.py:254 duplicates reckon/crew/picker/__init__.py:107 _section_effort_hours, the repository's existing owner of 'a section's declared hours, or None', rather than calling it.\nFINDING reckon/crew/dispatch_plan.py:327 follow-on: _role_budget_key reads the role layers as roles.<role>.time_budget, then by_spec_level, then by_capability_class, but reckon/crew/routing.py:146 _effective_backend applies them in that order with the later layer overwriting the earlier, so when more than one role layer declares a time_budget the warning names a flight key that did not supply the resolved fence; the by_capability_class branch also returns the first class alphabetically with a time_budget rather than the node's resolved class. No shipped or host flight declares a nested role time_budget today (reckon/schema/flight-defaults.yaml:69 is the only one the fixture exercises), so the mis-naming is latent.\nFINDING reckon/crew/dispatch_plan.py:254 follow-on: _section_estimate_hours re-implements the 'read a section record's effort_hours, require it finite and positive, else None' step that reckon/crew/picker/__init__.py:107 _section_effort_hours already owns, appending only the plan-path resolution; the shared record reader (routing.py:248) is reused, so this is a duplicated private wrapper rather than a duplicated mechanism, and the record argument is a Mapping, making the _record_field indirection over record.get do no work.\nFINDING reckon/crew/dispatch_plan.py:1141 follow-on: the stderr print sits inside plan_dispatch, which the budget-hold fallback calls a second time after restoring the caller's budget (reckon/crew/dispatch.py:1497-1499), so a dispatch that falls back prints the same advisory line twice on stderr; no dedupe or once-per-dispatch guard exists.\n",
+  "review_run_id": "r-20261021T202924041587-review-of-a-bare-dispatch-names-a-fence-far-below-its-effort-72d00db8d6e07442b877028aa66e986a50e93ef9",
+  "reviewed_base_sha": "ac67e760d6505ea14e25677d93fa821d9b6d5c9a",
+  "reviewed_head_sha": "72d00db8d6e07442b877028aa66e986a50e93ef9",
+  "reviewed_run_id": "r-20261021T173653041093-a-bare-dispatch-names-a-fence-far-below-its-effort",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 10,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T20:55:00+00:00",
+  "total": 102
+}
