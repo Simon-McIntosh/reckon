@@ -855,6 +855,103 @@ def rerun_gate_at_integrated_revision(
     return report
 
 
+# The file name each declared invariant's replay log is written under, in the
+# run directory beside the suite replay's own log. Named from the invariant's
+# id so a reader told which invariant failed can open exactly its log, and a
+# second run of the same check replaces its log rather than accumulating.
+def _domain_check_log_name(invariant_id: str) -> str:
+    safe = "".join(
+        character if character.isalnum() or character in "-_" else "-"
+        for character in str(invariant_id)
+    )
+    return f"domain-check-{safe or 'invariant'}.log"
+
+
+def replay_domain_invariant_checks(
+    *,
+    invariants: Sequence[Any],
+    repository: Path,
+    replay_directory: str | Path,
+    integrated_revision: str = "HEAD",
+    timeout_seconds: float | None = None,
+    changed_paths: Sequence[str] | None = None,
+    worktree_roots: Sequence[str | Path] = (),
+    recorded_gate_seconds: float | None = None,
+) -> tuple[dict[str, Any], ...]:
+    """Run each declared invariant's check through the promotion replay.
+
+    A repository declares, beside each domain rule, the command whose zero exit
+    means the rule holds. The command is run here through the same replay the
+    project's suite command goes through — ``sh -c`` in the repository under one
+    bound, with the worker's own worktree roots rewritten and the output kept in
+    the run directory — so a check that overruns its bound is reported as a
+    timeout rather than hanging the promotion, and its log lands beside the
+    suite's. No second executor exists to drift from that one.
+
+    Only invariants carrying a check are run: a rule stated without a command is
+    a rule the brief and the review carry, and there is nothing to execute.
+    Every check runs even after one fails, so an operator fixing a node learns
+    every rule it breaks from one call. The rows name the invariant id, so a
+    refusal can name the rule rather than the command.
+    """
+    directory = Path(replay_directory).expanduser()
+    rows: list[dict[str, Any]] = []
+    for invariant in invariants:
+        command = str(getattr(invariant, "check", "") or "").strip()
+        if not command:
+            continue
+        identifier = str(getattr(invariant, "id", "") or "")
+        report = rerun_gate_at_integrated_revision(
+            repository=repository,
+            gate_check={"command": command},
+            base_verdict="passed",
+            integrated_revision=integrated_revision,
+            timeout_seconds=timeout_seconds,
+            command=command,
+            changed_paths=changed_paths,
+            worktree_roots=worktree_roots,
+            replay_log_path=directory / _domain_check_log_name(identifier),
+            recorded_gate_seconds=recorded_gate_seconds,
+        )
+        finding = report.get("finding")
+        rows.append(
+            {
+                "id": identifier,
+                "rule": str(getattr(invariant, "rule", "") or ""),
+                "command": command,
+                "ok": bool(report.get("ok")),
+                "exit_status": report.get("exit_status"),
+                "timed_out": bool(report.get("timed_out")),
+                "log_path": report.get("log_path"),
+                "replay_bound_seconds": report.get("replay_bound_seconds"),
+                "detail": str(report.get("reason") or " ")
+                if report.get("ok")
+                else str(
+                    report.get("reason")
+                    or (finding.get("detail") if isinstance(finding, Mapping) else "")
+                    or "the check did not pass"
+                ),
+            }
+        )
+    return tuple(rows)
+
+
+def domain_check_refusal_text(rows: Sequence[Mapping[str, Any]]) -> str:
+    """Name every failing declared check, its rule and the log to open.
+
+    The text is what a promotion refusal carries, so it names the invariant by
+    id — the handle the repository's own flight config uses — and points at the
+    captured output rather than paraphrasing it.
+    """
+    failed = [row for row in rows if not row["ok"]]
+    lines = [
+        f"invariant {row['id']!r}: {row['detail']}"
+        + (f"; log: {row['log_path']}" if row.get("log_path") else "")
+        for row in failed
+    ]
+    return "; ".join(lines)
+
+
 def record_gate_rerun_at_integrated_revision(
     *,
     project: str,

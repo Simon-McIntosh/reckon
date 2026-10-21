@@ -1204,6 +1204,78 @@ class _PromotionRefusalError(CrewError):
         self.refusals = list(refusals)
 
 
+def _require_domain_invariant_checks(
+    run_id: str,
+    project: str,
+    node: Mapping[str, Any] | None,
+    *,
+    repository: str | Path | None,
+    waiver_reason: str = "",
+    timeout_seconds: float | None = None,
+    replay_directory: str | Path | None = None,
+) -> dict[str, Any] | None:
+    """Refuse a promotion whose repository's declared invariants do not hold.
+
+    A repository declares, beside each domain rule, the command whose zero exit
+    means the rule holds. Those commands are replayed here through the same
+    integration replay the project's suite command goes through, against the
+    tree that ships, so the rule a node's result must satisfy is measured on the
+    result rather than only carried in its brief. The refusal names the
+    invariant id — the handle the repository's own declaration uses — and the
+    log the check's output was captured to.
+
+    A project that declares no invariant, and a node whose write paths match
+    none of them, run nothing: this guard is inert until a repository opts in.
+    An unreadable or unusable declaration is not an empty one, so a config that
+    cannot be read raises rather than promoting a node whose rules were never
+    matched.
+    """
+    from reckon.crew.domain_rules import rules_for
+    from reckon.crew import promotion_gate
+
+    if not project or not node or repository is None:
+        return None
+    checkout = Path(repository).expanduser().resolve()
+    rules = rules_for(
+        project,
+        node,
+        checkout_path=str(checkout),
+    )
+    checks = tuple(
+        invariant for invariant in rules.invariants if str(invariant.check or "").strip()
+    )
+    if not checks:
+        return None
+    rows = promotion_gate.replay_domain_invariant_checks(
+        invariants=checks,
+        repository=checkout,
+        replay_directory=(
+            Path(replay_directory)
+            if replay_directory is not None
+            else run_directory_of({"run_id": run_id})
+        ),
+        timeout_seconds=timeout_seconds,
+        changed_paths=tuple(str(path) for path in node.get("write_paths") or ()),
+    )
+    failing = tuple(row for row in rows if not row["ok"])
+    if not failing:
+        return None
+    text = promotion_gate.domain_check_refusal_text(rows)
+    if waiver_reason.strip():
+        return {
+            "run_id": run_id,
+            "project": project,
+            "waived_invariants": [row["id"] for row in failing],
+            "reason": waiver_reason.strip(),
+            "checks": [dict(row) for row in rows],
+        }
+    raise CrewError(
+        f"run {run_id!r} does not satisfy the domain invariants declared for the "
+        f"paths it writes: {text}. Fix the result, or waive the guard with a "
+        "stated reason"
+    )
+
+
 def _combined_refusal_text(refusals: Sequence[BaseException]) -> str:
     """Render every failure, keeping the first one's wording verbatim first.
 
