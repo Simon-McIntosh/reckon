@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-21T09:53:36.180Z",
+  "dispatched_at": "2026-10-21T09:44:41Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-finished-plan-closes.html:72",
+      "id": "done_when-1",
+      "reason": "without a fixture on a plan that still has an implementable section, a node can leave the section-holding branch unedited and still pass every fixture, because a finished plan is not blocked whether or not that half of the rule was written.",
+      "text": "\u00a73's rule removes an unpassed gate from *both* holding lists when its gated section is done, but all four fixtures assert only \"not blocked\" on fixtures that have no implementable section; the section-holding half of the edit is measured nowhere, and \u00a73 names that half as live (`_section_gate_blockers` reports it at `reckon/mcp_views.py:2504`, roadmap row key `section_gate_blockers` at `reckon/roadmap.py:3319`)",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "3ae6572c34c916c7f1eea7633acb010ebf11376586fd935ce85599caba4c790e",
+  "plan_slug": "a-finished-plan-closes",
+  "plan_version": 7,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-21T09:54:31.288372+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-21T09:54:31.288372+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-finished-plan-closes.v7.json",
+  "review_run_id": "r-20261021T094301517286-plan-review-of-a-finished-plan-closes",
+  "reviewed_blob_sha": "9dd05076bb0d5dfb236fde3eab99049f7fdf4841",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `split_unpassed_gates`, the roadmap ladder, `_derive_lifecycle`, `_blocking`/`_section_gate_blockers`, `unpassed_gate_blockers` and the cited evidence file all resolve at the stated locations.",
+    "done_when": "a finding \u2014 \u00a73's four fixtures cover only plans with no implementable section, so neither fixture measures \u00a73's own section-holding change (a gate on a done section inside a plan that still has implementable work), which is the one shape \u00a72's closable short-circuit cannot mask.",
+    "evidence_paths": "pass \u2014 the one path \u00a73 relies on, `docs/evidence/archive/a-finished-plan-closes-landed.html`, is a durable repository evidence record, not a scratchpad.",
+    "naming": "pass \u2014 \u00a73's prose names mechanisms and files, carrying no plan label, stage name, ticket number or version tag.",
+    "reasoning": "pass \u2014 \u00a73's stated behaviour matches the code it cites (`not declared - named` returns every unpassed gate as plan-holding; a failed closed gate stays unpassed), and it names the production callers the edit reaches (roadmap ladder, `_derive_lifecycle`, the two MCP readers) rather than assuming a path.",
+    "single_goal": "pass \u2014 \u00a73 carries one deliverable, the gate-holding rule in `split_unpassed_gates`.",
+    "wiring": "pass \u2014 s3 declares no depends-on, and the followup states \u00a73 can start at once; the readers and inputs \u00a73 names all exist."
+  },
+  "section_digests": {
+    "_document": "a4ae683796f1cd7d1f79c1a255667e309bf30ed565ec4468724053b7e60a7306",
+    "s1": "1e9dfcb4502718170725c8fe6a094be7008a8414e2b0c4d7396de0b81ce04dab",
+    "s2": "6c44eda16e770936689d05513ebb501b1e2a0f657f06807e53fa716607264744",
+    "s3": "366a3ade0e53978caa0163b94ef4f2a6886b14f40f9a99e0f50269455721ecbd",
+    "s4": "1df36730914802cdf8e709b01c5f54eabac4b98f4e2300d731e4af0610418147",
+    "s5": "4060f5077ce6aada3abd8600dd95d99101462cba15260f20910a58337fb685c8",
+    "s6": "94a8098fad6e6e0e94b30b6aa3b5479453e35e2f7ef9f3c088ea41be599f8353"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T09:54:22.505110+00:00"
+}
