@@ -1,0 +1,40 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-21T14:02:10.380Z",
+  "dispatched_at": "2026-10-21T13:47:44Z",
+  "findings": [
+    {
+      "anchor": "tests/test_crew_view_serves_every_view.py:372",
+      "id": "finding-1",
+      "severity": "follow-on",
+      "text": "the 30-second advance is not itself asserted: setting _PARITY_CLOCK_ADVANCE to timedelta(0) makes _hold_the_budget_clock_at pin both calls of a pair to one instant, so the parity case still passes and the drop it makes necessary stops being exercised, leaving the determinism this node adds unguarded"
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 0702ee8a3: f27886f59 rewrites the parity filter and adds the clock drive and the confinement case, 4a246412a adds the evidence fragment; +149/-8 across the two declared paths.",
+    "done_when": "the done_when names ten runs of the crew view family gate at -n 12 beside a negative control and a confinement case; the manifest records that run and gate-run-01.log through gate-run-10.log each end '105 passed ... EXIT=0' and negative-control.log ends '2 failed, 4 passed' EXIT=1, so the gate asserts the stated measure.",
+    "goal": "the node goal is to make the parity case drop only the budget view's top-level checked_at and drive the budget clock itself; tests/test_crew_view_serves_every_view.py:339 _TOP_LEVEL_COMPOSITION_STAMPS = {\"budget\": frozenset({\"checked_at\"})} and :372 _hold_the_budget_clock_at pin budget's _now, so both halves landed.",
+    "manifest": "read; it reads status complete with commits f27886f59 and 4a246412a, ten of ten gate runs at 105 passed, the negative control red naming budget on all four vectors, and ruff clean.",
+    "write_paths": "the declared paths are tests/test_crew_view_serves_every_view.py, docs/evidence/fragments/the-suite-is-green-at-head/the-view-parity-case-reads-the-budget-at-one-instant.html, and the docs/figures/the-suite-is-green-at-head/the-view-parity-case-reads-the-budget-at-one-instant directory; the diff touches the first two only, and the figures directory is correctly unused."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261021T134606519218-review-of-the-view-parity-case-reads-the-budget-at-one-instant-4a246412a9e8",
+  "reviewed_base_sha": "0702ee8a3a725e46925cb7cbdcb1cc8df02f1c3a",
+  "reviewed_head_sha": "4a246412a9e8f2e38cb177bfdcf6759b75717150",
+  "reviewed_run_id": "r-20261021T130942057343-the-view-parity-case-reads-the-budget-at-one-instant",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T14:03:23.833041+00:00",
+  "total": 110
+}
