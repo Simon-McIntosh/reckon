@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-brief-should-not-cost-what-it-names-landed">
+  <meta name="plan-title" content="A Brief Should Not Cost What It Names — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Brief Should Not Cost What It Names: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-brief-should-not-cost-what-it-names">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Brief Should Not Cost What It Names — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Brief Should Not Cost What It Names — landed record</h1>
+  <p>Closure synthesis for A Brief Should Not Cost What It Names: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s9">
+    <h2>§9 — a regenerated path is charged as written, not read</h2>
+    <p>Run <code>a-regenerated-path-is-charged-as-written</code> (commit <code>df48984e9</code>). <code>reckon crew dispatch</code> and <code>reckon crew pick</code> take <code>--regenerate-path</code>, carried on <code>TaskNode.regenerate_paths</code> and folded into <code>write_paths</code> when the node is built, so the live-claim walk, the scope-conflict refusal and promotion's scope reads treat it as written with no change to any scope consumer. The context census in <code>reckon/crew/routing.py</code> charges it a flat <code>_REGENERATED_PATH_REFERENCE_TOKENS</code> (4,000) independent of the file's size, records provenance <code>regenerated</code>, and keys its cache on the regenerated set. The serialised node carries the regenerated paths onto the live pointer, the shadow and replay definitions, and the promoted ledger row.</p><p>Gate: 126 passed, EXIT=0. Review: 106/120 (goal 20, evidence 14, scope 20, durability 16, fit 18, reuse 18), landed under the bar because the code is right and a power_convertor coordinator is blocked on two 1 MB generated records. Two test-quality follow-ons (an assertion independent of the fold, and an assertion on the promoted ledger row) are folded into §10; the base arm's collection error is exempted as the honest reading for a new option.</p>
+  </section>
+
+</main>
+</body>
+</html>

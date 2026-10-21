@@ -148,6 +148,11 @@ for k, n in fallbacks.most_common():
     print(f&quot;  {n:5d}  {k}&quot;)
 </pre>
   </section>
- </main>
+   <section id="s9">
+    <h2>§9 — a newer config does not break an older reader</h2>
+    <p>Run <code>a-newer-flight-key-is-ignored-at-load</code> (commits <code>78bad3aec</code>, <code>8f435107b</code>). <code>scripts/regen_flight_schema.py</code> now generates the flight models with <code>extra="ignore"</code> and <code>reckon/_flight_schema.py</code> was regenerated from it. Loading flight config to run ignores a key the running schema does not declare and reports its path in <code>flight_unknown_keys</code> on <code>flight_report</code>, which <code>crew(view="flight")</code> serves. <code>reckon flight --check</code> validates the resolved config strictly and refuses an unknown key, naming its path. The two tests that pinned an unknown key raising at load moved that assertion to the strict read; no case was deleted.</p><p>Gate at <code>8f435107b</code>: 1 failed, 144 passed; the one failure (<code>test_a_clean_moved_checkout_answers_on_the_current_code</code>) fails identically at the base, which read 1 failed, 138 passed, so the head adds none. Review: 109/120 (goal 19, evidence 16, scope 18, durability 18, fit 18, reuse 20); two follow-ons exempted as not regressions. The failure this section names was seen again while landing it: a session MCP server on older code answered an <code>edit_plan</code> write with <code>review_owed_error: FlightConfigError … budget.advisory_pace_groups: Extra inputs are not permitted</code>.</p>
+  </section>
+
+</main>
 </body>
 </html>
