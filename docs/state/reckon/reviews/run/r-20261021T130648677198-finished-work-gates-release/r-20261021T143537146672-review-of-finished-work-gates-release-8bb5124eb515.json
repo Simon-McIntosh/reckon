@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/roadmap.py:3277",
+    "reckon/serve.py:1924",
+    "reckon/mcp_views.py:2499",
+    "reckon/mcp_views.py:2509"
+  ],
+  "completed_at": "2026-10-21T14:51:35.382Z",
+  "dispatched_at": "2026-10-21T14:36:27Z",
+  "findings": [
+    {
+      "file": "reckon/roadmap.py",
+      "line": "829",
+      "severity": "follow-on",
+      "text": "follow-on: the early return for a plan carrying no section declarations applies the pre-change reading to every unpassed gate, so a closed gate still holds an undeclared plan; the coordinator's ruling that a closed gate holds neither the plan nor any section is not applied to that population, which the manifest and fragment disclose and file as a scope request against tests/test_roadmap.py:1391, where the fixture gate's status would have to become open."
+    },
+    {
+      "file": "reckon/roadmap.py",
+      "line": "856",
+      "severity": "follow-on",
+      "text": "follow-on: _gate_is_closed decides a gate is settled from status == \"closed\", but the repository's existing reader of the same fact, reckon/_store_section_ops.py:395, decides it from a verdict in {\"passed\", \"failed\"}, so the two readers agree only while reckon/_store.py:3265 keeps writing both together; a gate carrying a verdict without the status word would read as open here while the section-ops guard already treats it as closed."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read all three commits b38b00b23, 73d06200b and 8bb5124e against base 9d0ebf5dd; the split edit lands in reckon/roadmap.py with two new helpers, the two test modules and the landing fragment, all inside the declared scope.",
+    "done_when": "the done_when names the seven-module pytest command and the base-commit negative control; the manifest records after_suite 114 passed exit 0 and baseline_suite 6 failed 1 passed exit 1, both with their log paths and failing ids.",
+    "goal": "the goal is to stop a closed gate, or an open gate over a done, descoped or deferred section, from holding a plan in split_unpassed_gates; reckon/roadmap.py:829-847 drops closed gates and gates naming no implementable section, and tests/test_gates_on_finished_work_release.py pins each named case.",
+    "manifest": "read; it states the gate command, gate.log 114 passed EXIT=0 and negative-control.log 6 failed 1 passed EXIT=1, names the measurement module and cwd, and files the undeclared-plan boundary as its scope request.",
+    "write_paths": "read the manifest's five declared paths and the run's reopened.json; the diff touches four paths, all inside them or the coordinator's granted extension tests/test_a_section_gate_holds_its_sections.py."
+  },
+  "justifications": {
+    "durability": "negative-control.log reinstates the base split_unpassed_gates and reddens tests/test_gates_on_finished_work_release.py at six ids the head arm passes, including the settled-gate case at :147 and the section-holding case at :178.",
+    "evidence": "the done_when's command is the manifest's tests line and its result is recorded at gate.log (\"114 passed\", \"EXIT=0\") with the base arm at negative-control.log (\"6 failed, 1 passed\", \"EXIT=1\").",
+    "fit": "reckon/roadmap.py:99 names the status word as a module constant and the two helpers sit beside implementable_sections at :112 in the module's voice, but _gate_is_closed at :856 reads settled-ness from the status field where the repository's other reader of that fact, reckon/_store_section_ops.py:395, reads the verdict.",
+    "goal_fidelity": "reckon/roadmap.py:829-831 returns every unpassed gate as plan-holding when section_declarations is absent, so a closed gate still holds a plan with no declarations, a boundary the change left outside the rule it applies elsewhere.",
+    "reuse": "a search of reckon/ for an existing closed-gate predicate found none, so _gate_is_closed and _names_implementable are new, and they compose the existing owners execution_gates, unpassed_gate_blockers and implementable_sections rather than duplicating them.",
+    "scope_discipline": "every path in the diff sits inside the five-path declaration or the coordinator's grant recorded in the run's reopened.json, tests/test_a_section_gate_holds_its_sections.py, so the scope was extended by the coordinator rather than taken by the worker."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to stop a closed gate, or an open gate over a done, descoped or deferred section, from holding a plan in split_unpassed_gates; reckon/roadmap.py:829-847 drops closed gates and gates naming no implementable section, and tests/test_gates_on_finished_work_release.py pins each named case.\nVERDICT done_when: the done_when names the seven-module pytest command and the base-commit negative control; the manifest records after_suite 114 passed exit 0 and baseline_suite 6 failed 1 passed exit 1, both with their log paths and failing ids.\nVERDICT write_paths: read the manifest's five declared paths and the run's reopened.json; the diff touches four paths, all inside them or the coordinator's granted extension tests/test_a_section_gate_holds_its_sections.py.\nVERDICT manifest: read; it states the gate command, gate.log 114 passed EXIT=0 and negative-control.log 6 failed 1 passed EXIT=1, names the measurement module and cwd, and files the undeclared-plan boundary as its scope request.\nVERDICT diff: read all three commits b38b00b23, 73d06200b and 8bb5124e against base 9d0ebf5dd; the split edit lands in reckon/roadmap.py with two new helpers, the two test modules and the landing fragment, all inside the declared scope.\nCALL_SITES: reckon/roadmap.py:3277, reckon/serve.py:1924, reckon/mcp_views.py:2499, reckon/mcp_views.py:2509\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/roadmap.py:829-831 returns every unpassed gate as plan-holding when section_declarations is absent, so a closed gate still holds a plan with no declarations, a boundary the change left outside the rule it applies elsewhere.\nSCORE evidence: 18\nJUSTIFICATION evidence: the done_when's command is the manifest's tests line and its result is recorded at gate.log (\"114 passed\", \"EXIT=0\") with the base arm at negative-control.log (\"6 failed, 1 passed\", \"EXIT=1\").\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff sits inside the five-path declaration or the coordinator's grant recorded in the run's reopened.json, tests/test_a_section_gate_holds_its_sections.py, so the scope was extended by the coordinator rather than taken by the worker.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log reinstates the base split_unpassed_gates and reddens tests/test_gates_on_finished_work_release.py at six ids the head arm passes, including the settled-gate case at :147 and the section-holding case at :178.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/roadmap.py:99 names the status word as a module constant and the two helpers sit beside implementable_sections at :112 in the module's voice, but _gate_is_closed at :856 reads settled-ness from the status field where the repository's other reader of that fact, reckon/_store_section_ops.py:395, reads the verdict.\nSCORE reuse: 18\nJUSTIFICATION reuse: a search of reckon/ for an existing closed-gate predicate found none, so _gate_is_closed and _names_implementable are new, and they compose the existing owners execution_gates, unpassed_gate_blockers and implementable_sections rather than duplicating them.\nFINDING reckon/roadmap.py:829 follow-on: the early return for a plan carrying no section declarations applies the pre-change reading to every unpassed gate, so a closed gate still holds an undeclared plan; the coordinator's ruling that a closed gate holds neither the plan nor any section is not applied to that population, which the manifest and fragment disclose and file as a scope request against tests/test_roadmap.py:1391, where the fixture gate's status would have to become open.\nFINDING reckon/roadmap.py:856 follow-on: _gate_is_closed decides a gate is settled from status == \"closed\", but the repository's existing reader of the same fact, reckon/_store_section_ops.py:395, decides it from a verdict in {\"passed\", \"failed\"}, so the two readers agree only while reckon/_store.py:3265 keeps writing both together; a gate carrying a verdict without the status word would read as open here while the section-ops guard already treats it as closed.",
+  "review_run_id": "r-20261021T143537146672-review-of-finished-work-gates-release-8bb5124eb515",
+  "reviewed_base_sha": "9d0ebf5ddce0f88dcb2070d754ef1aff92897037",
+  "reviewed_head_sha": "8bb5124eb515dd3bdaf32b5d11135fb910d65918",
+  "reviewed_run_id": "r-20261021T130648677198-finished-work-gates-release",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-21T14:55:54.013561+00:00",
+  "total": 108
+}
