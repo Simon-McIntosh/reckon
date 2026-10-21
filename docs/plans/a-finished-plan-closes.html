@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
-  <meta name="plan-section-depends-on" content="{&quot;s4&quot;: [&quot;a-project-reads-as-one-picture#s9&quot;], &quot;s6&quot;: [&quot;a-finished-plan-closes#s2&quot;, &quot;a-finished-plan-closes#s3&quot;, &quot;a-finished-plan-closes#s4&quot;, &quot;a-finished-plan-closes#s5&quot;]}">
+  <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;a-project-reads-as-one-picture#s9&quot;],&quot;s6&quot;:[&quot;a-finished-plan-closes#s2&quot;,&quot;a-finished-plan-closes#s3&quot;,&quot;a-finished-plan-closes#s4&quot;,&quot;a-finished-plan-closes#s5&quot;],&quot;s5&quot;:[&quot;a-finished-plan-closes#s2&quot;]}">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
   <title>A Finished Plan Closes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="3">
 <meta name="plan-modified" content="2026-10-21">
 </head>
 <body>
@@ -81,7 +81,12 @@
       <strong>Done when:</strong> a fixture plan with every section done reads <code>closable</code>,
       is absent from <code>ready_now</code>, and lists the <code>close</code> op. A fixture with one
       implementable section still reads <code>ready</code>, and a fixture with no section
-      declarations keeps its current readiness; those are the controls. On the base commit
+      declarations keeps its current readiness; those are the controls. The closable test runs
+      before the readiness ladder falls through to <code>blocked</code> or <code>deferred</code>
+      (<code>reckon/roadmap.py</code>, near line 3269). A fixture with every section done, an open
+      execution gate and no open followup therefore reads <code>closable</code>, with the gate in its
+      closing list, where the base reads it <code>deferred</code>. That is the shape of §1's blocked
+      plans. On the base commit
       the first fixture reads <code>ready</code>, and the test fails there. The census in §6 counts
       the closable plans per mount.
     </p>
@@ -170,7 +175,7 @@
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-afpc-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-21" data-recommends-skill="/reckon-build a-finished-plan-closes §2" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Give a finished plan the readiness closable</h4>
-    <div class="r-fu-body"><p>§2, §3 and §5 can start at once. §4 waits on the descoped declaration in a-project-reads-as-one-picture §9, and §6 runs once the rest land.</p></div>
+    <div class="r-fu-body"><p>§2 and §3 can start at once. §5 returns §2's closing list and waits on it, §4 waits on the descoped declaration in a-project-reads-as-one-picture §9, and §6 runs once the rest land.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-finished-plan-closes §2</pre>
     </article>
 </section>
