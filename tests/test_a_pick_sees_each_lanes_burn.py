@@ -22,6 +22,7 @@ the reserve out of the pool, which the pool case must fail.
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -43,7 +44,16 @@ PERIOD_MINUTES = 10_080
 WEEK_HOURS = PERIOD_MINUTES / 60.0
 CAP = 10_000.0
 BALANCE_AT_GRANT = 60_559.94
-ENDPOINT = "burn-fixture"
+
+#: The namespace every run id this file mints is filed under. The real-home
+#: guard searches for the identifiers this test alone writes, and neither the
+#: project name nor a plain word like "pool" would do: a peer's live pointer
+#: carries the project name in every record, and a fixture word turns up in
+#: the goals of unrelated nodes, so either would report a peer's write.
+FIXTURE_TAG = "burnfixture"
+
+#: Every run id this file minted since the case began.
+_MINTED: list[str] = []
 
 
 def _config() -> dict[str, Any]:
@@ -74,12 +84,12 @@ def _isolated_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Isolate the crew home, and assert the real one is left untouched."""
 
     home = Path.home() / ".config" / "reckon"
-    before = traces_naming(home, ("crew/live",), (PROJECT, ENDPOINT))
+    _MINTED.clear()
     monkeypatch.setenv("RECKON_HOME", str(tmp_path))
     monkeypatch.delenv(bl.RUN_ID_ENV, raising=False)
     yield
-    after = traces_naming(home, ("crew/live",), (PROJECT, ENDPOINT))
-    assert after == before, f"a test wrote the live crew home: {after}"
+    traces = traces_naming(home, ("crew/live",), tuple(_MINTED))
+    assert not traces, f"a test wrote the live crew home: {traces}"
 
 
 def _record(
@@ -108,14 +118,16 @@ def _record(
             "unlimited": False,
             "balance": balance,
         }
+    minted = f"{FIXTURE_TAG}-{run_id}"
     pointer = {
-        "run_id": run_id,
+        "run_id": minted,
         "project": PROJECT,
         "backend": backend,
         "observed_at": when.isoformat(),
         "budget": block,
     }
-    path = home / "crew" / "live" / f"{run_id}.json"
+    _MINTED.append(minted)
+    path = home / "crew" / "live" / f"{minted}.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(pointer), encoding="utf-8")
 
@@ -136,17 +148,34 @@ def _publish(
 ) -> None:
     """The headroom document one lane member publishes, under the crew home."""
 
+    _publish_windows(home, when=when, windows={"seven_day": (utilisation, resets_in)})
+
+
+def _publish_windows(
+    home: Path,
+    *,
+    when: datetime,
+    windows: Mapping[str, tuple[float, float]],
+) -> None:
+    """The same document carrying one observed block per named window.
+
+    Each value is the window's utilisation as a fraction and the hours to its
+    reset. Blocks keep the order given, so a case can put the window it does
+    not mean first and require the reader to name the one it does.
+    """
+
     document = {
         "version": 1,
         "accounts": {
             LANE: {
                 "windows": {
-                    "seven_day": {
+                    period: {
                         "state": "observed",
                         "utilisation": utilisation,
                         "observed_at": when.isoformat(),
                         "resets_at": (when + timedelta(hours=resets_in)).isoformat(),
                     }
+                    for period, (utilisation, resets_in) in windows.items()
                 }
             }
         },
@@ -221,6 +250,33 @@ def test_the_window_even_share_is_the_remainder_over_the_hours_to_reset(
     burn = _burn()
     assert burn["window_even_share_pct"] == pytest.approx(0.15, abs=0.01)
     assert burn["window_rate_pct_per_hour"] is None
+
+
+def test_one_window_carries_both_the_rate_and_the_even_share(tmp_path: Path):
+    """A document publishing both windows is read on the window the lane ran on.
+
+    The recorded reading places the seven-day window, so the published document
+    must be read there too. It lists the five-hour window first, where a reader
+    taking the first figure it finds would report 43 points an hour against 12
+    points of even share instead of the seven-day window's 8 and 3.08.
+    """
+
+    _record(
+        tmp_path,
+        run_id="both-a",
+        when=NOW - timedelta(hours=2),
+        utilisation_pct=4.0,
+        hours_to_reset=6.5 * 24 + 2,
+    )
+    _publish_windows(
+        tmp_path,
+        when=NOW,
+        windows={"five_hour": (0.90, 5.0), "seven_day": (0.20, 6.5 * 24)},
+    )
+
+    burn = _burn()
+    assert burn["window_rate_pct_per_hour"] == pytest.approx(8.0, rel=0.001)
+    assert burn["window_even_share_pct"] == pytest.approx(3.08, abs=0.01)
 
 
 def test_the_published_headroom_document_supplies_the_current_point(

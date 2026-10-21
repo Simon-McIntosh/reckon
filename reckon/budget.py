@@ -806,6 +806,68 @@ BURN_MIN_SPAN_MINUTES = 30.0
 #: ``routing.budget_period_hours``.
 DEFAULT_BUDGET_PERIOD_HOURS = 6.0
 
+#: The named metered windows a published headroom document keys its figures by,
+#: against the window length a recorded block reports. A dialect that names the
+#: period it measured and one that reports only the position it was furthest
+#: through must resolve to the same window, or a rate measured on one window
+#: would be quoted beside a remainder measured on another.
+NAMED_WINDOW_MINUTES = {300: "five_hour", 10_080: "seven_day"}
+
+
+def _window_key(
+    block: Mapping[str, Any], fallback_minutes: float | None = None
+) -> str | None:
+    """The metered window one recorded block's utilisation belongs to.
+
+    A recorded block's utilisation is the binding window -- whichever window it
+    reported was furthest through when the probe answered -- so the block's own
+    tags name it. A dialect that names the period says it, and one that reports
+    only the position names the length instead, which is mapped to the name the
+    published document uses for the same window. A length outside the named set
+    keeps its own key rather than borrowing a name it does not measure.
+    """
+    named = block.get("rate_limit_type")
+    if isinstance(named, str) and named in NAMED_WINDOW_MINUTES.values():
+        return named
+    minutes = _numeric(block.get("rate_limit_period_minutes"))
+    if minutes is None:
+        minutes = fallback_minutes
+    if minutes is None:
+        return None
+    return NAMED_WINDOW_MINUTES.get(int(minutes), f"{int(minutes)}m")
+
+
+def _selected_window(points: Iterable[_BurnPoint]) -> str | None:
+    """The window a lane's rate and even share are both read on.
+
+    The newest recorded reading that places a window chooses it: that is the
+    window the lane was up against when it last ran, and the one its remainder
+    is a statement about. A series that places no window leaves the choice to
+    the published document.
+    """
+    return next(
+        (
+            point.window
+            for point in reversed(list(points))
+            if point.utilisation_pct is not None and point.window is not None
+        ),
+        None,
+    )
+
+
+def _on_one_window(points: Iterable[_BurnPoint], window: str) -> list[_BurnPoint]:
+    """Drop the utilisation of every reading taken on another window.
+
+    The credit balance is window-independent and stays, so a point that cannot
+    place this window still dates a credit fall.
+    """
+    return [
+        point
+        if point.utilisation_pct is None or point.window == window
+        else replace(point, utilisation_pct=None)
+        for point in points
+    ]
+
 
 def budget_period_hours(config: Mapping[str, Any] | None) -> float:
     """The period a lane's even share is quoted for, in hours.
@@ -832,6 +894,7 @@ class _BurnPoint:
     utilisation_pct: float | None = None
     credit_balance: float | None = None
     resets_at: datetime | None = None
+    window: str | None = None
 
 
 def _numeric(value: Any) -> float | None:
@@ -843,13 +906,6 @@ def _numeric(value: Any) -> float | None:
 
 def _round_or_none(value: float | None, digits: int = 4) -> float | None:
     return None if value is None else round(value, digits)
-
-
-def _declared_group_members(
-    config: Mapping[str, Any] | None, group: str
-) -> tuple[str, ...]:
-    """The backend members of one declared budget group, in declaration order."""
-    return tuple(budget_group.declared_groups(config).get(str(group), ()))
 
 
 def _group_points(
@@ -884,6 +940,7 @@ def _group_points(
                 resets_at=(
                     _parse_stamp(resets_at) if isinstance(resets_at, str) else None
                 ),
+                window=_window_key(block),
             )
         )
     points.sort(key=lambda point: point.when)
@@ -921,7 +978,11 @@ def _trailing_rate(
 
 
 def _published_point(
-    config: Mapping[str, Any] | None, group: str, *, now: datetime
+    config: Mapping[str, Any] | None,
+    group: str,
+    *,
+    now: datetime,
+    window: str | None = None,
 ) -> _BurnPoint | None:
     """The group's freshest published window reading, as one burn point.
 
@@ -941,19 +1002,27 @@ def _published_point(
     when = _parse_stamp(payload.get("observed_at"))
     if when is None:
         return None
-    for value in payload.values():
-        if not isinstance(value, Mapping):
-            continue
-        utilisation = _numeric(value.get("utilisation"))
-        if utilisation is None:
-            continue
-        resets_at = value.get("resets_at")
-        return _BurnPoint(
-            when=when,
-            utilisation_pct=utilisation * 100.0,
-            resets_at=(_parse_stamp(resets_at) if isinstance(resets_at, str) else None),
-        )
-    return None
+    candidates = [
+        (str(period), value)
+        for period, value in payload.items()
+        if isinstance(value, Mapping) and _numeric(value.get("utilisation")) is not None
+    ]
+    if not candidates:
+        return None
+    if window is None:
+        period, value = candidates[0]
+    else:
+        chosen = next((item for item in candidates if item[0] == window), None)
+        if chosen is None:
+            return None
+        period, value = chosen
+    resets_at = value.get("resets_at")
+    return _BurnPoint(
+        when=when,
+        utilisation_pct=_numeric(value.get("utilisation")) * 100.0,
+        resets_at=(_parse_stamp(resets_at) if isinstance(resets_at, str) else None),
+        window=period,
+    )
 
 
 def _even_share(
@@ -1018,14 +1087,26 @@ def burn_block(
     """
     moment = _now(now)
     period_hours = budget_period_hours(config)
-    members = _declared_group_members(config, group)
+    members = tuple(budget_group.declared_groups(config).get(str(group), ()))
     collected = _readings(project, config=config) if readings is None else readings
     points = _group_points(collected, members)
+    # A rate and a remainder are comparable only on one window, so the window
+    # the newest recorded reading places governs both: the recorded series is
+    # read on that window alone and the document is asked for that window by
+    # name rather than for whichever figure it happens to list first. A series
+    # that places no window takes the published document's, so a lane whose
+    # readings carry no window still reports one window's figures rather than
+    # a mixture.
+    window = _selected_window(points)
     # The published headroom document supplies the current point where no run
     # recorded. It is added only when it carries an observation no recorded
     # reading already places at that moment, so one moment is never counted
     # twice and two points never share a timestamp.
-    published = _published_point(config, group, now=moment)
+    published = _published_point(config, group, now=moment, window=window)
+    if window is None and published is not None:
+        window = published.window
+    if window is not None:
+        points = _on_one_window(points, window)
     if (
         published is not None
         and published.utilisation_pct is not None
