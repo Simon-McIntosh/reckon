@@ -1765,7 +1765,7 @@ class RowPolicy:
 
         A limit reset is its own case. It is not a lift in any of the three
         senses above, so it neither reads nor writes the group memory: the pane
-        draws one reset per event as §2 requires, and the grants and ends of the
+        draws one reset per event, and the grants and ends of the
         lift family are left as the lift rows set them. Its claim is the same
         exclusive create the grant takes, keyed on the event's own id.
         """
