@@ -8,6 +8,17 @@ This review is read only. Do not edit, create, move, delete, redraw, relabel or
 reformat any file, including a figure or its caption. Report findings in the
 review record only.
 
+## Judge the rendered PNG, never the SVG source
+
+Judge every figure only from the rendered PNGs named in this review. Open, read,
+list, search, render or `git show` no SVG, and no image other than the named
+PNGs. The verdict is about the picture a reader sees: an SVG's text elements,
+dimensions and glyph coordinates are generated markup, and a verdict assembled
+from them can report a label the rendered PNG clips or hides. Anchor a finding
+to the figure's repository path, or, where the run's own diff shows the script
+that draws the figure, to a line in that script. Never anchor a finding to a
+line of SVG markup.
+
 For every attached figure, report one `RUBRIC <item>: <verdict>` line for each
 item below. A verdict names what is visible and either passes or states the
 specific defect:
@@ -30,9 +41,9 @@ change it.
 
 Record every finding as an object with these four fields:
 
-- `file` — the source figure path the finding concerns.
-- `line` — a line in that source, or `null` when the finding concerns only the
-  rendered image and no source line is useful.
+- `file` — the figure's repository path, or the path of the script that draws it
+  when the finding is in that script.
+- `line` — a line in that script, or `null` when no script line is useful.
 - `severity` — one of the two declared severities below.
 - `summary` — what is wrong and why it matters to a reader.
 
