@@ -1,7 +1,7 @@
 # Worker role digest: test
 #
-# Generated from ~/.agents/AGENTS.md (sha256 dfae942cb63bb0ac482f5da8b5293516497aa0c08294bc0854eca7fb26ebadbe,
-# 108152 bytes, ~27038 — the same policy holds for every
+# Generated from ~/.agents/AGENTS.md (sha256 e8604736a2b100786f55e0b9c1e5c5cee417ef8cabb068a0a95407e2a5d975f7,
+# 109886 bytes, ~27472 — the same policy holds for every
 # role; this digest retains the sections below and withholds the
 # coordinator-only delivery text.
 # Regenerate with: python -m reckon.crew.worker_digest
