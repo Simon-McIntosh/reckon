@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:664",
+    "reckon/crew_follow_commands.py:1815",
+    "reckon/crew_follow_commands.py:3105",
+    "reckon/crew_follow_commands.py:2106"
+  ],
+  "completed_at": "2026-10-22T11:38:21.300Z",
+  "dispatched_at": "2026-10-22T11:18:31Z",
+  "findings": [
+    {
+      "file": "tests/test_a_pane_settles_when_no_work_is_live.py",
+      "line": "612",
+      "severity": "follow-on",
+      "text": "the added _follower_registered locates the child's lease with home.glob(\"*.followers/{session}-*.lease\"), re-deriving a path shape that reckon/crew/follower_registration.py:54 follower_lease_path(project, session) already owns and that tests/test_a_hostless_follower_is_judged_by_its_lease.py:59 already calls; the test knows both PROJECT and SESSION of the child it started, so the owned function would answer the same question and the glob duplicates the naming convention instead of extending it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T100542325518-the-pane-prints-no-line-that-asks-nothing/manifest.md",
+      "line": "12",
+      "severity": "follow-on",
+      "text": "the tests: line is a template carrying unsubstituted placeholders (\"<arm>\", \"<the 50 tests/ files importing reckon.crew.needs_you or reckon.crew_follow_commands>\"), where the manifest contract requires the literal text a shell was handed, so promotion's gate receipt cannot be re-run from this line; the fallback it names, the log's own command: header, carries the substitution only in logs/gate-head.log:2."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T100542325518-the-pane-prints-no-line-that-asks-nothing/logs/gate-base.log",
+      "line": "2",
+      "severity": "follow-on",
+      "text": "the base arm's command: header ends in \"<files>\" rather than the literal test list the head arm prints, and the done-when requires every log to start with its revision and the literal command, so the base arm cannot be re-run from its own header alone; the list is recoverable only from the other arm."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against the base; a7b3cb38b is the change (the DRAINED_TAIL constant removed with its two readers rewritten, the composer, the settle emitter, the watch-line guard and the CLI echo guard, four test files and the fragment) and 3c5a1d90f records the two-arm gate and the negative control in the fragment; both commits stay inside the declared scope.",
+    "done_when": "the done-when names four fake-clock cases, a negative control, a two-arm comparison over the test files importing the two modules with -n 8, tests/test_every_module_fits_a_worker_window.py and a ruff delta; the manifest records the focused runs (12 passed; 12 passed), the two-arm gate (head 409 passed / 1 failed, base 409 passed / the same 1 failed), the negative control and the module-window run, and the logs are on disk under the run directory, each ending EXIT=1 or EXIT=0 as stated.",
+    "goal": "the goal is that the follower prints no line that asks nothing of the coordinator -- the empty needs-you line and the drained settle line; at head reckon/crew/needs_you.py:372 returns \"\" for an empty set and :319 returns \"\" for a drained fleet, reckon/crew_follow_commands.py:629 returns \"\" when the settle tail is empty and :1800 refuses to yield a needs-you event for an empty set, while the CLI at :3105-3111 still sets settled=True and prints nothing, so the follower leaves with its settle code.",
+    "manifest": "read; status complete, the landing line present, commits and logs named, and the negative-control log named as a bare path whose content I opened (EXIT=1, the restored line printed verbatim) -- marred by a tests: line that is a template carrying unsubstituted placeholders, so the gate receipt cannot be re-run from it (see FINDING manifest.md:12).",
+    "write_paths": "read; git diff d513f542441f6b9aaa95458b7c52c1b982d646a6..3c5a1d90f60e7749e90fabeedfb6164881a74f55 lists exactly the declared paths -- reckon/crew/needs_you.py, reckon/crew_follow_commands.py, tests/test_follow_needs_you_line.py, tests/test_follow_drain_line.py, tests/test_a_pane_settles_when_no_work_is_live.py, tests/test_a_pane_does_not_settle_during_admission.py and the landing fragment -- and no path outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_follow_needs_you_line.py:346 and tests/test_follow_drain_line.py:342 assert against constants and would redden if the suppressed lines were restored -- the declared negative control demonstrates exactly that for the needs-you line -- while the settle suppression is covered by assertions and a positive control rather than by its own demonstrated mutation.",
+    "evidence": "the gate is genuinely two-arm at the right revisions with the same single failure in both arms, readable at logs/gate-head.log and logs/gate-base.log, but the manifest's gate command is a template with unsubstituted placeholders (manifest.md:12) and the base arm's own header abbreviates its file list as <files> (logs/gate-base.log:2).",
+    "fit": "the change extends the modules that already own each behaviour (reckon/crew/needs_you.py:292, :352 and reckon/crew_follow_commands.py:606, :1799) and its docstrings state the rule in mechanism terms with no plan, stage or ticket name.",
+    "goal_fidelity": "reckon/crew/needs_you.py:372 and :319 return the empty string for an empty set and a drained fleet, reckon/crew_follow_commands.py:629 and :1800 suppress the two lines, and :3105 keeps settled=True so the child still leaves with its settle code.",
+    "reuse": "every production definition extends its existing owner, but tests/test_a_pane_settles_when_no_work_is_live.py:612 re-derives the follower lease path by pattern where reckon/crew/follower_registration.py:54 owns that derivation and tests/test_a_hostless_follower_is_judged_by_its_lease.py:59 already calls the owner.",
+    "scope_discipline": "every path in git diff d513f542441f6b9aaa95458b7c52c1b982d646a6..3c5a1d90f60e7749e90fabeedfb6164881a74f55 is one of the manifest's declared write paths."
+  },
+  "node": "review-of-the-pane-prints-no-line-that-asks-nothing-3c5a1d90f60e",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the follower prints no line that asks nothing of the coordinator -- the empty needs-you line and the drained settle line; at head reckon/crew/needs_you.py:372 returns \"\" for an empty set and :319 returns \"\" for a drained fleet, reckon/crew_follow_commands.py:629 returns \"\" when the settle tail is empty and :1800 refuses to yield a needs-you event for an empty set, while the CLI at :3105-3111 still sets settled=True and prints nothing, so the follower leaves with its settle code.\nVERDICT done_when: the done-when names four fake-clock cases, a negative control, a two-arm comparison over the test files importing the two modules with -n 8, tests/test_every_module_fits_a_worker_window.py and a ruff delta; the manifest records the focused runs (12 passed; 12 passed), the two-arm gate (head 409 passed / 1 failed, base 409 passed / the same 1 failed), the negative control and the module-window run, and the logs are on disk under the run directory, each ending EXIT=1 or EXIT=0 as stated.\nVERDICT write_paths: read; git diff d513f542441f6b9aaa95458b7c52c1b982d646a6..3c5a1d90f60e7749e90fabeedfb6164881a74f55 lists exactly the declared paths -- reckon/crew/needs_you.py, reckon/crew_follow_commands.py, tests/test_follow_needs_you_line.py, tests/test_follow_drain_line.py, tests/test_a_pane_settles_when_no_work_is_live.py, tests/test_a_pane_does_not_settle_during_admission.py and the landing fragment -- and no path outside them.\nVERDICT manifest: read; status complete, the landing line present, commits and logs named, and the negative-control log named as a bare path whose content I opened (EXIT=1, the restored line printed verbatim) -- marred by a tests: line that is a template carrying unsubstituted placeholders, so the gate receipt cannot be re-run from it (see FINDING manifest.md:12).\nVERDICT diff: read commit by commit against the base; a7b3cb38b is the change (the DRAINED_TAIL constant removed with its two readers rewritten, the composer, the settle emitter, the watch-line guard and the CLI echo guard, four test files and the fragment) and 3c5a1d90f records the two-arm gate and the negative control in the fragment; both commits stay inside the declared scope.\nCALL_SITES: reckon/crew_follow_commands.py:664, reckon/crew_follow_commands.py:1815, reckon/crew_follow_commands.py:3105, reckon/crew_follow_commands.py:2106\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/needs_you.py:372 and :319 return the empty string for an empty set and a drained fleet, reckon/crew_follow_commands.py:629 and :1800 suppress the two lines, and :3105 keeps settled=True so the child still leaves with its settle code.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate is genuinely two-arm at the right revisions with the same single failure in both arms, readable at logs/gate-head.log and logs/gate-base.log, but the manifest's gate command is a template with unsubstituted placeholders (manifest.md:12) and the base arm's own header abbreviates its file list as <files> (logs/gate-base.log:2).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff d513f542441f6b9aaa95458b7c52c1b982d646a6..3c5a1d90f60e7749e90fabeedfb6164881a74f55 is one of the manifest's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_follow_needs_you_line.py:346 and tests/test_follow_drain_line.py:342 assert against constants and would redden if the suppressed lines were restored -- the declared negative control demonstrates exactly that for the needs-you line -- while the settle suppression is covered by assertions and a positive control rather than by its own demonstrated mutation.\nSCORE fit: 20\nJUSTIFICATION fit: the change extends the modules that already own each behaviour (reckon/crew/needs_you.py:292, :352 and reckon/crew_follow_commands.py:606, :1799) and its docstrings state the rule in mechanism terms with no plan, stage or ticket name.\nSCORE reuse: 5\nJUSTIFICATION reuse: every production definition extends its existing owner, but tests/test_a_pane_settles_when_no_work_is_live.py:612 re-derives the follower lease path by pattern where reckon/crew/follower_registration.py:54 owns that derivation and tests/test_a_hostless_follower_is_judged_by_its_lease.py:59 already calls the owner.\nFINDING tests/test_a_pane_settles_when_no_work_is_live.py:612 follow-on: the added _follower_registered locates the child's lease with home.glob(\"*.followers/{session}-*.lease\"), re-deriving a path shape that reckon/crew/follower_registration.py:54 follower_lease_path(project, session) already owns and that tests/test_a_hostless_follower_is_judged_by_its_lease.py:59 already calls; the test knows both PROJECT and SESSION of the child it started, so the owned function would answer the same question and the glob duplicates the naming convention instead of extending it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T100542325518-the-pane-prints-no-line-that-asks-nothing/manifest.md:12 follow-on: the tests: line is a template carrying unsubstituted placeholders (\"<arm>\", \"<the 50 tests/ files importing reckon.crew.needs_you or reckon.crew_follow_commands>\"), where the manifest contract requires the literal text a shell was handed, so promotion's gate receipt cannot be re-run from this line; the fallback it names, the log's own command: header, carries the substitution only in logs/gate-head.log:2.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T100542325518-the-pane-prints-no-line-that-asks-nothing/logs/gate-base.log:2 follow-on: the base arm's command: header ends in \"<files>\" rather than the literal test list the head arm prints, and the done-when requires every log to start with its revision and the literal command, so the base arm cannot be re-run from its own header alone; the list is recoverable only from the other arm.",
+  "review_run_id": "r-20261022T111724809709-review-of-the-pane-prints-no-line-that-asks-nothing-3c5a1d90f60e",
+  "reviewed_base_sha": "d513f542441f6b9aaa95458b7c52c1b982d646a6",
+  "reviewed_head_sha": "3c5a1d90f60e7749e90fabeedfb6164881a74f55",
+  "reviewed_run_id": "r-20261022T100542325518-the-pane-prints-no-line-that-asks-nothing",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T11:43:22.506141+00:00",
+  "total": 100
+}
