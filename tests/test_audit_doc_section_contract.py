@@ -19,7 +19,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from reckon._store import _section_contract_refusal
+from reckon._store import _SECTION_RECORD_EXAMPLE_DEFAULTS
 from reckon.doccheck import Finding, audit_file
 
 _RECORD = (
@@ -106,11 +106,17 @@ def test_the_finding_carries_the_write_boundary_example(tmp_path: Path) -> None:
     found = _with_code(_audit(tmp_path, doc), "section-without-contract")
     _, _, carried = found[0].message.partition("Example: ")
     assert carried, "the finding carries no worked example for the author to copy"
-    # Imported, not copied: the example a finding carries is byte-for-byte the
-    # one the write boundary refuses with, so the two cannot drift apart.
-    _, _, refused = _section_contract_refusal("x").partition("Example: ")
-    assert carried == refused
-    assert json.loads(carried)["target"] == "sections"
+    # The example is the write that adopts the section the finding reports: the
+    # reported id and heading text, the boundary's own record defaults, and no
+    # body — a body authors a heading the file already holds and is refused.
+    example = json.loads(carried)
+    assert example["target"] == "sections"
+    assert example["item"] == {
+        "id": "s2",
+        "title": "§2 — work",
+        **_SECTION_RECORD_EXAMPLE_DEFAULTS,
+    }
+    assert "body" not in example["item"]
 
 
 # ─ a plan that predates the contract warns rather than stops the fleet ──────

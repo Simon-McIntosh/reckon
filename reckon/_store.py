@@ -1668,27 +1668,46 @@ def _replace_authored_span(
     return replaced
 
 
-def _section_contract_refusal(detail: str) -> str:
-    """Give authors a complete state-mode append they can adapt and submit."""
+#: The effort and capability a section record is authored with when the writer
+#: states none. The worked example and every caller-built item share these, so
+#: the shape a refusal prints and the shape a finding prints cannot drift.
+_SECTION_RECORD_EXAMPLE_DEFAULTS = {
+    "effort_hours": 1.25,
+    "capability": {
+        "version": "1.0",
+        "class": "general",
+        "requirements": {
+            "reasoning": "standard",
+            "verification": "strict",
+            "risk": "low",
+        },
+    },
+    "links": [],
+}
+
+#: The new-section example, whose ``body`` makes it the create route.
+_NEW_SECTION_EXAMPLE_ITEM = {
+    "id": "s2",
+    "title": "Implement and verify",
+    "body": "<p>Describe the work and its acceptance check.</p>",
+    **_SECTION_RECORD_EXAMPLE_DEFAULTS,
+}
+
+
+def _section_contract_refusal(
+    detail: str, item: Mapping[str, Any] | None = None
+) -> str:
+    """Give authors the state-mode append that adopts the section being refused.
+
+    ``item`` is the record the caller needs written, rendered inside the same
+    envelope the write boundary owns; a caller that passes none gets the
+    new-section example, whose ``body`` makes it the create route, so a
+    pre-existing message prints byte-for-byte what it printed before.
+    """
     example = {
         "op": "append",
         "target": "sections",
-        "item": {
-            "id": "s2",
-            "title": "Implement and verify",
-            "body": "<p>Describe the work and its acceptance check.</p>",
-            "effort_hours": 1.25,
-            "capability": {
-                "version": "1.0",
-                "class": "general",
-                "requirements": {
-                    "reasoning": "standard",
-                    "verification": "strict",
-                    "risk": "low",
-                },
-            },
-            "links": [],
-        },
+        "item": dict(item) if item is not None else dict(_NEW_SECTION_EXAMPLE_ITEM),
     }
     return f"{detail}. Use edit_plan mode=state. Example: {json.dumps(example)}"
 

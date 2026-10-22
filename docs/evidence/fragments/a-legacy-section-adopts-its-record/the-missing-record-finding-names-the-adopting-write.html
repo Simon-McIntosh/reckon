@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-legacy-section-adopts-its-record">
+  <meta name="plan-title" content="A legacy section adopts its record">
+  <meta name="plan-evidence-for" content="reckon:a-legacy-section-adopts-its-record">
+  <meta name="plan-verifies" content="reckon:a-legacy-section-adopts-its-record#s1">
+  <meta name="plan-recorded-at" content="2026-10-22">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,audit,section-record,refusal">
+  <title>The missing-record finding names the adopting write &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+  <p class="fragment-note">Node: the-missing-record-finding-names-the-adopting-write</p>
+  <main class="plan-doc">
+    <h1>The missing-record finding names the adopting write</h1>
+
+    <section id="the-missing-record-finding-names-the-adopting-write-landing">
+      <h2>Landing</h2>
+      <p><code>_section_contract_refusal</code> in <code>reckon/_store.py</code>
+        takes an optional <code>item</code> and renders it in the same
+        <code>Use edit_plan mode=state. Example: &lt;json&gt;</code> envelope in
+        place of the fixed example; a caller passing none prints byte-for-byte
+        what it printed before. The record defaults (effort, capability, links)
+        moved to one module-level mapping so the fixed example and every
+        caller-built item cannot drift.</p>
+      <p>The <code>section-without-contract</code> finding in
+        <code>reckon/doccheck.py</code> now passes a body-less item for the
+        section it reports &mdash; the reported id, that heading's own text as
+        the title, and those defaults. It previously printed the fixed example,
+        an <code>append</code> for <code>s2</code> carrying a <code>body</code>,
+        which <code>_carries_authored_prose</code> routes to authoring a new
+        heading and which is therefore refused with
+        <code>already exists</code> on every section the finding reports.</p>
+    </section>
+
+    <section id="the-missing-record-finding-names-the-adopting-write-gates">
+      <h2>Gates</h2>
+      <table>
+        <tr><th>measure</th><th>figure</th></tr>
+        <tr><td>head gate, the two touched test files</td>
+          <td>21 passed</td></tr>
+        <tr><td>head gate, the dependent population</td>
+          <td>91 passed, <code>-n 4</code>, per-run <code>--basetemp</code></td></tr>
+        <tr><td>the example, parsed</td>
+          <td>names <code>s1</code>, title <code>&#167;1 &mdash; Existing work</code>,
+            no <code>body</code> key</td></tr>
+        <tr><td>the example, submitted unchanged</td>
+          <td>the record lands beside the heading, the prose region is byte-identical,
+            and the audit reports no <code>section-without-contract</code> finding</td></tr>
+        <tr><td>control, no item from the finding</td>
+          <td>the example names <code>s2</code> and carries a <code>body</code></td></tr>
+        <tr><td>control, a body added to the parsed item</td>
+          <td>refused with <code>already exists</code>, file unchanged, finding remains</td></tr>
+        <tr><td>control, the default example made body-less</td>
+          <td>a refusal built with no item is no longer byte-for-byte the
+            body-carrying example; case fails</td></tr>
+        <tr><td>lint delta against base</td>
+          <td>26 findings at base, 26 at head, the same ids &mdash; zero added</td></tr>
+      </table>
+    </section>
+  </main>
+</body>
+</html>
