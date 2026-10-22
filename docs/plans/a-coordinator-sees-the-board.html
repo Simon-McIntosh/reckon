@@ -25,8 +25,8 @@
   <title>A Coordinator Sees the Board | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="5">
-<meta name="plan-modified" content="2026-10-22">
+<meta name="plan-version" content="6">
+<meta name="plan-modified" content="2026-10-23">
 </head>
 <body>
   <main class="plan-doc">
@@ -84,7 +84,7 @@
       (<code>_live_review_runs</code>) already filters runs by the dispatching session.</li>
     </ul>
     <p>A plan's coordinator is the dispatching <code>session</code> of its most recent dispatched run, live or in the
-    ledger, within a configured staleness window. A run is matched to its plan by the row's <code>plan</code> field, and, where that is null because the run was dispatched from a brief (<code>reckon/run_record.py:489</code>), by its <code>plan_link</code>; a run carrying neither belongs to no plan. The window is a configuration value, never a literal in
+    ledger, within a configured staleness window. A run is matched to its plan by the row's <code>plan</code> field, and, where that is null because the run was dispatched from a brief (<code>reckon/run_record.py:489</code>), by its <code>plan_link</code>. A run carrying neither is matched by the plan its node id names: a plan review's node <code>plan-review-of-&lt;slug&gt;</code> names <code>&lt;slug&gt;</code>, and a run review resolves through the run it reviews. A run matched by none of these belongs to no plan. The window is a configuration value, never a literal in
     code. With no such run it is unowned, reported as itself and never guessed. The answer carries both
     facts: the <code>plan-owner</code> person and the coordinator session with its peer name where
     <code>reckon/crew/directory.py</code> resolves one. It also says whether that session is live, and an
@@ -92,11 +92,9 @@
     already holds the earlier sessions as history. No claim store is added. The resolver is one function
     beside <code>obligations.py</code>'s session filter, which it reuses.</p>
     <p>Done when, on a fixture built from power_convertor's run ledger as committed at 2026-10-22T08:50Z,
-    each named plan resolves to the stated coordinator:</p>
+    each named plan resolves to the coordinator its most recent matching row names:</p>
     <ul>
-      <li><code>shared-coil-supply-model</code> to session <code>cdb769a4</code>;</li>
-      <li><code>iter-switched-terminal-transients</code> to <code>83d14db1</code>;</li>
-      <li><code>tf-co-wound-tape-validation</code> to <code>e1b445e1</code>;</li>
+      <li><code>shared-coil-supply-model</code>, <code>iter-switched-terminal-transients</code> and <code>tf-co-wound-tape-validation</code> each resolve to the session the test pins as a literal, read from the fixture rows by hand; the gate log names, for each plan, the row that decided it and which of <code>plan</code>, <code>plan_link</code> or the node id matched, so the expectation never comes from the derivation under test;</li>
       <li>a plan given no ledger rows in the fixture to unowned;</li>
       <li>each plan's <code>plan-owner</code> reported beside its coordinator.</li>
     </ul>
