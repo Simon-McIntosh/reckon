@@ -1,0 +1,50 @@
+<article class="r-evidence" data-node="every-pane-draws-a-limit-reset-once">
+<h3 id="every-pane-draws-a-limit-reset-once-what">Every pane draws a limit reset, once, because a producer writes it</h3>
+<p id="every-pane-draws-a-limit-reset-once-body">A reset was durable and readable but invisible: the
+store held the event, and nothing on the watch stream a follower reads said so, so a session stopped at
+its usage limit still learned of the reset only if a human told it. <code>lift_watch.sweep_resets</code>
+is the module's second entry point and folds the recent events into each project's stream. It runs on
+the producer's clock-driven block — <code>recovery_watch._sweep_reset_rows</code>, called inside the
+<code>WATCHER_SWEEP_INTERVAL_SECONDS</code> branch under the registered-producer guard — rather than on
+the change gate the lift fold reads, because a reset becomes due when the clock passes an announced
+instant and every file stays still; a store the gate's fingerprint does not cover is the second such
+case. It remembers the event ids it has announced, so an event reaches the stream once, and an event
+whose instant is still ahead reaches it on the first pass after that instant with no file changing in
+between. The one-hour <code>RESET_HORIZON</code> is what stops a restarted producer — which has
+announced nothing — from replaying every reset the store still holds, while still admitting a session
+resumed twenty minutes later.</p>
+<p id="every-pane-draws-a-limit-reset-once-pane">On the pane, a reset is not a lift, so it joins
+<code>ticker.LIFT_STATES</code> with its own case in <code>_feed_lift</code>. That case takes the shared
+claim on <code>(session, event id, limit-reset)</code> and returns without touching
+<code>_lift_groups</code>, which is what lets a group holding a lift still draw its own baseline and end
+rows as before. The row maps to the pane word <code>working</code> — a reset is the fleet resuming, not
+a new one — and its stage cell reads <code>limit</code>, so the grid draws it as its own family rather
+than as a lift. Both projects' producers write the same workstation-wide event into their own streams,
+and the pane's claim is what makes that one row rather than two.</p>
+<h3 id="every-pane-draws-a-limit-reset-once-measure">Measure</h3>
+<p id="every-pane-draws-a-limit-reset-once-figures">Both arms were rebuilt from git checkouts under the
+run's own scratch directory with the four follower variables unset and run in place on the fleet node at
+<code>pytest -n 8</code> over the 84 test files importing the three changed modules: base
+<code>4b43bb5eb</code> <strong>2 failed, 882 passed</strong> (228.22 s), head
+<code>b613326a5</code> <strong>2 failed, 894 passed</strong> (232.40 s) — the same two failure ids in both
+arms and none added. The thirteen added passes are this node's cases — the last of them added in the
+repair round, whose arm re-run at <code>c811cc79b</code> reads <strong>2 failed, 895 passed</strong>
+against the same two ids. The two shared ids fail in both arms and belong to other work; the
+producer-sweeps id passes when run alone in each arm, so no id failed in one arm only. At the repaired
+head the new file and <code>tests/test_every_module_fits_a_worker_window.py</code> pass together,
+<strong>17 passed</strong>.
+<code>ruff check</code> reports four findings on the changed files and <code>ruff format --check</code>
+is clean; all four are pre-existing in <code>recovery_watch.py</code> at lines this change does not
+touch, and the base blobs carry the same four.</p>
+<p id="every-pane-draws-a-limit-reset-once-control">All three negative controls the section names were
+run at the head <code>d9af2a0ea</code>, one mutation per arm, and each left its own log under the run
+directory's <code>logs/</code>. The declared one, <code>negative_control.log</code>, draws the row
+without the claim and session A's pane then draws the line twice — <strong>4 failed, 9 passed,
+EXIT=1</strong>, the four failures being the once-per-pane cases. The second,
+<code>negative_control_change_gate.log</code>, moves the call into the change gate, so the due event is
+never announced on a pass the gate did not open — <strong>1 failed, 12 passed, EXIT=1</strong>, the one
+failure being the case that requires the sweep to have run on a still gate. The third,
+<code>negative_control_baseline_path.log</code>, routes <code>limit-reset</code> through the baseline
+in-force path, and the pane holding the group's lift then never draws the reset — <strong>1 failed, 12
+passed, EXIT=1</strong>, failing exactly the pane-holding-a-lift case.</p>
+</article>

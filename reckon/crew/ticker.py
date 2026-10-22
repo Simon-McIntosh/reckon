@@ -259,17 +259,19 @@ NEEDS_ACTION = frozenset(
     }
 )
 
-# The three states a lift row carries. A lift row is the one row this module
-# keys on the lift's group rather than a run id: the producer builds it with no
-# run id and the group in ``node``. The words are spelled here rather than read
-# from the lift module, which imports the recovery watch, which imports this
-# renderer — reading them back would close an import cycle. The fixtures in
-# ``lift_watch`` bind them.
+# The four states a broadcast row carries. Such a row is the one row this module
+# keys on a name rather than a run id: the producer builds it with no run id and
+# the group in ``node``. The words are spelled here rather than read from the
+# lift module, which imports the recovery watch, which imports this renderer —
+# reading them back would close an import cycle. The fixtures in ``lift_watch``
+# bind them.
 LIFT_GRANTED = "lift-granted"
 LIFT_IN_FORCE = "lift-in-force"
 LIFT_ENDED = "lift-ended"
-LIFT_STATES = frozenset({LIFT_GRANTED, LIFT_IN_FORCE, LIFT_ENDED})
+LIMIT_RESET = "limit-reset"
+LIFT_STATES = frozenset({LIFT_GRANTED, LIFT_IN_FORCE, LIFT_ENDED, LIMIT_RESET})
 LIFT_STAGE = "lift"
+LIMIT_STAGE = "limit"
 
 # The sole state vocabulary printed by the pane. Recovery distinctions and
 # capacity-lift causes stay in the event's own facts.
@@ -283,6 +285,7 @@ PANE_STATES = {
             "working",
             "lift-granted",
             "lift-in-force",
+            "limit-reset",
         }
     ),
     "waiting": frozenset({"waiting", "paused", "wait-aged"}),
@@ -1749,20 +1752,32 @@ class RowPolicy:
         no row. A row with no group cannot be keyed, so it prints as before.
 
         A row the pane keeps is then offered to the pane's shared claim on
-        (pane, lift id, transition): the followers of one pane write it, and
-        every project's producer carries the same grant, so whichever follower
-        reaches a lift row first takes the claim and draws it, and the others
-        draw nothing. The claim is taken here, at the point the row would
-        print, after every hold has decided — a follower that claimed and then
-        held the row would leave no pane drawing it. A follower that loses the
-        claim keeps no memory of a lift it did not show, so its grant's end is a
-        peer follower's to draw: the group memory holds only what this follower
-        itself drew. A row carrying no lift id cannot be keyed and prints on this
-        pane's own memory alone.
+        (pane, its key, transition): the followers of one pane write it, and
+        every project's producer carries the same row, so whichever follower
+        reaches it first takes the claim and draws it, and the others draw
+        nothing. The claim is taken here, at the point the row would print,
+        after every hold has decided — a follower that claimed and then held the
+        row would leave no pane drawing it. A follower that loses the claim
+        keeps no memory of a lift it did not show, so its grant's end is a peer
+        follower's to draw: the group memory holds only what this follower itself
+        drew. A row carrying no key cannot be claimed and prints on this pane's
+        own memory alone.
+
+        A limit reset is its own case. It is not a lift in any of the three
+        senses above, so it neither reads nor writes the group memory: the pane
+        draws one reset per event, and the grants and ends of the
+        lift family are left as the lift rows set them. Its claim is the same
+        exclusive create the grant takes, keyed on the event's own id.
         """
         group = str(event.get("node") or "")
         lift_id = str(event.get("lift_id") or "")
         claim = self._lift_claim if lift_id else None
+
+        if to_state == LIMIT_RESET:
+            if claim is not None and not claim(lift_id, to_state):
+                return out
+            out.append(event)
+            return out
 
         if to_state == LIFT_GRANTED:
             if claim is not None and not claim(lift_id, to_state):
@@ -2335,10 +2350,14 @@ class Ticker:
         if stream_event:
             self._reported[run_id] = to_state
 
-        # A lift row carries no run and so no role: its stage is the lift
-        # itself, and its job cell names the budget group it lifts.
+        # A broadcast row carries no run and so no role: its stage names the
+        # broadcast, and its job cell names the budget group it concerns. A
+        # reset is not a lift, so it takes its own stage word rather than
+        # claiming the lift's — the row reads as what it is.
         stage = (
-            LIFT_STAGE
+            LIMIT_STAGE
+            if raw_to_state == LIMIT_RESET
+            else LIFT_STAGE
             if raw_to_state in LIFT_STATES
             else _display_role(event.get("role"))
         )
