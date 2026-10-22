@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs, since manifest.md leaves baseline_suite and after_suite empty: base arm logs/wider-arm-base.log is 7 failed, 398 passed, EXIT=1 and head arm logs/wider-arm-head.log is 2 failed, 403 passed, EXIT=1; the two head ids (tests/test_follower_freshness.py::test_running_follower_reloads_without_stream_or_registration_gap, tests/test_one_check_trusts_a_moved_checkout.py::test_a_clean_moved_checkout_answers_on_the_current_code) both appear in the base arm's seven, so head-minus-base is empty and zero ids are added. The base arm's seven include the node's own new test reddening as its negative control, which is the expected add and is green at head (logs/head-focus.log, 2 passed, EXIT=0).",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:_follow_watch_lines (def 1324, calls _fleet_replay at 2258)"
+  ],
+  "completed_at": "2026-10-22T04:45:02.965Z",
+  "dispatched_at": "2026-10-22T04:24:31Z",
+  "findings": [
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "1240",
+      "text": "follow-on: _replayed_baseline_repeats_the_pane re-implements the state-equality suppression the repository already owns at reckon/crew/ticker.py:1643 (RowPolicy.feed suppresses a row whose destination word equals the pane's memory), and which is repeated in this same module at reckon/crew_follow_commands.py:1276 (_follow_gap_rows drops a replayed row whose state equals the remembered one); the addition neither extends nor wraps either owner, and by dropping the row before the row path it also bypasses same_word_row_is_news (ticker.py:2042), so a replayed baseline that repeats a waiting word but carries a changed duty condition is lost where the live path deliberately keeps it. It works as \u00a771 designs, and ticker.py was outside this node's fence, so it does not hold the node."
+    },
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "1234",
+      "text": "follow-on: the local shown mirror is advanced for printed non-baseline rows only, while path.feed advances path.reported for every released row, so a replayed baseline that does print leaves shown stale for its run; a second replayed baseline naming that same state later in one _fleet_replay call is then not suppressed and prints, which is the self-transition \u00a771 removes. Narrow (the fleet baseline list holds one row per run) and out of the tested path, so it does not hold the node."
+    },
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "1237",
+      "text": "follow-on: three consecutive blank lines separate _fleet_replay from the new helper (and again before _FOLLOW_REATTACH_FRAME), where the file otherwise uses two; ruff does not redden it because E303 is not in this repository's lint selection, so the change is ruff-clean while still off the file's own idiom."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit 58e11382f against its parent 08b02ee48 (a single commit, +218 lines across three files): the suppression and its helper in reckon/crew_follow_commands.py, the new test file, and the evidence fragment.",
+    "done_when": "\u00a771's measure names tests/test_a_reload_replay_prints_no_self_transition.py; the manifest records that file at 2 passed EXIT=0 (logs/head-focus.log) with the negative control reddening at base (logs/negative-control-base-arm.log, 1 failed 1 passed EXIT=1), and the importing arms add no head-only failure, which is exactly the measure.",
+    "goal": "the node goal is to make the follower print no row for a replayed baseline that repeats the state the pane last showed; reckon/crew_follow_commands.py:1227-1234 seeds a per-run memory from path.reported and drops a baseline whose to_state equals it, so the goal is met.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T031347119295-a-reload-replay-prints-no-self-transition/manifest.md; status complete, commits 58e11382f, it states the base 3 rows -> head 2 rows measure and names all six logs, but baseline_suite and after_suite are empty so the arm results are readable only from the test_logs it names.",
+    "write_paths": "read the manifest's declared paths (reckon/crew_follow_commands.py, reckon/crew/follower_reload.py, tests/test_a_reload_replay_prints_no_self_transition.py, one evidence fragment, a figures dir); git show --stat 58e11382f changes three of them and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_reload_replay_prints_no_self_transition.py:106 asserts the row sequence against literals and reddens when the suppression is absent (logs/negative-control-base-arm.log, 1 failed), and the second case at :141 guards the negative side, neither comparing a value against the variable the test itself passed in.",
+    "evidence": "logs/head-focus.log records 2 passed EXIT=0 and logs/negative-control-base-arm.log records 1 failed 1 passed EXIT=1, and the wider arms (base 7 failed/398 passed, head 2 failed/403 passed) differ by zero head-only ids, though manifest.md leaves baseline_suite and after_suite empty so the arms are readable only from the logs it names.",
+    "fit": "the helper at reckon/crew_follow_commands.py:1240 follows the module's underscore-prefixed, lazily-imported idiom but leaves three blank lines where the file uses two (1237-1239) and re-imports ticker inside the helper the caller already imported at 1195.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:1229 drops a baseline whose to_state repeats path.reported while letting a different state, a first sighting and every transition through, matching the goal exactly.",
+    "reuse": "the suppression duplicates the state-equality judgement owned by reckon/crew/ticker.py:1643 (RowPolicy.feed's same-word guard) and repeated in the same module at reckon/crew_follow_commands.py:1276 (_follow_gap_rows), extending neither.",
+    "scope_discipline": "git show --stat 58e11382f lists exactly the three declared paths (reckon/crew_follow_commands.py, tests/test_a_reload_replay_prints_no_self_transition.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-reload-replay-prints-no-self-transition.html) and nothing outside them."
+  },
+  "node": "review-of-a-reload-replay-prints-no-self-transition-58e11382fa0e",
+  "node:reviewed": "a-reload-replay-prints-no-self-transition",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the follower print no row for a replayed baseline that repeats the state the pane last showed; reckon/crew_follow_commands.py:1227-1234 seeds a per-run memory from path.reported and drops a baseline whose to_state equals it, so the goal is met.\nVERDICT done_when: \u00a771's measure names tests/test_a_reload_replay_prints_no_self_transition.py; the manifest records that file at 2 passed EXIT=0 (logs/head-focus.log) with the negative control reddening at base (logs/negative-control-base-arm.log, 1 failed 1 passed EXIT=1), and the importing arms add no head-only failure, which is exactly the measure.\nVERDICT write_paths: read the manifest's declared paths (reckon/crew_follow_commands.py, reckon/crew/follower_reload.py, tests/test_a_reload_replay_prints_no_self_transition.py, one evidence fragment, a figures dir); git show --stat 58e11382f changes three of them and nothing else.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T031347119295-a-reload-replay-prints-no-self-transition/manifest.md; status complete, commits 58e11382f, it states the base 3 rows -> head 2 rows measure and names all six logs, but baseline_suite and after_suite are empty so the arm results are readable only from the test_logs it names.\nVERDICT diff: read commit 58e11382f against its parent 08b02ee48 (a single commit, +218 lines across three files): the suppression and its helper in reckon/crew_follow_commands.py, the new test file, and the evidence fragment.\nCALL_SITES: reckon/crew_follow_commands.py:_follow_watch_lines (def 1324, calls _fleet_replay at 2258)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:1229 drops a baseline whose to_state repeats path.reported while letting a different state, a first sighting and every transition through, matching the goal exactly.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/head-focus.log records 2 passed EXIT=0 and logs/negative-control-base-arm.log records 1 failed 1 passed EXIT=1, and the wider arms (base 7 failed/398 passed, head 2 failed/403 passed) differ by zero head-only ids, though manifest.md leaves baseline_suite and after_suite empty so the arms are readable only from the logs it names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 58e11382f lists exactly the three declared paths (reckon/crew_follow_commands.py, tests/test_a_reload_replay_prints_no_self_transition.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-reload-replay-prints-no-self-transition.html) and nothing outside them.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_reload_replay_prints_no_self_transition.py:106 asserts the row sequence against literals and reddens when the suppression is absent (logs/negative-control-base-arm.log, 1 failed), and the second case at :141 guards the negative side, neither comparing a value against the variable the test itself passed in.\nSCORE fit: 16\nJUSTIFICATION fit: the helper at reckon/crew_follow_commands.py:1240 follows the module's underscore-prefixed, lazily-imported idiom but leaves three blank lines where the file uses two (1237-1239) and re-imports ticker inside the helper the caller already imported at 1195.\nSCORE reuse: 11\nJUSTIFICATION reuse: the suppression duplicates the state-equality judgement owned by reckon/crew/ticker.py:1643 (RowPolicy.feed's same-word guard) and repeated in the same module at reckon/crew_follow_commands.py:1276 (_follow_gap_rows), extending neither.\nFINDING reckon/crew_follow_commands.py:1240 follow-on: _replayed_baseline_repeats_the_pane re-implements the state-equality suppression the repository already owns at reckon/crew/ticker.py:1643 (RowPolicy.feed suppresses a row whose destination word equals the pane's memory), and which is repeated in this same module at reckon/crew_follow_commands.py:1276 (_follow_gap_rows drops a replayed row whose state equals the remembered one); the addition neither extends nor wraps either owner, and by dropping the row before the row path it also bypasses same_word_row_is_news (ticker.py:2042), so a replayed baseline that repeats a waiting word but carries a changed duty condition is lost where the live path deliberately keeps it. It works as \u00a771 designs, and ticker.py was outside this node's fence, so it does not hold the node.\nFINDING reckon/crew_follow_commands.py:1234 follow-on: the local shown mirror is advanced for printed non-baseline rows only, while path.feed advances path.reported for every released row, so a replayed baseline that does print leaves shown stale for its run; a second replayed baseline naming that same state later in one _fleet_replay call is then not suppressed and prints, which is the self-transition \u00a771 removes. Narrow (the fleet baseline list holds one row per run) and out of the tested path, so it does not hold the node.\nFINDING reckon/crew_follow_commands.py:1237 follow-on: three consecutive blank lines separate _fleet_replay from the new helper (and again before _FOLLOW_REATTACH_FRAME), where the file otherwise uses two; ruff does not redden it because E303 is not in this repository's lint selection, so the change is ruff-clean while still off the file's own idiom.",
+  "review_run_id": "r-20261022T041900296185-review-of-a-reload-replay-prints-no-self-transition-58e11382fa0e",
+  "reviewed_base_sha": "08b02ee48ecdd23edf3c09c47d8ddf496a195e22",
+  "reviewed_head_sha": "58e11382fa0e38b3ce1ba863e8c15cd17a5de1b2",
+  "reviewed_run_id": "r-20261022T031347119295-a-reload-replay-prints-no-self-transition",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 11,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T04:45:00+00:00",
+  "total": 101
+}
