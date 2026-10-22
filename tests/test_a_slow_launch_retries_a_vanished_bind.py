@@ -345,6 +345,50 @@ def test_a_healthy_launch_returns_when_its_window_passes(
         _cleanup(*spawn.processes)
 
 
+def test_a_running_worker_quoting_the_refusal_is_not_a_dead_try(
+    tmp_path: Path,
+    isolated_run: tuple[Path, Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A live worker's own words must not be read as a refused launch.
+
+    The refusal is read from the launch's own stderr, and the worker's stderr is
+    the same file: a worker whose turn quotes the phrase bubblewrap uses beside
+    one of this launch's mount sources reads exactly like a refused sandbox. A
+    try is dead only once its child has exited, so this launch keeps the worker
+    it has and returns, rather than waiting on a child that never ended.
+    """
+    home, directory = isolated_run
+    protected = home / ".claude.json"
+    argv = _fenced_argv(home, directory, protected)
+    source = str(_backends.resolved_destination(protected))
+    phrase = f"bwrap: {REFUSALS[0]} {source} on {source}"
+    quoting = _script(
+        tmp_path / "quoting.sh",
+        'echo \'{"type":"thread.started"}\'\n'
+        f"echo {shlex.quote(phrase)} >&2\n"
+        "sleep 60\n",
+    )
+    spawn = _recording_spawn(monkeypatch, [[str(quoting)]])
+
+    try:
+        started = time.monotonic()
+        pid = _launch(argv, directory)
+        elapsed = time.monotonic() - started
+        assert len(spawn.processes) == 1, (
+            "a running worker's own words were read as a refused launch"
+        )
+        assert pid == spawn.processes[0].pid
+        assert spawn.processes[0].poll() is None, "the live worker was ended"
+        record = runs.read_pointer(RUN_ID)
+        assert record.get("launch_failures") in (None, [])
+        assert elapsed < WINDOW, (
+            "the launch never returned while its worker was still running"
+        )
+    finally:
+        _cleanup(*spawn.processes)
+
+
 def test_a_stream_record_ends_the_watch_on_the_healthy_path(
     tmp_path: Path,
     isolated_run: tuple[Path, Path],

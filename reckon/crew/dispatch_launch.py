@@ -1478,10 +1478,14 @@ _VANISHED_BIND_REFUSAL_PHRASES = ("Can't bind mount", "Can't find source path")
 # bwrap's refusal reaches the shared stderr seconds after the launch rather
 # than in the instant a directly exec'd sandbox would take to refuse. A
 # directly exec'd sandbox is covered too — it writes its refusal and exits well
-# inside this window. The watch ends early on either of two facts, so the
-# window is not a delay on the healthy path: the launch's stream beginning (the
-# worker reached its turn) or the child's own exit.
-SANDBOX_STARTUP_WINDOW_SECONDS = 30.0
+# inside this window, as do the seconds a client takes to hand the step over.
+# The watch ends early on either of two facts, so the window bounds only what it
+# must: the launch's stream beginning, or the child's own exit. A child that
+# exits inside the window is collected as a launch failure, so the window is
+# kept well clear of the interval a healthy child of this launch stays alive —
+# a window that reached that far would turn a worker that is merely quiet into a
+# recorded failure.
+SANDBOX_STARTUP_WINDOW_SECONDS = 15.0
 VANISHED_BIND_STARTUP_POLL_SECONDS = 0.01
 
 
@@ -1539,30 +1543,33 @@ def _died_over_a_vanished_bind_source(
     client: it stays alive while the step starts, so a sandbox that refuses the
     mount seconds in does not end it, and the refusal is the only record of the
     failure until the client reports the step's own exit. The watch therefore
-    runs for the full window and ends early on the first of three facts:
+    runs the window out and ends early on the first of two facts:
 
-    * the refusal names a read-only bind source this launch would mount — the
-      failure the retry exists for, which is the answer ``True``;
-    * the launch's stream has begun, which says the worker reached its turn;
-    * the child exited, whose stderr is read once more before answering, since
-      a short-lived sandbox can write its stderr and exit between two polls.
+    * the launch's stream has begun, which says the worker reached its turn, so
+      whatever its stderr holds is that turn's own output rather than a refusal
+      of the mount — the sandbox refuses before the worker ever writes;
+    * the child exited, whose stderr decides the answer: a refusal naming a
+      read-only bind source this launch would mount is the failure the retry
+      exists for.
 
-    A child that cannot be polled at all — a stand-in rather than a real
-    process — offers nothing but the refusal already written, so the watch ends
-    on that. A launch that reaches the end of the window with none of these is
+    A try is dead only once its child has exited. Reading the refusal on its own
+    would answer for a child that is merely still running — a stream that had
+    not opened yet is not the same fact as a worker that never started — and the
+    retry collects a dead try by waiting on it, so the launch would stop in a
+    worker that is doing its work. A child that cannot be polled at all offers
+    nothing but the refusal already written, and is left alone for the same
+    reason. A launch that reaches the end of the window with neither fact is
     left running: the answer is no, and the caller keeps the child it spawned.
     """
     sources = _read_only_bind_sources(argv)
     if not sources:
         return False
     poll = getattr(process, "poll", None)
+    if poll is None:
+        return False
     deadline = time.monotonic() + SANDBOX_STARTUP_WINDOW_SECONDS
     while True:
-        if _refusal_names_a_bind_source(_read_text_or_empty(stderr_path), sources):
-            return True
         if _stream_began(log_path):
-            return False
-        if poll is None:
             return False
         if poll() is not None:
             return _refusal_names_a_bind_source(
@@ -1598,6 +1605,11 @@ def _spawn_worker_retrying_a_vanished_bind(
     while tries < limit and _died_over_a_vanished_bind_source(
         process, argv=argv, stderr_path=stderr_path, log_path=log_path
     ):
+        # Only an exited try is dead, and the watch answers for nothing else:
+        # a child still running is the launch, so the retry keeps it rather
+        # than waiting on work that is under way.
+        if process.poll() is None:
+            break
         # The dead try is reaped here so it cannot be mistaken later for the
         # worker's own exit by whoever collects the run's children.
         process.wait()

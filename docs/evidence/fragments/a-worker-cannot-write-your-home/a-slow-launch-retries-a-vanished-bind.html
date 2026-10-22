@@ -12,12 +12,14 @@
   </p>
   <p id="a-slow-launch-retries-a-vanished-bind-fix">
     The startup watch now reads the refusal from the launch's own stderr inside a
-    window of <code>30</code> seconds, sized for a placed step, and ends early on
-    the first of three facts: a refusal naming a read-only bind source this
-    launch would mount (retried), the launch's stream beginning, or the child
-    exiting — whose stderr is read once more before answering. The window no
-    longer keys on the child's exit alone, so the healthy path is not held to it.
-    The stream path is threaded through both spawn sites.
+    window sized for a placed step, and ends early on the first of two facts: the
+    launch's stream beginning, or the child exiting — whose stderr decides the
+    answer. A try counts as dead only once its child has exited, because the
+    retry collects a dead try by waiting on it: reading the refusal on its own
+    would declare a worker that is still running a failed launch and then block
+    in it. The window is kept well clear of the interval a healthy child of this
+    launch stays alive, since an exit inside the window is recorded as a launch
+    failure. The stream path is threaded through both spawn sites.
   </p>
   <ul id="a-slow-launch-retries-a-vanished-bind-measures">
     <li>
@@ -25,15 +27,16 @@
       <code>tests/test_spawn_retries_a_vanished_bind.py</code>,
       <code>tests/test_an_early_exit_keeps_its_status.py</code>,
       <code>tests/test_a_failed_launch_does_not_block_its_node.py</code>):
-      <strong>19 passed, EXIT=0</strong>, at revision
-      <code>935bd7f183b684a1ff69a8346dee54214763fcd1</code>. The existing
-      early-exit control is green unchanged.
+      <strong>20 passed, EXIT=0</strong> at the head carrying both review fixes,
+      against <strong>4 failed, 16 passed, EXIT=1</strong> for the same gate at
+      the base revision. The existing early-exit control is green unchanged.
     </li>
     <li>
-      Base arm (the new test file at <code>6d3c43bbd</code> in a scratch
-      extraction, so the arm imports the base module): <strong>3 failed,
-      2 passed, EXIT=1</strong>. The delayed-refusal fixture the measure names
-      fails there, recorded as a launch failure.
+      Base revision: the same gate over a scratch extraction of
+      <code>6d3c43bbd</code> gives <strong>4 failed, 16 passed, EXIT=1</strong>,
+      so every case this node's file adds is red there and green here. It runs
+      as the red arm's bounded sibling: the delayed-refusal fixture the measure
+      names is recorded as a launch failure at the base revision.
     </li>
     <li>
       Negative control — the declared mutation, keying the retry on the startup
