@@ -1,0 +1,49 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T23:35:45.997Z",
+  "dispatched_at": "2026-10-22T23:23:56Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/work-is-checked-against-its-domain/r-20261022T232112522451-plan-review-of-work-is-checked-against-its-domain/plan.html:105",
+      "id": "reasoning-1",
+      "reason": "the change gains a required declaration site (`reckon/ledger.py` `RECORD_FIELDS`), without which the node meets its own done-when while breaking the repository's completeness test.",
+      "text": "\u00a711's Change records the new key on the promoted row \"through the same record seeding in `reckon/run_record.py`\" and names no other site, but a promoted row's keys are declared in `reckon/ledger.py` `RECORD_FIELDS` (ledger.py:112, holding `boundary_waiver` at :173 and `resume_waiver` at :174), and `tests/test_record_fields_declare_every_key.py` asserts the union of keys over mounted ledger rows is a subset of that tuple \u2014 so a node that follows \u00a711 literally leaves `RECORD_FIELDS` stale and the first real waiver-bearing promotion turns that standing test red",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "2ca6b680a329f5fc2a4df20aacbc6df6ce6335de39da3a3d4c171dce3caa7e19",
+  "plan_slug": "work-is-checked-against-its-domain",
+  "plan_version": 51,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T232112522451-plan-review-of-work-is-checked-against-its-domain",
+  "reviewed_blob_sha": "db4e1d165c72fa7a771a5f5966a4f234c801a9ac",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/promotion.py` (line 535), `reckon/run_record.py`, `_complete_locked` and `crew(view=\"records\")` all resolve, and every extensionless plan href (`/reckon/evidence/archive/work-is-checked-against-its-domain-landed.html#sN`) resolves to a present anchor.",
+    "done_when": "pass \u2014 \u00a711's done-when names a declared negative control (\"On the base commit the row carries no such field, so the test fails there\") beside a positive read-back through `crew(view=\"records\")`.",
+    "evidence_paths": "pass \u2014 the section's evidence lands on the durable promoted ledger row and the run's landed record; no scratchpad or node-local path is named.",
+    "naming": "pass \u2014 \u00a711 introduces no code symbols and carries no stage name or ticket number into source; section ids are plan structure, not code.",
+    "reasoning": "a finding \u2014 \u00a711's premise is accurate but its mechanism omits one real code-path element, the promoted-row key it adds must also be declared in `reckon/ledger.py`'s `RECORD_FIELDS`.",
+    "single_goal": "pass \u2014 \u00a711 carries one deliverable, writing the waived domain check and its reason onto the promoted ledger row.",
+    "wiring": "pass \u2014 the plan's only open followup `f-wicd-003` recommends `\u00a711`, which the declarations still carry as `implementable`, and every `plan-section-depends-on` target resolves to a section that exists."
+  },
+  "section_digests": {
+    "_document": "90658cf9e7a95118f22750c16e684984bd5e8f5fbc3ce7f19e52a32cbf5e8e7a",
+    "s1": "096b2231b1cf1ab1c4476bbab2ea39d0ee87ea2bbfae045a542369206b4fbbf2",
+    "s10": "b56ed0d1f986fb9b41deb555b006f3ce22e9344bb04ac0efa3d87658a7061eb6",
+    "s11": "aba2b332ee5cc355989c767aba6cf0943f84b8c1c57622d2390f1720f4e8ecea",
+    "s2": "f58c33e1d5efdd77473d24dbd96aa04b4eafedff3df86cbb94db6ca520d1f639",
+    "s3": "eca25029a7c8cca2e22a3d4d879135d32aa739c860c67cbd0f563910c524a0b7",
+    "s4": "4e977ee3102a5bb6e0f0ddeadeead92dd3753ffcbdb411d4d5d57d9266a43a35",
+    "s5": "43dd5f8401bfb239df6459a7313dc79f279335e3a6fd514e3cd36907fa3bedb4",
+    "s6": "18f0e2163a6488f09429208429eec18345f675af939a88c13637006a5639037c",
+    "s7": "ca3f9f129fae7eeff42ece50be5f648250554ce1998644ad4d07e46b7c6fb742",
+    "s8": "3e81a90c6c14d49fab5a52690b64e2f1ab769994c4c3be458a42db18af91e666",
+    "s9": "935dc7353f3dac93b40a3ff757e12028572d0a1726e114369c0ee80114c5ffbc"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T23:40:56.623233+00:00"
+}
