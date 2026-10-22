@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-landing-reads-binary-files">
   <meta name="plan-title" content="A Landing Reads Binary Files">
   <meta name="plan-summary" content="crew complete --land crashed on a binary blob after promotion, leaving the run unmerged; the marker check reads bytes and any land failure exits non-zero.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="3.5">
   <meta name="plan-capability-version" content="1.0">
@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-standalone" content="It repairs the merge step that crew complete --land and crew merge share; no live plan waits on it, and it consumes no plan&#x27;s pending evidence.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;}">
   <title>A Landing Reads Binary Files | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="22">
+<meta name="plan-version" content="23">
 <meta name="plan-modified" content="2026-10-22">
 <meta name="plan-section-depends-on" content="{&quot;s2&quot;:[&quot;a-landing-reads-binary-files#s1&quot;]}">
 </head>
@@ -47,7 +47,7 @@
     <p>Negative control: read the binary path through the text <code>_show</code> again, and the first case raises <code>UnicodeDecodeError</code>. The gate runs the new test with <code>tests/test_a_reviewed_head_lands_without_touching_the_index.py</code>, <code>tests/test_one_call_lands_a_run.py</code> and <code>tests/test_crew_tool_carries_the_write_verbs.py</code>, at base and at head, judged by delta. Each arm's log names its revision, ends in <code>EXIT=</code>, and lives under the run directory. <code>baseline_suite</code> and <code>after_suite</code> record <code>failure_ids</code> in the form <code>tests/&lt;file&gt;::&lt;name&gt;</code>. <code>ruff check</code> and <code>ruff format --check</code> add no findings on the paths staged. Write paths: <code>reckon/crew/merge.py</code>, <code>tests/test_a_landing_reads_binary_files.py</code>, <code>tests/helpers/landing_repository.py</code>, <code>tests/test_one_call_lands_a_run.py</code>, <code>docs/evidence/fragments/a-landing-reads-binary-files/the-landing-marker-check-reads-a-blob-as-bytes.html</code>.</p>
 
     <h2 id="s2">§2 — A land step that fails after promotion exits non-zero and says so</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
     <p><strong>Why.</strong> <code>_land_a_promoted_run</code> (<code>reckon/crew_run_commands.py</code>, near line 2393) catches only <code>merge_module.MergeError</code> around the merge. Any other exception escapes the land step, even though the run is already promoted and released: the decode error in §1 is one, and an <code>OSError</code> or a git failure the merge module does not wrap would be others. The report never carries <code>steps.land: {ok: false}</code>. The standalone <code>reckon crew merge</code> verb (near line 65) has the same gap, because it converts only <code>MergeError</code> into a refusal. The session that hit the crash says the command exited 0. An uncaught exception from a click command normally exits 1, so that observation needs reproducing before it is explained.</p>
     <p><strong>Deliverable.</strong> First reproduce it. Make the merge raise a non-<code>MergeError</code> exception inside a <code>crew complete --land</code> call driven through click's <code>CliRunner</code>, against a temporary repository, and record the exit status and output the base produces. Then make every exception raised after promotion and before the land step reports success a failed land step. The command emits its JSON report with <code>steps.land</code> set to <code>{ok: false, error: …}</code>, naming the exception's type and message, and exits non-zero. The report also names the <code>crew merge</code> command that resumes the landing, as a <code>MergeError</code> refusal already does. <code>crew merge</code> reports such an exception as a refusal with a non-zero exit rather than a traceback.</p><p>One module-level function in <code>reckon/crew_run_commands.py</code> owns the mapping from a merge failure to a land refusal: its type, message, resume command and exit status. Today that mapping is written out at two sites: <code>crew merge</code>'s <code>MergeError</code> handler (near line 77) and the promoted-land merge refusal handler near line 2485. Both call the new function and keep no catch of their own, so the sites cannot drift apart the first time one changes. The handler near line 2449 is not a merge failure. It catches a repository-resolution failure from <code>merge_module.project_repository</code>, reported before any merge or resume command exists, and keeps its own report, which has no resume key.</p><p>Two neighbouring handlers are not refusals and keep their own handling unchanged. The <code>MergePushOutstandingError</code> handler near line 2475 reports a landed merge whose push is outstanding: <code>ok: true</code>, <code>steps.land.push_outstanding</code>, and exit <code>PUSH_OUTSTANDING_EXIT</code>, pinned by <code>tests/test_a_reviewed_head_lands_without_touching_the_index.py</code> near line 352. The release-step handler near line 2524 records a push error under <code>steps.release.push_error</code>. It lives in <code>crew_run_commands.py</code>, beside its callers, rather than in <code>reckon/crew/merge.py</code>, so this section and §1 stay on disjoint files. Promotion and release are not rolled back: the report states that they happened, and that the merge did not.</p>
     <p><strong>Done when</strong> <code>tests/test_a_failed_land_exits_nonzero.py</code> drives both commands through <code>CliRunner</code> against a temporary repository, with every environment-resolved directory pointed at temporary paths. It imports <code>_write_origin_and_checkout</code> and the <code>crew complete --land</code> driver <code>_complete_land</code> from <code>tests/helpers/landing_repository.py</code>, where §1 moves them, and copies neither. <code>merge_module.land_merge</code> is patched to raise a <code>UnicodeDecodeError</code>. The test holds all of these:</p>
@@ -61,10 +61,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-alrbf-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-21" data-recommends-skill="/reckon-build a-landing-reads-binary-files" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-alrbf-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-21" data-recommends-skill="/reckon-build a-landing-reads-binary-files" data-resolved-at="2026-10-22T00:01:27+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Build both sections once the plan&#x27;s reviews are answered</h4>
     <div class="r-fu-body"><p>The plan is written and its reviews are answered. §1 dispatches first. §2 runs after §1 lands, because it imports the landing harness that §1 moves into <code>tests/helpers/landing_repository.py</code>.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-landing-reads-binary-files</pre>
+    <p class="r-fu-outcome">done - no followup: a head carrying a binary file lands through merge.land by blob identity (f60e79e2d), and any failure after promotion reports a failed land step with a non-zero exit in crew complete --land and crew merge (b133c102b)</p>
     </article>
 </section>
   
@@ -86,6 +87,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261021T221515174127-a-failed-land-exits-nonzero" data-who="reckon-build" data-when="2026-10-21T23:28:22.543Z">
     <div class="r-comment-body"><p>crew complete --land and crew merge now report any failure raised after promotion as a refused land step through _merge_land_refusal; head gate 61 passed/4 failed against base 59 passed/6 failed, 0 added failures; negative control 1 failed of 3</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-22T00:05:00Z">
+    <div class="r-comment-body"><p>§2 landed at <code>b133c102b</code>. A land step that fails after promotion now exits non-zero, with <code>steps.land.ok: false</code>, the error and the resume command. <code>crew merge</code> refuses such a failure rather than printing a traceback. A promoted but unmerged run can no longer read as landed. <a href="/reckon/evidence/archive/a-landing-reads-binary-files-landed.html#s2">evidence</a></p></div>
 </div>
 </section>
 </main>
