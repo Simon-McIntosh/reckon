@@ -1783,6 +1783,15 @@ def _resolved_write_paths(
 INPUTS_PROPERTY = "inputs"
 COMPARES_WITH_PROPERTY = "compares-with"
 
+# An admission check judging a node's declaration reports one of two outcomes.
+# A refusal stops the dispatch; a warning records the gap and admits the node.
+# An input the repository does not hold is a refusal, because the node would
+# read a tree that lacks what it names. An unnamed comparison is a warning,
+# because the fit is still worth dispatching with the gap on the record, and a
+# lint that refused the run it was meant to save would cost more than it saved.
+ADMISSION_REFUSAL = "refusal"
+ADMISSION_WARNING = "warning"
+
 
 def authority_project(authority: Mapping[str, Any]) -> str:
     """The project a resolved dispatch authority names, or an empty string."""
@@ -1818,6 +1827,7 @@ def node_inputs_finding(
     named = ", ".join(missing)
     return {
         "property": INPUTS_PROPERTY,
+        "severity": ADMISSION_REFUSAL,
         "detail": (
             f"the node declares {named} as its inputs, and "
             + ("that path does not" if len(missing) == 1 else "those paths do not")
@@ -1856,6 +1866,7 @@ def node_measurement_finding(
         return None
     return {
         "property": COMPARES_WITH_PROPERTY,
+        "severity": ADMISSION_WARNING,
         "detail": (
             f"the node's write paths match the model paths "
             f"({', '.join(rules.model_paths)}) project {project!r} declares, so "
@@ -1886,6 +1897,28 @@ def admission_domain_findings(
         node_measurement_finding(node, project=project, project_path=project_path),
     ]
     return [finding for finding in findings if finding is not None]
+
+
+def admission_refusals_and_warnings(
+    findings: Iterable[Mapping[str, str]],
+) -> tuple[list[dict[str, str]], list[str]]:
+    """Split admission findings into the refusals and the warnings.
+
+    A refusal is reported on the verdict and stops the dispatch. A warning is
+    admitted, so it has to reach the caller on the dispatch's warning channel,
+    rendered as the detail the finding composed — which is what names the field
+    that clears it. One split serves the dispatch that reports a finding and
+    the check that rebuilds a node from its stored record, so a warning cannot
+    be a refusal on one path and not on the other.
+    """
+    refusals: list[dict[str, str]] = []
+    warnings: list[str] = []
+    for finding in findings:
+        if str(finding.get("severity") or "") == ADMISSION_WARNING:
+            warnings.append(str(finding["detail"]))
+        else:
+            refusals.append(dict(finding))
+    return refusals, warnings
 
 
 def _require_write_paths_in_authority(

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>an-unnamed-comparison-warns — landed record</title>
+</head>
+<body>
+<main>
+<h2 id="an-unnamed-comparison-warns-heading">A model-building node that names no comparison is warned, not refused</h2>
+<p id="an-unnamed-comparison-warns-what">Both admission checks a node's own declaration answers are composed in
+<code>reckon/crew/dispatch_admission.py</code>, but they reached the dispatch through one channel: every finding they
+produced was appended to the node's verdict, so the unnamed-comparison lint refused the dispatch it existed to
+admit. Each finding now carries an outcome. <code>node_inputs_finding</code> marks its finding
+<code>refusal</code>, because a node that names an input the repository does not hold would read a tree lacking what
+it named; <code>node_measurement_finding</code> marks its finding <code>warning</code>, because the fit the node
+builds is still worth running with the gap on the record.</p>
+<p id="an-unnamed-comparison-warns-split">One new function, <code>admission_refusals_and_warnings</code>, holds the
+split into the refusals the verdict is composed from and the warning lines the caller reads.
+<code>plan_dispatch</code> in <code>reckon/crew/dispatch_plan.py</code> calls it once where the sandbox and admission
+findings are gathered, extends <code>DispatchPlan.warnings</code> with the warning lines and refuses only on the
+remainder — so the warning reaches <code>payload["warnings"]</code> naming <code>--compares-with</code> as the field
+that clears it, and <code>payload["ok"]</code> is true for the model node the base revision refused. The warning is
+composed from the finding's own detail rather than held in admission state, so a node rebuilt from the node record
+the dispatch stores reports the same warning.</p>
+<p id="an-unnamed-comparison-warns-measure">Measure: <code>tests/test_a_node_names_its_inputs_and_measurement.py</code>.
+The dry run of a node whose write path matches the declared <code>models/**</code> glob and which names no
+comparison is <strong>admitted</strong> (<code>ok: true</code>, <code>validation.ok: true</code>, no
+<code>compares-with</code> property among the findings) and carries a warning naming <code>--compares-with</code>;
+rebuilding the node from <code>payload["node"]</code> and re-deriving through the same split reproduces that warning
+exactly. A node declaring <code>data/absent.h5</code> is still <strong>refused</strong> naming the path, and the
+comparison lint rides the warning channel beside it rather than the refusal it shared before.</p>
+<p id="an-unnamed-comparison-warns-gate">Gate: the four declared files, run in place at head
+<code>bcd9e8855</code> (<code>gate-after.log</code>) — <strong>42 passed, EXIT=0</strong>. The base arm at revision
+<code>4bd6d8d7</code>, in a scratch tree under <code>$TMPDIR</code> with this node's test file copied in
+(<code>base-arm.log</code>) — <strong>5 failed, 37 passed, EXIT=1</strong>: the five failures are this node's new
+or amended tests in the one file, and no other file gains a failure id. On the base the first case is refused —
+the dry run answers <code>"ok": false</code>, <code>"error": "contract-validation"</code>, with the comparison
+finding on <code>validation.findings</code> carrying the <code>D07</code> remedy and <code>"warnings": []</code>.
+<code>ruff check</code> and <code>ruff format --check</code> report nothing added on the three staged paths.</p>
+<p id="an-unnamed-comparison-warns-control">Negative control (<code>negative-control.log</code>): routing the
+comparison finding back into the refusal findings — <code>plan_dispatch</code> taking every sandbox finding as a
+refusal and producing no warning — makes the comparison finding a refusal again, and the file reports
+<strong>3 failed, 39 passed, EXIT=1</strong>, headed by
+<code>test_the_dry_run_refuses_the_missing_input_and_warns_the_comparison</code> with
+<code>assert 'compares-with' not in ['inputs', 'compares-with']</code>.
+The three ids fail on the mutated tree and pass on the head, so the split is what admits the node rather than the
+fixture's shape.</p>
+</main>
+</body>
+</html>
