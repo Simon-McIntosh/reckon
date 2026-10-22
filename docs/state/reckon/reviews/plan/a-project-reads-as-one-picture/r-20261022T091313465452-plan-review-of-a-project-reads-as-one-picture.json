@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T09:36:44.494Z",
+  "dispatched_at": "2026-10-22T09:21:43Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-project-reads-as-one-picture.html:111",
+      "id": "done_when-1",
+      "reason": "the node would close on a control that proves absence rather than the head disagreement it names, leaving \u00a77's head selection measured by nothing until \u00a78's base comparison runs, so the section should either move that comparison into an arm that calls the base analyser's own payload or drop the claim.",
+      "text": "\u00a77's declared base control reads \"The base commit has no brief and its plan-level analyser names a different head, so the test fails there\" \u2014 but on the base commit the brief module and function do not exist, so the base arm stops at import/attribute error and the base analyser's head is never computed or compared; the control therefore shows only that the feature is new, not that the brief's head differs from the base analyser's",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b3a74b3f622ef962aadaed74745518451a5349acb03bf2306aba8f31293964c3",
+  "plan_slug": "a-project-reads-as-one-picture",
+  "plan_version": 39,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T091313465452-plan-review-of-a-project-reads-as-one-picture",
+  "reviewed_blob_sha": "a848839a28cb99eb16202a834b40713d73a38037",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/project_maintenance_commands.py` exists and its `roadmap` verb is at line 1527; `reckon/roadmap.py` is 4,409 lines; `the-mcp-answers-the-question-asked`, `work-scheduling-surface` and `a-finished-plan-closes` all exist; the two extensionless comment hrefs resolve once `.html` is appended.",
+    "done_when": "a finding \u2014 \u00a77's base arm (docs/plans/a-project-reads-as-one-picture.html:111) fails on the base commit only because the brief does not exist there, so the head comparison it describes is never made.",
+    "evidence_paths": "pass \u2014 the plan's measurements land in `docs/evidence/archive/a-project-reads-as-one-picture-landed.html` (exists) and in gate logs; \u00a77 names no scratchpad, node-local temp or other non-durable path.",
+    "naming": "pass \u2014 `project_brief`, `since` and `--brief` name the mechanism; no plan label, stage name, ticket number or version tag reaches a reference, and no comment or docstring cites a tracker entry.",
+    "reasoning": "pass \u2014 the move to a new module is supported by the fact the section cites (`reckon/roadmap.py` is 4,409 lines) and the caller it relies on is real and named (`reckon roadmap --brief`, verb at `reckon/project_maintenance_commands.py:1527`, with the MCP serving the brief as roadmap's default answer per the contract plan's \u00a76); the one overstated clause is \"every remaining section of this plan writes it\", which is untrue of \u00a78's measurement section but does not alter the decision the clause supports.",
+    "single_goal": "pass \u2014 \u00a77 names one deliverable, the brief, with its own surface entry point (`reckon roadmap --brief`) and one measure.",
+    "wiring": "pass \u2014 \u00a77's `plan-section-depends-on` now names s2, s3, s4 and s5, which is exactly the set its composition reads; \u00a712's claim that the brief counts its findings needs no declared edge, because the brief counts the payload's `wiring_findings` generically rather than requiring \u00a712 to exist first."
+  },
+  "section_digests": {
+    "_document": "08d0da782375c4b96f171e89eaca4f36c40e8d39aa64889ab1ca7971769a5cce",
+    "s1": "1956dcaef74ad7d3216608fe69c2e7baa2a9e32d702ef86431dc746f15c3878a",
+    "s10": "e102e1c4c48bcc4635b2e41c4a84e2b36433f78cee863762cad68b3deae2cf75",
+    "s11": "ff19dc90f42b226ca45a5aaaf02a9894b54846500c87597775cb2806fc9b6156",
+    "s12": "039fc9469fcdd80b1d5482629a5dcefc71359e7124fbbad20e0227170c2760dc",
+    "s13": "95e233ad4cbbcd9c2cf975b7cb717f3f0eec9093cbeade0f4f268890aaff8d73",
+    "s14": "e215eae311c545fa0320f94622e0e806b548177eb68b4ee0c1ca4cb1b202d283",
+    "s2": "d5da4569d38701f7f8c91790b979f6e3de48d9e5d4969c4f115a74a7e8317e8c",
+    "s3": "749a131ab7a4c04f7278425172c74a2f6ebd29c0014fbb7befc6a0c8f48f08b4",
+    "s4": "389898eb9ae606e5b51a4f3a7bfafd20cdd843ae6612eb3884809786e45217a6",
+    "s5": "e13040e31816bf168d9b0b3f3a1245e7fa9b90c30cdf82db44726a02a764b6d9",
+    "s6": "d0f702b85752e3605cfbc815d2de3035b6d1e8e89fb584b661e8571aba7aa175",
+    "s7": "4b7f03800b0290de1a0bafb26394bce95eb17e51cbf54fa9575a90b165ce7ac8",
+    "s8": "1f13b98a4d7476b083792c060d8da48918e0ca44b3b27c910d2cfb7ae1aa69d3",
+    "s9": "a65c8523c1a05e7389c35e43a8737757ab2c60d08633460c1648c40a88138892"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T09:50:48.840765+00:00"
+}
