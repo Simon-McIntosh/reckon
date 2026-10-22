@@ -1,0 +1,55 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T13:06:12.667Z",
+  "dispatched_at": "2026-10-22T12:47:37Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-legacy-section-adopts-its-record.html:35",
+      "id": "reasoning-1",
+      "reason": "the whole Deliverable (a new `set sections.<id>.<field>` path that creates the record, plus the \u00a71 write-path surface in `reckon/_store_section_ops.py`) implements a capability the codebase already provides; the real, smaller defect is that the audit message advises the body-carrying append shape, so a node building this plan would duplicate a working mechanism and leave the actual message defect untouched.",
+      "text": "the plan asserts \"A legacy section therefore can never be given a record, and its audit error can never be cleared without hand-editing the plan's markup\" and \"Both write paths refuse that section\", but only the *body-carrying* append and the `set` path refuse; the documented and supported body-less append already adopts the section. Measured against the main checkout's code (probe `probe.py`, log `probe-log.txt`: `module: /home/ITER/mcintos/Code/reckon/reckon/_store.py`) and `docs/plans/the-page-paints-from-an-index.html` \u00a77: `apply_ops` with `{\"op\":\"append\",\"target\":\"sections\",\"item\":{\"id\":\"s7\",\"title\":\"\u2026\",\"effort_hours\":2.0,\"capability\":{\u2026},\"links\":[]}}` (no `body`) SUCCEEDS, and the subsequent `write_state` emits `<h2 id=\"s7\">\u2026</h2>\\n<section data-reckon=\"section\" data-id=\"s7\" data-effort-hours=\"2.0\" \u2026>` \u2014 the record element placed directly after the heading, which is precisely the placement the plan's Deliverable claims as new behaviour. The op vocabulary documents this route explicitly at `reckon/mcp.py:1752`: \"target 'sections' \u2026 attaches a record to an `<h2 id>` already in the file (item: id, no body)\". The mechanism that performs the placement is `_splice_section_records` (`reckon/_plan_html.py:1670-1683`), which finds the single matching h2 by identity and inserts the rendered record at its heading span's end, reached from `write_state` (`reckon/_plan_html.py:2240`). The plan's own measurement reproduced a refusal only because the audit message's worked example (`_section_contract_refusal`, `reckon/_store.py:1671-1689`) carries a `body`, which routes the item through `_insert_authored_section` and its `section id 's7' already exists` guard",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-legacy-section-adopts-its-record.html:35",
+      "id": "reasoning-2",
+      "reason": "the plan does not say how the audit's message alone is retargeted, so a node implementing it as written would either garble seven other refusals by editing the shared builder or need a write path the plan omits.",
+      "text": "the Deliverable requires \"The audit's `section-without-contract` message names a write that succeeds on the section it reports: a `set` of each of `effort_hours` and `capability`\", but that message is produced by `_section_contract_refusal` (`reckon/_store.py:1671`), a shared builder whose worked-example JSON is emitted by every caller \u2014 including `append sections requires an item object` (`reckon/_store.py:3035`) and `unsupported section fields` (`reckon/_store.py:1706`), where a `set` is not a remedy at all \u2014 and the `Finding` itself is constructed in `reckon/doccheck.py:1423`, which is not among the plan's declared write paths (`reckon/_store_section_ops.py`, `reckon/_store.py`, `tests/test_a_legacy_section_adopts_its_record.py`)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-legacy-section-adopts-its-record.html:23",
+      "id": "wiring-1",
+      "reason": "it is a soft relationship that steers no worker, and the same subject could arguably be carried by an open section-contract node instead.",
+      "text": "`plan-informs` names `section-contract-and-computed-impl`, which carries `<meta name=\"plan-status\" content=\"done\">`; informing a terminal plan records an edge to a node that can no longer act on it",
+      "type": "wiring",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "2f7cff4b4c5324a3a5467f8ebf105cf7bc08cb46b16c7dc9d6edc11d1a26086e",
+  "plan_slug": "a-legacy-section-adopts-its-record",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T124557058595-plan-review-of-a-legacy-section-adopts-its-record",
+  "reviewed_blob_sha": "b1012cf5d2aaf69d6e1adaf553a559b420f20977",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_section_contract_refusal` (reckon/_store.py:1671), `apply_section_field_set` (reckon/_store_section_ops.py:223), the four cited existing test files, and `the-page-paints-from-an-index` \u00a77 (an `<h2 id=\"s7\">` with no record, declared implementable) all resolve.",
+    "done_when": "pass \u2014 each of the four done-when items carries its own declared control, and the post-merge audit-doc before/after is a measurable negative control.",
+    "evidence_paths": "pass \u2014 gates are required under the run directory with a revision header and an EXIT= tail; nothing is sent to a scratchpad or node-local temp.",
+    "naming": "pass \u2014 the new test filename and the cited symbols are named by mechanism; no plan labels, stage names or ticket numbers reach code.",
+    "reasoning": "a finding \u2014 the plan's premise that a legacy section can never be given a record is contradicted by the code it cites; a body-less `append target=sections` already adopts the section and splices the record directly after the file's existing `<h2 id>`.",
+    "single_goal": "pass \u2014 \u00a71 carries one deliverable (a legacy section adopts its typed record).",
+    "wiring": "pass \u2014 `plan-blocks` and `plan-informs` both resolve to existing plans (`docs/plans/the-page-paints-from-an-index.html`, `docs/plans/section-contract-and-computed-impl.html`); no needed dependency is missing."
+  },
+  "section_digests": {
+    "_document": "e5216fc08bb077a6d244df1cb252e82123491261e3712eaf9f21246f34fe6a4b",
+    "s1": "a83f4f1ced8bf43ddc7f5fc1bf3694cbe5c5331e8278bf5d24cb022e17b76cdf"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T13:14:13.353681+00:00"
+}
