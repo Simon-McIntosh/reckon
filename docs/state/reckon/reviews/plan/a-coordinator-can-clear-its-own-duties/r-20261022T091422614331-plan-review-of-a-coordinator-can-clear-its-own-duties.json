@@ -1,0 +1,44 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T09:46:04.274Z",
+  "dispatched_at": "2026-10-22T09:28:46Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-coordinator-can-clear-its-own-duties.html:49",
+      "id": "reasoning-1",
+      "reason": "the dispatch-side claim is built in _repository_scope_claims from a pointer that does carry pointer.get(\"worktree\") (reckon/crew/dispatch_claims.py:321), but neither the dispatch route nor the runs.py facade passes that path into the claim, so the implementer must invent the lookup and the stated mechanism cannot run on the real path as written.",
+      "text": "\u00a75's exception turns on \"reads the holder's head from its worktree with _head_revision in reckon/crew/promotion_scope.py\", but it lists the added claim fields as only \"the holder's run id and its unintegrated commits\", and _RepositoryScopeClaim (reckon/crew/dispatch_claims.py:127-150) carries no worktree path nor a pointer reference to obtain one \u2014 so the mechanism names a read the plan never routes an argument to",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "bb6068d53ae2fba667777e935af6b4bb603bf845dbbd9111a40a390433b1709b",
+  "plan_slug": "a-coordinator-can-clear-its-own-duties",
+  "plan_version": 20,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T091422614331-plan-review-of-a-coordinator-can-clear-its-own-duties",
+  "reviewed_blob_sha": "ab275fa3396412d8f3eccd0c76a38b608ec63d92",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 verified against the worktree: claim_disposition (reckon/crew/node.py:1500), ClaimDisposition.unintegrated (reckon/crew/node.py:1497), _raise_repository_scope_conflict (reckon/crew/dispatch_claims.py:1567), _RepositoryScopeClaim (reckon/crew/dispatch_claims.py:127), the runs.py facade rebuilding claims from _LiveScopeClaim (reckon/crew/runs.py:1176, 1205), _head_revision (reckon/crew/promotion_scope.py:1814), _revision_is_ancestor (reckon/crew/promotion_scope.py:2389), _is_ancestor (reckon/crew/merge.py:538), discard (reckon/crew/promotion.py:1832), _live_scope_claims (reckon/crew/runs.py:902); three git-ancestry helpers exist, so \"rather than adding a fourth\" is accurate, and the evidence hrefs resolve.",
+    "done_when": "pass \u2014 \u00a75's done-when names a declared negative control (\"refuses one based on main with ScopeConflict\") and a base-arm failure (\"On the base commit the stacked dispatch is refused ScopeConflict, so the test fails there\"), so the gate can fail on the unfixed code.",
+    "evidence_paths": "pass \u2014 \u00a75 names no scratch or node-local path, and the plan's landing convention puts gates under the durable docs/evidence/archive/a-coordinator-can-clear-its-own-duties-landed.html and fragment tree, both of which exist on disk.",
+    "naming": "pass \u2014 \u00a75 introduces no plan label, stage name, ticket number or version tag into any symbol, filename or comment; the node ids (contour-chain-added-failures, root-polish-owned-line-search) and commit e9444fd44 appear only in the Why as cited evidence.",
+    "reasoning": "a finding \u2014 \u00a75:49 \u2014 the exception's mechanism calls _head_revision on the holder's worktree but \u00a75 enumerates only the claim's run id and unintegrated commits as the facts it carries, and _RepositoryScopeClaim has no worktree field, so the path the read depends on is never routed to the check.",
+    "single_goal": "pass \u2014 \u00a75 names one capability, admitting a dispatch based on a held run's chain tip; the promotion/discard descendant-naming is the plan's stated substitute for a refusal family (\"No refusal family is added\"), not an independent deliverable.",
+    "wiring": "pass \u2014 the plan declares no depends-on/informs/gates meta and none is needed: \u00a75's followup f-accd-002 states \u00a75 and \u00a76 write disjoint files and can run at once, and the plan-level plan-after (work-is-checked-against-its-domain#s2) already carries the only cross-plan dependency, so no relationship points at the wrong node and no needed dependency is missing."
+  },
+  "section_digests": {
+    "_document": "5856fc5e825e56071b67e7e76cfa10ea4c284a7424cd7e9fed8aef6670f4eb53",
+    "s1": "43085e648cc19c93f778cca423c4bc64fcf292fd5751f0b768a6d900a2dc6f99",
+    "s2": "933e62d10b3381ed03c0f019a65289e14b557412b102f39aa4a770ec912a74f5",
+    "s3": "b0aed5170f3bee16722263b2bd44c1b29dece8bb4f30f50f921ccf768e16aa23",
+    "s4": "b894ac78377b3dbd1cb6e04ff8829d39275d930a6f04671cdeeebd95f9cdc1c0",
+    "s5": "6e2cbaab0cd286c1e9a03b64438873105d6eb7f44d03b98dbe53950ac914531d",
+    "s6": "ef6ea3ed02381f59920675f97d17e071fb37761446ffb484e987801a9ef8cce5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T09:55:52.145605+00:00"
+}
