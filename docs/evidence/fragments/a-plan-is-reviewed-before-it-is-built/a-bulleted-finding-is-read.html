@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="a-bulleted-finding-is-read">
+<meta name="plan-title" content="Bulleted finding reading and incomplete review coverage">
+<meta name="plan-evidence-for" content="a-plan-is-reviewed-before-it-is-built">
+<meta name="plan-verifies" content="a-plan-is-reviewed-before-it-is-built#s40">
+<meta name="plan-recorded-at" content="2026-10-22">
+<meta name="plan-verdict" content="passed">
+<meta name="plan-commits" content="8c08715b22c6e01b0b264eda1c3711f99200fa93,e69382009915d5f766ce3d3f7fffaa89bd1d589b">
+<title>Bulleted finding reading and incomplete review coverage | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css">
+<link rel="stylesheet" href="/_shared/dashboard.css">
+</head><body><main class="plan-doc">
+<section id="a-bulleted-finding-is-read-verification">
+<h1>Bulleted finding reading and incomplete review coverage</h1>
+<table><thead><tr><th>Measure</th><th>Result</th><th>Receipt or qualification</th></tr></thead><tbody>
+<tr><td>Defect reproduction, bullets</td><td>Base: 0 findings from <code>- FINDING …</code>; head: <code>anchors_resolve-1</code></td><td>reproduction.log; one bulleted finding line parsed at each revision</td></tr>
+<tr><td>Bulleted finding stored and answerable</td><td>Passed</td><td>Record carries <code>anchors_resolve-1</code> with <code>would_change</code> true; <code>crew review --answer anchors_resolve-1 --acted</code> exits 0 and reports none unanswered</td></tr>
+<tr><td>Report missing a brief item</td><td>Stored <code>incomplete</code>, unit b uncovered, dispatch refused</td><td>Refusal reads <code>uncovered units: b;</code> and does not name the design rubric; the marked record is not among the contributing reviews</td></tr>
+<tr><td>Unmarked older review</td><td>Covers as before</td><td>A record listing an absent item with no mark (status <code>ready</code>) still covers, and is the sole contributing review</td></tr>
+<tr><td>Complete report</td><td>Stores <code>ready</code></td><td>All seven content items answered; <code>absent_items</code> empty</td></tr>
+<tr><td>Base arm</td><td>2 failed, 116 passed in 280.65s; EXIT=1</td><td>base-gate.log; both failures are this node's own new cases at the base revision; -n 8, its own basetemp, scratch extraction</td></tr>
+<tr><td>Head arm</td><td>118 passed in 321.59s; EXIT=0</td><td>head-gate.log; same 13 files, -n 8, its own basetemp</td></tr>
+<tr><td>Added failures</td><td>0</td><td>Head adds none; the base arm's two are the cases the change makes pass</td></tr>
+<tr><td>Declared negative control</td><td>2 failed, 2 passed in 20.40s; EXIT=1</td><td>negative-control.log; anchored line reading restored and the incomplete filter removed at the committed head</td></tr>
+<tr><td>Scoped lint and format</td><td>0 findings, formatted</td><td><code>ruff check</code> and <code>ruff format --check</code> — base and head both clean on the changed paths</td></tr>
+</tbody></table>
+<h2>What changed</h2>
+<p>One plan-report line reader, <code>_plan_report_lines</code>, strips a leading Markdown list marker (<code>- </code>, <code>* </code>, <code>1. </code>) before the plan-report patterns see the line. Both readers of a delivered plan report use it — <code>parse_plan_review_report</code> and the admission guard <code>report_carries_review_lines</code>, which refuses a report carrying no emitted line. The shared <code>_review_text_lines</code> and <code>_PLAN_RUBRIC_LINE_RE</code> are untouched, so the run-review and health-review grammars do not move.</p>
+<p>A content review delivered with one of its brief's rubric items missing is stored <code>incomplete</code>, and <code>review_coverage</code> skips a record carrying that mark, so every unit it would have covered stays uncovered and <code>require_plan_reviewed</code> names them.</p>
+<p><strong>Deviation, for the coordinator.</strong> The mark is set on the <em>content</em> rubric only. Taking the design rubric with it cost five existing deliveries their coverage — <code>test_gate_accepts_a_stored_or_delivered_review[delivered-*]</code>, <code>test_unstored_sidecar_is_promoted_before_coverage[*]</code> and <code>test_answer_stores_an_unstored_delivery_before_answering</code> each deliver a design report carrying one emitted line and expect the plan then covered. Those files are outside this node's write paths, and the section's done-when exercises a content review throughout. If the section means the mark to reach the design rubric too, that is a follow-on that updates the five deliveries.</p>
+<h2>Durable receipts</h2>
+<table><thead><tr><th>Artifact</th><th>Path</th></tr></thead><tbody>
+<tr><td>manifest.md</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T192836923875-a-bulleted-finding-is-read/manifest.md</td></tr>
+<tr><td>head-gate.log</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T192836923875-a-bulleted-finding-is-read/logs/head-gate.log</td></tr>
+<tr><td>base-gate.log</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T192836923875-a-bulleted-finding-is-read/logs/base-gate.log</td></tr>
+<tr><td>negative-control.log</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T192836923875-a-bulleted-finding-is-read/logs/negative-control.log</td></tr>
+<tr><td>reproduction.log</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T192836923875-a-bulleted-finding-is-read/logs/reproduction.log</td></tr>
+</tbody></table>
+</section></main></body></html>
