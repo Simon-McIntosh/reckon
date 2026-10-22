@@ -1,0 +1,68 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T07:17:45.624Z",
+  "dispatched_at": "2026-10-22T07:09:39Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-window-paces-the-lane.html:2010",
+      "id": "wiring-1",
+      "reason": "without an open followup carrying `/reckon-build a-window-paces-the-lane \u00a720`, the section is stranded exactly as \u00a719 was before wiring-1 was acted on, and the plan's own statement that no section remains contradicts the declaration.",
+      "text": "\u00a720 is the plan's only section declared implementable (`plan-section-declarations` carries `s20:implementable`) yet no followup names it, and the last followup `f-20261015-replay-session` (docs/plans/a-window-paces-the-lane.html:2134) is resolved with the outcome \"No open section remains on this plan; done, no followup\", so the record a coordinator reads for the next build is closed while \u00a720 remains",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-window-paces-the-lane.html:2012",
+      "id": "reasoning-1",
+      "reason": "a worker implementing \"the credit-cap judgement reads the governing lift for the dispatching session\" could resolve the governing lift inside `_credit_lift_verdict` or `decide` \u2014 a second resolver \u00a717 deliberately forbids \u2014 and leave the missing session argument at reckon/crew/dispatch.py:1453 in place, so the refusal would survive the repair.",
+      "text": "\u00a720 states the refusal \"comes from a path that does not go through\" `_governing_lift`, but the dispatch path does reach `_governing_lift`, through `budget_group.effective_block`, with `session=None`: `_budget_verdict(...)` is called at reckon/crew/dispatch.py:1453 without the `session` the enclosing `dispatch()` already holds and already passes to `plan_dispatch` (reckon/crew/dispatch.py:1523), so `_applies` discards the session-scoped lift and the spent global credit lift governs; the Change names no caller and the section declares no write paths, unlike \u00a712\u2013\u00a719",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "0999a34a1dc56a86e9245dddd8bc8270ef986dae477676bdb60926e9a833bf6e",
+  "plan_slug": "a-window-paces-the-lane",
+  "plan_version": 240,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T070824998248-plan-review-of-a-window-paces-the-lane",
+  "reviewed_blob_sha": "ea2fd47009de63547789061ef57b87efe5d086d1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/budget_lift.py`, `_governing_lift` (reckon/crew/budget_lift.py:1000), the credit message (reckon/crew/budget_lift.py:697-704) and \u00a713 all resolve, and no extensionless href is involved.",
+    "done_when": "pass \u2014 \u00a720's done-when names observable admit/hold outcomes for both the session's own dispatch and another session's, and its negative control is the base commit, where the first dispatch is refused naming the global lift.",
+    "evidence_paths": "pass \u2014 \u00a720 sends its gate log to the run directory and writes no evidence to a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 \u00a720 introduces no code symbol, and it states its rule by mechanism (governing lift, credit cap) rather than by a ticket, plan label or version tag.",
+    "reasoning": "a finding \u2014 \u00a720 blames a path that does not reach `_governing_lift`, but the dispatch path does reach it, with no session supplied, and no caller is named.",
+    "single_goal": "pass \u2014 \u00a720 carries one deliverable: the credit-cap judgement honours the dispatching session's governing lift.",
+    "wiring": "a finding \u2014 \u00a720 is declared implementable in the document's section declarations but no followup recommends it; the plan's last followup is resolved with \"No open section remains on this plan\", so the chain a coordinator dispatches from is closed with work outstanding."
+  },
+  "section_digests": {
+    "_document": "dbdc9ab2d72875425db22b43518b4c25d51043f393877d15e568c0e5f6b05bdb",
+    "s1": "fd232b0e9e301983eea254fa355a00f9cfdad5e4ba397415c196946997e8b78a",
+    "s10": "cff30d466dd7580b4623ab4ba85a967692183d1c1fbf0a887b817140c3fe2bf9",
+    "s11": "4f344761a1c7f9eeda684c28b5399f6cc6c50a6961808244c50f4f385a8dfb83",
+    "s12": "d332f915a715e0ce7c1efdd5027285714154977800a9ec70d7b055bf5762609f",
+    "s13": "627916281462553dd6f077d4f3ad0d176f2e5177a66b12b43e0c6d7b6788b3d7",
+    "s14": "5c54d28fac7106fc49f1eb45cc396fb761556bbd5ae16f469c6cf14cdd342fc8",
+    "s15": "5acca22c78776d5b829195bb01b2c5d660f4787c61cd3b04e511e66046bc7cf0",
+    "s16": "3dcf3315f6ba2812e050e78dff00ef7816e3e4ecc36a672d2a94915c9b63b57e",
+    "s17": "389b1f5c6e5ccd170eda4e87d4a50ed8785e7e0ef0485ef2c7e8597176c84370",
+    "s18": "3acd44306ea9cc8f5c0a20e3aeb4221a43ab0edf6ddcb9f12448519ae3b2e7bb",
+    "s19": "4a84b14941d424d93f96d9c90164a3c964ba50a4257edf6ec9082fa198fe2314",
+    "s2": "0c4f642bff7cb6b87908ea9e036cb3161c15e31cb3285273e06bb2ac1f5c368c",
+    "s20": "eda26dd0e16babed53900601bc3047df22370b75dc7bb0fa2710ac81aeb01aea",
+    "s3": "ae3d7625321a46e7fa6a9ee3bac0272ee77d236811612140ef03b79670883261",
+    "s4": "8f3ac850d09e4745435c5274237c26be090ce2db03ac422e941c3329841d8563",
+    "s5": "3bc104a16d90fb6279e9ab8c70555e1041253ad31f6376c64b455da33489c6b0",
+    "s5b": "1be686d2a1165f13c4f4e81a29ca56c362c3b069dfc80759cf370cca59440d41",
+    "s6": "8e4ab80a317b73fb60010fe92858cbe3b073511ce10c4547c6eb8952a89829f0",
+    "s6-the-probe-reader-and-the-undeclared-dialect": "c463be6993bc79b07591a01d9e1a1d92d699a48d4c322b2cc395a0e78a2d097d",
+    "s7": "39b7111a3bfa256531f953bd33de123967e24fa4ffc75e6d1cbeca26a45c565d",
+    "s8": "9d68431496117798ca30bbebd6828adc5853e02df969ac62de3bb2dcd41512a4",
+    "s9": "5f72c27f2288b837b6513304ec92d0bf2e8950d169b0389c4c3ffeba27c23b6b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T07:25:17.521817+00:00"
+}
