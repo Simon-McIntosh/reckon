@@ -2415,6 +2415,57 @@ _PLAN_SET_TOP = frozenset(
 # Index top-level fields a `set` op may target directly.
 _INDEX_SET_TOP = frozenset({"active_sprint_id", "north_stars"})
 
+# Dotted set forms the plan writer handles outside the flat scalar table, keyed
+# by the head that selects them and written in the spelling a caller sends.
+# The unsupported-path refusal reads this table, so the forms it names are the
+# ones the writer handles rather than a copy of them kept beside the message.
+_PLAN_SET_KEYED_FORMS: Mapping[str, str] = {
+    "section_depends_on": "section_depends_on.SECTION",
+    "sections": "sections.SECTION.FIELD",
+    "gates": "gates.ID.FIELD",
+}
+
+
+def _nearest_settable_path(path: str, candidates: Sequence[str]) -> str | None:
+    """The settable path ``path`` is closest to, in its own spelling, or None.
+
+    A hyphen where the store spells an underscore is the miss a caller reaches
+    for by habit, and it measures as a poor match against the stored spelling
+    while being the same word to a reader. Case and hyphens are folded on both
+    sides before the comparison, so the answer names the stored path a reader
+    would have to type.
+    """
+    import difflib
+
+    def folded(name: str) -> str:
+        return name.replace("-", "_").lower()
+
+    by_folded: dict[str, str] = {}
+    for candidate in candidates:
+        by_folded.setdefault(folded(candidate), candidate)
+    match = difflib.get_close_matches(folded(path), list(by_folded), n=1, cutoff=0.6)
+    return by_folded[match[0]] if match else None
+
+
+def _unsupported_plan_set_path_detail(path: str) -> str:
+    """A refusal that names what can be set instead, and the nearest path."""
+    settable = ", ".join(sorted(_PLAN_SET_TOP))
+    keyed = ", ".join(
+        _PLAN_SET_KEYED_FORMS[head] for head in sorted(_PLAN_SET_KEYED_FORMS)
+    )
+    detail = (
+        f"unsupported plan set path {path!r} — "
+        f"settable paths: {settable}. "
+        f"keyed forms: {keyed}"
+    )
+    nearest = _nearest_settable_path(
+        path,
+        sorted(_PLAN_SET_TOP) + sorted(_PLAN_SET_KEYED_FORMS),
+    )
+    if nearest is not None:
+        detail += f" — nearest settable path {nearest!r}"
+    return detail
+
 
 def _find_by_id(lst: list, ident: str, id_field: str = "id") -> tuple[int, dict] | None:
     for i, el in enumerate(lst):
@@ -2736,7 +2787,7 @@ def _apply_set(working: dict, op: dict, is_index: bool, warnings: list[str]) -> 
         _store_section_ops.apply_section_depends_on_set(working, parts, value, warnings)
         return
     if len(parts) != 1 or head not in _PLAN_SET_TOP:
-        raise OpError(f"unsupported plan set path {path!r}")
+        raise OpError(_unsupported_plan_set_path_detail(path))
     if head == "impl":
         from reckon import _plan_html
 
