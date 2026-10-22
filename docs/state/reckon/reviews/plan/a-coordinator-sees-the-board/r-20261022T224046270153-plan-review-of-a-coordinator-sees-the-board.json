@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T22:55:38.695Z",
+  "dispatched_at": "2026-10-22T22:43:06Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html:92",
+      "id": "reasoning-1",
+      "reason": "a node that follows the reuse instruction builds the resolver on an enumerator that cannot produce \u00a72's answer, so the section's done-when is unreachable as written; the author must name what is actually reused (reading the `session` field off live pointers and ledger rows) or drop the reuse clause.",
+      "text": "\u00a72 ends \"The resolver is one function beside obligations.py's session filter, which it reuses\", and the only session filter \u00a72 cites is `_live_review_runs` (`reckon/crew/obligations.py:467-476`), which iterates `runs.list_live(project=\u2026)` and keeps only pointers whose `session` matches **and** whose current revision has a review in flight (`if run_id and _current_review_in_flight(pointer)`); \u00a72's answer instead needs \"the session of its most recent dispatched run, live or in the ledger\" \u2014 and its done-when runs on a fixture built from a *committed* ledger \u2014 so a resolver that reuses that function sees no ledger row at all and drops every live run without a review in flight, reporting nearly every plan unowned and failing \u00a72's own first negative control",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html:83",
+      "id": "anchors_resolve-1",
+      "reason": "the symbol is named and resolves in the same file, so a reader greps it; correcting the line number refreshes the citation without changing what \u00a72 asks a node to build.",
+      "text": "\u00a72 cites `reckon/crew/obligations.py:429` as `_live_review_runs` and as the evidence that a session filter already exists, but line 429 sits inside `_refused_delivered_review` and the named function is at `reckon/crew/obligations.py:467`, so a reader following the line lands on unrelated code",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "57bdb4b7629a54d647fe8bf68bbababcfed7d609e435d6deb9c43083b5393c68",
+  "plan_slug": "a-coordinator-sees-the-board",
+  "plan_version": 6,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T224046270153-plan-review-of-a-coordinator-sees-the-board",
+  "reviewed_blob_sha": "e422a6d490fa29f3f3651e5365fb1046806d949a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 `reckon/crew/obligations.py:429` does not contain `_live_review_runs` (that function is at line 467; line 429 lies inside `_refused_delivered_review`).",
+    "done_when": "pass \u2014 the measure is a fixture assertion with two declared negative controls (all-unowned must fail; dispatch-order-ignoring must fail), and the gate log is required to name the deciding row and which of `plan`, `plan_link` or the node id matched, so the expectation is not sourced from the derivation under test.",
+    "evidence_paths": "pass \u2014 \u00a72 names only \"the gate log\" and directs no evidence to a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 the new symbols are named by mechanism (\"the resolver\"), and \u00a72 carries no ticket number, version tag or changelog prose.",
+    "reasoning": "a finding \u2014 the mechanism \u00a72 states for building the resolver (reusing `obligations.py`'s session filter) reuses a function that enumerates only live runs with a review in flight, so it cannot produce the answer \u00a72's own done-when requires.",
+    "single_goal": "pass \u2014 \u00a72 carries one deliverable: derive a plan's coordinator session from the ledger beside its `plan-owner`.",
+    "wiring": "pass \u2014 `s2` declares no `depends-on` of its own, and every section that consumes its answer declares it (`s3` and `s5` name `a-coordinator-sees-the-board#s2`; `s4` reaches it through `#s3`)."
+  },
+  "section_digests": {
+    "_document": "179fd781683b8de3429431d31d2da583319fc0fdb80b1db1734a86c481d7f66c",
+    "s1": "4f48bcfe2c71d1397f0eeb277ff928920d1ed0ae7cfb0da777c94e4943eadf87",
+    "s2": "90f70866fbebc8529a67effe4023cdadbb3a9e5b5ddaa80d47fa76924fba39df",
+    "s3": "e4cd7ce8696d0d9fb511a9be2379e2561a08418a1d1f759c42a926231bad6e36",
+    "s4": "ba6bafca3a7e3ae7fb186980afd26dd26e183bf99b72272ea15f06fbaeb19e5f",
+    "s5": "c7676f30d627a592319ab4f34cbd8352167ba0b9b92a20d5cbafea4a685b90ae",
+    "s6": "b5875d403856eb185e06155d0c62410ab30a447353779fe729a12b57c2607cf0",
+    "s7": "4428c6858fc7f10400173c2e619ad379aa49779cef060ae4b50d866fde4a59a7",
+    "s8": "f9f58e76a5713eb901b1e780fcb93d48ca773a573fded72ec476738a59629b67"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T23:00:35.719531+00:00"
+}
