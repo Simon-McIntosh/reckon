@@ -155,6 +155,15 @@ before dispatching. A goal containing `;` is not one deliverable, and every node
 needs at least one `--write-path`. Every refusal answers with a JSON document on
 stdout carrying `error` and `detail`.
 
+`--input <path>` names a file the node reads to do its work, resolved against
+the dispatched repository, and dispatch is refused with the path when the
+repository does not hold it — a fit is not started on constants nobody has.
+A node whose write paths match a `model_paths` glob the project declares is
+building a model, and states in `--compares-with` the measurement or reference
+its result is checked against, or `none-exists: <the search that established
+it>`. Stating neither is reported with the admission findings beside the
+contract properties.
+
 Dispatch ensures one live producer before creating a worktree. Peer scopes come
 from live pointers in the same project and repository: dispatch refuses
 containing or contained path claims before creating a worktree and names the
@@ -210,7 +219,7 @@ reckon crew budget --list [--group <group>] [--pretty]
 reckon crew check --manifest --run <id>    reckon crew check --review (--run <id> | --record <path>)
 reckon crew complete --run <id> --gate <verdict> --commit <sha> --outcome <text> --tests-added <n> --scope-changed
 reckon crew directory --project <project> --run <id> --node <node>
-reckon crew dispatch --project <project> --plan <slug> --section <section> --role <role> --node <node> --goal <goal> --done-when <measure> --write-path <path> --regenerate-path <path> --peer <other-node>=<their-paths> --time-budget <duration> --session <session> --set <override> --dry-run --member <member> --manifest <path> --allow-unreconciled-runs --no-watch
+reckon crew dispatch --project <project> --plan <slug> --section <section> --role <role> --node <node> --goal <goal> --done-when <measure> --write-path <path> --regenerate-path <path> --input <path> --compares-with <measurement> --peer <other-node>=<their-paths> --time-budget <duration> --session <session> --set <override> --dry-run --member <member> --manifest <path> --allow-unreconciled-runs --no-watch
 reckon crew discard --run <id>    reckon crew drain --project <project> --leave <id>=<disposition>
 reckon crew follow --project <project>    reckon crew gc
 reckon crew gate (--pause <reason> | --open) [--pretty]    # prints the shared gate document before and after the change

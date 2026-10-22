@@ -753,6 +753,9 @@ class TaskNode:
     requires_decisions: list[str] = field(default_factory=list)
     peer_scopes: dict[str, list[str]] = field(default_factory=dict)
     images: list[str] = field(default_factory=list)
+    inputs: list[str] = field(default_factory=list)
+    compares_with: str = ""
+    admission_findings: list[dict[str, str]] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         """Fold a regenerated path into the write scope it is claimed under.
@@ -776,10 +779,12 @@ class TaskNode:
             "brief": self.brief,
             "brief_path": self.brief_path,
             "brief_sha256": self.brief_sha256,
+            "compares_with": self.compares_with,
             "done_when": self.done_when,
             "goal": self.goal,
             "id": self.id,
             "images": list(self.images),
+            "inputs": list(self.inputs),
             "manifest_path": self.manifest_path,
             "estimated_hours": self.estimated_hours,
             "negative_control": self.negative_control,

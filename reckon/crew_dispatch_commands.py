@@ -1160,6 +1160,27 @@ def _budget_check_report(
     help="Exclusive write path; repeat for each.",
 )
 @click.option(
+    "--input",
+    "inputs",
+    multiple=True,
+    metavar="PATH",
+    help=(
+        "A path the node reads to do its work, resolved against the dispatched "
+        "repository; a dispatch naming an input the repository does not hold is "
+        "refused with the path. Repeat for each."
+    ),
+)
+@click.option(
+    "--compares-with",
+    "compares_with",
+    default="",
+    help=(
+        "The measurement or reference the node's result is checked against, "
+        "declared when its write paths match a model path the project declares; "
+        "`none-exists: <search>` when no measurement exists."
+    ),
+)
+@click.option(
     "--regenerate-path",
     "regenerate_paths",
     multiple=True,
@@ -1355,6 +1376,8 @@ def crew_dispatch(
     goal,
     done_when,
     write_paths,
+    inputs,
+    compares_with,
     regenerate_paths,
     image_paths,
     peers,
@@ -1501,6 +1524,8 @@ def crew_dispatch(
         negative_control=negative_control or "",
         done_when=done_when,
         write_paths=list(write_paths),
+        inputs=list(inputs),
+        compares_with=compares_with or "",
         regenerate_paths=list(regenerate_paths),
         time_budget=time_budget,
         estimated_hours=estimated_hours,
