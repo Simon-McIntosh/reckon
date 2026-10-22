@@ -1,0 +1,78 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T09:43:41.221Z",
+  "dispatched_at": "2026-10-22T09:28:50Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html:23",
+      "id": "wiring-1",
+      "reason": "a node dispatched on \u00a75 on its declared edges could be built before \u00a73 exists and would consume a read that is not there.",
+      "text": "\u00a75's board row carries \"their ready-idle sections from \u00a73\", yet s5's depends-on lists only the-mcp-answers-the-question-asked#s3 and a-coordinator-sees-the-board#s2, so \u00a73 is outside s5's dependency closure",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html:23",
+      "id": "wiring-2",
+      "reason": "\u00a76 edits \u00a73's answer and would start without it if dispatched on its declared edges.",
+      "text": "\u00a76 states the \"ready-idle answer\" carries the lane figures, but s6 declares depends-on s5 only, so \u00a73 is outside its closure as well",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html:90",
+      "id": "done_when-1",
+      "reason": "a worker can satisfy the letter by labelling every plan \"unowned\" and implementing no tier resolution, so the section's own measure cannot fail.",
+      "text": "\u00a72's done-when (\"every pending plan in a project resolves to declared, derived or unowned, with its tier\") is satisfied by construction because the three tiers are exhaustive by definition, and it names no project or fixture",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html:130",
+      "id": "reasoning-1",
+      "reason": "a single-state field cannot represent that fixture, so the node must invent a second state axis or fail the gate the section set for itself.",
+      "text": "\u00a74's mechanism gives each link \"one state\" from {in flight, ready-idle, gated, waiting}, but its done-when requires iter-switched-terminal-transients#s6 to read as gated on g-istt-6 and waiting on shared-coil-supply-model#s9 simultaneously",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html:127",
+      "id": "anchors_resolve-1",
+      "reason": "the mechanism and its measure are unaffected; only the provenance pointer is lost.",
+      "text": "\u00a74 cites \"the per-link state reckon-a1 named as a small extension\" and \u00a77 cites \"the monitor plan owns that drawing\", neither of which names a plan, section or commit a later reader can resolve",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "a3ba9838ae3530cd5910753142d3439fd8f3b7aba2bbf7c8e414e1964836e957",
+  "plan_slug": "a-coordinator-sees-the-board",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T092431450914-plan-review-of-a-coordinator-sees-the-board",
+  "reviewed_blob_sha": "4cf35e2505bfb3c4dfe5a811b0c5d6ab5276eb1a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a74's \"reckon-a1\" and \u00a77's \"the monitor plan\" name no plan, section or commit that a later reader can open, though every href and file/section anchor cited resolves.",
+    "done_when": "a finding \u2014 \u00a72's headline done-when states a statement that is true by construction and names no fixture, so it cannot fail.",
+    "evidence_paths": "pass \u2014 no section places a gate log or evidence under a scratchpad or node-local temp path; \u00a78 records into the plan's evidence by the repository convention.",
+    "naming": "pass \u2014 the proposed surfaces (\"board\", ready-idle set, tiers) carry no plan label, stage name, ticket number or version tag, and \u00a72 states its staleness window is a configuration value rather than a literal.",
+    "reasoning": "a finding \u2014 \u00a74's mechanism gives each critical-path link one state, but its own done-when requires one link to read as two states at once.",
+    "single_goal": "pass \u2014 each section names one deliverable (one read, one record, one measurement), and \u00a77's two skill edits serve the one goal of pointing both skills at the bounded reads.",
+    "wiring": "a finding \u2014 \u00a75 and \u00a76 both consume \u00a73's ready-idle answer, but neither declares a depends-on edge to s3 in `plan-section-depends-on` (plan.html:23)."
+  },
+  "section_digests": {
+    "_document": "0d2add9a02b2283ae405a2400e8d7f854f2b814d9c0b4f5f8ce0e1c28de622ac",
+    "s1": "a1bec4bf8a399ae2158a3cdd7643aa10b8420978a60e8c006c1e149a252b6bd4",
+    "s2": "ed39fc062bb510a8e8893ab3df38fbd05a012d855dd7706cb56666bf613b5e88",
+    "s3": "d7123ee4896bde58896cc8c08f946d3e5fc14b156b8769ad823058ab9f6d6fe6",
+    "s4": "cde13af80c074c35276f790e9117d5e68a9498542ecd964565fa1be76e6d26df",
+    "s5": "b82d3aabc0d05453465e9a935332bf51c0efb48e3e236f61521f43e10b389d80",
+    "s6": "3fe693a1acdaec9dd08e1c5c6c099db91e82e79ca21a41bb167ba4014b004c76",
+    "s7": "264418b0fe794b01914ff6baf4074b8f68bf48a9565fe879a03326d1b658247b",
+    "s8": "f9f58e76a5713eb901b1e780fcb93d48ca773a573fded72ec476738a59629b67"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T10:37:14.360331+00:00"
+}
