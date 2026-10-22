@@ -1,0 +1,46 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T23:43:33.017Z",
+  "dispatched_at": "2026-10-22T23:27:56Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html:89",
+      "id": "reasoning-1",
+      "reason": "the section names a source that does not exist, so a node implementing \u00a72 must invent peer-name resolution or ship an empty field; the author must either cite the real source (the run row's `member`) or drop the peer-name claim.",
+      "text": "\u00a72 states the answer \"carries both facts: the plan-owner person and the coordinator session with its peer name where `reckon/crew/directory.py` resolves one\", but directory.py resolves no peer or member name anywhere: its coordinator rows carry only session, project, repository, plans, sprints, state, live_node_count, runs and transports (reckon/crew/directory.py:190-208), and its run-row builder `_run_row` (reckon/crew/directory.py:91-122) carries no name field either \u2014 the only name a run row carries is `member` (reckon/run_record.py:504), produced by the ledger, not by directory.py",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ed8f3c751900f266342bb2cb1b09c3a3a8049f9d91e5055a5c4ff457a460aa10",
+  "plan_slug": "a-coordinator-sees-the-board",
+  "plan_version": 7,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T232454014890-plan-review-of-a-coordinator-sees-the-board",
+  "reviewed_blob_sha": "92643c6650e330130f582980178393a1039c1510",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the changed s2 anchors resolve: reckon/ledger.py:162-165 and reckon/run_record.py:538-539 carry the `session`/`session_id` pair, reckon/run_record.py:489 is the brief-run `plan` null, and `_live_review_runs` is at reckon/crew/obligations.py:467 with the stated live-pointer-and-review-in-flight behaviour; the false cite to directory.py is reported under reasoning.",
+    "done_when": "pass \u2014 \u00a72's done-when pins each plan's expected coordinator as a literal read from the fixture rows, names the deciding row in the gate log, and carries two negative controls (a resolver returning unowned everywhere must fail the fixture test; one ignoring dispatch order must fail the A-then-B test).",
+    "evidence_paths": "pass \u2014 the section's evidence is the fixture replay recorded as evidence for the plan; no node-local or scratchpad path is named as the durable home.",
+    "naming": "pass \u2014 the revision introduces no new symbol; the plan cites existing mechanism-named functions (`_live_review_runs`, `plan-review-of-<slug>`) and carries no plan labels or ticket numbers into names.",
+    "reasoning": "a finding \u2014 \u00a72 names `reckon/crew/directory.py` as the source of the coordinator's peer name, but that module resolves no peer or member name.",
+    "single_goal": "pass \u2014 \u00a72 delivers one thing: a plan's coordinator derived from the ledger, beside its recorded owner.",
+    "wiring": "pass \u2014 s2 is the root of the owner chain and both consumers declare it (s3 and s5 each list a-coordinator-sees-the-board#s2 in plan-section-depends-on), so no node reads \u00a72 outside its closure."
+  },
+  "section_digests": {
+    "_document": "179fd781683b8de3429431d31d2da583319fc0fdb80b1db1734a86c481d7f66c",
+    "s1": "4f48bcfe2c71d1397f0eeb277ff928920d1ed0ae7cfb0da777c94e4943eadf87",
+    "s2": "3881232107d997f57790cb87e0c7a196215cfeee81f67f8fad045d1d2726cfca",
+    "s3": "e4cd7ce8696d0d9fb511a9be2379e2561a08418a1d1f759c42a926231bad6e36",
+    "s4": "ba6bafca3a7e3ae7fb186980afd26dd26e183bf99b72272ea15f06fbaeb19e5f",
+    "s5": "c7676f30d627a592319ab4f34cbd8352167ba0b9b92a20d5cbafea4a685b90ae",
+    "s6": "b5875d403856eb185e06155d0c62410ab30a447353779fe729a12b57c2607cf0",
+    "s7": "4428c6858fc7f10400173c2e619ad379aa49779cef060ae4b50d866fde4a59a7",
+    "s8": "f9f58e76a5713eb901b1e780fcb93d48ca773a573fded72ec476738a59629b67"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T23:53:57.058213+00:00"
+}
