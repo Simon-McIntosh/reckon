@@ -45,6 +45,11 @@
     <p>Run <code>a-line-only-finding-names-its-fallback</code>, landed at <code>970b7df92</code>. <code>repair._finding_location</code> in <code>reckon/crew/repair.py</code> returns nothing for a finding with a line but no file, so each caller's fallback applies; a finding with both still renders <code>file:line</code>, and the review-waits-for-its-repair refusal for a line-only finding names the review's findings rather than a bare line number. Gate: 10 passed at the head; the line-only case fails at the base. Review: 112/120; two follow-ons exempted.</p>
   </section>
 
+  <section id="s5">
+    <h2>§5 — a review answers the domain checks, and a failed one blocks</h2>
+    <p>Run <code>a-review-answers-the-domain-checks</code>, landed at <code>e15ee9ef0</code> after four rounds. Declared domain review checks join the checklist mechanism <code>REVIEW_ITEMS</code> uses in <code>reckon/crew/review.py</code>, not a seventh scored dimension: the six dimensions, the acceptance floor and the prompt falsifier are unchanged. A review of a node the checks apply to carries one verdict line per matching check; a delivered record that omits one is incomplete and names the check; a failed check is stored as a blocking finding, which <code>review_lifecycle</code> already reads. The owed checks are resolved inside <code>parse_review</code> from the reviewed run's live pointer, else its committed per-run row, else its delivered manifest, and a record whose owed checks cannot be established is refused rather than treated as owing none. Whether a project declares checks is asked of <code>reckon/crew/domain_rules.py</code>, the owner of the domain read.</p><p>Gate at the head: green; the round's base arm read 1 failed. Reviews: 98 (the guard had no production caller), 98 (it failed open when the pointer was gone), 96 (two re-derivations), then 112/120 (goal 19, evidence 19, scope 20, durability 15, fit 19, reuse 20); two follow-ons exempted. The duplicate per-check line renderer the earlier rounds named is §9's.</p>
+  </section>
+
 </main>
 </body>
 </html>
