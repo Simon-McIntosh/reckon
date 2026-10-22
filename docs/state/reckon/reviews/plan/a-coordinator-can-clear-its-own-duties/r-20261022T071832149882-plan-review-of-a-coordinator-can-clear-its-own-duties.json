@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T07:25:09.840Z",
+  "dispatched_at": "2026-10-22T07:19:47Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-coordinator-can-clear-its-own-duties.html:49",
+      "id": "reasoning-1",
+      "reason": "a node must either extend the disposition and the check's signature, which \u00a75's \"claim_disposition is unchanged\" forbids, or invent where the base and the stopped-state enter; the plan should name that plumbing and the caller that supplies it.",
+      "text": "\u00a75 puts the exception in `_raise_repository_scope_conflict`, which receives a `TaskNode` with no base field (reckon/crew/node.py:737-758) and a list of `_RepositoryScopeClaim` carrying only `binding` and a free-text `disposition_reason` (reckon/crew/dispatch_claims.py:127-150), yet the exception keys on \"the dispatch's base is the holder's chain tip\" and \"its holder is stopped\"; `claim_disposition` returns `binding=True` for both a running holder (`\"is still running as pid N\"`) and a stopped holder holding work (`\"has stopped but its worktree still holds \u2026\"`, reckon/crew/node.py:1554-1566), so neither fact is readable at that site",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-coordinator-can-clear-its-own-duties.html:49",
+      "id": "reasoning-2",
+      "reason": "the third clause of the done-when is unbuildable from the plan, so a node either invents a site for the promotion result or silently fails the measure it was given.",
+      "text": "\u00a75's done-when requires \"promoting the holder while its descendant is live succeeds and its result names the live descendant\", but \u00a75's Change names no site for that result: its stated mechanisms are the scope-conflict exception, the stacking recorded on both pointers through `_mutate_pointer`, and the `_live_scope_claims` registry row (reckon/crew/runs.py:902), and no promotion or discard result reads that row",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "077b8f013f795b4221101a4cc7d7e81d749ef20609ba7c64ac3290dc367a9060",
+  "plan_slug": "a-coordinator-can-clear-its-own-duties",
+  "plan_version": 17,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T071832149882-plan-review-of-a-coordinator-can-clear-its-own-duties",
+  "reviewed_blob_sha": "38c86b3c67454ab5ebbaa30e0f684533dc8ba4cd",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol \u00a75 cites resolves: `claim_disposition` (reckon/crew/node.py:1500), `_raise_repository_scope_conflict` (reckon/crew/dispatch_claims.py:1567), `_revision_is_ancestor` (reckon/crew/promotion_scope.py:2389), `_is_ancestor` (reckon/crew/merge.py:538), `_live_scope_claims` (reckon/crew/runs.py:902), and the pointer writer `_mutate_pointer` (reckon/crew/runs.py:328).",
+    "done_when": "pass \u2014 \u00a75's done-when is measurable and names a negative control: a dispatch based on main is still refused `ScopeConflict` and the base commit fails the same test; its unbuildable promotion clause is reported under reasoning.",
+    "evidence_paths": "pass \u2014 \u00a75 names no gate log of its own; the landing record this plan uses (`docs/evidence/archive/a-coordinator-can-clear-its-own-duties-landed.html`) exists and is durable.",
+    "naming": "pass \u2014 \u00a75's proposed vocabulary (stacked run, chain tip, admitted stacking) names mechanism, carrying no plan label, stage name or ticket number.",
+    "reasoning": "a finding \u2014 the exception is placed at a site that can read neither the dispatch's base nor the holder's stopped state, and the done-when's promotion clause names no mechanism.",
+    "single_goal": "pass \u2014 \u00a75 has one goal (a run built on a held chain tip may write its holder's paths), with the scopes-view row and the promotion/discard results as consequences of that one change.",
+    "wiring": "pass \u2014 \u00a75 declares no depends-on/informs/gates of its own and the plan-level after-target `work-is-checked-against-its-domain#s2` resolves (docs/plans/work-is-checked-against-its-domain.html)."
+  },
+  "section_digests": {
+    "_document": "5856fc5e825e56071b67e7e76cfa10ea4c284a7424cd7e9fed8aef6670f4eb53",
+    "s1": "43085e648cc19c93f778cca423c4bc64fcf292fd5751f0b768a6d900a2dc6f99",
+    "s2": "933e62d10b3381ed03c0f019a65289e14b557412b102f39aa4a770ec912a74f5",
+    "s3": "b0aed5170f3bee16722263b2bd44c1b29dece8bb4f30f50f921ccf768e16aa23",
+    "s4": "b894ac78377b3dbd1cb6e04ff8829d39275d930a6f04671cdeeebd95f9cdc1c0",
+    "s5": "ab5eeb036c7cd20deb8102ac1173b65fa5bdeb4f546b3e68904917a9dc106fb2",
+    "s6": "ef6ea3ed02381f59920675f97d17e071fb37761446ffb484e987801a9ef8cce5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T07:40:03.193751+00:00"
+}
