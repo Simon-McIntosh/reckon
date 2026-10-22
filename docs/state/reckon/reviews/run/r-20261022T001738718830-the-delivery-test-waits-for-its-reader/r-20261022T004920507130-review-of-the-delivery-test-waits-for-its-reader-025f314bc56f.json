@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-22T01:04:41.977Z",
+  "dispatched_at": "2026-10-22T00:50:13Z",
+  "findings": [
+    {
+      "file": "tests/test_removed_flag_migration.py",
+      "line": "390",
+      "severity": "follow-on",
+      "text": "follow-on: _wait_for_the_first_attach re-implements the bounded wait and pytest.fail-on-timeout already owned by _wait_for at tests/test_removed_flag_migration.py:381 in the same file (same WATCHER_LOAD_BOUND_SECONDS default, same failure shape); _wait_for(lambda: attached.is_set()) would reuse the existing owner, and a second bounded-wait helper in one file drifts from the first."
+    },
+    {
+      "file": "logs/alone-25.log",
+      "line": "53",
+      "severity": "follow-on",
+      "text": "follow-on: the base-arm log the manifest cites as baseline_suite.log_path ends in 'PASS=25 FAIL=0' rather than a bare EXIT= line, and its '# command:' header is a description ('alone-run loop x25 of test_the_delivery_path_itself_carries_no_state_filter') rather than the literal command, so the base arm's exit status cannot be read from the log and the command cannot be re-run; logs/xdist-10.log carries the same two defects, against the done-when clause 'every log ... starts with its revision and the literal command, and ends in EXIT='."
+    },
+    {
+      "file": "logs/negative-control-mutated.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the negative-control log's header names rev 87d07ec6059fdb98ae65ad30c0c788f268f81a8a, but the run recorded in the body is the fixed test (it contains attached = threading.Event() and the _wait_for_the_first_attach path) with the declared mutation applied, so the header revision does not identify the code that ran and a reader comparing it against the reviewed head 025f314bc would misjudge what the control falsified."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to find the window in which the delivery-path test misses the dispatched state and close it; the landed change names the window at docs/evidence/fragments/the-suite-is-green-at-head/the-delivery-test-waits-for-its-reader.html:30-40 and closes it at tests/test_removed_flag_migration.py:390-457.\nVERDICT done_when: the done-when asks for 20/20 alone, 10/10 under -n 8, the file's other cases green, the window named from the committed blob, a negative control failing at least one of ten, and every log ending in EXIT=; manifest.md:11-16 records alone-20-after.log PASS=20 FAIL=0 EXIT=0 and xdist-10-after.log PASS=10 FAIL=0 EXIT=0 at 6 passed per iteration, but the base arm it cites (logs/alone-25.log) ends in PASS=25 FAIL=0 with no EXIT= line.\nVERDICT write_paths: manifest.md:3 declares tests/test_removed_flag_migration.py and the two docs paths; the diff of 025f314bc touches only the test and docs/evidence/fragments/the-suite-is-green-at-head/the-delivery-test-waits-for-its-reader.html, both inside that scope.\nVERDICT manifest: read manifest.md; it records status complete, commit 025f314bc, the window with its responsible lines, the negative control at 10 of 10 red, alone-25.log PASS=25 FAIL=0, alone-20-after.log PASS=20 FAIL=0 EXIT=0, and xdist-10-after.log PASS=10 FAIL=0 EXIT=0.\nVERDICT diff: read against base 87d07ec6 commit by commit; one commit, 107 insertions and 2 deletions across the test file and the evidence fragment, no product module, and the test gains _wait_for_the_first_attach plus a wrapper around runs.watch_stream_cursor that sets an Event after the real call returns.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_removed_flag_migration.py:457 waits for the reader's attach before the fixture moves, and the window that made the test miss dispatched is named with its responsible lines in reckon/crew/runs.py:2484-2505 at docs/evidence/fragments/the-suite-is-green-at-head/the-delivery-test-waits-for-its-reader.html:30-40.\nSCORE evidence: 15\nJUSTIFICATION evidence: the 20/20 and 10/10 arms are recorded at logs/alone-20-after.log and logs/xdist-10-after.log with EXIT=0, and the negative control at logs/negative-control-mutated.log is 10 of 10 red with EXIT=1, but the miss is a null at the base arm (logs/alone-25.log PASS=25 FAIL=0) and that log carries no EXIT= line.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff of 025f314bc is tests/test_removed_flag_migration.py or docs/evidence/fragments/the-suite-is-green-at-head/the-delivery-test-waits-for-its-reader.html, all declared at manifest.md:3, and no product module is touched.\nSCORE durability: 13\nJUSTIFICATION durability: reverting the change leaves tests/test_removed_flag_migration.py as the base test that logs/alone-25.log records green 25 of 25, so the assertion at tests/test_removed_flag_migration.py:478 reddens only under the hand-applied mutation in logs/negative-control-mutated.log and no test in the suite fails if the change regresses.\nSCORE fit: 17\nJUSTIFICATION fit: the helper at tests/test_removed_flag_migration.py:390 follows the file's own bounded-wait idiom and its WATCHER_LOAD_BOUND_SECONDS constant, and no added name or comment carries a plan, stage or ticket identifier.\nSCORE reuse: 13\nJUSTIFICATION reuse: tests/test_removed_flag_migration.py:390 re-implements the bounded wait and pytest.fail already owned by _wait_for at tests/test_removed_flag_migration.py:381 in the same file rather than extending it.\nFINDING tests/test_removed_flag_migration.py:390 follow-on: _wait_for_the_first_attach duplicates the bounded-wait-and-fail capability of _wait_for at line 381 in the same file, where _wait_for(lambda: attached.is_set()) would reuse the existing owner.\nFINDING logs/alone-25.log:53 follow-on: the cited base-arm log ends in PASS=25 FAIL=0 rather than a bare EXIT= line and its header command is a description rather than the literal command, so its exit status is unreadable and the arm cannot be re-run; logs/xdist-10.log repeats both.\nFINDING logs/negative-control-mutated.log:1 follow-on: the header names rev 87d07ec6 while the body ran the fixed test plus the declared mutation, so the log's revision does not identify the code that ran.",
+  "review_run_id": "r-20261022T004920507130-review-of-the-delivery-test-waits-for-its-reader-025f314bc56f",
+  "reviewed_base_sha": "87d07ec6059fdb98ae65ad30c0c788f268f81a8a",
+  "reviewed_head_sha": "025f314bc56f6b16ad4cf3a517b959fca17e51ce",
+  "reviewed_run_id": "r-20261022T001738718830-the-delivery-test-waits-for-its-reader",
+  "scores": {
+    "durability": 13,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 13,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T01:04:44.088196+00:00",
+  "total": 96
+}
