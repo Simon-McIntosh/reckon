@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S26">
-<meta name="plan-version" content="130">
+<meta name="plan-version" content="131">
 <meta name="plan-modified" content="2026-10-22">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="f2ea9301,5b1759ab,428477c7">
@@ -358,10 +358,16 @@
     <pre class="r-fu-prompt">/reckon-build a-review-can-see-the-figure §10</pre>
     <p class="r-fu-outcome">§10 (f1d444cb3), §11 (bcdace7c1) and §12 (b5c3c6fd7) landed. The remaining work, a figure review that promotion dispatches and reads, is carried by scoring-should-stop-a-promotion §6 and §18 to §20, whose §6 now depends on this plan's §10 and §12.</p>
     </article>
-<article class="r-fu" data-id="f-arcstf-007" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-21" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-arcstf-007" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-21" data-recommends-skill="" data-resolved-at="2026-10-22T20:03:23+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Measure what the local lane can judge (§21), then hold figure reviews to it (§20)</h4>
     <div class="r-fu-body"><p>Figure reviews now run end to end on the local lane. The first live one, on power_convertor's <code>vs1-first-turn-convergence</code> on 2026-10-21, opened all three rendered PNGs and stored a parsed figure record. §13 measured only that clive receives an image. §21 measures whether it applies a rule: it runs §8's five pairs and their image-withheld controls on the local lane and reports <code>trusted</code>, <code>partly</code> or <code>untrusted</code>. §20, which holds figure reviews to an unmetered image lane, waits for that verdict.</p><p>Not covered by §21 or any other section: whether a figure review waits for its run's text review, the "cheap review first" half of §4. It is unverified, and needs a section of its own before it can be claimed.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-review-can-see-the-figure §21</pre>
+    <p class="r-fu-outcome">§21 delivered: the local lane judged all ten pair figures correctly and its five controls stayed honest, verdict partly (3 of 5 pairs) because two runs emitted a malformed Read path from leaked DSML tool-call markup. The lead held §20 until that leak is fixed and figure reviews read the PNG rather than the SVG.</p>
+    </article>
+<article class="r-fu" data-id="f-arcstf-008" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-22" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Make a figure review judge the rendered PNG (§22); §20 waits on it and on the imas-ambix leak fix</h4>
+    <div class="r-fu-body"><p>§22 makes the figure prompt and brief forbid any access to the SVG source and anchor a finding to the figure path or its drawing script. §20, which holds figure reviews to the unmetered local lane, depends on §21 (done, partly), on §22, and on <code>imas-ambix:a-tool-call-carries-no-model-markup#s3</code>, the fix for the DSML markup that leaks into the local lane's tool arguments. Dispatch §20 only once both have landed.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-review-can-see-the-figure §22</pre>
     </article>
 </section>
 
