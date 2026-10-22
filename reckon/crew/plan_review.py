@@ -59,7 +59,7 @@ import json
 import re
 import shlex
 import subprocess
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -207,8 +207,21 @@ def _is_run_comment(comment_id: Any) -> bool:
 # what a freshly stored review carries; ``acted`` and ``declined`` are reached
 # once every finding is answered; ``pending`` is the surface's state for a
 # version with no stored review yet.
-PLAN_REVIEW_STATUSES: tuple[str, ...] = ("pending", "ready", "acted", "declined")
+# ``incomplete`` is what a delivered report carries when it leaves out an item
+# its own brief listed: the review answered fewer checks than it was asked for,
+# so it is not the review the plan owed and it covers nothing until a complete
+# one is composed. It is set at delivery against the rubric that review was
+# asked for, and it stays off every record stored before the mark existed, so
+# an older review that merely lists an absent item keeps the coverage it had.
+PLAN_REVIEW_STATUSES: tuple[str, ...] = (
+    "pending",
+    "ready",
+    "acted",
+    "declined",
+    "incomplete",
+)
 DEFAULT_STATUS = "ready"
+INCOMPLETE_STATUS = "incomplete"
 
 # An author answers each finding by acting on it or by declining it. Either
 # answer closes the finding for the dispatch gate; a decline must carry a reason.
@@ -794,6 +807,17 @@ def _plan_goals(plan: Mapping[str, Any] | str | Path) -> dict[str, str]:
     }
 
 
+def _review_is_incomplete(record: Mapping[str, Any]) -> bool:
+    """Whether a stored record is a review marked as an incomplete one.
+
+    The mark is set at delivery on a report that left out an item its own brief
+    listed, and it is absent from every record stored before the mark existed.
+    Only the exact status counts: a record carrying another status, or none, is
+    a review of its day.
+    """
+    return str(record.get("status") or "").strip().lower() == INCOMPLETE_STATUS
+
+
 def review_coverage(
     project: str,
     plan_slug: str,
@@ -816,7 +840,10 @@ def review_coverage(
     neither applies to it. A unit absent from the review is never covered, a
     section the review's snapshot did not declare implementable counts as new,
     and the document unit, whose digest carries decisions, gates and
-    dependencies, is covered only by an exact match.
+    dependencies, is covered only by an exact match. A stored review marked
+    :data:`INCOMPLETE_STATUS` covers nothing at all, so every unit it would
+    have covered is left uncovered and the coordinator composes the review the
+    plan is actually owed rather than building on a partial one.
 
     Both thresholds come from the project's own resolved flight config when the
     caller passes none, so a host or project layer that retunes one changes
@@ -834,7 +861,7 @@ def review_coverage(
     records = [
         record
         for record in list_plan_reviews(project, base_dir=base_dir)
-        if record.get("plan_slug") == plan_slug
+        if record.get("plan_slug") == plan_slug and not _review_is_incomplete(record)
     ]
     forms = _fingerprint_forms(content)
     whole = [record for record in records if record.get("plan_fingerprint") in forms]
@@ -2050,20 +2077,65 @@ def _stored_code_review_run_ids(project: str) -> set[str]:
     return ids
 
 
-def report_carries_review_lines(text: str) -> bool:
+def _report_line_reader(subject: str) -> Callable[[str], Iterator[str]]:
+    """The line reader the grammar of a ``subject`` report is written against.
+
+    The admission guard reads a report's text through the reader the parser that
+    will consume it reads through, so the two cannot disagree about which line
+    they are looking at. A plan report is Markdown, so its reader strips a
+    leading list marker and ``- FINDING …`` reads as ``FINDING …``; the health
+    grammar, which a ``code`` subject is read under, reads its lines as written.
+    The reader is selected by the same subject that selects the record builder,
+    so no call site can pair one grammar's guard with another's parser.
+    """
+    if str(subject or "").strip() == "code":
+        return _review_store._review_text_lines
+    return _review_store._plan_report_lines
+
+
+def report_carries_review_lines(text: str, *, subject: str = "") -> bool:
     """Whether a report's text carries a RUBRIC or FINDING line.
 
     A delivered review's report emits one line per rubric item and one per
-    finding. A report directory with a report file that carries neither was
+    finding. ``subject`` selects the grammar the text is read under, which is
+    the grammar its record will be built by, so a report is admitted on the
+    lines its own parser will see rather than on the lines some other parser
+    would. A report directory with a report file that carries neither was
     composed and never delivered — a snapshot and a sidecar with no reviewer
     output beside them — so it is not a review and is neither imported nor
-    counted.
+    counted. The default is the plan report, the permissive reading, so a caller
+    that does not know the subject admits a report rather than dropping it
+    unread.
     """
+    reader = _report_line_reader(subject)
     return any(
         _review_store._PLAN_RUBRIC_LINE_RE.match(line)
         or _review_store._PLAN_FINDING_LINE_RE.match(line)
-        for line in _review_store._review_text_lines(text)
+        for line in reader(text)
     )
+
+
+def _delivered_status(parsed: Mapping[str, Any], rubric: str) -> str:
+    """The status a delivered report's record carries, at the moment it is stored.
+
+    A content review of the plan is the review the plan owes before it is
+    built, so a report that leaves out one of its brief's items has not
+    answered a check it owed: its record is marked :data:`INCOMPLETE_STATUS`
+    rather than stored as a finished review, and it covers nothing. The mark is
+    decided here, against the rubric the report was delivered under, because
+    that is where the rubric the review was asked for is known.
+
+    A design review is not marked: it is owed once at any version as the plan's
+    search of the codebase for machinery it could reuse, and a partial one is
+    read for what it answered rather than withdrawn — which is how every review
+    stored before this mark is read. A report that answered every item of its
+    rubric stores as :data:`DEFAULT_STATUS`, exactly as before.
+    """
+    incomplete = (
+        _review_store.plan_report_rubric_name(rubric) == "plan_review"
+        and parsed["absent_items"]
+    )
+    return INCOMPLETE_STATUS if incomplete else DEFAULT_STATUS
 
 
 def delivered_report_record(sidecar: Mapping[str, Any]) -> dict[str, Any]:
@@ -2107,7 +2179,7 @@ def delivered_report_record(sidecar: Mapping[str, Any]) -> dict[str, Any]:
         "section_digests": dict(sidecar.get("section_digests") or {}),
         "findings": parsed["findings"],
         "responses": {},
-        "status": DEFAULT_STATUS,
+        "status": _delivered_status(parsed, rubric),
         "review_run_id": report_path.parent.name,
         "rubric_items": parsed["rubric_items"],
         "absent_items": parsed["absent_items"],
@@ -2137,7 +2209,7 @@ def _code_review_record(sidecar: Mapping[str, Any]) -> dict[str, Any]:
     if not key:
         raise ValueError("delivered code review sidecar is missing neighbourhood_key")
     text = report_path.read_text(encoding="utf-8", errors="replace")
-    if not report_carries_review_lines(text):
+    if not report_carries_review_lines(text, subject="code"):
         raise ValueError(
             f"delivered code review report {report_path} carries no RUBRIC or "
             "FINDING line, so it is not a review"
