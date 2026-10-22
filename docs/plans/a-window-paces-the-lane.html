@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-window-paces-the-lane">
   <meta name="plan-title" content="A Window Paces The Lane">
   <meta name="plan-summary" content="The provider publishes two clocks on every served stream and nothing reads them, so a wave spends a five-hour window in an hour and the free lane sits idle.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="11.0">
   <meta name="plan-capability-version" content="1.0">
@@ -26,7 +26,7 @@
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s6-the-probe-reader-and-the-undeclared-dialect&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17,6a915fd7,4d043fd0,fd4a158f,95ba8ea7,cb69a87f,768a9285,e5cf008e,6001f577,e6dd0dc4,c011b6f9,82095575,87c98418,8e70585c,b7ba4786,3f0e9621,798f87f8,e37ac897,d34eaf27">
 <meta name="plan-impl" content="0.97">
-<meta name="plan-version" content="246">
+<meta name="plan-version" content="247">
 <meta name="plan-modified" content="2026-10-22">
 </head>
 <body>
@@ -2078,10 +2078,11 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     <pre class="r-fu-prompt">/reckon-build a-window-paces-the-lane §6</pre>
     <p class="r-fu-outcome">The four stranded landing records are on main: b2148230+2e4c8c8e, 3f81cab7, 9b937d01 and c8c329d4 merged in an integration worktree with both sides kept, the evidence file's two append-point conflicts resolved by restoring the section close between anchors, audit-doc clean on all four documents, and merged into main at 6a915fd7. Proved by positive markers at HEAD: the plan anchor o-s5-gate-at-the-current-head and the figure head-timeline.png are present and all five commits are ancestors. The promotion-boundary guard the followup asks for — refuse --no-commit when the run's worktree has commits beyond its base — is not this plan's: reckon/crew/promotion.py is claimed live by a scoring-should-stop-a-promotion node and that plan owns the promotion boundary; the pointer followup below names it.</p>
     </article>
-<article class="r-fu" data-id="f-20260922T1145-no-commit-guard-owner" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-22" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-20260922T1145-no-commit-guard-owner" data-status="resolved" data-written-by="reckon-ship" data-written-at="2026-09-22" data-recommends-skill="/reckon-build" data-resolved-at="2026-10-22T10:04:42+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">A no-commit promotion over a worktree with commits belongs to the promotion plan</h4>
     <div class="r-fu-body"><p>Pointer, not work. Four verification nodes were promoted with <code>--no-commit</code> while their worktrees held committed landing records, and nothing compared the declared reason against <code>git log &lt;base&gt;..HEAD</code>. The one-line refusal belongs at the promotion boundary in <code>reckon/crew/promotion.py</code>, which <strong>scoring-should-stop-a-promotion</strong> owns and had claimed live when this was recorded. Recorded here as foreign-owner so the ledger shows where it went; the work is that plan's.</p></div>
     <pre class="r-fu-prompt">/reckon-build scoring-should-stop-a-promotion</pre>
+    <p class="r-fu-outcome">Every section has landed; §20 was the last. The one open followup pointed a no-commit promotion over a worktree with commits at the promotion boundary; that guard now exists as _require_commit_for_changed_manifest in reckon/crew/promotion_scope.py, which measures a commitless run's worktree against its base and refuses unless the coordinator passes a --no-commit reason, recording the paths beside it. The chain ends here.</p>
     </article>
 <article class="r-fu" data-id="f-awptl-budget-group-assertion-cannot-fail" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-09-25T14:18:00Z" data-recommends-skill="/reckon-build a-window-paces-the-lane §5b" data-resolved-at="2026-10-01T19:56:12+00:00" data-resolved-by="">
     <h4 class="r-fu-title">A budget-group assertion cannot fail on a swapped clock constant</h4>
@@ -2615,7 +2616,7 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
     <div class="r-comment-body"><p>Landed: both budget verdicts a dispatch takes are judged against the dispatching session's lift; review 115/120. Evidence: <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed.html#s20">§20 landing record</a>.</p></div>
 </div>
 <div class="r-comment" data-section="s20" data-id="c-run-r-20261022T083802161983-a-spent-global-lift-does-not-mask-a-session-lift" data-who="reckon-build" data-when="2026-10-22T09:00:16.143Z">
-    <div class="r-comment-body"><p>dispatch() now passes its dispatching session to both of its budget verdicts, so a live session credit lift under its own cap admits its session&#x27;s dispatch (and its fallback substitute&#x27;s) past a spent global credit lift on the same group while another session is still held; new file 4 passed, gate 43 passed with 1 pre-existing failure outside scope.</p></div>
+    <div class="r-comment-body"><p>dispatch() now passes its dispatching session to both of its budget verdicts, so a live session credit lift under its own cap admits its session's dispatch (and its fallback substitute's) past a spent global credit lift on the same group while another session is still held; new file 4 passed, gate 43 passed with 1 pre-existing failure outside scope.</p></div>
 </div>
 </section>
 </main>
