@@ -35,6 +35,11 @@
     <p>Run <code>a-duty-follows-the-current-head</code>, landed at <code>f8057bb00</code> after one repair round. From the moment a complete run is resumed until it delivers again, <code>reckon/crew/obligations.py</code> withdraws its <code>review-missing</code> and <code>promotable-stale</code> duties for the replaced head; a review queued for that head is withdrawn rather than launched and recorded as superseded by the resume, and the reflex refuses to compose one; when the run delivers, the duties return naming the new head. The published obligation snapshot skips a withdrawn duty rather than failing its whole sweep, which the first round's head did.</p><p>Gate: base 5 failed, head 70 passed, EXIT=0; a mutation arm reproduces the sweep failure. Reviews: 99 (the snapshot sweep raised on a withdrawn duty), then 108/120; two follow-ons exempted.</p>
   </section>
 
+  <section id="s6">
+    <h2>§6 — a manual admission pass says what it decides</h2>
+    <p>Run <code>r-20261022T101719372774-a-manual-admission-pass-reports-its-verdicts</code>, commit <code>038da9f3d952c030ea0f5b832935b29b06cab342</code>. The bare <code>crew admit</code> loop in <code>reckon/crew/queue_admission.py</code> writes each pass's result to stdout as one JSON line, the same record <code>admission-verdicts.jsonl</code> holds for that pass, so a caller sees every decision as it is made. <code>--once</code> is unchanged, and the help names the loop, the single manual pass and the pass bound.</p><p>Gate, re-run by the coordinator from <code>git archive</code> extractions: 33 passed EXIT=0 at the head; at base a3395779 with the head's test file copied in, the two new cases fail (2 failed, 31 passed). The declared mutation (the loop publishes nothing) fails the two-pass case. Review 116/120, one follow-on: the help states the bound as a literal phrase rather than reading <code>LANE_GATE_READ_DEADLINE_SECONDS</code>, so a change to that constant would leave the help stale.</p>
+  </section>
+
 </main>
 </body>
 </html>
