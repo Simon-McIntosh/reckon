@@ -26,7 +26,7 @@
   <title>Work Is Checked Against Its Domain | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="37">
+<meta name="plan-version" content="38">
 <meta name="plan-modified" content="2026-10-22">
 </head>
 <body>
@@ -195,6 +195,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-10-22T04:55:00Z">
     <div class="r-comment-body"><p>Landed: one composer for the domain block and its check lines; no heading for an empty rule set; review 113/120. Evidence: <a href="/reckon/evidence/archive/work-is-checked-against-its-domain-landed.html#s9">§9 landing record</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261022T023248970019-one-composer-for-the-domain-block" data-who="reckon-build" data-when="2026-10-22T04:21:04Z">
+    <div class="r-comment-body"><p>One composer for the domain block and its per-check line: `_brief_domain_block` is deleted from `reckon/crew/dispatch_admission.py` and its call sites in `reckon/crew/dispatch.py` and `reckon/crew/dispatch_plan.py` call `prompts.domain_rules_block`, while `prompts.render_review_check` is the one spelling of a declared review check&#x27;s line; `render_domain_rules` composes nothing for a match holding no invariants and no review checks, so a project declaring only `model_paths` gets no empty heading. The brief-digest test pins its expectation to a sha256 computed in the test over the fixture&#x27;s own bytes and the declared block, and the per-check test pins its expectation to the literal line the fixture declares; a mutation arm in `logs/negative-control.log` turns each of them red. Gate `tests/test_one_composer_for_the_domain_block.py tests/test_domain_rules_reach_the_brief.py tests/test_domain_rules.py tests/test_brief_dispatch.py tests/test_brief_prompt.py tests/test_every_module_fits_a_worker_window.py` — 67 passed EXIT=0 at head 7c2934565, 6 failed 61 passed EXIT=1 at base ed60ec494 with the model-paths cases among the failures.</p></div>
 </div>
 </section>
 </main>
