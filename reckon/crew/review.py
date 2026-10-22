@@ -1281,6 +1281,19 @@ def _plan_report_lines(text: str) -> Iterator[str]:
         yield _PLAN_REPORT_LIST_MARKER_RE.sub("", line, count=1)
 
 
+def plan_report_rubric_name(rubric: str) -> str:
+    """The canonical name of the plan-report rubric ``rubric`` spells, else ``""``.
+
+    A caller that must act on which rubric a report was delivered under reads
+    the name from here rather than restating the alias table, so the two
+    spellings the dispatch flag accepts (``content``, ``design``) and the two
+    the item sets are keyed by resolve in one place.
+    """
+    name = str(rubric or "").strip().lower()
+    name = _PLAN_REPORT_RUBRIC_ALIASES.get(name, name)
+    return name if name in _PLAN_REPORT_RUBRIC_ITEMS else ""
+
+
 def _plan_report_rubric_items(rubric: str) -> tuple[str, ...]:
     """Return the checklist items a report under ``rubric`` is judged against."""
     name = _PLAN_REPORT_RUBRIC_ALIASES.get(str(rubric or "").strip().lower(), "")
