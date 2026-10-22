@@ -39,9 +39,10 @@ finding on <code>validation.findings</code> carrying the <code>D07</code> remedy
 <code>ruff check</code> and <code>ruff format --check</code> report nothing added on the three staged paths.</p>
 <p id="an-unnamed-comparison-warns-control">Negative control (<code>negative-control.log</code>): routing the
 comparison finding back into the refusal findings — <code>plan_dispatch</code> taking every sandbox finding as a
-refusal and producing no warning — makes the model-building fixture refused again, and the file reports
+refusal and producing no warning — makes the comparison finding a refusal again, and the file reports
 <strong>3 failed, 39 passed, EXIT=1</strong>, headed by
-<code>test_the_dry_run_admits_a_model_node_and_warns_the_comparison</code> with <code>assert False is True</code>.
+<code>test_the_dry_run_refuses_the_missing_input_and_warns_the_comparison</code> with
+<code>assert 'compares-with' not in ['inputs', 'compares-with']</code>.
 The three ids fail on the mutated tree and pass on the head, so the split is what admits the node rather than the
 fixture's shape.</p>
 </main>
