@@ -47,6 +47,9 @@ from reckon.crew.node import (
     role_may_write_repository_paths,
     validate_node,
 )
+from reckon.crew.prompts import (
+    domain_rules_block,
+)
 from reckon.crew.refusals import (
     format_refusal,
 )
@@ -825,7 +828,7 @@ def plan_dispatch(
             # yet, so the source is read.
             node.brief_sha256 = _brief_digest(
                 node.brief_path or node.brief,
-                block=_brief_domain_block(node, project),
+                block=domain_rules_block(project=project, node=node),
             )
         if not node.plan.strip():
             # A brief alone names no committed plan section, so the gates that
@@ -1596,7 +1599,6 @@ from .dispatch_admission import (  # noqa: E402
     ORCHESTRATOR_LANE_DECLARATION_KEY,
     _LANE_GATE_WAITING_STATES,
     _brief_digest,
-    _brief_domain_block,
     _brief_record,
     _dispatch_fleet_gate,
     _dispatch_health_review,

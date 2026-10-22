@@ -108,6 +108,7 @@ from reckon.crew.node import (
 )
 from reckon.crew.prompts import (
     compose_prompt as compose_prompt,
+    domain_rules_block as domain_rules_block,
     time_fence_statement as time_fence_statement,
 )
 from reckon.crew.recovery import (
@@ -1807,7 +1808,7 @@ def dispatch(
     # The domain-rules block this brief carries is composed once and handed to
     # both the stored copy and the record, so the text the worker reads, the
     # copy the pointer names and the digest a promotion cites are one document.
-    brief_block = _brief_domain_block(node, project)
+    brief_block = domain_rules_block(project=project, node=node)
     if node.brief.strip():
         node.brief_path = str(_store_brief(directory, node.brief, block=brief_block))
     brief = _brief_record(node, project=project)
@@ -2803,7 +2804,6 @@ from .dispatch_admission import (  # noqa: E402
     _REQUIREMENT_PROBE_TIMEOUT_SECONDS as _REQUIREMENT_PROBE_TIMEOUT_SECONDS,
     _actionable_budget_hold as _actionable_budget_hold,
     _brief_digest as _brief_digest,
-    _brief_domain_block as _brief_domain_block,
     _brief_record as _brief_record,
     _brief_text as _brief_text,
     _dispatch_fleet_gate as _dispatch_fleet_gate,

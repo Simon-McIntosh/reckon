@@ -160,9 +160,7 @@ def test_the_stored_brief_carries_the_rule_and_its_digest_covers_it(
     flight = _flight_file(tmp_path, FLIGHT.format(check="true"))
     node = _node(["models/tape.py"])
     source = _brief(tmp_path)
-    block = dispatch_admission._brief_domain_block(
-        node, "fixture", project_path=str(flight)
-    )
+    block = domain_rules_block(project="fixture", node=node, project_path=str(flight))
     assert block.startswith(DOMAIN_RULES_HEADING)
     stored = dispatch_admission._store_brief(tmp_path / "run", source, block=block)
     assert DOMAIN_RULES_HEADING in stored.read_text(encoding="utf-8")
@@ -182,9 +180,7 @@ def test_a_brief_that_already_carries_the_heading_is_not_doubled(
     flight = _flight_file(tmp_path, FLIGHT.format(check="true"))
     node = _node(["models/tape.py"])
     source = _brief(tmp_path, f"Build the tape model.\n\n{DOMAIN_RULES_HEADING}\n  x\n")
-    block = dispatch_admission._brief_domain_block(
-        node, "fixture", project_path=str(flight)
-    )
+    block = domain_rules_block(project="fixture", node=node, project_path=str(flight))
     stored = dispatch_admission._store_brief(tmp_path / "run", source, block=block)
     assert stored.read_text(encoding="utf-8").count(DOMAIN_RULES_HEADING) == 1
 
@@ -227,10 +223,7 @@ def test_a_project_declaring_nothing_carries_no_rule_heading(tmp_path: Path) -> 
     node.brief = str(_brief(tmp_path))
     original = Path(node.brief).read_text(encoding="utf-8")
     assert (
-        dispatch_admission._brief_domain_block(
-            node, "fixture", project_path=str(flight)
-        )
-        == ""
+        domain_rules_block(project="fixture", node=node, project_path=str(flight)) == ""
     )
     assert (
         dispatch_admission._brief_text(node, "fixture", project_path=str(flight))
