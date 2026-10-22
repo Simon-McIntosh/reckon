@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/promotion.py:334",
+    "reckon/crew/promotion_checks.py:2838"
+  ],
+  "completed_at": "2026-10-22T03:16:00.115Z",
+  "dispatched_at": "2026-10-22T03:00:49Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-plan-review-promotes-without-a-typed-outcome.html",
+      "id": "repair-arm-base-is-the-section-base",
+      "line": 41,
+      "severity": "follow-on",
+      "text": "Both gate arms take their base at adefd63bd (baseline_suite.revision), not at the previously reviewed head b8dd1a756, so the repair commit 78fe215e0's own delta is not isolated: the manifest shows the repair adds no failure against the section base, but neither arm would catch a regression the refactor introduced relative to b8dd1a756. The risk is low because 78fe215e0 is behaviour-preserving and its two callers are covered by the 302 tests passing in both arms, but the record cannot be checked against the head it repaired."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "The changed helper _delivered_plan_review_for_run is reached only through _plan_review_promotion_outcome (:1487), itself called from _resolve_promotion_outcome (:1516) whose production caller is reckon/crew/promotion.py:334 inside complete(), and through _plan_review_record_for_promoting_run (:2547) from _staging_review_record_by_run, called in-turn from _delivered_review_payloads_for_commit at promotion_checks.py:2838; reckon/mcp_views.py:3884 calls plan_review.delivered_reports directly for a different question and does not reach the change.",
+    "diff": "Read commit by commit against b8dd1a756: 78fe215e0 replaces the inline delivered-report join in _plan_review_record_for_promoting_run with a call to _delivered_plan_review_for_run, updates two docstrings, and adds _stage_plan_review_store_record plus test_a_stored_plan_review_is_summarised_by_its_own_figures; abe4d9441 updates the evidence fragment's measure paragraphs only. No other path is touched.",
+    "done_when": "The done_when names tests/test_a_plan_review_promotes_without_a_typed_outcome.py and a base arm adding no failure; the manifest's after_suite at 78fe215e0 records '308 passed in 74.74s' with failure_count 0 and baseline_suite records 6 failed, 302 passed with the six being this node's own cases, and logs/repair-head-arm-new-test.log ends '8 passed in 43.15s' with EXIT=0.",
+    "goal": "The node's goal is a review's promotion composing its default outcome without a hand-typed one for plan reviews and queue-launched run reviews; the two commits gained since b8dd1a756 are a repair round on that, and 78fe215e0 gives the delivered-report join a single owner at reckon/crew/promotion_checks.py:1448 and adds the missing case for the stored-record summary's plan-slug discriminator at :1441.",
+    "manifest": "Read in full; it records the four commits, the literal head-arm command, five gate logs, baseline_suite and after_suite both completed with log_path, the bare negative_control_log path and its '4 failed, 4 passed in 8.47s' EXIT=1 result, and the ruff before/after counts.",
+    "write_paths": "The manifest declares reckon/crew/promotion_checks.py, tests/test_a_plan_review_promotes_without_a_typed_outcome.py, the evidence fragment and the figures directory; git diff --stat b8dd1a756..abe4d9441 changes exactly the first three and nothing else, and the granted figures directory is unused."
+  },
+  "justifications": {
+    "durability": "test_a_stored_plan_review_is_summarised_by_its_own_figures fails against the plan-slug branch it guards: with that branch at promotion_checks.py:1441 removed the outcome reads 'review stored with no total score; 2 finding(s)' and the assertion on 'plan review stored with 2 finding(s)' reddens, and the case fails at the base arm while the head arm passes it.",
+    "evidence": "logs/repair-head-arm-new-test.log ends '8 passed in 43.15s' EXIT=0 and logs/repair-base-arm-population.log ends '6 failed, 302 passed in 104.27s (0:01:44)' EXIT=1 with the six being this node's cases, but both arms take their base at adefd63bd rather than at the previously reviewed head b8dd1a756, so the repair commit's own delta is not isolated.",
+    "fit": "reckon/crew/promotion_checks.py:1448 keeps the surrounding docstring idiom of the module and the added test helper names the fixture it stages rather than any plan stage, matching tests/test_a_plan_review_promotes_without_a_typed_outcome.py:256.",
+    "goal_fidelity": "reckon/crew/promotion_checks.py:2547 now resolves the record reader's delivery through _delivered_plan_review_for_run, and :1441 picks the plan-review summary on the plan slug the plan-review store writes, which resolves both findings the prior review recorded against this node's goal.",
+    "reuse": "The duplication the prior review recorded at promotion_checks.py:1448 is removed: the delivered-report join now exists once and _plan_review_record_for_promoting_run delegates to it at :2547, and a search of the head tree for other iterations of plan_review.delivered_reports matching a crew run finds none in reckon/crew/.",
+    "scope_discipline": "git diff --stat b8dd1a756 abe4d9441 lists only promotion_checks.py, the named test file and the evidence fragment, all inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261022T025922661416-review-of-a-plan-review-promotes-without-a-typed-outcome-abe4d944116b",
+  "reviewed_base_sha": "b8dd1a756badbd1ce2a05453ae2f26a15d92a3df",
+  "reviewed_head_sha": "abe4d944116b465441798e81deaf6da175a6cb0d",
+  "reviewed_run_id": "r-20261022T013007429203-a-plan-review-promotes-without-a-typed-outcome",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T03:26:01.877564+00:00",
+  "total": 113
+}
