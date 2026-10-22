@@ -1,0 +1,100 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite gate logs as the manifest records them: baseline_suite failure_count 0 with failure_ids [] (logs/baseline_gate.log, 96 passed EXIT=0 at 52f79371c) and after_suite failure_count 0 with failure_ids [] (logs/after_gate_repair.log, 101 passed EXIT=0 at 1e036a271); the reviewed head 042724c6740 is one docs-only commit past that gate, on the evidence fragment, a path no file in the gate's list reads, so the head adds no failing test the base arm did not already fail.",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/serve.py:1749",
+    "reckon/mcp.py:1968",
+    "reckon/mcp.py:2992",
+    "reckon/flight.py:2635",
+    "reckon/crew/plan_review.py:3074",
+    "reckon/roadmap.py:2322",
+    "reckon/mcp_views.py:1927",
+    "reckon/mcp_views.py:1937"
+  ],
+  "completed_at": "2026-10-22T05:04:26.126Z",
+  "dispatched_at": "2026-10-22T04:49:24Z",
+  "findings": [
+    {
+      "file": "tests/test_work_in_flight_sits_on_its_section.py",
+      "line": 288,
+      "severity": "follow-on",
+      "summary": "the case added for the released-claim repair cannot fail on the defect it was added for: the fixture holds no claim that binds the path (a stopped run whose claim is released and a queued run), and held_path_blockers emits a row only when sides['holders'] is non-empty, so reinstating `side = \"holders\" if claim.get(\"binding\", True) else \"waiting\"` leaves `held == []` true; the repair is real in the code but nothing tests it.",
+      "text": "follow-on: the case added for the released-claim repair cannot fail on the defect it was added for: the fixture holds no claim that binds the path (a stopped run whose claim is released and a queued run), and held_path_blockers emits a row only when sides['holders'] is non-empty, so reinstating `side = \"holders\" if claim.get(\"binding\", True) else \"waiting\"` leaves `held == []` true; a third fixture run holding the path would make the released one appear as waiting and redden the case, as the defect did before the repair."
+    },
+    {
+      "file": "tests/test_work_in_flight_sits_on_its_section.py",
+      "line": 161,
+      "severity": "follow-on",
+      "summary": "the classification assertion compares the section row against a direct call to partition_live_runs on the same pointer, and the fixture records no watcher event, so a row that derived its own classification by classify_pointer would return the same string and the assertion would still hold - the regression its docstring names is not reachable through this fixture.",
+      "text": "follow-on: the assertion compares the section row against a direct call to partition_live_runs on the same pointer the test handed to build_roadmap, and the fixture has no recorded watcher event, so the record-led read and a fresh classify_pointer answer coincide; a row that derived its own classification, the regression the docstring names, would leave the assertion true. A fixture carrying a recorded event for the run is the case where the two readings diverge and the assertion can fail."
+    },
+    {
+      "file": "docs/figures/a-project-reads-as-one-picture/work-in-flight-sits-on-its-section/section_row_readers.py",
+      "line": 1,
+      "severity": "follow-on",
+      "summary": "the reviewed node's landing contract states its done-when names no artifact so it writes no figure, and the diff carries a 337-line renderer plus a 1841-line generated SVG - 78 percent of the change - which exceeds the brief even though the figures directory is inside the granted scope.",
+      "text": "follow-on: the reviewed node's landing contract states its done-when names no artifact so it writes no figure, and the diff carries a 337-line renderer plus a 1841-line generated SVG - 78 percent of the change's lines - which exceeds the brief even though the figures directory is inside the granted scope; it should be confirmed as wanted or dropped from the landing."
+    },
+    {
+      "file": "reckon/mcp_views.py",
+      "line": 1497,
+      "severity": "follow-on",
+      "summary": "the goal asks a section row to list the held paths of the runs sitting on it, but the run row carries no write paths and the only place a path reaches a section row is the holder/waiting pair at reckon/roadmap.py:3878, so a section whose single running run holds a path reports no held path at all.",
+      "text": "follow-on: the goal asks a section row to list the held paths of the runs sitting on it, but the run row built here carries no write paths and the only place a path reaches a section row is the holder/waiting pair at reckon/roadmap.py:3878, so a section whose single running run holds pkg/one.py reports no held path; if the goal sentence means a run's declared paths on its row, the pointer's node.write_paths has to be carried the way the classification now is."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T020156268686-work-in-flight-sits-on-its-section/manifest.md",
+      "line": 12,
+      "severity": "follow-on",
+      "summary": "the tests line and the after_suite command carry an unsubstituted <worktree> placeholder, which the node's own manifest contract forbids on these exact fields, so the gate receipt that promotion fills from this line cannot be re-run even though the log's own command header can.",
+      "text": "follow-on: the tests line and the after_suite command carry an unsubstituted <worktree> placeholder, which the node's own manifest contract forbids on exactly these fields ('the literal text a shell was handed, never a template command carrying an unsubstituted placeholder'); the write-time audit returns ok:true because logs/after_gate_repair.log names the literal command on its second line, so the receipt is recoverable from the log rather than from the record."
+    },
+    {
+      "file": "docs/evidence/fragments/a-project-reads-as-one-picture/work-in-flight-sits-on-its-section.html",
+      "line": 1,
+      "severity": "follow-on",
+      "summary": "commit f82ca652e, the only commit touching this file alone, carries a subject is 'feat(roadmap): carry each section's runs, held paths and blocker kinds' while its content is only the evidence fragment, so a reader auditing subjects against diffs sees a product commit carrying no product change.",
+      "text": "follow-on: commit f82ca652e carries the subject 'feat(roadmap): carry each section's runs, held paths and blocker kinds' over a diff whose only file is docs/evidence/fragments/a-project-reads-as-one-picture/work-in-flight-sits-on-its-section.html, so a reader auditing subjects against diffs reads a product commit carrying no product change; the manifest discloses it, and the tree is correct at every later commit."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/serve.py:1749, reckon/mcp.py:1968, reckon/mcp.py:2992, reckon/flight.py:2635, reckon/crew/plan_review.py:3074 and reckon/roadmap.py:2322 are the production callers of build_roadmap, and reckon/mcp_views.py:1927 (in_flight_by_plan) and :1937 (interrupted_by_plan) are the production callers of partition_live_runs, the two functions the change extends.",
+    "diff": "read commit by commit over 52f79371c..042724c6740: ba405e2c4 is the product change (live_run_classification.py, mcp_views.py, roadmap.py, the new test file), abeebd593 widens one except clause in the claim read, f82ca652e and 042724c67 write the evidence fragment, a45e72061 adds the figure, 2d8197acd restyles it, 1e036a271 is the review's repair round over the same four product and test paths.",
+    "done_when": "read from the reviewed run's prompt.txt FENCE - EVIDENCE and the plan section docs/plans/a-project-reads-as-one-picture.html:88 - a fixture live pointer on a section row with the crew-live classification, a blocked manifest making its section run-blocked with the blocker text, two runs over one path reporting holder then queued, the new tests failing on the base commit, and the gate log recording the power_convertor pair explanation; tests/test_work_in_flight_sits_on_its_section.py:144, :165 and :201 are the three cases, logs/base_arm.log shows them red at the base revision, and the pair explanation is recorded in docs/evidence/fragments/a-project-reads-as-one-picture/work-in-flight-sits-on-its-section.html:44 rather than in a gate log.",
+    "goal": "read from the reviewed run's prompt.txt:26 - 'List each section's runs, held paths and blocker kinds on its roadmap row using the one run classification'; the landed code does that at reckon/roadmap.py:3893 for runs, :3874-3878 for blocker kinds and held paths, with the classification carried from the partition at reckon/mcp_views.py:1902.",
+    "manifest": "read at the run directory; status complete, baseline_suite and after_suite are flat records with completed true and failure_count 0, the f82ca652e subject/content mismatch is disclosed, and `reckon crew check --manifest --run r-20261022T020156268686-work-in-flight-sits-on-its-section` returns ok:true with no findings now that logs/docs_paths_gate.log names its command; the tests line and after_suite command still carry an unsubstituted <worktree> placeholder.",
+    "write_paths": "read from prompt.txt:70-77 and the manifest's orientation_write_paths; git diff --stat 52f79371c 042724c6740 lists seven files and every one is inside the grant."
+  },
+  "justifications": {
+    "durability": "the base arm reddens for real (logs/base_arm.log, three KeyError 'alpha#s1' failures at the base revision, where a section row carries no runs) and the declared mutation reddens test_a_live_run_sits_on_its_section_row_with_its_classification, but the case added for the repaired released-claim defect cannot fail: tests/test_work_in_flight_sits_on_its_section.py:288 asserts an empty hold list over a fixture with no binding holder, and held_path_blockers emits a row only when sides['holders'] is non-empty, so the reinstated defect leaves that assertion true.",
+    "evidence": "the gate asserts the done_when: logs/base_arm.log is 3 failed / 1 passed EXIT=1 at 52f79371c in a scratch extraction whose header names its module and cwd, logs/after_gate_repair.log is 101 passed EXIT=0 at 1e036a271, and logs/negative_control.log is the declared mutation red with EXIT=1; the plan's power_convertor explanation is recorded in the evidence fragment rather than in a gate log as the done-when words it.",
+    "fit": "the change follows the surrounding idiom - mechanism-named kind constants at reckon/live_run_classification.py:26-30, docstrings that state the reason for the rule, no plan, sprint or ticket label in any changed path or symbol - and the manifest records zero added ruff findings; commit f82ca652e carries a feat(roadmap) subject over an evidence-fragment-only change.",
+    "goal_fidelity": "reckon/roadmap.py:3874-3893 puts on each section row its runs carrying the partition's classification, a blocked run's own blocker text, and the five hold kinds, which meets the goal sentence; reckon/mcp_views.py:1486-1499 leaves a run's write paths off the row and the only place a path appears is the holder/waiting pair at reckon/roadmap.py:3878.",
+    "reuse": "no owner exists for the capability the two new helpers add: a search of reckon/ for a holder/waiting pairing and for a grouping of classified run rows by (plan, section) found only reckon/crew/dispatch_claims.py and reckon/crew/directory.py:142-154, which pair a claim with its liveness and group run records by coordinator session, neither of which is this; the helpers sit beside the existing shared read in reckon/live_run_classification.py and read the claim registry's own binding verdict rather than re-deriving it.",
+    "scope_discipline": "every path in git diff --stat 52f79371c 042724c6740 is inside the declared write paths (reckon/roadmap_ranking.py is declared and unused); the 337-line figure script and its 1841-line SVG are 78 percent of the diff and the node's own prompt said its done-when names no artifact and so it writes no figure."
+  },
+  "node": "review-of-work-in-flight-sits-on-its-section-042724c6740a",
+  "node:reviewed": "work-in-flight-sits-on-its-section",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read from the reviewed prompt.txt:26; the landed change lists each section's runs with the partition's classification at reckon/roadmap.py:3893 and five blocker kinds at :3874-3878, and a run's held paths appear only as the holder/waiting pair at :3878.\nVERDICT done_when: the plan's \u00a74 done-when names three cases with a base-commit failure and the power_convertor explanation; tests/test_work_in_flight_sits_on_its_section.py:144, :165 and :201 are those cases, logs/base_arm.log shows them red at 52f79371c, and the explanation is in the evidence fragment rather than in a gate log.\nVERDICT write_paths: read from prompt.txt:70-77 and the manifest's orientation_write_paths; git diff --stat 52f79371c 042724c6740 lists seven files, every one inside the grant.\nVERDICT manifest: read at the run directory; it reports complete with flat baseline_suite and after_suite records, its write-time audit now returns ok:true, and its tests line still carries a <worktree> placeholder.\nVERDICT diff: read commit by commit over 52f79371c..042724c6740; seven commits, seven files, the product change confined to three reckon modules and one test file, plus an evidence fragment and a figure that is 78 percent of the changed lines.\nCALL_SITES: reckon/serve.py:1749, reckon/mcp.py:1968, reckon/mcp.py:2992, reckon/flight.py:2635, reckon/crew/plan_review.py:3074, reckon/roadmap.py:2322, reckon/mcp_views.py:1927, reckon/mcp_views.py:1937\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/roadmap.py:3874-3893 puts the runs, the blocker kinds and the held-path pair on each section row, but reckon/mcp_views.py:1497 leaves the paths a single run holds off its row.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/base_arm.log is 3 failed / 1 passed EXIT=1 at 52f79371c and logs/after_gate_repair.log is 101 passed EXIT=0 at 1e036a271, both recorded in the manifest with the literal command in their own headers.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths, but the figure script and its SVG are 78 percent of the changed lines and the node's prompt said it writes no figure.\nSCORE durability: 12\nJUSTIFICATION durability: the base arm reddens three cases at 52f79371c, but tests/test_work_in_flight_sits_on_its_section.py:288 stays true when the released-claim defect is reinstated because its fixture has no binding holder.\nSCORE fit: 16\nJUSTIFICATION fit: the kind constants at reckon/live_run_classification.py:26-30 and the surrounding docstrings follow the module's idiom with no plan or ticket label, and commit f82ca652e is the one subject/content mismatch.\nSCORE reuse: 18\nJUSTIFICATION reuse: no owner for a holder/waiting pairing or for grouping classified run rows by section exists (searched reckon/crew/directory.py:142-154, reckon/crew/dispatch_claims.py), and the new helpers live beside the shared read that already owns the classification.\nFINDING tests/test_work_in_flight_sits_on_its_section.py:288 follow-on: the fixture has no binding holder, so the released-claim defect reinstated leaves held == [] true and the case guards nothing.\nFINDING tests/test_work_in_flight_sits_on_its_section.py:161 follow-on: the row is compared against the same classifier the row is built from over a fixture with no recorded event, so a self-derived classification would leave the assertion true.\nFINDING docs/figures/a-project-reads-as-one-picture/work-in-flight-sits-on-its-section/section_row_readers.py:1 follow-on: a 337-line renderer and its 1841-line SVG sit in a node whose own contract said it writes no figure.\nFINDING reckon/mcp_views.py:1497 follow-on: the run row carries no write paths, so a section whose single running run holds a path reports no held path anywhere.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T020156268686-work-in-flight-sits-on-its-section/manifest.md:12 follow-on: the tests line and after_suite command carry a <worktree> placeholder the manifest contract forbids on those fields.\nFINDING docs/evidence/fragments/a-project-reads-as-one-picture/work-in-flight-sits-on-its-section.html:1 follow-on: commit f82ca652e carries a feat(roadmap) subject over an evidence-fragment-only diff, disclosed in the manifest and harmlessly wrong in the tree.",
+  "review_run_id": "r-20261022T044544129182-review-of-work-in-flight-sits-on-its-section-042724c6740a",
+  "reviewed_base_sha": "52f79371c393e66873066150fbdd6d60b7592760",
+  "reviewed_head_sha": "042724c6740ab0f07baaa817a5937ae7d2a20a99",
+  "reviewed_run_id": "r-20261022T020156268686-work-in-flight-sits-on-its-section",
+  "scores": {
+    "durability": 12,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 16,
+    "reuse": 18,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T05:00:12+00:00",
+  "total": 92
+}
