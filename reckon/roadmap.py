@@ -25,6 +25,7 @@ from reckon._plan_html import (
     derive_fleet_impl_imputing_effort,
     open_sections,
     read_state_and_text_file,
+    section_record_id,
 )
 from reckon._schema import (
     GATE_TRANSITIONS,
@@ -1374,7 +1375,7 @@ def _finding(
 
 
 #: Section references as prose writes them: ``slug#sN`` or ``project:slug#sN``.
-#: Every candidate is validated by ``parse_plan_ref``, so the grammar stays the
+#: Candidates are validated by ``parse_plan_ref``, so the grammar stays the
 #: ``depends_on`` ref's rather than a second copy of it.
 _SECTION_REF_IN_TEXT_RE = re.compile(r"[A-Za-z0-9_.:\-]+#[A-Za-z0-9_.\-]+")
 
@@ -1462,7 +1463,7 @@ def _undeclared_wait_findings(
             _normalized_section_ref(project, ref)
             for ref in declared_refs.get((plan_ref, section), ())
         }
-        waiting = f"{plan_ref}#{section}"
+        waiting = f"{plan_ref}#{section_record_id(section)}"
         reported: set[str] = set()
         for source, text in entries:
             for ref in _mentioned_section_refs(text):
