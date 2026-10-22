@@ -183,8 +183,13 @@ def _launch_queued(
         config_for(pointer) if config_for is not None else _resolve_lane_config(pointer)
     )
     destination = str(backend_override).strip()
+    # The launch continues the request it was admitted from, so it keeps that
+    # request's run id: the id a dispatch printed is the one a coordinator
+    # records and later acts on, and a fresh id here would leave the printed one
+    # naming nothing the moment the lane frees.
     return dispatch(
         node=node,
+        run_id=str(pointer["run_id"]),
         project=str(pointer["project"]),
         repo=pointer.get("repo"),
         config=config,

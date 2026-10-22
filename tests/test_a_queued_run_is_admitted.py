@@ -203,7 +203,9 @@ def test_one_slot_launches_the_highest_ranked_queued_run_only(
     assert len(result["launched"]) == 1
     assert "r-second" in result["held"]
     assert len(recorded) == 1
-    assert not runs.pointer_path("r-first").exists()
+    # The launch continues the request it was admitted from, so the queued
+    # id is the one the launched run answers to and its pointer never leaves.
+    assert result["launched"][0] == "r-first"
     assert runs.read_pointer(result["launched"][0])["phase"] != "queued"
     assert runs.read_pointer("r-second")["phase"] == "queued"
 
@@ -525,7 +527,9 @@ def test_a_queued_launch_takes_its_manifest_from_its_launched_run(
     assert launched["manifest_path"] == str(launched_dir / "manifest.md")
     prompt = Path(launched["prompt_path"]).read_text(encoding="utf-8")
     assert str(launched_dir) in prompt
-    assert str(queued_dir) not in prompt
+    # One run id means one run directory: the request and its launch share it,
+    # so the manifest the launch derives is its own.
+    assert launched_dir == queued_dir
 
 
 def test_a_queued_launch_keeps_a_manifest_named_outside_a_run_directory(
@@ -589,10 +593,12 @@ def test_a_queued_launch_derives_write_paths_under_its_launched_run(
     launched = _launched_pointer(result)
     launched_dir = runs.run_dir(str(launched["run_id"])).resolve()
     paths = [str(path) for path in launched["node"]["write_paths"]]
-    # The default write path the plan derived inside the run directory is now
-    # the launched run's own, and no write path names the queued run directory.
+    # The default write path the plan derived inside the run directory is the
+    # launched run's own, which is the directory the request was queued in.
     assert str((launched_dir / "scratch").resolve()) in paths
-    assert not any(Path(path).is_relative_to(queued_dir.resolve()) for path in paths)
+    # One run id means one run directory, so the derived write path is under
+    # the queued request directory because that is the launched run's own.
+    assert launched_dir == queued_dir.resolve()
 
 
 def test_a_launched_run_leaves_queued_for_starting_then_working(
@@ -613,4 +619,4 @@ def test_a_launched_run_leaves_queued_for_starting_then_working(
     observed.append(folded["phase"])
 
     assert observed == ["queued", "starting", "working"]
-    assert not runs.pointer_path("r-phased").exists()
+    assert run_id == "r-phased"
