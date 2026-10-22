@@ -20,9 +20,9 @@
 <meta name="plan-capability-class" content="orchestrator">
 <meta name="plan-capability-reasoning" content="deep">
 <meta name="plan-capability-verification" content="strict">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 <meta name="plan-modified" content="2026-10-22">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
 </head>
 <body>
 <main class="plan-doc">
@@ -44,6 +44,14 @@
 <section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
 <p>The id a dispatch returns is the one a coordinator records, cites and later acts on. Admission retries and the launch reuse it rather than minting a new one, so <code>crew observe</code>, <code>crew discard</code> and the ledger all answer for the id the dispatch printed, and the monitor never reports a run that launched as dropped.</p><p><strong>Done when:</strong> a fixture dispatch that is queued, retried by admission twice and then launched carries the same run id throughout; <code>crew discard</code> on that id while queued succeeds; the watch stream carries no <code>dropped</code> transition for it. On the base commit the launched run has a different id, so the test fails there.</p>
 
+<h2 id="s5">§5 — A run built on a held chain tip may write its holder&#x27;s paths</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> Reported by nova-47 (session <code>s21-nova</code>) on 2026-10-22. Two follow-on nodes, <code>contour-chain-added-failures</code> and <code>root-polish-owned-line-search</code>, were dispatched with <code>--base e9444fd44</code>, the chain tip of the held run <code>r-20261021T005136987306-read-correction-path</code>, deliberately building on its unlanded 38 commits to resolve that run's 19 added gate failures. The admit service retried both for over 90 minutes and refused each with <code>ScopeConflict</code> on the holder's claimed paths (<code>nova/equilibrium/contour_tree.py</code>, <code>nova/equilibrium/fixed_points.py</code>), naming the holder as <em>stopped with unreachable commits — promote or recover it</em>. The holder could not be promoted, because the follow-ons exist to make it promotable. The coordinator worked round it by widening the holder and resuming it with both tasks, discarding the two queued runs.</p><p><strong>Change.</strong> The scope fence in <code>reckon/crew/node.py</code> (the refusal near line 1559) admits a dispatch onto a held run's claimed paths when the dispatch's base is that run's chain tip and the holder is stopped, and records the stacking on both runs, so the holder cannot be promoted or discarded under its descendant without that being named. A dispatch based anywhere else is refused as today.</p><p><strong>Done when:</strong> a fixture held run with unlanded commits admits a dispatch based on its chain tip that writes its claimed path, and refuses one based on main; both runs record the stacking; promoting the holder while its descendant is live is refused naming the descendant. On the base commit the stacked dispatch is refused <code>ScopeConflict</code>, so the test fails there.</p>
+
+<h2 id="s6">§6 — A manual admission pass says what it decides, inside a bound</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> Reported by nova-47 the same night: a manual <code>reckon crew admit</code> (no options; <code>--project</code> is not accepted) emitted nothing for 5 minutes and was killed by <code>timeout 300</code>, so the coordinator could not tell whether it was waiting or working, nor what it decided. The decisions it makes are written to <code>admission-verdicts.jsonl</code>, which is where the coordinator diagnosing the case above had to read them.</p><p><strong>Change.</strong> <code>reckon crew admit --once</code> (<code>reckon/crew_run_commands.py</code>, <code>crew_admit</code>) emits one JSON document per pass naming each queued run it considered and its verdict with the detail admission-verdicts records, and finishes within a stated bound; its help text says how long a pass may take.</p><p><strong>Done when:</strong> a fixture <code>crew admit --once</code> over two queued runs, one admitted and one refused on scope, prints both verdicts with the refusal's detail and exits within its bound. On the base commit the pass prints nothing, so the test fails there.</p>
+
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-accd-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-21" data-recommends-skill="/reckon-build a-coordinator-can-clear-its-own-duties §2" data-resolved-at="" data-resolved-by="">
@@ -63,7 +71,7 @@
     <div class="r-comment-body"><p>Landed: a review dispatch is exempt from its session's queue cap and launches before that session's queued implementation; gate 62 passed; review 108/120. Evidence: <a href="/reckon/evidence/archive/a-coordinator-can-clear-its-own-duties-landed.html#s2">§2 landing record</a>.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261021T212738927975-a-review-passes-its-sessions-queue-cap" data-who="reckon-build" data-when="2026-10-21T23:50:39Z">
-    <div class="r-comment-body"><p>Section 2 — a review dispatch is exempt from its session&#x27;s queued-dispatch cap and launches before that session&#x27;s queued implementation; the cap still bounds every other role.</p></div>
+    <div class="r-comment-body"><p>Section 2 — a review dispatch is exempt from its session's queued-dispatch cap and launches before that session's queued implementation; the cap still bounds every other role.</p></div>
 </div>
 </section>
 </main>
