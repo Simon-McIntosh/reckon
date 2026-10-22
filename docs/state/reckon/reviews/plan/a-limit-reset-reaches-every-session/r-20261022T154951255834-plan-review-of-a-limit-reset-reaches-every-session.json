@@ -1,0 +1,71 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T17:11:20.246Z",
+  "dispatched_at": "2026-10-22T16:59:38Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-limit-reset-reaches-every-session.html:131",
+      "id": "done_when-1",
+      "reason": "\u00a76 is marked done on a measure that its own artifact fails, so the plan reports a landed section whose stated success condition is unmeetable until \u00a79 lands, and the reader who trusts the tick treats the last clause of \u00a76 as satisfied.",
+      "text": "\u00a76 is declared done (plan-section-declarations s6=done) on the done-when \"every command and row word it names exists on reckon's main\", and the row word it names is \"A reckon monitor row reading `usage limit reset`\"; \u00a79:145 records that the only such row this line has ever drawn read `14:32:38  limit  claude-sub  new \u2192 working  \u2013` \u2014 \"a state transition and no words\" \u2014 and confirms in source that no pane can print that phrase, because `reckon/crew/ticker.py` contains zero occurrences of `detail` and therefore drops the clause carrying it, so the clause exists only in the producer's stream row (`~/.config/reckon/crew/watch/reckon-18dc8a86709b.events`, field `detail`)",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-limit-reset-reaches-every-session.html:131",
+      "id": "reasoning-1",
+      "reason": "the section body is the text a later node copies, so it hands the next announcer the exact group the plan's own \u00a79 and the live incident record as the defect.",
+      "text": "\u00a76 quotes the paragraph it landed, and that quoted text announces with `reckon crew budget --reset --group claude-sub --used --reason \"<what the lead said>\"`, but the commit \u00a76 names as its landing (dotfiles `fabae49`, \"docs(agents): announce a usage-limit reset once, for orchestrators only\") records the paragraph as `--reset --used --group claude-orchestrators --clock five_hour --reason \"<the lead's words>\"`, and the plan's own \u00a76 outcome comment (line 252) says the paragraph was \"revised by the lead's ruling: announce under claude-orchestrators\" \u2014 the plan's body text was never updated to the revised artifact, and it is the pre-ruling text \u00a79 (line 145) exists to correct, since \u00a76's version tells a session to announce under the worker lane's group",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-limit-reset-reaches-every-session.html:24",
+      "id": "wiring-1",
+      "reason": "the declared graph is what a dispatcher reads to decide a section is ready, and without the edge \u00a78 reads as dispatchable independently of the investigation whose findings define its write paths.",
+      "text": "`plan-section-depends-on` carries entries for s2, s3, s4, s5, s6 and s9 only, so \u00a78 declares no dependency on \u00a77, although \u00a78's Why line reads \"\u00a77 found why the `claude` account's windows have read `unknown` ... Its report is in the landing record under \u00a77\" and \u00a78's three deliverables repair exactly the three causes \u00a77 returned",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-limit-reset-reaches-every-session.html:145",
+      "id": "reasoning-2",
+      "reason": "the abbreviation does not move \u00a79's mechanism or remedy, whose premise (a row drawn with the clause dropped at render) I confirmed directly in the stream and in `ticker.py`.",
+      "text": "\u00a79 cites the 12:32 UTC announcement as `reckon crew budget --reset --used --group claude-sub --clock five_hour` with no `--reason`, but \u00a71:58 landed `--reason` as required for `--reset --used` (`reckon/crew_run_commands.py:2861`, `raise click.UsageError` \u2014 `\"--reason is required with --reset --used\"`) and the store record for that event (`<crew-home>/budget-resets.json`, id `reset-claude-sub-20261022T123236Z`) carries `\"reason\": \"the lead reports the usage limits have reset; every session continues its work\"`, so the quoted command is not the one that produced the row \u00a79 reasons from",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "29af7b7f4fc7f312582655e31c04b60295a79e157ee90df3c65d8b981bccc0f5",
+  "plan_slug": "a-limit-reset-reaches-every-session",
+  "plan_version": 48,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T154951255834-plan-review-of-a-limit-reset-reaches-every-session",
+  "reviewed_blob_sha": "e6812d34c6d834dd6f0a2fa33ba1ecede8b4ddba",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited module, symbol, test file, evidence anchor (#s1, #s2, #s5, #s6, #s7), the cross-plan section the-monitor-shows-the-work-it-watches#s83 and dotfiles commit fabae49 resolve.",
+    "done_when": "a finding \u2014 \u00a76 is declared done on a done-when whose row-word clause its own landed artifact does not satisfy.",
+    "evidence_paths": "pass \u2014 gates write under the run directory, \u00a77's report under the crew reports directory, \u00a74/\u00a76 into the landing record; no evidence home is a session scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 the names the plan introduces (_reset_detail, sweep_resets, limit-reset, the stage word limit, the new test filenames) are mechanism names; no plan label, stage name, ticket number or version tag is carried into code.",
+    "reasoning": "a finding \u2014 \u00a76's quoted paragraph names the worker lane's budget group, which its own landed commit records as replaced; the other three checks hold, and \u00a79's root cause is confirmed against the live stream.",
+    "single_goal": "pass \u2014 each section names one deliverable (the producer sweep and the pane row in \u00a72 are one outcome, a reset reaching every pane once).",
+    "wiring": "a finding \u2014 the section dependency map omits the \u00a77\u2192\u00a78 edge that \u00a78's own Why line asserts."
+  },
+  "section_digests": {
+    "_document": "c522e5b13c4b851f322252da39fc5748ef0d53318036908f367886b5d750f38c",
+    "s1": "94def7b6fb41cc276c0577018bcc106bab7eaaa9d39a5df760e2d77ee1a7595d",
+    "s2": "844aada0f6b4aae72bc45795e96c553e16bf3ff92f9e2c27666fc952d0187a40",
+    "s3": "a481ce43e07f6167db0a1f56a9c3a147b001b2973383c03f33151bc407e5cb4a",
+    "s4": "136bf6f43df2d99c1f758324927ab05eabd9aec938251a8d408a96c67841f596",
+    "s5": "7c0dc3556a9d6a54cf58532f9b8aa1054d9bd3725c15c82e0aa9da736a5e9309",
+    "s6": "c8ff3c099e9d217a97c0f6232689f76a21d7c9cc4b1a7d5ced6db85300180b0a",
+    "s7": "b35e0e8820af110a5858364a331330a3a6c886f10fe5701e5471afe28563c83f",
+    "s8": "300e4261969417e426a548a6e07a93240c47b0c26af35e8c15a54b63c7930b86",
+    "s9": "ceeb6143c98537e16cca0244c9d4b26b8e7f380c0e175228e144e02a1da7ea46"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T17:50:02.460808+00:00"
+}
