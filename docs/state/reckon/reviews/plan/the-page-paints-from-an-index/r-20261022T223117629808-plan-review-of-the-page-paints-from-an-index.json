@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T22:49:50.894Z",
+  "dispatched_at": "2026-10-22T22:33:17Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-page-paints-from-an-index.html:265",
+      "id": "reasoning-1",
+      "reason": "the plan sends the worker at the wrong function unless it also names `_served_index_rows`/`index_rows`/`build_index` as the entry point whose walk must consult the persisted shape, which is the only way \u00a77's 1 s `/_index` gate becomes reachable.",
+      "text": "\u00a713's Why blames `_reuse_covered` (\"answers the persisted file set only when every recorded directory's identity is unchanged, and walks the whole tree otherwise\"), but the served `/_index/<project>` read reaches `_walk_covered` without ever consulting `_reuse_covered`: the endpoint calls `_served_index_rows` (reckon/serve.py:1189), which calls `index_rows(...)` with `revalidate` defaulting to False (reckon/metadata_index.py:359-369), so `covered` stays None and `build_index` walks at line 490 rather than reusing the persisted shape; measured on a throwaway tree with `_reuse_covered`/`_walk_covered` spied, `index_rows(..., revalidate=True)` gives {reuse: 1, walk: 1} while `index_rows(..., revalidate=False)` gives {reuse: 0, walk: 1}, so the 120 s `/_index/reckon` failure recorded in the s7-live evidence is a full walk the persisted directory stamps never gate \u2014 a repair confined to `_reuse_covered`, as the Why and deliverable read, leaves the measured failure intact",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "0eb760b956b58e8629745f156f8cdd30aea61f4cb823916641a4c6af5fcf3bb1",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 83,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T223117629808-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "ee42d94f812884a7f32fae76d407d88f68011c0b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_walk_covered`, `_reuse_covered`, `build_index`, `_content_digest` and `tests/test_every_module_fits_a_worker_window.py` all resolve in the tree; the two new test files are named deliverables, not citations.",
+    "done_when": "pass \u2014 each of \u00a713's three cases and \u00a714's four cases carries its own control, and each control is discriminating (restore the full walk, restore digest-first, drop the modification time from the signature, include the device in the comparison).",
+    "evidence_paths": "pass \u2014 both sections put gate logs under the run directory with a revision header and a final `EXIT=` line, and \u00a77 records its report under `docs/evidence/archive/the-page-paints-from-an-index-landed.html`, not a scratch or node-local path.",
+    "naming": "pass \u2014 `tests/test_a_changed_directory_rescans_only_itself.py` and `tests/test_a_restart_reuses_rows_by_stat_identity.py` name the mechanism, and no version tag, ticket number or stage label reaches a symbol.",
+    "reasoning": "a finding \u2014 \u00a713's stated cause names `_reuse_covered`, which the `/_index` request it cites never calls, so the repair it describes does not reach the path that failed.",
+    "single_goal": "pass \u2014 \u00a713 is one deliverable (an incremental covered-set rebuild) and \u00a714 is one (stat-identity reuse), each with its own gate.",
+    "wiring": "pass \u2014 the `_document` change adds `s14: [the-page-paints-from-an-index#s13]` and extends `s7` with `#s13`/`#s14`; every depends-on target resolves to a section that exists, and `reckon/metadata_index.py` is written by no pending section other than \u00a713 and \u00a714, whose ordering edge is declared."
+  },
+  "section_digests": {
+    "_document": "b7ef0ceb5f1db955f317725bf386aa649aa45d027ce9acba466c67a62e636b39",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "17515cc4d212280b53e77d7279aa81e37c7d58f877ada031f77705b31e53d437",
+    "s11": "bb32b98b9a0a5070d5ec6b5387862bef5af3ba37b5956ac7c9d734723c2ac9fa",
+    "s12": "071a3e9ff829e6cc2047658d80b57b5d30603318f0fa4a31084d94b5ed308185",
+    "s13": "5d8152c4fd6bebcc87be716a1cd62505fcec3349a217d84f5958c49339779c31",
+    "s14": "81d5ac4cc3ec42e5b1f7e8ee9da1f92e89073fdda2bd21fda06046a2d2e15b68",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "048a1031945a098f9a63b70d985d91dd2d9ee2f67f1ac1a2132e4c7d21b89e7e",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T22:55:12.699909+00:00"
+}
