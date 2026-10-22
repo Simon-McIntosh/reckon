@@ -40,6 +40,11 @@
     <p>Run <code>the-crew-tool-passes-the-domain-waiver</code>, landed at <code>e513575de</code>. The §4 landing gave <code>crew_complete</code> a required <code>waive_domain_check</code> parameter that the MCP crew tool's parameter map did not pass, so the tool's <code>complete</code> and <code>land</code> actions answered <code>crew_error TypeError</code> and four tests in <code>tests/test_crew_tool_carries_the_write_verbs.py</code> were red on main. A peer coordinator reported it. The repair adds the parameter to both actions' entries in <code>reckon/mcp_crew_actions.py</code> with the empty-string default the other reason waivers use, and carries it through the crew tool's signature and <code>CrewArgs</code>. Gate green at the head; the negative control reddens exactly the four tests. Review: 110/120; two follow-ons are §10.</p>
   </section>
 
+  <section id="s8">
+    <h2>§8 — a finding with a line but no file names its fallback</h2>
+    <p>Run <code>a-line-only-finding-names-its-fallback</code>, landed at <code>970b7df92</code>. <code>repair._finding_location</code> in <code>reckon/crew/repair.py</code> returns nothing for a finding with a line but no file, so each caller's fallback applies; a finding with both still renders <code>file:line</code>, and the review-waits-for-its-repair refusal for a line-only finding names the review's findings rather than a bare line number. Gate: 10 passed at the head; the line-only case fails at the base. Review: 112/120; two follow-ons exempted.</p>
+  </section>
+
 </main>
 </body>
 </html>
