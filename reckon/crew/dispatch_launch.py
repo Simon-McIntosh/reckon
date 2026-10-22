@@ -243,12 +243,8 @@ def _empty_stream_launch_failure(
     the failure was found.
     """
     stream = Path(str(record.get("log_path") or ""))
-    try:
-        if stream.stat().st_size:
-            return None
-    except OSError:
-        # A stream never created is the same fact as an empty one.
-        pass
+    if _stream_began(stream):
+        return None
     try:
         raw = Path(str(record.get("stderr_path") or "")).read_bytes()
     except OSError:
@@ -292,11 +288,7 @@ def _record_launch_failure(launched: Mapping[str, Any], *, exit_status: int) -> 
     measured loop of one 0-byte stream every two minutes.
     """
     stream = Path(str(launched.get("stream_path") or ""))
-    try:
-        size = stream.stat().st_size
-    except OSError:
-        # A stream that was never created is the same fact as an empty one.
-        size = 0
+    began = _stream_began(stream)
     run_id = str(launched.get("run_id") or "")
     if not run_id:
         return
@@ -306,7 +298,7 @@ def _record_launch_failure(launched: Mapping[str, Any], *, exit_status: int) -> 
     # to record yet. Only a job that has left the queue is judged.
     if placement and _placement_job_alive(placement, job_id) is True:
         return
-    if size and placement:
+    if began and placement:
         # A placed launch's wait status is the scheduler client's, not the
         # worker's, so a run whose payload log shows a turn ran has nothing
         # here that describes the worker: the client's status says nothing
@@ -316,7 +308,7 @@ def _record_launch_failure(launched: Mapping[str, Any], *, exit_status: int) -> 
     wait_status = _wait_status_record(exit_status)
     failure = (
         None
-        if size
+        if began
         else _launch_failure_record(
             launched,
             exit_status=exit_status,
@@ -1467,18 +1459,61 @@ def _spawn(
 # those binds from the paths that exist when it is built, and a writer that
 # replaces a file by rename leaves the name missing for an instant, so a spawn
 # landing in that instant dies before the worker starts while a launch a moment
-# later would have begun normally. A spawn that dies this way is retried rather
-# than recorded as a launch failure.
+# later would have begun normally. A spawn that meets this refusal is retried
+# rather than recorded as a launch failure.
 _VANISHED_BIND_REFUSAL_PHRASES = ("Can't bind mount", "Can't find source path")
 
 # How long a freshly spawned worker is given to prove it started, and how often
-# its exit is looked for inside that window. bwrap refuses a missing bind source
-# before it execs the harness, so the window only has to cover bwrap's own
-# startup — but that startup competes with every other process on the host, so
-# the window is sized for a loaded host rather than for the refusal itself: a
-# child still running at the end of it is a launch that began.
-SANDBOX_STARTUP_WINDOW_SECONDS = 0.5
+# its stderr and its stream are looked at inside that window. The window is
+# sized for a placed launch, whose child is the local scheduler client rather
+# than the sandbox itself: the client stays alive while the step starts, so
+# bwrap's refusal reaches the shared stderr seconds after the launch rather
+# than in the instant a directly exec'd sandbox would take to refuse. A
+# directly exec'd sandbox is covered too — it writes its refusal and exits well
+# inside this window, as do the seconds a client takes to hand the step over.
+# The watch ends early on either of two facts, so the window bounds only what it
+# must: the launch's stream beginning, or the child's own exit. Thirty seconds
+# is a floor rather than a comfortable margin against the four seconds a
+# recorded placed launch took from launch to exit: what the window has to cover
+# is the step start *before* that refusal, and a step start on a loaded host is
+# exactly the interval a shorter window would return before. A child that exits
+# inside the window is collected as a launch failure, so the window is counted
+# from before each try's own spawn (see
+# :func:`_died_over_a_vanished_bind_source`): a child whose life is the window
+# itself then outlives it, rather than being read as the launch's failure at the
+# window's last poll.
+SANDBOX_STARTUP_WINDOW_SECONDS = 30.0
 VANISHED_BIND_STARTUP_POLL_SECONDS = 0.01
+
+
+def _read_text_or_empty(path: Path) -> str:
+    """A path's text, or empty when it is absent or unreadable."""
+    try:
+        return path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+
+
+def _stream_began(path: Path | None) -> bool:
+    """Whether a launch's stream has begun, however little it has written.
+
+    A launch that wrote its first byte reached the worker's own machinery
+    whatever it does afterwards, so the stream beginning is what ends the
+    startup watch early on the healthy path. It is also the fact that decides
+    whether a reap has anything to explain: a stream with a turn in it says the
+    worker reached its model, so the exit is not a launch that never started.
+
+    This function is the one owner of that fact, and the launcher and the watch
+    both ask it rather than reading the stream's size for themselves. A stream
+    that was never created counts as one that has not begun, which is the same
+    answer either caller needs for a run whose log was never opened.
+    """
+    if path is None:
+        return False
+    try:
+        return path.stat().st_size > 0
+    except OSError:
+        return False
 
 
 def _read_only_bind_sources(argv: Iterable[str]) -> list[str]:
@@ -1503,34 +1538,59 @@ def _died_over_a_vanished_bind_source(
     *,
     argv: Iterable[str],
     stderr_path: Path,
+    log_path: Path | None = None,
+    started: float | None = None,
 ) -> bool:
-    """Whether a just-spawned worker already died over a missing bind source.
+    """Whether a just-spawned worker refused over a missing bind source.
 
-    The window a rename leaves is momentary, so this only answers true for the
-    failure that window causes: the child exited inside the startup poll, and
-    bwrap's refusal names one of the sources this launch asked it to mount. A
-    child still running at the end of the window started, and a child that
-    exited over anything else is the launch failure its caller records.
+    The refusal is read from the launch's own stderr rather than inferred from
+    the child's exit, because a placed launch's child is the local scheduler
+    client: it stays alive while the step starts, so a sandbox that refuses the
+    mount seconds in does not end it, and the refusal is the only record of the
+    failure until the client reports the step's own exit. The watch therefore
+    runs the window out and ends early on the first of two facts:
+
+    * the launch's stream has begun, which says the worker reached its turn, so
+      whatever its stderr holds is that turn's own output rather than a refusal
+      of the mount — the sandbox refuses before the worker ever writes;
+    * the child exited, whose stderr decides the answer: a refusal naming a
+      read-only bind source this launch would mount is the failure the retry
+      exists for.
+
+    A try is dead only once its child has exited. Reading the refusal on its own
+    would answer for a child that is merely still running — a stream that had
+    not opened yet is not the same fact as a worker that never started — and the
+    retry collects a dead try by waiting on it, so the launch would stop in a
+    worker that is doing its work. A child that cannot be polled at all offers
+    nothing but the refusal already written, and is left alone for the same
+    reason. A launch that reaches the end of the window with neither fact is
+    left running: the answer is no, and the caller keeps the child it spawned.
+
+    The window is counted from ``started`` when a caller names one, and from now
+    otherwise. A retry names the moment its try began, before the spawn, because
+    the window is the try's and not the child's: a child whose own life is
+    exactly the window then outlives it, so it is left running rather than
+    collected at the window's last poll and written into the launch's failure
+    record as a worker that never started.
     """
     sources = _read_only_bind_sources(argv)
     if not sources:
         return False
-    # A caller may hand the launch a stand-in rather than a real process; such a
-    # launch cannot be observed starting, and the refusal is proved by the
-    # child's own exit, so there is nothing the retry could key on.
     poll = getattr(process, "poll", None)
     if poll is None:
         return False
-    deadline = time.monotonic() + SANDBOX_STARTUP_WINDOW_SECONDS
-    while poll() is None and time.monotonic() < deadline:
+    began = time.monotonic() if started is None else started
+    deadline = began + SANDBOX_STARTUP_WINDOW_SECONDS
+    while True:
+        if _stream_began(log_path):
+            return False
+        if poll() is not None:
+            return _refusal_names_a_bind_source(
+                _read_text_or_empty(stderr_path), sources
+            )
+        if time.monotonic() >= deadline:
+            return False
         time.sleep(VANISHED_BIND_STARTUP_POLL_SECONDS)
-    if poll() is None or process.returncode == 0:
-        return False
-    try:
-        refusal = stderr_path.read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return False
-    return _refusal_names_a_bind_source(refusal, sources)
 
 
 def _spawn_worker_retrying_a_vanished_bind(
@@ -1538,26 +1598,41 @@ def _spawn_worker_retrying_a_vanished_bind(
     *,
     argv: Iterable[str],
     stderr_path: Path,
+    log_path: Path | None = None,
 ) -> subprocess.Popen:
     """Spawn a worker, retrying while the fence's own bind source is missing.
 
     The retry is inside one attempt: a worker that starts on a later try is the
     attempt that launched, so nothing is recorded as a failure for the tries a
     momentary rename defeated. The tries are bounded by the constants the
-    composition's own wait uses. A spawn that failed for any other reason is
-    returned at once for its caller to record as the launch failure it is.
+    composition's own wait uses. The watch between tries keys on the refusal
+    text in the launch's own stderr inside a window sized for a placed launch,
+    so a step that reaches its refusal seconds in is retried as well as one that
+    meets it at exec — see :func:`_died_over_a_vanished_bind_source`. The window
+    is counted from before each try's spawn, so it bounds the try rather than
+    the child: a healthy child of this launch that lives as long as the window
+    is left running, not collected as a failure at the window's end.
+    A spawn that failed for any other reason is returned at once for its caller
+    to record as the launch failure it is.
     """
+    started = time.monotonic()
     process = attempt()
     tries = 1
     limit = max(1, _backends.PROTECTED_BIND_WAIT_ATTEMPTS)
     while tries < limit and _died_over_a_vanished_bind_source(
-        process, argv=argv, stderr_path=stderr_path
+        process, argv=argv, stderr_path=stderr_path, log_path=log_path, started=started
     ):
+        # Only an exited try is dead, and the watch answers for nothing else:
+        # a child still running is the launch, so the retry keeps it rather
+        # than waiting on work that is under way.
+        if process.poll() is None:
+            break
         # The dead try is reaped here so it cannot be mistaken later for the
         # worker's own exit by whoever collects the run's children.
         process.wait()
         time.sleep(_backends.PROTECTED_BIND_WAIT_INTERVAL_SECONDS)
         tries += 1
+        started = time.monotonic()
         process = attempt()
     return process
 
@@ -1604,7 +1679,10 @@ def _spawn_detached_worker(
             )
 
     process = _spawn_worker_retrying_a_vanished_bind(
-        attempt, argv=argv, stderr_path=Path(stderr_path)
+        attempt,
+        argv=argv,
+        stderr_path=Path(stderr_path),
+        log_path=Path(log_path),
     )
     launched = _launched_worker_record(plan, log_path, stderr_path)
     # A poll of a child that has already exited collects its status, and the
@@ -2440,6 +2518,7 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
         attempt,
         argv=argv,
         stderr_path=Path(str(spec["stderr_path"])),
+        log_path=Path(str(spec["log_path"])),
     )
     # A poll of a child that has already exited collects its status, and the
     # retry's startup check is such a poll. The status is carried on the pid
