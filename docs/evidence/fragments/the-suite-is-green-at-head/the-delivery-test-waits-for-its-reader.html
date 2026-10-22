@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-title" content="The delivery-path test waits for the reader to attach before the fleet moves">
+  <meta name="plan-summary" content="The delivery-path test raced its own reader: the fixture moved the fleet before the reader had derived its baseline, so the move arrived as inventory rather than as the transition the assertion names. The test now holds the fixture until the reader attaches.">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s37">
+  <meta name="plan-recorded-at" content="2026-10-22">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,tests,evidence">
+  <title>The delivery-path test waits for the reader to attach before the fleet moves | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-delivery-test-waits-for-its-reader" data-reckon="landed" data-when="2026-10-22" id="the-delivery-test-waits-for-its-reader-note">
+  <h2>The delivery-path test waits for the reader to attach before the fleet moves</h2>
+  <p id="the-delivery-test-waits-for-its-reader-window">The window is the fixture moving the
+  pointers before the reader attaches, and it is in the test rather than in the follower. A
+  follower's first attach derives its baseline from the live records and captures the stream
+  offset it will read from, both in <code>reckon/crew/runs.py:2484-2505</code> at the committed
+  blob: <code>watch_stream_cursor</code> reads <code>_list_live_records</code> and builds each
+  baseline row with <code>previous=None</code>, which is why its <code>from_state</code> is
+  <code>null</code>. The lines the fixture appends when it moves the fleet land after that
+  captured offset, so a reader armed behind the move never reads them; what it delivers for the
+  moved run is the baseline row itself, inventory with no left half. The assertion asks for news
+  and gets inventory, and the <code>dispatched</code> half is the state that goes missing.</p>
+  <p id="the-delivery-test-waits-for-its-reader-arms">Reproduced two ways.
+  <strong>Natural, unmodified tree:</strong> 25 alone runs and 10 <code>-n&nbsp;8</code> runs of
+  <code>tests/test_removed_flag_migration.py</code> at <code>87d07ec6</code> were all green
+  (<code>logs/alone-25.log</code> <code>PASS=25 FAIL=0</code>,
+  <code>logs/xdist-10.log</code> <code>PASS=10 FAIL=0</code>), so the window is real but the race
+  almost never lands. <strong>Forced ordering, same tree:</strong> holding the reader's attach
+  until the fixture had finished moving made the test fail at the <em>set</em> assertion, not at
+  the <code>_wait_for</code> ceiling: <code>AssertionError: assert
+  {'completed_unpromoted'} == {'completed_u... 'dispatched'}</code>, with the receipt
+  <code>[{'project': 'proj', 'event': 'baseline', 'run_id': 'r-one', ...}]</code> — one baseline
+  row carrying no <code>from_state</code>. The failing run is 24.49&nbsp;s, inside the 30&nbsp;s
+  bound, which is the same fact from the other side: the ceiling never fired because the
+  baseline row <em>did</em> arrive, so no transition after the baseline is lost.</p>
+  <p id="the-delivery-test-waits-for-its-reader-repair">The repair is in the test, and no product
+  module changes. <code>_wait_for_the_first_attach</code> waits, bounded by
+  <code>WATCHER_LOAD_BOUND_SECONDS</code>, for the reader to report that it has derived its
+  baseline; the reader reports it from a wrapper around
+  <code>runs.watch_stream_cursor</code> that sets the event <em>after</em> the real call returns,
+  so the baseline and the offset are both captured before the test touches anything. The fixture
+  then moves the fleet inside the watch claim and the move is read as a transition. The
+  assertion message now carries the rows it received, because the receipt is what distinguishes
+  the two windows.</p>
+  <p><strong>Measured.</strong> After the change, in the foreground on the fleet node
+  (98dci4-clu-2068, job 1291586, in place): 20 of 20 alone runs of
+  <code>test_the_delivery_path_itself_carries_no_state_filter</code> pass
+  (<code>logs/alone-20-after.log</code> <code>PASS=20 FAIL=0</code>, <code>EXIT=0</code>) and 10
+  of 10 <code>-n&nbsp;8</code> runs of the whole file beside its siblings pass
+  (<code>logs/xdist-10-after.log</code> <code>PASS=10 FAIL=0</code>, <code>EXIT=0</code>, 6
+  passed per iteration), so the other five cases in the file still pass. The declared negative
+  control reintroduces the window by moving the pointers before the reader attaches — the
+  attach is held until the fixture has finished moving: <strong>10 of 10</strong> runs fail on
+  <code>test_the_delivery_path_itself_carries_no_state_filter</code> with the set assertion
+  (<code>logs/negative-control-mutated.log</code>, <code>MUTATED PASS=0 FAIL=10</code>,
+  <code>EXIT=1</code>). <code>ruff check</code> is clean at the base blob and at the change, and
+  <code>ruff format --check</code> produces a byte-identical 37-line reformat diff before and
+  after the change, all of it the three pre-existing long
+  <code>monkeypatch.setattr</code> lines at 160, 208 and 327 — the changed region contributes no
+  hunk (<code>logs/ruff.log</code>).</p>
+</article>
+</body>
+</html>
