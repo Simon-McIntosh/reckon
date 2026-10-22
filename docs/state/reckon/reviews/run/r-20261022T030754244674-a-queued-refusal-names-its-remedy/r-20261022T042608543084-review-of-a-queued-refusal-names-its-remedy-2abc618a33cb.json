@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-22T04:43:58.749Z",
+  "dispatched_at": "2026-10-22T04:27:41Z",
+  "findings": [
+    {
+      "file": "tests/test_a_queued_refusal_names_its_remedy.py",
+      "line": "105",
+      "severity": "follow-on",
+      "text": "follow-on: _review_refusal hand-writes the refusal text instead of driving require_* as the production gate composes it, so nothing ties the new regex to the sentence at reckon/crew/routing.py:2583-2584; a change to that wording would silently stop the remedy and leave every test green. The production message does currently quote the invocation in backticks (read at routing.py:2584), so the behaviour is correct today."
+    },
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "157",
+      "severity": "follow-on",
+      "text": "follow-on: a stamped launch refusal that names no session and quotes no command is still returned None and the run reads as 'waiting for a lane slot', so the goal's 'whatever text it carries' holds only for refusals that state a remedy; the PlanReviewMissingError raised for an unresolvable plan (routing.py:2546) and PlanVisibilityError are such refusals."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make the obligations item for a queued run name its stamped launch refusal and its remedy whatever text it carries; reckon/crew/recovery_classification.py:148-162 now falls through from the session branch to _remedy_command_stated_by and returns the command the refusal quotes, and the obligations reader at reckon/crew/obligations.py:1283 consumes row[\"session_refusal\"] unchanged.\nVERDICT done_when: the done_when names a three-pointer test in a temporary crew home plus an import-set arm comparison; tests/test_a_queued_refusal_names_its_remedy.py is that test and the manifest records it at 5 passed, base 17 failed / head 16 failed over the import set with 0 added ids, and the worker-window test at 4 passed.\nVERDICT write_paths: the manifest declares reckon/crew/recovery_classification.py, tests/test_a_queued_refusal_names_its_remedy.py, the evidence fragment and a docs/figures directory; git diff 08b02ee48ecdd23edf3c09c47d8ddf496a195e22..2abc618a33cbe5defc3b54cfe1a34313b0ecde24 touches exactly the first three and nothing else.\nVERDICT manifest: read; status is the recognised value complete, the tests: line is a literal command, test_logs names gate-head2.log, gate-base.log, gate-negative-control.log, gate-worker-window.log and gate-head-errors-rerun.log, and negative_control_log is the bare path of the review-refusal red log.\nVERDICT diff: read commit by commit against 08b02ee48; 3073107b2 adds _QUOTED_COMMAND, _QUOTED_REVIEW_COMMAND and _remedy_command_stated_by and rewrites the session branch of _queued_failure_remedy, b12033315 reformats the new test, 2abc618a3 adds the 26-line evidence fragment; three files, +297/-27, all inside the declared scope.\nCALL_SITES: reckon/crew/recovery_classification.py:668 (classify_pointer calls _queued_failure_remedy), reckon/crew/obligations.py:1283, reckon/crew/obligation_snapshot.py:1038, reckon/crew/queue_admission.py:1209 (composes the stamped failure text the reader parses), reckon/crew/routing.py:2583 (composes the backtick-quoted remedy the new regex reads)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: recovery_classification.py:157-159 publishes the command the refusal quotes and obligations.py:1283 gains the item through the reader it already called, though a refusal naming neither the session nor a command (routing.py:2546) is still dropped.\nSCORE evidence: 18\nJUSTIFICATION evidence: I re-ran tests/test_a_queued_refusal_names_its_remedy.py at the reviewed head in a scratch export (5 passed) and the manifest's arms record 0 added failures (base 17 / head 16, every head id present at base), though the head arm ran -n 16 where the done_when names -n 8 and its 5 basetemp setup errors were separately rerun green.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 08b02ee48..2abc618a3 changes only the three declared paths, +297/-27, with no other source or test file touched and the unused docs/figures directory left empty.\nSCORE durability: 16\nJUSTIFICATION durability: reinstating the removed session filter in a scratch copy of the head tree reddens four assertions in the new file (my own run, 4 failed 1 passed), so the assertions bite on the regression, but their input refusal is hand-written at tests/test_a_queued_refusal_names_its_remedy.py:105 rather than composed by the gate.\nSCORE fit: 19\nJUSTIFICATION fit: the new regexes and helper at recovery_classification.py:89-110 follow the module's underscore-private, docstring-led idiom, introduce no plan or version label, and the test file is named for the node id.\nSCORE reuse: 20\nJUSTIFICATION reuse: the remedy is read out of the refusal rather than re-spelled, the follower command still comes from watch_unit._watch_attach_line (verified identical to runs._watch_attach_line), and a search over reckon/crew for an existing reader of a backtick-quoted command found no owner to extend.\nFINDING tests/test_a_queued_refusal_names_its_remedy.py:105 follow-on: _review_refusal hand-writes the refusal text instead of driving require_plan_reviewed, so nothing ties the new regex to the sentence the gate composes at reckon/crew/routing.py:2583-2584; a wording change there would silently stop the remedy and leave every test green. The production message does currently quote the invocation, which I read at routing.py:2584, so the behaviour is correct today.\nFINDING reckon/crew/recovery_classification.py:157 follow-on: a stamped launch refusal that names no session and quotes no command is still returned None and reads as 'waiting for a lane slot', so the 'whatever text it carries' half of the goal holds only for refusals that state a remedy; the PlanReviewMissingError for an unresolvable plan (routing.py:2546) and PlanVisibilityError are such refusals.\n",
+  "review_run_id": "r-20261022T042608543084-review-of-a-queued-refusal-names-its-remedy-2abc618a33cb",
+  "reviewed_base_sha": "08b02ee48ecdd23edf3c09c47d8ddf496a195e22",
+  "reviewed_head_sha": "2abc618a33cbe5defc3b54cfe1a34313b0ecde24",
+  "reviewed_run_id": "r-20261022T030754244674-a-queued-refusal-names-its-remedy",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T09:14:52.658937+00:00",
+  "total": 110
+}
