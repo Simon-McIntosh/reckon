@@ -56,6 +56,7 @@ from reckon._schema import (
     unwired_plan_severity,
 )
 from reckon._store import (
+    _SECTION_RECORD_EXAMPLE_DEFAULTS,
     PLAN_SUMMARY_MAX_LENGTH,
     _mounts_path,
     _section_contract_refusal,
@@ -1398,18 +1399,21 @@ def _section_contract_findings(
     Severity is the plan's own state: a plan that already carries at least one
     typed record is held to the contract at ``error``, and a plan that carries
     none predates it and is reported at ``warn``, so converting the existing
-    plans does not stop the fleet. The message carries the same worked append
-    example the write boundary refuses with, because the lane that authors the
-    record needs a shape it can copy rather than a rule it must translate.
+    plans does not stop the fleet. The message carries the body-less append
+    that attaches the record to the section's own heading — its id and heading
+    text — because a body-carrying item authors a new heading and is refused on a
+    section whose heading the file already holds.
     """
 
     if doc_type != "plan":
         return []
-    heading_ids = [
-        str(h.own_id or "")
+    headings = [
+        h
         for h in _plan_html.plan_headings(html_text)
         if h.level == 2 and h.own_id is not None
     ]
+    heading_ids = [str(h.own_id) for h in headings]
+    heading_titles = {str(h.own_id): h.text for h in headings}
     recorded = {
         str(record.get("id") or "")
         for record in state.get("sections") or []
@@ -1422,7 +1426,12 @@ def _section_contract_findings(
             _SECTION_WITHOUT_CONTRACT,
             _section_contract_refusal(
                 f"section {sid!r} is implementable but carries no typed section "
-                "record (effort_hours, capability, links)"
+                "record (effort_hours, capability, links)",
+                item={
+                    "id": sid,
+                    "title": heading_titles.get(sid, ""),
+                    **_SECTION_RECORD_EXAMPLE_DEFAULTS,
+                },
             ),
         )
         for sid in _implementable_section_ids(state, heading_ids)

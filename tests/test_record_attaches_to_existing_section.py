@@ -93,15 +93,53 @@ def _item(**updates) -> dict:
     }
 
 
-def _append(root: Path, *items: dict) -> int:
+def _submit(root: Path, *ops: dict) -> int:
+    """Submit state-mode ops the way the write boundary does, and count writes."""
     working, version = store.read_plan("sample", "sample", root=root)
-    store.apply_ops(
-        working,
-        [{"op": "append", "target": "sections", "item": item} for item in items],
-        is_index=False,
-    )
+    store.apply_ops(working, list(ops), is_index=False)
     PlanState.model_validate(working).validate_for_write()
     return store.write_plan("sample", "sample", working, version, root=root)
+
+
+def _append(root: Path, *items: dict) -> int:
+    return _submit(
+        root,
+        *[{"op": "append", "target": "sections", "item": item} for item in items],
+    )
+
+
+def _example_of(message: str) -> dict:
+    """The worked example a refusal or finding carries, parsed back to an op."""
+    _, _, carried = message.partition("Example: ")
+    assert carried, "the message carries no worked example to copy"
+    return json.loads(carried)
+
+
+def _finding_message(path: Path) -> str:
+    found = [f for f in audit_file(path) if f.code == "section-without-contract"]
+    assert found, "the section without a record is the finding under test"
+    return found[0].message
+
+
+#: The new-section example the write boundary prints when no caller names an
+#: item: an ``append`` for ``s2`` carrying the body that authoring requires and
+#: that adopting a heading the file already holds leaves the item without.
+_DEFAULT_ITEM = {
+    "id": "s2",
+    "title": "Implement and verify",
+    "body": "<p>Describe the work and its acceptance check.</p>",
+    "effort_hours": 1.25,
+    "capability": {
+        "version": "1.0",
+        "class": "general",
+        "requirements": {
+            "reasoning": "standard",
+            "verification": "strict",
+            "risk": "low",
+        },
+    },
+    "links": [],
+}
 
 
 def _body(html_text: str) -> str:
@@ -198,6 +236,76 @@ def test_an_item_carrying_a_body_still_authors_the_heading_and_prose(plan):
     assert '<h2 id="s2">New work</h2>' in html
     assert "<p>New prose.</p>" in html
     assert _body(html).count(_HEADING) == 1
+
+
+def test_the_finding_example_adopts_the_section_it_reports(plan):
+    _, path = plan
+
+    example = _example_of(_finding_message(path))
+
+    assert example["op"] == "append"
+    assert example["target"] == "sections"
+    assert example["item"]["id"] == "s1", "the example must name the reported id"
+    assert example["item"]["title"] == "§1 — Existing work"
+    assert "body" not in example["item"], (
+        "a body authors a heading and is refused where the heading exists"
+    )
+
+
+def test_a_caller_naming_no_item_still_gets_the_new_section_example():
+    # The control for the case above: the finding passes an item, and a caller
+    # that passes none must keep today's example for a section not yet written.
+    _, _, carried = store._section_contract_refusal("x").partition("Example: ")
+    example = json.loads(carried)
+
+    assert example["item"] == _DEFAULT_ITEM
+    assert example["item"]["id"] == "s2"
+    assert "body" in example["item"]
+
+
+def test_the_finding_example_submitted_unchanged_adopts_the_record(plan):
+    root, path = plan
+    before = path.read_text()
+
+    _submit(root, _example_of(_finding_message(path)))
+
+    after = path.read_text()
+    element = _RECORD_ELEMENT.search(after)
+    assert element is not None, "the adopt must write the typed record"
+    assert _body(after).replace("\n" + element.group(0), "", 1) == _body(before)
+    assert [f for f in audit_file(path) if f.code == "section-without-contract"] == []
+
+
+def test_the_example_with_a_body_is_refused_where_the_heading_exists(plan):
+    # The control for the case above: the body is the discriminator, so the same
+    # example carrying one is the create route and is refused on an existing id.
+    root, path = plan
+    example = _example_of(_finding_message(path))
+    example["item"]["body"] = "<p>Describe the work and its acceptance check.</p>"
+    before = path.read_text()
+
+    with pytest.raises(store.OpError) as refused:
+        _submit(root, example)
+
+    assert "already exists" in str(refused.value)
+    assert path.read_text() == before
+    assert [f for f in audit_file(path) if f.code == "section-without-contract"] != []
+
+
+def test_a_refusal_naming_no_item_prints_the_new_section_example(plan):
+    root, path = plan
+    before = path.read_text()
+
+    with pytest.raises(store.OpError) as refused:
+        _append(root, {**_item(), "unsupported_field": 1})
+
+    _, _, carried = str(refused.value).partition("Example: ")
+    assert carried, "the refusal carries no example for the author to copy"
+    # Byte-for-byte the new-section example, not the finding's body-less one.
+    assert carried == json.dumps(
+        {"op": "append", "target": "sections", "item": _DEFAULT_ITEM}
+    )
+    assert path.read_text() == before
 
 
 def test_the_op_vocabulary_names_the_record_fields_on_both_write_routes():
