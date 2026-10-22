@@ -65,9 +65,15 @@ SLOW_REFUSAL_DELAY_SECONDS = 20.0
 # from a refusal over something else.
 REFUSALS = ("Can't bind mount", "Can't find source path")
 
-# The shipped watch's own window, read once so a case can say what it measured
-# against without restating the constant.
-WINDOW = dispatch_module.SANDBOX_STARTUP_WINDOW_SECONDS
+# The floor the watch's window is held to: at least thirty seconds, because what
+# the window has to cover is the step start *before* the sandbox's own refusal,
+# and the four seconds one recorded launch took from launch to exit is a delay
+# that was measured rather than the bound. Every case below compares elapsed
+# time against this literal and never against the shipped constant: an
+# expectation read from the one value under test moves with it and passes
+# whatever that value is set to, which is how a window narrower than the step
+# start it must cover survives a green gate.
+WINDOW_FLOOR_SECONDS = 30.0
 
 
 @pytest.fixture()
@@ -278,7 +284,7 @@ def test_a_launch_refused_after_the_step_starts_is_retried(
         assert record.get("phase") == "working"
         # The retry ends on the refusal, not on the window: this case's watch is
         # the four seconds the refusal takes, not the whole bound.
-        assert time.monotonic() - started < WINDOW, (
+        assert time.monotonic() - started < WINDOW_FLOOR_SECONDS, (
             "the retry waited the window out instead of ending on the refusal"
         )
     finally:
@@ -388,7 +394,7 @@ def test_a_healthy_launch_returns_when_its_window_passes(
         assert spawn.processes[0].poll() is None, (
             "the launch waited for a child that outlives the window"
         )
-        assert elapsed >= WINDOW, (
+        assert elapsed >= WINDOW_FLOOR_SECONDS, (
             "the launch returned before its window passed, so it never "
             "exercised the window's bound; this case would then measure nothing"
         )
@@ -436,7 +442,7 @@ def test_a_running_worker_quoting_the_refusal_is_not_a_dead_try(
         assert spawn.processes[0].poll() is None, "the live worker was ended"
         record = runs.read_pointer(RUN_ID)
         assert record.get("launch_failures") in (None, [])
-        assert elapsed < WINDOW, (
+        assert elapsed < WINDOW_FLOOR_SECONDS, (
             "the launch never returned while its worker was still running"
         )
     finally:
@@ -465,8 +471,23 @@ def test_a_stream_record_ends_the_watch_on_the_healthy_path(
         assert len(spawn.processes) == 1
         assert pid == spawn.processes[0].pid
         assert (directory / "stream.jsonl").stat().st_size > 0
-        assert elapsed < WINDOW, (
+        assert elapsed < WINDOW_FLOOR_SECONDS, (
             "the launch waited the window out although its stream had begun"
         )
     finally:
         _cleanup(*spawn.processes)
+
+
+def test_the_shipped_window_covers_a_slow_step_start() -> None:
+    """The window the launch ships reaches the floor a slow step start needs.
+
+    The expected bound is the literal above and not the constant it judges: a
+    launch that returns at fifteen seconds sits well inside the margin around
+    the recorded four-second delay and well short of a step start on a loaded
+    host, which is the interval this window exists to cover.
+    """
+    shipped = dispatch_module.SANDBOX_STARTUP_WINDOW_SECONDS
+    assert shipped >= WINDOW_FLOOR_SECONDS, (
+        f"the shipped startup window is {shipped} seconds, below the floor a "
+        "slow step start needs"
+    )
