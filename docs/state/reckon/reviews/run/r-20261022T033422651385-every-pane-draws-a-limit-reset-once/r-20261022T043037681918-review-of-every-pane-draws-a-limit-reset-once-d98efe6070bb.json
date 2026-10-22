@@ -1,0 +1,109 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "The once-per-pane claims fail if the reset row's lift_id is dropped or if _feed_lift's limit-reset case stops consulting the claim: both tests feed two projects' rows through the real follower_row_path, whose default lift_claim is take_lift_claim (reckon/crew_follow_commands.py:1028-1033), and count drawn rows. They do not compare a value the test passed in against itself: the event id on the row is built by budget_reset.mark_used and read back from the appended stream, and the expectation is a literal count of drawn rows. Demonstrated by the declared mutation: removing the claim makes 4 of the 12 cases red (logs/negative_control.log, EXIT=1), which is exactly the four once-per-pane cases. The claim's staleness window (LIFT_CLAIM_MAX_AGE_SECONDS = 24 h, reckon/crew_follow_commands.py:773) is far longer than the 60-minute RESET_HORIZON, so a re-armed producer's re-announcement inside the horizon cannot re-draw on a pane that already claimed.",
+      "lines": "tests/test_a_limit_reset_reaches_every_pane.py:141-176"
+    },
+    {
+      "failure_condition": "The horizon and due-instant claims fail if sweep_resets stops filtering on the stated instant or stops applying RESET_HORIZON: 182 asserts no row for an event two hours old, and 232 asserts no row while the instant is ahead then one row once it passes, with the store's mtime asserted unchanged across the two passes so 'no file moved' is measured rather than asserted in prose. Both are independent of the sweep's return value. They do not, however, reach the call site the second control names \u2014 see the blocking finding on recovery_watch.py:2778.",
+      "lines": "tests/test_a_limit_reset_reaches_every_pane.py:182-186, 232-251"
+    },
+    {
+      "failure_condition": "The reset-is-not-a-lift claim fails if the limit-reset case reaches the baseline in-force branch: the pane then holds _lift_groups for claude-sub and the reset is dropped for a pane holding that group's lift. Demonstrated by the baseline-path mutation, which reddens exactly this case (logs/negative_control_baseline_path.log, 1 failed, 11 passed, EXIT=1). The reload-order assertion ('a baseline in-force row for that lift is still held') is the half that shows _lift_groups was not disturbed.",
+      "lines": "tests/test_a_limit_reset_reaches_every_pane.py:298-323"
+    },
+    {
+      "failure_condition": "The producer-guard pair is a real two-sided measure: with runs._WATCH_STREAM_PRODUCERS emptied, no row is written (line 355), and with a stub producer registered and watch_stream_path pointed at the temp stream, one row is (line 372). The positive half is what makes the zero of the first half readable, which is the discipline the node's follow_ons ask for elsewhere. It does not cover whether watch_ticker calls the sweep on the clock block.",
+      "lines": "tests/test_a_limit_reset_reaches_every_pane.py:348-374"
+    },
+    {
+      "failure_condition": "This assertion cannot name a condition under which it fails: both sides are the same call with the same arguments, so it survives a sweep_resets that announces nothing. Recorded as a finding; it is not load-bearing for any score.",
+      "lines": "tests/test_a_limit_reset_reaches_every_pane.py:207"
+    }
+  ],
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:2778",
+    "reckon/crew/recovery_watch.py:2538",
+    "reckon/crew/ticker.py:1683",
+    "reckon/crew/ticker.py:1775",
+    "reckon/crew_follow_commands.py:1032",
+    "reckon/crew_follow_commands.py:1058",
+    "reckon/crew/lift_watch.py:190"
+  ],
+  "changed_paths": [
+    "reckon/crew/lift_watch.py",
+    "reckon/crew/recovery_watch.py",
+    "reckon/crew/ticker.py",
+    "tests/test_a_limit_reset_reaches_every_pane.py",
+    "docs/evidence/fragments/a-limit-reset-reaches-every-session/every-pane-draws-a-limit-reset-once.html"
+  ],
+  "commit_list": [
+    "b613326a57f99119c3eff533fa6b9f11e351e75f",
+    "cb79af32c090feae0bd00ce33cad3cfab70636f7",
+    "25be7bf41cadae2a9375585818bc28e88d873acc",
+    "d98efe6070bb5aee5787970a43a0231e438f2044"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-22T04:32:20Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-limit-reset-reaches-every-session/every-pane-draws-a-limit-reset-once.html",
+      "line": "39",
+      "severity": "blocking",
+      "text": "blocking: the committed evidence credits the wrong control. The fragment's control paragraph says 'A second control, routing the sweep through the change gate so the store's write is what triggers it, fails the one named case, 1 failed, 11 passed, EXIT=1' \u2014 but the log that run produced, /tmp/reckon-crew-scratch/r-20261022T033422651385-every-pane-draws-a-limit-reset-once/logs/negative_control_baseline_path.log, fails at tests/test_a_limit_reset_reaches_every_pane.py:315 with 'a pane holding the group's lift never drew the reset'. That is the third control the plan names (limit-reset routed through the baseline in-force path), not the second (the sweep moved into the change gate): under a change-gate mutation the case that reddens is the still-ahead-instant case (line 250, 'the event did not reach the stream once it was due'), not the pane-holding-a-lift case, which drives sweep_resets directly and never touches the gate. So the fragment claims a control was demonstrated when the log beneath it is a different mutation, which is exactly the 'record that cannot be told apart from one about other code' the review contract exists to prevent. Repair is one clause: name this log as the baseline-path control, and either run the change-gate control or drop the claim."
+    },
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": "2778",
+      "severity": "blocking",
+      "text": "blocking: the plan's second negative control is not demonstrated, and nothing in the landed tests can catch its regression. The done_when this node was dispatched against requires that 'the three negative controls the section names fail as it says'; the second of them runs sweep_resets inside the change gate instead of the clock-driven block, and the scheduled event is then never announced. The tests all call lift_watch.sweep_resets directly with an explicit now (tests/test_a_limit_reset_reaches_every_pane.py:98, and every _sweep call site), so moving the call at recovery_watch.py:2778 out of the WATCHER_SWEEP_INTERVAL_SECONDS block and behind the change gate reddens no test \u2014 the manifest itself records this in negative_control_note and follow_ons. The call site is the load-bearing half of the node goal ('swept ... on the producer's clock-driven block'): a feature that works only when called by hand, from a block no test pins, is not the delivered capability. The repair does not need the subprocess end-to-end run the manifest says it would: monkeypatching the block's collaborators and asserting that _sweep_reset_rows was called on a pass where no gate input moved pins the call site, and it reddens under the mutation."
+    },
+    {
+      "file": ".config/reckon/crew/runs/r-20261022T033422651385-every-pane-draws-a-limit-reset-once/manifest.md",
+      "line": "21",
+      "severity": "follow-on",
+      "text": "follow-on: the baseline_suite and after_suite command fields carry an unsubstituted placeholder and a prose tail rather than the literal command that ran: 'PYTHONPATH=$PWD <repo>/.venv/bin/python -m pytest -p no:cacheprovider -q -n 8 @84 files importing the changed modules'. The armed-suite contract requires the literal command with absolute paths and no angle-bracket placeholder, and this string cannot be re-run, which is the field's whole purpose. The literal commands survive in the two logs' own '# command:' headers, so the evidence is recoverable and the count I derived from those logs stands; only the record's field is malformed."
+    },
+    {
+      "file": ".config/reckon/crew/runs/r-20261022T033422651385-every-pane-draws-a-limit-reset-once/manifest.md",
+      "line": "22",
+      "severity": "follow-on",
+      "text": "follow-on: the after_suite arm ran at b613326a5, one commit short of the reviewed head d98efe607, so the recorded 84-file gate does not measure the promoted revision. The manifest states this honestly in failure_attribution and re-ran the focused gate green at d98efe607, and the two intervening commits are whitespace and one docstring sentence, so nothing in the gate's ids is reached \u2014 but a promotion reader comparing after_suite.revision against the promoted head sees a gap the record does not state at the field itself."
+    },
+    {
+      "file": "tests/test_a_limit_reset_reaches_every_pane.py",
+      "line": "207",
+      "severity": "follow-on",
+      "text": "follow-on: 'assert _sweep(PROJECTS[0], stream, seen=None) == first' compares the sweep's return against the sweep's own earlier return under identical arguments, so it holds whatever the function does \u2014 including the regression it reads as guarding, a sweep that announces nothing and returns an empty set both times. It is not the guard for the re-announcement it sits beside; the real guard is the following line, 'assert len(rows) == 1 and len(again) > 0', which counts appended rows independently of the return value. The assertion is harmless but should not be counted as coverage."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against 4b43bb5eb. b613326a5 is the change (lift_watch.sweep_resets plus the shared _transition_row refactor, recovery_watch._sweep_reset_rows and its memory, ticker's limit-reset case and limit stage, the new test); cb79af32c is a ruff format pass; 25be7bf41 is the landing fragment; d98efe607 is a docstring edit removing a plan-section citation. Five files, 661 insertions, 33 deletions, all inside the declared scope, no unrelated churn, and no plan, sprint or ticket identifier in any name, path or comment at the head.",
+    "done_when": "The gate the worker ran asserts most of the top section and none of it quantitatively for the second control. The run's own tests line is the literal focused gate (tests/test_a_limit_reset_reaches_every_pane.py plus tests/test_every_module_fits_a_worker_window.py, 16 passed, EXIT=0 at d98efe607, logs/head.final.log), and the 84-file arms are recorded in base.suite.log/head.suite.log with 2 failed/882 passed and 2 failed/894 passed. Nine of the nine bullets the plan lists are covered by a named test. The second negative control the done_when names is not demonstrated and no test reaches the call site it would move.",
+    "goal": "The node goal is to make every pane draw a limit-reset row once, swept from budget_reset.recent_resets on the producer's clock-driven block. The landed change does that: reckon/crew/lift_watch.py:200 reads budget_reset.recent_resets over a 60-minute RESET_HORIZON and appends one row per event whose instant has passed and whose id it has not announced, recovery_watch.py:2778 calls it from the WATCHER_SWEEP_INTERVAL_SECONDS block under the registered-producer guard, and ticker.py:1775-1780 gives the row the shared claim and returns without touching _lift_groups, with the stage cell reading limit (ticker.py:2358-2361) and the state word working (ticker.py:285-289).",
+    "manifest": "Read at 5153 bytes, status complete. It states the focused gate's result (16 passed, EXIT=0), both armed arms with their logs, the negative-control log and its firing (4 failed, 8 passed, EXIT=1), and it states plainly that the change-gate control is not demonstrated and that the call site is untested. Two shape defects: the armed arms' command fields carry '<repo>' and a prose tail instead of the literal command, and the after_suite revision is one commit short of the reviewed head. Its added-failure claim (zero) reconciles with the two logs.",
+    "write_paths": "The run declared six paths (three modules, one test, the landing fragment, a figures directory). The diff touches five of them and nothing else: reckon/crew/lift_watch.py, reckon/crew/recovery_watch.py, reckon/crew/ticker.py, tests/test_a_limit_reset_reaches_every_pane.py and docs/evidence/fragments/a-limit-reset-reaches-every-session/every-pane-draws-a-limit-reset-once.html. The declared figures directory is correctly left empty, because the node's done-when names no artifact."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261022T043037681918-review-of-every-pane-draws-a-limit-reset-once-d98efe6070bb",
+  "reviewed_base_sha": "4b43bb5ebdb9f06a83fc577f7340be1c777853ee",
+  "reviewed_head_sha": "d98efe6070bb5aee5787970a43a0231e438f2044",
+  "reviewed_run_id": "r-20261022T033422651385-every-pane-draws-a-limit-reset-once",
+  "reviewed_run_orientation_base_sha": "4b43bb5ebdb9f06a83fc577f7340be1c777853ee",
+  "scope_note": "Read the five targets: the node goal, its done_when, its declared write paths, its manifest, the diff of its four commits against 4b43bb5eb, and the production call sites. The reviewed node's worktree was read at d98efe607; the review worktree itself is at 3c38eb616 and does not carry the change, so every diff read was taken from the source worktree's object store.",
+  "scores": {
+    "durability": 14,
+    "evidence": 11,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T09:24:32.259293+00:00",
+  "total": 100,
+  "verification": "The reviewed run's own gate logs were read rather than re-run: baseline_suite 2 failed/882 passed at 4b43bb5eb and after_suite 2 failed/894 passed at b613326a5, both carrying the same two FAILED ids (tests/test_a_new_lift_replaces_the_standing_one.py::test_the_cli_reply_carries_replaces_in_its_lift_field and tests/test_a_producer_sweeps_only_on_change.py::test_quiet_cycles_list_nothing_and_spawn_no_git), so added_failure_count is 0 with an empty id list. Both negative-control logs were read: the claim-removal control reddens 4 of 12 cases (EXIT=1) and the baseline-path control reddens 1 of 12 (EXIT=1). The reuse read searched for a pre-existing owner of each added capability: recent_resets already exists in reckon/crew/budget_reset.py:474 and is reused rather than re-implemented; the row builder is shared through the refactored _transition_row and the pre-existing _append_rows and recovery_watch._watch_transition; the pane's once-per-pane claim reuses take_lift_claim (reckon/crew_follow_commands.py:945) rather than adding a second claim store; the sweep sits beside its three siblings in recovery_watch.py's clock block. The only consumer of a row's lift_id field outside the pane is recovery_review_dispatch.py:1257, which reads budget_lift.effective_budget's own lift_id and never a watch row, so the reset row's reuse of that field reaches nothing that would misread it as a lift."
+}
