@@ -53,11 +53,39 @@ all-unknown case never reaching the probe, and its test fails. Measured:
 <code>1 failed, 7 passed</code>, exit 1, the failure being
 <code>the-claude-account-is-read-again</code>'s all-unknown case alone.</p>
 
-<p id="the-claude-account-is-read-again-open">One item of the stated measure is <strong>not</strong>
-met and is recorded rather than claimed: reading the published document's claude windows after one
-timer pass. This worker runs under a write fence that mounts the publication directory read-only, so
-the pass the node ran exited 1 on
-<code>Read-only file system: /home/ITER/mcintos/public/reckon/paid-lanes.json.lock</code>, and the
-document read afterwards is the previous tick's. The pass will produce a reading once this change is
-on the primary branch and the timer runs unfenced.</p>
+<p id="the-claude-account-is-read-again-open">One item of the stated measure is the coordinator's
+rather than this node's: reading the published document's claude windows after one timer pass. This
+worker runs under a write fence that mounts the publication directory read-only, so a pass from here
+exits 1 on <code>Read-only file system: …/paid-lanes.json.lock</code> and produces no reading to
+cite. The coordinator runs one unfenced publish after merge.</p>
+
+<h3 id="the-claude-account-is-read-again-repair-round">The repair round: one shape, one parser</h3>
+<p id="the-claude-account-is-read-again-repair-body">A review of the first round returned four
+findings, and they were one defect seen from four sides: the change had left two spellings of the
+account answer alive and two parsers for the same rule, so a reader could not tell which was
+canonical. The repairs are:</p>
+<ol id="the-claude-account-is-read-again-repair-list">
+  <li id="the-claude-account-is-read-again-repair-parser">The reset stamp is validated through
+  <code>reckon/_timestamps.parse_iso</code>, the module that owns the Z-suffix and strip handling,
+  rather than a local <code>datetime.fromisoformat</code> call. A repository-wide invariant names
+  that module as the only caller of <code>fromisoformat</code>; it passes at this head.</li>
+  <li id="the-claude-account-is-read-again-repair-shape">The compatibility read for the nested
+  <code>windows</code> spelling is deleted, and the tests that asserted it — three named by the
+  review, and a fourth that went red the moment the read went — are migrated to the top-level
+  windows. One answer shape now crosses the boundary.</li>
+  <li id="the-claude-account-is-read-again-repair-keys">The windows are keyed by their length in
+  minutes, which is the key every other quota map in the module carries. The first round keyed them
+  by name, which the lane view then read as a number and failed on — found by the migration, not by
+  inspection.</li>
+  <li id="the-claude-account-is-read-again-repair-lint">Lint and format are re-run on the changed
+  paths at this head, judged against the base blobs: format clean, and the check's three findings
+  are all present in the base, so the commit adds none.</li>
+</ol>
+<p id="the-claude-account-is-read-again-repair-measure">The measurement is a bounded arm over the
+twelve test files that reach the changed modules plus the structural invariant: base 132 passed,
+head 140 passed, both exit 0, with no identifier failing in one arm alone. The literal importer
+population is 171 files and does not fit the node's window — a run over all of them was bounded
+without reaching its cut — so that run is logged and the bounded arm is what is claimed. The
+negative control was re-applied to the repaired head and still fails exactly the one case it was
+declared to fail.</p>
 </article>
