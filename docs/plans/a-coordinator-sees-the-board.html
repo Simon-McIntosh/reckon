@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
-  <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-project-reads-as-one-picture#s4&quot;,&quot;a-coordinator-sees-the-board#s2&quot;],&quot;s4&quot;:[&quot;a-project-reads-as-one-picture#s2&quot;,&quot;a-coordinator-sees-the-board#s3&quot;],&quot;s5&quot;:[&quot;the-mcp-answers-the-question-asked#s3&quot;,&quot;a-coordinator-sees-the-board#s2&quot;,&quot;a-coordinator-sees-the-board#s3&quot;],&quot;s7&quot;:[&quot;a-coordinator-sees-the-board#s3&quot;,&quot;a-coordinator-sees-the-board#s5&quot;],&quot;s8&quot;:[&quot;a-coordinator-sees-the-board#s3&quot;,&quot;a-coordinator-sees-the-board#s4&quot;,&quot;a-coordinator-sees-the-board#s5&quot;,&quot;a-coordinator-sees-the-board#s6&quot;]}">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-project-reads-as-one-picture#s4&quot;,&quot;a-coordinator-sees-the-board#s2&quot;],&quot;s4&quot;:[&quot;a-project-reads-as-one-picture#s2&quot;,&quot;a-coordinator-sees-the-board#s3&quot;],&quot;s5&quot;:[&quot;the-mcp-answers-the-question-asked#s3&quot;,&quot;a-coordinator-sees-the-board#s2&quot;,&quot;a-coordinator-sees-the-board#s3&quot;],&quot;s7&quot;:[&quot;a-coordinator-sees-the-board#s3&quot;,&quot;a-coordinator-sees-the-board#s4&quot;,&quot;a-coordinator-sees-the-board#s5&quot;,&quot;a-coordinator-sees-the-board#s6&quot;],&quot;s8&quot;:[&quot;a-coordinator-sees-the-board#s3&quot;,&quot;a-coordinator-sees-the-board#s4&quot;,&quot;a-coordinator-sees-the-board#s5&quot;,&quot;a-coordinator-sees-the-board#s6&quot;]}">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>A Coordinator Sees the Board | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="5">
 <meta name="plan-modified" content="2026-10-22">
 </head>
 <body>
@@ -84,7 +84,7 @@
       (<code>_live_review_runs</code>) already filters runs by the dispatching session.</li>
     </ul>
     <p>A plan's coordinator is the dispatching <code>session</code> of its most recent dispatched run, live or in the
-    ledger, within a configured staleness window. The window is a configuration value, never a literal in
+    ledger, within a configured staleness window. A run is matched to its plan by the row's <code>plan</code> field, and, where that is null because the run was dispatched from a brief (<code>reckon/run_record.py:489</code>), by its <code>plan_link</code>; a run carrying neither belongs to no plan. The window is a configuration value, never a literal in
     code. With no such run it is unowned, reported as itself and never guessed. The answer carries both
     facts: the <code>plan-owner</code> person and the coordinator session with its peer name where
     <code>reckon/crew/directory.py</code> resolves one. It also says whether that session is live, and an
