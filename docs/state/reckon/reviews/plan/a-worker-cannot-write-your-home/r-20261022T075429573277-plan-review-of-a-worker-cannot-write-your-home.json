@@ -1,0 +1,73 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T08:02:36.914Z",
+  "dispatched_at": "2026-10-22T07:55:51Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-worker-cannot-write-your-home.html:1592",
+      "id": "done_when-1",
+      "reason": "without a fixture whose delay covers the cited 4 s (or a stated window length), the section's headline claim, that the retry covers a launch that starts slowly, is measured by nothing and the next node can satisfy its gate while leaving the incident unrepaired.",
+      "text": "the mechanism is \"refusal text \u2026 within a bounded startup window sized for a placed step \u2026 or at a stated number of seconds\", but the done-when's fixture only requires the fake bwrap to write the refusal \"after a delay longer than 0.5 s\", while the incident \u00a719 is written to cover took ~4 s from `launched_at` 07:35:53Z to `exited_at` 07:35:57Z, and the window's other bound (\"the first stream record\") cannot fire for that shape at all because `stream.jsonl` is empty; an implementation choosing a one-second window passes every arm of the done-when and still records this launch as failed",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-worker-cannot-write-your-home.html:1592",
+      "id": "evidence_paths-1",
+      "reason": "the dispatch fences a node from the write paths the plan declares, and an undeclared scope invites a grant spanning the neighbouring launch modules (`reckon/_backends.py`, `reckon/host_shims/`) that \u00a718 and \u00a715 own.",
+      "text": "\u00a719 states no \"Write paths:\" clause, names no test file and no gate-log path, where the eighteen sibling sections each end with \"Write paths: \u2026\" (the nearest, \u00a718 at `:1579`, names three modules and its test file), so the node's exclusive file scope must be guessed and its evidence path is undeclared",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-worker-cannot-write-your-home.html:1592",
+      "id": "anchors_resolve-1",
+      "reason": "the prefix is unique in the runs root and one `ls` reaches the record, so the claim it supports (`ended_during: launch`, the refusal in `stderr.log`) is checkable; carrying the slug in every citation is house convention rather than a correctness fix.",
+      "text": "\"Run `r-20261021T073526532476`\" names a run by timestamp prefix alone and no directory resolves at `~/.config/reckon/crew/runs/r-20261021T073526532476`; the record the section describes is at `~/.config/reckon/crew/runs/r-20261021T073526532476-jt60sa-2023-shot-census`, and every other run id in this plan carries its slug",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "fb066b6583832e70b67a77934195c6877de2a534abebe87586a5db25f87ed18b",
+  "plan_slug": "a-worker-cannot-write-your-home",
+  "plan_version": 220,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T075429573277-plan-review-of-a-worker-cannot-write-your-home",
+  "reviewed_blob_sha": "22d139af4f3e9e21f7da3b7438a3fb880bb98aee",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the cited run is named by timestamp prefix only, and no directory resolves at that path; every other run id in the plan carries its slug suffix.",
+    "done_when": "a finding \u2014 \u00a719's window is left as \"a stated number of seconds\" while its fixture only requires a delay \"longer than 0.5 s\", so no arm fails for a window too short to cover the cited incident.",
+    "evidence_paths": "a finding \u2014 \u00a719 declares no write paths and names neither a test file nor a gate-log path, unlike every sibling section, so a later reader has no durable path to open and a dispatcher cannot derive the node's file scope.",
+    "naming": "pass \u2014 no plan label, stage name or ticket number reaches the symbols \u00a719 names; it cites mechanisms (`_spawn_worker_retrying_a_vanished_bind`, `_died_over_a_vanished_bind_source`, `SANDBOX_STARTUP_WINDOW_SECONDS`) rather than its own identity.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited record (launched 07:35:53Z to exit 07:35:57Z is ~4 s, past the 0.5 s window, and `stream.jsonl` is empty with the refusal in `stderr.log`), and both callers the mechanism must run under are named and do call the retry (`reckon/crew/dispatch_launch.py:1606`, `:2439`).",
+    "single_goal": "pass \u2014 one deliverable (the retry keys on the refusal text in a bounded window that never waits on the child's exit), with three arms naming its behaviour, its discrimination and its negative control.",
+    "wiring": "pass \u2014 \u00a719 declares no `depends-on` and needs none at dispatch time: it writes only `reckon/crew/dispatch_launch.py`, whose two other plan sections that name that module (\u00a712 at `:1525`, \u00a715 at `:1537`) are both declared `done`, and no open section (\u00a718 names `_worker_fence.py`, `_backends.py`, `dispatch_admission.py`) holds it."
+  },
+  "section_digests": {
+    "_document": "b5d967f50774b69a535b2a66f93e45dbcb2d30ef90fb55298a1ec94c1604642f",
+    "s1": "20aea2196f748a0a26dcd8c4f13a51e89056dc090927dcbf7c88e3384e3a5ab4",
+    "s10": "c5c7fe720643fd4e73b5f1c9fff30c26f8357f46808e3b91eb33b5271d3a19bc",
+    "s11": "f2f305292dacd47d88930479053d919c6bce05b3f863e60a502ce40a2b1c1239",
+    "s12": "bcbf84b314096bf944f58481d98177c11ed6732c763472dc6bc259bc0ad8f54e",
+    "s13": "274d2cd914af10830f75d7ac253c9a1833d25cf9ac0e37e28c0c48ba60b77628",
+    "s14": "fcefb6cd20b26029bf0d8c785373a493532289cca9f2b4b01a93bf7b4ef7c19a",
+    "s15": "2d4c8c79a854bdbb21757053e30b9cf1366a1b627dc8c8ef6e7760cb15af06a2",
+    "s16": "f2c003eb41a15d4a475407c4f28b7405bf87620a7ee1c9732c823c0bd535923c",
+    "s17": "2d2d08c8567a83cca3bdd3a30b5cca94fa8e377c6e1552aed6dfb8e1d15db707",
+    "s18": "8f63d2e9144312cbecd9a2f55a3526ba207f322d3d1f237392b076ed1b4abf53",
+    "s19": "c3e3e68918975542eb74ccd451ba5d47b33951a0d0de3684223ac55477ae9a8d",
+    "s2": "dfbb662d3da9aa4d3d153e8d2cd5e2c614534034829ebd298f56063c2150b8b6",
+    "s3": "8a798e91551442bdcf324bf0e8f2801e9ced17b35f45f3867f8314e98619dde9",
+    "s4": "b249a7c0cf7296d1b03a7dcdc45216481b546ee13550784bcaabea3f34abe51d",
+    "s5": "b591d224f29bac0f9b5918e6ee3a87b55260f3424887d057e5a8bec79aec03b1",
+    "s6": "a2ea9ae61376b301400c70bae6a0060a2a2abf072b89cbf83a102cea2ab5f3b4",
+    "s7": "b363364b7464f2f7c7af654833037ddd56f6af79fd55aa44a6d3327083f626a5",
+    "s8": "af9d785f0f9f36ee58ec7010366aec4f06efdf850c84cf4ce0619311174d54dd",
+    "s9": "131001034a4d533c7f8c0beb295eb3570f2b7e1fc7853a1a09da023955ff5c4d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T08:10:49.770009+00:00"
+}
