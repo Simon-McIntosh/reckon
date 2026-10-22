@@ -814,6 +814,14 @@ def _waiting_decision_rows(
     this poll already parses and memoises: the crew page lists a wait without
     paying a second reading of the same plan files. One unreadable document is
     skipped rather than blanking the rows the other plans supply.
+
+    Serving the roadmap report's own list here instead was tried and refused by
+    two pinned contracts on this route: building the report reads every plan a
+    second time through ``_plan_html.read_state``, so a poll that reads one plan
+    twice reported two reads, and the first poll pays the whole build, which the
+    route's one-second budget over forty pointers does not allow. The report
+    carries the same rows on the discovery payload (see ``_attach_ready_set``),
+    which is where a caller that wants the report's own list reads them.
     """
 
     from reckon.roadmap import unsettled_decisions
@@ -828,16 +836,20 @@ def _waiting_decision_rows(
         except OSError:
             continue
         for plan_path in plan_paths:
-            state = _crew_plan_state(docs, plan_path.stem)
+            state = _waiting_plan_state(docs, plan_path.stem, name)
             if not state:
                 continue
-            rows.extend(
-                unsettled_decisions(
-                    {"slug": plan_path.stem, "project": name, **state},
-                    waiting_context=True,
-                )
-            )
+            rows.extend(unsettled_decisions(state, waiting_context=True))
     return rows
+
+
+def _waiting_plan_state(docs: Path, slug: str, project: str) -> dict | None:
+    """One plan's parsed state, named as the roadmap's derivation expects it."""
+
+    state = _crew_plan_state(docs, slug)
+    if not state:
+        return None
+    return {"slug": slug, "project": project, **state}
 
 
 def _crew_rows(mounts: dict[str, Path], project: str | None = None) -> list[dict]:
@@ -1795,7 +1807,7 @@ def _attach_ready_set(
     """
 
     from reckon.mcp_views import ready_set_view
-    from reckon.roadmap import build_roadmap
+    from reckon.roadmap import build_roadmap, waiting_decision_rows
 
     roadmap = build_roadmap(
         project,
@@ -1806,6 +1818,10 @@ def _attach_ready_set(
         review=result.get("review") or {},
         docs_dir=docs_dir,
     )
+    # The decisions this project waits on travel with its discovery payload,
+    # taken from the report that derived them, so a surface serving them reads
+    # the derivation rather than walking the plans again.
+    result["waiting_decisions"] = waiting_decision_rows(roadmap)
     projection = ready_set_view(roadmap)
     result["ready_set"] = projection
     result["endpoints"] = projection.get("endpoints", [])

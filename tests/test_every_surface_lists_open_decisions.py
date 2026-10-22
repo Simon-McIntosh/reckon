@@ -4,8 +4,8 @@ A plan waiting on the lead carries no followup, so its open decision is the
 only record that it waits and on whom. Two surfaces are read for that record:
 the roadmap's default summary view and the crew payload the page polls. They
 must list one derivation rather than two readings of the same plan files, so
-these cases build one mounted project, ask both surfaces the same question and
-compare their answers.
+these cases mount two projects holding three plans, ask both surfaces the same
+question of each project, and compare their answers in order.
 """
 
 from __future__ import annotations
@@ -24,22 +24,33 @@ from reckon.mcp_views import roadmap_view
 from tests.mcp_family_reload import reload_mcp_family
 
 PROJECT = "sample"
+COMPANION = "companion"
 SLUG = "waiting-work"
-#: The plan's own last-modified date. Fixed in the fixture rather than taken
-#: from today, so the case cannot pass on the day it is written and expire.
-MODIFIED = "2026-10-01"
+SCOPE_SLUG = "whole-plan-wait"
+COMPANION_SLUG = "companion-work"
 SCOPED_SECTION = "s2"
+#: The plans' own last-modified date. Fixed in the fixture rather than taken
+#: from today, so the cases cannot pass on the day they are written and expire.
+MODIFIED = "2026-10-01"
+#: The open and gated decisions the sample project holds; its locked one does
+#: not appear on any surface.
+WAITING_IDS = {"transport", "scope-move", "retention"}
 
 
 @pytest.fixture()
-def mounted_project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def mounted_projects(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
     docs = tmp_path / "repo" / "docs"
+    other = tmp_path / "other" / "docs"
     docs.mkdir(parents=True)
+    other.mkdir(parents=True)
     config_home = tmp_path / "config"
     state_root = config_home / "state"
     state_root.mkdir(parents=True)
     mounts_file = config_home / "mounts.json"
-    mounts_file.write_text(json.dumps({PROJECT: str(docs)}), encoding="utf-8")
+    mounts_file.write_text(
+        json.dumps({PROJECT: str(docs), COMPANION: str(other)}),
+        encoding="utf-8",
+    )
     monkeypatch.setenv("RECKON_HOME", str(config_home))
     monkeypatch.setenv("RECKON_MOUNTS_PATH", str(mounts_file))
     monkeypatch.setenv("RECKON_STATE_ROOT", str(state_root))
@@ -53,7 +64,7 @@ def mounted_project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
-        yield docs, server.server_port
+        yield {"docs": docs, "other": other, "port": server.server_port}
     finally:
         server.shutdown()
         server.server_close()
@@ -61,67 +72,42 @@ def mounted_project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         serve_module._DISC_CACHE.clear()
 
 
-def _write_waiting_plan(docs: Path, *, transport_choice: str = "") -> Path:
-    """Write the one plan the fixture reads, with its three decisions.
-
-    ``transport_choice`` locks the scoped decision when it is set, which is how
-    a case shows a locked decision leaving both surfaces.
-    """
-
-    bare = (
+def _plan_doc(slug: str, project: str) -> str:
+    return (
         '<!doctype html><html lang="en"><head><meta charset="utf-8">'
-        f'<meta name="docs-project" content="{PROJECT}">'
-        f"<title>{SLUG}</title></head>"
+        f'<meta name="docs-project" content="{project}">'
+        f"<title>{slug}</title></head>"
         '<body><main class="plan-doc">'
         '<h2 id="s1">§1 — The work</h2>'
         '<h2 id="s2">§2 — The payload</h2>'
-        "</main></body></html>"
+        f"</main></body></html>"
     )
-    path = docs / "plans" / f"{SLUG}.html"
+
+
+def _decision(title: str, **extra) -> dict:
+    return {
+        "title": title,
+        "choices": ["accept", "reject"],
+        "option_labels": {"accept": "accept", "reject": "reject"},
+        "choice": "",
+        "rationale": "",
+        **extra,
+    }
+
+
+def _write_plan(docs: Path, slug: str, project: str, *, decisions, gates=()) -> Path:
+    path = docs / "plans" / f"{slug}.html"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         write_state(
-            bare,
+            _plan_doc(slug, project),
             {
-                "slug": SLUG,
-                "title": "Waiting work",
+                "slug": slug,
+                "title": slug,
                 "status": "active",
                 "modified": MODIFIED,
-                "decisions": {
-                    "transport": {
-                        "title": "Which transport carries the payload?",
-                        "choices": ["accept", "reject"],
-                        "option_labels": {"accept": "accept", "reject": "reject"},
-                        "choice": transport_choice,
-                        "rationale": "",
-                        "recommended": "accept",
-                        "recommended_by": "surface review",
-                        "sections": [SCOPED_SECTION],
-                    },
-                    "retention": {
-                        "title": "How long do records remain?",
-                        "choices": ["keep", "drop"],
-                        "option_labels": {"keep": "keep", "drop": "drop"},
-                        "choice": "",
-                        "rationale": "",
-                    },
-                    "naming": {
-                        "title": "Which naming scheme holds?",
-                        "choices": ["dotted", "flat"],
-                        "option_labels": {"dotted": "dotted", "flat": "flat"},
-                        "choice": "dotted",
-                        "rationale": "",
-                    },
-                },
-                "gates": [
-                    {
-                        "id": "retention-edge",
-                        "measure": "the retention choice is recorded",
-                        "transition": "decision-lockable",
-                        "decision": "retention",
-                        "verdict": "",
-                    }
-                ],
+                "decisions": decisions,
+                "gates": list(gates),
                 "followups": [],
                 "version": 0,
             },
@@ -131,13 +117,75 @@ def _write_waiting_plan(docs: Path, *, transport_choice: str = "") -> Path:
     return path
 
 
-def _summary_view() -> dict:
-    return roadmap_view(
-        mcp_module._roadmap(PROJECT), view="summary", cursor=None, limit=None
+def _write_mounted_plans(
+    docs: Path, other: Path, *, transport_choice: str = ""
+) -> None:
+    """Write the three plans the fixture reads.
+
+    ``transport_choice`` locks the scoped decision when it is set, which is how
+    a case shows a locked decision leaving both surfaces.
+    """
+
+    _write_plan(
+        docs,
+        SLUG,
+        PROJECT,
+        decisions={
+            "transport": _decision(
+                "Which transport carries the payload?",
+                choice=transport_choice,
+                recommended="accept",
+                recommended_by="surface review",
+                sections=[SCOPED_SECTION],
+            ),
+            "retention": _decision("How long do records remain?"),
+            "naming": _decision("Which naming scheme holds?", choice="dotted"),
+        },
+        gates=[
+            {
+                "id": "retention-edge",
+                "measure": "the retention choice is recorded",
+                "transition": "decision-lockable",
+                "decision": "retention",
+                "verdict": "",
+            }
+        ],
+    )
+    _write_plan(
+        docs,
+        SCOPE_SLUG,
+        PROJECT,
+        decisions={"scope-move": _decision("Does the plan move as one?")},
+    )
+    _write_plan(
+        other,
+        COMPANION_SLUG,
+        COMPANION,
+        decisions={
+            "cadence": _decision("How often does the companion poll?"),
+            "timing": _decision("Which clock does it read?", choice="utc"),
+        },
     )
 
 
-def _crew_payload(port: int) -> dict:
+def _arm(mounted: dict, *, transport_choice: str = "") -> int:
+    """Write the fixture is served from, and return the port it polls."""
+
+    _write_mounted_plans(
+        mounted["docs"], mounted["other"], transport_choice=transport_choice
+    )
+    reload_mcp_family()
+    serve_module._DISC_CACHE.clear()
+    return mounted["port"]
+
+
+def _summary(project: str) -> dict:
+    return roadmap_view(
+        mcp_module._roadmap(project), view="summary", cursor=None, limit=None
+    )
+
+
+def _crew(port: int) -> dict:
     connection = http.client.HTTPConnection("127.0.0.1", port, timeout=30)
     try:
         connection.request("GET", "/crew")
@@ -147,32 +195,28 @@ def _crew_payload(port: int) -> dict:
         connection.close()
 
 
-def test_summary_and_crew_payload_list_the_same_open_decisions(mounted_project) -> None:
-    docs, port = mounted_project
-    _write_waiting_plan(docs)
-    reload_mcp_family()
-    serve_module._DISC_CACHE.clear()
+def test_summary_and_crew_payload_list_the_same_open_decisions(
+    mounted_projects,
+) -> None:
+    crew_rows = _crew(_arm(mounted_projects))["open_decisions"]
 
-    summary_rows = _summary_view()["open_decisions"]
-    crew_rows = _crew_payload(port)["open_decisions"]
-
-    assert summary_rows == crew_rows
+    for project in (PROJECT, COMPANION):
+        assert _summary(project)["open_decisions"] == [
+            row for row in crew_rows if row["project"] == project
+        ], project
 
 
 def test_summary_view_lists_open_and_gated_decisions_with_their_plan(
-    mounted_project,
+    mounted_projects,
 ) -> None:
-    docs, _port = mounted_project
-    _write_waiting_plan(docs)
-    reload_mcp_family()
-    serve_module._DISC_CACHE.clear()
-
-    summary = _summary_view()
+    _arm(mounted_projects)
+    summary = _summary(PROJECT)
     rows = {row["id"]: row for row in summary["open_decisions"]}
 
-    assert set(rows) == {"transport", "retention"}
-    assert summary["open_decision_count"] == 2
+    assert set(rows) == WAITING_IDS
+    assert summary["open_decision_count"] == len(WAITING_IDS)
     assert "naming" not in rows, "a locked decision holds no work"
+    assert "cadence" not in rows, "another project's wait is not this one's"
 
     scoped = rows["transport"]
     assert scoped["status"] == "open"
@@ -182,45 +226,63 @@ def test_summary_view_lists_open_and_gated_decisions_with_their_plan(
     assert scoped["recommended"] == "accept"
     assert scoped["recommended_by"] == "surface review"
     assert scoped["plan_modified"] == MODIFIED
-
     assert rows["retention"]["status"] == "gated"
 
 
-def test_crew_payload_lists_the_open_and_gated_decisions(mounted_project) -> None:
-    docs, port = mounted_project
-    _write_waiting_plan(docs)
-    reload_mcp_family()
-    serve_module._DISC_CACHE.clear()
+def test_crew_payload_lists_every_mounted_projects_decisions(
+    mounted_projects,
+) -> None:
+    rows = {
+        (row["project"], row["id"]): row
+        for row in _crew(_arm(mounted_projects))["open_decisions"]
+    }
 
-    payload = _crew_payload(port)
-    rows = {row["id"]: row for row in payload["open_decisions"]}
+    assert set(rows) == {(PROJECT, key) for key in WAITING_IDS} | {
+        (COMPANION, "cadence")
+    }
 
-    assert set(rows) == {"transport", "retention"}
-    assert rows["transport"]["sections"] == [SCOPED_SECTION]
-    assert rows["transport"]["recommended_by"] == "surface review"
-    assert rows["transport"]["plan_modified"] == MODIFIED
-    assert rows["retention"]["status"] == "gated"
+    scoped = rows[(PROJECT, "transport")]
+    assert scoped["sections"] == [SCOPED_SECTION]
+    assert scoped["recommended_by"] == "surface review"
+    assert scoped["plan_modified"] == MODIFIED
+    assert rows[(PROJECT, "retention")]["status"] == "gated"
+    assert (COMPANION, "timing") not in rows, "a locked decision holds no work"
+
+
+def test_a_whole_plan_wait_says_so_on_both_surfaces(mounted_projects) -> None:
+    port = _arm(mounted_projects)
+    summary = {row["id"]: row for row in _summary(PROJECT)["open_decisions"]}
+    crew = {
+        row["id"]: row
+        for row in _crew(port)["open_decisions"]
+        if row["project"] == PROJECT
+    }
+
+    whole = summary["scope-move"]
+    assert whole["plan"] == SCOPE_SLUG
+    assert whole["sections"] == []
+    assert whole["holds_whole_plan"] is True
+
+    scoped = summary["transport"]
+    assert scoped["sections"] == [SCOPED_SECTION]
+    assert scoped["holds_whole_plan"] is False
+
+    assert crew["scope-move"] == whole, "both surfaces agree on the scope"
+    assert crew["transport"]["holds_whole_plan"] is False
 
 
 def test_locking_the_open_decision_removes_it_from_both_surfaces(
-    mounted_project,
+    mounted_projects,
 ) -> None:
-    docs, port = mounted_project
-    _write_waiting_plan(docs)
-    reload_mcp_family()
-    serve_module._DISC_CACHE.clear()
-    assert {row["id"] for row in _summary_view()["open_decisions"]} == {
-        "transport",
-        "retention",
-    }
+    port = _arm(mounted_projects)
+    assert {row["id"] for row in _summary(PROJECT)["open_decisions"]} == WAITING_IDS
 
-    _write_waiting_plan(docs, transport_choice="accept")
-    reload_mcp_family()
-    serve_module._DISC_CACHE.clear()
+    _arm(mounted_projects, transport_choice="accept")
+    summary_rows = _summary(PROJECT)["open_decisions"]
+    crew_rows = [
+        row for row in _crew(port)["open_decisions"] if row["project"] == PROJECT
+    ]
 
-    summary_rows = _summary_view()["open_decisions"]
-    crew_rows = _crew_payload(port)["open_decisions"]
-
-    assert {row["id"] for row in summary_rows} == {"retention"}
-    assert {row["id"] for row in crew_rows} == {"retention"}
+    assert {row["id"] for row in summary_rows} == WAITING_IDS - {"transport"}
+    assert {row["id"] for row in crew_rows} == WAITING_IDS - {"transport"}
     assert summary_rows == crew_rows

@@ -999,11 +999,14 @@ def _decision_rows(
 
     ``waiting_context`` adds what a reader of a *wait* needs and what a row
     consumed for readiness does not: the owning project, the recorded
-    recommendation and who made it, and the plan's last-modified date. An open
-    decision records no date of its own, so the plan's date is the only signal
-    of how long the wait has run. It is opt-in because a caller that consumes
-    rows for readiness compares them whole, and a new field would read as a
-    different decision rather than the same one with more to say.
+    recommendation and who made it, the plan's last-modified date, and the
+    scope the wait holds — every waiting row carries ``sections`` as a list and
+    ``holds_whole_plan``, so a plan-level wait and a row whose field is simply
+    absent do not read alike. An open decision records no date of its own, so
+    the plan's date is the only signal of how long the wait has run. It is
+    opt-in because a caller that consumes rows for readiness compares them
+    whole, and a new field would read as a different decision rather than the
+    same one with more to say.
     """
 
     raw_decisions = plan.get("decisions") or []
@@ -1045,6 +1048,15 @@ def _decision_rows(
             if isinstance(scoped, list)
             else []
         )
+        # A wait that names no section holds the whole plan, and a reader
+        # cannot tell that from a row whose field is missing. The waiting rows
+        # therefore always state the scope: the list is present and possibly
+        # empty, and the whole-plan case says so in a field of its own.
+        scope = (
+            {"sections": sections, "holds_whole_plan": not sections}
+            if waiting_context
+            else ({"sections": sections} if sections else {})
+        )
         rows.append(
             {
                 "kind": "decision",
@@ -1065,7 +1077,7 @@ def _decision_rows(
                     if waiting_context
                     else {}
                 ),
-                **({"sections": sections} if sections else {}),
+                **scope,
                 **(
                     {
                         "transition": "decision-lockable",
