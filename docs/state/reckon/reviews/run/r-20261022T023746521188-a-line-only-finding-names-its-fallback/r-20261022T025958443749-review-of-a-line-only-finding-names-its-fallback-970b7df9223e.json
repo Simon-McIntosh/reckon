@@ -1,0 +1,45 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "baseline_suite (f35480da) 3 failures [test_a_line_only_finding_has_no_location, test_the_parser_states_a_line_only_finding_with_no_file, test_the_refusal_for_a_line_only_finding_names_the_reviews_findings]; after_suite (970b7df9) 0 failures; added = after - baseline = none.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/repair.py:532",
+    "reckon/crew/repair.py:549",
+    "reckon/crew/recovery_review_dispatch.py:2154"
+  ],
+  "completed_at": "2026-10-22T03:09:43.013Z",
+  "dispatched_at": "2026-10-22T03:01:12Z",
+  "findings": [
+    {
+      "file": "reckon/crew/repair.py",
+      "line": "532",
+      "text": "follow-on: compose_repair_brief is one of the callers the goal says now falls back, but it spells no fallback of its own, so a line-only finding renders as \"- [id]  text\" with an empty location slot where it previously rendered \":12\"; the same gap shows at :549 where the unmarked-findings line becomes a bare \"- \"."
+    },
+    {
+      "file": "tests/test_a_line_only_finding_names_its_fallback.py",
+      "line": "99",
+      "text": "follow-on: the world fixture and its _git/_commit/_write_run/_store_review helpers duplicate the equivalent harness in tests/test_a_review_waits_for_its_repair.py:66-237 and at least six other modules; no shared owner exists, so this is the established idiom rather than a fork, but the harness merits one shared fixture node."
+    }
+  ],
+  "node": "review-of-a-line-only-finding-names-its-fallback-970b7df9223e",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is \"Return nothing from _finding_location for a finding that carries a line but no file\"; the diff adds `if not location: return \"\"` at reckon/crew/repair.py:501-502 of the reviewed head, which is exactly that.\nVERDICT done_when: the plan's \u00a78 done-when names the empty result, the unchanged file:line rendering and the refusal naming the review's findings; the worker's gate ran tests/test_a_line_only_finding_names_its_fallback.py plus the two sibling modules and recorded head 10 passed EXIT=0 against base 3 failed EXIT=1.\nVERDICT write_paths: read the source manifest's declared paths (reckon/crew/repair.py, tests/test_a_line_only_finding_names_its_fallback.py, the landing fragment under docs/evidence/fragments/work-is-checked-against-its-domain/); all three files in the diff are inside them.\nVERDICT manifest: read; it states status: complete, records the head gate at gate_head.log (10 passed, EXIT=0), the base arm at gate_base.log (3 failed, EXIT=1) and the negative control at negative_control.log (3 failed, EXIT=1).\nVERDICT diff: read commit by commit against base f35480da; one commit, 970b7df9, adds the guard in repair.py:501-502, the new test file and the 94-line landing fragment; no caller was edited.\nCALL_SITES: reckon/crew/repair.py:532 (compose_repair_brief), reckon/crew/repair.py:549 (compose_repair_brief unmarked list), reckon/crew/recovery_review_dispatch.py:2154 (the review-waits-for-its-repair refusal)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/repair.py:501-502 returns the empty string when the finding names no file, and the file:line rendering at :503 is unchanged for a finding that names one.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate_head.log names the three test modules and ends EXIT=0, gate_base.log runs the new file at the base revision and ends EXIT=1 with the three line-only ids, so the delta is recorded rather than claimed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/repair.py, the new test file and the landing fragment, all three inside the manifest's declared write_paths.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the guard on the line alone (the declared mutation, run as the node's own negative control at negative_control.log) reddens three of the four added assertions, and none of them compares a value against the input the test itself supplied; the fourth case only pins the unchanged renderings.\nSCORE fit: 19\nJUSTIFICATION fit: the added prose at reckon/crew/repair.py:499-505 follows the module's own docstring idiom, and neither the helper name nor the test module name carries a plan, stage or ticket identifier.\nSCORE reuse: 16\nJUSTIFICATION reuse: no owner for the review-dispatch test harness exists in tests/ (searched for a shared support module; tests/roadmap_fixtures.py is not one), so this is not the duplicate-an-owned-capability case, but the new file is the eighth per-module copy of the world/_git/_commit fixture, naming tests/test_a_review_waits_for_its_repair.py:66-237 as one such copy.\nFINDING reckon/crew/repair.py:532 follow-on: compose_repair_brief is one of the callers the goal says now falls back, but it spells no fallback of its own, so a line-only finding renders as \"- [id]  text\" with an empty location slot where it previously rendered \":12\"; the line stays readable but the intent that every caller names a place is unmet here, and the same gap shows at :549 where the unmarked-findings line becomes a bare \"- \".\nFINDING tests/test_a_line_only_finding_names_its_fallback.py:99 follow-on: the world fixture and its _git/_commit/_write_run/_store_review helpers duplicate tests/test_a_review_waits_for_its_repair.py:95's equivalents across at least eight test modules; no shared owner exists, so this is the established idiom rather than a fork, but the harness is worth one shared fixture node.\n",
+  "review_run_id": "r-20261022T025958443749-review-of-a-line-only-finding-names-its-fallback-970b7df9223e",
+  "reviewed_base_sha": "f35480dab6fb0f3c76cf97d82bf8a4c8a9a7f578",
+  "reviewed_head_sha": "970b7df9223eac8b0a5401a9b6e711a760952720",
+  "reviewed_run_id": "r-20261022T023746521188-a-line-only-finding-names-its-fallback",
+  "run_id": "r-20261022T025958443749-review-of-a-line-only-finding-names-its-fallback-970b7df9223e",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T03:12:06.632203+00:00",
+  "total": 112
+}
