@@ -26,7 +26,7 @@
   <title>Work Is Checked Against Its Domain | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="44">
+<meta name="plan-version" content="45">
 <meta name="plan-modified" content="2026-10-22">
 </head>
 <body>
@@ -102,10 +102,16 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-wicd-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-21" data-recommends-skill="/reckon-build work-is-checked-against-its-domain §2" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-wicd-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-21" data-recommends-skill="/reckon-build work-is-checked-against-its-domain §2" data-resolved-at="2026-10-22T06:46:54+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Refuse a review round while a blocking finding is unanswered</h4>
     <div class="r-fu-body"><p>§2 and §3 can start at once. §4, §5 and §6 read the block §3 defines, and §7 replays the cases once the rest land.</p></div>
     <pre class="r-fu-prompt">/reckon-build work-is-checked-against-its-domain §2</pre>
+    <p class="r-fu-outcome">§2, §3, §4, §5, §8, §9 and §10 have landed; §6's first node landed with its comparison report refusing where the section asks for a warning, so §6 stays open behind a repair node, and §7 replays the cases once §6 closes. The next invocation is f-wicd-002.</p>
+    </article>
+<article class="r-fu" data-id="f-wicd-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-22" data-recommends-skill="/reckon-build work-is-checked-against-its-domain §6" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Close §6, then replay the cases in §7</h4>
+    <div class="r-fu-body">§6's repair node turns the unnamed-comparison report into a dispatch warning and keeps the missing-input refusal. When it lands, §6 is ticked and §7 replays the recorded cases against the landed checks.</div>
+    <pre class="r-fu-prompt">/reckon-build work-is-checked-against-its-domain §6</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -215,7 +221,7 @@
     <div class="r-comment-body"><p>Landed the first node: declared inputs are checked at admission and a model-building node with no stated comparison is reported; review 108/120. Section stays open: the comparison report refuses rather than warns, and a repair node turns it into a warning. Evidence: <a href="/reckon/evidence/archive/work-is-checked-against-its-domain-landed.html#s6-inputs">§6 first node</a>.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261022T050115039687-a-node-names-its-inputs-and-measurement" data-who="reckon-build" data-when="2026-10-22T05:31:24.062Z">
-    <div class="r-comment-body"><p>TaskNode gained `inputs` and `compares_with` from the new `--input` and `--compares-with` dispatch options, and dispatch admission now refuses a node whose declared input the dispatched repository does not hold (naming the path) and reports a node whose write paths match a project&#x27;s declared `model_paths` while it states no measurement or `none-exists` search, both through the findings the verdict is already composed from — 13 new tests, gate 123 passed EXIT=0 at head against 12 failed / 111 passed EXIT=1 at 63e6d9f18.</p></div>
+    <div class="r-comment-body"><p>TaskNode gained `inputs` and `compares_with` from the new `--input` and `--compares-with` dispatch options, and dispatch admission now refuses a node whose declared input the dispatched repository does not hold (naming the path) and reports a node whose write paths match a project's declared `model_paths` while it states no measurement or `none-exists` search, both through the findings the verdict is already composed from — 13 new tests, gate 123 passed EXIT=0 at head against 12 failed / 111 passed EXIT=1 at 63e6d9f18.</p></div>
 </div>
 </section>
 </main>
