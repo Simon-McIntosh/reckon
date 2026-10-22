@@ -34,9 +34,15 @@ one arm only. At the post-format head <code>cb79af32c</code>, the new file and
 <code>ruff check</code> reports four findings on the changed files and <code>ruff format --check</code>
 is clean; all four are pre-existing in <code>recovery_watch.py</code> at lines this change does not
 touch, and the base blobs carry the same four.</p>
-<p id="every-pane-draws-a-limit-reset-once-control">The declared negative control — draw a limit-reset
-row without the claim — makes session A's pane draw the line twice: <strong>4 failed, 8 passed,
-EXIT=1</strong>, the four being exactly the once-per-pane cases. A second control, routing the sweep
-through the change gate so the store's write is what triggers it, fails the one named case,
-<strong>1 failed, 11 passed, EXIT=1</strong>.</p>
+<p id="every-pane-draws-a-limit-reset-once-control">All three negative controls the section names were
+run at the head <code>d9af2a0ea</code>, one mutation per arm, and each left its own log under the run
+directory's <code>logs/</code>. The declared one, <code>negative_control.log</code>, draws the row
+without the claim and session A's pane then draws the line twice — <strong>4 failed, 9 passed,
+EXIT=1</strong>, the four failures being the once-per-pane cases. The second,
+<code>negative_control_change_gate.log</code>, moves the call into the change gate, so the due event is
+never announced on a pass the gate did not open — <strong>1 failed, 12 passed, EXIT=1</strong>, the one
+failure being the case that requires the sweep to have run on a still gate. The third,
+<code>negative_control_baseline_path.log</code>, routes <code>limit-reset</code> through the baseline
+in-force path, and the pane holding the group's lift then never draws the reset — <strong>1 failed, 12
+passed, EXIT=1</strong>, failing exactly the pane-holding-a-lift case.</p>
 </article>
