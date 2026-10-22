@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-22T07:43:27.542Z",
+  "dispatched_at": "2026-10-22T07:32:05Z",
+  "findings": [
+    {
+      "file": "tests/test_a_wait_nobody_declared_is_a_finding.py",
+      "line": 129,
+      "severity": "follow-on",
+      "summary": "passthrough assertion is not independent of the value under test",
+      "text": "follow-on: the assertion at tests/test_a_wait_nobody_declared_is_a_finding.py:129 compares the fixture's own blocker string, handed to the analyser, against the text the finding echoes back, so it holds whatever the ref extraction does and would stay green if _mentioned_section_refs stopped finding refs; the independent assertions beside it at :127 and :128 are what carry this case, so the durability score does not rest on it."
+    },
+    {
+      "file": "reckon/roadmap.py",
+      "line": 1517,
+      "severity": "follow-on",
+      "summary": "open-section scoping is inert by construction",
+      "text": "follow-on: the open-section filter at reckon/roadmap.py:1517 cannot exclude anything, because reckon/roadmap.py:3882 unions every run-bearing section into the same set it tests against and every key in paths came from those runs, so the filter admits each key whose plan is in the roadmap scope; a section that is no longer implementable but still carries a run pointer is therefore read as open, which is a precision loss in the finding rather than a wrong pair."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "The emitters are reached only through _build_roadmap, whose report feeds the CLI, MCP and crew plan-review readers; no other caller exists.",
+    "diff": "Read commit by commit against a4a3beb8b: four commits, three files, 514 insertions and 1 deletion, all inside the declared scope.",
+    "done_when": "The done_when names the six fixture cases and the power_convertor listing; tests/test_a_wait_nobody_declared_is_a_finding.py:104-278 carries all six and the manifest records the four-file gate it ran.",
+    "goal": "The node goal is to emit undeclared-wait and overlapping-scope from the roadmap analyser; reckon/roadmap.py:1409 and reckon/roadmap.py:1492 define both emitters and reckon/roadmap.py:4008 and reckon/roadmap.py:4019 call them into the report's wiring_findings.",
+    "manifest": "Read; it records the gate command, the four gate logs, the mutation, the base arm and the power_convertor reading, with the suite fields as prose because the node's role is implement rather than armed test.",
+    "write_paths": "Read the manifest's four declared paths; the diff touches reckon/roadmap.py, tests/test_a_wait_nobody_declared_is_a_finding.py and the landing fragment, and writes no figure, which matches the brief's no-artifact rule."
+  },
+  "justifications": {
+    "durability": "The declared mutation turns tests/test_a_wait_nobody_declared_is_a_finding.py:104, :159 and :191 red while the three controls survive, and the base arm fails the same three cases for the absent code.",
+    "evidence": "tests/test_a_wait_nobody_declared_is_a_finding.py:104-278 holds the six named cases, and the logs record the head arm at 71 passed EXIT=0, the base arm at 3 failed 3 passed EXIT=1, and the power_convertor reading with both hand counts.",
+    "fit": "The emitters follow the module's shape, but the parameter open_sections of the emitter defined at reckon/roadmap.py:1492 shadows the open_sections imported at reckon/roadmap.py:26 and its filter cannot exclude anything.",
+    "goal_fidelity": "reckon/roadmap.py:1409 gathers the three sources the plan names (blocked run, gate measure, open followup) and reckon/roadmap.py:1492 reports the cross-plan pair, both through reckon/roadmap.py:1356's _finding at severity warn.",
+    "reuse": "parse_plan_ref, section_record_id, run_blocker_rows, find_invocation, _finding and crew.runs._scopes_overlap are all imported or called rather than restated; no owner of a canonical ref string exists to extend.",
+    "scope_discipline": "git diff --stat a4a3beb8b..bc20dd67e lists only reckon/roadmap.py, tests/test_a_wait_nobody_declared_is_a_finding.py and docs/evidence/fragments/a-project-reads-as-one-picture/a-wait-nobody-declared-is-a-finding.html."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261022T073119939925-review-of-a-wait-nobody-declared-is-a-finding-bc20dd67e04c",
+  "reviewed_base_sha": "a4a3beb8bb97be87f54f88ab5dd5d3d359a92c82",
+  "reviewed_head_sha": "bc20dd67e04c42bd65bdeaa11de80af64323d25b",
+  "reviewed_run_id": "r-20261022T063726220214-a-wait-nobody-declared-is-a-finding",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T07:46:22.440867+00:00",
+  "total": 105
+}
