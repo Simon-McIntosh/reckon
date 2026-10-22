@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-legacy-section-adopts-its-record-landed">
+  <meta name="plan-title" content="A Legacy Section Adopts Its Record — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Legacy Section Adopts Its Record: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-legacy-section-adopts-its-record">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Legacy Section Adopts Its Record — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Legacy Section Adopts Its Record — landed record</h1>
+  <p>Closure synthesis for A Legacy Section Adopts Its Record: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s1">
+    <h2>§1 — the missing-record finding names the adopting write</h2>
+    <p>Landed at <code>772868c9e</code> (head <code>31951d343</code>, run <code>r-20261022T145913770921-the-missing-record-finding-names-the-adopting-write</code>). <code>_section_contract_refusal</code> in <code>reckon/_store.py</code> takes an optional item and renders it in its own envelope. A caller that passes none prints the new-section example exactly as before. The <code>section-without-contract</code> finding in <code>reckon/doccheck.py</code> passes a body-less item naming the reported section's id and heading, so the remedy it prints attaches the record to that heading instead of being refused with <code>already exists</code>.</p><ul><li>Gate: 112 passed, EXIT=0, at <code>9e19bb2d6</code> over the attach, audit-contract, refusal, round-trip and module-window tests.</li><li>Controls, each applied alone and reversed: passing no item fails 4 cases, adding a body to the item fails 3, and a body-less default fails 2. Each set includes the control's own case.</li><li>Population: 106 files importing <code>reckon/_store.py</code> or <code>reckon/doccheck.py</code>. 24 failed at base <code>e6f348f70</code> and 22 at candidate <code>3a417da06</code>, none added; the two that pass only at head are in <code>tests/test_mcp_recovery.py</code>.</li><li>Review: 19/18/20/17/19/20, no blocking finding. One follow-on was exempted: the adopting case spreads the shared defaults into its expectation, but the no-item case pins those defaults against literals.</li><li>The plan's first motivating section, the-page-paints-from-an-index §7, was given its record by the body-less append at <code>e88cec99d</code>. Its audit error cleared and its prose was unchanged.</li></ul>
+  </section>
+
+</main>
+</body>
+</html>
