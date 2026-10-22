@@ -1228,7 +1228,8 @@ def parse_review(
 # ``None`` rather than defaulted. Lines in any other shape are ignored, so the
 # reviewer may surround the emitted lines with prose without breaking the parse.
 # The line reading is shared with :func:`parse_review` through
-# :func:`_review_text_lines`.
+# :func:`_review_text_lines`, and a delivered report additionally has a leading
+# Markdown list marker stripped by :func:`_plan_report_lines`.
 #
 # The rubric name selects the checklist items a report is judged against. Both
 # item sets are owned by this module and mirrored into the two prompt files
@@ -1250,12 +1251,34 @@ _PLAN_RUBRIC_LINE_RE = re.compile(
     r"^RUBRIC\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$", re.IGNORECASE
 )
 _PLAN_FINDING_LINE_RE = re.compile(r"^FINDING\s+(\S+)\s+(.+)$", re.IGNORECASE)
+# A plan review's report is Markdown, so a reviewer may introduce an emitted
+# line with a list marker — ``- ``, ``* `` or ``1. `` — rather than writing it
+# bare. The marker is stripped by the one line reader below instead of being
+# written into the two patterns, which the health grammar also matches on, so a
+# bulleted report reads the same as a bare one and no other grammar moves.
+_PLAN_REPORT_LIST_MARKER_RE = re.compile(r"^(?:[-*]|\d+\.)\s+")
 _PLAN_FINDING_TAIL_RE = re.compile(
     r"^(?P<anchor>.*?)\s+(?:—|--)\s+(?P<text>.*?)\s+(?:—|--)\s+"
     r"WOULD_CHANGE_THE_PLAN\s*:\s*(?P<would_change>yes|no)\b"
     r"(?:\s+(?:—|--)\s+REASON\s*:\s*(?P<reason>.*))?$",
     re.IGNORECASE,
 )
+
+
+def _plan_report_lines(text: str) -> Iterator[str]:
+    """Yield each line of a delivered plan-review report, list marker removed.
+
+    A report is Markdown, so ``- FINDING ...`` and ``FINDING ...`` state the
+    same line; a marker left in place anchors the pattern at the marker and
+    drops the line, which is how a bulleted finding reached the plan only when
+    a reader compared the report with the record by hand. Both readers of a
+    delivered plan report — :func:`parse_plan_review_report` and the admission
+    guard that refuses a report carrying no emitted line — read these lines,
+    while the run-review and health-review grammars keep the shared
+    :func:`_review_text_lines` they were written against.
+    """
+    for line in _review_text_lines(text):
+        yield _PLAN_REPORT_LIST_MARKER_RE.sub("", line, count=1)
 
 
 def _plan_report_rubric_items(rubric: str) -> tuple[str, ...]:
@@ -1321,7 +1344,7 @@ def parse_plan_review_report(text: str, *, rubric: str) -> dict[str, Any]:
     rubric_items: dict[str, str] = {}
     findings: list[dict[str, Any]] = []
     counters: dict[str, int] = {}
-    for line in _review_text_lines(text):
+    for line in _plan_report_lines(text):
         match = _PLAN_RUBRIC_LINE_RE.match(line)
         if match:
             item = match.group(1).lower()
