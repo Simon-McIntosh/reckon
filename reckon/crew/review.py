@@ -1255,7 +1255,10 @@ _PLAN_FINDING_LINE_RE = re.compile(r"^FINDING\s+(\S+)\s+(.+)$", re.IGNORECASE)
 # line with a list marker — ``- ``, ``* `` or ``1. `` — rather than writing it
 # bare. The marker is stripped by the one line reader below instead of being
 # written into the two patterns, which the health grammar also matches on, so a
-# bulleted report reads the same as a bare one and no other grammar moves.
+# bulleted plan report reads the same as a bare one and no other grammar moves.
+# Only the plan-report reader strips: a subject is read by the grammar it was
+# composed under, so a code report reads through the health grammar's reader
+# unchanged and the admission guard agrees with the parser that will read it.
 _PLAN_REPORT_LIST_MARKER_RE = re.compile(r"^(?:[-*]|\d+\.)\s+")
 _PLAN_FINDING_TAIL_RE = re.compile(
     r"^(?P<anchor>.*?)\s+(?:—|--)\s+(?P<text>.*?)\s+(?:—|--)\s+"
@@ -1272,10 +1275,12 @@ def _plan_report_lines(text: str) -> Iterator[str]:
     same line; a marker left in place anchors the pattern at the marker and
     drops the line, which is how a bulleted finding reached the plan only when
     a reader compared the report with the record by hand. Both readers of a
-    delivered plan report — :func:`parse_plan_review_report` and the admission
-    guard that refuses a report carrying no emitted line — read these lines,
-    while the run-review and health-review grammars keep the shared
-    :func:`_review_text_lines` they were written against.
+    delivered *plan* report — :func:`parse_plan_review_report` and the admission
+    guard reading a plan subject — read these lines. The health grammar a code
+    report is read under keeps :func:`_review_text_lines`, the reader
+    :func:`parse_health_review` reads with, so a code report is admitted on
+    exactly the lines the health parser will see and the guard cannot pass a
+    report whose own grammar reads nothing in it.
     """
     for line in _review_text_lines(text):
         yield _PLAN_REPORT_LIST_MARKER_RE.sub("", line, count=1)

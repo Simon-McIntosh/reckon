@@ -30,6 +30,8 @@ from tests.test_review_plan_command import project as project  # noqa: PLC0414
 
 CONTENT_ITEMS = review.PLAN_REVIEW_ITEMS
 DESIGN_ITEMS = review.PLAN_DESIGN_REVIEW_ITEMS
+CODE_ITEMS = review.HEALTH_REVIEW_ITEMS
+CODE_KEY = "c0de" * 3
 
 
 @pytest.fixture
@@ -93,6 +95,41 @@ def _deliver(path, *, run_id, rubric, report):
 
 def _rubric_lines(items):
     return "".join(f"RUBRIC {item}: pass\n" for item in items)
+
+
+def _code_report(*, bulleted):
+    """A code report under the health rubric, its emitted lines bulleted or bare."""
+    marker = "- " if bulleted else ""
+    lines = [f"{marker}RUBRIC {item}: pass" for item in CODE_ITEMS]
+    lines.append(
+        f"{marker}FINDING unreached reckon/crew/review.py:1268 — the reader a "
+        "marker introduces — CLASS: dead_code — CITES: none"
+    )
+    lines.append("TREATMENT : none — the verdicts read the neighbourhood")
+    return "\n".join(lines) + "\n"
+
+
+def _code_sidecar(report):
+    """Write a delivered code report and its sidecar, and return the sidecar."""
+    directory = plan_review.code_review_report_directory(project="sample", key=CODE_KEY)
+    directory.mkdir(parents=True, exist_ok=True)
+    report_path = directory / "report.md"
+    report_path.write_text(report)
+    payload = {
+        "subject": "code",
+        "project": "sample",
+        "around": "",
+        "neighbourhood_key": CODE_KEY,
+        "reviewed_revision": "0" * 40,
+        "named_paths": ["reckon/crew/review.py"],
+        "modules": [],
+        "report_path": str(report_path),
+        "review_run_id": directory.name,
+    }
+    plan_review.write_review_sidecar(
+        directory, payload=payload, name=plan_review.CODE_REVIEW_SIDECAR_NAME
+    )
+    return payload
 
 
 def _stored(run_id):
@@ -213,6 +250,34 @@ def test_an_unmarked_older_review_keeps_its_coverage(section_plan):
     records, uncovered = _coverage(path)
     assert uncovered == set()
     assert [item["review_run_id"] for item in records] == ["content-partial"]
+
+
+def test_a_bulleted_code_report_is_not_admitted_as_a_review(project):
+    """A code report is guarded by the grammar its own parser reads it with.
+
+    The health grammar reads its lines as written, so a report whose ``RUBRIC``
+    and ``FINDING`` lines are bulleted carries neither as the health parser sees
+    it: it parses to no item and no finding. Reading the guard's lines with the
+    plan report's marker-stripping reader would admit it on the stripped bullet
+    and store it as a review with every item absent — the composed-but-
+    undelivered false pass the guard exists to prevent.
+    """
+    report = _code_report(bulleted=True)
+    assert not plan_review.report_carries_review_lines(report, subject="code")
+    parsed = review.parse_health_review(report)
+    assert parsed["rubric_items"] == {} and parsed["findings"] == []
+    with pytest.raises(ValueError, match="carries no RUBRIC or FINDING line"):
+        plan_review.delivered_report_record(_code_sidecar(report))
+
+
+def test_a_bare_code_report_carries_its_items_and_finding(project):
+    """The control: the guard admits the code report its parser reads in full."""
+    report = _code_report(bulleted=False)
+    assert plan_review.report_carries_review_lines(report, subject="code")
+    record = plan_review.delivered_report_record(_code_sidecar(report))
+    assert sorted(record["rubric_items"]) == sorted(CODE_ITEMS)
+    assert record["absent_items"] == []
+    assert [finding["id"] for finding in record["findings"]] == ["unreached-1"]
 
 
 def test_a_complete_report_stores_as_ready(section_plan):

@@ -59,7 +59,7 @@ import json
 import re
 import shlex
 import subprocess
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -2077,21 +2077,41 @@ def _stored_code_review_run_ids(project: str) -> set[str]:
     return ids
 
 
-def report_carries_review_lines(text: str) -> bool:
+def _report_line_reader(subject: str) -> Callable[[str], Iterator[str]]:
+    """The line reader the grammar of a ``subject`` report is written against.
+
+    The admission guard reads a report's text through the reader the parser that
+    will consume it reads through, so the two cannot disagree about which line
+    they are looking at. A plan report is Markdown, so its reader strips a
+    leading list marker and ``- FINDING …`` reads as ``FINDING …``; the health
+    grammar, which a ``code`` subject is read under, reads its lines as written.
+    The reader is selected by the same subject that selects the record builder,
+    so no call site can pair one grammar's guard with another's parser.
+    """
+    if str(subject or "").strip() == "code":
+        return _review_store._review_text_lines
+    return _review_store._plan_report_lines
+
+
+def report_carries_review_lines(text: str, *, subject: str = "") -> bool:
     """Whether a report's text carries a RUBRIC or FINDING line.
 
     A delivered review's report emits one line per rubric item and one per
-    finding, and a Markdown list marker before either word does not make the
-    line a different line: the report is Markdown, so the reader strips the
-    marker, as the parser does. A report directory with a report file that
-    carries neither was composed and never delivered — a snapshot and a sidecar
-    with no reviewer output beside them — so it is not a review and is neither
-    imported nor counted.
+    finding. ``subject`` selects the grammar the text is read under, which is
+    the grammar its record will be built by, so a report is admitted on the
+    lines its own parser will see rather than on the lines some other parser
+    would. A report directory with a report file that carries neither was
+    composed and never delivered — a snapshot and a sidecar with no reviewer
+    output beside them — so it is not a review and is neither imported nor
+    counted. The default is the plan report, the permissive reading, so a caller
+    that does not know the subject admits a report rather than dropping it
+    unread.
     """
+    reader = _report_line_reader(subject)
     return any(
         _review_store._PLAN_RUBRIC_LINE_RE.match(line)
         or _review_store._PLAN_FINDING_LINE_RE.match(line)
-        for line in _review_store._plan_report_lines(text)
+        for line in reader(text)
     )
 
 
@@ -2189,7 +2209,7 @@ def _code_review_record(sidecar: Mapping[str, Any]) -> dict[str, Any]:
     if not key:
         raise ValueError("delivered code review sidecar is missing neighbourhood_key")
     text = report_path.read_text(encoding="utf-8", errors="replace")
-    if not report_carries_review_lines(text):
+    if not report_carries_review_lines(text, subject="code"):
         raise ValueError(
             f"delivered code review report {report_path} carries no RUBRIC or "
             "FINDING line, so it is not a review"
