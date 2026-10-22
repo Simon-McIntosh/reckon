@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:246",
+    "reckon/crew/dispatch_launch.py:291",
+    "reckon/crew/dispatch_launch.py:366",
+    "reckon/crew/dispatch_launch.py:1585",
+    "reckon/crew/dispatch_launch.py:1697",
+    "reckon/crew/dispatch.py:3053",
+    "reckon/crew/resumption.py:1229"
+  ],
+  "completed_at": "2026-10-22T19:01:11.740Z",
+  "dispatched_at": "2026-10-22T18:36:59Z",
+  "findings": [
+    {
+      "file": "after-suite.log",
+      "line": 4,
+      "severity": "follow-on",
+      "summary": "the gate log opens with a scaffold failure from an unsubstituted placeholder path before the real run",
+      "text": "after-suite.log line 3 names the four-file gate command in its header, but the log's own first run at lines 4 to 8 reports that the placeholder path tests/test_a_slow_launch_retries-placeholder was not found, that no tests ran, and EXIT=4, while the real run at lines 9 to 11 shows 22 passed with EXIT=0 and no boundary line separates the two. Promotion reads the last bare EXIT= line, which is 0, so the receipt reads green, but the log a reader is asked to check opens by recording a run that did not execute the gate, which is the unsubstituted-placeholder shape the manifest contract warns against; the leftover stub belongs outside the gate log."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit from e0edff7baf3c1a0e036951362283f3a8463114a1 to e596a4335209b034e61200be1630713ac0df2cde; three commits, three files, 69 insertions and 31 deletions, and the production change routes the launcher's two formerly-inline stream-size reads to the existing _stream_began owner with no behavioural change.",
+    "done_when": "the done-when names a gate over four test files; the manifest records the gate at head e596a4335 as 22 passed EXIT=0 (after-suite.log) against 5 failed/17 passed EXIT=1 at base 6d3c43bbd (baseline-suite.log), and the reviewed delta adds test_the_shipped_window_covers_a_slow_step_start, which asserts the shipped constant reaches the thirty-second floor.",
+    "goal": "the source node's goal is to retry a launch whose sandbox refuses a vanished bind source however long the launch took to start; the three commits reviewed here (fefcef40e, 936ff8a20, e596a4335) preserve that retry - reckon/crew/dispatch_launch.py:1585 still ends the watch on the stream beginning or on the refusing child's exit - and pin the window the retry depends on rather than leaving it unguarded.",
+    "manifest": "read at the reviewed head; status complete, eleven commits listed, after_suite and baseline_suite as flat JSON records carrying revision/command/exit_status/log_path/completed/failure_count/failure_ids, a negative control plus the reviewed window's own pinned-window and repair controls, a landing line on the fragment, and follow_ons naming the launch reaper's unguarded pointer write.",
+    "write_paths": "the source node's declared scope is reckon/crew/dispatch_launch.py, tests/test_a_slow_launch_retries_a_vanished_bind.py, docs/evidence/fragments/a-worker-cannot-write-your-home/a-slow-launch-retries-a-vanished-bind.html and an unused docs/figures directory; the range e0edff7ba..e596a4335 touches exactly the first three files and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_slow_launch_retries_a_vanished_bind.py:490 asserts dispatch_module.SANDBOX_STARTUP_WINDOW_SECONDS against the independent literal WINDOW_FLOOR_SECONDS of 30.0, and pinned-window-control.log reddens it (5 failed, 3 passed, EXIT=1) with the constant set to 0.5 in a scratch tree.",
+    "evidence": "after-suite.log:10-11 records 22 passed in 211.56s with EXIT=0 at revision e596a4335 and baseline-suite.log records 5 failed, 17 passed EXIT=1 over a scratch extraction of 6d3c43bbd, but after-suite.log:4 opens with a placeholder run that exited 4 before the real gate ran.",
+    "fit": "the docstring at reckon/crew/dispatch_launch.py:1497 and the test's new constant and case follow the module's own idiom and describe mechanism, with no plan or ticket identifier in any name or comment.",
+    "goal_fidelity": "reckon/crew/dispatch_launch.py:1514 keeps the try keyed on the launch's own refusal text and dispatch_launch.py:1493 holds SANDBOX_STARTUP_WINDOW_SECONDS at 30.0, which the reviewed delta pins against a floor rather than narrowing.",
+    "reuse": "fefcef40e makes _stream_began at reckon/crew/dispatch_launch.py:1497 the single owner of the stream-began fact and routes both formerly-inline stat-based reads, at dispatch_launch.py:246 and :291, through it, so no capability is forked.",
+    "scope_discipline": "every path in e0edff7ba..e596a4335 is one of the three declared write paths, and the granted docs/figures directory is unused."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to retry a launch whose sandbox refuses a vanished bind source however long the launch took to start; the three commits reviewed here (fefcef40e, 936ff8a20, e596a4335) preserve that retry - reckon/crew/dispatch_launch.py:1585 still ends the watch on the stream beginning or on the refusing child's exit - and pin the window the retry depends on rather than leaving it unguarded.\nVERDICT done_when: the done-when names a gate over four test files; the manifest records the gate at head e596a4335 as 22 passed EXIT=0 (after-suite.log) against 5 failed/17 passed EXIT=1 at base 6d3c43bbd (baseline-suite.log), and the reviewed delta adds test_the_shipped_window_covers_a_slow_step_start, which asserts the shipped constant reaches the thirty-second floor.\nVERDICT write_paths: the source node's declared scope is reckon/crew/dispatch_launch.py, tests/test_a_slow_launch_retries_a_vanished_bind.py, docs/evidence/fragments/a-worker-cannot-write-your-home/a-slow-launch-retries-a-vanished-bind.html and an unused docs/figures directory; the range e0edff7ba..e596a4335 touches exactly the first three files and nothing else.\nVERDICT manifest: read at the reviewed head; status complete, eleven commits listed, after_suite and baseline_suite as flat JSON records carrying revision/command/exit_status/log_path/completed/failure_count/failure_ids, a negative control plus the reviewed window's own pinned-window and repair controls, a landing line on the fragment, and follow_ons naming the launch reaper's unguarded pointer write.\nVERDICT diff: read commit by commit from e0edff7baf3c1a0e036951362283f3a8463114a1 to e596a4335209b034e61200be1630713ac0df2cde; three commits, three files, 69 insertions and 31 deletions, and the production change routes the launcher's two formerly-inline stream-size reads to the existing _stream_began owner with no behavioural change.\nCALL_SITES: reckon/crew/dispatch_launch.py:246, reckon/crew/dispatch_launch.py:291, reckon/crew/dispatch_launch.py:366, reckon/crew/dispatch_launch.py:1585, reckon/crew/dispatch_launch.py:1697, reckon/crew/dispatch.py:3053, reckon/crew/resumption.py:1229\nSCORE goal_fidelity: 19\nSCORE evidence: 16\nSCORE scope_discipline: 19\nSCORE durability: 19\nSCORE fit: 18\nSCORE reuse: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:1514 keeps the try keyed on the launch's own refusal text and dispatch_launch.py:1493 holds SANDBOX_STARTUP_WINDOW_SECONDS at 30.0, which the reviewed delta pins against a floor rather than narrowing.\nJUSTIFICATION evidence: after-suite.log:10-11 records 22 passed in 211.56s with EXIT=0 at revision e596a4335 and baseline-suite.log records 5 failed, 17 passed EXIT=1 over a scratch extraction of 6d3c43bbd, but after-suite.log:4 opens with a placeholder run that exited 4 before the real gate ran.\nJUSTIFICATION scope_discipline: every path in e0edff7ba..e596a4335 is one of the three declared write paths, and the granted docs/figures directory is unused.\nJUSTIFICATION durability: tests/test_a_slow_launch_retries_a_vanished_bind.py:490 asserts dispatch_module.SANDBOX_STARTUP_WINDOW_SECONDS against the independent literal WINDOW_FLOOR_SECONDS of 30.0, and pinned-window-control.log reddens it (5 failed, 3 passed, EXIT=1) with the constant set to 0.5 in a scratch tree.\nJUSTIFICATION fit: the docstring at reckon/crew/dispatch_launch.py:1497 and the test's new constant and case follow the module's own idiom and describe mechanism, with no plan or ticket identifier in any name or comment.\nJUSTIFICATION reuse: fefcef40e makes _stream_began at reckon/crew/dispatch_launch.py:1497 the single owner of the stream-began fact and routes both formerly-inline stat-based reads, at dispatch_launch.py:246 and :291, through it, so no capability is forked.\nFINDING after-suite.log:4 follow-on: after-suite.log line 3 names the four-file gate command in its header, but the log's own first run at lines 4 to 8 reports that the placeholder path tests/test_a_slow_launch_retries-placeholder was not found, that no tests ran, and EXIT=4, while the real run at lines 9 to 11 shows 22 passed with EXIT=0 and no boundary line separates the two. Promotion reads the last bare EXIT= line, which is 0, so the receipt reads green, but the log a reader is asked to check opens by recording a run that did not execute the gate, which is the unsubstituted-placeholder shape the manifest contract warns against; the leftover stub belongs outside the gate log.\n",
+  "review_run_id": "r-20261022T181626444961-review-of-a-slow-launch-retries-a-vanished-bind-e596a4335209",
+  "reviewed_base_sha": "e0edff7baf3c1a0e036951362283f3a8463114a1",
+  "reviewed_head_sha": "e596a4335209b034e61200be1630713ac0df2cde",
+  "reviewed_run_id": "r-20261022T090956316216-a-slow-launch-retries-a-vanished-bind",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T18:49:00Z",
+  "total": 111
+}
