@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-22T08:46:49.419Z",
+  "dispatched_at": "2026-10-22T08:36:34Z",
+  "emission": [
+    "VERDICT goal: the source node's goal is \"Emit undeclared-wait and overlapping-scope wiring findings from the roadmap analyser\" (prompt.txt:31); the three commits under review change no emitter, only the delivered test's formatting and the landing fragment, so the goal's capability is untouched by this delta.",
+    "VERDICT done_when: the done_when (prompt.txt:98) names the fixture pair, the power_convertor listing, the four-file gate and \"ruff check and ruff format --check report nothing added on the staged paths\"; the manifest records the gate at 73 passed EXIT=0 (logs/gate-head.log) and the ruff receipt at delta 0 (logs/ruff-receipt.log).",
+    "VERDICT write_paths: the manifest declares four paths (reckon/roadmap.py, tests/test_a_wait_nobody_declared_is_a_finding.py, the fragment, a figures directory); git diff --name-only 6b0ea5a55..bf4fe81cd lists exactly the test file and the fragment, both inside that set.",
+    "VERDICT manifest: read; it records the gate command, seven log paths including ruff-receipt.log, both suite arms as completed:true (base 5 failed/3 passed, head 0 failures), the negative control, and the landing line.",
+    "VERDICT diff: read commit by commit against 6b0ea5a55; three commits over two files, six insertions and four deletions \u2014 f4830847f rewraps two extraction asserts, b5af4640d corrects the format claim and records the receipt, bf4fe81cd adds the landing paragraph.",
+    "CALL_SITES: none",
+    "SCORE goal_fidelity: 18",
+    "JUSTIFICATION goal_fidelity: the reviewed delta only reformats tests/test_a_wait_nobody_declared_is_a_finding.py and edits the fragment, leaving the emitters at reckon/roadmap.py:1409 and reckon/roadmap.py:1492 exactly as the goal's capability requires.",
+    "SCORE evidence: 17",
+    "JUSTIFICATION evidence: the gate ran at the code head f4830847f (logs/gate-head.log, 73 passed EXIT=0) and logs/ruff-receipt.log records a delta of 0, but the new prose at docs/evidence/fragments/a-project-reads-as-one-picture/a-wait-nobody-declared-is-a-finding.html:28 overstates the reformat count.",
+    "SCORE scope_discipline: 20",
+    "JUSTIFICATION scope_discipline: every path in git diff --name-only 6b0ea5a55..bf4fe81cd is inside the four declared write paths and the node writes no figure.",
+    "SCORE durability: 18",
+    "JUSTIFICATION durability: the delta adds no assertion (a pure reformat plus documentation), and the extraction assertions at tests/test_a_wait_nobody_declared_is_a_finding.py:104-122 compare literals the test itself writes down against the reader's output, so reverting the reader's ref grammar reddens them.",
+    "SCORE fit: 19",
+    "JUSTIFICATION fit: the reformat is ruff format's own output and the prose matches the sibling-fragment idiom under docs/evidence/fragments/a-project-reads-as-one-picture/, with no plan or ticket identifier in either changed file.",
+    "SCORE reuse: 20",
+    "JUSTIFICATION reuse: the delta defines nothing new; the fragment points at existing owners (reckon/roadmap.py:_scopes_overlap, reckon/roadmap.py:_mentioned_section_refs, reckon/followup_pointers.py:find_invocation) rather than restating them.",
+    "FINDING docs/evidence/fragments/a-project-reads-as-one-picture/a-wait-nobody-declared-is-a-finding.html:28 follow-on: the paragraph states \"three asserts in the literal case having outgrown the line width\", but git diff 6b0ea5a55..f4830847f rewraps two asserts (89 and 92 columns) and the third was already wrapped, so the count is overstated by one in the very sentence added to make the format obligation auditable."
+  ],
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-project-reads-as-one-picture/a-wait-nobody-declared-is-a-finding.html",
+      "line": 28,
+      "severity": "follow-on",
+      "summary": "reformat count overstated by one",
+      "text": "follow-on: the paragraph states \"three asserts in the literal case having outgrown the line width\", but git diff 6b0ea5a55..f4830847f rewraps two asserts (89 and 92 columns) while the third was already wrapped, so the count is overstated by one in the very sentence added to make the format obligation auditable."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "none \u2014 the delta touches only a test file and an evidence fragment, so no production runtime path can reach it.",
+    "diff": "Read commit by commit against 6b0ea5a55: three commits over two files, six insertions and four deletions \u2014 f4830847f rewraps two extraction asserts, b5af4640d corrects the format claim and records the ruff receipt, bf4fe81cd adds the landing paragraph.",
+    "done_when": "The done_when (prompt.txt:98) names the fixture pair, the power_convertor listing, the four-file gate and \"ruff check and ruff format --check report nothing added on the staged paths\"; the manifest records the gate at 73 passed EXIT=0 (logs/gate-head.log) and the ruff receipt at a delta of 0 (logs/ruff-receipt.log), so the gate asserts what the measure states.",
+    "goal": "The source node's goal is \"Emit undeclared-wait and overlapping-scope wiring findings from the roadmap analyser\" (prompt.txt:31); the three commits this review covers change no emitter, only the delivered test's formatting and the landing fragment, so the goal's capability is untouched and unregressed by this delta.",
+    "manifest": "Read; it records the gate command, seven log paths including ruff-receipt.log, both suite arms as completed:true with exit_status and failure ids (base 5 failed/3 passed, head 0), the negative control, and the landing line.",
+    "write_paths": "The manifest declares four paths (reckon/roadmap.py, tests/test_a_wait_nobody_declared_is_a_finding.py, the landing fragment and a docs/figures directory); git diff --name-only 6b0ea5a55..bf4fe81cd lists exactly the test file and the fragment, both inside that declared set."
+  },
+  "justifications": {
+    "durability": "The delta adds no assertion (a pure reformat plus documentation), and the extraction assertions at tests/test_a_wait_nobody_declared_is_a_finding.py:104-122 compare literals the test itself writes down against the reader's output, so reverting the reader's ref grammar reddens them.",
+    "evidence": "The gate ran at the code head f4830847f (logs/gate-head.log, 73 passed EXIT=0) and logs/ruff-receipt.log records a head/base delta of 0, but the newly landed prose at docs/evidence/fragments/a-project-reads-as-one-picture/a-wait-nobody-declared-is-a-finding.html:28 overstates the reformat count.",
+    "fit": "The test change is ruff format's own output and the prose matches the sibling-fragment idiom under docs/evidence/fragments/a-project-reads-as-one-picture/, with no plan or ticket identifier in either changed file.",
+    "goal_fidelity": "The reviewed delta only reformats tests/test_a_wait_nobody_declared_is_a_finding.py and edits the fragment, leaving the emitters at reckon/roadmap.py:1409 and reckon/roadmap.py:1492 exactly as the goal's capability requires.",
+    "reuse": "The delta defines nothing new; the fragment points at existing owners (reckon/roadmap.py:_scopes_overlap, reckon/roadmap.py:_mentioned_section_refs, reckon/followup_pointers.py:find_invocation) rather than restating a second implementation.",
+    "scope_discipline": "Every path in git diff --name-only 6b0ea5a55..bf4fe81cd is inside the four declared write paths, and the node writes no figure although a figures directory was granted."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261022T083537139463-review-of-a-wait-nobody-declared-is-a-finding-bf4fe81cd650",
+  "reviewed_base_sha": "6b0ea5a5593b3615217fde171e7b362486bb042e",
+  "reviewed_head_sha": "bf4fe81cd6505290dee3753e89257c19c83f2290",
+  "reviewed_run_id": "r-20261022T063726220214-a-wait-nobody-declared-is-a-finding",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T08:52:36.966826+00:00",
+  "total": 112
+}
