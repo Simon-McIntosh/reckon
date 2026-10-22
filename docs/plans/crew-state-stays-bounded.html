@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="crew-state-stays-bounded">
+  <meta name="plan-title" content="Crew State Stays Bounded">
+  <meta name="plan-summary" content="Pointers reach 94 KB, runs/ holds 17,159 entries and event logs 252 MB; live records carry only live facts and every store has a bound.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="9.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint" content="S27">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;the-monitor-reads-each-fact-once#s12&quot;],&quot;s5&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <title>Crew State Stays Bounded | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: every crew store grows without a bound</h2>
+    <p>Measured on clu-2068 on 2026-10-22 (<a href="/reckon/research/monitor-storage-load-rca">monitor-storage-load-rca</a>):</p>
+    <ul>
+      <li>live pointers average about 44 KB and reach 94 KB, though a reader needs a few hundred bytes of
+      them; <code>picker_selection</code> alone is 33 KB, then <code>unreconciled_override</code> 9 KB,
+      <code>argv</code> 8.6 KB, <code>admit_request</code> 6.7 KB;</li>
+      <li><code>~/.config/reckon/crew/runs/</code> holds 17,159 run directories in one directory;</li>
+      <li><code>crew/watch/</code> holds 252 MB of event logs, reckon's alone 92 MB, with no rotation, and
+      stale <code>.lock.registration.*.tmp</code> files from crashed registrations back to 2026-10-07;</li>
+      <li>reload images sit on GPFS under <code>crew/reload-trees/</code> with cross-node lease records.</li>
+    </ul>
+    <p>Every reader of these pays for their size, and every scan pays for their count. This plan bounds each
+    one. It is independent of the station except where a section says so.</p>
+
+    <h2 id="s2">§2 — A live pointer carries only live facts</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p>Dispatch-time detail that no live reader consults moves from the pointer into a file in the run's
+    directory, written once at dispatch: <code>picker_selection</code>, <code>admit_request</code>,
+    <code>argv</code>, <code>competence</code>, <code>peer_scopes</code> and <code>unreconciled_override</code>.
+    The pointer keeps a path to that file. Every reader of a moved field reads it through one accessor in
+    <code>reckon/crew/runs.py</code> that falls back to the pointer, so pointers written before the change
+    still read.</p>
+    <p>Done when: a grep of <code>reckon/</code> finds no read of a moved field except through the accessor;
+    a pointer written by a test dispatch is under 8 KB; tests that read each moved field pass for a
+    pointer of the new shape and one of the old. Negative control: an accessor without the fallback must fail
+    the old-shape test.</p>
+
+    <h2 id="s3">§3 — Promoted runs live in dated directories</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p>A run's directory is created under <code>runs/&lt;run&gt;</code> as today and moved at release to
+    <code>runs/&lt;yyyy&gt;/&lt;mm&gt;/&lt;dd&gt;/&lt;run&gt;</code>, dated by the run id's own timestamp, by one rename
+    on the same filesystem. <code>runs.run_dir</code> resolves both locations, so no caller changes. A
+    migration verb moves existing released runs in bounded slices of 500, skipping any run with a live
+    pointer or a queued entry, and prints every move.</p>
+    <p>Done when: <code>run_dir</code> finds a run in either location; a release moves the directory and a
+    later <code>crew view</code> of that run reads its manifest; the migration, run in a dry-run mode
+    against a copy of 2,000 run directories, lists the moves and moves nothing, and in the real mode leaves
+    no live or queued run moved. Negative control: a resolver that only looks in the flat directory must
+    fail the second test.</p>
+
+    <h2 id="s4">§4 — The old event logs are retired</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>Once the station has taken over (the-monitor-reads-each-fact-once §12), the per-project
+    <code>.events</code> logs, their <code>.followers</code> lease directories, the seat locks and the stale
+    registration temporaries are compressed into one dated archive under the crew home and removed. The
+    sweep names every path it removes and refuses any whose mtime is within the last hour.</p>
+    <p>Done when the sweep's dry run lists the paths with sizes, the real run removes exactly that list,
+    and <code>crew/watch/</code> holds under 1 MB afterwards. Negative control: a log written within the hour
+    must be refused and left in place.</p>
+
+    <h2 id="s5">§5 — Reload images live on node-local storage</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>When only the station reloads (the-monitor-reads-each-fact-once §7), the reload image cache moves to
+    the node-local runtime root and the cross-node lease records in <code>checkout_trust</code>
+    (<code>_record_lease_node</code>, <code>_prune_must_keep</code>'s host branch) are deleted, because no
+    image is shared between nodes any more.</p>
+    <p>Done when the reload tests pass with the cache under a temporary runtime root, the cache path is
+    never under the crew home, and the lease-record functions are gone. Negative control: a cache resolver
+    returning the crew-home path must fail the path test.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-cssb-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-22" data-recommends-skill="/reckon-build crew-state-stays-bounded §2" data-resolved-at="" data-resolved-by="">
+        <h4 class="r-fu-title">Slim the pointer first</h4>
+        <div class="r-fu-body"><p>§2 and §3 are independent of the station and can start now; §4 waits for the station cutover and §5 for the station.</p></div>
+        <pre class="r-fu-prompt">/reckon-build crew-state-stays-bounded §2</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

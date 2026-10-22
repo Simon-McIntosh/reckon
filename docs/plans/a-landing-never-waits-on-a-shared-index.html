@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-landing-never-waits-on-a-shared-index">
+  <meta name="plan-title" content="A Landing Never Waits On A Shared Index">
+  <meta name="plan-summary" content="crew complete took over five minutes and rolled back on .git/index.lock; a landing commits through its own index and checks only what moved.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="8.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint" content="S27">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-after" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <title>A Landing Never Waits On A Shared Index | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: promotions queue on one index and rescan the tree</h2>
+    <p>On 2026-10-22 at about 21:45 CEST four sessions were promoting runs on clu-2068 at once. One
+    <code>crew complete</code> of a plain review run ran past a five-minute bound and was killed; its retry
+    then rolled back with <code>fatal: Unable to create '.git/index.lock': File exists</code>, because every
+    promotion stages its landing writes in the main checkout's single index while peers do the same.
+    The handoff from the monitor session records three promotions failing their landing step the same way
+    earlier that day. Three py-spy samples of a peer's promotion, taken seconds apart, sat in:</p>
+    <ul>
+      <li><code>ledger._indexed_data</code> parsing JSON for <code>promotion_checks._landing_preconditions</code>;</li>
+      <li><code>routing._repository_tree_snapshot</code> running git over the whole tree for the boundary check;</li>
+      <li><code>reports._committed_paths_added_since</code> running git for the PNG-twin check.</li>
+    </ul>
+    <p>The analysis is in <a href="/reckon/research/monitor-storage-load-rca">monitor-storage-load-rca</a> §3.</p>
+
+    <h2 id="s2">§2 — A landing commits through its own index</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="3.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p>The promotion's landing writes are staged into a temporary index (<code>GIT_INDEX_FILE</code> under the
+    run's scratch, seeded from <code>HEAD</code>), committed with <code>git commit-tree</code>, and published
+    with <code>git update-ref refs/heads/main &lt;new&gt; &lt;old&gt;</code>, which fails when main moved. A failed
+    compare is retried against the new head, up to a bound, and the main checkout's working tree is brought
+    up to the published commit for the landed paths only. The main checkout's <code>.git/index.lock</code> is
+    never taken.</p>
+    <p>Done when a test runs four promotions at once against a temporary repository and all four land as
+    four commits, with no index lock taken in the shared checkout (asserted by holding
+    <code>.git/index.lock</code> open for the whole test) and the shared checkout's tracked files matching
+    <code>HEAD</code> afterwards. Negative control: today's staging path must fail with the held lock.</p>
+
+    <h2 id="s3">§3 — Promotion checks read only what moved</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p>The ledger index is loaded once per promotion and shared by every check that reads it. The
+    repository-boundary check reads the paths the run's commits touch, not a snapshot of the whole tree.
+    The PNG-twin check reads the run's own commits since its base, not every path added since an older base.</p>
+    <p>Done when, on a fixture of 2,000 ledger rows and a repository of 5,000 files, a promotion calls the
+    ledger loader once and runs no git command over the whole tree (counted by wrapping the git runner), and
+    the existing promotion tests pass. Negative control: a boundary check that snapshots the whole tree must
+    fail the git-call count.</p>
+
+    <h2 id="s4">§4 — A promotion lands in under a minute with peers promoting</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>Measure on the fleet node: three promotions of completed review runs started together.</p>
+    <p>Done when each lands in under 60 s wall clock, none rolls back, and the timings and the git log are
+    recorded in the RCA. Negative control: the same measure on the code before §2 and §3 shows the
+    multi-minute promotions and at least one lock collision, or the measurement records that the collision
+    did not reproduce and how often it was tried.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-alnw-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-22" data-recommends-skill="/reckon-build a-landing-never-waits-on-a-shared-index §2" data-resolved-at="" data-resolved-by="">
+        <h4 class="r-fu-title">Take the landing off the shared index</h4>
+        <div class="r-fu-body"><p>§2 and §3 are independent and can run in parallel; §4 measures both.</p></div>
+        <pre class="r-fu-prompt">/reckon-build a-landing-never-waits-on-a-shared-index §2</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

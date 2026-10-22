@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="35.56cm" height="16cm" viewBox="0 0 1400 630" font-family="system-ui, -apple-system, sans-serif" font-size="16" fill="#1d1d1f">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#555"/>
+    </marker>
+    <marker id="r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#b2452f"/>
+    </marker>
+    <marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2f6f9f"/>
+    </marker>
+  </defs>
+
+  <!-- left: today -->
+  <text x="30" y="34" font-size="20" font-weight="600">today</text>
+
+  <rect x="230" y="270" width="190" height="120" fill="none" stroke="#555" stroke-width="1.2"/>
+  <text x="325" y="300" text-anchor="middle" font-weight="600">GPFS crew home</text>
+  <text x="325" y="324" text-anchor="middle" font-size="14">61 live pointers, ~44 KB</text>
+  <text x="325" y="344" text-anchor="middle" font-size="14">17,159 run dirs</text>
+  <text x="325" y="364" text-anchor="middle" font-size="14">252 MB .events, unbounded</text>
+
+  <g font-size="14">
+    <text x="30" y="96" font-weight="600">12 followers</text>
+    <text x="30" y="116">one per session per project</text>
+    <text x="30" y="136">re-read every pointer each ~1.2 s</text>
+    <text x="30" y="156" fill="#b2452f">~130 MB/min each</text>
+    <text x="30" y="176" fill="#b2452f">lease utime 4×/s each (fixed)</text>
+  </g>
+  <g stroke="#b2452f" stroke-width="1.2" marker-end="url(#r)">
+    <line x1="120" y1="190" x2="260" y2="268"/>
+    <line x1="160" y1="190" x2="290" y2="268"/>
+    <line x1="200" y1="190" x2="320" y2="268"/>
+  </g>
+
+  <g font-size="14">
+    <text x="30" y="470" font-weight="600">6 producers, one per project</text>
+    <text x="30" y="490">on 3 hosts, one a login node</text>
+    <text x="30" y="510">re-read whole worker streams</text>
+    <text x="30" y="530" fill="#b2452f">32 MB cache vs 258 MB live</text>
+    <text x="30" y="550" fill="#b2452f">up to 612 MB/min each</text>
+  </g>
+  <g stroke="#b2452f" stroke-width="1.2" marker-end="url(#r)">
+    <line x1="120" y1="455" x2="260" y2="392"/>
+    <line x1="170" y1="455" x2="300" y2="392"/>
+  </g>
+
+  <g font-size="14">
+    <text x="460" y="96" font-weight="600">hooks, crew view, SPA</text>
+    <text x="460" y="116">each re-derive again</text>
+  </g>
+  <line x1="500" y1="130" x2="400" y2="268" stroke="#b2452f" stroke-width="1.2" marker-end="url(#r)"/>
+
+  <!-- divider -->
+  <line x1="700" y1="60" x2="700" y2="600" stroke="#bbb" stroke-width="1"/>
+
+  <!-- right: proposed -->
+  <text x="730" y="34" font-size="20" font-weight="600">proposed</text>
+
+  <rect x="760" y="270" width="190" height="120" fill="none" stroke="#555" stroke-width="1.2"/>
+  <text x="855" y="300" text-anchor="middle" font-weight="600">GPFS crew home</text>
+  <text x="855" y="324" text-anchor="middle" font-size="14">durable records only</text>
+  <text x="855" y="344" text-anchor="middle" font-size="14">ledger, manifests,</text>
+  <text x="855" y="364" text-anchor="middle" font-size="14">reviews, streams</text>
+
+  <rect x="1060" y="255" width="300" height="150" fill="none" stroke="#2f6f9f" stroke-width="1.6"/>
+  <text x="1210" y="285" text-anchor="middle" font-weight="600" fill="#2f6f9f">station (one per node)</text>
+  <text x="1210" y="310" text-anchor="middle" font-size="14">SQLite on node-local /dev/shm</text>
+  <text x="1210" y="332" text-anchor="middle" font-size="14">pointer parsed when stat moves</text>
+  <text x="1210" y="354" text-anchor="middle" font-size="14">stream read past its offset</text>
+  <text x="1210" y="376" text-anchor="middle" font-size="14">events rotated daily</text>
+
+  <line x1="1058" y1="315" x2="952" y2="315" stroke="#2f6f9f" stroke-width="1.6" marker-end="url(#b)"/>
+  <text x="1005" y="300" text-anchor="middle" font-size="14" fill="#2f6f9f">reads 5 MB/min</text>
+  <line x1="1058" y1="355" x2="952" y2="355" stroke="#555" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#a)"/>
+  <text x="1005" y="378" text-anchor="middle" font-size="14">snapshot</text>
+
+  <g font-size="14">
+    <text x="1060" y="96" font-weight="600">followers become subscribers</text>
+    <text x="1060" y="116">data_version, then rows after cursor</text>
+    <text x="1060" y="136" fill="#2f6f9f">3 ms CPU per 40 polls, no GPFS</text>
+  </g>
+  <line x1="1210" y1="150" x2="1210" y2="252" stroke="#2f6f9f" stroke-width="1.2" marker-end="url(#b)" />
+
+  <g font-size="14">
+    <text x="1060" y="470" font-weight="600">hooks and crew view query it</text>
+    <text x="1060" y="490">login node and SPA read a snapshot</text>
+    <text x="1060" y="510">the station exports to GPFS on change</text>
+  </g>
+  <line x1="1210" y1="455" x2="1210" y2="408" stroke="#2f6f9f" stroke-width="1.2" marker-end="url(#b)"/>
+</svg>

@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="plan-slug" content="monitor-storage-load-rca">
+  <meta name="plan-title" content="Monitor Storage Load: Root Cause and Redesign">
+  <meta name="plan-summary" content="Why the monitor loaded clu-2068 (load 38, 20 tasks blocked on GPFS), what was fixed in session on 2026-10-22, and the one-reader-per-fact station that replaces it.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-informs" content="the-monitor-reads-each-fact-once,crew-state-stays-bounded,a-landing-never-waits-on-a-shared-index">
+  <title>Monitor Storage Load: Root Cause and Redesign | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Summary</h2>
+    <p>On 2026-10-22 the fleet node <code>98dci4-clu-2068</code> (fleet job 1291586, 28 cores) ran at a load
+    average of 37–39. A storage review from a power_convertor session found every task blocked on storage
+    belonged to reckon's monitor: 20 <code>crew follow</code> and <code>crew watch</code> processes,
+    5.1 cores of continuous CPU, and GPFS waits (<code>cxiWaitEventWait</code>) behind them. The filesystem
+    itself was healthy (a listing in 5 ms, a stat in 8 ms); the contention was the monitor's own.</p>
+    <p>The cause is structural, not one bug. <strong>Every consumer re-derives the whole fleet from the
+    shared filesystem on every pass</strong>: each follower and each producer re-reads every live pointer,
+    re-reads worker streams its cache cannot hold, and stamps shared lease files, so the work scales with
+    sessions × projects × live runs × stream size. The redesign replaces that with one node-local
+    <em>station</em> that reads each fact once and serves every consumer from a SQLite database on
+    <code>/dev/shm</code>. A prototype run against the live crew home read <strong>5.1 MB/min in
+    total</strong> where today's processes read about <strong>4 GB/min</strong>, and a subscriber spent
+    3 ms of CPU over 40 polls with no GPFS reads.</p>
+
+    <figure>
+      <img src="/reckon/figures/monitor-redesign/topology.svg" alt="Left: twelve followers, six producers and the hooks each poll the GPFS crew home. Right: one station per node reads GPFS at 5 MB/min into SQLite on /dev/shm; subscribers, hooks and crew view query the station, which exports a snapshot to GPFS for the login node.">
+      <figcaption>Today (left) every follower, producer and reader polls the GPFS crew home and re-derives
+      the same facts; red arrows are load on GPFS, with the rates measured on clu-2068 on 2026-10-22.
+      Proposed (right) one station per node reads GPFS incrementally into node-local SQLite; followers,
+      hooks and <code>crew view</code> query the station, and a snapshot is exported to GPFS for login-node
+      readers and the SPA. The 5 MB/min and 3 ms figures are the prototype's (§7).</figcaption>
+    </figure>
+
+    <h2 id="s2">§2 — What was measured, and when</h2>
+    <p>All figures were taken on clu-2068 with the same instruments: per-process <code>/proc/&lt;pid&gt;/io</code>
+    deltas over 60 s (bytes read, read and write syscalls), CPU ticks from <code>/proc/&lt;pid&gt;/stat</code>,
+    D-state tasks sampled six times with their wait channel, and a 15 s <code>strace</code> of one reckon
+    follower (pid 4178201).</p>
+    <table>
+      <thead><tr><th>Time (CEST)</th><th>State</th><th>Load avg</th><th>Reads</th><th>Writes and waits</th></tr></thead>
+      <tbody>
+        <tr><td>~20:30</td><td>before monitor §83 (reckon-bc's measurement)</td><td>~39</td>
+        <td>power_convertor followers 76–86 MB/s each; ~570 MB/s in total</td>
+        <td>14 D-state tasks: 8 in <code>cxiWaitEventWait</code>, 5 in <code>d_alloc_parallel</code></td></tr>
+        <tr><td>20:50</td><td>after §83 (needs-you recomputation removed from followers)</td><td>37</td>
+        <td>~100 MB/min per follower (1.7 MB/s)</td>
+        <td>27 of ~100 D-state samples in <code>vfs_utimes</code>, all followers stamping the image lease</td></tr>
+        <tr><td>21:09–21:15</td><td>after the import-proof fix (§4)</td><td>29–30</td>
+        <td>~130 MB/min per follower; producers up to 612 MB/min; ~4 GB/min across all crew processes</td>
+        <td>utime calls per follower 55 → 1 in 15 s; 0 tasks in <code>vfs_utimes</code></td></tr>
+      </tbody>
+    </table>
+    <p>The 15 s trace after the lock fix attributed the follower's reads by path: <strong>34.4 of 34.7 MB were
+    live pointers</strong>, 784 opens of about 60 files, each re-read about every 1.2 s, at roughly 44 KB a
+    pointer. One field, <code>picker_selection</code>, is 33 KB of a 94 KB pointer.</p>
+
+    <h2 id="s3">§3 — Root causes</h2>
+    <table>
+      <thead><tr><th>Cause</th><th>Mechanism</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Derivation is replicated per consumer</strong></td>
+        <td>Each follower (one per session per project) and each producer (one per project) independently
+        classifies every live run, recomputes needs-you, settle and liveness, and re-reads the same
+        pointers.</td>
+        <td>20 processes doing the same work; §83 cut per-follower reads ~50× by deleting one copy of it.</td></tr>
+        <tr><td><strong>Derivation restarts from scratch</strong></td>
+        <td>The stream fold is resumable (<code>Observation.stream_state</code>) but its state lives in a
+        per-process LRU of parsed events capped at 32 MB (<code>_backends._PARSED_STREAM_LIMIT</code>), while
+        live streams total 258 MB for power_convertor alone, so streams are re-read whole; the stall check
+        parsed every line uncached.</td>
+        <td>Producer strace (reckon-bc): <code>stream.jsonl</code> opened 49 times, ~103 MB, in 8 s.</td></tr>
+        <tr><td><strong>Live, high-churn state lives on a cross-node filesystem</strong></td>
+        <td>Pointers, leases, locks, follower cursors and event logs are on GPFS, where every open, stat
+        and utime takes cluster tokens; every poll renewed an image lease with a utime on one shared inode
+        and an <code>O_TRUNC</code> rewrite of one shared record.</td>
+        <td>27 of ~100 D-state samples in <code>vfs_utimes</code>; 55 utimes per follower in 15 s.</td></tr>
+        <tr><td><strong>No cheap "has anything changed"</strong></td>
+        <td>Each pass re-reads every pointer to learn whether anything moved.</td>
+        <td>784 pointer opens per 15 s per follower when few pointers changed.</td></tr>
+        <tr><td><strong>Nothing is bounded</strong></td>
+        <td>Event logs grow without rotation; promoted runs accumulate in one directory; pointers carry
+        dispatch-time detail that is never read live.</td>
+        <td><code>watch/</code> 252 MB (reckon's log 92 MB); <code>runs/</code> 17,159 entries; pointers up to 94 KB.</td></tr>
+        <tr><td><strong>Every process reloads itself</strong></td>
+        <td>Each follower and producer materialises the new image on GPFS, proves it in a child interpreter
+        under a lock, and stamps cross-node lease records; 38 commits moved <code>reckon/</code> on 2026-10-22.</td>
+        <td>"the import proof lock was still held after 30 s" in every pane; 91 and 124 such lines in two
+        sessions' transcripts.</td></tr>
+      </tbody>
+    </table>
+    <p>Two neighbouring defects surfaced in the same investigation and belong to the same family:</p>
+    <ul>
+      <li><strong>Promotion collides on the shared git index.</strong> <code>crew complete</code> took over
+      five minutes per run with three peers promoting at once; one promotion rolled back on
+      <code>.git/index.lock</code>. py-spy samples sat in <code>ledger._indexed_data</code> JSON parsing,
+      <code>routing._repository_tree_snapshot</code> and <code>reports._committed_paths_added_since</code> git
+      subprocesses.</li>
+      <li><strong>A lift row reads as a run.</strong> A lift grant and the end of the lift it replaced render
+      as <code>new → working</code> and <code>working → landed</code> on one <code>codex-sub</code> row, keyed
+      by group, so the lead read a fresh grant as ended.</li>
+    </ul>
+
+    <h2 id="s4">§4 — Fixed in session on 2026-10-22</h2>
+    <p>The lead asked for the monitor lock bug to be fixed in session and landed quickly. Each change was
+    committed in its own worktree, judged against its base by delta, and merged with <code>--no-ff</code>.</p>
+    <table>
+      <thead><tr><th>Change</th><th>Merge</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td>An import proof never makes a follower wait: a held proof lock returns pending at once; a
+        retry wait is checked before re-materialising; the image lease is renewed once a minute</td>
+        <td><code>eaff2df10</code></td>
+        <td>No 30 s stalls; utimes 55 → 1 per follower in 15 s; the fleet reloaded in about a minute on the next
+        image, whose proof took 11 s</td></tr>
+        <tr><td>The import verdict goes through the shared atomic writer; the follower reload test reads
+        rows the pane prints at once</td>
+        <td><code>de6086295</code></td>
+        <td>The two tests failing on main pass; the reload family reads 169 passed, 0 failed</td></tr>
+        <tr><td>A live pointer is read again only when its stat identity moves</td>
+        <td>pending its population measure</td>
+        <td>Expected to remove ~99% of follower reads (§2)</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s5">§5 — What must survive the redesign</h2>
+    <p>From the handoff by the session that drove the monitor, these are the properties the lead relies on:</p>
+    <ul>
+      <li>one row per run transition, with stage, short node, from → to, age, worker and hours counters,
+      queue position, rate and model;</li>
+      <li>broadcasts that reach every session's pane once: budget lift grants and ends, and the limit-reset row;</li>
+      <li>rows for runs that need the coordinator: delivered and unpromoted, halted, a refused queued launch
+      with its remedy, a blocking review finding, a declared wait addressed to the coordinator, the follower
+      ending with no host;</li>
+      <li>the review reflex: a delivered run gets its independent review dispatched automatically;</li>
+      <li>the obligations list as the authority for what a session owes, through the hooks and
+      <code>crew view obligations</code>, fresh or saying why not;</li>
+      <li>new code taken up without restarting sessions;</li>
+      <li>per-session scoping across projects.</li>
+    </ul>
+
+    <h2 id="s6">§6 — Design: one station reads each fact once</h2>
+    <p><strong>Principle.</strong> Each fact is read once, by one process, on the node where it changes, and
+    every consumer reads the derived answer. Bytes on the shared filesystem are read only when their stat
+    identity moves or past an offset already consumed.</p>
+    <table>
+      <thead><tr><th>Store</th><th>Where</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>Station database: pointer mirror, stream offsets and fold state, events, cursors,
+        obligations</td><td>SQLite in WAL mode under the node-local runtime root
+        (<code>$XDG_RUNTIME_DIR</code>, then <code>/run/user/&lt;uid&gt;</code>, then <code>/dev/shm</code>, the
+        order the session host already uses)</td><td>Derived and rebuildable; read many times a second; WAL needs
+        shared memory and so must never be on GPFS.</td></tr>
+        <tr><td>Event partitions</td><td>One SQLite file per UTC day beside the station database, attached
+        for reads, the oldest unlinked after a retention window</td><td>Rotation by unlinking a file costs
+        nothing and keeps the history bounded.</td></tr>
+        <tr><td>Live pointers, manifests, streams, ledger, reviews, evidence</td><td>GPFS, unchanged</td>
+        <td>Durable truth: survives the allocation and is visible from login nodes. Writers are not changed;
+        the station only reads them.</td></tr>
+        <tr><td>Exported snapshot (obligations, live board)</td><td>GPFS, one small file per project,
+        written by atomic replace only when it changes</td><td>Login-node sessions, hooks run there and the
+        SPA cannot see node-local storage.</td></tr>
+        <tr><td>Reload images</td><td>Node-local runtime root</td><td>Only the station reloads; images are
+        rebuilt from git, so no cross-node lease is needed.</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Process model.</strong> One station per node that runs workers, held by a node-local lock,
+    serves every project on the node. It is the database's only writer. It stats the live directory and each
+    live pointer and stream every tick, parses a pointer only when its identity moved, reads a stream only
+    past its stored offset and folds the new records with reckon's own <code>observe_stream</code> carrying
+    the stored fold state, runs the classifier once per changed run, writes each transition once with its
+    audience (a session, or every pane) and its duty, and runs the review reflex and settle detection once.
+    A follower becomes a subscriber: it checks <code>PRAGMA data_version</code>, and when it moved, selects
+    its session's rows after its cursor, so a row is delivered exactly once per pane by construction. Hooks
+    and <code>crew view</code> query the same database on the node, and read the exported snapshot elsewhere.</p>
+    <p><strong>Failure modes.</strong> When the allocation ends the station database goes with it; the next
+    station rebuilds from GPFS, which the prototype measured at 170 MB and 5.5 s. A station that dies
+    leaves subscribers reading a <code>data_version</code> that does not move; every row and snapshot carries
+    the station's heartbeat time, so a reader reports a stale station rather than a quiet fleet. Concurrent
+    readers never block the writer under WAL.</p>
+    <p><strong>Why SQLite.</strong> Indexed reads of exactly the rows a reader needs, change detection at the
+    cost of a shared-memory read, and transactions in place of the lock files, lease stamps and
+    temporary-and-rename records that make up today's coordination. It is in the standard library, so it adds
+    no dependency.</p>
+
+    <h2 id="s7">§7 — Prototype evidence</h2>
+    <p>The prototype (<code>~/.cache/reckon-monitor-prototype/station.py</code>) reads the real crew home and
+    writes only to <code>/dev/shm</code>. It ran 70 one-second ticks on clu-2068 at 21:58 CEST, then 45 ticks
+    with three subscribers attached for real sessions.</p>
+    <table>
+      <thead><tr><th>Measure</th><th>Today</th><th>Prototype</th></tr></thead>
+      <tbody>
+        <tr><td>Steady reads from GPFS</td><td>~130 MB/min per follower, up to 612 MB/min per producer;
+        ~4 GB/min in total</td><td><strong>5.1 MB/min</strong> in total, almost all of it newly appended
+        stream bytes (4.9 MB over 69 ticks)</td></tr>
+        <tr><td>CPU</td><td>3–4% per follower; 17–32% per busy producer</td><td>7.5 ms per 1 s tick, under 1% of
+        one core</td></tr>
+        <tr><td>Pointer parses</td><td>every pointer every ~1.2 s in every process</td><td>16 in 69 ticks</td></tr>
+        <tr><td>Subscriber cost</td><td>a follower process at 3–4% CPU and ~130 MB/min</td><td>3 ms of CPU and
+        232 KB read from RAM over 40 polls; 4, 9 and 14 rows delivered to three sessions</td></tr>
+        <tr><td>Cold start</td><td>—</td><td>170 MB read once, 5.5 s</td></tr>
+      </tbody>
+    </table>
+    <p>The tick's wall time (mean 605 ms) is stat latency on a congested GPFS, about 90 stats; it does not
+    scale with consumers and can be overlapped if needed.</p>
+
+    <h2 id="s8">§8 — Portfolio dispositions</h2>
+    <table>
+      <thead><tr><th>Plan</th><th>Disposition</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td>the-monitor-shows-the-work-it-watches</td><td>close as superseded once §71 and §83 have their
+        landing records</td><td>73 of 88 sections done; the 13 open sections are re-homed as requirements of
+        the-monitor-reads-each-fact-once or moved to the-crew-does-its-own-bookkeeping, mapped one by one in that
+        plan.</td></tr>
+        <tr><td>crew-observability-truth</td><td>keep</td><td>one section open, held on a lead decision about score
+        reading; not a load question.</td></tr>
+        <tr><td>the-crew-does-its-own-bookkeeping</td><td>keep, and take monitor §84</td><td>crew-command
+        correctness; its classification sections §14–§17 feed the station's classifier unchanged.</td></tr>
+        <tr><td>a-read-answers-inside-its-deadline</td><td>keep</td><td>read latency of MCP and roadmap reads,
+        a different path.</td></tr>
+        <tr><td>lane-and-model-routing</td><td>keep, add one section</td><td>codex was unreachable for every
+        session although lifted: its window reading was 14 h old, only a credits lift skips the reserved-lane
+        window term, and only claude has a probe that refreshes a reading, so the stale reading could never
+        refresh itself.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s9">§9 — The sprint</h2>
+    <p>Sprint S27 carries three plans:</p>
+    <ul>
+      <li><a href="/reckon/plans/the-monitor-reads-each-fact-once">the-monitor-reads-each-fact-once</a>, the
+      station and its consumers, with the session's fixes recorded as its first done sections;</li>
+      <li><a href="/reckon/plans/crew-state-stays-bounded">crew-state-stays-bounded</a>, pointer slimming,
+      dated run directories and retirement of the old event logs;</li>
+      <li><a href="/reckon/plans/a-landing-never-waits-on-a-shared-index">a-landing-never-waits-on-a-shared-index</a>,
+      promotion off the shared git index and reading only what moved.</li>
+    </ul>
+  </main>
+</body>
+</html>
