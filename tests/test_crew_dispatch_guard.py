@@ -584,28 +584,14 @@ def test_the_exclusive_claim_walk_reads_every_live_claim_at_refusal(
     claims_walked: dict[str, int] = {}
     real = dispatch_module._raise_repository_scope_conflict
 
-    def wrapped(
-        node,
-        *,
-        project,
-        repo,
-        authority,
-        claims,
-        disregarded=None,
-        own_run_id=None,
-        own_registered_at=None,
-    ):
-        claims_walked["count"] = len(list(claims))
-        return real(
-            node,
-            project=project,
-            repo=repo,
-            authority=authority,
-            claims=claims,
-            disregarded=disregarded,
-            own_run_id=own_run_id,
-            own_registered_at=own_registered_at,
-        )
+    # The instrument counts the claims the check walks, so it repeats the seam's
+    # positional head and forwards everything else as it arrives. Enumerating the
+    # keyword list instead would make the count fail the moment the check gains an
+    # argument, which is a change to the check and not to the walk being counted —
+    # and a wrapper that cannot see the new argument also cannot pass it on.
+    def wrapped(node, **kwargs):
+        claims_walked["count"] = len(list(kwargs["claims"]))
+        return real(node, **kwargs)
 
     monkeypatch.setattr(dispatch_module, "_raise_repository_scope_conflict", wrapped)
     with pytest.raises(crew.ScopeConflict):
