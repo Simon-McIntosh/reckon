@@ -1,0 +1,72 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T08:02:44.211Z",
+  "dispatched_at": "2026-10-22T07:57:19Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-brief-should-not-cost-what-it-names.html:112",
+      "id": "reasoning-1",
+      "reason": "the body tells a node the current term is a full-load charge to be reduced, when the work is actually to raise a zero charge to the reference cost, and any test derived from \"and not the file size\" is written against behaviour that no longer exists.",
+      "text": "\u00a73 asserts \"A path a node must edit and a path a node is told never to open are not the same load, and today they cost the same\", and at :118 that a negated clause \"is currently the place it is most wrong\", but `_declared_input_files` (reckon/crew/routing.py:3026) charges nothing for a mere mention and withholds a negated clause's paths, so a mention already costs zero and a write path full \u2014 the section's activation comment at :256 (\"a mention costs nothing and a negated clause's paths are withheld\") and its reopen comment at :277 (\"the code's current answer is `zero`\") both say so, contradicting the body.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-brief-should-not-cost-what-it-names.html:123",
+      "id": "done_when-1",
+      "reason": "a node cannot implement two opposite charges for one path, so the clause must be split into the different-files case (reference for the negated path, full for the write path) or a precedence rule stated.",
+      "text": "\u00a73's assertion that \"a path inside a negative clause is asserted to be charged as a reference even when the same path is also a declared write path elsewhere in the brief, since the two clauses are about different files in the general case and the write path must still be charged at full\" states a path is charged as a reference and at full in one breath, and justifies the same-path case with a \"different files in the general case\" reason that does not cover it; the code's `counted` dedup (routing.py:3129) describes write paths before named files, so a path in both sets is already counted once at full \u2014 the measure gives a node no unambiguous assertion to write and no rule for the collision.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-brief-should-not-cost-what-it-names.html:137",
+      "id": "done_when-2",
+      "reason": "the node dispatched to \u00a74 would find its central assertion impossible to satisfy and either pick a reference cost the lead has not chosen or return blocked, and the plan should state that \u00a74 requires a nonzero reference cost (or restate the opt-out's measure) before dispatch.",
+      "text": "\u00a74's measure \"asserted by the same brief estimating lower with the opt-out than without it\" cannot hold if \u00a73's `reference-cost` decision (docs/plans/a-brief-should-not-cost-what-it-names.html:225, `data-choice=\"\"`) settles at `zero`: an opted-out anchor and a plain mention would both cost zero, so \"lower with the opt-out\" is unsatisfiable, yet \u00a74 declares no dependency on \u00a73 or on that decision (its `data-links` is empty, and the ordering \"Section 4 follows section 3\" lives only in \u00a78's prose).",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-brief-should-not-cost-what-it-names.html:126",
+      "id": "evidence_paths-1",
+      "reason": "the node must either be given the recorded payloads on a durable path or the clause restated to derive the figures from fixtures it builds, otherwise the assertion is unrunnable as written.",
+      "text": "\u00a73's done-when requires \"the three measured briefs above are asserted to fit their lanes after the change, using their recorded figures rather than re-derived ones\", but \u00a71's table at :47-75 is the only record of those briefs, their refusal payloads (161,013 / 508,965 / `graph_ops.py` 326,217) and the lane windows, and it names no path a test could open \u2014 while the repository requires a test to synthesise its inputs rather than reach outside the tree, so \"recorded figures rather than re-derived ones\" cannot both be honoured and executed.",
+      "type": "evidence_paths",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "555dbf34293202b982de9c60a0baaaf63692670ce10288f3783ee8bdd04ee36d",
+  "plan_slug": "a-brief-should-not-cost-what-it-names",
+  "plan_version": 12,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T075614808896-plan-review-of-a-brief-should-not-cost-what-it-names",
+  "reviewed_blob_sha": "c2011acf549c4ce32f38e9b09e5ab81a6f6a9734",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited `reckon/crew/routing.py` exists, \u00a71's table referenced as \"the three measured briefs above\" is present in the plan, and the informs targets carry the house `.html` convention.",
+    "done_when": "a finding \u2014 \u00a73's negative-clause assertion is internally contradictory and \u00a74's \"estimating lower with the opt-out\" arm cannot hold once \u00a73's open `reference-cost` decision settles at `zero`.",
+    "evidence_paths": "a finding \u2014 \u00a73's done-when requires the three measured briefs to be asserted \"using their recorded figures rather than re-derived ones\", but those briefs and their refusal payloads exist only as prose in \u00a71's table on no path a node can open.",
+    "naming": "pass \u2014 \u00a73 and \u00a74 name mechanisms (`reference cost, a mention, a negative clause`) and carry no plan labels, stage names, ticket numbers or version tags into the symbols they propose.",
+    "reasoning": "a finding \u2014 \u00a73's stated root cause (\"today they cost the same\"; \"currently the place it is most wrong\") is contradicted by the code and by the section's own activation and reopen comments, which record that a mention already costs nothing.",
+    "single_goal": "pass \u2014 \u00a73 carries one deliverable (charge a mention and a negated-clause path at a reference cost) and \u00a74 one (an anchor opt-out), each closable on its own verdict.",
+    "wiring": "pass \u2014 the plan's two `plan-informs` targets resolve (`docs/plans/background-agent-fitness-and-dispatch-scope.html` and `docs/plans/a-window-paces-the-lane.html` both exist), and the plan declares no `depends-on`/`gates` relationships that point anywhere wrong."
+  },
+  "section_digests": {
+    "_document": "30b2bc94634fbfe881544257ddb6bee6ef3cb8edb95ed567d833c1078f1d3673",
+    "s1": "d7fcfefe329cb385d8051b6135d5841c859cd5608068c3abc22b2dde5922a542",
+    "s10": "2b9ee6303e741d2d156f9e2cc199120146503ad5facd805ae644d7d7ba96659c",
+    "s2": "de9c3b0e07cca426601fe174741c157b6b3f9a95a4b2f5e1e8a21f881bbf30cf",
+    "s3": "e14931a79e53300c533fc95034238316363b38a267eeaed1deca5c9333ae2ae5",
+    "s4": "6dd62a4cd8a88ef35ef6d86f9e54e1f7eb0aa31424abc4dddc3cf2af0832d524",
+    "s5": "35701fe950d085e6f8efb2262f67db43fbbb02a811be9c5e5acf83a807a811c2",
+    "s6": "243e799cfe9e40125eb1da6d912895d8ebc9fde064b1684dc863e2b84a6c5775",
+    "s7": "e79cc324628f520c4867c6f70df4db194485c3f72b2cbec63defa27e9009fab4",
+    "s8": "5d7a0ddfc529c4b7dd6511fd73f6edd50552945a8665b943641b1b77d577812e",
+    "s9": "6cacd75509f791d5d06f64aac3fd9ab7710d79e68e341a36be215f1a0b1ed346"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T08:08:43.771682+00:00"
+}
