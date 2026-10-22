@@ -375,3 +375,104 @@ def test_the_check_admits_the_tip_and_refuses_the_branch(
             claims=claims,
             base_revision=base,
         )
+
+
+def test_the_dry_run_and_the_real_dispatch_agree_on_a_stacked_dispatch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The dry run reaches the verdict the launch reaches.
+
+    A caller reads the dry run's verdict to decide whether to dispatch, so a
+    dry run that refuses where the launch admits sends them away from a dispatch
+    that would have been accepted. Both are asked the same question here, on the
+    same holder and the same base: on the holder's chain tip both admit, and on
+    the integration branch both refuse.
+    """
+    from reckon.crew.dispatch_plan import plan_dispatch
+
+    _config_home, repo = _held_repository(tmp_path, monkeypatch)
+    _holder, base, head = _publish_stopped_holder(repo, tmp_path)
+
+    admitted = plan_dispatch(
+        node=_descendant_node(tmp_path),
+        config=CONFIG,
+        project=PROJECT,
+        repo=repo,
+        base=head,
+        session=SESSION,
+        report_live_conflicts=True,
+        route="deterministic",
+    )
+    assert admitted.admission["state"] == "admitted"
+
+    record = _dispatch_on(repo, tmp_path, monkeypatch, base=head)
+    assert str(record["run_id"]).startswith("r-")
+
+    refused = plan_dispatch(
+        node=_descendant_node(tmp_path),
+        config=CONFIG,
+        project=PROJECT,
+        repo=repo,
+        base=base,
+        session=SESSION,
+        report_live_conflicts=True,
+        route="deterministic",
+    )
+    assert refused.admission["state"] == "refused"
+    assert refused.admission["error"] == "scope-conflict"
+
+    with pytest.raises(crew.ScopeConflict):
+        _dispatch_on(repo, tmp_path, monkeypatch, base=base)
+
+
+def test_a_stacked_run_widening_onto_the_holders_paths_is_admitted(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A widening dispatch is judged with the base it was itself cut from.
+
+    A run stacked on a stopped holder has that holder's chain tip as its base,
+    so widening onto the holder's other claimed paths adds no writer the holder
+    does not already carry. Judged without its own base the same widening is
+    refused, which is the state this case pins: the stacked run is admitted and
+    a run based on the integration branch is still refused.
+    """
+    from reckon.crew.dispatch_claims import refuse_widen_scope_conflicts
+
+    _config_home, repo = _held_repository(tmp_path, monkeypatch)
+    _holder, descendant, _head = _record_stacking_directly(repo, tmp_path)
+    # The control is judged at the revision the holder itself was cut from, which
+    # is the one base that carries none of the holder's commits.
+    base = str(read_pointer(HOLDER_RUN).get("base_sha") or "")
+    assert base
+
+    live = {str(row["run_id"]) for row in crew.list_live(project=PROJECT)}
+    assert descendant in live, "the fixture must publish a live stacked descendant"
+    assert HOLDER_RUN in live
+
+    # The descendant widens onto a path its own base already carries: admitted.
+    refuse_widen_scope_conflicts(read_pointer(descendant), [CLAIMED_PATH])
+
+    # A run cut from the integration branch carries none of it: still refused.
+    based_on_main = "r-20261022T101900000000-based-on-main"
+    crew._write_json(
+        pointer_path(based_on_main),
+        {
+            "run_id": based_on_main,
+            "project": PROJECT,
+            "repo": str(repo),
+            "worktree": str(tmp_path / "based-on-main-tree"),
+            "base": base,
+            "base_sha": base,
+            "pid": os.getpid(),
+            "phase": "working",
+            "created_at": str(read_pointer(descendant).get("created_at") or ""),
+            "node": {
+                "id": "based-on-main",
+                "plan": "fixture",
+                "section": "s5",
+                "write_paths": [CLAIMED_PATH],
+            },
+        },
+    )
+    with pytest.raises(crew.ScopeConflict):
+        refuse_widen_scope_conflicts(read_pointer(based_on_main), [CLAIMED_PATH])

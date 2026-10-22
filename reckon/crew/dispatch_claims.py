@@ -1790,12 +1790,20 @@ def refuse_widen_scope_conflicts(
     claims = _repository_scope_claims(
         exclude_run_ids=(str(pointer.get("run_id") or ""),)
     )
+    # The run doing the widening is the one whose base decides whether a claim it
+    # overlaps is one it already carries. A run stacked on a stopped holder has
+    # that holder's chain tip as its base, so reading its own base is what keeps a
+    # widening dispatch from being refused by the very claim it was cut from. The
+    # pointer records the base it was dispatched from, and the resolved value is
+    # preferred over the ref it was resolved from.
+    widening_base = str(pointer.get("base_sha") or pointer.get("base") or "").strip()
     _raise_repository_scope_conflict(
         candidate,
         project=project,
         repo=repo,
         authority=authority,
         claims=claims,
+        base_revision=widening_base,
         own_run_id=str(pointer.get("run_id") or ""),
         own_registered_at=_utc_now(),
     )

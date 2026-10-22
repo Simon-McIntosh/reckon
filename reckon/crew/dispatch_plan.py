@@ -73,6 +73,9 @@ from reckon.crew.runs import (
     run_dir,
     watch_state,
 )
+from reckon.crew.recovery import (
+    _resolve_commit,
+)
 
 
 @dataclass
@@ -1137,6 +1140,12 @@ def plan_dispatch(
                     authority=resolved_authority,
                     claims=claims,
                     disregarded=resolution.warnings,
+                    # The dry run judges the same claims the launch will, so it has
+                    # to judge them with the same base: without its own base it
+                    # refuses a dispatch cut from a stopped holder's chain tip that
+                    # the launch admits, and a caller reading the verdict would act
+                    # on a refusal the real dispatch never makes.
+                    base_revision=_resolve_commit(repo_root, base),
                     **_directory_claim_acceptance_kwargs(accept_directory_claim, []),
                 )
             except ScopeConflict as exc:
