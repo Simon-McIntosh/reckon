@@ -79,6 +79,19 @@ def _arm_session_identity(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("CODEX_THREAD_ID", "codex-thread-id")
 
 
+def _option_default(command, name: str):
+    """The default the command itself declares for one of its options.
+
+    Read from the command rather than a literal so the call follows the option.
+    A parameter the command gains with no default then fails the call here in
+    the same way, rather than being passed a value chosen by this test.
+    """
+    for param in command.params:
+        if param.name == name:
+            return param.default
+    raise AssertionError(f"{command.name} declares no {name!r} option")
+
+
 def test_start_watch_producer_hands_over_a_scrubbed_environment(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -195,6 +208,7 @@ def test_crew_watch_sheds_identity_before_its_first_sweep(
     monkeypatch.setattr(follow_module, "_emit_crew_result", lambda *a, **k: None)
 
     follow_module.crew_watch.callback(
+        stop=_option_default(follow_module.crew_watch, "stop"),
         project="sample",
         stall_window="1h",
         exit_on_empty=False,
