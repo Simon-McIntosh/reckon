@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": "reckon/crew/dispatch_plan.py:886 (plan_dispatch), reckon/crew/crew_dispatch_commands.py:1787 (crew dispatch CLI), reckon/crew/dispatch.py:804 (plan_dispatch caller reading resolution.warnings)",
+  "completed_at": "2026-10-22T07:21:26.573Z",
+  "dispatched_at": "2026-10-22T07:10:55Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_sessions.py",
+      "line": 1439,
+      "severity": "follow-on",
+      "text": "`_recorded_task_node` rebuilds a TaskNode from a run's stored record but omits `inputs` and `compares_with` (both present in TaskNode.to_dict at reckon/crew/node.py:782-787), so a node rebuilt in production loses a stated comparison and would be linted afresh; that is the production rebuild path the landed docstring (reckon/crew/dispatch_admission.py:1910-1911) and the commit body claim reproduces the warning, and it does not. Outside this node's declared write paths; the worker recorded it under follow_ons."
+    },
+    {
+      "file": "reckon/crew/dispatch_admission.py",
+      "line": 1910,
+      "severity": "follow-on",
+      "text": "The docstring of `admission_refusals_and_warnings` asserts \"One split serves the dispatch that reports a finding and the check that rebuilds a node from its stored record\", but no production caller rebuilds a node and calls the split -- grep over reckon/ finds only the dispatch_plan.py:886 call, and the one production rebuild drops the fields the warning is derived from; the sentence describes a mechanism that does not exist yet."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "VERDICT call_sites: the change is reached at runtime through plan_dispatch; reckon/crew/crew_dispatch_commands.py:1787 and reckon/crew/dispatch.py:804 both call plan_dispatch and read resolution.warnings.",
+    "diff": "VERDICT diff: read commit by commit against a27547f0 (bcd9e8855 the code change, 5e3f01c06 and c28c23f3c the landing fragment); all four changed paths are inside the manifest's declared write paths and nothing else moves.",
+    "done_when": "VERDICT done_when: the done_when names tests/test_a_node_names_its_inputs_and_measurement.py and its three clauses (admitted and warns, missing input refused, rebuilt node reports the same warning); the gate records the run and its result in gate-after.log and base-arm.log.",
+    "goal": "VERDICT goal: the node's goal is to warn rather than refuse a model-building node that names no comparison; reckon/crew/dispatch_admission.py:1869 marks node_measurement_finding as ADMISSION_WARNING and reckon/crew/dispatch_plan.py:889 extends DispatchPlan.warnings with it, which is what the goal states.",
+    "manifest": "VERDICT manifest: read; it states the four-file gate passed 42 at bcd9e8855 and the base arm failed 5 at 4bd6d8d7, and names both logs and the negative-control log.",
+    "write_paths": "VERDICT write_paths: read the manifest's declared paths; the four files in the diff (dispatch_admission.py, dispatch_plan.py, the test file, the landing fragment) all sit inside them and the declared figures directory is unused."
+  },
+  "justifications": {
+    "durability": "tests/test_a_node_names_its_inputs_and_measurement.py fails if the change regresses: the negative control routes the comparison finding back into the refusals and the three warning tests redden (3 failed, 39 passed, EXIT=1), and each of the three passes on the head arm, so the split is what admits the node rather than the fixture's shape.",
+    "evidence": "The recorded gate result is real and matches the done_when: gate-after.log is headed by revision bcd9e8855 with the exact four-file command and ends in `42 passed`/`EXIT=0`, and base-arm.log is headed by revision 4bd6d8d7 and ends in `5 failed, 37 passed`/`EXIT=1`, all five in this node's test file.",
+    "fit": "The additions follow the surrounding idiom of reckon/crew/dispatch_admission.py (module-level named constants beside the property names at line 1786-1791, a pure helper composed from findings), and no added name carries a plan label or version tag; the docstring overreach at line 1910 is recorded as a finding rather than scored a pass.",
+    "goal_fidelity": "The landed change does what the goal asks: reckon/crew/dispatch_plan.py:886-889 splits the comparison finding onto the warning channel and refuses only on the remaining findings, so a model-building node naming no comparison is admitted with a warning naming --compares-with.",
+    "reuse": "No owner for a findings-partition capability exists: the search over reckon/crew/dispatch_admission.py, dispatch_plan.py, node.py and refusals.py found only format_refusal (refusals.py:37) and the unrelated orchestrator-lane `severity` vocabulary (dispatch_admission.py:1554), so admission_refusals_and_warnings is the first owner rather than a duplicate.",
+    "scope_discipline": "Every path in the diff (reckon/crew/dispatch_admission.py, reckon/crew/dispatch_plan.py, tests/test_a_node_names_its_inputs_and_measurement.py, docs/evidence/fragments/work-is-checked-against-its-domain/an-unnamed-comparison-warns.html) is inside the manifest's declared write paths and carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to warn rather than refuse a model-building node that names no comparison; reckon/crew/dispatch_admission.py:1869 marks node_measurement_finding as ADMISSION_WARNING and reckon/crew/dispatch_plan.py:889 extends DispatchPlan.warnings with it, which is what the goal states.\nVERDICT done_when: the done_when names tests/test_a_node_names_its_inputs_and_measurement.py and its three clauses; the gate records the run and its result in gate-after.log (EXIT=0) and base-arm.log (EXIT=1).\nVERDICT write_paths: read the manifest's declared paths; the four files in the diff all sit inside them and the declared figures directory is unused.\nVERDICT manifest: read; it states the four-file gate passed 42 at bcd9e8855 and the base arm failed 5 at 4bd6d8d7, and names both logs and the negative-control log.\nVERDICT diff: read commit by commit against a27547f0; bcd9e8855 is the code change, 5e3f01c06 and c28c23f3c are the landing fragment, all inside the declared scope.\nCALL_SITES: reckon/crew/dispatch_plan.py:886 (plan_dispatch), reckon/crew/crew_dispatch_commands.py:1787 (crew dispatch CLI), reckon/crew/dispatch.py:804 (plan_dispatch caller reading resolution.warnings)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_plan.py:886-889 splits the comparison finding onto the warning channel and refuses only on the remainder.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-after.log ends `42 passed`/`EXIT=0` at bcd9e8855 and base-arm.log ends `5 failed, 37 passed`/`EXIT=1` at 4bd6d8d7, matching the done_when.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is inside the manifest's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_node_names_its_inputs_and_measurement.py reddens three tests under the negative control (3 failed, 39 passed) and all three pass on the head.\nSCORE fit: 17\nJUSTIFICATION fit: the additions follow reckon/crew/dispatch_admission.py:1786-1791, though the docstring at line 1910 names a production caller that does not exist.\nSCORE reuse: 20\nJUSTIFICATION reuse: no findings-partition owner exists in reckon/crew; the search of dispatch_admission.py, dispatch_plan.py, node.py and refusals.py found none and admission_refusals_and_warnings is the first.\nFINDING reckon/crew/dispatch_sessions.py:1439 follow-on: `_recorded_task_node` omits `inputs` and `compares_with`, so the production rebuild never reproduces the warning the docstring claims.\nFINDING reckon/crew/dispatch_admission.py:1910 follow-on: the docstring names a production caller that does not exist.\n",
+  "review_run_id": "r-20261022T070959255402-review-of-an-unnamed-comparison-warns-c28c23f3c387",
+  "reviewed_base_sha": "a27547f0ea2873b361cf8338b6b64a2f1636c284",
+  "reviewed_head_sha": "c28c23f3c387912b0b46921ff71c6c91c0cbc795",
+  "reviewed_run_id": "r-20261022T064745942842-an-unnamed-comparison-warns",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T07:26:26.666327+00:00",
+  "total": 115
+}
