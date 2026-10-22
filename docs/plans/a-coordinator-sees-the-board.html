@@ -25,6 +25,8 @@
   <title>A Coordinator Sees the Board | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="2">
+<meta name="plan-modified" content="2026-10-22">
 </head>
 <body>
   <main class="plan-doc">
@@ -75,11 +77,12 @@
     <ul>
       <li><strong>The person.</strong> The plan's <code>&lt;meta name="plan-owner"&gt;</code> names who is
       accountable. It is read as it stands and never overwritten.</li>
-      <li><strong>The session.</strong> Every ledger run row carries <code>session_id</code>
-      (<code>reckon/ledger.py:165</code>), and <code>reckon/crew/obligations.py:429</code>
+      <li><strong>The session.</strong> Every ledger run row carries <code>session</code>, the crew session
+      that dispatched it, beside <code>session_id</code>, the worker's own harness session
+      (<code>reckon/ledger.py:162-165</code>, <code>reckon/run_record.py:538-539</code>), and <code>reckon/crew/obligations.py:429</code>
       (<code>_live_review_runs</code>) already filters runs by the dispatching session.</li>
     </ul>
-    <p>A plan's coordinator is the <code>session_id</code> of its most recent dispatched run, live or in the
+    <p>A plan's coordinator is the dispatching <code>session</code> of its most recent dispatched run, live or in the
     ledger, within a configured staleness window. The window is a configuration value, never a literal in
     code. With no such run it is unowned, reported as itself and never guessed. The answer carries both
     facts: the <code>plan-owner</code> person and the coordinator session with its peer name where
@@ -159,13 +162,15 @@
     holds, which section a peer is on, and which of its sections a peer has left idle.</p>
     <p>Done when the directory for power_convertor lists every live run of every coordinator with its section
     and held paths, and lists a coordinator that has ready-idle work but no run. It stays bounded at
-    workstation scope through its paging. Negative control: a coordinator whose only plan has no ready
+    workstation scope because the directory view gains a <code>limit</code> and a
+    <code>cursor</code>: today <code>reckon/mcp_views.py:3805-3813</code> returns the directory early with
+    neither, so the change caps the row count and pages the rest. Negative control: a coordinator whose only plan has no ready
     section and no run must not appear, and the test must fail if it does.</p>
 
     <h2 id="s6">§6 — The lane share lives on the lanes view alone</h2>
     <p><code>crew(view="lanes")</code> already attaches the parsed lane document to each lane row
     (<code>_attach_lane_document</code>, <code>reckon/mcp_views.py:724</code>). The document is parsed once,
-    in <code>reckon/crew/lane_document.py:447</code>, and
+    by <code>read_lane_document</code> in <code>reckon/crew/lane_document.py:303</code>, and
     <code>reckon/crew/obligations.py:553</code> (<code>_published_worker_slots</code>) already reads the
     calling session's published share. This section extends the lanes view with that share and the
     session's live run count, through that function, together with the document's
@@ -197,26 +202,26 @@
     show that the idle sections are absent there. That absence is the defect this plan exists to remove.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="board-surface" data-choice="split" data-by="reckon-build" data-when="2026-10-22">
-        <p class="r-dec-q">Which tool serves the board and the ready-idle set?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="crew-view">crew views: board and idle</button>
-          <button class="r-opt" data-value="roadmap-view">roadmap views: board and idle</button>
-          <button class="r-opt" data-value="split">split by what each fact describes</button>
-        </p>
-        <p class="r-dec-rat">Split by what each fact describes, as the coordinator of the-mcp-answers-the-question-asked proposed on 2026-10-22. The board (§5) and the lane share (§6) are facts about coordinators, runs, claims and the lane, so they are one new bounded crew view joining directory, scopes, live and lanes. The ready-idle set (§3) and the link-by-link critical path (§4) are facts about sections, so they go on the roadmap's section rows and payload, where a-project-reads-as-one-picture §4 already put runs and blocker kinds, and that plan's §7 brief quotes them. The roadmap serves plans and sections, and crew serves runs and coordinators: one derivation per fact.</p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="board-surface" data-choice="split" data-by="reckon-build" data-when="2026-10-22T18:09:47+00:00">
+    <p class="r-dec-q">Which tool serves the board and the ready-idle set?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="crew-view">crew views: board and idle</button>
+      <button class="r-opt" data-value="roadmap-view">roadmap views: board and idle</button>
+      <button class="r-opt chosen" data-value="split">split by what each fact describes</button>
+      </p>
+    <p class="r-dec-rat">Split by what each fact describes, as the coordinator of the-mcp-answers-the-question-asked proposed on 2026-10-22, and across existing views only: no new view is added. The board (§5) extends the directory view, and the lane share (§6) extends the lanes view, because they are facts about coordinators, runs, claims and the lane. The ready-idle set (§3) and the link-by-link critical path (§4) are facts about sections, so they are fields on the roadmap&#x27;s existing ready-set and critical_path rows, where a-project-reads-as-one-picture §4 already put runs and blocker kinds, and that plan&#x27;s §7 brief quotes them. The roadmap serves plans and sections, and crew serves runs and coordinators: one derivation per fact.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-acsb-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-22" data-recommends-skill="/reckon-build a-coordinator-sees-the-board §2">
-        <h4 class="r-fu-title">Record plan ownership first</h4>
-        <div class="r-fu-body"><p>§2 is the prerequisite for every owner field in §3–§5. Settle the decision on which surface serves the board before §3 is dispatched.</p></div>
-        <pre class="r-fu-prompt">/reckon-build a-coordinator-sees-the-board §2</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-acsb-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-22" data-recommends-skill="/reckon-build a-coordinator-sees-the-board §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Record plan ownership first</h4>
+    <div class="r-fu-body"><p>§2 is the prerequisite for every owner field in §3–§5. Settle the decision on which surface serves the board before §3 is dispatched.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-coordinator-sees-the-board §2</pre>
+    </article>
+</section>
   </main>
 </body>
 </html>
