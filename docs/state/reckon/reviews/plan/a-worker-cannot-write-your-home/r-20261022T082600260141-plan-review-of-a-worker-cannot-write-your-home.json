@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T08:38:45.970Z",
+  "dispatched_at": "2026-10-22T08:27:19Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-worker-cannot-write-your-home.html:1592",
+      "id": "done_when-1",
+      "reason": "without the arm and the two files in its write paths, the node can neither see that a shipped guard (the carried-exit invariant the early-exit file exists to protect) has gone red nor repair it, so it would land or block on a discoverable, in-plan consequence of its own mechanism.",
+      "text": "\u00a719 rewrites the trigger inside `_died_over_a_vanished_bind_source` (`reckon/crew/dispatch_launch.py:1501`) and `_spawn_worker_retrying_a_vanished_bind` (`:1536`), but its done-when declares no regression arm for the shipped test files that measure that function, and its Write paths name neither, so neither is in the node's scope. `tests/test_an_early_exit_keeps_its_status.py` (green at base, 3 passed in 3.54 s) asserts as a *live premise control* that the production startup poll collects the exit of a child that dies inside the shipped window \u2014 `_assert_reaped_inside_the_window` (`tests/test_an_early_exit_keeps_its_status.py:154`) fails with \"the control worker outlived the startup window\" unless `process.returncode is not None` after the poll \u2014 and the section's \"It never waits on the child's exit\" invites an implementation that stops observing that exit, which turns the control red; `tests/test_spawn_retries_a_vanished_bind.py` (green at base, 7 passed in 9.05 s) drives the same function through `_supervisor_spawn_worker` with the shipped window. \u00a716 and \u00a718 both carry the arm this plan uses for exactly this case (\"Pytest over the new file, <existing test files> adds no failure against the base\"); \u00a719 carries none.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-worker-cannot-write-your-home.html:1591",
+      "id": "wiring-1",
+      "reason": "adding the driving followup (or correcting the closing outcome) is a change to the plan's own hand-off, and without it an implementable section is reachable only by a reader who consults the declarations instead of the chain.",
+      "text": "\u00a719 is declared `implementable` in the document's `plan-section-declarations` (plan.html:26), but the plan carries no followup for it: the followups run `f-awcwyh-001`\u2026`f-awcwyh-019`, every one `data-status=\"resolved\"`, and \u00a719 arrived in commit `45f96fce4` (\"docs(plan): plan the vanished-bind retry for a launch that starts slowly\") with no followup and no open chain. The plan's last followup outcome, `f-awcwyh-019` (line 1780), states \"\u00a76 remains the plan's one implementable section\", which the declarations now contradict. A coordinator reading the plan's own chain \u2014 the followups and their \u00a705 invocations, which is how this plan hands work to a builder \u2014 is told \u00a719 does not exist.",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "28acfce69d2480b340e4b896a8358a73705ecb1a6bd45deed1266fe940248a26",
+  "plan_slug": "a-worker-cannot-write-your-home",
+  "plan_version": 221,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T082600260141-plan-review-of-a-worker-cannot-write-your-home",
+  "reviewed_blob_sha": "6c4bd45ea49bc913da22376b98168fc67698a1ed",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the run `r-20261021T073526532476-jt60sa-2023-shot-census` resolves and its record, stderr and argv match the section exactly (`ended_during: launch`, launched 07:35:53Z / exited 07:35:57Z, `stream_records_seen: 0`, the bwrap refusal for `~/.claude.json`, one attempt only); `_spawn_worker_retrying_a_vanished_bind`, `_died_over_a_vanished_bind_source`, `SANDBOX_STARTUP_WINDOW_SECONDS` (0.5), `_spawn_detached_worker` and `_supervisor_spawn_worker` all resolve in `reckon/crew/dispatch_launch.py`, and `--ro-bind /home/ITER/mcintos/.claude.json \u2026` is present in the recorded argv, so the refusal is one the retry's source check can match.",
+    "done_when": "a finding \u2014 the section changes the trigger inside `_died_over_a_vanished_bind_source` / `_spawn_worker_retrying_a_vanished_bind` but declares no regression arm and no write path for the two shipped test files that measure that function (`tests/test_an_early_exit_keeps_its_status.py`, `tests/test_spawn_retries_a_vanished_bind.py`), and its \"never waits on the child's exit\" wording removes the exit observation one of them asserts as a live premise.",
+    "evidence_paths": "pass \u2014 Write paths name the module, the new test file and the node's evidence fragment, and the gate log is required to record whether the four-second delay alone reproduces the recorded failure; no session scratchpad or node-local temporary path is named.",
+    "naming": "pass \u2014 the section introduces no code symbol and the one new path it names (`tests/test_a_slow_launch_retries_a_vanished_bind.py`) states the mechanism; no plan label, ticket number or version tag reaches code.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited evidence (the child of this launch is the `srun` shim at `worker.json` pid 3842765, which outlives the 0.5 s `SANDBOX_STARTUP_WINDOW_SECONDS`, so `poll()` was still `None` at the deadline and the retry never fired \u2014 the run holds a single attempt), the mechanism produces each arm of the done-when, and the real caller is named and reached (`_supervisor_spawn_worker` \u2192 `_spawn_worker_retrying_a_vanished_bind`, `reckon/crew/dispatch_launch.py:2439`, the path the failed run was recorded by, `recorded_by: supervisor`).",
+    "single_goal": "pass \u2014 \u00a719 carries one deliverable (extend the vanished-bind retry to a slow-starting placed launch); confirming the root cause and rejecting `--ro-bind-try` are evidence and a rejected alternative, not a second deliverable.",
+    "wiring": "a finding \u2014 \u00a719 is declared `implementable` in `plan-section-declarations` (plan.html:26) but carries no followup, and the plan's last followup outcome states \u00a76 is the only implementable section."
+  },
+  "section_digests": {
+    "_document": "b5d967f50774b69a535b2a66f93e45dbcb2d30ef90fb55298a1ec94c1604642f",
+    "s1": "20aea2196f748a0a26dcd8c4f13a51e89056dc090927dcbf7c88e3384e3a5ab4",
+    "s10": "c5c7fe720643fd4e73b5f1c9fff30c26f8357f46808e3b91eb33b5271d3a19bc",
+    "s11": "f2f305292dacd47d88930479053d919c6bce05b3f863e60a502ce40a2b1c1239",
+    "s12": "bcbf84b314096bf944f58481d98177c11ed6732c763472dc6bc259bc0ad8f54e",
+    "s13": "274d2cd914af10830f75d7ac253c9a1833d25cf9ac0e37e28c0c48ba60b77628",
+    "s14": "fcefb6cd20b26029bf0d8c785373a493532289cca9f2b4b01a93bf7b4ef7c19a",
+    "s15": "2d4c8c79a854bdbb21757053e30b9cf1366a1b627dc8c8ef6e7760cb15af06a2",
+    "s16": "f2c003eb41a15d4a475407c4f28b7405bf87620a7ee1c9732c823c0bd535923c",
+    "s17": "2d2d08c8567a83cca3bdd3a30b5cca94fa8e377c6e1552aed6dfb8e1d15db707",
+    "s18": "8f63d2e9144312cbecd9a2f55a3526ba207f322d3d1f237392b076ed1b4abf53",
+    "s19": "19da2176124b0de549bb7c585cc22ee853204ec373eb89082871457fa89862bf",
+    "s2": "dfbb662d3da9aa4d3d153e8d2cd5e2c614534034829ebd298f56063c2150b8b6",
+    "s3": "8a798e91551442bdcf324bf0e8f2801e9ced17b35f45f3867f8314e98619dde9",
+    "s4": "b249a7c0cf7296d1b03a7dcdc45216481b546ee13550784bcaabea3f34abe51d",
+    "s5": "b591d224f29bac0f9b5918e6ee3a87b55260f3424887d057e5a8bec79aec03b1",
+    "s6": "a2ea9ae61376b301400c70bae6a0060a2a2abf072b89cbf83a102cea2ab5f3b4",
+    "s7": "b363364b7464f2f7c7af654833037ddd56f6af79fd55aa44a6d3327083f626a5",
+    "s8": "af9d785f0f9f36ee58ec7010366aec4f06efdf850c84cf4ce0619311174d54dd",
+    "s9": "131001034a4d533c7f8c0beb295eb3570f2b7e1fc7853a1a09da023955ff5c4d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T09:05:04.487360+00:00"
+}
