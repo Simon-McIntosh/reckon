@@ -85,17 +85,21 @@
     is the arm that read its code. The base arm
     (<code>9a9492e0a</code>) reported 10 failed, 197 passed in 329.79s,
     <code>EXIT=1</code>: four failures are this file's cases as the file then
-    stood, which is what the change is judged to fix. The head arm
-    (<code>1a3841364</code>) reported 6 failed, 202 passed in 620.30s,
-    <code>EXIT=1</code>, and all six are the pre-existing browser-layout cases
+    stood — the file now holds six — which is what the change is judged to
+    fix. The head arm
+    (<code>933b011273a26d5364f23615022870badadc5566</code>) reported 6 failed,
+    203 passed in 477.86s, <code>EXIT=1</code>, and all six are the
+    pre-existing browser-layout cases
     (<code>test_spa_composition</code>, <code>test_spa_project_visibility</code>
     ×4, <code>test_spa_topbar_snapshot</code>) that fail identically at base.
     Nothing the change touches is red at head. The negative control uses the
     parity case: removing the open-decision list from the summary view fails it
     with <code>KeyError: 'open_decisions'</code>, 1 failed, <code>EXIT=1</code>.
-    <code>ruff check</code> and <code>ruff format --check</code> report the same
-    counts on the staged paths as at base — no finding is added. Logs live under
-    the run directory as <code>logs/base-gate.log</code>,
-    <code>logs/head-gate.log</code> and <code>logs/negative-control.log</code>.
+    <code>ruff check</code> reports 29 findings on the base blobs of the changed
+    paths and 22 at head, so head does not exceed base, and
+    <code>ruff format --check</code> reports every file formatted in both arms.
+    Logs live under the run directory as <code>logs/base-gate.log</code>,
+    <code>logs/head-gate.log</code>, <code>logs/negative-control.log</code>,
+    <code>logs/ruff-base.log</code> and <code>logs/ruff-head.log</code>.
   </p>
 </section>
