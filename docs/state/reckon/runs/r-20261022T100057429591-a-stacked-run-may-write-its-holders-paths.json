@@ -1,0 +1,5528 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 230144,
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 230144
+  },
+  "attempt": 4,
+  "attempt_kind": "resume",
+  "backend": "clive",
+  "base_sha": "79446127ba0f72f614260e478d8e457b6530c68d",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 10880525,
+      "input_tokens_cumulative": 10880525,
+      "output_tokens": 40832,
+      "output_tokens_cumulative": 40832,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 1006,
+    "files": 8,
+    "removed": 37
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 1021,
+        "name": "admit_once",
+        "path": "reckon/crew/queue_admission.py"
+      },
+      "run_function": {
+        "line": 401,
+        "name": "_launch_yielded_queued_request",
+        "path": "reckon/crew/dispatch.py"
+      },
+      "window_line": 431
+    },
+    {
+      "existing_function": {
+        "line": 1122,
+        "name": "dispatch",
+        "path": "reckon/crew/dispatch.py"
+      },
+      "run_function": {
+        "line": 858,
+        "name": "dispatch_pair",
+        "path": "reckon/crew/dispatch.py"
+      },
+      "window_line": 859
+    },
+    {
+      "existing_function": {
+        "line": 858,
+        "name": "dispatch_pair",
+        "path": "reckon/crew/dispatch.py"
+      },
+      "run_function": {
+        "line": 1122,
+        "name": "dispatch",
+        "path": "reckon/crew/dispatch.py"
+      },
+      "window_line": 1123
+    },
+    {
+      "existing_function": {
+        "line": 487,
+        "name": "plan_dispatch",
+        "path": "reckon/crew/dispatch_plan.py"
+      },
+      "run_function": {
+        "line": 1122,
+        "name": "dispatch",
+        "path": "reckon/crew/dispatch.py"
+      },
+      "window_line": 1895
+    },
+    {
+      "existing_function": {
+        "line": 1957,
+        "name": "move",
+        "path": "reckon/crew/dispatch_sessions.py"
+      },
+      "run_function": {
+        "line": 1122,
+        "name": "dispatch",
+        "path": "reckon/crew/dispatch.py"
+      },
+      "window_line": 2249
+    },
+    {
+      "existing_function": {
+        "line": 503,
+        "name": "__init__",
+        "path": "reckon/crew/node.py"
+      },
+      "run_function": {
+        "line": 1122,
+        "name": "dispatch",
+        "path": "reckon/crew/dispatch.py"
+      },
+      "window_line": 1776
+    },
+    {
+      "existing_function": {
+        "line": 434,
+        "name": "__init__",
+        "path": "reckon/crew/node.py"
+      },
+      "run_function": {
+        "line": 85,
+        "name": "__init__",
+        "path": "reckon/crew/dispatch_claims.py"
+      },
+      "window_line": 85
+    },
+    {
+      "existing_function": {
+        "line": 980,
+        "name": "_candidate_scope_entries",
+        "path": "reckon/crew/dispatch_claims.py"
+      },
+      "run_function": {
+        "line": 928,
+        "name": "_resolved_node_scope_entries",
+        "path": "reckon/crew/dispatch_claims.py"
+      },
+      "window_line": 929
+    },
+    {
+      "existing_function": {
+        "line": 1002,
+        "name": "_peer_scopes_without_shared_landing_paths",
+        "path": "reckon/crew/dispatch_claims.py"
+      },
+      "run_function": {
+        "line": 928,
+        "name": "_resolved_node_scope_entries",
+        "path": "reckon/crew/dispatch_claims.py"
+      },
+      "window_line": 936
+    },
+    {
+      "existing_function": {
+        "line": 928,
+        "name": "_resolved_node_scope_entries",
+        "path": "reckon/crew/dispatch_claims.py"
+      },
+      "run_function": {
+        "line": 980,
+        "name": "_candidate_scope_entries",
+        "path": "reckon/crew/dispatch_claims.py"
+      },
+      "window_line": 981
+    },
+    {
+      "existing_function": {
+        "line": 928,
+        "name": "_resolved_node_scope_entries",
+        "path": "reckon/crew/dispatch_claims.py"
+      },
+      "run_function": {
+        "line": 1002,
+        "name": "_peer_scopes_without_shared_landing_paths",
+        "path": "reckon/crew/dispatch_claims.py"
+      },
+      "window_line": 1017
+    },
+    {
+      "existing_function": {
+        "line": 1578,
+        "name": "_raise_repository_scope_conflict",
+        "path": "reckon/crew/dispatch_claims.py"
+      },
+      "run_function": {
+        "line": 1045,
+        "name": "_live_conflict_rows",
+        "path": "reckon/crew/dispatch_claims.py"
+      },
+      "window_line": 1046
+    },
+    {
+      "existing_function": {
+        "line": 1485,
+        "name": "_peer_claim_is_an_unlaunched_racing_winner",
+        "path": "reckon/crew/dispatch_claims.py"
+      },
+      "run_function": {
+        "line": 1274,
+        "name": "_peer_claim_is_a_later_racing_arrival",
+        "path": "reckon/crew/dispatch_claims.py"
+      },
+      "window_line": 1275
+    },
+    {
+      "existing_function": {
+        "line": 1274,
+        "name": "_peer_claim_is_a_later_racing_arrival",
+        "path": "reckon/crew/dispatch_claims.py"
+      },
+      "run_function": {
+        "line": 1485,
+        "name": "_peer_claim_is_an_unlaunched_racing_winner",
+        "path": "reckon/crew/dispatch_claims.py"
+      },
+      "window_line": 1486
+    },
+    {
+      "existing_function": {
+        "line": 1045,
+        "name": "_live_conflict_rows",
+        "path": "reckon/crew/dispatch_claims.py"
+      },
+      "run_function": {
+        "line": 1578,
+        "name": "_raise_repository_scope_conflict",
+        "path": "reckon/crew/dispatch_claims.py"
+      },
+      "window_line": 1579
+    },
+    {
+      "existing_function": {
+        "line": 310,
+        "name": "_estimate_hours",
+        "path": "reckon/crew/dispatch_plan.py"
+      },
+      "run_function": {
+        "line": 257,
+        "name": "_section_estimate_hours",
+        "path": "reckon/crew/dispatch_plan.py"
+      },
+      "window_line": 258
+    },
+    {
+      "existing_function": {
+        "line": 257,
+        "name": "_section_estimate_hours",
+        "path": "reckon/crew/dispatch_plan.py"
+      },
+      "run_function": {
+        "line": 310,
+        "name": "_estimate_hours",
+        "path": "reckon/crew/dispatch_plan.py"
+      },
+      "window_line": 311
+    },
+    {
+      "existing_function": {
+        "line": 1122,
+        "name": "dispatch",
+        "path": "reckon/crew/dispatch.py"
+      },
+      "run_function": {
+        "line": 487,
+        "name": "plan_dispatch",
+        "path": "reckon/crew/dispatch_plan.py"
+      },
+      "window_line": 641
+    },
+    {
+      "existing_function": {
+        "line": 330,
+        "name": "summarize",
+        "path": "reckon/crew/picker/outcomes.py"
+      },
+      "run_function": {
+        "line": 487,
+        "name": "plan_dispatch",
+        "path": "reckon/crew/dispatch_plan.py"
+      },
+      "window_line": 1127
+    },
+    {
+      "existing_function": {
+        "line": 2241,
+        "name": "test_dispatch_refuses_work_above_the_selected_configuration_horizon",
+        "path": "tests/test_crew.py"
+      },
+      "run_function": {
+        "line": 487,
+        "name": "plan_dispatch",
+        "path": "reckon/crew/dispatch_plan.py"
+      },
+      "window_line": 1126
+    },
+    {
+      "existing_function": {
+        "line": 551,
+        "name": "_candidate_holders",
+        "path": "tests/test_dispatch_lifetime_probe.py"
+      },
+      "run_function": {
+        "line": 487,
+        "name": "plan_dispatch",
+        "path": "reckon/crew/dispatch_plan.py"
+      },
+      "window_line": 1127
+    },
+    {
+      "existing_function": {
+        "line": 983,
+        "name": "_complete_locked",
+        "path": "reckon/crew/promotion.py"
+      },
+      "run_function": {
+        "line": 230,
+        "name": "complete",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 236
+    },
+    {
+      "existing_function": {
+        "line": 221,
+        "name": "capture_exec",
+        "path": "tests/test_a_reload_runs_the_committed_head.py"
+      },
+      "run_function": {
+        "line": 230,
+        "name": "complete",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 312
+    },
+    {
+      "existing_function": {
+        "line": 983,
+        "name": "_complete_locked",
+        "path": "reckon/crew/promotion.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "_landing_gate",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 490
+    },
+    {
+      "existing_function": {
+        "line": 230,
+        "name": "complete",
+        "path": "reckon/crew/promotion.py"
+      },
+      "run_function": {
+        "line": 983,
+        "name": "_complete_locked",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 992
+    },
+    {
+      "existing_function": {
+        "line": 473,
+        "name": "_landing_gate",
+        "path": "reckon/crew/promotion.py"
+      },
+      "run_function": {
+        "line": 983,
+        "name": "_complete_locked",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1191
+    },
+    {
+      "existing_function": {
+        "line": 1400,
+        "name": "canonical_dump",
+        "path": "reckon/_schema.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 739,
+        "name": "tracked_reckon_tree_is_dirty",
+        "path": "reckon/checkout_trust.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 1488,
+        "name": "_inherited_worktree_reading",
+        "path": "reckon/crew/dispatch_sessions.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 262,
+        "name": "garbage_collect",
+        "path": "reckon/crew/gc.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 595,
+        "name": "_run_reserved_probe",
+        "path": "reckon/crew/paid_lanes.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 545,
+        "name": "_worktree_audit",
+        "path": "reckon/crew/promotion_records.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 1044,
+        "name": "_primary_read_targets",
+        "path": "reckon/crew/promotion_scope.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 790,
+        "name": "_restore_queued",
+        "path": "reckon/crew/queue_admission.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1909
+    },
+    {
+      "existing_function": {
+        "line": 585,
+        "name": "group_terminal_lane_events",
+        "path": "reckon/crew/recovery_memo.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 851,
+        "name": "review_record_refusals",
+        "path": "reckon/crew/review.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1918
+    },
+    {
+      "existing_function": {
+        "line": 654,
+        "name": "_tree_state",
+        "path": "reckon/crew/routing.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 357,
+        "name": "_service_manager_unreachable",
+        "path": "reckon/crew/watch_unit.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1918
+    },
+    {
+      "existing_function": {
+        "line": 111,
+        "name": "_covering_review_identity",
+        "path": "reckon/crew_dispatch_commands.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1918
+    },
+    {
+      "existing_function": {
+        "line": 252,
+        "name": "_crew_result_ok",
+        "path": "reckon/crew_dispatch_commands.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1909
+    },
+    {
+      "existing_function": {
+        "line": 97,
+        "name": "_heading_walks",
+        "path": "reckon/interface_counts.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 1333,
+        "name": "_read_plan_view",
+        "path": "reckon/mcp.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 2027,
+        "name": "_crew",
+        "path": "reckon/mcp.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 340,
+        "name": "_matches_search",
+        "path": "reckon/mcp_discovery.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 605,
+        "name": "_audit_sprint_findings",
+        "path": "reckon/mcp_discovery.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 1102,
+        "name": "sprint_state_view",
+        "path": "reckon/mcp_views.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 1982,
+        "name": "storage_schema_for",
+        "path": "reckon/mcp_views.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 2532,
+        "name": "_relations",
+        "path": "reckon/mcp_views.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 2763,
+        "name": "_detail",
+        "path": "reckon/mcp_views.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1909
+    },
+    {
+      "existing_function": {
+        "line": 2849,
+        "name": "_response_schema",
+        "path": "reckon/mcp_views.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 3186,
+        "name": "discovery_view",
+        "path": "reckon/mcp_views.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1909
+    },
+    {
+      "existing_function": {
+        "line": 3472,
+        "name": "_roadmap_project_summary",
+        "path": "reckon/mcp_views.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1909
+    },
+    {
+      "existing_function": {
+        "line": 1350,
+        "name": "_echo_lifecycle_findings",
+        "path": "reckon/project_maintenance_commands.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 541,
+        "name": "_validate_review",
+        "path": "reckon/project_state.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 1376,
+        "name": "_hydrate_items",
+        "path": "reckon/project_state.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1909
+    },
+    {
+      "existing_function": {
+        "line": 1023,
+        "name": "_load_prior_manifest",
+        "path": "reckon/resources.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 1870,
+        "name": "_derive_lifecycle",
+        "path": "reckon/serve.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1909
+    },
+    {
+      "existing_function": {
+        "line": 2878,
+        "name": "do_GET",
+        "path": "reckon/serve.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 781,
+        "name": "_capture_commits",
+        "path": "reckon/velocity.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 837,
+        "name": "capture_project",
+        "path": "reckon/velocity.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 1204,
+        "name": "_record_file_additions",
+        "path": "reckon/velocity.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 1252,
+        "name": "recover_ledger_clocks",
+        "path": "reckon/velocity.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 1951,
+        "name": "measure",
+        "path": "reckon/velocity.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 2578,
+        "name": "compact_summary",
+        "path": "reckon/velocity.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1909
+    },
+    {
+      "existing_function": {
+        "line": 64,
+        "name": "_complete_land",
+        "path": "tests/helpers/landing_repository.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 273,
+        "name": "test_a_node_with_no_estimate_carries_no_line",
+        "path": "tests/test_a_bare_dispatch_names_a_fence_far_below_its_effort.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 97,
+        "name": "_arguments",
+        "path": "tests/test_a_brief_points_rather_than_quotes.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 184,
+        "name": "operator_home",
+        "path": "tests/test_a_capacity_refusal_resumes_on_another_lane_model.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 268,
+        "name": "test_the_findings_reader_lists_a_code_review_by_path_with_its_disposition",
+        "path": "tests/test_a_code_review_finding_is_disposable.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 295,
+        "name": "test_a_dimension_disposition_on_a_code_review_is_refused_by_name",
+        "path": "tests/test_a_code_review_finding_is_disposable.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 79,
+        "name": "test_a_queued_discard_keeps_the_admission_record_in_the_spool",
+        "path": "tests/test_a_discard_keeps_the_admission_record.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1909
+    },
+    {
+      "existing_function": {
+        "line": 138,
+        "name": "test_a_node_dispatched_without_the_waiver_is_still_refused_on_redispatch",
+        "path": "tests/test_a_lane_change_keeps_its_waivers.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 98,
+        "name": "_args",
+        "path": "tests/test_a_lane_model_is_launched_through_its_lane.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 205,
+        "name": "test_undeclared_model_keeps_shared_refusal",
+        "path": "tests/test_a_lane_model_is_launched_through_its_lane.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 117,
+        "name": "test_from_and_session_are_recorded_as_given",
+        "path": "tests/test_a_limit_reset_is_one_record.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 317,
+        "name": "test_the_cli_round_trips_a_used_reset",
+        "path": "tests/test_a_limit_reset_is_one_record.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1918
+    },
+    {
+      "existing_function": {
+        "line": 128,
+        "name": "_args",
+        "path": "tests/test_a_model_launches_with_its_declared_settings.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 211,
+        "name": "test_explicit_time_budget_wins_on_a_lane_model",
+        "path": "tests/test_a_model_launches_with_its_declared_settings.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 230,
+        "name": "test_explicit_effort_wins_on_a_lane_model",
+        "path": "tests/test_a_model_launches_with_its_declared_settings.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 181,
+        "name": "_arguments",
+        "path": "tests/test_a_named_lane_lets_jev_choose_its_model.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 335,
+        "name": "_dry_run_arguments",
+        "path": "tests/test_a_node_names_its_inputs_and_measurement.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 154,
+        "name": "invoke_pick",
+        "path": "tests/test_a_pick_probe_uses_the_dispatch_inputs.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 184,
+        "name": "invoke_dispatch",
+        "path": "tests/test_a_pick_probe_uses_the_dispatch_inputs.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 145,
+        "name": "_arguments",
+        "path": "tests/test_a_picked_model_is_the_model_launched.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 260,
+        "name": "_dispatch_arguments",
+        "path": "tests/test_a_regenerated_path_is_charged_as_written.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 104,
+        "name": "_commit",
+        "path": "tests/test_a_reload_waits_for_a_clean_tree.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 105,
+        "name": "_resume_backend",
+        "path": "tests/test_a_resume_runs_under_its_dispatch_policy.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 430,
+        "name": "test_a_completed_run_relaunched_through_a_lane_change_is_not_ended",
+        "path": "tests/test_a_resumed_worker_is_not_ended_as_delivered.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 104,
+        "name": "_resume_backend",
+        "path": "tests/test_a_run_s_overrides_have_one_reader.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 77,
+        "name": "_start_session",
+        "path": "tests/test_a_shared_basetemp_is_refused.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 262,
+        "name": "test_a_shortfall_promotion_completes_and_reports_on_the_record",
+        "path": "tests/test_a_short_commit_list_is_reported.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 302,
+        "name": "_dispatch",
+        "path": "tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 546,
+        "name": "test_fleet_step_finishes_after_inner_stop",
+        "path": "tests/test_a_stopped_worker_ends_inside_its_step.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 229,
+        "name": "test_the_finding_lists_the_keys_a_flat_record_needs",
+        "path": "tests/test_a_suite_record_is_flat.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1909
+    },
+    {
+      "existing_function": {
+        "line": 457,
+        "name": "test_the_composed_fence_argv_for_a_fixed_root_set_is_literal",
+        "path": "tests/test_a_worker_cannot_remove_the_nodes_temporary_files.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 144,
+        "name": "_complete",
+        "path": "tests/test_an_unchanged_run_needs_no_suite_pair.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 49,
+        "name": "_arguments",
+        "path": "tests/test_backend_availability.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 56,
+        "name": "_assert_unselected_unavailable_entry",
+        "path": "tests/test_backend_environment.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 430,
+        "name": "test_a_codex_stream_that_reports_a_position_records_it_in_the_claude_shape",
+        "path": "tests/test_backend_observation.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 103,
+        "name": "test_read_only_codex_uses_the_delivery_directory_for_a_fresh_launch",
+        "path": "tests/test_backends.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 128,
+        "name": "test_read_only_codex_uses_the_delivery_directory_when_resumed",
+        "path": "tests/test_backends.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 213,
+        "name": "test_the_result_carries_no_backend_name",
+        "path": "tests/test_bar.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 348,
+        "name": "test_a_brief_beside_a_committed_plan_section_dispatches_end_to_end",
+        "path": "tests/test_brief_beside_a_plan_section.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 115,
+        "name": "_cli_arguments",
+        "path": "tests/test_brief_dispatch.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 65,
+        "name": "_collect",
+        "path": "tests/test_browser_population_is_its_own_row.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 1500,
+        "name": "test_cli_dispatch_reports_a_hold_on_its_own_exit_code",
+        "path": "tests/test_budget.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 121,
+        "name": "test_a_lift_carries_every_recorded_field",
+        "path": "tests/test_budget_lift.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 451,
+        "name": "test_compiled_spa_modules_isolate_scope_and_preserve_window_exports",
+        "path": "tests/test_build.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 660,
+        "name": "test_spa_entry_points_load_the_same_surface_stylesheets",
+        "path": "tests/test_build.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 1048,
+        "name": "installed_static_site",
+        "path": "tests/test_build.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 520,
+        "name": "test_capabilities_cli_publishes_one_row_per_configuration",
+        "path": "tests/test_capabilities.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 53,
+        "name": "run_fixture",
+        "path": "tests/test_check_manifest_reads_the_commitless_roles.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 105,
+        "name": "_promote",
+        "path": "tests/test_cited_identifier_resolves.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 323,
+        "name": "test_a_manifest_with_no_commits_line_is_unaffected",
+        "path": "tests/test_cited_identifier_resolves.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 115,
+        "name": "_open_state",
+        "path": "tests/test_complete_refuses_an_open_merge.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 344,
+        "name": "test_a_reason_flag_refuses_a_value_that_begins_with_two_dashes",
+        "path": "tests/test_complete_reports_every_refusal.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 254,
+        "name": "test_a_promotion_presenting_an_unresolvable_sha_names_it_in_the_refusal",
+        "path": "tests/test_control_gate_repairs.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 619,
+        "name": "test_dry_run_payload_reports_the_resolved_write_paths",
+        "path": "tests/test_crew.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 675,
+        "name": "test_dispatch_cli_accepts_and_persists_a_wave",
+        "path": "tests/test_crew.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 718,
+        "name": "test_dispatch_cli_opens_a_wave_without_a_flag",
+        "path": "tests/test_crew.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 857,
+        "name": "test_local_dry_run_selects_the_declared_backend",
+        "path": "tests/test_crew.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 906,
+        "name": "test_local_dry_run_refuses_an_unset_key",
+        "path": "tests/test_crew.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 947,
+        "name": "test_local_dispatch_marks_the_live_pointer",
+        "path": "tests/test_crew.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 1736,
+        "name": "test_cli_dispatch_reports_a_live_scope_conflict_on_its_own_exit_code",
+        "path": "tests/test_crew.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 1988,
+        "name": "test_no_watch_dispatch_records_the_override_on_pointer_and_ledger",
+        "path": "tests/test_crew.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 2046,
+        "name": "test_cli_dispatch_arms_a_missing_watcher",
+        "path": "tests/test_crew.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 2183,
+        "name": "test_cli_dispatch_reports_unreconciled_runs_on_its_own_exit_code",
+        "path": "tests/test_crew.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 2336,
+        "name": "test_cli_competence_refusal_has_typed_dry_run_parity",
+        "path": "tests/test_crew.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 2451,
+        "name": "test_cli_plan_visibility_refusal_has_its_own_exit_code",
+        "path": "tests/test_crew.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 20,
+        "name": "_manifest",
+        "path": "tests/test_crew_attempt_accounting.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 105,
+        "name": "_arguments",
+        "path": "tests/test_crew_cli_repository.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 123,
+        "name": "_commit_in",
+        "path": "tests/test_crew_cross_project_claims.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 229,
+        "name": "test_the_figure_finding_is_disposed_onto_the_figure_record",
+        "path": "tests/test_crew_dispose_answers_a_figure_finding.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 144,
+        "name": "test_command_and_tool_thread_the_asking_session_into_the_drain",
+        "path": "tests/test_crew_drain_by_coordinator.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 171,
+        "name": "test_session_drain_cannot_record_a_disposition_on_a_peer",
+        "path": "tests/test_crew_drain_by_coordinator.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 193,
+        "name": "test_dispatch_refusal_counts_own_run_and_names_observed_peer",
+        "path": "tests/test_crew_drain_by_coordinator.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 539,
+        "name": "test_resume_successors_preserve_base_answers",
+        "path": "tests/test_crew_families_fold.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 648,
+        "name": "test_resume_backend_carries_the_selected_model",
+        "path": "tests/test_crew_families_fold.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 783,
+        "name": "test_repair_and_check_tombstones_name_their_successors",
+        "path": "tests/test_crew_families_fold.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 823,
+        "name": "test_repair_and_check_successors_preserve_recorded_answers",
+        "path": "tests/test_crew_families_fold.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 273,
+        "name": "test_complete_command_refuses_a_gate_command_that_cannot_run",
+        "path": "tests/test_crew_gate_command_is_runnable.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 31,
+        "name": "repository",
+        "path": "tests/test_crew_gate_log_agrees.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 504,
+        "name": "test_a_non_passing_verdict_beside_a_contradictory_log_is_unaffected",
+        "path": "tests/test_crew_gate_log_agrees.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 247,
+        "name": "test_resume_backend_override_reports_a_cross_harness_fresh_start",
+        "path": "tests/test_crew_lane_change.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 336,
+        "name": "test_both_commands_call_the_shared_lane_change_operation",
+        "path": "tests/test_crew_lane_change.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 116,
+        "name": "test_dispatch_without_a_specification_level_exits_two",
+        "path": "tests/test_crew_node.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 236,
+        "name": "test_a_stopped_run_holding_a_commit_still_binds_and_names_itself",
+        "path": "tests/test_crew_node.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 313,
+        "name": "test_a_commit_the_integration_branch_reaches_is_not_unintegrated",
+        "path": "tests/test_crew_node.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 132,
+        "name": "test_every_session_duty_has_identity_age_and_its_exact_next_command",
+        "path": "tests/test_crew_obligations.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 1005,
+        "name": "test_complete_command_refuses_a_resume_path_waiver_without_a_reason",
+        "path": "tests/test_crew_promotion.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 1339,
+        "name": "test_a_resume_waiver_retains_the_worktree_by_default",
+        "path": "tests/test_crew_promotion.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 301,
+        "name": "test_complete_command_accepts_reasoned_companion_path",
+        "path": "tests/test_crew_promotion_scope.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 404,
+        "name": "test_complete_command_refuses_companion_path_without_a_reason",
+        "path": "tests/test_crew_promotion_scope.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 470,
+        "name": "_complete_arguments",
+        "path": "tests/test_crew_promotion_scope.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 82,
+        "name": "_terminal_pointer",
+        "path": "tests/test_crew_recovery.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 206,
+        "name": "test_committed_work_is_never_abandoned_even_with_a_clean_worktree",
+        "path": "tests/test_crew_recovery.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 250,
+        "name": "test_recover_fabricates_no_derived_manifest_over_committed_work",
+        "path": "tests/test_crew_recovery.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 495,
+        "name": "test_dead_process_never_counts_as_working_at_any_phase",
+        "path": "tests/test_crew_recovery.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 632,
+        "name": "test_a_dead_process_with_a_terminal_manifest_is_finished_whatever_decorates_status",
+        "path": "tests/test_crew_recovery.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 189,
+        "name": "_arguments",
+        "path": "tests/test_crew_refusal_visibility.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 284,
+        "name": "test_a_member_already_in_flight_is_named_with_its_owning_run",
+        "path": "tests/test_crew_refusal_visibility.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 444,
+        "name": "test_context_refusal_is_exit_five_before_worktree_creation",
+        "path": "tests/test_crew_routes.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 82,
+        "name": "test_shadow_derives_the_committed_node_at_the_primary_base",
+        "path": "tests/test_crew_shadow.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 469,
+        "name": "test_shadow_cli_routes_the_candidate_and_derives_the_node",
+        "path": "tests/test_crew_shadow.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 528,
+        "name": "test_shadow_cli_accepts_and_persists_session_and_wave",
+        "path": "tests/test_crew_shadow.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 243,
+        "name": "test_recorded_clean_stream_is_not_marked",
+        "path": "tests/test_crew_shadow_contamination.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 191,
+        "name": "test_mine_keeps_only_the_named_sessions_runs",
+        "path": "tests/test_crew_surface_parity.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 89,
+        "name": "synthetic_wave",
+        "path": "tests/test_crew_test_role.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 296,
+        "name": "test_a_test_node_commit_touching_a_source_path_is_refused_at_promotion",
+        "path": "tests/test_crew_test_role.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 387,
+        "name": "test_follow_explicit_width_beats_the_measurement",
+        "path": "tests/test_crew_ticker.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 407,
+        "name": "test_every_state_the_snapshot_can_emit_has_a_colour",
+        "path": "tests/test_crew_ticker_layout.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 243,
+        "name": "test_the_default_payload_fits_the_response_ceiling",
+        "path": "tests/test_crew_velocity_view.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 304,
+        "name": "test_the_declared_queries_are_the_ones_runs_asks",
+        "path": "tests/test_crew_workspace_requirements.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 139,
+        "name": "_dry_run",
+        "path": "tests/test_directory_claim_asks_first.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 99,
+        "name": "operator_home",
+        "path": "tests/test_dispatch_attaches_the_figures.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 429,
+        "name": "test_crew_dispatch_image_reaches_the_argv",
+        "path": "tests/test_dispatch_attaches_the_figures.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 146,
+        "name": "_build_repo",
+        "path": "tests/test_dispatch_lifetime_probe.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 118,
+        "name": "dispatch",
+        "path": "tests/test_dispatch_names_a_model.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 104,
+        "name": "_arguments",
+        "path": "tests/test_dispatch_names_its_backend.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 39,
+        "name": "_arguments",
+        "path": "tests/test_dispatch_names_the_health_review.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 144,
+        "name": "dispatch",
+        "path": "tests/test_dispatch_refuses_a_lane_model_name.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 73,
+        "name": "test_dry_run_reports_the_same_named_refusal",
+        "path": "tests/test_dispatch_refuses_without_tmp_headroom.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 47,
+        "name": "test_svg_cli_dispatch_records_a_run_local_png_and_resume_reuses_it",
+        "path": "tests/test_dispatch_renders_svg_figures.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 118,
+        "name": "test_png_cli_dispatch_keeps_the_input_path",
+        "path": "tests/test_dispatch_renders_svg_figures.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 398,
+        "name": "_dispatch_cli",
+        "path": "tests/test_dispatch_result_matches_launch.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 391,
+        "name": "_build_repository",
+        "path": "tests/test_dispatch_returns_without_worker.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 82,
+        "name": "_cli_arguments",
+        "path": "tests/test_dispatch_stdout_is_one_document.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 303,
+        "name": "test_naming_both_a_dimension_and_a_finding_writes_nothing",
+        "path": "tests/test_dispose_a_finding.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 48,
+        "name": "_build",
+        "path": "tests/test_doctor_mcp_launch.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 51,
+        "name": "_checkout",
+        "path": "tests/test_domain_rules_reach_the_brief.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 30,
+        "name": "repository",
+        "path": "tests/test_done_when_lints.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 71,
+        "name": "_verdict",
+        "path": "tests/test_done_when_lints.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 103,
+        "name": "_commit_assertion",
+        "path": "tests/test_done_when_lints.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 137,
+        "name": "_arguments",
+        "path": "tests/test_dry_run_reaches_admission.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 119,
+        "name": "_arguments",
+        "path": "tests/test_dry_run_shows_each_set_override.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 116,
+        "name": "_arguments",
+        "path": "tests/test_every_dry_run_refusal_carries_the_echo.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 74,
+        "name": "_dispatch_arguments",
+        "path": "tests/test_execution_fit.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 69,
+        "name": "repository",
+        "path": "tests/test_failed_landing_leaves_nothing_behind.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 285,
+        "name": "test_figure_prompt_and_brief_cover_every_visual_rule",
+        "path": "tests/test_figure_review.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 288,
+        "name": "test_cutover_sends_request_through_its_step_argv",
+        "path": "tests/test_fleet_migrate_cutover.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 225,
+        "name": "test_rehearsal_cli_dry_run_has_no_side_effects",
+        "path": "tests/test_fleet_migrate_rehearsal.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 115,
+        "name": "test_stand_up_then_promote_resumes_from_ledger_with_injected_actions",
+        "path": "tests/test_fleet_migrate_stand_up.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 432,
+        "name": "test_node_is_draining_matches_a_drain_token_anywhere_in_the_set",
+        "path": "tests/test_fleet_node.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 788,
+        "name": "test_the_stripped_variables_are_absent_from_a_spawned_child",
+        "path": "tests/test_fleet_supervisor.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 1379,
+        "name": "test_default_stdout_parses_as_json_and_exits_zero",
+        "path": "tests/test_flight.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 827,
+        "name": "_dispatch_arguments",
+        "path": "tests/test_follower_bounds_its_lifetime.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 167,
+        "name": "test_running_follower_reloads_without_stream_or_registration_gap",
+        "path": "tests/test_follower_freshness.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 179,
+        "name": "test_syntax_error_in_a_follower_module_defers_the_reload",
+        "path": "tests/test_follower_reload_is_safe.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 100,
+        "name": "_arguments",
+        "path": "tests/test_foreign_repo_is_refused.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 166,
+        "name": "run",
+        "path": "tests/test_fragment_ids_are_checked.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 262,
+        "name": "_complete_arguments",
+        "path": "tests/test_gate_evidence.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 318,
+        "name": "test_promoting_a_passing_gate_with_a_full_check_is_accepted_and_stored",
+        "path": "tests/test_gate_evidence.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 353,
+        "name": "test_a_log_digest_satisfies_the_check_in_place_of_a_log_path",
+        "path": "tests/test_gate_evidence.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 385,
+        "name": "test_a_failing_or_not_run_gate_needs_no_check_evidence",
+        "path": "tests/test_gate_evidence.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 109,
+        "name": "_dispatch_arguments",
+        "path": "tests/test_granted_path_is_a_claim.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 52,
+        "name": "_plan_text",
+        "path": "tests/test_impl_derives_from_declarations.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 219,
+        "name": "test_questions_explain_every_weighed_field",
+        "path": "tests/test_jev_prompt_carries_what_it_weighs.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 66,
+        "name": "repository",
+        "path": "tests/test_landing_contract_and_gate_agree.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 95,
+        "name": "repository",
+        "path": "tests/test_landing_contract_follows_the_grant.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 922,
+        "name": "test_a_record_without_a_review_is_distinguishable_from_a_zero_scored_one",
+        "path": "tests/test_ledger.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 1361,
+        "name": "test_complete_command_assumes_utc_for_a_naive_completion_stamp",
+        "path": "tests/test_ledger.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 2267,
+        "name": "test_every_read_view_returns_and_large_defaults_are_compact",
+        "path": "tests/test_ledger.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 291,
+        "name": "_committed_checkout",
+        "path": "tests/test_mcp_server_serves_current_code.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 705,
+        "name": "test_raw_and_schema_are_explicit_layers",
+        "path": "tests/test_mcp_views.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 237,
+        "name": "test_the_index_endpoint_serves_only_row_fields",
+        "path": "tests/test_metadata_index_survives_restart.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 115,
+        "name": "test_review_still_composes_a_review_on_demand",
+        "path": "tests/test_nothing_sweeps_old_plans.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 140,
+        "name": "test_ledger_and_cli_report_pair_and_keep_stored_bytes",
+        "path": "tests/test_old_names_resolve.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 66,
+        "name": "_build_repository",
+        "path": "tests/test_one_blob_reader_serves_velocity_and_the_counter.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 89,
+        "name": "_build_repository_with_a_later_path",
+        "path": "tests/test_one_blob_reader_serves_velocity_and_the_counter.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 149,
+        "name": "_committed_checkout",
+        "path": "tests/test_one_check_trusts_a_moved_checkout.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 61,
+        "name": "_commit",
+        "path": "tests/test_one_sources_reader_serves_the_detector_and_the_counter.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 174,
+        "name": "_invoke",
+        "path": "tests/test_orchestrator_assessment_reaches_jev.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 102,
+        "name": "_invoke",
+        "path": "tests/test_pick_paths_carry_authority.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 246,
+        "name": "test_representative_state_is_bounded_and_comment_verbatim",
+        "path": "tests/test_picker.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 434,
+        "name": "test_cli_emits_one_selection_without_dispatch",
+        "path": "tests/test_picker.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 147,
+        "name": "test_dispatch_candidates_match_direct_pick_from_recorded_window",
+        "path": "tests/test_picker_dispatch_pace.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1918
+    },
+    {
+      "existing_function": {
+        "line": 186,
+        "name": "test_missing_recorded_window_names_absence_without_inventing_figures",
+        "path": "tests/test_picker_dispatch_pace.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1918
+    },
+    {
+      "existing_function": {
+        "line": 207,
+        "name": "test_hold_and_route_both_explain_the_sliding_scale",
+        "path": "tests/test_picker_holds.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 140,
+        "name": "invoke",
+        "path": "tests/test_picker_in_dispatch.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 232,
+        "name": "test_dispatch_refuses_and_records_picker_hold",
+        "path": "tests/test_picker_outcomes.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 129,
+        "name": "_arguments",
+        "path": "tests/test_picker_refusal_falls_back_to_deterministic.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 519,
+        "name": "_invoke",
+        "path": "tests/test_picker_reserved_lanes.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 185,
+        "name": "_arguments",
+        "path": "tests/test_picker_route_keeps_availability_refusal.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 352,
+        "name": "test_dry_run_names_the_plan_review_error_key",
+        "path": "tests/test_plan_review_gate.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 405,
+        "name": "test_launch_path_names_the_plan_review_error_key",
+        "path": "tests/test_plan_review_gate.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 459,
+        "name": "test_dry_run_in_report_only_mode_admits_and_carries_the_warning",
+        "path": "tests/test_plan_review_gate.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 643,
+        "name": "test_an_unanswered_design_finding_stays_owed_past_a_newer_content_review",
+        "path": "tests/test_plan_review_gate.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 92,
+        "name": "test_metadata_only_edit_keeps_the_fingerprint",
+        "path": "tests/test_plan_review_store.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 85,
+        "name": "project",
+        "path": "tests/test_portfolio_review_composes.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 141,
+        "name": "test_portfolio_lists_the_non_shipped_plans_with_their_figures",
+        "path": "tests/test_portfolio_review_composes.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 201,
+        "name": "test_the_verb_refuses_a_portfolio_named_with_another_subject",
+        "path": "tests/test_portfolio_review_composes.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 446,
+        "name": "test_an_unread_group_reports_unknown_clocks_and_allowance_and_never_zero",
+        "path": "tests/test_preflight_pace.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1909
+    },
+    {
+      "existing_function": {
+        "line": 563,
+        "name": "test_naming_a_window_and_a_ready_set_does_not_move_the_hold_decision",
+        "path": "tests/test_preflight_pace.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 620,
+        "name": "test_the_preflight_command_emits_one_group_block_per_declared_wallet",
+        "path": "tests/test_preflight_pace.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 115,
+        "name": "test_the_module_declares_the_five_properties_the_ruling_names",
+        "path": "tests/test_prescription.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1918
+    },
+    {
+      "existing_function": {
+        "line": 21,
+        "name": "test_expired_lease_writes_stop_reason",
+        "path": "tests/test_producer_says_why_it_stops.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 52,
+        "name": "test_renewed_producer_keeps_publishing",
+        "path": "tests/test_producer_says_why_it_stops.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 233,
+        "name": "_follow_text",
+        "path": "tests/test_producer_says_why_it_stops.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 61,
+        "name": "_commit",
+        "path": "tests/test_producer_shares_the_classifier_verdict.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 652,
+        "name": "test_the_follow_json_surface_carries_the_stale_producer",
+        "path": "tests/test_producer_takes_new_code.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 38,
+        "name": "_plan_text",
+        "path": "tests/test_progress_from_section_effort.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 30,
+        "name": "test_sync_creates_distributed_state_without_legacy_index",
+        "path": "tests/test_project_state_native_creation.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 86,
+        "name": "observe_release",
+        "path": "tests/test_promotion_never_amends_its_commit.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1918
+    },
+    {
+      "existing_function": {
+        "line": 33,
+        "name": "audit",
+        "path": "tests/test_promotion_stages_its_one_run_file.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 89,
+        "name": "test_complete_commits_one_run_file_per_promotion",
+        "path": "tests/test_promotion_stages_its_one_run_file.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 170,
+        "name": "test_non_plan_canonical_dump_omits_neutral_plan_defaults",
+        "path": "tests/test_provenance.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 18,
+        "name": "test_lighter_session_catches_up_then_admissions_alternate",
+        "path": "tests/test_queue_order.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 79,
+        "name": "test_a_bare_object_name_reads_alongside_a_revision_path_pair",
+        "path": "tests/test_read_blobs_reads_bare_objects.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 599,
+        "name": "test_the_live_rows_are_compared_over_the_written_down_field_set",
+        "path": "tests/test_read_verbs_retire_behind_crew_view.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 32,
+        "name": "_spawn_unrecorded_producer",
+        "path": "tests/test_reaper_catches_unrecorded_producer.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 124,
+        "name": "test_survived_row_receipt_keeps_the_do_not_re_promote_wording",
+        "path": "tests/test_receipt_names_the_rolled_back_row.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1918
+    },
+    {
+      "existing_function": {
+        "line": 149,
+        "name": "test_the_removed_flag_reconnects_instead_of_exiting_two",
+        "path": "tests/test_removed_flag_migration.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 233,
+        "name": "test_the_deprecation_announcement_reaches_stderr_and_not_the_stream",
+        "path": "tests/test_removed_flag_migration.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 129,
+        "name": "test_crew_pick_offers_the_reserved_lane_only_on_a_fresh_open_window",
+        "path": "tests/test_reserved_lane_window_reading.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 85,
+        "name": "operator_home",
+        "path": "tests/test_resume_and_lane_change_follow_their_own_attempt.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 151,
+        "name": "test_around_composes_the_neighbourhood_brief",
+        "path": "tests/test_review_composes_a_code_subject.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 265,
+        "name": "test_the_review_verb_refuses_a_plan_given_with_a_code_subject",
+        "path": "tests/test_review_composes_a_code_subject.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 87,
+        "name": "test_discovery_composes_live_sprint_metrics_review_rows_and_order",
+        "path": "tests/test_review_composition.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 286,
+        "name": "test_review_plan_dry_run_resolves_the_shared_composition",
+        "path": "tests/test_review_plan_command.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 321,
+        "name": "test_review_plan_dry_run_leaves_the_report_root_unchanged",
+        "path": "tests/test_review_plan_command.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 347,
+        "name": "test_review_plan_real_dispatch_writes_the_composed_artifacts",
+        "path": "tests/test_review_plan_command.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 383,
+        "name": "test_review_plan_launch_passes_session_and_local",
+        "path": "tests/test_review_plan_command.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 423,
+        "name": "test_answer_refuses_missing_reason_or_ambiguous_action",
+        "path": "tests/test_review_plan_command.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 450,
+        "name": "test_answer_records_response_through_store",
+        "path": "tests/test_review_plan_command.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 137,
+        "name": "test_review_brief_reads_the_contract_vocabulary",
+        "path": "tests/test_review_record_contract.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1909
+    },
+    {
+      "existing_function": {
+        "line": 25,
+        "name": "test_review_vocabularies_are_closed_and_explicit",
+        "path": "tests/test_review_resource.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 1018,
+        "name": "test_ready_dispatch_rows_report_their_endpoint_closures",
+        "path": "tests/test_roadmap.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1909
+    },
+    {
+      "existing_function": {
+        "line": 89,
+        "name": "repository",
+        "path": "tests/test_role_write_scope.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 248,
+        "name": "review_repository",
+        "path": "tests/test_role_write_scope.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 456,
+        "name": "test_a_test_run_that_slipped_through_is_still_refused_at_promotion",
+        "path": "tests/test_role_write_scope.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 783,
+        "name": "_promotion_repository",
+        "path": "tests/test_role_write_scope.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 813,
+        "name": "test_promoting_a_run_that_wrote_both_landing_paths_is_accepted",
+        "path": "tests/test_role_write_scope.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 24,
+        "name": "test_member_add_commits_only_the_roster_write",
+        "path": "tests/test_roster_write_commits.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 26,
+        "name": "invoke",
+        "path": "tests/test_routing_picker_key.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 290,
+        "name": "test_the_detail_set_is_exactly_the_measured_wide_fields",
+        "path": "tests/test_run_store.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 634,
+        "name": "test_a_store_from_the_narrow_column_shape_migrates_in_place_on_open",
+        "path": "tests/test_run_store.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 292,
+        "name": "test_a_finding_carried_by_two_covering_reviews_is_refused_naming_both",
+        "path": "tests/test_run_verbs_share_one_identity_grammar.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 319,
+        "name": "test_review_run_selects_which_covering_review_answers_the_finding",
+        "path": "tests/test_run_verbs_share_one_identity_grammar.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 183,
+        "name": "_cli_dispatch",
+        "path": "tests/test_scope_refusal_names_its_claimant.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 44,
+        "name": "_repository",
+        "path": "tests/test_section_attempts_are_tool_owned.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 43,
+        "name": "repo",
+        "path": "tests/test_session_lives_on_its_run.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 46,
+        "name": "repository",
+        "path": "tests/test_shared_claims_on_declared_hot_files.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 90,
+        "name": "test_fan_out_rule_lands_in_every_skill_a_session_holds",
+        "path": "tests/test_skill_contracts.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 410,
+        "name": "test_ship_skill_owns_the_pre_dispatch_checklist",
+        "path": "tests/test_skill_contracts.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 1043,
+        "name": "test_worker_protocol_defines_typed_suite_observations",
+        "path": "tests/test_skill_contracts.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 1171,
+        "name": "test_ship_cli_instructions_match_registered_commands_and_flags",
+        "path": "tests/test_skill_contracts.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 68,
+        "name": "_evaluate_sprint_helpers",
+        "path": "tests/test_spa_composition.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 149,
+        "name": "_screenshot",
+        "path": "tests/test_spa_graph_authority.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 559,
+        "name": "test_an_unnamed_endpoint_derives_the_same_closure_as_a_named_one",
+        "path": "tests/test_spa_graph_authority.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 118,
+        "name": "test_landed_rows_take_the_seven_newest_across_visible_projects",
+        "path": "tests/test_spa_home_surface.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 75,
+        "name": "test_topbar_is_one_row_with_four_within_project_tabs",
+        "path": "tests/test_spa_project_visibility.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 73,
+        "name": "test_retired_grid_and_collapse_rules_are_absent",
+        "path": "tests/test_spa_shell_geometry.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 85,
+        "name": "test_sprint_surface_and_header_use_content_geometry",
+        "path": "tests/test_spa_sprints_geometry.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1918
+    },
+    {
+      "existing_function": {
+        "line": 109,
+        "name": "test_fixed_horizon_and_recorded_work_are_fully_retired",
+        "path": "tests/test_spa_sprints_geometry.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 378,
+        "name": "test_ready_lane_cards_use_canvas_geometry",
+        "path": "tests/test_spa_sprints_geometry.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 121,
+        "name": "test_topbar_renders_in_canvas_order",
+        "path": "tests/test_spa_topbar_snapshot.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 389,
+        "name": "_follow_events",
+        "path": "tests/test_stale_producer_warning_waits_for_its_reload.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 174,
+        "name": "test_absent_reading_stays_null_with_reason",
+        "path": "tests/test_stale_reading_reaches_jev.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1918
+    },
+    {
+      "existing_function": {
+        "line": 28,
+        "name": "_git_init",
+        "path": "tests/test_standing_suite.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 226,
+        "name": "_build_repository",
+        "path": "tests/test_stop_before_spawn_spawns_nothing.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 142,
+        "name": "_complete",
+        "path": "tests/test_suite_arms_use_the_armed_command.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 50,
+        "name": "invoke",
+        "path": "tests/test_suite_never_calls_live_jev.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 45,
+        "name": "test_the_file_leaves_the_system_temp_directory_empty",
+        "path": "tests/test_test_temp_files_stay_under_tmp_path.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 114,
+        "name": "test_arms_a_watcher_without_reaping_it",
+        "path": "tests/test_test_watchers_are_reaped.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 173,
+        "name": "test_a_watcher_armed_by_a_child_session_is_not_left_running",
+        "path": "tests/test_test_watchers_are_reaped.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 68,
+        "name": "_checkout",
+        "path": "tests/test_the_admit_service_runs_current_code.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 105,
+        "name": "test_the_exit_record_block_reconciles_with_the_attempt_counts_it_summarises",
+        "path": "tests/test_the_local_lane_death_rate_is_stated.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1909
+    },
+    {
+      "existing_function": {
+        "line": 48,
+        "name": "operator_home",
+        "path": "tests/test_the_protected_set_is_declared.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 126,
+        "name": "test_the_cells_sit_on_one_screen_column_in_the_reading_order",
+        "path": "tests/test_the_row_reads_in_one_order.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 62,
+        "name": "_run_affected_files",
+        "path": "tests/test_the_suite_clears_the_follower_environment.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 174,
+        "name": "test_answer_stores_an_unstored_delivery_before_answering",
+        "path": "tests/test_the_surfaces_pass_the_plan.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 202,
+        "name": "test_answer_surface_reads_a_section_covering_review",
+        "path": "tests/test_the_surfaces_pass_the_plan.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 249,
+        "name": "test_absent_covering_review_names_the_stale_one",
+        "path": "tests/test_the_surfaces_pass_the_plan.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 399,
+        "name": "test_every_pane_word_is_a_hued_table_key",
+        "path": "tests/test_ticker_row_is_one_transition.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 341,
+        "name": "test_redispatch_cli_accepts_estimated_hours",
+        "path": "tests/test_unmeasured_horizon_never_refuses.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 93,
+        "name": "operator_home",
+        "path": "tests/test_unprotected_paths_reach_every_launch.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 48,
+        "name": "test_cold_fleet_child_stores_the_result_it_computed",
+        "path": "tests/test_velocity_answers_from_stored_results.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 360,
+        "name": "_spawn_lookalike",
+        "path": "tests/test_watch_arming_isolation.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 227,
+        "name": "test_the_mutating_forms_of_a_readable_verb_are_still_denied",
+        "path": "tests/test_worker_git_guard.py"
+      },
+      "run_function": {
+        "line": 1887,
+        "name": "_remove_discarded_worktree",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 1910
+    },
+    {
+      "existing_function": {
+        "line": 2389,
+        "name": "_revision_is_ancestor",
+        "path": "reckon/crew/promotion_scope.py"
+      },
+      "run_function": {
+        "line": 2092,
+        "name": "_marker_present_in",
+        "path": "reckon/crew/promotion.py"
+      },
+      "window_line": 2107
+    },
+    {
+      "existing_function": {
+        "line": 182,
+        "name": "read",
+        "path": "reckon/crew/follow_checkpoint.py"
+      },
+      "run_function": {
+        "line": 185,
+        "name": "read_delivered",
+        "path": "reckon/crew/runs.py"
+      },
+      "window_line": 196
+    },
+    {
+      "existing_function": {
+        "line": 212,
+        "name": "write",
+        "path": "reckon/crew/follow_checkpoint.py"
+      },
+      "run_function": {
+        "line": 215,
+        "name": "write_delivered",
+        "path": "reckon/crew/runs.py"
+      },
+      "window_line": 249
+    },
+    {
+      "existing_function": {
+        "line": 76,
+        "name": "_admit_lock",
+        "path": "reckon/crew/queue_admission.py"
+      },
+      "run_function": {
+        "line": 335,
+        "name": "_pointer_lock",
+        "path": "reckon/crew/runs.py"
+      },
+      "window_line": 338
+    },
+    {
+      "existing_function": {
+        "line": 1859,
+        "name": "_ledger_write_lock",
+        "path": "reckon/ledger.py"
+      },
+      "run_function": {
+        "line": 335,
+        "name": "_pointer_lock",
+        "path": "reckon/crew/runs.py"
+      },
+      "window_line": 338
+    },
+    {
+      "existing_function": {
+        "line": 1411,
+        "name": "record",
+        "path": "reckon/crew/runs.py"
+      },
+      "run_function": {
+        "line": 1351,
+        "name": "record",
+        "path": "reckon/crew/runs.py"
+      },
+      "window_line": 1351
+    },
+    {
+      "existing_function": {
+        "line": 1351,
+        "name": "record",
+        "path": "reckon/crew/runs.py"
+      },
+      "run_function": {
+        "line": 1411,
+        "name": "record",
+        "path": "reckon/crew/runs.py"
+      },
+      "window_line": 1411
+    },
+    {
+      "existing_function": {
+        "line": 201,
+        "name": "_remainder_by_parsing_every_plan",
+        "path": "tests/test_drain_reads_the_index.py"
+      },
+      "run_function": {
+        "line": 1682,
+        "name": "_project_executable_remainder",
+        "path": "reckon/crew/runs.py"
+      },
+      "window_line": 1710
+    },
+    {
+      "existing_function": {
+        "line": 286,
+        "name": "_parse_history",
+        "path": "reckon/crew/follow_checkpoint.py"
+      },
+      "run_function": {
+        "line": 2240,
+        "name": "_seed_published_states",
+        "path": "reckon/crew/runs.py"
+      },
+      "window_line": 2266
+    },
+    {
+      "existing_function": {
+        "line": 3098,
+        "name": "project_watch_visibility",
+        "path": "reckon/crew/runs.py"
+      },
+      "run_function": {
+        "line": 2853,
+        "name": "_reconcile_watch_record",
+        "path": "reckon/crew/runs.py"
+      },
+      "window_line": 2866
+    },
+    {
+      "existing_function": {
+        "line": 329,
+        "name": "_register_watch_unit",
+        "path": "reckon/crew/watch_unit.py"
+      },
+      "run_function": {
+        "line": 2853,
+        "name": "_reconcile_watch_record",
+        "path": "reckon/crew/runs.py"
+      },
+      "window_line": 2866
+    },
+    {
+      "existing_function": {
+        "line": 432,
+        "name": "_ensure_watch_producer",
+        "path": "reckon/crew/dispatch_watch.py"
+      },
+      "run_function": {
+        "line": 2948,
+        "name": "_project_watch_claim",
+        "path": "reckon/crew/runs.py"
+      },
+      "window_line": 2962
+    },
+    {
+      "existing_function": {
+        "line": 414,
+        "name": "unwatch",
+        "path": "reckon/crew/recovery_watch.py"
+      },
+      "run_function": {
+        "line": 2948,
+        "name": "_project_watch_claim",
+        "path": "reckon/crew/runs.py"
+      },
+      "window_line": 2962
+    },
+    {
+      "existing_function": {
+        "line": 2853,
+        "name": "_reconcile_watch_record",
+        "path": "reckon/crew/runs.py"
+      },
+      "run_function": {
+        "line": 3098,
+        "name": "project_watch_visibility",
+        "path": "reckon/crew/runs.py"
+      },
+      "window_line": 3104
+    },
+    {
+      "existing_function": {
+        "line": 180,
+        "name": "watch_state",
+        "path": "reckon/crew/watch_unit.py"
+      },
+      "run_function": {
+        "line": 3098,
+        "name": "project_watch_visibility",
+        "path": "reckon/crew/runs.py"
+      },
+      "window_line": 3120
+    },
+    {
+      "existing_function": {
+        "line": 329,
+        "name": "_register_watch_unit",
+        "path": "reckon/crew/watch_unit.py"
+      },
+      "run_function": {
+        "line": 3098,
+        "name": "project_watch_visibility",
+        "path": "reckon/crew/runs.py"
+      },
+      "window_line": 3104
+    },
+    {
+      "existing_function": {
+        "line": 2559,
+        "name": "watch_ticker",
+        "path": "reckon/crew/recovery_watch.py"
+      },
+      "run_function": {
+        "line": 3440,
+        "name": "watch",
+        "path": "reckon/crew/runs.py"
+      },
+      "window_line": 3460
+    },
+    {
+      "existing_function": {
+        "line": 2880,
+        "name": "watch_follow",
+        "path": "reckon/crew/recovery_watch.py"
+      },
+      "run_function": {
+        "line": 3440,
+        "name": "watch",
+        "path": "reckon/crew/runs.py"
+      },
+      "window_line": 3460
+    },
+    {
+      "existing_function": {
+        "line": 560,
+        "name": "_single",
+        "path": "tests/test_crew_ticker.py"
+      },
+      "run_function": {
+        "line": 3440,
+        "name": "watch",
+        "path": "reckon/crew/runs.py"
+      },
+      "window_line": 3459
+    },
+    {
+      "existing_function": {
+        "line": 14,
+        "name": "git",
+        "path": "tests/test_a_single_run_gc_reads_its_own_run_directory.py"
+      },
+      "run_function": {
+        "line": 69,
+        "name": "_git",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "window_line": 72
+    },
+    {
+      "existing_function": {
+        "line": 65,
+        "name": "_git",
+        "path": "tests/test_concurrent_dispatch_of_one_node.py"
+      },
+      "run_function": {
+        "line": 69,
+        "name": "_git",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "window_line": 69
+    },
+    {
+      "existing_function": {
+        "line": 25,
+        "name": "git",
+        "path": "tests/test_crew_gc.py"
+      },
+      "run_function": {
+        "line": 69,
+        "name": "_git",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "window_line": 72
+    },
+    {
+      "existing_function": {
+        "line": 73,
+        "name": "_git",
+        "path": "tests/test_dispatch_launch_is_not_its_own_conflict.py"
+      },
+      "run_function": {
+        "line": 69,
+        "name": "_git",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "window_line": 69
+    },
+    {
+      "existing_function": {
+        "line": 33,
+        "name": "git",
+        "path": "tests/test_gc_applies_past_a_vanished_worktree.py"
+      },
+      "run_function": {
+        "line": 69,
+        "name": "_git",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "window_line": 72
+    },
+    {
+      "existing_function": {
+        "line": 21,
+        "name": "git",
+        "path": "tests/test_gc_covers_run_directory_trees.py"
+      },
+      "run_function": {
+        "line": 69,
+        "name": "_git",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "window_line": 72
+    },
+    {
+      "existing_function": {
+        "line": 38,
+        "name": "git",
+        "path": "tests/test_gc_reports_what_it_already_did.py"
+      },
+      "run_function": {
+        "line": 69,
+        "name": "_git",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "window_line": 72
+    },
+    {
+      "existing_function": {
+        "line": 59,
+        "name": "_git",
+        "path": "tests/test_one_of_two_racing_reviews_survives.py"
+      },
+      "run_function": {
+        "line": 69,
+        "name": "_git",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "window_line": 69
+    },
+    {
+      "existing_function": {
+        "line": 75,
+        "name": "_git",
+        "path": "tests/test_refused_dispatch_leaves_no_pointer.py"
+      },
+      "run_function": {
+        "line": 69,
+        "name": "_git",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "window_line": 69
+    },
+    {
+      "existing_function": {
+        "line": 68,
+        "name": "_git",
+        "path": "tests/test_scope_refusal_names_its_claimant.py"
+      },
+      "run_function": {
+        "line": 69,
+        "name": "_git",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "window_line": 69
+    },
+    {
+      "existing_function": {
+        "line": 26,
+        "name": "_write_plan",
+        "path": "tests/test_closure_verdict.py"
+      },
+      "run_function": {
+        "line": 80,
+        "name": "_plan_document",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "window_line": 83
+    },
+    {
+      "existing_function": {
+        "line": 70,
+        "name": "_plan_document",
+        "path": "tests/test_directory_claim_asks_first.py"
+      },
+      "run_function": {
+        "line": 80,
+        "name": "_plan_document",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "window_line": 80
+    },
+    {
+      "existing_function": {
+        "line": 18,
+        "name": "_write_plan",
+        "path": "tests/test_evidence_synthesis.py"
+      },
+      "run_function": {
+        "line": 80,
+        "name": "_plan_document",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "window_line": 83
+    },
+    {
+      "existing_function": {
+        "line": 2138,
+        "name": "test_declared_effort_is_read_from_the_plans_themselves",
+        "path": "tests/test_ledger.py"
+      },
+      "run_function": {
+        "line": 80,
+        "name": "_plan_document",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "window_line": 83
+    },
+    {
+      "existing_function": {
+        "line": 76,
+        "name": "_plan_document",
+        "path": "tests/test_review_record_is_one_runs_claim.py"
+      },
+      "run_function": {
+        "line": 80,
+        "name": "_plan_document",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "window_line": 80
+    },
+    {
+      "existing_function": {
+        "line": 79,
+        "name": "_plan_document",
+        "path": "tests/test_scope_refusal_names_its_claimant.py"
+      },
+      "run_function": {
+        "line": 80,
+        "name": "_plan_document",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "window_line": 80
+    },
+    {
+      "existing_function": {
+        "line": 66,
+        "name": "dispatch_context",
+        "path": "tests/test_a_held_member_is_read.py"
+      },
+      "run_function": {
+        "line": 93,
+        "name": "_held_repository",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "window_line": 94
+    },
+    {
+      "existing_function": {
+        "line": 34,
+        "name": "dispatch_context",
+        "path": "tests/test_dispatch_guard_consults_liveness.py"
+      },
+      "run_function": {
+        "line": 93,
+        "name": "_held_repository",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "window_line": 94
+    },
+    {
+      "existing_function": {
+        "line": 37,
+        "name": "isolated_project",
+        "path": "tests/test_no_member_dispatch_runs_alone.py"
+      },
+      "run_function": {
+        "line": 93,
+        "name": "_held_repository",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "window_line": 94
+    },
+    {
+      "existing_function": {
+        "line": 55,
+        "name": "isolated_project",
+        "path": "tests/test_shared_landing_paths.py"
+      },
+      "run_function": {
+        "line": 93,
+        "name": "_held_repository",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "window_line": 94
+    },
+    {
+      "existing_function": {
+        "line": 163,
+        "name": "_record_stacking_directly",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "run_function": {
+        "line": 135,
+        "name": "_publish_stopped_holder",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "window_line": 154
+    },
+    {
+      "existing_function": {
+        "line": 428,
+        "name": "test_a_stacked_run_widening_onto_the_holders_paths_is_admitted",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "run_function": {
+        "line": 135,
+        "name": "_publish_stopped_holder",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "window_line": 154
+    },
+    {
+      "existing_function": {
+        "line": 135,
+        "name": "_publish_stopped_holder",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "run_function": {
+        "line": 163,
+        "name": "_record_stacking_directly",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "window_line": 199
+    },
+    {
+      "existing_function": {
+        "line": 428,
+        "name": "test_a_stacked_run_widening_onto_the_holders_paths_is_admitted",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "run_function": {
+        "line": 163,
+        "name": "_record_stacking_directly",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "window_line": 199
+    },
+    {
+      "existing_function": {
+        "line": 135,
+        "name": "_publish_stopped_holder",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "run_function": {
+        "line": 428,
+        "name": "test_a_stacked_run_widening_onto_the_holders_paths_is_admitted",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "window_line": 471
+    },
+    {
+      "existing_function": {
+        "line": 163,
+        "name": "_record_stacking_directly",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "run_function": {
+        "line": 428,
+        "name": "test_a_stacked_run_widening_onto_the_holders_paths_is_admitted",
+        "path": "tests/test_a_stacked_run_may_write_its_holders_paths.py"
+      },
+      "window_line": 471
+    }
+  ],
+  "commit_resolution": null,
+  "commits": [
+    "dcb3b7133b0de0ed8101bdc8decc4ee6d996688c",
+    "25393567279701c7ac1f44e6208ffe641233a2da",
+    "33be2a080ea8e984272aac1cb125ee9c477db35f",
+    "cd426702aeadd0ece942294e73e60f9ba196a30f",
+    "1660bb5eaa247465bcdd8b23749e91fc539b7d9e",
+    "191f191d429b4c2569fe54e6dd85d0a3d415fc4f",
+    "96f902caad67a251050ca9e7b0e3b347bac97de0",
+    "7adecfbdc82c89d74e06826bc6e9d8b35628265f",
+    "50b4d1b0529ab8df8f55df201f19229f6ed3b47d"
+  ],
+  "completed_at": "2026-10-22T18:32:35Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-22T10:50:01Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "base/head",
+    ".git/worktrees",
+    "tests/test_concurrent_dispatch_of_one_node.py::test_a_fresh_empty_claim_refuses"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "cd /tmp/mcintos-1291586-d5head-nLhq && PYTHONPATH=/tmp/mcintos-1291586-d5head-nLhq /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q -n 8 tests/test_a_stacked_run_may_write_its_holders_paths.py tests/test_crew_dispatch_guard.py tests/test_a_racing_loser_outlives_a_withdrawn_winner.py tests/test_claim_grace_follows_live_launches.py tests/test_crew.py tests/test_crew_node.py tests/test_crew_refusal_visibility.py tests/test_dispatch_launch_cost.py tests/test_fence_widening.py tests/test_ledger.py tests/test_one_resolver_names_a_worktree_project.py tests/test_overlapping_queued_requests_launch_in_turn.py tests/test_shared_claims_on_declared_hot_files.py tests/test_the_scopes_view_says_what_it_evaluated.py tests/test_work_in_flight_sits_on_its_section.py",
+    "exit_status": 1,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T100057429591-a-stacked-run-may-write-its-holders-paths/coordinator-head-arm.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 0.6571428571428571,
+    "plan": "a-coordinator-can-clear-its-own-duties",
+    "reason": "corrective-run:resume",
+    "verdict": "exempt"
+  },
+  "lane": "clive",
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-22T11:47:39.359463+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": "clive",
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-22T10:47:39Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 2,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 6,
+    "headroom": 6,
+    "mean_context": 150000,
+    "observed_at": "2026-10-22T10:48:09Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": 2,
+      "aggregate_tokens_per_second": 427.519,
+      "detail": "",
+      "mean_tokens_per_second": 62.87,
+      "observed_at": "2026-10-22T10:48:09Z",
+      "runs": 6.8,
+      "state": "measured"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-22T18:32:35Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T100057429591-a-stacked-run-may-write-its-holders-paths/manifest.md",
+  "member": "disposable-r-20261022T100057429591-a-stacked-run-may-write-its-holders-paths",
+  "model_key": "flash",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_a_stacked_run_may_write_its_holders_paths.py::test_a_dispatch_on_the_holders_chain_tip_is_admitted"
+    ],
+    "baseline_failure_ids": [
+      "tests/test_a_stacked_run_may_write_its_holders_paths.py::test_a_dispatch_on_the_holders_chain_tip_is_admitted",
+      "tests/test_a_stacked_run_may_write_its_holders_paths.py::test_a_stacked_run_widening_onto_the_holders_paths_is_admitted",
+      "tests/test_a_stacked_run_may_write_its_holders_paths.py::test_promoting_the_holder_names_its_live_descendant",
+      "tests/test_a_stacked_run_may_write_its_holders_paths.py::test_the_check_admits_the_tip_and_refuses_the_branch",
+      "tests/test_a_stacked_run_may_write_its_holders_paths.py::test_the_dry_run_and_the_real_dispatch_agree_on_a_stacked_dispatch",
+      "tests/test_a_stacked_run_may_write_its_holders_paths.py::test_the_registry_names_the_stacked_run_and_still_binds",
+      "tests/test_overlapping_queued_requests_launch_in_turn.py::test_a_new_dispatch_over_a_queued_claim_queues_then_launches"
+    ],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_a_stacked_run_may_write_its_holders_paths.py::test_a_dispatch_on_the_holders_chain_tip_is_admitted"
+    ],
+    "declaration": "make the conflict check ignore the dispatch base so the stacked dispatch is refused again; the admit case must fail",
+    "head_failure_ids": [
+      "tests/test_overlapping_queued_requests_launch_in_turn.py::test_a_new_dispatch_over_a_queued_claim_queues_then_launches"
+    ],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T100057429591-a-stacked-run-may-write-its-holders-paths/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T100057429591-a-stacked-run-may-write-its-holders-paths/negative-control.log",
+    "test_paths": [
+      "tests/test_a_stacked_run_may_write_its_holders_paths.py",
+      "tests/test_crew_dispatch_guard.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "a-stacked-run-may-write-its-holders-paths",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "capability": {
+      "class": "general",
+      "requirements": {
+        "reasoning": "deep",
+        "risk": "moderate",
+        "verification": "strict"
+      },
+      "version": "1.0"
+    },
+    "compares_with": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 5524,
+          "cached_input_tokens": 541200,
+          "input_tokens": 546726,
+          "output_tokens": 1738,
+          "reasoning_output_tokens": 118,
+          "total_tokens": 548464,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "efd0ee8c-9d4e-4fa3-a440-ac05791d4758",
+      "session_id": "efd0ee8c-9d4e-4fa3-a440-ac05791d4758"
+    },
+    "done_when": "A fixture held run with unlanded commits admits a dispatch based on its chain tip that writes its claimed path, and refuses one based on main with ScopeConflict; both pointers record the stacking, and the scopes view's row for the holder's claim names the stacked run while still reading binding; promoting the holder while its descendant is live succeeds and its result names the descendant. On the base commit the stacked dispatch is refused ScopeConflict, so the test fails there. Gate: tests/test_a_stacked_run_may_write_its_holders_paths.py plus every existing test module that imports the changed scope-fence, claim-registry or promotion functions, named in the manifest. Run the gate in the foreground on the fleet allocation, with the revision, tree and command on the log's first line; ruff check and ruff format --check report nothing added on the staged paths.",
+    "estimated_hours": null,
+    "goal": "Admit a dispatch based on a stopped holder's chain tip onto that holder's claimed paths",
+    "id": "a-stacked-run-may-write-its-holders-paths",
+    "images": [],
+    "inputs": [],
+    "lane_declaration": {
+      "backend": "clive",
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-22T10:47:39Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 2,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 6,
+      "headroom": 6,
+      "mean_context": 150000,
+      "observed_at": "2026-10-22T10:48:09Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": 2,
+        "aggregate_tokens_per_second": 427.519,
+        "detail": "",
+        "mean_tokens_per_second": 62.87,
+        "observed_at": "2026-10-22T10:48:09Z",
+        "runs": 6.8,
+        "state": "measured"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T100057429591-a-stacked-run-may-write-its-holders-paths/manifest.md",
+    "negative_control": "make the conflict check ignore the dispatch base so the stacked dispatch is refused again; the admit case must fail",
+    "plan": "a-coordinator-can-clear-its-own-duties",
+    "regenerate_paths": [],
+    "requested_backend": "clive",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§5",
+    "spec_level": "guided",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/node.py",
+      "reckon/crew/dispatch_claims.py",
+      "reckon/crew/runs.py",
+      "reckon/crew/promotion.py",
+      "tests/test_a_stacked_run_may_write_its_holders_paths.py",
+      "docs/evidence/fragments/a-coordinator-can-clear-its-own-duties/a-stacked-run-may-write-its-holders-paths.html",
+      "docs/figures/a-coordinator-can-clear-its-own-duties/a-stacked-run-may-write-its-holders-paths",
+      "reckon/crew/dispatch.py",
+      "reckon/crew/dispatch_plan.py",
+      "tests/test_crew_dispatch_guard.py"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": 6149213.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "lift_id": null,
+    "member": null,
+    "node": "a-stacked-run-may-write-its-holders-paths",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-22T10:48:37.632248+00:00",
+    "score": 0.7375,
+    "session": null,
+    "source": null,
+    "state": "unknown"
+  },
+  "picker_selection": {
+    "action": "fallback",
+    "backend": null,
+    "comment": "",
+    "confidence": null,
+    "effort": null,
+    "excluded": [],
+    "fallback_reason": "timeout in pick:capability",
+    "family": null,
+    "jev_model": "typesafe/jev-1.13",
+    "latency_ms": 5002.391,
+    "model": null,
+    "offered": [],
+    "probabilities": {},
+    "stage_ms": {
+      "budget-snapshot": 1498.242,
+      "context-estimate": 12.437,
+      "records": 1675.172,
+      "verdict-inputs": 1983.885
+    }
+  },
+  "plan": "a-coordinator-can-clear-its-own-duties",
+  "plan_impl_at_dispatch": 0.6571428571428571,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "50b4d1b0529ab8df8f55df201f19229f6ed3b47d",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "96f902caad67a251050ca9e7b0e3b347bac97de0",
+    "reviewed_head_sha": "50b4d1b0529ab8df8f55df201f19229f6ed3b47d",
+    "scores": {
+      "durability": 19,
+      "evidence": 16,
+      "fit": 18,
+      "goal_fidelity": 19,
+      "reuse": 20,
+      "scope_discipline": 19
+    },
+    "status": "parsed",
+    "total": 111
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "route_mode": "explicit",
+  "run_id": "r-20261022T100057429591-a-stacked-run-may-write-its-holders-paths",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§5",
+  "session": "efd0ee8c-9d4e-4fa3-a440-ac05791d4758",
+  "session_harness": "claude",
+  "session_id": "ea1b79ed-45e6-4620-9256-e4207c5eb020",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": true,
+  "suite_delta": null,
+  "tests_added": 6,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 48219242,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 230144",
+    "elapsed_seconds": 2010.639,
+    "generated_tokens": 250993,
+    "generation_seconds": 1328.316,
+    "input_budget_tokens": 230144,
+    "input_utilisation_pct": 85.0,
+    "machine_seconds": 682.323,
+    "peak_input_tokens": 195559,
+    "tokens_per_second": 188.96,
+    "wall_tokens_per_second": 124.83
+  },
+  "time_budget": "60m",
+  "tool_steps": 165.0,
+  "unplanned_reason": null,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": [
+      {
+        "backend": "clive",
+        "budget_overrun": true,
+        "budget_overrun_cause": "unknown",
+        "budget_overrun_rate": null,
+        "budget_overrun_reference_rate": null,
+        "budget_overrun_reference_runs": 0,
+        "budget_overrun_reference_source": "recent committed runs, same backend and model",
+        "budget_overrun_seconds": 2807,
+        "budget_seconds": 3600,
+        "classification": "promotable",
+        "commits_beyond_base": 0,
+        "detail": "the worker manifest reports completion and an independent parsed review is attached; the run is ready for promotion",
+        "effective_phase": "complete",
+        "elapsed_seconds": 6407,
+        "exit_record": {
+          "attempt": 3,
+          "ended_during": "working",
+          "ended_pids": [],
+          "exit_code": 0,
+          "exited_at": "2026-10-22T10:12:52Z",
+          "last_record_type": "result",
+          "launched_at": "2026-10-22T09:02:14Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20261022T065817789148-a-row-is-compact-and-names-its-section",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 20816,
+          "worker_pid": 4092299
+        },
+        "external_wait": null,
+        "fleet_verdict": {
+          "detail": "",
+          "lifting_condition": null,
+          "recovery": "promote",
+          "recovery_classification": "promotable",
+          "stall_base_detail": null,
+          "stall_base_state": null,
+          "stall_pause_reason": null,
+          "stall_process_state": null,
+          "stall_quiet_seconds": null,
+          "stall_window_seconds": 900,
+          "state": "complete"
+        },
+        "interruption": null,
+        "lane": "clive",
+        "lane_cause": null,
+        "lane_ended_at": "2026-10-22T10:12:52Z",
+        "lane_event": null,
+        "lifting_condition": null,
+        "liveness_proven": true,
+        "log_age_seconds": 2138,
+        "log_fresh": false,
+        "manifest_commits": [
+          "9a7c6b83d8cfc1776f670459ac10b1a7d9d168c1",
+          "eb07961b36f0a58f306ba6fa3d7dbbace0cf216f",
+          "00ff2a685",
+          "59c57322a40270cde77796b8f04c13e08187ba65",
+          "ac3b69b77"
+        ],
+        "manifest_derived": false,
+        "manifest_digest": "db58a23256e4be44cdc09520171ba4b89b4d651914d648557034233de650c302",
+        "manifest_error": null,
+        "manifest_file_present": true,
+        "manifest_fresh": true,
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T065817789148-a-row-is-compact-and-names-its-section/manifest.md",
+        "manifest_present": true,
+        "manifest_reported_status": "complete",
+        "manifest_status": "complete",
+        "marker": null,
+        "model_key": "flash",
+        "needs_help_complete": null,
+        "next_action": "reckon crew complete --run r-20261022T065817789148-a-row-is-compact-and-names-its-section --gate <verdict> --commit 9a7c6b83d8cfc1776f670459ac10b1a7d9d168c1 --commit eb07961b36f0a58f306ba6fa3d7dbbace0cf216f --commit 00ff2a685cb5e70707d4267775304d62ca981a46 --commit 59c57322a40270cde77796b8f04c13e08187ba65 --commit ac3b69b7714690525d1f484311b95bb0a90d135d",
+        "node": "a-row-is-compact-and-names-its-section",
+        "phase": "complete",
+        "plan": "the-mcp-answers-the-question-asked",
+        "process_alive": false,
+        "process_descendant_alive": null,
+        "project": "reckon",
+        "recovery": "promote",
+        "recovery_classification": "promotable",
+        "resets_at": null,
+        "review_error": null,
+        "review_present": true,
+        "review_status": "parsed",
+        "run_id": "r-20261022T065817789148-a-row-is-compact-and-names-its-section",
+        "session": "efd0ee8c-9d4e-4fa3-a440-ac05791d4758",
+        "stored_phase": "complete",
+        "terminal_age_seconds": 2214,
+        "terminal_at": "2026-10-22T10:11:33Z",
+        "wait_age_seconds": null,
+        "wait_condition_state": null,
+        "wait_key_defect": null,
+        "wait_observed": null,
+        "wait_overdue": null,
+        "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/efd0ee8c-9d4e-4fa3-a440-ac05791d4758/a-row-is-compact-and-names-its-section"
+      }
+    ]
+  },
+  "wall_seconds": 27754,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 4,
+    "ended_during": "working",
+    "ended_pids": [],
+    "exit_code": 0,
+    "exited_at": "2026-10-22T18:32:43Z",
+    "last_record_type": "result",
+    "launched_at": "2026-10-22T17:58:59Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261022T100057429591-a-stacked-run-may-write-its-holders-paths",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 43109,
+    "worker_pid": 2213559
+  },
+  "worker_seconds": 12467,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}

@@ -20,7 +20,7 @@
 <meta name="plan-capability-class" content="orchestrator">
 <meta name="plan-capability-reasoning" content="deep">
 <meta name="plan-capability-verification" content="strict">
-<meta name="plan-version" content="27">
+<meta name="plan-version" content="28">
 <meta name="plan-modified" content="2026-10-22">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;}">
 </head>
@@ -120,6 +120,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-10-22T19:50:00Z">
     <div class="r-comment-body"><p>Landed: a dispatch built on a stopped holder's chain tip may write the holder's paths; review 111/120. One pre-existing failure in the queued-claim suite is unchanged. Evidence: <a href="/reckon/evidence/archive/a-coordinator-can-clear-its-own-duties-landed.html#s5">§5 landing record</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261022T100057429591-a-stacked-run-may-write-its-holders-paths" data-who="reckon-build" data-when="2026-10-22T18:32:35Z">
+    <div class="r-comment-body"><p>§5 landed: a dispatch built on a stopped holder&#x27;s chain tip is admitted onto its claimed paths, and one built on the integration branch is still refused ScopeConflict. dispatch() resolves the revision it builds on once and passes it to both _raise_repository_scope_conflict call sites; an admitted holder&#x27;s chain-tip ancestry lets the claim pass over it, and the stacking is written on both pointers with record_stacked_dispatch. Gate tests/test_a_stacked_run_may_write_its_holders_paths.py read 5 passed, EXIT=0 at 33be2a080, and the declared mutation (both call sites passing base_revision=None) fails the admit arm at EXIT=1 (1 failed, 4 passed). Repair round: the review&#x27;s one blocking finding is answered at 191f191d4 — the dispatch guard instrument restated the check&#x27;s keyword list, so the check gaining base_revision and stacked reddened that module serially; the wrapper now forwards the whole seam and the module reads 14 passed, EXIT=0. The two wider-gate ids are attributed in the fragment to the causes they actually have: that one was this change&#x27;s, and test_a_fresh_empty_*_refuses fails identically on a base-revision copy, so it is pre-existing. The whole-suite delta against the base revision remains unmeasured; see baseline_suite. Round 3: the same base is now carried by the two paths that still judged without it, at 7adecfbdc — plan_dispatch resolves and passes the base it was handed, so a dry run of a stacked dispatch reaches the real dispatch&#x27;s verdict, and refuse_widen_scope_conflicts reads the widening run&#x27;s own base_sha from its pointer, so a stacked descendant widening onto its holder&#x27;s other claimed paths is admitted. Each has a case and a negative control (round3-nc1.log, round3-nc2.log). The gate over the node&#x27;s test module and tests/test_crew_dispatch_guard.py reads 21 passed, EXIT=0 at that revision (round3-head-arm.log). The disputed figure now cites round3-base-arm.log at 2539356 (1 failed, 4 passed, EXIT=1), which is the same module whose header names its revision and tree. The guard module&#x27;s instrument edit is kept, and the fragment says why.</p></div>
 </div>
 </section>
 </main>
