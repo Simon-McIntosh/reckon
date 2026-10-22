@@ -20,7 +20,7 @@
 <meta name="plan-capability-class" content="orchestrator">
 <meta name="plan-capability-reasoning" content="deep">
 <meta name="plan-capability-verification" content="strict">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="10">
 <meta name="plan-modified" content="2026-10-22">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
 </head>
@@ -78,6 +78,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-22T02:20:00Z">
     <div class="r-comment-body"><p>Landed: a queued run keeps the id its dispatch returned through admission and launch; gate 60 passed; review 112/120. Evidence: <a href="/reckon/evidence/archive/a-coordinator-can-clear-its-own-duties-landed.html#s4">§4 landing record</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261022T003519782346-a-queued-run-keeps-one-id" data-who="reckon-build" data-when="2026-10-22T01:52:57Z">
+    <div class="r-comment-body"><p>a queued run now keeps the one run id its dispatch printed, through admission retries and the launch - reckon/crew/queue_admission.py passes run_id=str(pointer[&quot;run_id&quot;]) into dispatch() at the _launch_queued call site, tests/test_a_queued_run_keeps_one_id.py asserts the id across two held admission passes and the launching pass, the discard of the printed id while it waits, and the absence of a dropped row for it, and the four assertions in tests/test_a_queued_run_is_admitted.py that pinned the id-swap are updated to the identity it now guarantees; gate 60 passed, exit 0, at f03d4f07b against a base arm of 2 failed, 58 passed.</p></div>
 </div>
 </section>
 </main>
