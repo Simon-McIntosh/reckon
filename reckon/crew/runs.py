@@ -14,18 +14,37 @@ import subprocess as subprocess
 import sys as sys
 import threading as threading
 import time as time
-from collections.abc import Callable as Callable, Iterable as Iterable, Mapping as Mapping
+from collections.abc import (
+    Callable as Callable,
+    Iterable as Iterable,
+    Mapping as Mapping,
+)
 from contextlib import contextmanager as contextmanager, suppress as suppress
 from dataclasses import dataclass as dataclass, field as field
 from datetime import UTC as UTC, datetime as datetime
 from pathlib import Path as Path
 from typing import Any as Any
 from reckon import __version__ as __version__
-from reckon._store import _config_home as _config_home, _docs_dir_for_project as _docs_dir_for_project, write_atomically as write_atomically, write_json_atomically as write_json_atomically
+from reckon._store import (
+    _config_home as _config_home,
+    _docs_dir_for_project as _docs_dir_for_project,
+    write_atomically as write_atomically,
+    write_json_atomically as write_json_atomically,
+)
 from reckon._timestamps import parse_utc as parse_utc
 from reckon.env_duration import read_duration_override
-from reckon.crew.host_lease import LEASE_RENEW_SECONDS as LEASE_RENEW_SECONDS, HostLease as HostLease
-from reckon.crew.node import _TERMINAL_RUN_PHASES as _TERMINAL_RUN_PHASES, DEFAULT_WATCH_STALL_WINDOW as DEFAULT_WATCH_STALL_WINDOW, RUN_DRAIN_DISPOSITIONS as RUN_DRAIN_DISPOSITIONS, CrewError as CrewError, TaskNode as TaskNode, parse_duration as parse_duration
+from reckon.crew.host_lease import (
+    LEASE_RENEW_SECONDS as LEASE_RENEW_SECONDS,
+    HostLease as HostLease,
+)
+from reckon.crew.node import (
+    _TERMINAL_RUN_PHASES as _TERMINAL_RUN_PHASES,
+    DEFAULT_WATCH_STALL_WINDOW as DEFAULT_WATCH_STALL_WINDOW,
+    RUN_DRAIN_DISPOSITIONS as RUN_DRAIN_DISPOSITIONS,
+    CrewError as CrewError,
+    TaskNode as TaskNode,
+    parse_duration as parse_duration,
+)
 from reckon.crew.obligation_snapshot import CLI_MODULE_FILES as CLI_MODULE_FILES
 
 
@@ -577,8 +596,7 @@ def queue_dispatch(
                         pointer
                         for pointer in live
                         if _node_identity(pointer) == identity
-                        and str(pointer.get("phase") or "")
-                        not in _TERMINAL_RUN_PHASES
+                        and str(pointer.get("phase") or "") not in _TERMINAL_RUN_PHASES
                     ),
                     None,
                 )
@@ -775,6 +793,17 @@ class _LiveScopeClaim:
     # with the verdict so a disregarded claim does not read as a bare false.
     binding: bool = True
     disposition_reason: str = ""
+    # The runs a stopped holder admitted onto its chain tip. A stacked claim
+    # still binds — it is the holder's, and no one else may take those paths —
+    # so a reader of this row needs the descendants named beside that binding
+    # to know which live runs now carry the holder's commits.
+    stacked_runs: tuple[str, ...] = ()
+    # What the stacked-dispatch exception reads off a stopped holder: the work
+    # it holds, the worktree whose head is its chain tip, and the base its own
+    # dispatch was cut from.
+    unintegrated: tuple[str, ...] = ()
+    worktree: str = ""
+    base_sha: str = ""
 
     def as_dict(self) -> dict[str, Any]:
         """Return the stable read-model representation of this claim."""
@@ -788,6 +817,8 @@ class _LiveScopeClaim:
         }
         if self.derived_from is not None:
             claim["derived_from"] = self.derived_from
+        if self.stacked_runs:
+            claim["stacked_runs"] = list(self.stacked_runs)
         return claim
 
 
@@ -944,6 +975,12 @@ def _live_scope_claims(
                     launched=launched,
                     binding=disposition.binding,
                     disposition_reason=disposition.reason,
+                    stacked_runs=tuple(
+                        str(item) for item in (pointer.get("stacked_runs") or ())
+                    ),
+                    unintegrated=disposition.unintegrated,
+                    worktree=str(pointer.get("worktree") or ""),
+                    base_sha=str(pointer.get("base_sha") or ""),
                 )
             )
     return sorted(claims, key=lambda claim: (claim.run_id, claim.node_id, claim.path))
@@ -1182,6 +1219,8 @@ def _raise_live_scope_conflict(
     project: str | None = None,
     own_run_id: str | None = None,
     own_registered_at: str | None = None,
+    base_revision: str | None = None,
+    stacked: list[dict[str, Any]] | None = None,
 ) -> None:
     """Delegate a scope refusal to the check every crew dispatch runs.
 
@@ -1213,6 +1252,9 @@ def _raise_live_scope_conflict(
             declared_path=claim.declared_path,
             registered_at=claim.registered_at,
             launched=claim.launched,
+            unintegrated=claim.unintegrated,
+            worktree=claim.worktree,
+            base_sha=claim.base_sha,
         )
         for claim in claims
     ]
@@ -1224,7 +1266,60 @@ def _raise_live_scope_conflict(
         claims=converted,
         own_run_id=own_run_id,
         own_registered_at=own_registered_at,
+        base_revision=base_revision,
+        stacked=stacked,
     )
+
+
+def record_stacked_dispatch(
+    holder_run_id: str,
+    descendant_run_id: str,
+    *,
+    descendant_record: dict[str, Any] | None = None,
+) -> None:
+    """Record on both pointers that one dispatch was admitted onto a holder's tip.
+
+    The stacking is a fact about two runs, so it is written on both: the holder
+    gains the descendant in its ``stacked_runs``, and the descendant records the
+    run it was stacked on. The holder's pointer is the one that outlives the
+    admission — a later promotion or discard of the holder reads it to name the
+    descendants still carrying its commits — so it is written here, under its
+    own lock, rather than by the dispatcher that happens to be passing. A holder
+    whose pointer has already gone is not an error: the descendant's own record
+    still carries the stacking, and writing one half of a pair is better than
+    refusing the dispatch that was just admitted.
+    """
+    if not holder_run_id or not descendant_run_id or holder_run_id == descendant_run_id:
+        return
+    with _pointer_lock(holder_run_id):
+        if pointer_path(holder_run_id).is_file():
+            holder = read_pointer(holder_run_id)
+            stacked = [str(item) for item in (holder.get("stacked_runs") or ())]
+            if descendant_run_id not in stacked:
+                stacked.append(descendant_run_id)
+            holder["stacked_runs"] = stacked
+            _write_json(pointer_path(holder_run_id), holder)
+    if descendant_record is not None:
+        descendant_record["stacked_on"] = holder_run_id
+
+
+def stacked_descendants_still_live(record: Mapping[str, Any]) -> list[str]:
+    """Name the stacked descendants a holder recorded whose runs are still live.
+
+    Read at the moment the holder leaves — promotion or discard — because that
+    is when the stacking stops being a note about a working arrangement and
+    becomes a fact about where the holder's commits now live: a descendant's
+    worktree is the only remaining carrier of them. A descendant whose own
+    pointer has gone is not named, since nothing of the holder's work depends on
+    it any longer.
+    """
+    live: list[str] = []
+    for run_id in (str(item) for item in (record.get("stacked_runs") or ())):
+        if not run_id or run_id in live:
+            continue
+        if pointer_path(run_id).is_file():
+            live.append(run_id)
+    return live
 
 
 def _merge_peer_scopes(
