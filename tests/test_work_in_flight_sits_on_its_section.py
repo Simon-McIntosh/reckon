@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import time
 from pathlib import Path
 from typing import Any
@@ -27,6 +28,8 @@ from typing import Any
 import pytest
 
 from reckon.crew import recovery
+from reckon.crew.node import claim_disposition
+from reckon.mcp_views import partition_live_runs
 from reckon.roadmap import build_roadmap
 from tests.mcp_family_reload import reload_mcp_family
 
@@ -107,6 +110,20 @@ def _pointer(
     return record
 
 
+def _dead_pid() -> int:
+    """A pid that has certainly exited, for a pointer recording a gone worker.
+
+    The fence reads a pointer's liveness from its recorded pid and not from a
+    ``process_alive`` field, so a fixture that only sets the field reads as a
+    run whose worker has not been spawned yet. Reaping a child gives a pid the
+    probe on this host answers ``False`` for.
+    """
+
+    finished = subprocess.Popen(["true"])
+    finished.wait()
+    return finished.pid
+
+
 def _section_rows(report: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return {str(row["ref"]): row for row in report["immediate_roadmap"] if "ref" in row}
 
@@ -127,20 +144,21 @@ def _build(docs: Path, pointers: list[dict[str, Any]], monkeypatch) -> dict[str,
 def test_a_live_run_sits_on_its_section_row_with_its_classification(
     mounted_project, monkeypatch
 ):
-    """The run appears on its section's row with the classification the shared
-    classifier gives it, so a section row and ``crew live`` cannot disagree."""
+    """The run appears on its section's row with the classification the live
+    partition reports for it, so a section row and ``crew live`` cannot
+    disagree. A row that derived its own classification instead of carrying the
+    partition's fails here, which the pointer classifier's own answer would not
+    catch."""
 
     pointer = _pointer()
+    live, _interrupted = partition_live_runs(PROJECT, [pointer])
     report = _build(mounted_project, [pointer], monkeypatch)
 
     row = _section_rows(report)["alpha#s1"]
     runs = row["runs"]
 
     assert [run["run_id"] for run in runs] == ["run-live"]
-    assert (
-        runs[0]["classification"]
-        == recovery.classify_pointer(pointer)["classification"]
-    )
+    assert runs[0]["classification"] == live["alpha"][0]["classification"]
     assert row["plan"] == "alpha"
 
 
@@ -217,6 +235,57 @@ def test_two_runs_over_one_path_report_the_holder_then_the_queued_run(
     assert [
         hold for hold in rows["alpha#s1"]["blockers"] if hold["kind"] == "held-path"
     ] == []
+
+
+def test_a_stopped_run_that_left_nothing_releases_its_path(
+    mounted_project, monkeypatch, tmp_path
+):
+    """A stopped run with no unintegrated work holds nothing, so the run queued
+    behind the same path waits on nobody and no section row names either.
+
+    The fence stops a claim binding for two reasons and only one of them means a
+    run is waiting: this is the other one, where the path is free and the queued
+    run is held by nothing."""
+
+    repo = tmp_path / "repo"
+    # ``process_alive`` is carried for the display; the fence reads the pid, so
+    # the fixture records one whose process has exited and no worktree, which is
+    # the released condition rather than a claim still holding work.
+    stopped = _pointer(
+        run_id="run-stopped",
+        section="s1",
+        phase="completed",
+        pid=_dead_pid(),
+        process_alive=False,
+        repo=repo,
+        write_paths=[CLAIMED_PATH],
+    )
+    queued = _pointer(
+        run_id="run-queued",
+        section="s2",
+        phase="queued",
+        process_alive=None,
+        repo=repo,
+        write_paths=[CLAIMED_PATH],
+    )
+    # The fixture means what this test reads it as only if the fence agrees, so
+    # the stopped run's own claim is disregarded before anything is asserted
+    # about the row — and disregarded for the released reason, since a claim
+    # that stopped and left unintegrated work binds and would hold the path.
+    disposition = claim_disposition(stopped)
+    assert disposition.binding is False
+    assert "left no process and no unintegrated work" in disposition.reason
+
+    report = _build(mounted_project, [stopped, queued], monkeypatch)
+
+    held = [
+        hold
+        for row in _section_rows(report).values()
+        for hold in row["blockers"]
+        if hold["kind"] == "held-path"
+    ]
+
+    assert held == []
 
 
 def test_a_plan_with_no_runs_reports_no_section_row_for_an_undeclared_section(

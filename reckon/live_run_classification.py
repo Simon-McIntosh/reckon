@@ -34,21 +34,24 @@ HELD_PATH = "held-path"
 
 
 def section_run_rows(
-    rows: Iterable[Mapping[str, Any]],
-) -> dict[str, list[dict[str, Any]]]:
-    """Group run rows by the section each one sits on.
+    runs_by_plan: Mapping[str, Iterable[Mapping[str, Any]]],
+) -> dict[tuple[str, str], list[dict[str, Any]]]:
+    """Group the classified runs under the section each one sits on.
 
     The row is the run as one classification already gave it — the same row the
     plan-level views report — so a section row and the plan row above it name
     the same run with the same classification rather than each reading the
-    pointer again. A run naming no section groups nowhere.
+    pointer again. The key is the plan and the section together, because a
+    section id names a section only within its own plan. A run naming no section
+    groups nowhere.
     """
 
-    grouped: dict[str, list[dict[str, Any]]] = {}
-    for row in rows:
-        section = str(row.get("section") or "")
-        if section:
-            grouped.setdefault(section, []).append(dict(row))
+    grouped: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for plan_ref, rows in runs_by_plan.items():
+        for row in rows:
+            section = str(row.get("section") or "")
+            if section:
+                grouped.setdefault((str(plan_ref), section), []).append(dict(row))
     return grouped
 
 
@@ -72,23 +75,41 @@ def run_blocker_rows(rows: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]]:
     ]
 
 
-def held_path_blockers(claims: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]]:
+def held_path_blockers(
+    claims: Iterable[Mapping[str, Any]],
+    *,
+    queued_runs: Iterable[str] = (),
+) -> list[dict[str, Any]]:
     """The paths one run holds and another is waiting on, holder first.
 
     Two runs claiming one path are not the same condition twice: the holder's
-    claim fences the path, and the waiting run's claim is the one that was
+    claim fences the path, and the queued run's claim is the one the dispatcher
     disregarded, so the pair is reported in that order and a reader learns both
-    who holds the path and which run cannot start. A path with one claim, or
-    with no claim that still binds, holds nothing.
+    who holds the path and which run cannot start.
+
+    A claim that does not bind is not one condition either, and only a queued
+    one waits. The fence records a second reason a claim stops binding — a run
+    that stopped and left no process and no unintegrated work at its paths — and
+    that run holds nothing and waits on nothing, so it lists nobody. Reading
+    every non-binding claim as waiting would put a stopped run on a section's
+    row as a run queued behind a path it has in fact released.
+
+    A path with no claim that still binds holds nothing.
     """
 
+    queued = {str(run_id) for run_id in queued_runs}
     by_path: dict[str, dict[str, list[str]]] = {}
     for claim in claims:
         path = str(claim.get("path") or "")
         run_id = str(claim.get("run_id") or "")
         if not path or not run_id:
             continue
-        side = "holders" if claim.get("binding", True) else "waiting"
+        if claim.get("binding", True):
+            side = "holders"
+        elif run_id in queued:
+            side = "waiting"
+        else:
+            continue
         by_path.setdefault(path, {"holders": [], "waiting": []})[side].append(run_id)
     return [
         {

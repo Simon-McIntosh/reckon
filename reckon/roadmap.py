@@ -72,6 +72,7 @@ from reckon.live_run_classification import (
     run_blocker_rows,
     run_classification,
     run_classification_record,
+    section_run_rows,
 )
 from reckon.mcp_views import (
     compose_review,
@@ -2728,6 +2729,10 @@ def _held_path_blockers_by_section(
     blocker lands on the waiting run's section — the row that has to say why
     work on it has not started. A checkout with no measurable repository, or a
     registry that cannot be read, reports no held path rather than guessing one.
+
+    Which runs are queued is read from the pointers, because the registry
+    records a claim's binding but not the condition that stopped it binding, and
+    only a queued claim waits on the path it names.
     """
 
     if docs_dir is None:
@@ -2745,6 +2750,7 @@ def _held_path_blockers_by_section(
         # cannot read them still owes its reader the rest of the page.
         return {}
     placement: dict[str, tuple[str, str]] = {}
+    queued_runs: set[str] = set()
     for pointer in pointers:
         if not isinstance(pointer, Mapping):
             continue
@@ -2752,10 +2758,13 @@ def _held_path_blockers_by_section(
         node = node if isinstance(node, Mapping) else {}
         plan_ref = str(node.get("plan") or "")
         run_section = str(node.get("section") or "")
+        run_id = str(pointer.get("run_id") or "")
+        if str(pointer.get("phase") or "") == "queued":
+            queued_runs.add(run_id)
         if plan_ref and run_section:
-            placement[str(pointer.get("run_id") or "")] = (plan_ref, run_section)
+            placement[run_id] = (plan_ref, run_section)
     grouped: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
-    for blocker in held_path_blockers(claims):
+    for blocker in held_path_blockers(claims, queued_runs=queued_runs):
         key = placement.get(str(blocker.get("waiting") or ""))
         if key is not None:
             grouped[key].append(blocker)
@@ -2860,13 +2869,15 @@ def _build_roadmap(
     # already classified are grouped under the section each run names, so a
     # section row reports its runs with the one classification rather than
     # reading the pointers again.
-    section_runs: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
-    for grouped_runs in (live_runs, interrupted_runs):
-        for plan_ref, rows in grouped_runs.items():
-            for run_row in rows:
-                run_section = str(run_row.get("section") or "")
-                if run_section:
-                    section_runs[(plan_ref, run_section)].append(run_row)
+    section_runs = section_run_rows(
+        {
+            plan_ref: [
+                *live_runs.get(plan_ref, []),
+                *interrupted_runs.get(plan_ref, []),
+            ]
+            for plan_ref in {*live_runs, *interrupted_runs}
+        }
+    )
     held_path_blockers_by_section = _held_path_blockers_by_section(
         project, pointers, resolved_docs, project_manifest
     )
