@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s36">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-22">
+  <meta name="plan-tags" content="crew,watch,identity,test,call-signature">
+  <title>The watcher identity test passes the stop argument | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-watcher-identity-test-passes-stop" data-reckon="landed" data-when="2026-10-22">
+  <h2 id="the-watcher-identity-test-passes-stop-title">The watcher identity test passes the stop argument.</h2>
+  <p id="the-watcher-identity-test-passes-stop-cause"><strong>Cause.</strong>
+  <code>test_crew_watch_sheds_identity_before_its_first_sweep</code> drives
+  <code>crew_watch.callback</code> directly with keyword arguments, exercising the in-place
+  reload route that sheds inherited session identity before the first sweep. When
+  <code>crew_watch</code>, the click command in <code>reckon/crew_follow_commands.py</code>,
+  gained <code>stop</code> as its second parameter the call no longer supplied it, so the
+  test raised before reaching the code it guards. It failed in both arms of a population at
+  merge on 2026-10-21 and no plan tracked it.</p>
+  <p id="the-watcher-identity-test-passes-stop-reproduced"><strong>Reproduction, confirmed
+  first.</strong> At the worktree head <code>d837dec4393851e2acee5dceb8f12e4d0e83dbf1</code>
+  the file's own run is <code>1 failed, 4 passed</code>, <code>EXIT=1</code>, the single red
+  id reading <code>TypeError: crew_watch() missing 1 required positional argument:
+  'stop'</code> at the call site. The other four cases pass at that revision.</p>
+  <p id="the-watcher-identity-test-passes-stop-fix"><strong>Fix.</strong> The call now
+  passes <code>stop</code> at the value the command's own <code>--stop</code> option
+  declares, read from the click command's parameter list rather than written as a literal —
+  <code>stop=_option_default(follow_module.crew_watch, "stop")</code>, where
+  <code>_option_default</code> walks <code>command.params</code> for the named option and
+  returns its <code>default</code>. A parameter the command gains with no default therefore
+  still fails this call in the same way, instead of being handed a value the test chose.
+  No product code changes: <code>reckon/crew_follow_commands.py</code> is untouched.</p>
+  <p id="the-watcher-identity-test-passes-stop-measure"><strong>Measure.</strong> Logs are
+  under the run directory. Head arm (change present), the whole file, head
+  <code>d837dec43</code>: <code>5 passed</code>, <code>EXIT=0</code> — the named id and the
+  four other cases its file carries. Base arm (change absent), the same file at the same
+  revision: <code>1 failed, 4 passed</code>, <code>EXIT=1</code>. Negative control — the
+  declared mutation, the <code>stop</code> argument removed from the call, applied to the
+  committed test file and restored immediately after: <code>1 failed</code>,
+  <code>EXIT=1</code>, the red id's <em>TypeError</em> naming the same missing
+  <code>stop</code> argument as the base arm. <code>ruff check</code> and
+  <code>ruff format --check</code> add no finding on the changed file: both report clean at
+  base and head, so the delta is zero.</p>
+</article>
+</body>
+</html>
