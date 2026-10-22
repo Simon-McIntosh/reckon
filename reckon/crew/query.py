@@ -53,6 +53,15 @@ OPTIONAL_RUN_FIELDS = (
     "manifest_reported_status",
 )
 
+#: Every field a runs row declares: the ones the view serves by default and the
+#: optional ones a caller may ask for. The runs row is served whole, so a field
+#: the view declares is on the row whether or not it holds a value. A key that
+#: vanished when it was empty would make the row's shape depend on the run it
+#: describes, and a caller comparing two rows — or reading one against the field
+#: list this view documents — could not tell an unanswerable field from an
+#: unanswered one.
+RUN_ROW_FIELDS: tuple[str, ...] = (*DEFAULT_RUN_FIELDS, *OPTIONAL_RUN_FIELDS)
+
 RUN_SOURCES = frozenset({"all", "ledger", "live"})
 RUN_SCOPES = frozenset({"project", "workstation"})
 WORKSTATION_RUN_FIELDS = ("project", "repo", "repo_exists")
@@ -119,13 +128,25 @@ def _refuse_unknown_fields(requested: Iterable[str]) -> None:
 
 
 def _selected_fields(fields: Iterable[str] | None) -> tuple[str, ...]:
-    """Return default fields plus validated opt-in fields, in stable order."""
+    """Return the fields a runs row is built with for one request.
+
+    A request does not narrow a runs row. It adds the optional fields asked for
+    to the row the view declares, so a caller receives the view's own row —
+    every field this view is able to answer for, one of which it asked to be
+    sure of — rather than a different, smaller row. The whole default row is
+    built whatever was requested for a second reason: the view's own filters
+    read ``classification``, ``session_id`` and ``resumable`` off the row before
+    and after the projection, so a build narrowed to the request would answer
+    those filters with an absent key and list nothing.
+
+    What is refused here is a name no run row could carry, so the refusal is
+    raised before the fleet is walked rather than after it.
+    """
     if fields is None:
         return DEFAULT_RUN_FIELDS
     requested = _requested_field_names(fields)
     _refuse_unknown_fields(requested)
-    extras = tuple(field for field in OPTIONAL_RUN_FIELDS if field in requested)
-    return (*DEFAULT_RUN_FIELDS, *extras)
+    return tuple(dict.fromkeys((*DEFAULT_RUN_FIELDS, *requested)))
 
 
 def _live_field_vocabulary(
@@ -150,13 +171,17 @@ def _live_field_vocabulary(
     # such a row exists.
     vocabulary.update(LIVE_OVERRUN_FIELDS)
     vocabulary.update(LIVE_PLACEMENT_FIELDS)
+    vocabulary.update(COMMON_RUN_FIELDS)
     if with_mine:
         vocabulary.add("mine")
     return vocabulary
 
 
 def _refuse_unknown_live_fields(
-    requested: Iterable[str], classified: Sequence[Mapping[str, Any]], *, with_mine: bool
+    requested: Iterable[str],
+    classified: Sequence[Mapping[str, Any]],
+    *,
+    with_mine: bool,
 ) -> None:
     """Reject field names a live row does not carry, naming the live set."""
     vocabulary = _live_field_vocabulary(classified, with_mine=with_mine)
@@ -169,6 +194,125 @@ def _refuse_unknown_live_fields(
         + "; live fields are "
         + ", ".join(sorted(vocabulary))
     )
+
+
+#: The fields every list view's run rows carry, so a caller reads one
+#: vocabulary wherever a run is listed however it is listed. ``section`` is the
+#: name this set exists to guarantee: a run is dispatched for one section of one
+#: plan, and every view that lists runs names it. A view routes its rows through
+#: :func:`project_run_rows`, which fills ``section`` from the run's pointer and
+#: leaves a field whose value is empty off the row.
+COMMON_RUN_FIELDS: tuple[str, ...] = ("run_id", "node", "plan", "section")
+
+
+def _canonical_section(value: Any) -> str:
+    """Normalize a section identity, treating absence as the empty string."""
+
+    return normalize_section(str(value)) if value else ""
+
+
+def _run_section(record: Mapping[str, Any]) -> str:
+    """Return the section a live pointer's run was dispatched for."""
+
+    node = record.get("node")
+    node_mapping = node if isinstance(node, Mapping) else {}
+    return _canonical_section(node_mapping.get("section"))
+
+
+def run_section_index(
+    record_sets: Iterable[Iterable[Mapping[str, Any]]],
+) -> dict[str, str]:
+    """Map every run id in the given pointer sets to the section it names."""
+
+    index: dict[str, str] = {}
+    for records in record_sets:
+        for record in records:
+            run_id = str(record.get("run_id") or "")
+            if not run_id:
+                continue
+            index.setdefault(run_id, _run_section(record))
+    return index
+
+
+def project_run_rows(
+    rows: Iterable[Mapping[str, Any]],
+    *,
+    fields: Iterable[str] | None = None,
+    view: str,
+    vocabulary: Iterable[str] | None = None,
+    sections: Mapping[str, str] | None = None,
+    keep_empty: Iterable[str] = (),
+    identity: Iterable[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Route one list view's run rows through the single projection.
+
+    Every list view that lists runs calls this, so one vocabulary, one refusal
+    and one omission rule serve all of them. ``sections`` supplies the
+    ``section`` for a row that does not carry it; a field a view does not carry
+    is refused, naming the fields it has; and a field whose value is empty is
+    left off the row rather than serialised as an empty string or a null. The
+    run's identity is always kept, so a caller that asked for one field can
+    still tell which run answered.
+
+    ``identity`` is what a narrowed row carries whatever was asked for. A view
+    of compact run rows names the shared run fields, so a caller reading one
+    fact still sees which run, plan and section answered; a view that serves its
+    rows whole, as the live view serves whole classifications, names none of
+    them, because three fields riding along with a request for one is the shape
+    that view's own contract refuses. Every narrowed row carries
+    :data:`LIVE_ROW_ANCHOR` either way; omitting ``identity`` names
+    :data:`COMMON_RUN_FIELDS`.
+
+    ``keep_empty`` names the fields a view declares as part of its row, whose
+    presence is itself the statement a reader makes: a brief run's row carries
+    ``plan`` null, and the key's presence beside an absent digest is what
+    distinguishes it. Such a field keeps its empty value.
+    """
+
+    shared = tuple(COMMON_RUN_FIELDS if identity is None else identity)
+    rows = [dict(row) for row in rows]
+    for row in rows:
+        if not row.get("section") and sections is not None:
+            section = sections.get(str(row.get("run_id") or ""))
+            if section:
+                row["section"] = section
+        if row.get("section"):
+            row["section"] = _canonical_section(row["section"])
+
+    carried: set[str] = set(shared)
+    for row in rows:
+        carried.update(row)
+    if vocabulary is not None:
+        carried.update(vocabulary)
+
+    declared = set(keep_empty)
+    requested = _requested_field_names(fields)
+    if requested:
+        unknown = sorted(set(requested) - carried)
+        if unknown:
+            raise RunQueryError(
+                f"unknown {view} fields "
+                + ", ".join(repr(field) for field in unknown)
+                + f"; {view} fields are "
+                + ", ".join(sorted(carried))
+            )
+        selected = tuple(dict.fromkeys((*shared, *requested)))
+    else:
+        selected = ()
+
+    projected: list[dict[str, Any]] = []
+    for row in rows:
+        names = selected or tuple(dict.fromkeys((*shared, *row)))
+        narrowed = {name: row.get(name) for name in names if name in row}
+        narrowed = {
+            name: value
+            for name, value in narrowed.items()
+            if name == LIVE_ROW_ANCHOR
+            or name in declared
+            or value not in (None, "", [], {})
+        }
+        projected.append(narrowed)
+    return projected
 
 
 def project_live_rows(
@@ -213,20 +357,36 @@ def project_live_rows(
     if session is not None:
         for row in classified:
             row["mine"] = str(row.get("session") or "") == session
-    if fields is None:
-        return classified
-    requested = _requested_field_names(fields)
+    sections = run_section_index([records])
     with_mine = session is not None
+    if fields is None:
+        return project_run_rows(
+            classified,
+            view="live",
+            vocabulary=_live_field_vocabulary(classified, with_mine=with_mine),
+            sections=sections,
+        )
+    requested = _requested_field_names(fields)
     _refuse_unknown_live_fields(requested, classified, with_mine=with_mine)
-    always = (LIVE_ROW_ANCHOR, "mine") if with_mine else (LIVE_ROW_ANCHOR,)
-    selected = tuple(dict.fromkeys((*always, *requested)))
-    return [
-        {
-            **{field: row.get(field) for field in selected},
-            **({"lane_event": row["lane_event"]} if row.get("lane_event") else {}),
-        }
-        for row in classified
-    ]
+    # ``mine`` is a field of the request rather than of the classification: the
+    # projection narrows each row to what was asked for, and a narrowing drops
+    # the ``session`` the marker is read from. The verdict is taken here, where
+    # every classification is still whole, and carried across the projection by
+    # run id, so a narrowed row still says which rows are the caller's.
+    mine_by_run = {
+        str(row.get(LIVE_ROW_ANCHOR) or ""): bool(row.get("mine")) for row in classified
+    }
+    rows = project_run_rows(
+        classified,
+        fields=fields,
+        view="live",
+        sections=sections,
+        identity=(LIVE_ROW_ANCHOR,),
+    )
+    if with_mine:
+        for row in rows:
+            row["mine"] = mine_by_run.get(str(row.get(LIVE_ROW_ANCHOR) or ""), False)
+    return rows
 
 
 def _resumability(
@@ -373,7 +533,10 @@ def _compact_row(
         "run_id": str(record.get("run_id") or ""),
         "node": str(node or ""),
         "plan": str(plan) if plan else None,
-        "section": normalize_section(section) if section else "",
+        # The section is carried as the source states it; the single
+        # projection (project_run_rows) canonicalises it, so this row builder
+        # holds no copy of that rule.
+        "section": str(section) if section else "",
         "brief_sha256": brief_sha256,
         "source": source,
         "classification": (
@@ -604,6 +767,7 @@ def runs_view(
         return committed[key]
 
     rows: list[dict[str, Any]] = []
+    live_records: list[Mapping[str, Any]] = []
     if selected_source in {"all", "live"}:
         if selected_run_id:
             live_records = _live_records_for_run(
@@ -733,6 +897,25 @@ def runs_view(
     if "member" not in selected_fields:
         for row in rows:
             row.pop("member", None)
+    # The rows are built, so they are routed through the one projection last,
+    # exactly as the live, obligations and directory views route theirs. It
+    # fills a section the row does not carry from the run's own pointer,
+    # canonicalises every section to the one spelling, and refuses a field this
+    # view cannot answer before the fleet is walked. This view holds no copy of
+    # any of those rules.
+    #
+    # The row itself is served whole: every field this view declares is kept,
+    # empty or not, so a runs row is the read model the crew tool documents
+    # rather than whichever keys this run happened to fill. A brief run's null
+    # plan is one of them, and the key's presence beside an absent digest is
+    # what says that row's authority is a digest.
+    rows = project_run_rows(
+        rows,
+        view="runs",
+        vocabulary=row_fields,
+        sections=run_section_index([live_records]),
+        keep_empty=RUN_ROW_FIELDS,
+    )
     return {
         "ok": True,
         "project": project,

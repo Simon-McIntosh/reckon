@@ -9,12 +9,38 @@ from pathlib import Path
 from typing import Any
 
 from reckon import ledger
+from reckon.crew.query import project_run_rows, run_section_index
 from reckon.crew.recovery import classify_pointer
 from reckon.crew.runs import list_live
 
 
 class DirectoryError(RuntimeError):
     """A directory selector does not identify one live run."""
+
+
+#: The fields a directory run row carries.
+#:
+#: The coordinator rows and the unowned rows are projected by their own calls,
+#: and either list can be empty — a project whose runs all belong to a session
+#: has no unowned run, and a session whose runs have all ended has no
+#: coordinator row — so the vocabulary is declared here rather than read from
+#: the rows in hand. An empty list says nothing about which fields the view has;
+#: a name is accepted whether or not a row of that kind is in it, and a field
+#: whose value is empty is left off the row by the projection.
+DIRECTORY_RUN_FIELDS = (
+    "run_id",
+    "node",
+    "project",
+    "repository",
+    "plan",
+    "section",
+    "phase",
+    "classification",
+    "process_alive",
+    # Present only where the pointer recorded one.
+    "sprint",
+    "transport",
+)
 
 
 def _node(record: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -108,8 +134,15 @@ def directory(
     run_id: str | None = None,
     node_id: str | None = None,
     pointers: Iterable[Mapping[str, Any]] | None = None,
+    fields: Iterable[str] | None = None,
 ) -> dict[str, Any]:
-    """Group every live pointer by its owning coordinator session."""
+    """Group every live pointer by its owning coordinator session.
+
+    Each run row is built here and projected here, through the one projection
+    :func:`reckon.crew.query.project_run_rows`, so this view and every other
+    view that lists a run carry the same field vocabulary and the same refusal
+    for a field the view does not have.
+    """
     if run_id and node_id:
         raise DirectoryError("select by run id or node id, not both")
     records = list(pointers) if pointers is not None else list_live()
@@ -201,4 +234,20 @@ def directory(
             "node": run["node"],
             "session": coordinators[0]["session"] if owned else None,
         }
+    sections = run_section_index([records])
+    for coordinator in coordinators:
+        coordinator["runs"] = project_run_rows(
+            coordinator["runs"],
+            fields=fields,
+            view="directory",
+            vocabulary=DIRECTORY_RUN_FIELDS,
+            sections=sections,
+        )
+    result["unowned_runs"] = project_run_rows(
+        unowned_runs,
+        fields=fields,
+        view="directory",
+        vocabulary=DIRECTORY_RUN_FIELDS,
+        sections=sections,
+    )
     return result

@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import json
 import shlex
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -37,6 +37,7 @@ from reckon.crew import (
 )
 from reckon.crew import review as review_module
 from reckon.crew.node import INTERRUPTED_RUN_PHASE, CrewError, parse_duration
+from reckon.crew.query import project_run_rows, run_section_index
 from reckon.crew.recovery_review_dispatch import supersedes_head
 from reckon.crew.routing import (
     WorktreeRecordIndex,
@@ -63,6 +64,43 @@ RECOVERY_CLASSIFICATION_DUTY_KINDS = {"needs-help": "needs-help"}
 # the row is owed while the dimension carries no disposition, and it names the
 # run the review is about rather than the reviewing run.
 SUB_FLOOR_DUTY_KIND = "review-dimension-sub-floor"
+
+#: The fields a duty row can carry, beside the ones a duty of one kind adds.
+#:
+#: The two lists this view serves — the duties owed and the ones acknowledged —
+#: are projected by their own call, and a caller may ask either for a field only
+#: the other list's rows carry. The vocabulary is therefore declared here rather
+#: than read from the rows in hand: an empty list says nothing about which fields
+#: this view has, and ``acknowledged`` is empty in the ordinary case, so a
+#: vocabulary read from it would refuse the duty's own ``kind``. A field whose
+#: value is empty is left off the row by the projection; a name is accepted here
+#: whether or not any duty of that kind is currently owed.
+DUTY_ROW_FIELDS = (
+    "kind",
+    "run_id",
+    "node",
+    "plan",
+    "age_seconds",
+    "next_command",
+    "next_action_form",
+    # A queued duty's place in the lane's order, present only while it waits.
+    "position",
+    "rank",
+    # A review duty's reading and the revisions it disagrees about; a refused
+    # attempt's reason and record; the tier a run owes no review at all.
+    "reason",
+    "record",
+    "head",
+    "reviewed_head",
+    "review_tier",
+    "refused_at",
+    "worker_slots",
+    # A sub-floor review dimension's own figures.
+    "dimension",
+    "score",
+    "floor",
+    "exempt_alternative",
+)
 
 # A review whose attempt the lane's admission gate refused with ``lane-paused``
 # is not work the coordinator skipped: the reflex still owns it and retries when
@@ -1255,13 +1293,19 @@ def _sub_floor_items(
     return _sub_floor_items_by_session(project, floors, now=now).get(session, [])
 
 
-def obligations(project: str, session: str) -> dict[str, Any]:
+def obligations(
+    project: str, session: str, *, fields: Iterable[str] | None = None
+) -> dict[str, Any]:
     """Return every current duty owed by one coordinator session.
 
     Live duty kinds are a projection of :func:`recovery.recover`; the
     promotable grace comes from the same resolved flight configuration used by
     dispatch.  The result is ordered oldest first so the first row is also the
     most urgent age signal.
+
+    Every duty row is built here and projected here, through the one projection
+    :func:`reckon.crew.query.project_run_rows`, so this view carries the section
+    the run was dispatched for and refuses a field it does not have.
     """
     now = _utc_now()
     resolved = flight.resolve(project)
@@ -1362,16 +1406,30 @@ def obligations(project: str, session: str) -> dict[str, Any]:
     closure = runs.drain(project, session=session)
     items = [_with_action_form(item) for item in items]
     acknowledged = [_with_action_form(item) for item in acknowledged]
+    sections = run_section_index([pointers.values()])
+    summary = {
+        "count": len(items),
+        "oldest_age_seconds": max(
+            (int(item["age_seconds"]) for item in items), default=0
+        ),
+        "unreconciled_runs": int(closure["unreconciled_runs"]),
+    }
     return {
         "project": project,
         "session": session,
-        "obligations": items,
-        "acknowledged": acknowledged,
-        "summary": {
-            "count": len(items),
-            "oldest_age_seconds": max(
-                (int(item["age_seconds"]) for item in items), default=0
-            ),
-            "unreconciled_runs": int(closure["unreconciled_runs"]),
-        },
+        "obligations": project_run_rows(
+            items,
+            fields=fields,
+            view="obligations",
+            vocabulary=DUTY_ROW_FIELDS,
+            sections=sections,
+        ),
+        "acknowledged": project_run_rows(
+            acknowledged,
+            fields=fields,
+            view="obligations",
+            vocabulary=DUTY_ROW_FIELDS,
+            sections=sections,
+        ),
+        "summary": summary,
     }

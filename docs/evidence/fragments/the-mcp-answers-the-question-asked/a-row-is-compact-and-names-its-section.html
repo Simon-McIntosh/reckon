@@ -1,0 +1,190 @@
+<section data-reckon="fragment" id="a-row-is-compact-and-names-its-section" data-node="a-row-is-compact-and-names-its-section">
+
+<h2 id="a-row-is-compact-and-names-its-section-h">A row is compact and names its section</h2>
+
+<p id="a-row-is-compact-and-names-its-section-summary">
+  Every crew list view that lists runs — <code>live</code>, <code>runs</code>,
+  <code>obligations</code> and <code>directory</code> — builds its rows and
+  routes them through one projection, <code>project_run_rows</code> in
+  <code>reckon/crew/query.py</code>. That one function owns the field vocabulary
+  the views share, fills each row's <code>section</code> from the run's own
+  pointer, canonicalises the spelling, refuses a requested field the view does
+  not carry while naming the fields it does have, and leaves a field whose value
+  is empty off the row where the view serves a narrowed row. The
+  <code>runs</code> view is the exception, and it is the one its own suite has
+  always asserted: it serves its row whole. Every field it declares — the ones
+  it answers by default plus the optional ones a caller may ask for — is on the
+  row whether or not it holds a value, so a row can be read against the field
+  list the view publishes and an empty field is not confused with one the view
+  cannot answer; an optional field the caller did not ask for is absent, and a
+  request adds that field to the declared row rather than cutting the row down.
+  What each view did before, view by view: the
+  <code>live</code> view could not name a run's section at all and refused
+  <code>fields=["section"]</code>, because its row builder never carried the
+  field; <code>runs</code> carried it but narrowed its own fields and never
+  reached the projection; <code>obligations</code> had no such field either; and
+  <code>directory</code> carried the author's own spelling, so the same run read
+  <code>s4</code> there and <code>§4</code> in <code>runs</code>. All four now
+  call the projection, so the four agree and one rule answers for all of them.
+</p>
+
+<p id="a-row-is-compact-and-names-its-section-row-state">
+  The dependency row follows the same shape, now with one owner rather than
+  three copies. The state a section-scoped row reports — the section's own
+  declaration, falling back to the containing plan's status only where the plan
+  declares none — is computed by <code>dependency_row_state</code> in
+  <code>reckon/roadmap.py</code>, and both row builders call it: the roadmap's
+  own section edges, and the ref resolver behind <code>read_plan</code>'s
+  <code>deps</code> list. The <code>section_blocking</code> projection does not
+  re-derive the verdict at all; it reads the one the row already reached, so a
+  wait whose target section reads satisfied is reported as holding nothing
+  whether the section was declared <code>done</code> or its gate passed.
+</p>
+
+<table id="a-row-is-compact-and-names-its-section-measure">
+  <caption>Measured on the node's gate, at the base arm and after it.</caption>
+  <thead>
+    <tr><th>clause</th><th>base arm <code>8c7e865d7</code></th><th>after <code>81aa5716c</code></th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>named gate (this node's test file plus the four named suites)</td>
+      <td>12 failed, 3 passed — <code>EXIT=1</code> on this node's test file alone,
+        run inside the base-arm tree</td>
+      <td>64 passed — <code>EXIT=0</code></td>
+    </tr>
+    <tr>
+      <td>a runs row that carries an empty field</td>
+      <td>the row states every declared field, so an absent session, transcript
+        or classification is serialised as a null a reader has to interpret</td>
+      <td>the row states every field the view declares, and nothing else: an
+        empty field it answers for is stated (so an unanswered field is told
+        from one the view has no answer for), while an optional field nobody
+        asked for is absent</td>
+    </tr>
+    <tr>
+      <td>a dispatched run's <code>section</code> read in all four views</td>
+      <td>the four disagree: <code>live</code> and <code>obligations</code> carry
+        no <code>section</code> field at all, <code>runs</code> reads
+        <code>§4</code>, <code>directory</code> reads the dispatched
+        <code>s4</code></td>
+      <td>all four read <code>§4</code> (the canonical spelling of the
+        dispatched <code>s4</code>)</td>
+    </tr>
+    <tr>
+      <td><code>fields=["section"]</code> accepted by all four views</td>
+      <td><code>live</code> refuses the field; the other three answer, but not
+        by narrowing to it — <code>runs</code> narrows in its own row builder
+        instead of the projection, and <code>obligations</code> and
+        <code>directory</code> have no <code>section</code> to return</td>
+      <td>accepted by all four; a narrowed row carries the view's identity fields
+        and what was asked for, and the runs view answers with its declared row,
+        which the request adds to rather than narrows</td>
+    </tr>
+    <tr>
+      <td>a field a view lacks is refused naming the fields it has</td>
+      <td><code>live</code> refuses; <code>obligations</code> and
+        <code>directory</code> answer anyway</td>
+      <td>all four refuse, naming the view's own field list</td>
+    </tr>
+    <tr>
+      <td>a ref to a done section of an in-progress plan</td>
+      <td>the row reads the plan's <code>active</code> status and
+        <code>section_blocking</code> reports the wait as open</td>
+      <td>the row reads <code>done</code>, its own declaration, and
+        <code>section_blocking</code> reports nothing</td>
+    </tr>
+    <tr>
+      <td>serialised <code>power_convertor</code> roadmap, characters
+        (three samples per arm)</td>
+      <td>158,425 / 157,874 / 157,778</td>
+      <td>156,346 / 156,346 — lower than the base arm's lowest sample by
+        1,432</td>
+    </tr>
+  </tbody>
+</table>
+
+<p id="a-row-is-compact-and-names-its-section-negative-control">
+  The declared mutation — returning <code>section</code> to the run row's
+  omitted set, by dropping the projection's fill-and-canonicalise step — turns
+  the four-view measure red: <code>EXIT=1</code> with eight failing ids, all
+  four views of both the <code>names_the_section</code> and the
+  <code>accepts_the_section_field</code> case. The <code>runs</code> view now
+  fails with the other three, which is the direct evidence that it routes
+  through the projection rather than narrowing its own row. A second control
+  turns the section-state rule red on its own: making
+  <code>dependency_row_state</code> ignore the section declaration and report
+  the containing plan's status fails both section-state cases
+  (<code>EXIT=1</code>, 2 failed of 14, 12 deselected). A third control covers the
+  runs row's shape: returning that view's projection call to the empty-field
+  omission leaves the runs row narrowed and turns the cases that state its shape
+  red — this node's own runs-row case, in the suite that holds the row whole
+  (<code>EXIT=1</code>, 3 failed), and the live view's marker case goes red under
+  a control that reads <code>mine</code> from the narrowed row again
+  (<code>EXIT=1</code>, 1 failed of 2). A fourth, fifth and sixth control cover the
+  declared vocabulary, one per view: with each repair reverted in turn — the
+  duties' declared field set dropped, the directory rows' dropped, and the runs
+  row built narrowed to the request again — the case that names that defect
+  fails alone (<code>EXIT=1</code> each).
+</p>
+
+<p id="a-row-is-compact-and-names-its-section-shrink">
+  The roadmap shrinks for one reason, and the reason is the rule above rather
+  than a compaction pass: the section-scoped rows it carries now report the
+  section's own declaration instead of the containing plan's status, and the
+  declaration is the shorter string. A per-key comparison of the two serialised
+  payloads puts the whole difference there —
+  <code>depends_on[].status</code> and <code>section_depends_on[].status</code>
+  fall from 559 to 410 characters in <code>pending_work</code> and from 495 to
+  374 in <code>ready_now</code>, while the readiness blockers' own status fields
+  rise from 169 to 195. Nothing else moves beyond live-run counts. The
+  roadmap's own row shape is unchanged.
+</p>
+
+<p id="a-row-is-compact-and-names-its-section-acceptance">
+  The accepted field set is a property of the <em>view</em>, not of the rows a
+  call happened to return. Three of the four views projected two lists, or a
+  list whose fields the request does not need, with the accepted set read from
+  the rows in hand, so an empty list narrowed the vocabulary to the four common
+  run fields and a field the view does have was refused: <code>obligations</code>
+  refused <code>kind</code> whenever nothing was acknowledged, which is the
+  ordinary case; <code>directory</code> refused <code>phase</code> for any
+  project whose runs all belong to a session, so <code>unowned_runs</code> is
+  empty; and <code>runs</code> built its row narrowed to the request, so the
+  view's own <code>classification</code>, <code>session_id</code> and
+  <code>resumable</code> filters read an absent key and listed nothing. Each
+  view now declares the fields it is able to answer for, beside the builder that
+  produces its rows, and hands that set to the projection. The declared set is
+  what a request is measured against; an empty list, or a list carrying fewer
+  fields than the view has, changes nothing about what a caller may ask for.
+  Narrowing a row to the request still happens in the projection for the views
+  that serve a narrowed row, after the filters, which is the order the third
+  defect was about. The <code>runs</code> view narrows nothing: the row it
+  builds is its declared set, a request adds optional fields to that set, and
+  its own <code>classification</code>, <code>session_id</code> and
+  <code>resumable</code> filters read the whole row because the whole row is
+  what the build produces. That is also the contract its own suite asserts — a
+  row for <code>fields=[...]</code> is the view's default field set plus the
+  requested optional fields — so the request cannot be answered by a smaller row
+  than the one the view documents.
+</p>
+
+<p id="a-row-is-compact-and-names-its-section-refs">
+  References the rows and the projection travel in remain strings of the one
+  grammar, <code>[project:]plan[#section][@run|@f-id]</code>: the rows carry
+  <code>plan</code> and <code>section</code> as plain strings, never as expanded
+  objects, and the projection adds none.
+</p>
+
+<p id="a-row-is-compact-and-names-its-section-caveat">
+  One divergence from the done-when's literal wording, recorded rather than
+  smoothed over: the fixture dispatches for <code>P#s4</code> and the four views
+  read <code>§4</code>, the canonical spelling of the same identity, because the
+  one projection normalises every row's section through
+  <code>normalize_section</code>. Before the change the views disagreed —
+  <code>runs</code> read <code>§4</code> and <code>directory</code> read
+  <code>s4</code> for the same run — so a single spelling is the point of the
+  clause.
+</p>
+
+</section>

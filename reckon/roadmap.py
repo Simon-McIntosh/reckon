@@ -619,6 +619,35 @@ def _status(plan: dict[str, Any]) -> str:
     return str(plan.get("workflow_status") or plan.get("status") or "draft")
 
 
+def dependency_row_state(
+    plan: Mapping[str, Any] | None,
+    section: str,
+    declarations: Any = None,
+) -> str:
+    """The state a dependency row reports for the ref it named.
+
+    A row-level dependency reports the dependency's own state, never the
+    containing plan's: a ref that names a section reports that section's own
+    declaration, falling back to the plan's status only where the plan declares
+    nothing for it. A plan-level ref has only the plan's status to report.
+
+    ``declarations`` is the plan's section-declaration mapping where the caller
+    already holds it from the authored state rather than from the plan payload.
+    One function answers this for every surface that builds such a row, so a
+    section read on one surface and reported on another cannot disagree.
+    """
+
+    data = plan if isinstance(plan, Mapping) else {}
+    plan_status = str(data.get("workflow_status") or data.get("status") or "")
+    if not section:
+        return plan_status
+    if declarations is None:
+        declarations = data.get("section_declarations")
+    if not isinstance(declarations, Mapping):
+        return plan_status
+    return str(declarations.get(section) or "").strip() or plan_status
+
+
 def _section_satisfied(
     plan: dict[str, Any],
     section: str,
@@ -1329,24 +1358,18 @@ def _section_scoped_edges(
                     )
                 )
                 continue
-            section_found = parsed.stage in declared_section_identities(
-                _plan_authored_state(target, docs_dir, project, parsed.slug)
-            )
+            authored = _plan_authored_state(target, docs_dir, project, parsed.slug)
+            declarations = authored.get("section_declarations")
+            section_found = parsed.stage in declared_section_identities(authored)
             row.update(
                 {
                     "scope": "local",
                     "slug": parsed.slug,
                     "found": True,
-                    "status": _status(target),
+                    "status": dependency_row_state(target, parsed.stage, declarations),
                     "section_found": section_found,
                     "satisfied": section_found
-                    and _section_satisfied(
-                        target,
-                        parsed.stage,
-                        _plan_authored_state(
-                            target, docs_dir, project, parsed.slug
-                        ).get("section_declarations"),
-                    ),
+                    and _section_satisfied(target, parsed.stage, declarations),
                 }
             )
             rows.append(row)

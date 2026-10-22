@@ -117,7 +117,12 @@ from reckon.resources import (
     resource_map,
     resource_scan_scope,
 )
-from reckon.roadmap import GraphTargetError, build_roadmap, resolve_graph_target
+from reckon.roadmap import (
+    GraphTargetError,
+    build_roadmap,
+    dependency_row_state,
+    resolve_graph_target,
+)
 
 # Names moved into sibling modules stay importable from reckon.mcp so that
 # `from reckon.mcp import <name>` and attribute access by other modules keep
@@ -1714,7 +1719,7 @@ def _resolve_plan_ref(
     if not data:
         return row
     row["found"] = True
-    row["status"] = data.get("status", "")
+    row["status"] = dependency_row_state(data, parsed.stage)
     row["impl"] = data.get("impl", 0)
     row["title"] = data.get("title", "")
     return row
