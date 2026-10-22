@@ -1408,6 +1408,111 @@ def _review_outcome_summary(stored: Mapping[str, Any]) -> str:
     return f"review scored {int(total)}, {count} finding(s)"
 
 
+def _plan_review_outcome_summary(stored: Mapping[str, Any]) -> str:
+    """Summarise a stored plan review as the outcome a promotion records.
+
+    A plan review's own deliverable is its findings rather than a score, so the
+    two figures it carries are the count of findings and the count of those that
+    would change the plan. Both are read from the stored record, which the store
+    built from the delivered report, rather than restated by hand. A finding
+    whose would-change verdict the report never stated carries ``None``, which is
+    not a yes, so an unstated verdict is not counted as one.
+    """
+    findings = stored.get("findings")
+    findings = findings if isinstance(findings, Sequence) else ()
+    would_change = sum(
+        1
+        for finding in findings
+        if isinstance(finding, Mapping) and finding.get("would_change") is True
+    )
+    return (
+        f"plan review stored with {len(findings)} finding(s), "
+        f"{would_change} of which would change the plan"
+    )
+
+
+def _stored_review_outcome(stored: Mapping[str, Any]) -> str:
+    """Summarise a stored review under the summary its own kind carries.
+
+    A plan review and a run review hold different figures — findings against a
+    score — so a summary picked without asking which kind the record is would
+    name a figure the record does not hold. The plan slug is what the plan-review
+    store keys on and the run-review store never writes, so its presence tells
+    the two apart without a second lookup.
+    """
+    if str(stored.get("plan_slug") or ""):
+        return _plan_review_outcome_summary(stored)
+    return _review_outcome_summary(stored)
+
+
+def _delivered_plan_review_for_run(
+    project: str, plan_slug: str, run_id: str
+) -> dict[str, Any] | None:
+    """The delivered report a plan review run left, or ``None``.
+
+    A plan review's report directory is named for the composed review id rather
+    than the crew run that produced it, so the run's own id does not name the
+    record — the directory's ``dispatch.json`` does. This is the join between a
+    promoting run and the report it delivered, held here alone: the store reader
+    that commits the record and the refusal reader that holds the report path
+    both resolve their delivery through it, so a change to how a delivery is
+    joined reaches both rather than one.
+    """
+    for sidecar in plan_review.delivered_reports(project, plan_slug):
+        composed = str(sidecar.get("review_run_id") or "")
+        if (
+            review_module._plan_review_crew_run_id(project, plan_slug, composed)
+            == run_id
+        ):
+            return sidecar
+    return None
+
+
+def _plan_review_promotion_outcome(run_id: str, project: str, plan_slug: str) -> str:
+    """The default outcome a promoting plan review takes from its own report.
+
+    A plan review declares no head-keyed record path — the head it read is the
+    plan content, keyed by version and fingerprint rather than by a commit — so
+    the run-review delivery conditions describe a runner-up it never was. Its
+    delivery is the report at its write path and the record the plan-review store
+    builds from that report, and that record is the outcome.
+
+    The two ways the report cannot yield a record are refused separately, each
+    naming what the coordinator must look at: a report carrying no ``RUBRIC`` or
+    ``FINDING`` line holds no review however well formed it is, and a report that
+    carries them and that the store still refuses is refused with the store's own
+    reason rather than with a summary of a review that was never stored.
+    """
+    root = plan_review._plan_review_report_root(project, plan_slug)
+    delivery = _delivered_plan_review_for_run(project, plan_slug, run_id)
+    if delivery is None:
+        raise CrewError(
+            f"run {run_id!r} is a plan review of {plan_slug!r} with no delivered "
+            f"report under {root}, so --outcome has no default to take; store the "
+            "report or write what failed or why the evidence could not be produced"
+        )
+    report_path = str(delivery.get("report_path") or "")
+    composed = str(delivery.get("review_run_id") or "")
+    if not delivery.get("stored"):
+        for refused in plan_review.store_delivered_reviews(project, plan_slug):
+            if str(refused.get("review_run_id") or "") == composed:
+                raise CrewError(
+                    f"run {run_id!r} is a plan review of {plan_slug!r} whose "
+                    f"report {report_path} the review store refused: "
+                    f"{refused.get('store_error')}; store the report or write what "
+                    "failed or why the evidence could not be produced"
+                )
+    found = review_module.record_for_review_run(project, composed)
+    if found is None:
+        raise CrewError(
+            f"run {run_id!r} is a plan review of {plan_slug!r} whose delivered "
+            f"report {report_path} the review store holds no record for, so "
+            "--outcome has no default to take; store the report or write what "
+            "failed or why the evidence could not be produced"
+        )
+    return _plan_review_outcome_summary(found[1])
+
+
 def _resolve_promotion_outcome(
     run_id: str,
     record: Mapping[str, Any],
@@ -1427,6 +1532,21 @@ def _resolve_promotion_outcome(
     one delivery condition that failed, with the record path it concerns and the
     remedy that condition calls for, so a coordinator is told which condition to
     act on rather than that the record cannot be read.
+
+    A plan review is told from a run review by the node id its dispatch minted:
+    the two kinds read different subjects, so the run-review delivery conditions
+    — a head-keyed record path for the revision the review read — describe a head
+    a plan review never had, and applying them refused every plan review
+    promoted without a hand-typed outcome. A plan review's default comes from its
+    own report and the record the plan-review store builds from it instead.
+
+    A queue-launched run reaches promotion through the admission pass, and its
+    record can arrive rebuilt from its surviving run directory when no live
+    pointer remains — a rebuild that carries neither the role nor the node id a
+    review is recognised by. Such a record is not read as a run that is no
+    review: the review store's index is keyed by the review run that produced
+    each record, so a record naming this run is proof the run was a review and is
+    its stored review, which is what the default is composed from.
     """
     supplied = str(outcome).strip()
     if verdict == "passed" or supplied:
@@ -1434,12 +1554,19 @@ def _resolve_promotion_outcome(
     from reckon.crew import recovery
     from reckon.crew.recovery_review_delivery import review_delivery_refusal
 
+    project = str(record.get("project") or "")
+    node_id = str((record.get("node") or {}).get("id") or "")
+    prefix = recovery.PLAN_REVIEW_NODE_PREFIX
+    if node_id.startswith(prefix) and node_id[len(prefix) :]:
+        return _plan_review_promotion_outcome(run_id, project, node_id[len(prefix) :])
     if not recovery._is_review_run(record):
+        stored = review_module.record_for_review_run(project, run_id)
+        if stored is not None:
+            return _stored_review_outcome(stored[1])
         raise CrewError(
             "a non-passing gate requires --outcome; write what failed or why "
             "the evidence could not be produced"
         )
-    project = str(record.get("project") or "")
     refusal = review_delivery_refusal(record, project)
     if refusal is not None:
         raise CrewError(
@@ -2400,12 +2527,13 @@ def _plan_review_record_for_promoting_run(
     directory carries, which differs from the crew run that produced it, so a
     lookup by the promoting run's own id finds nothing. The report's
     ``dispatch.json`` names that crew run, so the delivered report is the join
-    between the promoting run and the record it delivered. Its report directory
-    is resolved from the plan the run's node names, and its report is stored
-    first when no stored record carries its id yet — the same step a plan build
-    runs, so the record is reachable from the staging store as well as from the
-    commit. A run whose node names no plan, or a plan with no delivered report
-    naming the run, yields nothing.
+    between the promoting run and the record it delivered — resolved by
+    :func:`_delivered_plan_review_for_run`, the one owner of that join. Its
+    report directory is resolved from the plan the run's node names, and its
+    report is stored first when no stored record carries its id yet — a plan
+    build runs the same step, so the record is reachable from the staging store
+    as well as from the commit. A run whose node names no plan, or a plan with
+    no delivered report naming the run, yields nothing.
     """
     from reckon.crew import recovery
 
@@ -2416,16 +2544,7 @@ def _plan_review_record_for_promoting_run(
     plan_slug = node_id[len(prefix) :]
     if not plan_slug:
         return None
-    matched: Mapping[str, Any] | None = None
-    for sidecar in plan_review.delivered_reports(project, plan_slug):
-        composed = str(sidecar.get("review_run_id") or "")
-        if (
-            review_module._plan_review_crew_run_id(project, plan_slug, composed)
-            != run_id
-        ):
-            continue
-        matched = sidecar
-        break
+    matched = _delivered_plan_review_for_run(project, plan_slug, run_id)
     if matched is None:
         return None
     if not matched.get("stored"):
