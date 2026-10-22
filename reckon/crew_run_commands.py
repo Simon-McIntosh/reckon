@@ -2781,14 +2781,25 @@ crew_ledger = tombstone_command("ledger")
 crew_velocity = tombstone_command("velocity")
 
 
-def _budget_reset_payload(group, mark_available, mark_used, by):
+def _budget_reset_payload(
+    group,
+    mark_available,
+    mark_used,
+    by,
+    reason=None,
+    clock=None,
+    session=None,
+    starts_at=None,
+):
     """Set, clear or read whether a budget group's banked reset is available or used.
 
     A metered subscription can carry one banked reset, which grants one extra
     full window of allowance while it is available. With no action flag the
     current state is printed; ``--available`` flags one (never stacking) and
-    ``--used`` clears it. Budget preflight and the picker read the flag from the
-    same durable record, so flagging it here changes the pace they report.
+    ``--used`` records the reset, which clears the flag when the event is global.
+    Budget preflight and the picker read the flag from the same durable record,
+    so flagging it here changes the pace they report, and the event itself is
+    what a pane announces and ``crew budget --list`` shows.
     """
     from reckon.crew import budget_reset as budget_reset_module
 
@@ -2797,7 +2808,23 @@ def _budget_reset_payload(group, mark_available, mark_used, by):
     if mark_available:
         result = budget_reset_module.mark_available(group, by=by)
     elif mark_used:
-        result = budget_reset_module.mark_used(group, by=by)
+        if not (isinstance(reason, str) and reason.strip()):
+            raise click.UsageError("--reason is required with --reset --used")
+        moment = None
+        if starts_at:
+            moment = _lift_moment(starts_at, now=datetime.now(UTC))
+            if moment is None:
+                raise click.ClickException(
+                    f"--from {starts_at!r} is neither an ISO-8601 time nor a duration"
+                )
+        result = budget_reset_module.mark_used(
+            group,
+            by=by,
+            moment=moment,
+            reason=reason,
+            clock=clock,
+            session=session,
+        )
     else:
         found = budget_reset_module.record(group)
         found = found or {}
@@ -3040,20 +3067,28 @@ def _group_credit_balance(config, group):
 
 
 def _budget_lifts_payload(group):
-    """List active and recent budget lifts, newest first.
+    """List active and recent budget lifts, newest first, beside the day's resets.
 
     Ended lifts are kept as history so a multiple can be tuned against what it
     did, so this prints every lift on record. A lift still in force carries a
-    null ``cleared_at`` and an ``ends`` block not yet reached.
+    null ``cleared_at`` and an ``ends`` block not yet reached. The resets are
+    the last day's events — the announced ones and the ones the window readings
+    detected — so a lift can be read against the reset it answered.
     """
     from reckon.crew import budget_lift as budget_lift_module
+    from reckon.crew import budget_reset as budget_reset_module
 
     lifts = budget_lift_module.list_lifts(group=group, path=None)
+    resets = budget_reset_module.recent_resets(horizon=timedelta(hours=24))
+    if group:
+        resets = [row for row in resets if row.get("group") == group]
     return {
         "ok": True,
         "group": group,
         "count": len(lifts),
         "lifts": lifts,
+        "reset_count": len(resets),
+        "resets": resets,
     }
 
 
@@ -3068,13 +3103,18 @@ def _budget_lifts_payload(group):
     "--list",
     "do_list",
     is_flag=True,
-    help="List active and recent budget lifts, newest first.",
+    help=(
+        "List active and recent budget lifts, newest first, beside the last "
+        "day's reset events."
+    ),
 )
 @click.option(
     "--reset",
     "do_reset",
     is_flag=True,
-    help="Flag, clear or read whether a group's banked reset is available or used.",
+    help=(
+        "Flag, record or read whether a group's banked reset is available or was used."
+    ),
 )
 @click.option(
     "--check",
@@ -3130,13 +3170,21 @@ def _budget_lifts_payload(group):
 @click.option(
     "--session",
     default=None,
-    help="With --lift, scope the lift to one session id rather than the workstation.",
+    help=(
+        "With --lift, scope the lift to one session id rather than the "
+        "workstation. With --reset --used, scope the reset to one session, "
+        "leaving the banked-reset flag alone; omit it for the account's own reset."
+    ),
 )
 @click.option(
     "--from",
     "starts_at",
     default=None,
-    help="With --lift, when the lift begins: an ISO-8601 time or a duration from now.",
+    help=(
+        "With --lift, when the lift begins: an ISO-8601 time or a duration from "
+        "now. With --reset --used, when the reset happened, in the same forms; "
+        "default: now."
+    ),
 )
 @click.option(
     "--until",
@@ -3152,12 +3200,18 @@ def _budget_lifts_payload(group):
     type=click.Choice(_LIFT_CLOCKS),
     default="seven_day",
     show_default=True,
-    help="With --lift, which rate-limit window the lift is anchored to.",
+    help=(
+        "With --lift, which rate-limit window the lift is anchored to. With "
+        "--reset --used, which window the reset belongs to."
+    ),
 )
 @click.option(
     "--reason",
     default=None,
-    help="With --lift, why the group's pace is being raised; required for a grant.",
+    help=(
+        "With --lift, why the group's pace is being raised; required for a grant. "
+        "With --reset --used, why the reset happened; required."
+    ),
 )
 @click.option(
     "--clear",
@@ -3187,7 +3241,10 @@ def _budget_lifts_payload(group):
     "--used",
     "mark_used",
     is_flag=True,
-    help="With --reset, clear the flag, recording that the banked reset was spent.",
+    help=(
+        "With --reset, record that the reset happened, clearing a banked flag "
+        "when the event is global. Requires --reason."
+    ),
 )
 @click.option(
     "--by",
@@ -3334,7 +3391,16 @@ def crew_budget(
         return
 
     if do_reset:
-        result = _budget_reset_payload(group, mark_available, mark_used, by)
+        result = _budget_reset_payload(
+            group,
+            mark_available,
+            mark_used,
+            by,
+            reason=reason,
+            clock=clock,
+            session=session,
+            starts_at=starts_at,
+        )
     else:
         result = _budget_lift_payload(
             group=group,
