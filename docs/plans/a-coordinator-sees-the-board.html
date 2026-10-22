@@ -25,7 +25,7 @@
   <title>A Coordinator Sees the Board | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="8">
 <meta name="plan-modified" content="2026-10-23">
 </head>
 <body>
@@ -85,8 +85,8 @@
     <p>A plan's coordinator is the dispatching <code>session</code> of its most recent dispatched run, live or in the
     ledger, within a configured staleness window. A run is matched to its plan by the row's <code>plan</code> field, and, where that is null because the run was dispatched from a brief (<code>reckon/run_record.py:489</code>), by its <code>plan_link</code>. A run carrying neither is matched by the plan its node id names: a plan review's node <code>plan-review-of-&lt;slug&gt;</code> names <code>&lt;slug&gt;</code>, and a run review resolves through the run it reviews. A run matched by none of these belongs to no plan. The window is a configuration value, never a literal in
     code. With no such run it is unowned, reported as itself and never guessed. The answer carries both
-    facts: the <code>plan-owner</code> person and the coordinator session with its peer name where
-    <code>reckon/crew/directory.py</code> resolves one. It also says whether that session is live, and an
+    facts: the <code>plan-owner</code> person and the coordinator session by its id; no
+    surface resolves a session to a peer name today, so none is claimed. It also says whether that session is live, and an
     ended session reads as ended. A later dispatch by another session takes the plan over, and the ledger
     already holds the earlier sessions as history. No claim store is added. The resolver is one new function that reads the committed ledger rows and the live pointers, takes each run's
     dispatching <code>session</code>, and keeps the most recent match per plan; it does not reuse
