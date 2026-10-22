@@ -11,6 +11,15 @@ never disagree with the counters beside it. A blocked run whose refusal has
 already been accepted (the ``held`` classification) is waiting, not blocked, and
 is left out exactly as the counters leave it out.
 
+A run the coordinator has deferred is left out too, through the same reader the
+obligations view defers it by, so the line and that view answer the same
+question the same way. A blocked or unpromoted run the coordinator has put off
+until an instant is not owed to them before that instant, and the pane saying so
+on its reminder cadence is a notification for work they have already parked. The
+deferral is read and not re-implemented, and it expires on its own: the instant
+passes and the run is owed again, which changes the set, so the line names it
+once rather than on every reminder.
+
 Every row names the node, the state it holds now and how long it has held it. An
 unpromoted run whose review is already stored is marked ``reviewed``: promotion
 unlinks the pointer and the session it captured, so a review read after the fact
@@ -132,6 +141,28 @@ def _snapshots(
     return snapshots, pointers
 
 
+def _deferred_run_ids(project: str, *, moment: float) -> frozenset[str]:
+    """The runs whose recorded deferral is still in force at ``moment``.
+
+    Read from the obligations view's own deferral reader rather than from a
+    second copy of its rules, so a run the coordinator has deferred is held out
+    of this line exactly as it is held out of that view. The reader takes the
+    instant rather than reading one itself, so a caller that composes the line
+    for a moment composes the deferral for the same moment.
+
+    An unreadable deadline is never a reason to withhold a run: the reader
+    treats it as undeferred, so the run stays in the set.
+    """
+    from datetime import UTC, datetime
+
+    from reckon.crew import obligations as obligations_module
+
+    in_force = obligations_module._acknowledgements_in_force(
+        project, now=datetime.fromtimestamp(float(moment), tz=UTC)
+    )
+    return frozenset(in_force)
+
+
 def needs_you_rows(
     project: str,
     *,
@@ -194,6 +225,13 @@ def needs_you_rows(
     # Oldest first within a kind, so the run that has needed attention longest
     # leads its group.
     rows.sort(key=lambda row: (-float(row["age_seconds"]), str(row["node"])))
+    # A deferred run is not owed to the coordinator until its deferral expires,
+    # so the line names it once the instant has passed and not on every reminder
+    # before it. The filter sits here rather than in one caller so the standing
+    # pane line and the closing drain row, which both compose from these rows,
+    # cannot disagree about which runs the coordinator still owes.
+    deferred = _deferred_run_ids(project, moment=at)
+    rows = [row for row in rows if row["run_id"] not in deferred]
     return rows, counts
 
 
@@ -230,9 +268,19 @@ def needs_you(
     return {"working": int(counts.get("working") or 0), "runs": rows}
 
 
-def needs_you_runs(project: str, *, session: str | None) -> list[dict[str, Any]]:
-    """The runs alone, for a caller that composes its own line."""
-    return needs_you(project, session=session)["runs"]
+def needs_you_runs(
+    project: str,
+    *,
+    session: str | None,
+    moment: float | None = None,
+) -> list[dict[str, Any]]:
+    """The runs alone, for a caller that composes its own line.
+
+    ``moment`` is the instant the set is composed for, defaulting to now; a
+    deferral is in force at that instant, so a caller that composes the same
+    moment twice composes the same set.
+    """
+    return needs_you(project, session=session, moment=moment)["runs"]
 
 
 # The word the drain line carries when the session's own fleet has nothing left
