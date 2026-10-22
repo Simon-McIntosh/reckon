@@ -64,7 +64,7 @@ class _Clock:
 
 
 class _Wall:
-    """A wall clock the case sets, so the idle line's stamp is exact.
+    """A wall clock the case sets, so a printed idle line's stamp is exact.
 
     Everything but ``time`` is the real module's, so the line's own
     ``strftime``/``localtime`` formatting is the production one.
@@ -292,11 +292,12 @@ def test_a_handover_keeps_the_pane_and_draws_the_admitted_run(home: Path) -> Non
 def test_a_population_empty_past_the_grace_settles_once(
     home: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The idle line names when the work drained, not when the pane noticed.
+    """An empty population past the grace settles once, and prints nothing.
 
     The population is empty for well past the grace, so the pane settles
-    exactly once. The stamp it prints is the moment the last unfinished run was
-    seen, so a reader is told when the fleet drained.
+    exactly once. The fleet drained with nothing outstanding, so the settle row
+    prints no line -- it names nothing the coordinator can act on. The row is
+    still delivered, which is what a session host retires the child on.
     """
     drain_wall = time.time() - 3 * 3600
     wall = _Wall(drain_wall)
@@ -318,8 +319,8 @@ def test_a_population_empty_past_the_grace_settles_once(
             arming.clock.advance(5.0)
             time.sleep(0.3)
             _drop_pointer(RUN_MINE)
-            # A stamp this far ahead would be a different HH:MM, so a line
-            # carrying it cannot be naming the sighting.
+            # Move the wall clock well past the sighting: a drained settle
+            # prints nothing, so no stamp of either moment can appear.
             wall.value = drain_wall + 2 * 3600
 
             arming.clock.advance(2.0)
@@ -336,10 +337,8 @@ def test_a_population_empty_past_the_grace_settles_once(
             )
             settles = arming.settles()
             assert len(settles) == 1, settles
-            stamp = time.strftime("%H:%M", time.localtime(drain_wall))
-            assert settles[0]["line"] == (
-                f"no live work since {stamp} · fleet drained"
-            ), settles[0]["line"]
+            # Nothing is outstanding, so the settle row prints no line at all.
+            assert settles[0]["line"] == "", settles[0]["line"]
         finally:
             arming.end()
 

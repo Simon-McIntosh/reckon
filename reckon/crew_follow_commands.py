@@ -606,27 +606,34 @@ def _follower_end_event(
 def _follower_settle_line(
     *, since: float, observed: Iterable[str] = (), tail: str = ""
 ) -> str:
-    """The one line the pane shows when a session has no work left to watch.
+    """The line the pane shows when a session drains, or nothing at all.
 
-    The stamp is the wall clock the reader's own tools print, taken at the
-    moment the session's last live run was seen, so ``since`` names when the
-    fleet actually drained rather than when this pane happened to notice.
-
-    A session at a terminal already knows its own id, so the bare stamp is the
-    whole of the news. The line names a session only when this pane carries more
-    than its own — the ones it was asked to observe — because then the reader
-    has more than one fleet in view and the row must say which it reports on.
+    A line the pane prints names something the coordinator can act on. A settle
+    whose fleet has drained names nothing to act on, so the composed line is
+    empty: the pane shows nothing, while the follower still exits with its
+    settle code so its session host retires the child as it does today.
 
     The tail is composed by :func:`reckon.crew.needs_you.drain_tail`, the same
-    derivation the standing needs-you line reads, and it is empty when that line
-    already said it.
+    derivation the standing needs-you line reads: it names the runs the session
+    still owes, and is empty when the fleet has drained or when that line
+    already named the same set. With no tail there is no line.
+
+    When it does print, the stamp is the wall clock the reader's own tools
+    print, taken at the moment the session's last live run was seen, so
+    ``since`` names when the fleet actually drained rather than when this pane
+    happened to notice. A session at a terminal already knows its own id, so the
+    bare stamp is the whole of the news; the line names a session only when this
+    pane carries more than its own — the ones it was asked to observe — because
+    then the reader has more than one fleet in view.
     """
+    if not tail:
+        return ""
     stamp = time.strftime("%H:%M", time.localtime(since))
     names = ", ".join(sorted({str(name) for name in observed if name}))
     head = f"no live work since {stamp}"
     if names:
         head = f"no live work in {names} since {stamp}"
-    return f"{head} · {tail}" if tail else head
+    return f"{head} · {tail}"
 
 
 def _follower_settle_event(
@@ -640,9 +647,12 @@ def _follower_settle_event(
     """Build the follower's terminal row for a session whose work drained.
 
     Like the lifetime end row it is about the follower rather than the fleet,
-    so it carries the line to print verbatim. ``shown`` is the signature of the
-    set the pane's last needs-you line printed, which the tail compares against
-    so the row repeats nothing that line already said.
+    so it carries the line to print verbatim. The line is empty when the fleet
+    drained with nothing outstanding: the row is still emitted, because the
+    follower leaves with its settle code either way, and the reader keys on the
+    event rather than the line. ``shown`` is the signature of the set the
+    pane's last needs-you line printed, which the tail compares against so the
+    row repeats nothing that line already said.
     """
     from reckon.crew import needs_you as needs_you_module
 
@@ -1788,10 +1798,12 @@ def _follow_watch_lines(
         changed = signature != last_needs_signature
         last_needs_signature = signature
         if not signature:
-            # The empty line prints once, when a shown set drains, not per beat.
-            if not (changed and shown_needs_signature):
-                return
-        elif not changed and moment - needs_emitted_at < interval:
+            # An empty set names nothing the coordinator can act on, so it is
+            # never printed -- not on the change, not on the cadence. The pane's
+            # last shown set is left as it was, so the settle tail still knows
+            # whether the pane was told about the runs it may still owe.
+            return
+        if not changed and moment - needs_emitted_at < interval:
             return
         shown_needs_signature = signature
         needs_emitted_at = moment
@@ -3086,13 +3098,17 @@ def crew_follow(
                 # This one line is about the follower, not the fleet, so it is
                 # printed as it was written rather than rendered as a fleet row.
                 # The settle row is the child's last: the process leaves with
-                # the settle status so its host does not restart it.
+                # the settle status so its host does not restart it. A composed
+                # line that is empty names nothing to act on, so nothing is
+                # printed -- but the event is still emitted for a JSON reader,
+                # and the child still leaves with its settle code below.
                 if event.get("event") == FOLLOWER_SETTLE_EVENT:
                     settled = True
+                line = str(event.get("line") or "")
                 if json_output:
                     _emit_crew_result(event, pretty, observation=True)
-                else:
-                    _echo_follow_line(str(event.get("line") or ""))
+                elif line:
+                    _echo_follow_line(line)
                 continue
             if event.get("event") == FOLLOWER_NEEDS_YOU_EVENT:
                 # The standing line is about the pane rather than any one run,

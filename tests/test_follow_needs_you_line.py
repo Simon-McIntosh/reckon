@@ -2,11 +2,10 @@
 
 The standing line names every owned run whose state needs action, and says so
 again while the work is still owed: an unpromoted or blocked run is something
-the coordinator has not done yet. It says nothing about an empty set -- a pane
-with nothing outstanding is not news, and under a session host, which restarts
-a follower that exits, a quiet pane already means a quiet fleet. The one
-exception is the moment a set the pane was shown full empties: that is worth one
-line, and then silence.
+the coordinator has not done yet. It prints nothing about an empty set -- a pane
+with nothing outstanding names nothing the coordinator can act on, and under a
+session host every printed line is a notification that starts a coordinator
+turn. So an empty set never prints, not on the change and not on the cadence.
 
 The line is one derivation, in ``reckon/crew/needs_you.py``, because the follower
 prints it while it lives and again as the run it names is delivered; two
@@ -316,12 +315,12 @@ def test_an_empty_set_is_never_announced(home):
         assert not thread.is_alive()
 
 
-def test_a_draining_set_is_announced_once(home):
-    """A set that empties after the pane was shown it full says so, once.
+def test_a_draining_set_prints_nothing(home):
+    """A set that empties after the pane was shown it full prints nothing.
 
-    The empty line is the follower's answer to a reader who was told there was
-    work: it reports that the work has gone. Nothing follows it, because a
-    quiet fleet under a session host is not a fact the reader must be woken for.
+    An empty set names nothing the coordinator can act on, so the line that
+    named the run prints while the run is owed and stops when it is promoted;
+    nothing at all is printed, on the change or on the cadence.
     """
     clock = _Clock()
     events: list[dict] = []
@@ -342,13 +341,14 @@ def test_a_draining_set_is_announced_once(home):
 
         crew.pointer_path("r-own").unlink()
         _advance(clock, 2.0)
-        lines = _wait_for_lines(events, 2)
-        assert len(lines) == 2, lines
-        assert lines[1] == "yours: 0 working · nothing needs you", lines
+        # Nothing follows the drain: the empty set prints no line at all.
+        lines = _needs_you_lines(events)
+        assert len(lines) == 1, lines
 
-        # And then nothing, for as long as the fleet stays quiet.
+        # And then nothing, for as long as the fleet stays quiet -- including
+        # well past the reminder cadence an unchanged non-empty set would beat.
         _advance(clock, 35 * 60, step=10.0)
-        assert len(_needs_you_lines(events)) == 2, _needs_you_lines(events)
+        assert len(_needs_you_lines(events)) == 1, _needs_you_lines(events)
     finally:
         stop.set()
         thread.join(timeout=2.0)

@@ -1,13 +1,15 @@
-"""The follower's settle row says whether the session's own fleet is drained.
+"""The follower's settle row names the runs the session still owes, or nothing.
 
 A pane goes dark exactly when a coordinator looks up from it, and the row it
-leaves behind is the last thing that pane says. That row already names when the
-session's work stopped; these cases hold it to saying what the reader must do
-about it -- the session's fleet is drained, or the count of runs it still owes
-the coordinator -- counted by the same derivation the standing needs-you line
-reads, so the closing row and the line it closed cannot disagree. The row leads
-with when it stopped -- ``no live work since`` and the HH:MM stamp -- and names
-a session only when the pane watches more than its own fleet.
+leaves behind is the last thing that pane says. That row names what the reader
+must still do about it: the runs the session still owes the coordinator,
+counted by the same derivation the standing needs-you line reads, so the closing
+row and the line it closed cannot disagree. When the fleet has drained there is
+nothing to act on, so the row prints nothing at all, while the follower still
+exits with its settle code so its host retires the child as it does today. When
+it does print, it leads with when the work stopped -- ``no live work since`` and
+the HH:MM stamp -- and names a session only when the pane watches more than its
+own fleet.
 
 Two facts decide the shape of the cases below.
 
@@ -285,13 +287,13 @@ def _prefix(sighting_wall: float) -> str:
 def test_a_drain_names_the_run_that_needs_you(
     home: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A drained pane says what its session still owes, then says it is drained.
+    """A drained pane says what its session still owes, or nothing at all.
 
     The owning session's last working run ends unpromoted, so the row's tail
     names one run needing the coordinator. A peer session's working run sits in
     the same fixture, unobserved, and neither holds the pane open nor appears in
-    the row. The run is then live again and is promoted, and the next drain says
-    the fleet is drained instead.
+    the row. The run is then live again and is promoted, and the next drain
+    prints nothing: the fleet has drained and names nothing to act on.
     """
     sighting = time.time() - 3 * 3600
     wall = _Wall(sighting)
@@ -335,10 +337,8 @@ def test_a_drain_names_the_run_that_needs_you(
             then=lambda: _promote(RUN_MINE),
         )
         assert len(settles) == 1, settles
-        line = settles[0]["line"]
-        prefix = _prefix(sighting + 2 * 3600)
-        assert line.startswith(prefix), line
-        assert "fleet drained" in line[len(prefix) :], line
+        # The fleet drained with nothing outstanding, so the row prints nothing.
+        assert settles[0]["line"] == "", settles[0]["line"]
         assert needs_you_module.needs_you_runs(PROJECT, session=SESSION) == []
 
 
@@ -371,6 +371,6 @@ def test_a_drain_keeps_silent_about_a_set_the_standing_line_named(
         )
         assert len(settles) == 1, settles
         line = settles[0]["line"]
-        assert line == _prefix(sighting), (
+        assert line == "", (
             f"the closing row restated a set the standing line already named: {line!r}"
         )
