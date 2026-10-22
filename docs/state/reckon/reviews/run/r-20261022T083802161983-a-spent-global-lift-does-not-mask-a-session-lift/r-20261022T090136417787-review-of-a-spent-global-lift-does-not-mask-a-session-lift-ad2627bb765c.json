@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "head-gate.log fails tests/test_a_new_lift_replaces_the_standing_one.py::test_the_cli_reply_carries_replaces_in_its_lift_field; unrelated-failure-at-base.log fails the same id at the base revision, so the change adds no failure",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:2015",
+    "reckon/crew/dispatch.py:825",
+    "reckon/crew/routing.py:438"
+  ],
+  "completed_at": "2026-10-22T09:21:34.623Z",
+  "dispatched_at": "2026-10-22T09:02:45Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T083802161983-a-spent-global-lift-does-not-mask-a-session-lift/head-gate.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the head gate log's first line names revision 2c1ac634 (the base commit) while the tree it ran carried the node's two added lines (the new file's four tests pass in that run and fail in base-arm.log), so the recorded \"43 passed\" cannot be reproduced from the revision the log names, and base-arm.log names the same revision and the same tree path, leaving the two arms indistinguishable by revision alone."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit ad2627bb7 against base 2c1ac634b4a4a335daefc5b92eeec208a26dd16 commit by commit; three files, +423 lines, no deletion, and the product change is the two `session=session` arguments the goal names.",
+    "done_when": "the measure names six gate files and requires the base commit to refuse the session's dispatch naming the global lift; head-gate.log records \"1 failed, 43 passed\" and base-arm.log records \"3 failed, 1 passed\" with the session's dispatch refused by the global lift codex-group-1792659009-fcf422, so the gate asserts what the done_when states.",
+    "goal": "the node goal is to pass the dispatching session to both budget verdicts a dispatch takes; reckon/crew/dispatch.py:1461 and reckon/crew/dispatch.py:1545 each add `session=session` to a `_budget_verdict` call, which is exactly the goal and nothing besides.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T083802161983-a-spent-global-lift-does-not-mask-a-session-lift/manifest.md; status complete, one commit ad2627bb765c28903f78b039671f1e4e42012c61, gate 43 passed / 1 pre-existing failure, new file 4 passed, negative_control_log named.",
+    "write_paths": "the manifest declares reckon/crew/dispatch.py, reckon/crew/budget_lift.py, the new test, the evidence fragment and the figure directory; git show --stat ad2627bb7 touches dispatch.py (+2), the new test (+376) and the fragment (+45), all inside the declared set, with budget_lift.py and the figure directory untouched."
+  },
+  "justifications": {
+    "durability": "base-arm.log shows removing the two added lines reddens tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py:347, :366 and :374, so the added assertions fail exactly when the change regresses.",
+    "evidence": "head-gate.log's last line reads EXIT=1 and records \"1 failed, 43 passed\" over the six named files, and base-arm.log records the session's dispatch refused by the global lift, but head-gate.log:1 names the base revision so the head result cannot be reproduced from the revision it names.",
+    "fit": "the product change is a two-line pass-through of the `session` parameter `_budget_verdict` already declares at reckon/crew/routing.py:450, and the new test follows the file idiom of driving the real CLI through click.testing.CliRunner over a throwaway repo.",
+    "goal_fidelity": "reckon/crew/dispatch.py:1461 and reckon/crew/dispatch.py:1545 add `session=session` to the first and the fallback `_budget_verdict` call, which is the goal verbatim and its whole diff.",
+    "reuse": "session-scoped lift resolution is owned by reckon/crew/budget_group.py:220 effective_block(session=...), reached through reckon/crew/routing.py:432; the change passes a session into that existing owner rather than adding a second resolver, and no new definition is introduced anywhere in the diff.",
+    "scope_discipline": "git show --stat ad2627bb7 changes only reckon/crew/dispatch.py, tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py and the evidence fragment, every one inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to pass the dispatching session to both budget verdicts a dispatch takes; reckon/crew/dispatch.py:1461 and reckon/crew/dispatch.py:1545 each add `session=session` to a `_budget_verdict` call, which is exactly the goal and nothing besides.\nVERDICT done_when: the measure names six gate files and requires the base commit to refuse the session's dispatch naming the global lift; head-gate.log records \"1 failed, 43 passed\" and base-arm.log records \"3 failed, 1 passed\" with the session's dispatch refused by the global lift codex-group-1792659009-fcf422, so the gate asserts what the done_when states.\nVERDICT write_paths: the manifest declares reckon/crew/dispatch.py, reckon/crew/budget_lift.py, the new test, the evidence fragment and the figure directory; git show --stat ad2627bb7 touches dispatch.py (+2), the new test (+376) and the fragment (+45), all inside the declared set, with budget_lift.py and the figure directory untouched.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T083802161983-a-spent-global-lift-does-not-mask-a-session-lift/manifest.md; status complete, one commit ad2627bb765c28903f78b039671f1e4e42012c61, gate 43 passed / 1 pre-existing failure, new file 4 passed, negative_control_log named.\nVERDICT diff: read commit ad2627bb7 against base 2c1ac634b4a4a335daefc5b92eeec208a26dd16 commit by commit; three files, +423 lines, no deletion, and the product change is the two `session=session` arguments the goal names.\nCALL_SITES: reckon/crew_dispatch_commands.py:2015, reckon/crew/dispatch.py:825, reckon/crew/routing.py:438\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:1461 and reckon/crew/dispatch.py:1545 add `session=session` to the first and the fallback `_budget_verdict` call, which is the goal verbatim and its whole diff.\nSCORE evidence: 16\nJUSTIFICATION evidence: head-gate.log's last line reads EXIT=1 and records \"1 failed, 43 passed\" over the six named files, and base-arm.log records the session's dispatch refused by the global lift, but head-gate.log:1 names the base revision so the head result cannot be reproduced from the revision it names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat ad2627bb7 changes only reckon/crew/dispatch.py, tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py and the evidence fragment, every one inside the declared write paths.\nSCORE durability: 20\nJUSTIFICATION durability: base-arm.log shows removing the two added lines reddens tests/test_a_spent_global_lift_does_not_mask_a_session_lift.py:347, :366 and :374, so the added assertions fail exactly when the change regresses.\nSCORE fit: 19\nJUSTIFICATION fit: the product change is a two-line pass-through of the `session` parameter `_budget_verdict` already declares at reckon/crew/routing.py:450, and the new test follows the file idiom of driving the real CLI through click.testing.CliRunner over a throwaway repo.\nSCORE reuse: 20\nJUSTIFICATION reuse: session-scoped lift resolution is owned by reckon/crew/budget_group.py:220 effective_block(session=...), reached through reckon/crew/routing.py:432; the change passes a session into that existing owner rather than adding a second resolver, and no new definition is introduced anywhere in the diff.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T083802161983-a-spent-global-lift-does-not-mask-a-session-lift/head-gate.log:1 follow-on: the head gate log's first line names revision 2c1ac634 (the base commit) while the tree it ran carried the node's two added lines (the new file's four tests pass in that run and fail in base-arm.log), so the recorded \"43 passed\" cannot be reproduced from the revision the log names, and base-arm.log names the same revision and the same tree path, leaving the two arms indistinguishable by revision alone.",
+  "review_run_id": "r-20261022T090136417787-review-of-a-spent-global-lift-does-not-mask-a-session-lift-ad2627bb765c",
+  "reviewed_base_sha": "2c1ac634b4a4a335daefc05b92eeec208a26dd16",
+  "reviewed_head_sha": "ad2627bb765c28903f78b039671f1e4e42012c61",
+  "reviewed_run_id": "r-20261022T083802161983-a-spent-global-lift-does-not-mask-a-session-lift",
+  "scores": {
+    "durability": 20,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T09:33:49.463245+00:00",
+  "total": 115
+}

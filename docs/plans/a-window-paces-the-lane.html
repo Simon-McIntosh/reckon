@@ -26,7 +26,7 @@
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s6-the-probe-reader-and-the-undeclared-dialect&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17,6a915fd7,4d043fd0,fd4a158f,95ba8ea7,cb69a87f,768a9285,e5cf008e,6001f577,e6dd0dc4,c011b6f9,82095575,87c98418,8e70585c,b7ba4786,3f0e9621,798f87f8,e37ac897,d34eaf27">
 <meta name="plan-impl" content="0.97">
-<meta name="plan-version" content="243">
+<meta name="plan-version" content="244">
 <meta name="plan-modified" content="2026-10-22">
 </head>
 <body>
@@ -2606,6 +2606,9 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
 </div>
 <div class="r-comment" data-section="s19" data-id="c-run-r-20261015T144150634437-a-replayed-pick-reads-its-own-session" data-who="reckon-build" data-when="2026-10-15T14:51:31.514Z">
     <div class="r-comment-body"><p>The dispatch replay now composes at most one budget view per distinct session in the replayed set and hands each record the view for its own session, so a session-scoped lift releases exactly that session's reserves: a lift scoped to session A over a group read at 95% leaves the A dispatch released at the 100 ceiling and the B dispatch held at the 92 reserve ceiling, a one-session replay composes one view, and a record naming no session reads the session-less view.</p></div>
+</div>
+<div class="r-comment" data-section="s20" data-id="c-run-r-20261022T090136417787-review-of-a-spent-global-lift-does-not-mask-a-session-lift-ad2627bb765c" data-who="reckon-build" data-when="2026-10-22T09:21:34.623Z">
+    <div class="r-comment-body"><p>review of r-20261022T083802161983-a-spent-global-lift-does-not-mask-a-session-lift at ad2627bb765c: all six dimensions scored (goal_fidelity 20, evidence 16, scope_discipline 20, durability 20, fit 19, reuse 20; total 115), all six checklist items answered, one follow-on finding, no blocking findings.</p></div>
 </div>
 </section>
 </main>
