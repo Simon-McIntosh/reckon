@@ -10,7 +10,9 @@
   the views share, fills each row's <code>section</code> from the run's own
   pointer, canonicalises the spelling, refuses a requested field the view does
   not carry while naming the fields it does have, and leaves a field whose value
-  is empty off the row. What each view did before, view by view: the
+  is empty off the row — in the runs view exactly as in the other three; the one
+  field that view keeps when empty is <code>plan</code>, because a brief run
+  read no plan and the key's presence beside an absent digest is what says so. What each view did before, view by view: the
   <code>live</code> view could not name a run's section at all and refused
   <code>fields=["section"]</code>, because its row builder never carried the
   field; <code>runs</code> carried it but narrowed its own fields and never
@@ -36,13 +38,21 @@
 <table id="a-row-is-compact-and-names-its-section-measure">
   <caption>Measured on the node's gate, at the base arm and after it.</caption>
   <thead>
-    <tr><th>clause</th><th>base arm <code>8c7e865d7</code></th><th>after <code>59c57322a</code></th></tr>
+    <tr><th>clause</th><th>base arm <code>8c7e865d7</code></th><th>after <code>81aa5716c</code></th></tr>
   </thead>
   <tbody>
     <tr>
       <td>named gate (this node's test file plus the four named suites)</td>
-      <td>11 failed, 3 passed — <code>EXIT=1</code> on this node's file alone</td>
-      <td>63 passed — <code>EXIT=0</code></td>
+      <td>12 failed, 3 passed — <code>EXIT=1</code> on this node's test file alone,
+        run inside the base-arm tree</td>
+      <td>64 passed — <code>EXIT=0</code></td>
+    </tr>
+    <tr>
+      <td>a runs row that carries an empty field</td>
+      <td>the row states every declared field, so an absent session, transcript
+        or classification is serialised as a null a reader has to interpret</td>
+      <td>every empty field is left off, except <code>plan</code>, whose
+        presence is what says a brief run's authority is a digest</td>
     </tr>
     <tr>
       <td>a dispatched run's <code>section</code> read in all four views</td>
@@ -96,7 +106,11 @@
   turns the section-state rule red on its own: making
   <code>dependency_row_state</code> ignore the section declaration and report
   the containing plan's status fails both section-state cases
-  (<code>EXIT=1</code>, 2 failed of 14, 12 deselected).
+  (<code>EXIT=1</code>, 2 failed of 14, 12 deselected). A third control covers the
+  empty-field rule the runs view previously switched off: passing the whole
+  declared field set to the projection keeps every empty field, and the case
+  asserting that an empty field is left off goes red under it
+  (<code>EXIT=1</code>, 1 failed).
 </p>
 
 <p id="a-row-is-compact-and-names-its-section-shrink">
