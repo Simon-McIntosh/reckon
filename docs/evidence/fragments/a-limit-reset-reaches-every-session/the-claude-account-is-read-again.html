@@ -102,10 +102,23 @@ refuses it, so the backend stayed unknown and both tests passed by accident; cor
 endpoint made the same read answer — 73.0 % utilisation, observed from this box — and the backend
 turn known. A positive control settles it: with the outbound read refused, both ids pass at the
 head that fails them.</p>
-<p id="the-claude-account-is-read-again-probe-runner-narrow">The repair is in the reader rather
-than in the tests. The account surface is now read only when the caller supplies no probe runner
-or asks for the read with a fetch, so an injected runner is the only instrument a caller gets; no
-production call site passes one, so the operator's path reads exactly as before. At that head the
-same arm is 2 failed / 76 passed against the base arm's 2 failed / 68 passed, with only the two
-pre-existing CLI failures in both and none added.</p>
+<p id="the-claude-account-is-read-again-probe-runner-narrow">The repair is in the suite, not in the
+product code and not in the tests. A first attempt narrowed the reader instead — reading the
+account surface only when the caller supplied no probe runner — and a re-review showed it bends
+production behaviour to fit a test: a cached-only pre-flight passes a probe runner of its own, so
+under the narrowing it would stop reading its account. That attempt is reverted. Whether a probe
+runner is supplied no longer decides whether the account surface is read; an injected runner
+governs the probe step and nothing else.</p>
+<p id="the-claude-account-is-read-again-probe-runner-guard">Isolation now lives in the suite-wide
+guard, in the same autouse fixture that already replaces the provider probe launcher: the claude
+dialect's account-surface read is stubbed there too, so no test anywhere reaches the
+workstation's live account whether or not the box is logged in. An injected <code>fetch</code> is
+still honoured, because a fetch is a transport the test already owns, and a test that patches the
+launcher itself replaces the guard for that test. One assertion holds the guard in place, and it
+asserts the <em>replacement</em> rather than a reading — an unguarded read on a logged-out machine
+answers unknown exactly as the stub does, so a reading-shaped assertion would pass with the guard
+removed and fail only on a machine that happened to be logged in. Both population ids therefore
+pass 5 of 5 alone because the guarded read is deterministic, not because this box's account
+answered or failed. At the guarded head the same arm is 2 failed / 77 passed against the base arm's
+2 failed / 68 passed, with the same two pre-existing CLI failures in both and none added.</p>
 </article>
