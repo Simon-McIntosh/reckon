@@ -1775,10 +1775,129 @@ def _resolved_write_paths(
     return [str((run_directory / str(entry)).resolve()) for entry in declared]
 
 
+# The finding names for the two admission checks a node's own declaration
+# answers. Neither is one of the contract properties: those judge the node's
+# definition, while these judge what the node says it reads and what it says
+# its result is checked against, so a reader can tell a gap in the shape of the
+# node from a claim it never made.
+INPUTS_PROPERTY = "inputs"
+COMPARES_WITH_PROPERTY = "compares-with"
+
+
+def authority_project(authority: Mapping[str, Any]) -> str:
+    """The project a resolved dispatch authority names, or an empty string."""
+    plan = authority.get("plan")
+    if isinstance(plan, Mapping) and str(plan.get("project") or "").strip():
+        return str(plan["project"]).strip()
+    write = authority.get("write")
+    projects = write.get("projects") if isinstance(write, Mapping) else None
+    if isinstance(projects, (list, tuple)) and len(projects) == 1:
+        return str(projects[0]).strip()
+    return ""
+
+
+def node_inputs_finding(
+    node: TaskNode, *, repository: str | Path
+) -> dict[str, str] | None:
+    """Compose the refusal for declared inputs the repository does not hold.
+
+    An input is a path the node reads to do its work, resolved against the
+    repository the node will run in, so a node fitting a model against
+    constants, a catalogue or a measurement set names them here and is refused
+    before a worktree exists when they are absent. Naming them costs a
+    dispatch; discovering them costs the worker's whole run.
+    """
+    root = Path(str(repository)).expanduser()
+    missing = [
+        str(entry)
+        for entry in node.inputs
+        if str(entry).strip() and not _resolved_input(root, str(entry)).exists()
+    ]
+    if not missing:
+        return None
+    named = ", ".join(missing)
+    return {
+        "property": INPUTS_PROPERTY,
+        "detail": (
+            f"the node declares {named} as its inputs, and "
+            + ("that path does not" if len(missing) == 1 else "those paths do not")
+            + f" exist under the work repository {root}; name inputs the "
+            "repository holds, or add the path to the node's write paths when "
+            "this node creates it"
+        ),
+    }
+
+
+def _resolved_input(root: Path, declared: str) -> Path:
+    """Resolve one declared input against the repository it will be read in."""
+    raw = Path(declared).expanduser()
+    return raw if raw.is_absolute() else root / raw
+
+
+def node_measurement_finding(
+    node: TaskNode, *, project: str, project_path: str | None = None
+) -> dict[str, str] | None:
+    """Report a model-building node that names nothing to compare against.
+
+    A project declares where its models live in the ``model_paths`` globs of its
+    flight config, and a node writing one of those paths builds a model. The
+    question such a node has to answer before it starts is what its result is
+    checked against — a measurement, a reference, or a stated search showing no
+    measurement exists — because a fit nobody can check is the round this lint
+    is here to save. A project that declares no model path, and a node that
+    touches none of them, are both never linted.
+    """
+    if not project:
+        return None
+    rules = _node_domain_rules(node, project, project_path=project_path)
+    if not rules.model_paths:
+        return None
+    if str(node.compares_with or "").strip():
+        return None
+    return {
+        "property": COMPARES_WITH_PROPERTY,
+        "detail": (
+            f"the node's write paths match the model paths "
+            f"({', '.join(rules.model_paths)}) project {project!r} declares, so "
+            "it builds a model, but it names nothing its result is checked "
+            "against; state the measurement or reference in --compares-with, or "
+            "declare `none-exists: <the search that established it>`"
+        ),
+    }
+
+
+def admission_domain_findings(
+    node: TaskNode,
+    *,
+    project: str,
+    repository: str | Path,
+    project_path: str | None = None,
+) -> list[dict[str, str]]:
+    """The findings a node's inputs and its stated comparison produce.
+
+    Both checks need the dispatched repository's root and the project whose
+    flight config carries the model paths, which is why they are resolved in
+    admission rather than on the node record: a node is shaped with no
+    repository in hand, and the same node is well-formed or not depending on
+    the tree it will run in.
+    """
+    findings = [
+        node_inputs_finding(node, repository=repository),
+        node_measurement_finding(node, project=project, project_path=project_path),
+    ]
+    return [finding for finding in findings if finding is not None]
+
+
 def _require_write_paths_in_authority(
     node: TaskNode, authority: Mapping[str, Any]
 ) -> None:
-    """Confine writes to resolved repositories or durable delivery roots."""
+    """Confine writes to resolved repositories or durable delivery roots.
+
+    The node's declared inputs and its stated comparison are resolved here too,
+    where the authority names both the repository the node will read and the
+    project whose flight config declares where models live, and ride the node to
+    the finding channel the verdict is composed from.
+    """
     work_repo = Path(str(authority["write"]["repository"])).resolve()
     repository_roots: list[Path] = []
     for value in authority.get("repositories") or (work_repo,):
@@ -1802,6 +1921,14 @@ def _require_write_paths_in_authority(
             "the repository containing this path is missing from "
             "mounts.json or outside the resolved plan authority"
         )
+    # Replaced rather than appended: a dispatch that resolves the same node
+    # twice — a picker retry, a preview before the launch — must not report the
+    # same finding twice.
+    node.admission_findings = admission_domain_findings(
+        node,
+        project=authority_project(authority),
+        repository=work_repo,
+    )
 
 
 def _sandbox_reachability(
@@ -1811,7 +1938,17 @@ def _sandbox_reachability(
     repository: Path,
     run_directory: Path,
 ) -> tuple[tuple[Path, ...] | None, list[dict[str, str]]]:
-    """Resolve writable roots and report declared paths outside every grant."""
+    """Resolve writable roots and report declared paths outside every grant.
+
+    The admission checks that need the repository root — a node's declared
+    inputs, and whether a model-building node names what its result is checked
+    against — are resolved earlier, where the resolved authority names the
+    project whose flight config carries ``model_paths``, and ride the node as
+    ``admission_findings``. They are reported here because this is the finding
+    channel the caller merges into the node's verdict, so a refusal and a lint
+    reach the same report as every other admission finding.
+    """
+    domain_findings = [dict(finding) for finding in node.admission_findings]
     roots = _backends.sandbox_write_roots(
         backend,
         repository=repository,
@@ -1837,7 +1974,7 @@ def _sandbox_reachability(
             sorted({*roots, *record_directories}, key=lambda path: path.as_posix())
         )
     if "execution_capable" not in backend:
-        return roots, []
+        return roots, domain_findings
     tier = str(backend.get("sandbox") or _backends.READ_ONLY)
     unreachable = [
         str(path)
@@ -1850,21 +1987,24 @@ def _sandbox_reachability(
     ]
     grants = "unrestricted" if roots is None else ", ".join(str(root) for root in roots)
     return roots, [
-        {
-            "property": "scoped",
-            "detail": (
-                f"write path {path!r} is unreachable in resolved sandbox tier "
-                f"{tier!r}; writable grants: {grants or 'none'}"
-                + (
-                    f"; review node {node.id!r} reviews run "
-                    f"{reviewed_run_id or 'that its id does not name'} and may "
-                    "write only that run's record directory"
-                    if node.role == "review"
-                    else ""
-                )
-            ),
-        }
-        for path in unreachable
+        *domain_findings,
+        *[
+            {
+                "property": "scoped",
+                "detail": (
+                    f"write path {path!r} is unreachable in resolved sandbox tier "
+                    f"{tier!r}; writable grants: {grants or 'none'}"
+                    + (
+                        f"; review node {node.id!r} reviews run "
+                        f"{reviewed_run_id or 'that its id does not name'} and may "
+                        "write only that run's record directory"
+                        if node.role == "review"
+                        else ""
+                    )
+                ),
+            }
+            for path in unreachable
+        ],
     ]
 
 

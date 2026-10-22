@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>a-node-names-its-inputs-and-measurement — landed record</title>
+</head>
+<body>
+<main>
+<h2 id="a-node-names-its-inputs-and-measurement-heading">A node names its inputs and its measurement before it starts</h2>
+<p id="a-node-names-its-inputs-and-measurement-what"><code>TaskNode</code> carries two optional fields,
+<code>inputs</code> and <code>compares_with</code>, filled from the new <code>--input</code> and
+<code>--compares-with</code> options of <code>reckon crew dispatch</code>. Both checks are resolved in
+<code>reckon/crew/dispatch_admission.py</code>, where the resolved dispatch authority names both the
+repository the node will read and the project whose flight config declares where its models live:
+<code>node_inputs_finding</code> resolves every declared input against that repository root and names
+the ones it does not hold, and <code>node_measurement_finding</code> reports a node whose write paths
+match a <code>model_paths</code> glob through <code>rules_for</code> and which states nothing its
+result is checked against. <code>admission_domain_findings</code> composes the two, the check runs
+beside the write-path authority check that already holds the authority in hand, and the findings ride
+the node to the one finding channel the dispatch verdict is composed from — so a refused contract and
+a lint are reported together under <code>validation.findings</code> in the dry run, and neither
+project nor prescription gains a second derivation.
+<code>reckon/crew/prescription.py</code> is unchanged and <code>judge_prescribed</code> still judges a
+synthesised node with no repository.</p>
+<p id="a-node-names-its-inputs-and-measurement-measure">Measure: <code>tests/test_a_node_names_its_inputs_and_measurement.py</code> — 13 passed. A node
+declaring <code>data/absent.h5</code> is refused naming that path while the input the fixture
+repository does hold is not named; adding the file clears the refusal, which is what shows the
+absence was seen rather than assumed; a node writing <code>models/tape.py</code> with no comparison
+is linted against the declared <code>models/**</code> glob, and a stated measurement or a stated
+<code>none-exists</code> search clears it; a node writing <code>lib/converters/divider.py</code> and a
+project declaring no model path are both never linted, the second being the control; and a dry run
+carrying both a missing input and an unstated comparison reports both properties in
+<code>validation.findings</code> with <code>ok: false</code>, while the same node with its input
+present and its comparison stated reports neither.</p>
+<p id="a-node-names-its-inputs-and-measurement-gate">Gate: the seven declared files, run in place at
+head (<code>after-arm.log</code>) — <strong>123 passed, EXIT=0</strong>; the base arm over the same
+seven files at revision <code>63e6d9f18</code> with this node's test file copied in
+(<code>base-arm.log</code>) — <strong>12 failed, 111 passed, EXIT=1</strong>, every one of the twelve
+failing ids in the new test file (the thirteenth, the prescribed judgement, passes on base because
+that behaviour is unchanged) and no other file gaining a failure id. <code>ruff check</code> and
+<code>ruff format --check</code> add no finding on the changed paths: the eight lint findings that
+remain in <code>reckon/crew/node.py</code> are the base revision's own, eight at base against eight at
+head with the same rules and lines, and both ends report every changed file formatted.</p>
+<p id="a-node-names-its-inputs-and-measurement-control">Negative control
+(<code>negative-control.log</code>): skipping the inputs check in admission makes the missing-input
+refusal never fire, and the file reports <strong>4 failed, 9 passed, EXIT=1</strong>, headed by
+<code>test_a_missing_input_is_refused_naming_the_path</code> with <code>assert None is not None</code>
+— the check is what produces the refusal, not the fixture's shape.</p>
+</main>
+</body>
+</html>
