@@ -64,7 +64,12 @@ from reckon.lifecycle import (
 )
 from reckon.live_run_classification import (
     BLOCKED_RUN_CLASSIFICATION,
+    DECISION_BLOCKER,
+    GATE_BLOCKER,
+    SECTION_DEPENDENCY_BLOCKER,
+    held_path_blockers,
     recorded_live_run_classifications,
+    run_blocker_rows,
     run_classification,
     run_classification_record,
 )
@@ -2710,6 +2715,50 @@ def _blocked_section_run_seconds(
     return seconds
 
 
+def _held_path_blockers_by_section(
+    project: str,
+    pointers: Iterable[Mapping[str, Any]],
+    docs_dir: Path | None,
+    manifest: Mapping[str, Any] | None,
+) -> dict[tuple[str, str], list[dict[str, Any]]]:
+    """The held paths of each waiting section, keyed by its plan and section.
+
+    The claims are read from the same registry the scopes view reads, so a path
+    reported here is one the dispatcher would refuse a second writer, and the
+    blocker lands on the waiting run's section — the row that has to say why
+    work on it has not started. A checkout with no measurable repository, or a
+    registry that cannot be read, reports no held path rather than guessing one.
+    """
+
+    if docs_dir is None:
+        return {}
+    from reckon.crew import runs
+
+    repo_root = Path(docs_dir).parent
+    try:
+        claims = runs.scope_claims(
+            project, repo_root, derivations=(manifest or {}).get("derivations") or {}
+        )
+    except OSError:
+        return {}
+    placement: dict[str, tuple[str, str]] = {}
+    for pointer in pointers:
+        if not isinstance(pointer, Mapping):
+            continue
+        node = pointer.get("node")
+        node = node if isinstance(node, Mapping) else {}
+        plan_ref = str(node.get("plan") or "")
+        run_section = str(node.get("section") or "")
+        if plan_ref and run_section:
+            placement[str(pointer.get("run_id") or "")] = (plan_ref, run_section)
+    grouped: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    for blocker in held_path_blockers(claims):
+        key = placement.get(str(blocker.get("waiting") or ""))
+        if key is not None:
+            grouped[key].append(blocker)
+    return dict(grouped)
+
+
 def build_roadmap(
     project: str,
     inventory: list[dict[str, Any]],
@@ -2804,6 +2853,20 @@ def _build_roadmap(
 
     pointers = crew.list_live()
     live_runs, interrupted_runs = partition_live_runs(project, pointers)
+    # Work in flight sits on its section: the rows the plan-level partition
+    # already classified are grouped under the section each run names, so a
+    # section row reports its runs with the one classification rather than
+    # reading the pointers again.
+    section_runs: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    for grouped_runs in (live_runs, interrupted_runs):
+        for plan_ref, rows in grouped_runs.items():
+            for run_row in rows:
+                run_section = str(run_row.get("section") or "")
+                if run_section:
+                    section_runs[(plan_ref, run_section)].append(run_row)
+    held_path_blockers_by_section = _held_path_blockers_by_section(
+        project, pointers, resolved_docs, project_manifest
+    )
     attempts_by_plan = section_attempts_by_plan(
         project,
         root=resolved_docs.parent if resolved_docs is not None else None,
@@ -2825,6 +2888,9 @@ def _build_roadmap(
     # derived, and the age of a run on a section that reports itself blocked.
     # Both feed the ranked section rows below.
     ready_sections_by_plan: dict[str, list[str]] = {}
+    # Each plan's named holds, by section: the blocker kinds a section row
+    # reports beside the runs sitting on it.
+    section_holds_by_plan: dict[str, dict[str, list[dict[str, Any]]]] = {}
     authored_by_plan: dict[str, Mapping[str, Any]] = {}
     blocked_run_seconds = _blocked_section_run_seconds(project, pointers)
     north_stars = [
@@ -3635,6 +3701,26 @@ def _build_roadmap(
             for section in plan_ready_sections
         )
         ready_sections_by_plan[slug] = plan_ready_sections
+        # Every hold the plan itself names, by section and by kind, so a section
+        # row reports a dependency, a gate and a decision alongside the two
+        # kinds only a run can carry. A row that reports a hold of one kind and
+        # hides another reads as less blocked than the section is.
+        named_holds: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        for blocker in section_dependency_blockers:
+            waiting = str(blocker.get("source_section") or blocker.get("stage") or "")
+            if waiting:
+                named_holds[waiting].append(
+                    {**blocker, "kind": SECTION_DEPENDENCY_BLOCKER}
+                )
+        for held_section, holding in decision_section_blockers.items():
+            for decision in holding:
+                named_holds[str(held_section)].append(
+                    {**decision, "kind": DECISION_BLOCKER}
+                )
+        for gate in section_gate_blockers:
+            for gated in gate.get("gated_sections") or []:
+                named_holds[str(gated)].append({**gate, "kind": GATE_BLOCKER})
+        section_holds_by_plan[slug] = named_holds
         if slug in live_runs:
             row["in_flight"] = live_runs[slug]
         if slug in interrupted_runs:
@@ -3738,10 +3824,25 @@ def _build_roadmap(
     # not the plan, so both are ready and both are reported. The ref names the
     # section as a clickable anchor and names its plan beside it.
     section_rows: list[dict[str, Any]] = []
-    for row in ready:
+    ready_plan_slugs = {str(row["slug"]) for row in ready}
+    # A section that carries a run is reported whether or not its plan is ready:
+    # work in flight is on the page because somebody is doing it, and a section
+    # a blocked or deferred plan hides would take the run on it off the page
+    # with it. One row per section either way, never two.
+    for row in pending:
         plan_slug = str(row["slug"])
         authored = authored_by_plan.get(plan_slug, {})
-        for section in ready_sections_by_plan.get(plan_slug, []):
+        plan_ready_sections = (
+            (list(ready_sections_by_plan.get(plan_slug, [])))
+            if plan_slug in ready_plan_slugs
+            else []
+        )
+        run_sections = sorted(
+            section
+            for ref_plan, section in section_runs
+            if ref_plan == plan_slug and section not in plan_ready_sections
+        )
+        for section in plan_ready_sections + run_sections:
             node = f"{plan_slug}#{section}"
             attempts = (
                 attempts_by_plan.get(plan_slug, {})
@@ -3753,6 +3854,15 @@ def _build_roadmap(
                 blocked_run_seconds.get((plan_slug, section))
                 or blocked_run_seconds.get((plan_slug, section_record_id(section))),
             )
+            section_holders = sorted(
+                section_runs.get((plan_slug, section), []),
+                key=lambda run_row: str(run_row.get("run_id") or ""),
+            )
+            blockers = [
+                *section_holds_by_plan.get(plan_slug, {}).get(section, []),
+                *run_blocker_rows(section_holders),
+                *held_path_blockers_by_section.get((plan_slug, section), []),
+            ]
             section_rows.append(
                 {
                     "ref": node,
@@ -3765,6 +3875,9 @@ def _build_roadmap(
                     "unlocks": sorted(dependents.get(node, set())),
                     "stuck": stuck,
                     "after_hold": bool(row.get("after_hold")),
+                    "ready": section in plan_ready_sections,
+                    "runs": section_holders,
+                    "blockers": blockers,
                 }
             )
     # One ordering over both populations: a plan row and a section row are ranked

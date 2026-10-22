@@ -40,11 +40,12 @@ from reckon.lifecycle import (
     unresolved_dependencies,
 )
 from reckon.live_run_classification import (
-    recorded_live_run_classifications as _recorded_live_run_classifications,
-)
-from reckon.live_run_classification import (
+    BLOCKED_RUN_CLASSIFICATION,
     run_classification,
     run_classification_record,
+)
+from reckon.live_run_classification import (
+    recorded_live_run_classifications as _recorded_live_run_classifications,
 )
 from reckon.project_state import _natural_identifier_key
 
@@ -1475,8 +1476,15 @@ def load_composed_review(
     )
 
 
-def _run_row(pointer: Mapping[str, Any]) -> dict[str, Any]:
-    """Project one live pointer's identity and target onto a compact row."""
+def _run_row(pointer: Mapping[str, Any], *, classification: str = "") -> dict[str, Any]:
+    """Project one live pointer's identity, target and classification onto a row.
+
+    The classification travels with the row rather than being left to the
+    reader, because the row is what a section reports about the work sitting on
+    it: a row whose classification a reader derived again would be a second
+    reading of the same record, and two readings is how one run came to look
+    interrupted in the roadmap and running elsewhere.
+    """
 
     node = pointer.get("node")
     node = node if isinstance(node, dict) else {}
@@ -1486,6 +1494,7 @@ def _run_row(pointer: Mapping[str, Any]) -> dict[str, Any]:
         "run_id": str(pointer.get("run_id") or ""),
         "member": str(pointer.get("member") or ""),
         "section": str(node.get("section") or ""),
+        "classification": classification,
         "started_at": str(pointer.get("created_at") or ""),
     }
 
@@ -1890,13 +1899,19 @@ def partition_live_runs(
             pointer, classify=classify_pointer, recorded=recorded
         )
         classification = run_classification(classified)
+        row = _run_row(pointer, classification=classification)
         if classification == INTERRUPTED_RUN_PHASE:
-            row = _run_row(pointer)
             row["reason"] = str(classified.get("detail") or "")
             row["next_action"] = str(classified.get("next_action") or "")
             interrupted.setdefault(plan, []).append(row)
         else:
-            in_flight.setdefault(plan, []).append(_run_row(pointer))
+            if classification == BLOCKED_RUN_CLASSIFICATION:
+                # A blocked run is in flight in the sense that it holds its
+                # section and its write paths, so it is not counted as a death;
+                # it is the reason it stopped that a section row has to be able
+                # to name, and that reason is the record's own text.
+                row["reason"] = str(classified.get("detail") or "")
+            in_flight.setdefault(plan, []).append(row)
     for grouped in (in_flight, interrupted):
         for runs in grouped.values():
             runs.sort(key=lambda run: run["run_id"])
