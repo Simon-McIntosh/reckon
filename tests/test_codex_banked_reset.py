@@ -231,7 +231,8 @@ def test_cli_budget_reset_round_trip(isolated_reckon_home) -> None:
 
     def invoke(*flags):
         return runner.invoke(
-            cli_main, ["crew", "budget-reset", "--group", "codex-sub", *flags]
+            cli_main,
+            ["crew", "budget", "--reset", "--group", "codex-sub", *flags],
         )
 
     state = invoke()
@@ -254,7 +255,7 @@ def test_cli_budget_reset_round_trip(isolated_reckon_home) -> None:
     read = invoke()
     assert json.loads(read.output)["available"] is True
 
-    used = invoke("--used")
+    used = invoke("--used", "--reason", "the limit reset")
     assert used.exit_code == 0
     assert json.loads(used.output)["available"] is False
 

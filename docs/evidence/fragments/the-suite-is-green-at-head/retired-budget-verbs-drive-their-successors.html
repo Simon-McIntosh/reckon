@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s38">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-22">
+  <meta name="plan-tags" content="crew,budget,tombstone,test-repair">
+  <title>Retired budget verbs drive their successors | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="retired-budget-verbs-drive-their-successors" data-reckon="landed" data-when="2026-10-22">
+  <h2 id="retired-budget-verbs-drive-their-successors-title">Retired budget verbs drive their successors.</h2>
+  <p id="retired-budget-verbs-drive-their-successors-cause"><strong>Cause.</strong>
+  The budget verb family was folded behind one parent: <code>crew preflight</code>,
+  <code>crew budget-lift</code>, <code>crew budget-reset</code> and
+  <code>crew budget-lifts</code> are now tombstones that print one JSON document naming
+  the successor under <code>crew budget</code> and exit
+  <code>TOMBSTONE_EXIT_CODE</code>, 10. Thirteen tests in five files still drove the
+  retired names, so each failed at its first assertion on the tombstone document rather
+  than on the behaviour it was written to pin. Twelve of the thirteen are those calls;
+  the thirteenth, <code>test_each_budget_flag_gives_the_answer_the_old_verb_gave</code>,
+  already drives the folded flags and failed because its recorded answer — captured
+  before the fold — no longer matched the landed shape.</p>
+  <p id="retired-budget-verbs-drive-their-successors-base"><strong>Base arm.</strong>
+  All thirteen ids were confirmed failing at the base with each driving a retired name
+  returning <code>exit_code: 10</code>, and the thirteenth failing on its recorded
+  answer. Twelve reproduction lines read <code>assert 10 == &lt;expected&gt;</code> with
+  <code>&lt;Result SystemExit(10)&gt;.exit_code</code>; the thirteenth differed by the
+  reset-record fields the recorded answer lacked.</p>
+  <p id="retired-budget-verbs-drive-their-successors-fix"><strong>Fix.</strong> Each test
+  now drives the successor flag its tombstone names with the arguments it was written to
+  pin, and asserts what it asserted before: <code>crew budget --lift</code> in
+  <code>tests/test_a_new_lift_replaces_the_standing_one.py</code>, <code>crew budget
+  --check</code> in <code>tests/test_budget.py</code> and
+  <code>tests/test_preflight_pace.py</code>, <code>crew budget --reset</code> in
+  <code>tests/test_codex_banked_reset.py</code>. The tombstone's own behaviour is
+  asserted once, by <code>test_each_retired_budget_name_prints_its_successor</code>,
+  rather than per test. No product code changed.</p>
+  <p id="retired-budget-verbs-drive-their-successors-recorded"><strong>Recorded answer.</strong>
+  <code>test_each_budget_flag_gives_the_answer_the_old_verb_gave</code> holds the folded
+  flags to the retired verbs' captured answers. Two captures had drifted from the landed
+  shape and are updated to it, with every field still asserted: the
+  <code>--list</code> answer now carries <code>reset_count</code> and
+  <code>resets</code>, the two fields a limit reset gained when it became one recorded
+  event, and the <code>--check</code> group's <code>allowance</code> block now carries
+  <code>advisory</code>. The reset round trip in
+  <code>tests/test_codex_banked_reset.py</code> passes the <code>--reason</code> the
+  <code>--used</code> case requires, since the test pins the flag's round trip rather
+  than the absence of that argument.</p>
+  <p id="retired-budget-verbs-drive-their-successors-measure"><strong>Measure.</strong>
+  Logs are under the run directory. Base arm at <code>fc81186ed</code>: the thirteen ids,
+  <code>13 failed</code>, <code>EXIT=1</code>. Head: the same thirteen ids,
+  <code>13 passed in 11.98s</code>, <code>EXIT=0</code>; the five-file gate,
+  <code>138 passed in 916.11s</code>, <code>EXIT=0</code>. Two controls, both red.
+  Pointing one repaired test back at its retired verb:
+  <code>1 failed in 15.34s</code>, <code>assert 10 == 0</code> with
+  <code>SystemExit(10)</code> — the failing id the head arm does not fail. Flipping the
+  <code>available</code> field of the successor's answer by monkeypatch:
+  <code>1 failed in 5.45s</code>, <code>assert True is False</code> at the assertion the
+  repaired round-trip test pins. No repaired test asserts fewer fields than before:
+  the invocation edits change no assertion, and the two recorded-answer updates add
+  fields to the compared payload rather than dropping any. <code>ruff check</code> and
+  <code>ruff format --check</code> report no added finding on the changed files: twelve
+  findings at the base blobs and twelve in the changed tree, and both trees fully
+  formatted.</p>
+</article>
+</body>
+</html>
