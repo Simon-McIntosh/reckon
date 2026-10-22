@@ -17,6 +17,7 @@ from reckon import (
     flight,
 )
 from reckon.crew import standing_suite
+from reckon.crew.tombstones import TOMBSTONE_EXIT_CODE
 
 
 def _payload(result):
@@ -96,14 +97,22 @@ def test_preflight_hold_and_clear_result_have_matching_exit_codes(monkeypatch):
     report = {"held": True, "held_backends": ["metered"], "backends": []}
     monkeypatch.setattr(budget, "preflight", lambda *args, **kwargs: report)
 
-    held = CliRunner().invoke(cli.main, ["crew", "preflight", "--project", "sample"])
+    held = CliRunner().invoke(
+        cli.main, ["crew", "budget", "--check", "--project", "sample"]
+    )
     assert held.exit_code == 3
     assert _payload(held)["ok"] is False
 
     report = {"held": False, "held_backends": [], "backends": []}
-    clear = CliRunner().invoke(cli.main, ["crew", "preflight", "--project", "sample"])
+    clear = CliRunner().invoke(
+        cli.main, ["crew", "budget", "--check", "--project", "sample"]
+    )
     assert clear.exit_code == 0
     assert _payload(clear)["ok"] is True
+
+    retired = CliRunner().invoke(cli.main, ["crew", "preflight", "--project", "sample"])
+    assert retired.exit_code == TOMBSTONE_EXIT_CODE
+    assert _payload(retired)["successor"] == "crew budget --check"
 
 
 def test_suite_without_exit_status_is_not_reported_as_success(monkeypatch, tmp_path):

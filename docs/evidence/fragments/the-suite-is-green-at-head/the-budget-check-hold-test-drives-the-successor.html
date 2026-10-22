@@ -1,0 +1,51 @@
+<section id="the-budget-check-hold-test-drives-the-successor">
+  <h2>the-budget-check-hold-test-drives-the-successor — the held-exit test drives the successor verb</h2>
+
+  <p><strong>Defect, reproduced first.</strong>
+  <code>tests/test_a_crew_verb_ok_reads_its_outcome.py::test_preflight_hold_and_clear_result_have_matching_exit_codes</code>
+  invoked the retired verb <code>reckon crew preflight</code>. That name resolves
+  through the crew group's tombstone lookup
+  (<code>reckon/crew/tombstones.py</code>, <code>retired="preflight"</code>,
+  <code>successor="crew budget --check"</code>), which prints a retirement
+  document and exits <code>TOMBSTONE_EXIT_CODE</code> = 10. At the base revision
+  <code>c01dcbf8b</code> the held assertion failed
+  <code>assert 10 == 3</code> with <code>1 failed, 24 passed</code>,
+  <code>EXIT=1</code> (<code>logs/base-reproduction.txt</code>), so the test drove
+  a name that no longer does the work and the exit-code contract it was written
+  to pin went untested.</p>
+
+  <p><strong>Fix, one commit.</strong> The test's held and clear arms now drive
+  <code>reckon crew budget --check --project sample</code> with the same stubbed
+  reports. The held arm asserts the check exits 3 with <code>ok</code> false; the
+  clear arm asserts it exits 0 with <code>ok</code> true. A separate assertion
+  keeps the retirement honest: <code>reckon crew preflight</code> exits
+  <code>TOMBSTONE_EXIT_CODE</code> and its document's
+  <code>successor</code> field reads <code>crew budget --check</code>. No product
+  source changed.</p>
+
+  <p id="the-budget-check-hold-test-drives-the-successor-measure"><strong>Measure.</strong>
+  <code>PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_crew_verb_ok_reads_its_outcome.py</code>
+  at <code>c01dcbf8b</code> in the assigned worktree: <strong>25 passed</strong>,
+  <code>EXIT=0</code> (<code>logs/head-arm.txt</code>). The test named in the
+  defect now passes and every other case in the file still passes.</p>
+
+  <p><strong>Negative control.</strong> The declared mutation — make the
+  successor's held branch exit 0 — was applied in a scratch copy of the tree
+  (<code>failure_exit=0</code> in the <code>--check</code> branch of
+  <code>crew_budget</code>), and the held assertion then failed
+  <code>assert 0 == 3</code> with <code>1 failed, 24 passed</code>,
+  <code>EXIT=1</code> (<code>logs/negative-control.txt</code>). The failing id is
+  the test the head arm passes, so the case fires on the behaviour it claims to
+  guard rather than passing for a name that never reaches it.</p>
+
+  <p><strong>Lint.</strong> <code>ruff check</code> and
+  <code>ruff format --check</code> add no findings to
+  <code>tests/test_a_crew_verb_ok_reads_its_outcome.py</code>, judged against the
+  base blob at <code>c01dcbf8b</code>: <code>ruff check</code> clean on both, and
+  the single reformat flag <code>ruff format --check</code> raises is on
+  pre-existing lines the change does not touch.</p>
+
+  <p><strong>Scope.</strong> Only the one test file is touched; no product source
+  changed. Verifying the merged result belongs to a separately dispatched test
+  node.</p>
+</section>
