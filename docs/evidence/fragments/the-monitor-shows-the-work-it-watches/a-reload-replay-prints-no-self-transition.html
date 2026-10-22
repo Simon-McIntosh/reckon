@@ -26,9 +26,23 @@
     has not shown, a run the pane has not drawn, and every real transition still
     print.
   </p>
+  <p id="a-reload-replay-prints-no-self-transition-duty">
+    The replay judges the word together with the duty it was shown beside it
+    &mdash; the recovery classification the fleet calls actionable, and the
+    external condition the run declares it waits on &mdash; which is the
+    evidence <code>same_word_row_is_news</code> reads to keep a same-word row.
+    A replay naming a changed condition is therefore news and still prints, and
+    one predicate decides both this replay and the gap replay rather than two
+    rules for the same question. Those two fields are also what the replay
+    remembers: what it delivers itself counts as shown, so a baseline that
+    printed is not repeated later in the same arming.
+  </p>
   <p id="a-reload-replay-prints-no-self-transition-negative-control">
     Removing the suppression returns the first case to three rows and fails it:
     <code>1 failed, 1 passed</code>, exit 1, in the base arm at
-    <code>08b02ee4</code>.
+    <code>08b02ee4</code>. Reverting the duty comparison alone fails exactly the
+    two cases that name it &mdash; a changed condition, and a second replay of a
+    state the first already delivered: <code>2 failed, 2 passed</code>, exit 1,
+    against <code>4 passed</code> with it.
   </p>
 </section>
