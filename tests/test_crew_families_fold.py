@@ -157,6 +157,7 @@ _FIXTURE_JSON = r"""
       "groups": [
         {
           "allowance": {
+            "advisory": false,
             "burn_multiple": 0.73,
             "derived": 0.04,
             "drain_hours": 156.0,
@@ -364,7 +365,9 @@ _FIXTURE_JSON = r"""
           "starts_at": "<when>"
         }
       ],
-      "ok": true
+      "ok": true,
+      "reset_count": 0,
+      "resets": []
     },
     "exit_code": 0
   },

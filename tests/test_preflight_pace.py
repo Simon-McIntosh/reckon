@@ -628,7 +628,15 @@ def test_the_preflight_command_emits_one_group_block_per_declared_wallet(
 
     result = CliRunner().invoke(
         cli_main,
-        ["crew", "preflight", "--project", "demo", "--checkout-path", str(tmp_path)],
+        [
+            "crew",
+            "budget",
+            "--check",
+            "--project",
+            "demo",
+            "--checkout-path",
+            str(tmp_path),
+        ],
         catch_exceptions=False,
     )
 
@@ -730,7 +738,8 @@ def _preflight_command(tmp_path: Path, *extra: str):
         cli_main,
         [
             "crew",
-            "preflight",
+            "budget",
+            "--check",
             "--project",
             "demo",
             "--checkout-path",

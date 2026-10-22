@@ -1470,7 +1470,8 @@ def test_cli_preflight_exits_three_when_a_backend_is_held(
         cli_main,
         [
             "crew",
-            "preflight",
+            "budget",
+            "--check",
             "--project",
             "proj",
             "--checkout-path",
@@ -1490,7 +1491,15 @@ def test_cli_preflight_exits_zero_when_every_backend_is_clear(
     monkeypatch.setenv("RECKON_FLIGHT_CONFIG", str(tmp_path / "absent.yaml"))
     result = CliRunner().invoke(
         cli_main,
-        ["crew", "preflight", "--project", "proj", "--checkout-path", str(repo)],
+        [
+            "crew",
+            "budget",
+            "--check",
+            "--project",
+            "proj",
+            "--checkout-path",
+            str(repo),
+        ],
     )
     payload = json.loads(result.output)
     assert result.exit_code == 0

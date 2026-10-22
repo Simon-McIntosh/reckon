@@ -11,7 +11,7 @@ two lifts in force where one was meant. These tests pin the replacement:
   naming the second, and the second carrying ``replaces`` naming the first;
 * a lift on a second scope stays in force, so replacement is scoped to the
   group and scope it was granted on;
-* a ``CliRunner`` run of ``crew budget-lift`` for the second grant shows
+* a ``CliRunner`` run of ``crew budget --lift`` for the second grant shows
   ``replaces`` in its reply's ``lift`` field;
 * a ``lift_watch`` sweep over the result writes one ended row and one granted
   row, and nothing on the next sweep.
@@ -194,7 +194,8 @@ def test_the_cli_reply_carries_replaces_in_its_lift_field(home: Path):
 
     first = json.loads(
         _invoke(
-            "budget-lift",
+            "budget",
+            "--lift",
             "--group",
             GROUP,
             "--multiple",
@@ -204,7 +205,8 @@ def test_the_cli_reply_carries_replaces_in_its_lift_field(home: Path):
         ).output
     )
     second_result = _invoke(
-        "budget-lift",
+        "budget",
+        "--lift",
         "--group",
         GROUP,
         "--multiple",
