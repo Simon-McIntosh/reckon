@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T18:41:35.034Z",
+  "dispatched_at": "2026-10-22T18:25:41Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-page-paints-from-an-index.html:198",
+      "id": "done_when-1",
+      "reason": "the sentence is the only statement of what the worker node owes, so a brief written from it either holds the node to two controls it did name or to two more the plan never defined, and the section's gate would be closed on a set the plan did not specify.",
+      "text": "\u00a77 closes on \"The four negative controls run as a worker node on the fleet allocation\", but the paragraph above it enumerates two controls \u2014 the port clause's \u00a72 mutation (`_FleetChangeWatch.start` arms before the port binds) and the `/_index` clause's removal of the persisted metadata index \u2014 so the count that states the controls' scope contradicts the section's own list of them",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "2277fe84bceb745fbf1d937cf1e56ac50600b420dbc8d0ff9f1b4a10646773c1",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 74,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T181650165927-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "c89d0b478a77f46aa5b3d10b1598f26d1054e53d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 each anchor the changed paragraph names resolves: `reckon service restart` is `@service.command(name=\"restart\")` at `reckon/project_maintenance_commands.py:143`, `/_server` answers `{\"host\", \"pid\", \"code\": _served_code_report()}` at `reckon/serve.py:2978` and that report carries `\"started_at\": snapshot.taken_at` at `reckon/served_code.py:655`, and `_FleetChangeWatch.start` is real \u2014 `serve.py:4055` calls `_FleetChangeWatch(mounts).start()`. The `s7` anchor itself is the anchor this section's evidence is to be written under, not a pointer to something deleted; it matches the `id=\"sN\"` convention the file already uses.",
+    "done_when": "a finding \u2014 \u00a77 tells the coordinator to dispatch \"four negative controls\" as a worker node while the same section enumerates two (the port clause's \u00a72 mutation and the `/_index` clause's index removal).",
+    "evidence_paths": "pass \u2014 the report is recorded under `docs/evidence/archive/the-page-paints-from-an-index-landed.html` (a repository path that survives the run, already carrying the sibling anchors `id=\"s10\"`, `id=\"s11\"`, `id=\"s12\"`), and the control logs are placed under the run directories rather than a scratch home or a node-local temporary path.",
+    "naming": "pass \u2014 the new paragraph names mechanisms (`code.started_at`, `_FleetChangeWatch.start`, the index file and its modification time) and carries no plan label, ticket number, version tag or changelog prose; section cross-references are plan-internal.",
+    "reasoning": "pass \u2014 \u00a77 is a measurement section, its root-cause premise (a cold start pays the rebuild) is the one \u00a73's design implies, its gate is capable of failing (each clause carries a mutation that reddens it), and the caller on the real code path is named: the coordinator runs `reckon service restart` on the serving host and reads the live `/_index` route, with the four controls fenced to a worker node because a fenced worker cannot reach the live service.",
+    "single_goal": "pass \u2014 \u00a77 carries one deliverable, one recorded cold-and-warm timing report under the `s7` anchor, whose two halves (coordinator-run live passes, worker-run controls) are closed on the same verdict.",
+    "wiring": "pass \u2014 `plan-section-depends-on` carries `s7` against exactly the five sections it measures (`s2`, `s3`, `s4`, `s5`, `s6`), the edges `s11\u2192s10` and `s12\u2192s11` name sections that exist, and `s7`'s declaration (`implementable`) matches the `data-status` on its record, so the section's scheduling edges and its declaration agree."
+  },
+  "section_digests": {
+    "_document": "4cef2d0dcb8155ca1e683b8ec01695c1fba4d5c88e28b6f05a0f380d0e2424c1",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "17515cc4d212280b53e77d7279aa81e37c7d58f877ada031f77705b31e53d437",
+    "s11": "bb32b98b9a0a5070d5ec6b5387862bef5af3ba37b5956ac7c9d734723c2ac9fa",
+    "s12": "071a3e9ff829e6cc2047658d80b57b5d30603318f0fa4a31084d94b5ed308185",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "459196ad55a6ba5375bf89b3a73b56ae0175b6e7f5d9ef458e211ce4c413cc2c",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T18:47:12.008662+00:00"
+}
