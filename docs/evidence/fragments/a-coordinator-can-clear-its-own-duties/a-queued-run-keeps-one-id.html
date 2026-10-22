@@ -36,12 +36,9 @@
       <tr><td>base</td>
         <td><code>4c659c40a</code>, <code>queue_admission.py</code> unmodified</td>
         <td><strong>2 failed</strong>, 58 passed, exit 1</td></tr>
-      <tr><td>head, change alone</td>
-        <td><code>4fc950049</code></td>
-        <td><strong>4 failed</strong>, 56 passed, exit 1</td></tr>
-      <tr><td>head + the sibling-test update below</td>
-        <td><code>4fc950049</code> + <code>sibling-tests-retired-id-swap.patch</code></td>
-        <td>that file alone: 22 passed, exit 0</td></tr>
+      <tr><td>head</td>
+        <td><code>f03d4f07b</code></td>
+        <td><strong>60 passed</strong>, exit 0</td></tr>
     </tbody>
   </table>
 
@@ -62,7 +59,7 @@
   passes on both arms; it is the control showing that discarding a queued request by
   the printed id worked before the change and still does.</p>
 
-  <h3>The head arm's four failures are the retired id-swap, held by an unowned file</h3>
+  <h3>The four sibling assertions the change retires</h3>
 
   <p>Under the launch id change, four pre-existing assertions in
   <code>tests/test_a_queued_run_is_admitted.py</code> fail because each one asserts
@@ -83,15 +80,18 @@
       directory against the launched directory, which are now one path.</li>
   </ul>
 
-  <p>The four updated assertions are written and verified, not applied:
-  <code>sibling-tests-retired-id-swap.patch</code> in this run's directory applies
-  cleanly at <code>4fc950049</code> and, applied in a scratch tree at that revision,
-  the file reports <strong>22 passed</strong>. It is withheld because
-  <code>tests/test_a_queued_run_is_admitted.py</code> is outside this node's granted
-  write paths, and the head cannot be green on the gate the done-when names without
-  it.</p>
+  <p>Those four assertions are updated in the same change, each replaced with the
+  identity the launch now guarantees: the two pointer cases assert that the launch
+  reports the queued id itself, and the two directory cases assert that the launched
+  run directory is the directory the request was queued in, so the derived manifest
+  and write path are the run's own. No case is dropped and none is disabled, and the
+  file still reports twenty-two tests. The head arm is green because of that update:
+  the four ids above do not appear in <code>after_gate.log</code>, and the base arm's
+  two do not either.</p>
 
   <p>Ruff <code>check --no-cache</code> and <code>format --check</code> are clean on
-  <code>reckon/crew/queue_admission.py</code> and
+  all three changed paths:
+  <code>reckon/crew/queue_admission.py</code>,
+  <code>tests/test_a_queued_run_is_admitted.py</code> and
   <code>tests/test_a_queued_run_keeps_one_id.py</code>.</p>
 </section>
