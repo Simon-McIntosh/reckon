@@ -496,8 +496,17 @@ def repair_write_scope(
 
 
 def _finding_location(finding: Mapping[str, Any]) -> str:
-    """Return a finding's location as ``file`` or ``file:line``."""
+    """Return a finding's location as ``file`` or ``file:line``.
+
+    A finding that carries no file has no location to name, whatever line it
+    states, so this returns nothing and the caller's own fallback applies. A
+    line rendered without its file is not a place a reader can open, and it is
+    truthy, so a caller testing the location for emptiness would take the bare
+    line for a location and never reach its fallback.
+    """
     location = str(finding.get("file") or "")
+    if not location:
+        return ""
     line = str(finding.get("line") or "")
     return f"{location}:{line}" if line else location
 

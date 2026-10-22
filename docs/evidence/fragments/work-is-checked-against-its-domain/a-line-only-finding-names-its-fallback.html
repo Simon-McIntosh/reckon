@@ -1,0 +1,94 @@
+<section id="a-line-only-finding-names-its-fallback">
+  <h2 id="a-line-only-finding-names-its-fallback-heading">A line-only finding names its fallback</h2>
+
+  <div id="a-line-only-finding-names-its-fallback-landing" class="r-landing">
+    <p><strong>What changed.</strong>
+    <code>repair._finding_location</code> (<code>reckon/crew/repair.py</code>) guarded on the
+    line alone, so a finding carrying a line and no file rendered as <code>:12</code>. That
+    string is truthy, so the review-waits-for-its-repair refusal's fallback to the review's
+    findings never applied and a refusal read <code>:12 — dispose it with …</code>, sending a
+    coordinator to a file nobody named. The function now returns nothing when the finding names
+    no file, so every caller's fallback applies. <strong>No caller was edited</strong>: the two
+    call sites in <code>repair.py</code> and the refusal in
+    <code>recovery_review_dispatch.py</code> already spell their own fallback, and the composer's
+    join takes the empty result without change. A finding naming a file, with or without a line,
+    renders exactly as before.</p>
+
+    <p id="a-line-only-finding-names-its-fallback-measure"><strong>Measure.</strong>
+    <code>tests/test_a_line_only_finding_names_its_fallback.py</code> holds four cases: the
+    renderer's empty result for a line-only finding and its unchanged <code>file:line</code> and
+    bare-<code>file</code> results; a parse of the emitted grammar
+    <code>FINDING :12 blocking: …</code> proving the empty location is a fact about a shape the
+    review grammar really produces rather than one the test constructed; and the refusal driven
+    through the real dispatch against a real git history and a real stored review, asserting it
+    names <em>the review's findings</em>, carries no <code>:12</code>, and still prints the
+    finding's <code>crew dispose</code> command.</p>
+
+    <p id="a-line-only-finding-names-its-fallback-arms"><strong>Arms, each in a log whose first
+    line names its revision, tree and command and whose last line is a bare
+    <code>EXIT=</code>.</strong></p>
+
+    <table id="a-line-only-finding-names-its-fallback-table">
+      <thead>
+        <tr><th>arm</th><th>revision</th><th>result</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>head (base revision + this change)</td>
+          <td><code>f35480dab</code></td>
+          <td><strong>10 passed</strong>, exit 0</td>
+        </tr>
+        <tr>
+          <td>base (<code>git archive</code> of <code>f35480dab</code> + the new test file)</td>
+          <td><code>f35480dab</code></td>
+          <td>3 failed, 1 passed, exit 1</td>
+        </tr>
+        <tr>
+          <td>negative control (guard on the line alone re-applied at head)</td>
+          <td>mutated head</td>
+          <td>3 failed, 1 passed, exit 1</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <ul>
+      <li><strong>The base reproduces the defect verbatim.</strong> The renderer case fails
+      <code>AssertionError: :12</code>; the parser case fails the same way on the parsed finding;
+      and the refusal case fails showing the base's own reason text:
+      <code>… with no disposition, so a review dispatched now would repeat them: :12 — dispose it
+      with `reckon crew dispose … --finding 0 --kind folded …`</code>. That is the defect the
+      section describes, reproduced rather than asserted, and the third failure is the refusal's
+      own rendering rather than a second reading of the renderer.</li>
+      <li><strong>The failing ids are the same in both red arms</strong> —
+      <code>test_a_line_only_finding_has_no_location</code>,
+      <code>test_the_parser_states_a_line_only_finding_with_no_file</code>,
+      <code>test_the_refusal_for_a_line_only_finding_names_the_reviews_findings</code> — and the
+      head arm fails none of them. The fourth case,
+      <code>test_a_finding_with_file_and_line_still_names_its_place</code>, passes in all three
+      arms, which is the guard that the change did not over-reach.</li>
+      <li><strong>The base arm's module is named, not assumed.</strong> The base tree is a
+      <code>git archive</code> extraction under the run's scratch; its header records
+      <code>module.__file__</code> inside that tree, so the arm measured the base renderer rather
+      than the head one resolved through the worktree. An earlier probe taken with the shell's own
+      working directory on <code>sys.path</code> named the worktree's copy of
+      <code>repair.py</code>, which would have made the base arm a claim about the head
+      tree; it was discarded and the arm re-run with the scratch tree as the working directory.</li>
+      <li><strong>Neighbouring suites, head.</strong> The two files the gate composes with this
+      one — <code>test_a_review_waits_for_its_repair.py</code> and
+      <code>test_a_repair_has_one_path.py</code> — pass unchanged in the head arm. The refusal
+      case there asserts <code>pkg/mod.py:1</code> for a finding that names a file, so it measures
+      the surviving half of the rendering rather than the changed half.</li>
+      <li><strong>Lint delta.</strong> <code>ruff check</code> and <code>ruff format --check</code>
+      are clean on the two changed paths, recorded beside the gate in the run's
+      <code>ruff.log</code>. Before the reformat the new test file carried a duplicate helper
+      definition (<code>F811</code>) and a missing final newline (<code>W292</code>); both were
+      fixed in the test file, not suppressed, and <code>repair.py</code> itself added no
+      finding.</li>
+    </ul>
+
+    <p id="a-line-only-finding-names-its-fallback-scope"><strong>What this node did not
+    measure.</strong> The gate covers this change only. Verifying the merged result against the
+    sibling nodes' heads belongs to a separately dispatched test node. No defect outside this
+    node's declared scope was found, so there is nothing to record under follow-ons.</p>
+  </div>
+</section>
