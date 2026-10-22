@@ -985,6 +985,8 @@ def _dispatchability(plan: dict[str, Any]) -> tuple[bool, list[str]]:
 def _decision_rows(
     plan: dict[str, Any],
     sections_map: Mapping[str, Any] | None = None,
+    *,
+    waiting_context: bool = False,
 ) -> list[dict[str, Any]]:
     """Return decisions with an explicit readiness state for roadmap consumers.
 
@@ -994,6 +996,14 @@ def _decision_rows(
     sections stay dispatchable. It lives on the caller's side because the
     scoping is authored markup, which a composed row may not carry yet; see
     :func:`_plan_decision_sections`.
+
+    ``waiting_context`` adds what a reader of a *wait* needs and what a row
+    consumed for readiness does not: the owning project, the recorded
+    recommendation and who made it, and the plan's last-modified date. An open
+    decision records no date of its own, so the plan's date is the only signal
+    of how long the wait has run. It is opt-in because a caller that consumes
+    rows for readiness compares them whole, and a new field would read as a
+    different decision rather than the same one with more to say.
     """
 
     raw_decisions = plan.get("decisions") or []
@@ -1007,6 +1017,12 @@ def _decision_rows(
 
     rows: list[dict[str, Any]] = []
     plan_slug = str(plan.get("slug") or "")
+    plan_context = {
+        "project": str(plan.get("project") or ""),
+        # An inventory row names the date differently on each read path, so
+        # both spellings are tried rather than the wait reading as undated.
+        "plan_modified": str(plan.get("modified") or plan.get("last") or ""),
+    }
     for decision in decisions:
         key = str(decision.get("key") or "").strip()
         choice = str(decision.get("choice") or decision.get("chosen") or "").strip()
@@ -1038,6 +1054,17 @@ def _decision_rows(
                 "status": status,
                 "choice": choice,
                 "rationale": rationale,
+                **(
+                    {
+                        **plan_context,
+                        "recommended": str(decision.get("recommended") or "").strip(),
+                        "recommended_by": str(
+                            decision.get("recommended_by") or ""
+                        ).strip(),
+                    }
+                    if waiting_context
+                    else {}
+                ),
                 **({"sections": sections} if sections else {}),
                 **(
                     {
@@ -1057,6 +1084,8 @@ def _decision_rows(
 def unsettled_decisions(
     plan: dict[str, Any],
     sections_map: Mapping[str, Any] | None = None,
+    *,
+    waiting_context: bool = False,
 ) -> list[dict[str, Any]]:
     """Decisions awaiting a choice, whether open or held by a transition edge.
 
@@ -1064,12 +1093,32 @@ def unsettled_decisions(
     open rows, while a reported set keeps both so the edge stays visible. A
     decision scoped to named sections is held the same way — reported in full,
     consumed by readiness only for the sections it names.
+
+    ``waiting_context`` carries the owning project, the recorded recommendation
+    and the plan's date onto each row, for a caller that lists the wait rather
+    than consuming it for readiness; see :func:`_decision_rows`.
     """
 
     return [
         row
-        for row in _decision_rows(plan, sections_map)
+        for row in _decision_rows(plan, sections_map, waiting_context=waiting_context)
         if row["status"] in ("open", "gated")
+    ]
+
+
+def waiting_decision_rows(report: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """The open and gated decisions one roadmap report is waiting on.
+
+    Every surface that lists a wait reads it from here rather than deriving the
+    wait a second time, so a decision cannot appear on one surface and go
+    missing from the other. A locked or deferred decision holds no work and is
+    not a wait, so it is not listed.
+    """
+
+    return [
+        dict(row)
+        for row in report.get("waiting_decisions") or []
+        if isinstance(row, dict)
     ]
 
 
@@ -3669,6 +3718,7 @@ def _build_roadmap(
     deferred: list[dict[str, Any]] = []
     schedule_deferred: list[dict[str, Any]] = []
     decision_blockers_report: list[dict[str, Any]] = []
+    waiting_decisions_report: list[dict[str, Any]] = []
     open_decisions_report: list[dict[str, Any]] = []
     deferred_decisions_report: list[dict[str, Any]] = []
     unauthorised: list[dict[str, Any]] = []
@@ -3715,6 +3765,12 @@ def _build_roadmap(
             for decision in decisions
             if decision["status"] in ("open", "gated")
         ]
+        # The same rows, carrying what a reader of the wait needs. The surfaces
+        # that list a wait read this list rather than the readiness rows, so a
+        # decision waiting on the lead is visible without opening the plan.
+        waiting_decisions = unsettled_decisions(
+            plan, decision_sections_map, waiting_context=True
+        )
         deferred_decisions = [
             decision for decision in decisions if decision["status"] == "deferred"
         ]
@@ -4000,6 +4056,7 @@ def _build_roadmap(
         if is_schedule_deferred:
             schedule_deferred.append(row)
         decision_blockers_report.extend(decision_blockers)
+        waiting_decisions_report.extend(waiting_decisions)
         open_decisions_report.extend(open_decisions)
         deferred_decisions_report.extend(deferred_decisions)
 
@@ -4385,6 +4442,7 @@ def _build_roadmap(
         },
         "schedule_deferred": schedule_deferred,
         "decision_blockers": decision_blockers_report,
+        "waiting_decisions": waiting_decisions_report,
         "judgment_required": {
             "required": bool(judgment_members),
             "count": len(judgment_members),

@@ -695,21 +695,29 @@ def _elapsed_since(stamp: object) -> int | None:
     return max(0, int((datetime.now(tz=timezone.utc) - started).total_seconds()))
 
 
-def _read_crew_plan_details(plan_path: Path) -> tuple[str, float | None]:
+def _read_crew_plan_state(plan_path: Path) -> dict:
+    """Parse one plan once for the crew poll.
+
+    The whole document is read rather than its head, because the decisions a
+    crew page lists live in the body. The parse is memoised per file identity,
+    so the head fields a crew row wants and the decisions the page lists come
+    from one read of one file.
+    """
+
     with plan_path.open(encoding="utf-8") as source:
-        head = re.split(
-            r"</head\s*>", source.read(16384), maxsplit=1, flags=re.IGNORECASE
-        )[0]
-    metadata = _plan_html.read_state(head)
-    if metadata.get("effort_hours") is None or not metadata.get("sprint"):
-        metadata = _plan_html.parse_meta(plan_path)
-    return str(metadata.get("sprint") or ""), metadata.get("effort_hours")
+        state = _plan_html.read_state(source.read())
+    if state.get("effort_hours") is None or not state.get("sprint"):
+        fallback = _plan_html.parse_meta(plan_path)
+        for field in ("sprint", "effort_hours"):
+            if state.get(field) is None:
+                state[field] = fallback.get(field)
+    return state
 
 
-def _crew_plan_details(docs: Path, slug: str) -> tuple[str, float | None]:
-    """Read navigation and effort from one referenced plan without discovery."""
+def _crew_plan_state(docs: Path, slug: str) -> dict | None:
+    """Read one referenced plan's parsed state without discovery."""
     if not slug or not SAFE_NAME.fullmatch(slug):
-        return "", None
+        return None
     candidates = (
         docs / "plans" / f"{slug}.html",
         docs / f"{slug}.html",
@@ -720,13 +728,21 @@ def _crew_plan_details(docs: Path, slug: str) -> tuple[str, float | None]:
             return memoized(
                 "crew-plan-details",
                 plan_path,
-                partial(_read_crew_plan_details, plan_path),
+                partial(_read_crew_plan_state, plan_path),
             )
         except FileNotFoundError:
             continue
         except (OSError, ValueError, UnicodeError):
-            return "", None
-    return "", None
+            return None
+    return None
+
+
+def _crew_plan_details(docs: Path, slug: str) -> tuple[str, float | None]:
+    """Read navigation and effort from one referenced plan without discovery."""
+    state = _crew_plan_state(docs, slug)
+    if not state:
+        return "", None
+    return str(state.get("sprint") or ""), state.get("effort_hours")
 
 
 # A crew row reads only the members out of a project's roster, and members live
@@ -787,6 +803,41 @@ def _project_roster(project: str, docs: Path) -> dict[str, dict]:
         if settled is not None and settled == identity:
             _ROSTER_CACHE[str(aggregate)] = (settled, members)
     return members
+
+
+def _waiting_decision_rows(
+    mounts: dict[str, Path], project: str | None = None
+) -> list[dict]:
+    """The open decisions every mounted project is waiting on.
+
+    Each row comes from the roadmap's own derivation, applied to the plan state
+    this poll already parses and memoises: the crew page lists a wait without
+    paying a second reading of the same plan files. One unreadable document is
+    skipped rather than blanking the rows the other plans supply.
+    """
+
+    from reckon.roadmap import unsettled_decisions
+
+    rows: list[dict] = []
+    for name in [project] if project else sorted(mounts):
+        docs = mounts.get(name)
+        if docs is None:
+            continue
+        try:
+            plan_paths = sorted((docs / "plans").glob("*.html"))
+        except OSError:
+            continue
+        for plan_path in plan_paths:
+            state = _crew_plan_state(docs, plan_path.stem)
+            if not state:
+                continue
+            rows.extend(
+                unsettled_decisions(
+                    {"slug": plan_path.stem, "project": name, **state},
+                    waiting_context=True,
+                )
+            )
+    return rows
 
 
 def _crew_rows(mounts: dict[str, Path], project: str | None = None) -> list[dict]:
@@ -3069,7 +3120,11 @@ class Handler(BaseHTTPRequestHandler):
                 return
             self._send_json(
                 HTTPStatus.OK,
-                {"project": project, "runs": _crew_rows(mounts, project)},
+                {
+                    "project": project,
+                    "runs": _crew_rows(mounts, project),
+                    "open_decisions": _waiting_decision_rows(mounts, project),
+                },
             )
             return
 
