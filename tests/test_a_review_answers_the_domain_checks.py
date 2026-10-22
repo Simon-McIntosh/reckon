@@ -16,6 +16,7 @@ from pathlib import Path
 
 import pytest
 
+from reckon import ledger
 from reckon.crew import recovery_review_subject as subject_module
 from reckon.crew import review as review_module
 from reckon.crew import runs as runs_module
@@ -263,17 +264,65 @@ def test_a_delivered_record_answering_every_declared_check_is_not_refused_for_th
     assert [refusal for refusal in refusals if "declared check" in refusal] == []
 
 
-def test_a_record_with_no_readable_reviewed_run_owes_nothing(
-    fixture_project, reviewed_run_pointer
+def test_a_promoted_subject_whose_review_skips_a_check_is_still_refused(
+    fixture_project,
 ) -> None:
-    """A record whose checklist cannot be resolved is held to no checks."""
+    """The guard survives promotion, when the live pointer is gone.
+
+    A run's pointer is reclaimed the moment it is promoted, which is also when
+    its review is filed. Resolving the checklist from the pointer alone would
+    switch the guard off at exactly that moment, so the committed per-run row
+    stands in: it carries the node definition the run was dispatched from.
+    """
+    fixture_project()
+    owed = _owed_checks(
+        subject_module._review_brief_text(_run_record(["models/tape.py"]), "a" * 40)
+    )
+    row = ledger.run_path("fixture", REVIEWED_RUN)
+    row.parent.mkdir(parents=True, exist_ok=True)
+    row.write_text(
+        json.dumps(
+            {"node_definition": {"id": "n1", "write_paths": ["models/tape.py"]}}
+        ),
+        encoding="utf-8",
+    )
+    assert not runs_module.pointer_path(REVIEWED_RUN).exists()
+
+    refusals = review_module.review_record_refusals(_delivered_record(_emission({})))
+
+    assert owed == ["same-operator", "perturbation-grows"]
+    assert [refusal for refusal in refusals if owed[0] in refusal]
+
+
+def test_a_subject_with_no_readable_record_is_refused_for_that(
+    fixture_project,
+) -> None:
+    """An unreadable subject is refused, not read as owing no checks.
+
+    "No checks owed" and "cannot tell which checks are owed" read the same from
+    the outside, and only one of them is a review that answered its checklist.
+    Nothing here is readable: no live pointer, no committed row, no run
+    directory.
+    """
     fixture_project()
     record = _delivered_record(_emission({}))
     record["reviewed_run_id"] = "r-fixture-promoted-and-reclaimed"
 
     refusals = review_module.review_record_refusals(record)
 
+    assert [refusal for refusal in refusals if "cannot be established" in refusal]
+
+
+def test_a_project_without_declarations_is_unaffected_by_the_contract(
+    fixture_project, reviewed_run_pointer
+) -> None:
+    """The control: a readable subject that owes nothing is still not refused."""
+    fixture_project(NO_DOMAIN_FLIGHT)
+
+    refusals = review_module.review_record_refusals(_delivered_record(_emission({})))
+
     assert [refusal for refusal in refusals if "declared check" in refusal] == []
+    assert [refusal for refusal in refusals if "cannot be established" in refusal] == []
 
 
 def test_a_project_without_declarations_is_unchanged(fixture_project) -> None:

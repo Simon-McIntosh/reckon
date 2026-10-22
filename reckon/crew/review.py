@@ -486,32 +486,133 @@ def unresolved_reviewed_revision(record: Mapping[str, Any]) -> str | None:
     return None
 
 
-def declared_review_checks(record: Mapping[str, Any]) -> tuple[str, ...]:
+def _manifest_write_paths(text: str) -> tuple[str, ...]:
+    """The declared write paths a delivered manifest names, or nothing.
+
+    A run's own directory holds the manifest it delivered, whose declared write
+    paths survive there after the pointer and the ledger row are gone. The
+    declared set is read first and the changed set second: the declared set is
+    what the node's checks were matched against when it ran, while a node that
+    changed nothing still owed every check its declaration selected.
+    """
+    for key in ("orientation_write_paths", "changed_paths"):
+        for line in text.splitlines():
+            if not line.startswith(key + ":"):
+                continue
+            raw = line.partition(":")[2].strip()
+            try:
+                value = json.loads(raw)
+            except ValueError:
+                continue
+            if isinstance(value, list):
+                paths = tuple(str(item) for item in value if str(item).strip())
+                if paths:
+                    return paths
+    return ()
+
+
+def _stored_run_row(project: str, reviewed_run_id: str) -> Mapping[str, Any] | None:
+    """The committed per-run row beside a project's ledger, or ``None``.
+
+    The row is written when a run is promoted, which is also when its live
+    pointer is reclaimed, so it is the source that outlives the pointer. A
+    project that names no readable ledger, and a row that is absent, unreadable
+    or not an object, all yield ``None``: a run whose row cannot be read is a
+    run whose node the caller must find elsewhere or refuse on.
+    """
+    from reckon import ledger
+
+    try:
+        row = json.loads(
+            ledger.run_path(project, reviewed_run_id).read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError, ledger.LedgerError):
+        return None
+    return row if isinstance(row, Mapping) else None
+
+
+def _stored_reviewed_node(
+    record: Mapping[str, Any], reviewed_run_id: str
+) -> Mapping[str, Any] | None:
+    """The node a reviewed run ran as, read from the records it left behind.
+
+    A live pointer is reclaimed when its run is promoted, so a review checked
+    after its subject was promoted would otherwise resolve no checks at all and
+    the guard would switch itself off exactly when the review is filed. Two
+    sources outlive the pointer. The committed per-run row beside the project's
+    ledger carries the node definition the run was dispatched from, write paths
+    included; failing that, the run's own directory holds the manifest it
+    delivered, which names the paths it declared. Both are read here before the
+    caller is told the checklist cannot be established.
+    """
+    project = str(record.get("project") or "").strip()
+    if project:
+        row = _stored_run_row(project, reviewed_run_id)
+        if isinstance(row, Mapping):
+            node = row.get("node_definition")
+            if isinstance(node, Mapping) and node.get("write_paths"):
+                return node
+    directory = _run_directory(reviewed_run_id)
+    if directory is None:
+        return None
+    try:
+        text = (directory / _MANIFEST_FILE_NAME).read_text(
+            encoding="utf-8", errors="replace"
+        )
+    except OSError:
+        return None
+    paths = _manifest_write_paths(text)
+    return {"write_paths": list(paths)} if paths else None
+
+
+def declared_review_checks(record: Mapping[str, Any]) -> tuple[str, ...] | None:
     """The declared check ids the reviewed node's write paths require.
 
     The checklist a composed brief carried, the verdicts a parser requires and
     the answers the delivery contract holds a record to are one list, matched by
-    the one module that answers which rules a node touches: the reviewed run's
-    own live pointer carries the node, its write paths select the checks, and
-    the project's flight layer declares them.
+    the one module that answers which rules a node touches: the reviewed run
+    carries the node, its write paths select the checks, and the project's
+    flight layer declares them.
 
-    A record naming no reviewed run, a run whose pointer is no longer readable
-    — the reviewed run promoted and its pointer reclaimed — and a project
-    declaring nothing for the node all yield nothing, so a record with no
-    checklist to answer is held to none. The import is local because the brief
-    composer reads this module, so a module-level edge back to it would be a
-    cycle.
+    The return distinguishes three states, because collapsing them is how the
+    guard switches itself off. ``()`` is a resolved checklist that owes nothing
+    — the project declared no checks, or declared none for this node — and is
+    held to none. ``None`` is a checklist that could not be established: the
+    reviewed run's node is readable from the live pointer, from the committed
+    per-run row or from the run's own delivered manifest, and when none of the
+    three can be read the contract refuses the record rather than reading an
+    unreadable subject as owing nothing. A project that declares no review
+    check at all is not in that state — every node under it owes the same empty
+    checklist — so it resolves to ``()`` without the node.
+
+    A record naming no reviewed run is the one case that returns ``()`` without
+    resolving anything: the missing-key refusals already name it, and refusing
+    it twice would report one defect as two. The import is local because the
+    brief composer reads this module, so a module-level edge back to it would be
+    a cycle.
     """
-    pointer = _reviewed_run_pointer(str(record.get("reviewed_run_id") or "").strip())
     project = str(record.get("project") or "").strip()
-    if pointer is None or not project:
+    reviewed_run_id = str(record.get("reviewed_run_id") or "").strip()
+    if not project or not reviewed_run_id:
         return ()
-    from reckon.crew.recovery_review_subject import domain_review_checks
-
-    return tuple(
-        str(check.id)
-        for check in domain_review_checks(project, pointer.get("node") or {})
+    pointer = _reviewed_run_pointer(reviewed_run_id)
+    node: Mapping[str, Any] | None = None
+    if pointer is not None and isinstance(pointer.get("node"), Mapping):
+        node = pointer["node"]
+    if node is None:
+        node = _stored_reviewed_node(record, reviewed_run_id)
+    from reckon.crew.recovery_review_subject import (
+        domain_review_checks,
+        project_declares_review_checks,
     )
+
+    if node is None:
+        # A project declaring no checks under any node puts every node the same
+        # empty checklist, so "nothing owed" is established here rather than
+        # guessed; a project that declares checks cannot say which of them this
+        # node touched, and that is the state the caller refuses on.
+        return None if project_declares_review_checks(project) else ()
+    return tuple(str(check.id) for check in domain_review_checks(project, node))
 
 
 def _answered_check_ids(record: Mapping[str, Any]) -> set[str]:
@@ -550,12 +651,27 @@ def unanswered_review_checks(record: Mapping[str, Any]) -> list[str]:
     filing it as a review that answered everything. The checks are resolved here
     rather than handed in, because the parser reads a reviewer's emitted text
     and the review it belongs to is not passed to it — so the contract, which
-    does hold the record, is where a skipped check is caught. A record with no
-    readable checklist to answer is left alone. Formatting belongs to the
-    caller, so one sentence serves the store's write, the reviewer's own
-    ``crew check --review`` and the audit that reads stored records.
+    does hold the record, is where a skipped check is caught.
+
+    A record whose owed checks cannot be established is refused for that reason
+    instead of passing as one that owed none: the two states read identically
+    from the outside, and only one of them is a review that answered its
+    checklist. Formatting belongs to the caller, so one sentence serves the
+    store's write, the reviewer's own ``crew check --review`` and the audit that
+    reads stored records.
     """
+    reviewed_run_id = str(record.get("reviewed_run_id") or "").strip()
     checks = declared_review_checks(record)
+    if checks is None:
+        return [
+            (
+                f"review record names reviewed run {reviewed_run_id!r}, whose "
+                "declared checks cannot be established: neither its live pointer, "
+                "its committed run record nor its run directory could be read, so "
+                "the review cannot be shown to have answered the checks it owed — "
+                "restore the run's record and check the review again"
+            )
+        ]
     if not checks:
         return []
     answered = _answered_check_ids(record)
