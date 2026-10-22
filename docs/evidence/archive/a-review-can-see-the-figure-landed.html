@@ -172,6 +172,12 @@ emits an image flag</code></pre>
 <p>Pairs 1 and 2 fail only the clause that a figure run shows exactly one Read. In fig-01 (pair 2) and fig-07 (pair 1) the lane emitted a Read whose <code>file_path</code> carried its own tool-call markup (<code>&lt;｜DSML｜ calls&gt;…</code>) or a truncated path. The harness answered <code>File does not exist</code>, and the run went on to read the right image and judge it correctly. fig-07 also read back its own outputs. The defect is in the lane's tool calling, not in its judgement. The report also states the strictest reading, counting a run reading back its own answer file: 0 of 5. The briefs did not say whether reading one's own deliverable counts.</p>
   </section>
 
+  <section id="s22-a-figure-review-judges-the-rendered-png">
+    <h2>§22 — a figure review judges the rendered PNG, never the SVG source</h2>
+    <p><code>reckon/crew/prompts/figure_review.md</code> gains a section, "Judge the rendered PNG, never the SVG source". It tells the reviewer to judge every figure only from the PNGs the review names, and to open, read, list, search, render or <code>git show</code> no SVG and no other image. A finding is anchored to the figure's repository path, or to a line of the script the run's diff shows drawing it, never to a line of SVG markup. The finding shape's <code>file</code> and <code>line</code> fields now name the figure path and that script line. <code>_review_brief_text</code> in <code>reckon/crew/recovery_review_subject.py</code> repeats the rule in the figure rubric's record contract.</p>
+<p>Run <code>r-20261022T200451906364-a-figure-review-judges-the-rendered-png</code>, head <code>f724637dc</code>, merged as <code>87c897a5f</code>; verify-gate passed at that revision. Gate: 15 passed. With the PNG-only paragraph removed, the three new prompt cases fail. Population over the 281 test files that import the brief composer or read the figure prompt, both arms from <code>/tmp</code> archives, showed nine failures at head only. Run alone twice on each arm, all nine pass at head, and one fails once at base, so none is added. Code review scored 111.</p>
+  </section>
+
 </main>
 </body>
 </html>
