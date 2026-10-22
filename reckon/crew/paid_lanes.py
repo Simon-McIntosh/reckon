@@ -883,9 +883,7 @@ def publish_document(
                 # this cannot become a storm.
                 stale = any(
                     windows
-                    and all(
-                        block.get("state") == UNKNOWN for block in windows.values()
-                    )
+                    and all(block.get("state") == UNKNOWN for block in windows.values())
                     for windows in member_windows.values()
                 )
             attempts = [

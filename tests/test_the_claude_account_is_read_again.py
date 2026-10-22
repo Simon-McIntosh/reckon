@@ -72,15 +72,12 @@ def test_a_probe_child_exiting_non_zero_publishes_the_reason_it_gave(monkeypatch
     completed = subprocess.CompletedProcess(
         args=["claude"], returncode=1, stdout=stream, stderr=""
     )
-    monkeypatch.setattr(
-        paid_lanes.subprocess, "run", lambda *args, **kwargs: completed
-    )
+    monkeypatch.setattr(paid_lanes.subprocess, "run", lambda *args, **kwargs: completed)
 
-    with pytest.raises(OSError) as raised:
+    with pytest.raises(OSError, match="model_not_found") as raised:
         paid_lanes._run_reserved_probe(BACKENDS["claude"], Path("."))
 
     assert "exited 1" in str(raised.value)
-    assert "model_not_found" in str(raised.value)
 
 
 def test_a_probe_child_with_no_output_states_its_exit_status_alone(monkeypatch):
@@ -88,11 +85,9 @@ def test_a_probe_child_with_no_output_states_its_exit_status_alone(monkeypatch):
     completed = subprocess.CompletedProcess(
         args=["claude"], returncode=3, stdout="", stderr=""
     )
-    monkeypatch.setattr(
-        paid_lanes.subprocess, "run", lambda *args, **kwargs: completed
-    )
+    monkeypatch.setattr(paid_lanes.subprocess, "run", lambda *args, **kwargs: completed)
 
-    with pytest.raises(OSError) as raised:
+    with pytest.raises(OSError, match="exited 3") as raised:
         paid_lanes._run_reserved_probe(BACKENDS["claude"], Path("."))
 
     assert str(raised.value) == "reserved window probe exited 3"
@@ -220,7 +215,9 @@ def _publish(tmp_path, monkeypatch, *, attempted_at: datetime):
     return reached, document
 
 
-def test_an_account_whose_windows_are_all_unknown_is_due_for_a_probe(tmp_path, monkeypatch):
+def test_an_account_whose_windows_are_all_unknown_is_due_for_a_probe(
+    tmp_path, monkeypatch
+):
     """Unknown is itself a reason to read: no attempt has ever resolved it.
 
     A window nobody has observed can never go stale, so without this the account
@@ -237,13 +234,16 @@ def test_an_account_whose_windows_are_all_unknown_is_due_for_a_probe(tmp_path, m
     assert document["accounts"]["claude"]["probe"]["attempted_at"] == NOW.isoformat()
 
 
-def test_an_all_unknown_account_attempted_inside_the_guard_is_not_probed(tmp_path, monkeypatch):
+def test_an_all_unknown_account_attempted_inside_the_guard_is_not_probed(
+    tmp_path, monkeypatch
+):
     """The recent guard bounds the unknown case exactly as it bounds a stale one."""
     reached, document = _publish(
         tmp_path, monkeypatch, attempted_at=NOW - timedelta(seconds=60)
     )
 
     assert reached == []
-    assert document["accounts"]["claude"]["probe"]["attempted_at"] == (
-        NOW - timedelta(seconds=60)
-    ).isoformat()
+    assert (
+        document["accounts"]["claude"]["probe"]["attempted_at"]
+        == (NOW - timedelta(seconds=60)).isoformat()
+    )
