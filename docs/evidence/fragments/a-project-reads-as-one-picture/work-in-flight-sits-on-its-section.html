@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-project-reads-as-one-picture">
+  <meta name="plan-title" content="Work in flight sits on its section">
+  <meta name="plan-summary" content="A roadmap section row lists the runs sitting on it with the one classification, the write paths they hold, and the kinds of hold that stop the work — including a manifest that reports blocked and a path one run holds while another waits.">
+  <meta name="plan-evidence-for" content="reckon:a-project-reads-as-one-picture">
+  <meta name="plan-verifies" content="reckon:a-project-reads-as-one-picture#s4">
+  <meta name="plan-recorded-at" content="2026-10-22">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-tags" content="roadmap,section-rows,live-runs,classification,scope-claims,blockers">
+  <title>Work in flight sits on its section — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="work-in-flight-sits-on-its-section-landing" data-node="work-in-flight-sits-on-its-section" data-reckon="landed" data-when="2026-10-22">
+  <h2 id="work-in-flight-sits-on-its-section-title">Work in flight sits on its section</h2>
+  <p id="work-in-flight-sits-on-its-section-change">A section row now carries its runs, grouped from the rows <code>partition_live_runs</code> already classified, so a reader sees the work somebody is doing without joining plan rows to live pointers by hand. The classification travels on the run row (<code>_run_row</code> in <code>reckon/mcp_views.py</code> takes it as an argument rather than leaving a reader to derive it again), a blocked run carries its manifest's own blocker text, and a section that carries a run is reported whether or not its plan is ready. Each section row's holds are named by kind: the section dependency, gate and decision holds the plan already knew, plus <code>run-blocked</code> for a manifest that reports blocked (<code>run_blocker_rows</code>) and <code>held-path</code> for a path one run holds while another waits on it (<code>held_path_blockers</code>), the latter read from the same claim registry the <code>scopes</code> view serves — <code>runs.scope_claims</code> — keyed onto the waiting run's section by <code>_held_path_blockers_by_section</code> in <code>reckon/roadmap.py</code>. The new kinds and the run grouping live in <code>reckon/live_run_classification.py</code>, the module that already owns the shared read; both large modules stay inside the 50,000-token window (<code>tests/test_every_module_fits_a_worker_window.py</code> passes).</p>
+  <p id="work-in-flight-sits-on-its-section-base">On the base commit the three readings do not exist: the new suite reads <code>3 failed, 1 passed</code>, <code>EXIT=1</code>, run in a scratch extraction of <code>52f79371c</code> whose <code>reckon.__file__</code> resolves inside that tree (<code>module: .../base/reckon/__init__.py</code>, <code>cwd: .../base</code>), the three required cases failing because a section row carries no runs at all.</p>
+  <p id="work-in-flight-sits-on-its-section-control">The declared mutation — the section rows no longer carry their runs (<code>"runs": section_holders</code> replaced by <code>"runs": []</code>) — turns the suite red at the head: <code>1 failed, 3 passed</code>, <code>EXIT=1</code>, the failing id being <code>test_a_live_run_sits_on_its_section_row_with_its_classification</code>.</p>
+  <p id="work-in-flight-sits-on-its-section-pair">The interrupted-against-running pair the plan names was investigated on the live <code>power_convertor</code> mount, and it reproduces today: run <code>r-20261021T234457021719-fdr-secant-rows</code> sits on <code>coil-supply-report-rebuild</code> section <code>§11</code> and reads <strong>running</strong> from the record the roadmap partitions on, while <code>classify_pointer</code> on the same pointer reads <strong>interrupted</strong> ("the worker process is gone with no recorded exit and the worktree carries 4 commits beyond the dispatch base"). It is a <strong>stale read, not a second classification path</strong>: both surfaces hand the same classifier the same pointer and differ only in when they read it. The roadmap's partition asks <code>run_classification_record</code>, which prefers the latest watcher event for the run, and that event was written at <code>02:08:45Z</code> saying <code>to_state=working</code>; the live view classifies the pointer now (<code>reckon/crew/query.py:324</code>, <code>classify_pointer</code> directly) and, as its launcher host is this host, asks the process table and finds the worker gone. The stored event carries an <code>observed_at</code> but nothing compares it against the pointer's own liveness, so a record forty minutes older than the truth outranks a fresh read. This node removes the roadmap's <em>own</em> second reading — a section row no longer re-derives a run's state, it reports the partition's — but the event-first record choice is shared with the plan rows and is consumed by surfaces outside this node's write scope; it is recorded under follow-ons rather than changed here.</p>
+  <p id="work-in-flight-sits-on-its-section-open">Added ruff findings on the changed paths: none — <code>7</code> findings across <code>reckon/mcp_views.py</code>, <code>reckon/roadmap.py</code> and <code>reckon/live_run_classification.py</code> at the head against <code>7</code> on the same three files at the base revision, and <code>ruff format --check</code> clean on all four staged paths.</p>
+</article>
+</body>
+</html>
