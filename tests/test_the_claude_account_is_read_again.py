@@ -130,11 +130,12 @@ def test_the_recorded_answer_is_read_on_both_windows():
     assert block["rate_limit_type"] == "seven_day"
     assert block["rate_limit_period_minutes"] == 10080
     assert block["resets_at"] == "2026-10-26T20:00:00.348964+00:00"
-    assert block["quota_windows"]["five_hour"]["used_percent"] == 62.0
-    assert block["quota_windows"]["five_hour"]["resets_at"] == (
+    assert block["quota_windows"][300]["used_percent"] == 62.0
+    assert block["quota_windows"][300]["resets_at"] == (
         "2026-10-22T00:20:00.348946+00:00"
     )
-    assert block["quota_windows"]["five_hour"]["window_minutes"] == 300
+    assert block["quota_windows"][300]["window_minutes"] == 300
+    assert block["quota_windows"][300]["rate_limit_type"] == "five_hour"
 
 
 def test_the_answer_publishes_both_clocks_as_the_fractions_the_document_carries():

@@ -76,7 +76,11 @@ def test_machine_seconds_is_reported_apart_from_generation():
 
 def _assistant_event(timestamp: str, *, tool_use: bool = False) -> dict:
     """One assistant turn at a stated moment, optionally requesting a tool."""
-    block = {"type": "tool_use", "name": "probe"} if tool_use else {"type": "text", "text": "…"}
+    block = (
+        {"type": "tool_use", "name": "probe"}
+        if tool_use
+        else {"type": "text", "text": "…"}
+    )
     return {
         "type": "assistant",
         "session_id": "sess-synthetic",
@@ -492,12 +496,9 @@ def _cache_file(tmp_path: Path, payload: dict) -> Path:
 
 def _cached_payload(*, stamp: object) -> dict:
     return {
-        "windows": {
-            "weekly": {
-                "utilization": 0.53,
-                "resetsAt": 1789416000,
-                "windowMinutes": 10080,
-            },
+        "seven_day": {
+            "utilization": 53.0,
+            "resets_at": "2026-09-14T20:00:00+00:00",
         },
         "fetch_stamp": stamp,
     }
@@ -548,7 +549,9 @@ def test_a_cached_reading_carries_its_age_at_the_reader_entry_point(
         tmp_path,
         _cached_payload(stamp=int((now - timedelta(hours=5)).timestamp())),
     )
-    monkeypatch.setattr(_backends, "_load_claude_credential", lambda: _live_credential(now))
+    monkeypatch.setattr(
+        _backends, "_load_claude_credential", lambda: _live_credential(now)
+    )
 
     def _unreachable(oauth):
         raise OSError("surface unreachable")
@@ -568,9 +571,7 @@ def test_a_cached_reading_carries_its_age_at_the_reader_entry_point(
     assert not _figure_without_age(budget)
 
 
-def test_a_cached_figure_never_appears_without_its_age_beside_it(
-    tmp_path, monkeypatch
-):
+def test_a_cached_figure_never_appears_without_its_age_beside_it(tmp_path, monkeypatch):
     """No emitted structure shows a cache-sourced figure alone.
 
     The age is a sibling field of the figure in the returned block, the stamp
@@ -581,14 +582,20 @@ def test_a_cached_figure_never_appears_without_its_age_beside_it(
         tmp_path,
         _cached_payload(stamp=int((now - timedelta(hours=5)).timestamp())),
     )
-    monkeypatch.setattr(_backends, "_load_claude_credential", lambda: _live_credential(now))
     monkeypatch.setattr(
-        _backends, "_fetch_claude_account",
+        _backends, "_load_claude_credential", lambda: _live_credential(now)
+    )
+    monkeypatch.setattr(
+        _backends,
+        "_fetch_claude_account",
         lambda oauth: (_ for _ in ()).throw(OSError("surface down")),
     )
 
     budget = _backends.probe_budget(
-        backend_name="metered", backend=CLAUDE, now=now, cache_path=cache,
+        backend_name="metered",
+        backend=CLAUDE,
+        now=now,
+        cache_path=cache,
     )
 
     assert budget["utilisation_pct"] == 53.0
@@ -613,14 +620,20 @@ def test_a_cached_block_without_a_trustworthy_stamp_is_unknown_not_a_figure(
     """
     now = datetime(2030, 1, 1, tzinfo=UTC)
     cache = _cache_file(tmp_path, _cached_payload(stamp=stamp))
-    monkeypatch.setattr(_backends, "_load_claude_credential", lambda: _live_credential(now))
     monkeypatch.setattr(
-        _backends, "_fetch_claude_account",
+        _backends, "_load_claude_credential", lambda: _live_credential(now)
+    )
+    monkeypatch.setattr(
+        _backends,
+        "_fetch_claude_account",
         lambda oauth: (_ for _ in ()).throw(OSError("surface down")),
     )
 
     budget = _backends.probe_budget(
-        backend_name="metered", backend=CLAUDE, now=now, cache_path=cache,
+        backend_name="metered",
+        backend=CLAUDE,
+        now=now,
+        cache_path=cache,
     )
 
     assert budget["headroom"] == "unknown"
@@ -642,9 +655,7 @@ def test_the_cache_reader_names_a_fetch_stamp_it_cannot_trust(tmp_path):
     assert "fetch_stamp" in budget["detail"]
 
 
-def test_a_live_account_read_is_not_annotated_with_a_cache_age(
-    tmp_path, monkeypatch
-):
+def test_a_live_account_read_is_not_annotated_with_a_cache_age(tmp_path, monkeypatch):
     """The age marks provenance of a fallback, never decoration of every reading.
 
     A fresh account-surface answer wins outright, even with a cache supplied,
@@ -655,14 +666,13 @@ def test_a_live_account_read_is_not_annotated_with_a_cache_age(
         tmp_path,
         _cached_payload(stamp=int((now - timedelta(hours=5)).timestamp())),
     )
-    monkeypatch.setattr(_backends, "_load_claude_credential", lambda: _live_credential(now))
+    monkeypatch.setattr(
+        _backends, "_load_claude_credential", lambda: _live_credential(now)
+    )
     live = {
-        "windows": {
-            "weekly": {
-                "utilization": 0.89,
-                "resetsAt": 1789416000,
-                "windowMinutes": 10080,
-            },
+        "seven_day": {
+            "utilization": 89.0,
+            "resets_at": "2026-09-14T20:00:00+00:00",
         },
     }
 
@@ -695,7 +705,9 @@ def test_a_cached_position_surfaces_only_when_the_live_read_does_not(
         tmp_path,
         _cached_payload(stamp=int((now - timedelta(hours=3, minutes=30)).timestamp())),
     )
-    monkeypatch.setattr(_backends, "_load_claude_credential", lambda: _live_credential(now))
+    monkeypatch.setattr(
+        _backends, "_load_claude_credential", lambda: _live_credential(now)
+    )
     changed = {"unrecognised": "shape"}
 
     budget = _backends.probe_budget(
@@ -726,9 +738,12 @@ def test_a_cached_position_surfaces_only_when_the_live_read_does_not(
 def test_an_unreadable_cache_is_an_unknown_reason_not_a_crash(tmp_path, monkeypatch):
     """A broken cache file cannot stop the instrument or mask the live reason."""
     now = datetime(2030, 1, 1, tzinfo=UTC)
-    monkeypatch.setattr(_backends, "_load_claude_credential", lambda: _live_credential(now))
     monkeypatch.setattr(
-        _backends, "_fetch_claude_account",
+        _backends, "_load_claude_credential", lambda: _live_credential(now)
+    )
+    monkeypatch.setattr(
+        _backends,
+        "_fetch_claude_account",
         lambda oauth: (_ for _ in ()).throw(OSError("surface down")),
     )
 

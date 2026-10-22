@@ -726,11 +726,6 @@ CLAUDE_CREDENTIAL_PATH = Path("~/.claude/.credentials.json")
 # the span it covers, so a figure lands on the document's own five-hour and
 # seven-day clocks rather than on a scoped window the client only labels.
 CLAUDE_ACCOUNT_WINDOWS = (("five_hour", 300), ("seven_day", 10080))
-# The nested spelling the surface used before it moved: one fractional weekly
-# window under a ``windows`` map. The last-known position kept on disk carries
-# it, so it stays readable beside the live shape.
-CLAUDE_NESTED_ACCOUNT_WINDOW = "weekly"
-CLAUDE_NESTED_ACCOUNT_WINDOW_MINUTES = 10080
 
 
 def _load_claude_credential() -> dict[str, Any]:
@@ -801,18 +796,14 @@ def _parse_claude_account(payload: object) -> dict[str, Any]:
     is the harness's internal contract and can change without notice, so a
     window carrying no usable figure is left out rather than guessed at, and an
     answer carrying no window at all resolves to an honest unknown rather than
-    to a plausible low utilisation — the quiet failure runs toward headroom. An
-    answer in the nested spelling the surface used before it moved is read by
-    its own contract, so a last-known position written then still parses.
+    to a plausible low utilisation — the quiet failure runs toward headroom.
     """
     if not isinstance(payload, Mapping):
         return unknown_budget("account answer was not an object")
     windows = _live_account_windows(payload)
     if not windows:
-        if "windows" in payload:
-            return _nested_account_budget(payload)
         return unknown_budget("account answer carried no named windows")
-    name, binding = max(
+    _minutes, binding = max(
         windows.items(), key=lambda item: float(item[1]["used_percent"])
     )
     budget = unknown_budget("")
@@ -820,7 +811,7 @@ def _parse_claude_account(payload: object) -> dict[str, Any]:
         {
             "headroom": "known",
             "utilisation_pct": binding["used_percent"],
-            "rate_limit_type": name,
+            "rate_limit_type": binding["rate_limit_type"],
             "rate_limit_period_minutes": binding["window_minutes"],
             "resets_at": binding["resets_at"],
             "quota_windows": windows,
@@ -830,17 +821,19 @@ def _parse_claude_account(payload: object) -> dict[str, Any]:
     return budget
 
 
-def _live_account_windows(payload: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
-    """Every account window the live surface reports, keyed by its own name.
+def _live_account_windows(payload: Mapping[str, Any]) -> dict[int, dict[str, Any]]:
+    """Every account window the live surface reports, keyed by its span.
 
-    Utilisation is carried as the percentage the surface reports, which is the
-    unit the budget block holds; the document's own figures are that percentage
-    as a fraction. A window whose figure is not a number, or which names no
-    reset time a reader can parse, is skipped rather than refused, so a sibling
-    window still yields its figure while the malformed one's clock stays
-    honestly unknown.
+    The key is the window's length in minutes, which is the key every other
+    quota map in this module carries, so a reader of the block does not have to
+    know which dialect produced it; the surface's own name for the window rides
+    in the row as ``rate_limit_type``. Utilisation is carried as the percentage
+    the surface reports, which is the unit the budget block holds. A window
+    whose figure is not a number, or which names no reset time a reader can
+    parse, is skipped rather than refused, so a sibling window still yields its
+    figure while the malformed one's clock stays honestly unknown.
     """
-    found: dict[str, dict[str, Any]] = {}
+    found: dict[int, dict[str, Any]] = {}
     for name, minutes in CLAUDE_ACCOUNT_WINDOWS:
         window = payload.get(name)
         if not isinstance(window, Mapping):
@@ -851,7 +844,7 @@ def _live_account_windows(payload: Mapping[str, Any]) -> dict[str, dict[str, Any
         resets_at = _iso_reset_moment(window.get("resets_at"))
         if resets_at is None:
             continue
-        found[name] = {
+        found[minutes] = {
             "window_minutes": minutes,
             "used_percent": float(utilisation),
             "resets_at": resets_at,
@@ -865,54 +858,13 @@ def _iso_reset_moment(value: Any) -> str | None:
 
     The live surface states the moment as a timestamp rather than the epoch
     seconds the nested spelling used, so it is accepted as text and refused
-    when it is not a string a reader can parse.
+    when it is not a string a reader can parse. The text is returned unchanged:
+    it is carried through to the document as the surface wrote it, so nothing
+    here re-renders a moment the surface chose.
     """
-    if not isinstance(value, str):
-        return None
-    try:
-        datetime.fromisoformat(value)
-    except ValueError:
+    if not isinstance(value, str) or parse_iso(value) is None:
         return None
     return value
-
-
-def _nested_account_budget(payload: Mapping[str, Any]) -> dict[str, Any]:
-    """Read the nested account spelling the surface used before it moved.
-
-    Its window carries utilisation as a fraction of the weekly window and the
-    reset moment as epoch seconds, so it is parsed by its own contract rather
-    than through the live one.
-    """
-    windows = payload.get("windows")
-    if not isinstance(windows, Mapping) or not windows:
-        return unknown_budget("account answer carried no named windows")
-    window = windows.get(CLAUDE_NESTED_ACCOUNT_WINDOW)
-    if not isinstance(window, Mapping):
-        return unknown_budget(
-            f"account answer carried no {CLAUDE_NESTED_ACCOUNT_WINDOW} window"
-        )
-    utilisation = window.get("utilization")
-    if not isinstance(utilisation, (int, float)) or isinstance(utilisation, bool):
-        return unknown_budget(
-            f"account {CLAUDE_NESTED_ACCOUNT_WINDOW} utilisation is not numeric"
-        )
-    resets_at = _epoch_to_iso(window.get("resetsAt"))
-    if resets_at is None:
-        return unknown_budget(
-            f"account {CLAUDE_NESTED_ACCOUNT_WINDOW} window names no reset time"
-        )
-    budget = unknown_budget("")
-    budget.update(
-        {
-            "headroom": "known",
-            "utilisation_pct": round(100.0 * float(utilisation), 1),
-            "rate_limit_type": CLAUDE_NESTED_ACCOUNT_WINDOW,
-            "rate_limit_period_minutes": window.get("windowMinutes"),
-            "resets_at": resets_at,
-            "detail": "account surface reports utilisation and reset time",
-        }
-    )
-    return budget
 
 
 # The on-disk copy of the account block is a last-known position, never a

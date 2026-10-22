@@ -64,11 +64,16 @@ def test_recorded_answer_yields_utilisation_and_reset_time() -> None:
     answer = _recorded_answer()
     budget = _read(answer)
 
-    window = answer["windows"]["weekly"]
+    window = answer["seven_day"]
     assert budget["headroom"] == "known"
-    assert budget["utilisation_pct"] == round(100.0 * window["utilization"], 1)
-    assert budget["resets_at"] == _backends._epoch_to_iso(window["resetsAt"])
-    assert budget["rate_limit_type"] == "weekly"
+    assert budget["utilisation_pct"] == window["utilization"]
+    assert budget["resets_at"] == window["resets_at"]
+    assert budget["rate_limit_type"] == "seven_day"
+    assert (
+        budget["quota_windows"][300]["used_percent"]
+        == (answer["five_hour"]["utilization"])
+    )
+    assert budget["quota_windows"][300]["window_minutes"] == 300
     assert _backends.budget_exhausted(budget) is False
 
 
@@ -76,8 +81,8 @@ def test_recorded_answer_yields_utilisation_and_reset_time() -> None:
     "payload",
     [
         ["not", "an", "object"],
-        {"windows": "not-a-mapping"},
-        {"windows": {}},
+        {"five_hour": "not-a-mapping"},
+        {"five_hour": {}, "seven_day": {}},
         {"unrelated": "shape"},
     ],
 )
@@ -89,25 +94,49 @@ def test_unrecognised_shape_is_unknown_never_low(payload: object) -> None:
     assert "account answer" in budget["detail"]
 
 
-def test_missing_named_window_is_unknown() -> None:
-    answer = _recorded_answer()
-    del answer["windows"]["weekly"]
+def test_an_answer_naming_no_known_window_is_unknown() -> None:
+    """A window the reader cannot name leaves the reading unknown, and says so.
+
+    The surface reports its account-wide clocks under the two names the reader
+    knows. An answer carrying only some other name has no figure to place on
+    either clock, so the reading stays unknown rather than being attributed to
+    a window nobody measured.
+    """
+    answer = {
+        "weekly_scoped": {
+            "utilization": 93.0,
+            "resets_at": "2026-09-14T20:00:00+00:00",
+        }
+    }
     budget = _read(answer)
 
     assert budget["headroom"] == "unknown"
     assert budget["utilisation_pct"] is None
-    assert "weekly" in budget["detail"]
+    assert "no named windows" in budget["detail"]
 
 
 @pytest.mark.parametrize("bad", ["high", True, None, [0.89]])
-def test_non_numeric_utilisation_is_unknown(bad: object) -> None:
+def test_a_window_with_no_usable_figure_is_dropped_not_guessed(bad: object) -> None:
+    """A malformed window is left out, and its read sibling still speaks.
+
+    Dropping rather than refusing keeps one unreadable window from blanking a
+    lane whose other clock is known; with every window malformed there is
+    nothing left to read and the reading is unknown.
+    """
     answer = _recorded_answer()
-    answer["windows"]["weekly"]["utilization"] = bad
+    answer["seven_day"]["utilization"] = bad
     budget = _read(answer)
 
-    assert budget["headroom"] == "unknown"
-    assert budget["utilisation_pct"] is None
-    assert "not numeric" in budget["detail"]
+    assert budget["headroom"] == "known"
+    assert 300 in budget["quota_windows"]
+    assert 10080 not in budget["quota_windows"]
+    assert budget["rate_limit_type"] == "five_hour"
+
+    bare = _read({"seven_day": answer["seven_day"]})
+
+    assert bare["headroom"] == "unknown"
+    assert bare["utilisation_pct"] is None
+    assert "no named windows" in bare["detail"]
 
 
 def test_expired_credential_is_unknown_naming_the_reason(monkeypatch) -> None:
