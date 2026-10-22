@@ -1,0 +1,45 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-22T03:33:37Z",
+  "dispatched_at": "2026-10-22T03:07:51Z",
+  "findings": [
+    {
+      "file": "tests/test_domain_rules_reach_the_brief.py",
+      "line": 163,
+      "severity": "follow-on",
+      "text": "the diff edits tests/test_domain_rules_reach_the_brief.py, which is outside the node's declared exclusive write paths; the node discloses it in its manifest's blockers line as an authorisation request rather than hiding it, and the edit is required because those three call sites named the composer the plan deletes, so reverting it would restore a red declared gate. The coordinator must authorise the scope expansion or own the file in a separate node."
+    },
+    {
+      "file": "tests/test_one_composer_for_the_domain_block.py",
+      "line": 195,
+      "severity": "follow-on",
+      "text": "assert first == second compares two calls of the deterministic _brief_digest over the same unchanged brief path, so it holds whatever the code does and cannot fail; the done_when clause 'the brief digest of an unchanged node is unchanged' therefore has no guard behind it. An independent assertion would pin the digest to a value derived from the fixture's own bytes rather than to a second call of the same function."
+    },
+    {
+      "file": "tests/test_one_composer_for_the_domain_block.py",
+      "line": 168,
+      "severity": "follow-on",
+      "text": "assert rendered == \"\\n\".join([DOMAIN_RULES_HEADING, render_review_check(check)]) derives both sides from the same code under test with the same test-supplied check, so a regression of render_review_check itself (for example returning a line without the id) changes both sides identically and the assertion still passes; it guards only the case where render_domain_rules stops routing through the helper, and is not evidence that the helper renders a check correctly."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to compose the domain block and each check line through one owner in prompts.py with no heading for an empty rule set; the diff deletes _brief_domain_block from reckon/crew/dispatch_admission.py at the landed revision, points its call sites in reckon/crew/dispatch.py:1811, reckon/crew/dispatch_plan.py:831 and reckon/crew/dispatch_admission.py:2142 at prompts.domain_rules_block, adds prompts.render_review_check at reckon/crew/prompts.py:419, and makes render_domain_rules at reckon/crew/prompts.py:393 return nothing when the match holds no invariants and no review checks.\nVERDICT done_when: the done_when is the six-file pytest gate judged by failure delta against the base revision plus ruff on the changed paths; the manifest records baseline_suite at ed60ec49 as 7 failed 60 passed EXIT=1 and after_suite at 4248c2891 as 67 passed EXIT=0, both logs naming revision, tree and literal command on their header lines and ending in a bare EXIT= line, with the base arm additionally naming measurement_module and measurement_cwd.\nVERDICT write_paths: the brief grants reckon/crew/dispatch_admission.py, reckon/crew/dispatch.py, reckon/crew/dispatch_plan.py, reckon/crew/prompts.py, tests/test_one_composer_for_the_domain_block.py and the evidence fragment; the diff changes all of those plus tests/test_domain_rules_reach_the_brief.py, which is not among them; the manifest's blockers line declares that expansion.\nVERDICT manifest: read; status complete, one commit 4248c289114b, changed_paths matching the diff, baseline_suite and after_suite carrying revision, literal command, log_path, completed, failure_count and failure_ids, and a negative_control_log at logs/negative-control.log whose first line names the mutation and whose last line is EXIT=1 with 4 failing ids.\nVERDICT diff: read commit by commit against ed60ec494ca7ebc4e77198b849306c5c9a76cb60; one commit changes seven files - the admission-layer composer is deleted, three call sites re-point at prompts.domain_rules_block, the renderer suppresses the heading on a rule-less match, render_review_check is added as the one per-check spelling, the new test file adds 206 lines, three call sites in an existing test file are redirected, and the evidence fragment is added.\nCALL_SITES: reckon/crew/dispatch.py:1811 dispatch, reckon/crew/dispatch_plan.py:831 plan_dispatch, reckon/crew/prompts.py:652 compose_prompt, reckon/crew/dispatch_admission.py:2142 _brief_text, reckon/crew/dispatch_admission.py:2003 _domain_rules_carry\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/prompts.py:393 returns nothing for a match with no invariants and no review checks and reckon/crew/prompts.py:419 is the single per-check spelling, so both halves of the goal land; the review-side consumer the plan names is fenced to a sibling node and is disclosed in the manifest's follow_ons.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/base-arm.log and logs/after-arm.log name their revision, tree and literal command on the header lines and end EXIT=1 and EXIT=0, and the manifest's baseline_suite and after_suite record those figures rather than claiming them.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: the diff changes tests/test_domain_rules_reach_the_brief.py, which the brief's exclusive write paths do not grant, though every other changed path is inside the declared scope.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_one_composer_for_the_domain_block.py:195 asserts first == second over two calls of the same deterministic digest, and line 168 compares two renderings that both come from the code under test, so the digest clause rests on an assertion that cannot fail.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/prompts.py:419 follows the surrounding renderer style and tests/test_one_composer_for_the_domain_block.py:47 names the capability rather than a stage, though the module-level text scans at lines 114-135 are a coupling to source text rather than to behaviour.\nSCORE reuse: 19\nJUSTIFICATION reuse: _brief_domain_block is deleted rather than kept beside prompts.domain_rules_block, and a search of the landed tree for a second check-line spelling (git grep 'check.id}\\|check\\.question' at 4248c2891 over *.py and *.jsx) finds only reckon/crew/prompts.py:425, so the added helper creates the owner rather than forking one.\nFINDING tests/test_domain_rules_reach_the_brief.py:163 follow-on: the diff edits a file outside the node's declared exclusive write paths; it is disclosed in the manifest's blockers line and the edit is required because the deleted composer was called there, so the coordinator must authorise the expansion rather than the node repairing it.\nFINDING tests/test_one_composer_for_the_domain_block.py:195 follow-on: assert first == second compares two calls of the deterministic _brief_digest over the same unchanged path, so it holds whatever the code does and the done_when's digest-invariance clause has no guard.\nFINDING tests/test_one_composer_for_the_domain_block.py:168 follow-on: both sides of the assertion are derived from the code under test with the same test-supplied check, so a regression inside render_review_check changes both sides identically and the assertion still passes.\n",
+  "review_run_id": "r-20261022T030604039629-review-of-one-composer-for-the-domain-block-4248c289114b",
+  "reviewed_base_sha": "ed60ec494ca7ebc4e77198b849306c5c9a76cb60",
+  "reviewed_head_sha": "4248c289114b9ea662865ac3cb05eda67080a2d8",
+  "reviewed_run_id": "r-20261022T023248970019-one-composer-for-the-domain-block",
+  "rubric": "code-review",
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T03:51:13.498293+00:00",
+  "total": 101
+}
