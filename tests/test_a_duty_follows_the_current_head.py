@@ -26,6 +26,7 @@ from reckon.crew.node import CrewError
 
 obligations_module = importlib.import_module("reckon.crew.obligations")
 resumption_module = importlib.import_module("reckon.crew.resumption")
+dispatch_module = importlib.import_module("reckon.crew.recovery_review_dispatch")
 
 PROJECT = "duty-head-fixture"
 SESSION = "coordinator-fixture"
@@ -227,3 +228,35 @@ def test_a_queued_review_is_withdrawn_and_recorded_as_superseded(world):
     # it for the head the resume replaced.
     with pytest.raises(CrewError):
         runs.read_pointer(review_run_id)
+
+
+def test_the_reflex_composes_no_review_for_a_superseded_head(world):
+    """The reflex's own arm: a review for the replaced head is refused.
+
+    The withdrawal above runs when a review was already queued; this is the
+    other direction, where the reflex reaches a run that reads as delivered at
+    the head its resume replaced — its manifest was written before the resume —
+    and would compose a fresh round against a revision the run has moved past.
+    The refusal is recorded on the run, so a reader sees why no round was
+    composed rather than a duty that simply stopped appearing.
+    """
+    run_id = "r-resumed-refused-review"
+    _write_run(world, run_id=run_id, head=world["delivered"])
+    resumption_module._record_resume_supersedes_head(run_id)
+
+    dry = dispatch_module.dispatch_review_for_run(
+        runs.read_pointer(run_id), dry_run=True
+    )
+    assert dry["refused"] is True
+    assert dry["dispatched"] is False
+    assert recovery.same_revision(dry["superseded_head"], world["delivered"])
+    # A dry run reports the refusal without recording it.
+    assert recovery.REVIEW_DISPATCH_FIELD not in runs.read_pointer(run_id)
+
+    composed = dispatch_module.dispatch_review_for_run(runs.read_pointer(run_id))
+
+    assert composed["refused"] is True
+    assert composed["dispatched"] is False
+    recorded = runs.read_pointer(run_id)[recovery.REVIEW_DISPATCH_FIELD]
+    assert recorded["status"] == "withdrawn"
+    assert "the head its resume superseded" in recorded["reason"]

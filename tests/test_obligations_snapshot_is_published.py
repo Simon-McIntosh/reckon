@@ -35,6 +35,7 @@ from reckon.crew import (
     recovery_liveness,
     recovery_stream,
     recovery_watch,
+    resumption,
     runs,
 )
 from reckon.crew import review as review_module
@@ -579,6 +580,51 @@ def test_a_moved_head_names_the_same_two_heads_in_snapshot_and_derivation(
         assert duty["kind"] == "review-missing", (reader, duty)
         assert duty["head"] == head, (reader, duty)
         assert duty["reviewed_head"] == reviewed_head, (reader, duty)
+
+
+def test_a_resumed_run_is_published_and_owes_no_duty_for_the_head_it_replaced(
+    fleet: dict[str, Any], capfd: pytest.CaptureFixture[str]
+) -> None:
+    """A session holding a resumed run keeps its snapshot, with no stale duty.
+
+    The run reads as delivered at the revision its own resume replaced, so the
+    derivation owes nothing for that head. The sweep's slice has to drop the
+    duty where it is built: the payload is what a coordinator is handed, and a
+    slice that appends the absent duty raises on it instead, costing the whole
+    session its snapshot over one run that owes nothing.
+    """
+    _write_pointer(fleet, "r-resumed", phase="complete", status="complete")
+    superseded = resumption._record_resume_supersedes_head("r-resumed")
+    assert superseded, "the fixture must record the head the resume replaced"
+
+    written = obligation_snapshot.sweep(
+        PROJECT,
+        sessions=[SESSION],
+        producer={
+            "pid": os.getpid(),
+            "pid_start_time": obligation_snapshot.process_start_time(os.getpid()),
+            "started_at": None,
+            "code_stamp": "stamp-one",
+        },
+        stream_offset=0,
+        state_dirs=[fleet["repo"] / "docs" / "state" / PROJECT],
+        now=fleet["frozen"],
+    )
+    failure = capfd.readouterr().err
+
+    assert obligation_snapshot.snapshot_path(PROJECT, SESSION) in written, (
+        "the session's snapshot was not published, so the sweep failed on the"
+        f" resumed run rather than skipping the duty it does not owe:\n{failure}"
+    )
+    assert "obligation-sweep-failure" not in failure, failure
+    stored = obligation_snapshot.read_snapshot(PROJECT, SESSION)
+    assert stored is not None
+    assert [row for row in stored["obligations"] if row["run_id"] == "r-resumed"] == []
+    # The slice and the derivation still agree, which is what the snapshot's
+    # whole purpose rests on: both readers skip the duty, neither raises.
+    assert obligation_snapshot.payload_for(
+        obligation_snapshot.fleet_state(PROJECT, now=fleet["frozen"]), SESSION
+    ) == obligations_module.obligations(PROJECT, SESSION)
 
 
 def test_the_stat_walk_skips_run_records(fleet: dict[str, Any]) -> None:
