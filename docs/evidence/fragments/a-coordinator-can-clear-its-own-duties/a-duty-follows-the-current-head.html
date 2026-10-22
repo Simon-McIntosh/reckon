@@ -80,3 +80,52 @@
   failed on it — green at base, red at the first head — and the guard is restored.
   The gate was re-run at the corrected revision.</p>
 </section>
+
+<section id="a-duty-follows-the-current-head-repair">
+  <h2>Repair: the slice that read a duty the derivation withholds</h2>
+
+  <p><strong>What the review found.</strong> The withdrawal lives in the
+  derivation's review-duty reader, which now returns nothing for a run carrying
+  the head its resume replaced. The snapshot module holds no derivation but
+  reaches that reader, and <code>payload_for</code> in
+  <code>reckon/crew/obligation_snapshot.py</code> appended its result without
+  checking it, so one resumed run put <code>None</code> in the duty list and
+  <code>_partition_acknowledged</code> raised on it — an
+  <code>AttributeError: 'NoneType' object has no attribute 'get'</code>. The
+  sweep reports a failure per session, so the cost was the whole session's
+  snapshot, and it surfaced only as a producer that stopped publishing rather
+  than as an error a reader would see.</p>
+
+  <p><strong>The fix, and the two cases asked for.</strong> The slice skips an
+  absent duty the way the derivation's own caller does.
+  <code>tests/test_obligations_snapshot_is_published.py</code> publishes the
+  snapshot for a session holding a resumed run and asserts the sweep succeeded,
+  that nothing on stderr named a sweep failure, that no duty names the
+  superseded head, and that the slice still equals the derivation.
+  <code>tests/test_a_duty_follows_the_current_head.py</code> drives the reflex's
+  own refusal: a run whose resume replaced the head it still carries is refused a
+  composed review, the refusal is reported without being recorded on a dry run,
+  and the real call records it as <code>withdrawn</code> with its reason.</p>
+
+  <p><strong>Arms.</strong> The guard-removed mutation — append the duty without
+  checking it — reads 1 failed, 5 passed, <code>EXIT=1</code>, failing exactly the
+  new snapshot case and reproducing the reviewer's own traceback, so the case
+  detects the defect it was written for rather than passing beside it. The base
+  arm at <code>dec005048c</code>, with this head's two test files overlaid, reads
+  5 failed, 65 passed, <code>EXIT=1</code> — precisely the five cases this change
+  introduces, the three from the landing and the two added here, each failing on
+  the absent seam (<code>module 'reckon.crew.resumption' has no attribute
+  '_record_resume_supersedes_head'</code>). The head reads 70 passed,
+  <code>EXIT=0</code>, so it adds no failure id against the base. The gate logs
+  and the negative-control log live in this run's directory under
+  <code>~/.config/reckon/crew/runs/</code>, each naming its revision, tree and
+  command on its first line and ending with its report line.</p>
+
+  <p><strong>One mechanical commit beside the fix.</strong>
+  <code>588ab2ed</code> is this node's final revision: it holds a
+  <code>style(format):</code> change that wraps four long lines in the snapshot
+  test file, which <code>ruff format</code> flags there and flagged before this
+  work touched the file. It carries no behaviour change and is separate from the
+  repair so the fix stays readable; the gate was re-run at that revision, which
+  both logs name.</p>
+</section>
