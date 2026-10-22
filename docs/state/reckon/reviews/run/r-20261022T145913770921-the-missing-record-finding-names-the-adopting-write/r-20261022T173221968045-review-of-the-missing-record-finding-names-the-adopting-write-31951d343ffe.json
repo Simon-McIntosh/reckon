@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured by differencing the reviewed run's own arm logs in its run directory: coordinator-population-base.log (arm base rev e6f348f70528107b271a9dc18eb797dc7f902c81, '24 failed, 1520 passed, 3 skipped', EXIT=1) against coordinator-population-head.log (arm head rev 3a417da06d6ef01842b02f976c3e5265dba76351, '22 failed, 1527 passed, 3 skipped', EXIT=1); the head failure id set is a strict subset of the base set (0 added, 2 ids present only at base), so added_failure_count is 0. The instrument saw failures present at both arms, so the empty added set is a measurement and not an unreadable log.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/doccheck.py:1427",
+    "reckon/_store_section_ops.py:169",
+    "reckon/_store.py:1725"
+  ],
+  "completed_at": "2026-10-22T17:57:14.158Z",
+  "dispatched_at": "2026-10-22T17:35:30Z",
+  "findings": [
+    {
+      "file": "tests/test_audit_doc_section_contract.py",
+      "line": "117",
+      "severity": "follow-on",
+      "text": "follow-on: the expected item's effort_hours, capability and links are spread from _SECTION_RECORD_EXAMPLE_DEFAULTS, so that half of the assertion is the module under test compared against itself and would stay green if those defaults regressed; only the fixture-independent half (id 's2', title '\u00a72 \u2014 work', and the absent body at line 119) can redden, which is what happens under the no-item mutation."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/doccheck.py:1427 and reckon/_store_section_ops.py:169 are the two production callers outside reckon/_store.py, and reckon/_store.py:1725 is the in-module caller that still takes the byte-identical default.",
+    "diff": "read both commits against base 9538112c5: 9e19bb2d6 adds _SECTION_RECORD_EXAMPLE_DEFAULTS, _NEW_SECTION_EXAMPLE_ITEM and the optional item parameter in reckon/_store.py, passes the built item in reckon/doccheck.py, and adds five cases plus rewrites one pin in the two test files; 31951d343 adds only the landing fragment.",
+    "done_when": "read the plan's s1 done-when; its three clauses are the five new cases at tests/test_record_attaches_to_existing_section.py:241-311 and the rewritten pin at tests/test_audit_doc_section_contract.py:101-119, and the head gate over the five files records 112 passed EXIT=0.",
+    "goal": "the node goal is 'Make the section-without-contract finding print a body-less append for the reported section through the shared refusal builder'; reckon/_store.py:1697 makes the builder take an optional item and reckon/doccheck.py:1427 supplies the body-less item for the reported section, which is that deliverable.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T145913770921-the-missing-record-finding-names-the-adopting-write/manifest.md; status complete, commits 9e19bb2d6 and 31951d34, tests line names the 112-test head gate, negative_control_log names negative-control.log with nine failing ids, but baseline_suite and after_suite are unset and the run's classification.json records both as null.",
+    "write_paths": "read the manifest's declared paths (reckon/_store.py, reckon/doccheck.py, tests/test_record_attaches_to_existing_section.py, tests/test_*audit*_doc_section_contract.py, one evidence fragment and one figures directory); git diff --stat 9538112c5 31951d343 lists five files, all four code/test paths plus the fragment, and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_record_attaches_to_existing_section.py:279 reinstates the regression (a body added to the parsed item for the reported id) and the case reddens with 'already exists', recorded in negative-control.log as one of nine failing ids; the weakest added assertion is the defaults half at tests/test_audit_doc_section_contract.py:117, which is spread from the module under test and so cannot move independently of it.",
+    "evidence": "the head gate named in the manifest's tests line ran the two touched files plus the three dependent files and recorded 112 passed with EXIT=0 in gate-head-all-9e19bb2d6.log, and the new cases at tests/test_record_attaches_to_existing_section.py:241-311 assert each done-when clause; the one weakness is that clause (2) is exercised through store.apply_ops at tests/test_record_attaches_to_existing_section.py:96-101 rather than through mcp.edit_plan, so the MCP envelope that parses the example is not covered.",
+    "fit": "reckon/_store.py:1674 hoists the inline example's record fields into one module-level mapping with a mechanism comment, and the added lines use the file's existing collections.abc Mapping and typing.Any imports at reckon/_store.py:68 and :73; no plan, sprint, version or attribution label appears in any added name or comment.",
+    "goal_fidelity": "reckon/doccheck.py:1427 now calls _section_contract_refusal with item={\"id\": sid, \"title\": heading_titles.get(sid, \"\"), **_SECTION_RECORD_EXAMPLE_DEFAULTS} (lines 1430-1433), so the section-without-contract finding prints the body-less append for the reported section that the goal names.",
+    "reuse": "the change extends the single owner of the capability: _section_contract_refusal at reckon/_store.py:1697 gains an optional parameter and doccheck.py:1427 reuses _SECTION_RECORD_EXAMPLE_DEFAULTS (the sole owner of those defaults, reckon/_store.py:1674) instead of restating the literal; a search over reckon/ for another section-record default or refusal-envelope builder found none to fork.",
+    "scope_discipline": "git diff 9538112c5..31951d343 changes exactly reckon/_store.py, reckon/doccheck.py, tests/test_record_attaches_to_existing_section.py, tests/test_*audit*_doc_section_contract.py and the landing fragment, every one inside the six declared write paths, and the declared figures directory is left unused as the dispatch's no-artifact clause directs."
+  },
+  "node": "review-of-the-missing-record-finding-names-the-adopting-write-31951d343ffe",
+  "node:reviewed": "the-missing-record-finding-names-the-adopting-write",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the section-without-contract finding print a body-less append for the reported section through the shared refusal builder; reckon/_store.py:1697 gives _section_contract_refusal an optional item and reckon/doccheck.py:1427 passes the reported section's own id, its heading's text and the boundary's record defaults.\nVERDICT done_when: read the plan's s1 done-when; its three clauses are covered by five new cases at tests/test_record_attaches_to_existing_section.py:241-311 and the rewritten pin at tests/test_audit_doc_section_contract.py:101-119, and the head gate over the five files records 112 passed EXIT=0 in gate-head-all-9e19bb2d6.log.\nVERDICT write_paths: read the manifest's declared paths (reckon/_store.py, reckon/doccheck.py, the two test files, an evidence fragment and a figures directory); git diff --stat 9538112c5 31951d343 changes exactly those four code/test files plus the fragment, all inside the declared scope, and the figures directory is left unused.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T145913770921-the-missing-record-finding-names-the-adopting-write/manifest.md; status complete, commits 9e19bb2d6 and 31951d34, tests line records the 112-test head gate EXIT=0, negative_control_log names negative-control.log with nine failing ids, but baseline_suite and after_suite are unset (classification.json records both null) so the run's arms are found only in its directory.\nVERDICT diff: read commit by commit against base 9538112c5; 9e19bb2d6 changes reckon/_store.py, reckon/doccheck.py and the two test files, and 31951d343 adds only the landing fragment.\nCALL_SITES: reckon/doccheck.py:1427, reckon/_store_section_ops.py:169, reckon/_store.py:1725\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/doccheck.py:1427 passes item={\"id\": sid, \"title\": heading_titles.get(sid, \"\"), **_SECTION_RECORD_EXAMPLE_DEFAULTS} at lines 1430-1433, so the finding prints the body-less adopting append the goal names.\nSCORE evidence: 18\nJUSTIFICATION evidence: the head gate named in the manifest's tests line recorded 112 passed with EXIT=0 in gate-head-all-9e19bb2d6.log, but done-when clause (2) is exercised through store.apply_ops at tests/test_record_attaches_to_existing_section.py:96-101 rather than through mcp.edit_plan.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 9538112c5 31951d343 touches only the four declared code/test paths and the landing fragment, and no concurrent node's path.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_record_attaches_to_existing_section.py:279 reinstates the regression and reddens as negative-control.log records, but the defaults half of tests/test_audit_doc_section_contract.py:117 is spread from the module under test and cannot move independently of it.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/_store.py:1674 hoists the example's record fields into one module-level mapping with a mechanism comment, and the new name carries no plan, sprint or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the one owner at reckon/_store.py:1697 and reuses _SECTION_RECORD_EXAMPLE_DEFAULTS at reckon/_store.py:1674 instead of restating it; a search over reckon/ for a second refusal-envelope builder or defaults owner found none.\nFINDING tests/test_audit_doc_section_contract.py:117 follow-on: the expected item's effort_hours, capability and links are spread from _SECTION_RECORD_EXAMPLE_DEFAULTS, so that half of the assertion compares the module under test against itself and would stay green if those defaults regressed; only the fixture-independent half (id, title and the absent body at line 119) can redden.\n",
+  "review_run_id": "r-20261022T173221968045-review-of-the-missing-record-finding-names-the-adopting-write-31951d343ffe",
+  "reviewed_base_sha": "9538112c56879ab7a3f8252201140b4053c757b1",
+  "reviewed_head_sha": "31951d343ffe3d34dc1d985c847058e91a370439",
+  "reviewed_run_id": "r-20261022T145913770921-the-missing-record-finding-names-the-adopting-write",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T17:52:00+00:00",
+  "total": 113
+}
