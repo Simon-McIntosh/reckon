@@ -1,0 +1,32 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-22T02:10:48.233Z",
+  "dispatched_at": "2026-10-22T01:56:03Z",
+  "findings": [
+    {
+      "file": "tests/test_a_queued_run_keeps_one_id.py",
+      "line": "117",
+      "severity": "follow-on",
+      "text": "follow-on: on the base arm this test reddens at line 117 on the same result[\"launched\"] == [\"r-continuity\"] assertion the first test carries at line 81, before it reaches its own dropped-row assertion at line 123; base_gate.log shows both base failures with the identical AssertionError shape ('r-20261022T011122053729-continuity' != 'r-continuity' at :81, 'r-20261022T011130511765-continuity' != 'r-continuity' at :117). So the two measured base failures are one guard asserted twice, and the DROPPED_WORDS check at :123 is a reasoned guard rather than a demonstrated one: it is non-vacuous only if fleet_transitions still emits a row for r-continuity when the launch re-mints, which no arm in this run exercises. The property is real and disclosed in the fragment; this only bounds what the two red ids prove."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to keep the run id a dispatch returned through admission retries and the launch; reckon/crew/queue_admission.py:192 passes run_id=str(pointer[\"run_id\"]) into dispatch() at the _launch_queued call site, and reckon/crew/dispatch_plan.py:726 resolves that as run_id or new_run_id(node.id), so the printed id is the one the launched run answers to.\nVERDICT done_when: each of the done_when's three checks is asserted in tests/test_a_queued_run_keeps_one_id.py (retry-and-launch at :46, discard-while-queued at :85, no-dropped-row at :102) and its gate, the nine named test files, is recorded rather than claimed - base_gate.log '2 failed, 58 passed in 139.29s' EXIT=1 and after_gate.log '60 passed in 265.04s' EXIT=0.\nVERDICT write_paths: the manifest declares reckon/crew/runs.py, reckon/crew/reserve.py, tests/test_a_queued_run_keeps_one_id.py, the landing fragment and docs/figures/a-coordinator-can-clear-its-own-duties/a-queued-run-keeps-one-id; the diff also changes reckon/crew/queue_admission.py and tests/test_a_queued_run_is_admitted.py, both outside that list but each carrying an in-session scope grant (resume-1-advice.txt for queue_admission.py, resume-2-advice.txt for the sibling test), and runs.py and reserve.py are untouched as the evidence_inputs state.\nVERDICT manifest: read at the reviewed head; status complete, changed_paths lists the four landed files, baseline_suite and after_suite carry revision, command with absolute paths, exit_status, log_path, completed true and their failure ids, negative_control_log names base_gate.log and nothing else on the line, and tests: is the literal nine-file pytest command with no placeholder.\nVERDICT diff: read commit by commit against 4c659c40a - bbda8e263 adds tests/test_a_queued_run_keeps_one_id.py, 4fc950049 is the one-line launch fix at reckon/crew/queue_admission.py:190-192, 54e0f23f6 and af9bc8109 write the landing fragment, f03d4f07b updates four sibling assertions in tests/test_a_queued_run_is_admitted.py; four files, +237/-6, and no source file other than queue_admission.py is touched.\nCALL_SITES: reckon/crew/queue_admission.py:admit_once (calls _launch_queued at :1198), reckon/crew/queue_admission.py:_await_moved_launch (calls _launch_queued at :314, reached through move_queued_run), reckon/crew/dispatch.py:_launch_yielded_queued_request (calls _launch_queued at :421)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:192 supplies run_id=str(pointer[\"run_id\"]) to the single dispatch() call every admission path routes through, and dispatch_plan.py:726 honours it, so the id survives the two held passes and the launching pass the new test drives.\nSCORE evidence: 18\nJUSTIFICATION evidence: the recorded arms reproduce - base_gate.log carries the two launch-case ids with EXIT=1 and after_gate.log '60 passed' with EXIT=0 - but the gate ran at f03d4f07b while the reviewed head is af9bc8109, a gap the manifest's revision_note and the fragment disclose as docs-only.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff 4c659c40a..af9bc8109 is authorized - queue_admission.py and tests/test_a_queued_run_is_admitted.py by the resume grants named in resume-1-advice.txt and resume-2-advice.txt, the fragment and new test by the declared fence - and neither declared file reckon/crew/runs.py nor reckon/crew/reserve.py is touched.\nSCORE durability: 17\nJUSTIFICATION durability: the base arm is a genuine negative control for the declared mutation (the pre-change id mint), reddening at tests/test_a_queued_run_keeps_one_id.py:81 and :117 on an id the head arm does not produce, but those two ids are one guard asserted twice and the dropped-row assertion at :123 is never reached on the red arm.\nSCORE fit: 18\nJUSTIFICATION fit: the mechanism comment at reckon/crew/queue_admission.py:187-190 explains why the launch keeps the id, the test file follows the sibling tests' fixture-and-idiom style, and the naming check over the changed paths returns only the ruff F811/F401 codes and no plan label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition - it supplies the run_id parameter dispatch() already declares at reckon/crew/dispatch.py:1155 and dispatch_plan.py:726 already resolves - and a search of reckon/crew for an existing run-id-continuity owner found only this one path, which the change extends rather than forks.\nFINDING tests/test_a_queued_run_keeps_one_id.py:117 follow-on: the test reddens on the base arm at the same result[\"launched\"] == [\"r-continuity\"] assertion the first test carries at :81, so its own dropped-row assertion at :123 is never exercised on a red arm and the two measured base failures are one guard asserted twice.\n",
+  "review_run_id": "r-20261022T015345882286-review-of-a-queued-run-keeps-one-id-af9bc8109be8",
+  "reviewed_base_sha": "4c659c40ac907ba3bab87f9c2c0d83820ea5b399",
+  "reviewed_head_sha": "af9bc8109be8264c8e9ee15592b256a463ce0273",
+  "reviewed_run_id": "r-20261022T003519782346-a-queued-run-keeps-one-id",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T02:11:37.041204+00:00",
+  "total": 112
+}
