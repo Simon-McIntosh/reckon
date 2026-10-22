@@ -1,0 +1,179 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T14:03:57.568Z",
+  "dispatched_at": "2026-10-22T13:52:34Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-plan-is-reviewed-before-it-is-built/r-20261022T134137852457-plan-review-of-a-plan-is-reviewed-before-it-is-built/plan.html:313",
+      "id": "single_goal-1",
+      "reason": "a node that fixes both cannot be closed on one verdict and its gate proves neither half; the two defects live in different modules and want separate done-whens and separate negative controls, so splitting s40 into a line-pattern node and a readiness node changes what is dispatched.",
+      "text": "s40 carries two deliverables: making the RUBRIC/FINDING line patterns accept a Markdown list marker, and refusing to store a delivered review with non-empty `absent_items` as `ready`",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-plan-is-reviewed-before-it-is-built/r-20261022T134137852457-plan-review-of-a-plan-is-reviewed-before-it-is-built/plan.html:315",
+      "id": "done_when-1",
+      "reason": "the second arm is exactly the half the incident shows silently passing (`status: ready`, `absent_items: ['anchors_resolve']`), and an uncontrolled positive assertion cannot show the guard fires; the plan needs a control that restores `DEFAULT_STATUS`/the `ready` assignment.",
+      "text": "s40's declared negative control only restores the anchored pattern and reddens the bulleted-finding case; the second done-when case (absent item \u2192 a status the coverage predicate does not count; receipt names the missing item) has no control, so it can pass without the readiness guard firing",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/reckon/crew/promotion_checks.py:2429",
+      "id": "anchors_resolve-1",
+      "reason": "the section names the function, so a node reaches the right code regardless; only the line citation is stale and correcting it does not change what is built.",
+      "text": "s37 cites `promotion_checks.py:2429-2430` as the site where `_plan_review_record_for_promoting_run` returns `None` for a run that is no plan review, but that function is defined at :2521 and returns `None` at :2541/:2549, while 2429-2430 are the closing lines of an unrelated scope-products dict",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/reckon/crew/queue_admission.py:1260",
+      "id": "anchors_resolve-2",
+      "reason": "the call-site count is right and the symbol is named, so the node finds the launch path to change; the line is wrong but not load-bearing, so the plan's content is unchanged.",
+      "text": "s38 states `_join_admitted_plan_review`'s \"only call site is `reckon/crew/queue_admission.py:1260`\", but the call is at `queue_admission.py:1293` (definition at :1329) and 1260 is inside an unrelated verdict-append branch",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-plan-is-reviewed-before-it-is-built/r-20261022T134137852457-plan-review-of-a-plan-is-reviewed-before-it-is-built/plan.html:305",
+      "id": "reasoning-1",
+      "reason": "s38's deliverable is \"find each path that launches a queued plan review without reaching that line, and reproduce one\"; if the true cause is a stale admission image (the join runs but predates it) no such path exists, the node finds nothing to reproduce, and it stalls on a premise the plan asserted without support \u2014 the section should carry the candidate set and let the pass that wrote the staging record be found rather than presuppose a bypass.",
+      "text": "s38's \"Why\" states as fact that \"the join's preconditions held for all three, so the launch itself went another way\", yet its cited evidence (\u00a735) lists that as one of three live candidates \u2014 an admission service running an image older than the join, the join's node-path match failing, and a launch path that bypasses the admission pass \u2014 and establishes none of them",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "95c1519666471e95f63cba82c360066caaad9e5e6ee8fc737b41c4fe365b64e7",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 270,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "single_goal-1",
+      "reason": "both halves serve one verdict, that a delivered review is read whole, and after this round each carries its own assertion and its own negative control, so the verdict says which half landed",
+      "when": "2026-10-22T14:06:25.380898+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-22T14:06:59.409153+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "section 37 is not under review in this round and names its function, so a node reaches the right code; the line drift changes no work",
+      "when": "2026-10-22T14:07:40.465809+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "anchors_resolve-2",
+      "reason": "section 38 is not under review in this round and names its symbol with the right call-site count; the line drift changes no work",
+      "when": "2026-10-22T14:08:29.013658+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "section 38's premise is outside the section this round adds; it stays with that section's next review, and section 40 does not depend on it",
+      "when": "2026-10-22T14:09:34.235906+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "section 37 is not under review in this round and names its function, so a node reaches the right code; the line drift changes no work",
+      "when": "2026-10-22T14:07:40.465809+00:00"
+    },
+    "anchors_resolve-2": {
+      "action": "declined",
+      "by": "",
+      "reason": "section 38 is not under review in this round and names its symbol with the right call-site count; the line drift changes no work",
+      "when": "2026-10-22T14:08:29.013658+00:00"
+    },
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-22T14:06:59.409153+00:00"
+    },
+    "reasoning-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "section 38's premise is outside the section this round adds; it stays with that section's next review, and section 40 does not depend on it",
+      "when": "2026-10-22T14:09:34.235906+00:00"
+    },
+    "single_goal-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "both halves serve one verdict, that a delivered review is read whole, and after this round each carries its own assertion and its own negative control, so the verdict says which half landed",
+      "when": "2026-10-22T14:06:25.380898+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-plan-is-reviewed-before-it-is-built.v270.json",
+  "review_run_id": "r-20261022T134137852457-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "550dcc81749a2eb133d22350d502e44cdf3eb95c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 two cited line anchors point at unrelated code. s37 cites `promotion_checks.py:2429-2430` for where `_plan_review_record_for_promoting_run` returns `None`, but that function is defined at `promotion_checks.py:2521` (its non-plan-review `return None` at :2541, its no-delivery `return None` at :2549), and lines 2429-2430 are the tail of a scope-products `return {\u2026}` dict. s38 cites `queue_admission.py:1260` as the join's only call site, but the call is at `queue_admission.py:1293` (definition at :1329) and line 1260 is inside an unrelated verdict branch. Both named symbols resolve, so the reader is not stranded, but the line anchors are wrong. s39's `promotion.py:1674` is off by two: the `if committed_review_payloads and not already_promoted` guard it quotes is at `promotion.py:1672`. By contrast s40's anchors are exact (`review.py:1249`, `plan_review.py:211`).",
+    "done_when": "a finding \u2014 s40's two done-when halves each need a control and only one is controlled. This node's declared negative control (\"restore the anchored pattern, and the bulleted finding is dropped again\") falsifies only the bulleted-line half; the section's second defect \u2014 a review with non-empty `absent_items` must not store `ready` \u2014 has no control that would turn red if that guard did not fire.",
+    "evidence_paths": "pass \u2014 every arm and log s37/s38/s39/s40 name is written under the run directory or the run's report directory, and s40's evidence fragment lands under `docs/evidence/fragments/`, all durable paths a later reader can open.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches a symbol, filename or comment in s37-s40; the new files (`tests/test_a_bulleted_finding_is_read.py`, the evidence fragment slug) are named by what they do, and no changelog prose is present.",
+    "reasoning": "a finding \u2014 s38 asserts as established fact a cause its cited evidence leaves as one of three open candidates.",
+    "single_goal": "a finding \u2014 s40 carries two independent deliverables, as its own opening states (\"Two defects combine\") and its title names (\"A bulleted finding is read, AND a review missing a rubric item is not ready\"). The two live in different modules (`review.py` line patterns; `plan_review.py` status).",
+    "wiring": "pass \u2014 `s37 \u2192 s36` and `s39 \u2192 s37` both resolve to sections that exist and are declared; the `s39 \u2192 s37` edge is load-bearing rather than wrong, since both nodes write `reckon/crew/promotion.py` and the edge sequences them, while `s38` (`queue_admission.py`, `recovery_review_dispatch.py`) and `s40` (`review.py`, `plan_review.py`) touch disjoint files with no cross-edge needed."
+  },
+  "section_digests": {
+    "_document": "c1226d09f2b3555f4319ecaaa13d382c2d3d4adffe8ba9fc11dc312a10a8164a",
+    "s1": "906b087bcd754848d9ec2aa4c4490b133dbdb4afae9f5c17499132679ea305dd",
+    "s10": "98a91766ca798ebcc3598987231522b39b9ddccc1b7df7872c8581168b36aade",
+    "s11": "02d5638ba0ff8ff5dd2b3c87ccf956cbd9642af42771fd95df9a2b12a65c5aa5",
+    "s12": "32d120b53140ccbc275a965b3f2d903579356680bca3d141eab868656e22f1a9",
+    "s13": "0b983b5335c882d2b5a1e938222637a43c6479acfa2c26796bd1bad6b53fc545",
+    "s14": "e1fc7769c27fba5c11398d91d6a0b95e0bf0b5fbe0348a53ae6bbd11ea67e01e",
+    "s15": "8bbe9d4ecb5d7699700d5ec5ec0e2e68e10eb703ce97c016074036e38c46dbb5",
+    "s16": "405268ed497c37284417b4990ae7587b9d5fdd51e429c59ee23c9fc899dcfd45",
+    "s17": "958a38a3a22f23aff755cc6fb7e95f67abf763621ef344dc4b5afdf2fd261899",
+    "s18": "5be55ae998bf9126a6d5854403395bc2d4dc141a96c747850537376c2b1151bf",
+    "s19": "c955b30374fdf31e71803dac9adb18a3149c1710f64f82faecf6a2e5343806bb",
+    "s2": "0eb83bb364e8325f6db277107654d8f99533fa7458d8f00fa07f41aebea11402",
+    "s20": "d7761564296d90fc766d60ab2d545a71e6b98a3f4cf6e09e3a652b61506adbea",
+    "s21": "9392bdfa49fcf52b6856100b3a6d3824e000fd4e4a4af7900f7ec262acd82fa0",
+    "s22": "5a1cf8eab82a83a4877f9f74ee81283174341d70a24da01bbf97695d84564e9f",
+    "s23": "bb0dab79249984e32a78afb123f52b66fc3170670049bbbc6f7d1b55e1c42124",
+    "s24": "b0870b19487b883350a25f7c90d57a62bc3bcd5f015e3c0e42caa08281ccfb11",
+    "s25": "55c54e0c4d76fc729ae8aae0b9a190890292be3f312bc2851a4557138e3967ee",
+    "s26": "376496ed070fca2ba62310cfbad3a64a716c044bc3c48188338105284b33c5c3",
+    "s27": "4ae9e428c0ae4b25213b1a6dc27ed1bb4add79f05c0c448533947a803910fb6b",
+    "s28": "00f1427c671fbc8c77c5450745a717805c5f71e02da4642612d0e31bcc34ce8b",
+    "s29": "f07a5c4ea029d4c84a0e2e37f4f85b81fd55ba2b01374dbc6725ec9362cbd106",
+    "s3": "46c9c67ed1b393114ccf029e708e97e998691b1283c54b0fb2932ce76f78e01d",
+    "s30": "524315a924e9ea2ed117ffa3497d7c973424aa0fe2f1747216012baa178fe54b",
+    "s31": "109c4c50496bf95da3ad7009025762e6f6203b7aca9bc27b36f9991372594266",
+    "s32": "6f71c6ddc0f515d53dad1398cfc608198a051af77d62d7ef23de5bee1c66d031",
+    "s33": "388b0ebd2758249fd29293434c224835cd9cedf5ab5e3e591eebaa72cd55fb22",
+    "s34": "a1796b7b522c746a6fffb9d84ce9daaadc480a8c182a10a7b546f050d6703270",
+    "s35": "348b0eb16c0690b2e138f28b1353eb6da6f30b89199885ee053a68b35472dcb9",
+    "s36": "1b9c235b3155cc20d2636997e871d553154bcde7170f42fe9c1788c1a3710769",
+    "s37": "580e8de9879c98487d861190d849fbaa300b4fdbfece9a7a4ba24eed4dd480a0",
+    "s38": "0534508fcd761740fdda339862fc74fa43388997b0df6702e53577242d341e4d",
+    "s39": "2dd33aaa16d0d3166c632ce15eac9837f0604222f84564c651c13ee870bba77d",
+    "s4": "7b91ac81d581cc35d0b52204756f087c9a3f39f6180d7b49c782173db05f104e",
+    "s40": "1cc3e5af7c5b7d8df67a535d914f2cfb3763e644565428af05c80dce32f5407a",
+    "s5": "931379e6e61a93111bd4f5be0f477adfac4df292d7f92a1c85da67ae19802e5b",
+    "s6": "d041173b5de95d0e5488fd6cd14ddeb04b6aeb31b2bedbae65328c3f93f022dc",
+    "s7": "658b997db4138d0ee40eca99702b5501c9bb0b620dea973a745e1c2c50ec9e29",
+    "s8": "60b74d52ea05d83fd0d024035a70976e05bc2e1ff165028ebe4589a8fc10c0b4",
+    "s9": "87545911e9ea78d872d01d72f7039ef1759951b05502ca91c7ca97ed86a90a41"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T14:06:01.880191+00:00"
+}
