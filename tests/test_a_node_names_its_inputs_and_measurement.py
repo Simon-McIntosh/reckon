@@ -2,9 +2,11 @@
 
 A dispatch decides whether the tree the node will run in holds what the node
 says it reads, and whether a node building a model in a project that declares
-where its models live has said what its result is compared against. Both
-checks need the dispatched repository and the project's flight config, so they
-run in admission and report through the findings the verdict is composed from.
+where its models live has said what its result is compared against. Both checks
+need the dispatched repository and the project's flight config, so they run in
+admission. A declared input the repository lacks refuses the dispatch; a
+model-building node that names no comparison is admitted with the gap recorded
+as a warning, so the lint does not cost the fit it was meant to save.
 """
 
 from __future__ import annotations
@@ -159,7 +161,31 @@ def test_a_model_node_naming_no_comparison_is_linted(tmp_path: Path) -> None:
 
     assert finding is not None
     assert finding["property"] == "compares-with"
+    # A lint, not a refusal: the dispatch admits this node and records the gap.
+    assert finding["severity"] == "warning"
+    assert "--compares-with" in finding["detail"]
     assert "models/**" in finding["detail"]
+
+
+def test_a_missing_input_is_a_refusal_where_the_comparison_is_a_warning(
+    tmp_path: Path,
+) -> None:
+    """The split is what the section asks for: one refuses, the other warns."""
+    repository = tmp_path / "repo"
+    repository.mkdir()
+    project_path = write_project_layer(repository, "fixture", MODEL_PATHS_LAYER)
+
+    findings = admission.admission_domain_findings(
+        _node(write_paths=["models/tape.py"], inputs=["data/absent.h5"]),
+        project="fixture",
+        repository=repository,
+        project_path=project_path,
+    )
+    refusals, warnings = admission.admission_refusals_and_warnings(findings)
+
+    assert [finding["property"] for finding in refusals] == ["inputs"]
+    assert len(warnings) == 1
+    assert "--compares-with" in warnings[0]
 
 
 @pytest.mark.parametrize(
@@ -347,10 +373,10 @@ def _dry_run_arguments(
     return [*arguments, "--dry-run"]
 
 
-def test_the_dry_run_reports_both_checks_with_the_admission_findings(
+def test_the_dry_run_refuses_the_missing_input_and_warns_the_comparison(
     dispatch_repo, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Both checks reach the findings a dry run reports, and refuse nothing else."""
+    """A missing input refuses; the unnamed comparison warns instead."""
     repo, brief = dispatch_repo
     result = _invoke(
         repo,
@@ -359,15 +385,64 @@ def test_the_dry_run_reports_both_checks_with_the_admission_findings(
     )
 
     payload = json.loads(result.output.splitlines()[0])
-    properties = [finding["property"] for finding in payload["validation"]["findings"]]
+    findings = payload["validation"]["findings"]
+    properties = [finding["property"] for finding in findings]
 
     assert "inputs" in properties, result.output
-    assert "compares-with" in properties, result.output
+    # The comparison is admitted, so it is not on the refusal channel at all.
+    assert "compares-with" not in properties, result.output
     assert payload["ok"] is False
-    assert any(
-        "data/absent.h5" in finding["detail"]
-        for finding in payload["validation"]["findings"]
+    assert any("data/absent.h5" in finding["detail"] for finding in findings)
+    # The lint is still reported, on the warning channel the caller reads.
+    assert any("--compares-with" in warning for warning in payload["warnings"]), (
+        result.output
     )
+
+
+def test_the_dry_run_admits_a_model_node_and_warns_the_comparison(
+    dispatch_repo, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The unnamed comparison does not stop the dispatch; it is recorded."""
+    repo, brief = dispatch_repo
+    result = _invoke(repo, monkeypatch, _dry_run_arguments(repo, brief))
+
+    payload = json.loads(result.output.splitlines()[0])
+    properties = [finding["property"] for finding in payload["validation"]["findings"]]
+
+    assert payload["ok"] is True, result.output
+    assert payload["validation"]["ok"] is True, result.output
+    assert "compares-with" not in properties, result.output
+    assert "inputs" not in properties, result.output
+    assert any("--compares-with" in warning for warning in payload["warnings"]), (
+        result.output
+    )
+
+
+def test_a_node_rebuilt_from_its_stored_record_reports_the_same_warning(
+    dispatch_repo, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The warning is derived from the recorded node, not held in a cache.
+
+    The dispatch stores the node definition it admitted, and the warning has to
+    be reproducible from that record rather than from admission state a later
+    reader does not have.
+    """
+    repo, brief = dispatch_repo
+    result = _invoke(repo, monkeypatch, _dry_run_arguments(repo, brief))
+
+    payload = json.loads(result.output.splitlines()[0])
+    warning = next(w for w in payload["warnings"] if "--compares-with" in w)
+
+    rebuilt = TaskNode(**payload["node"])
+    rebuilt_findings = admission.admission_domain_findings(
+        rebuilt,
+        project="proj",
+        repository=repo,
+        project_path=repo / "docs" / "state" / "proj" / "flight.yaml",
+    )
+    _, rebuilt_warnings = admission.admission_refusals_and_warnings(rebuilt_findings)
+
+    assert rebuilt_warnings == [warning], result.output
 
 
 def test_the_dry_run_admits_a_node_that_answers_both_checks(
@@ -394,6 +469,9 @@ def test_the_dry_run_admits_a_node_that_answers_both_checks(
 
     assert "inputs" not in properties, result.output
     assert "compares-with" not in properties, result.output
+    assert not any("--compares-with" in warning for warning in payload["warnings"]), (
+        result.output
+    )
 
 
 # ── the prescribed judgement is untouched ──────────────────────────────────

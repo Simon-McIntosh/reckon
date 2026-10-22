@@ -876,10 +876,21 @@ def plan_dispatch(
             repository=Path(repo).resolve(),
             run_directory=run_dir(resolved_run_id),
         )
-        if sandbox_findings:
+        # A declared input the repository does not hold refuses the dispatch,
+        # because the node would read a tree that lacks what it named. A
+        # model-building node that names nothing its result is checked against
+        # is admitted with the gap recorded instead: the lint reaches the caller
+        # on the warning channel, so it does not cost the fit it was meant to
+        # save, and the same split is what a node rebuilt from its record
+        # reports.
+        admission_refusals, admission_warnings = admission_refusals_and_warnings(
+            sandbox_findings
+        )
+        warnings.extend(admission_warnings)
+        if admission_refusals:
             verdict = NodeValidation(
                 ok=False,
-                findings=[*verdict.findings, *sandbox_findings],
+                findings=[*verdict.findings, *admission_refusals],
             )
     lane_declaration: dict[str, Any] | None = None
     lane_advisory: dict[str, Any] | None = None
@@ -1619,6 +1630,7 @@ from .dispatch_admission import (  # noqa: E402
     _resolved_write_paths,
     _sandbox_reachability,
     _unmetered_dispatch_alternatives,
+    admission_refusals_and_warnings,
     check_placement_requirements,
 )
 
