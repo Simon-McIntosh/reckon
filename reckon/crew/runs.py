@@ -689,13 +689,51 @@ def _attempt_budget_seconds(run_id: str, record: Mapping[str, Any]) -> int | Non
     return int(amount * multiplier)
 
 
+# Live pointers are re-read by every follower and producer on every pass, and
+# on a shared filesystem those reads were nearly all of a follower's I/O: each
+# of about sixty pointers, tens of kilobytes apiece, re-read every second or so
+# by every follower on the node. A pointer whose inode, size and timestamps are
+# unchanged holds the bytes last read, so its text is kept per process keyed by
+# that identity and the file is opened again only when the identity moves. The
+# text, not the parsed object, is kept, so every caller still receives a dict
+# of its own to change.
+_POINTER_TEXT: dict[str, tuple[tuple[int, int, int, int], str]] = {}
+_POINTER_TEXT_LOCK = threading.Lock()
+
+
+def _pointer_text(path: Path) -> str:
+    """A pointer's text, re-read only when its stat identity has moved.
+
+    Raises ``FileNotFoundError`` for a pointer that is gone, as a direct read
+    would, and forgets whatever was kept for it.
+    """
+    key = str(path)
+    try:
+        info = path.stat()
+    except FileNotFoundError:
+        with _POINTER_TEXT_LOCK:
+            _POINTER_TEXT.pop(key, None)
+        raise
+    identity = (info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+    with _POINTER_TEXT_LOCK:
+        kept = _POINTER_TEXT.get(key)
+    if kept is not None and kept[0] == identity:
+        return kept[1]
+    text = path.read_text()
+    with _POINTER_TEXT_LOCK:
+        _POINTER_TEXT[key] = (identity, text)
+    return text
+
+
 def read_pointer(run_id: str) -> dict[str, Any]:
     """Read one run's live pointer, or say which run is unknown."""
     path = pointer_path(run_id)
-    if not path.exists():
-        raise CrewError(f"no live run {run_id!r} (looked in {path})")
     try:
-        data = json.loads(path.read_text())
+        text = _pointer_text(path)
+    except FileNotFoundError:
+        raise CrewError(f"no live run {run_id!r} (looked in {path})") from None
+    try:
+        data = json.loads(text)
     except ValueError as exc:
         raise CrewError(
             f"live pointer for {run_id!r} is not valid JSON — {exc}"
@@ -726,9 +764,18 @@ def _list_live_records(
     if not directory.is_dir():
         return []
     records = []
-    for path in sorted(directory.glob("*.json")):
+    paths = sorted(directory.glob("*.json"))
+    present = {str(path) for path in paths}
+    with _POINTER_TEXT_LOCK:
+        for key in [
+            key
+            for key in _POINTER_TEXT
+            if key not in present and Path(key).parent == directory
+        ]:
+            del _POINTER_TEXT[key]
+    for path in paths:
         try:
-            data = json.loads(path.read_text())
+            data = json.loads(_pointer_text(path))
         except FileNotFoundError:
             continue
         except ValueError:
