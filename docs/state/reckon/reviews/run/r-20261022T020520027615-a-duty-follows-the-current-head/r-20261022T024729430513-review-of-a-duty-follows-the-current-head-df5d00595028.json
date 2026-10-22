@@ -3,6 +3,13 @@
   "added_failure_ids": [],
   "completed_at": "2026-10-22T03:01:41.819Z",
   "dispatched_at": "2026-10-22T02:48:27Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-duty-follows-the-current-head",
+      "recorded_at": "2026-10-22T03:08:45.837811+00:00"
+    }
+  },
   "findings": [
     "reckon/crew/obligation_snapshot.py:1024 blocking: payload_for appends the result of module._review_duty_item(...) into its duty list with no guard, and this change made that function return None for a run still carrying the head its resume superseded, so _partition_acknowledged (reckon/crew/obligations.py:496) calls None.get(\"run_id\") and raises AttributeError; the snapshot sweep catches it at reckon/crew/obligation_snapshot.py:1177 and records a sweep failure, so a resumed run silently costs its whole session its obligation snapshot. The main derivation in obligations() was updated for the None return (reckon/crew/obligations.py:1319) but this second production caller of the same function was not, and obligation_snapshot.py is outside the node's declared write paths, so the repair needs a scope extension or a follow-on node.",
     "docs/evidence/fragments/a-coordinator-can-clear-its-own-duties/a-duty-follows-the-current-head.html:1 follow-on: the landing fragment's account of the base arm is the only place the arm's identity is stated; the base-arm gate log itself carries no revision of its own in a form a reader can check against the tree it ran in \u2014 its command runs in the base-arm scratch tree, but the fragment is the sole record that the arm was the base revision, so the arm's provenance rests on prose rather than on the log.",
