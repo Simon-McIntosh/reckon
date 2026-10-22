@@ -1450,12 +1450,13 @@ def _delivered_plan_review_for_run(
 ) -> dict[str, Any] | None:
     """The delivered report a plan review run left, or ``None``.
 
-    A plan review's report directory is named for the composed review id rather than
-    the crew run that produced it, so the run's own id does not name the record —
-    the directory's ``dispatch.json`` does. This is the same join
-    :func:`_plan_review_record_for_promoting_run` applies, lifted out so the
-    refusal reader holds the sidecar and the report path it names rather than only
-    the record the store built from them.
+    A plan review's report directory is named for the composed review id rather
+    than the crew run that produced it, so the run's own id does not name the
+    record — the directory's ``dispatch.json`` does. This is the join between a
+    promoting run and the report it delivered, held here alone: the store reader
+    that commits the record and the refusal reader that holds the report path
+    both resolve their delivery through it, so a change to how a delivery is
+    joined reaches both rather than one.
     """
     for sidecar in plan_review.delivered_reports(project, plan_slug):
         composed = str(sidecar.get("review_run_id") or "")
@@ -2526,12 +2527,13 @@ def _plan_review_record_for_promoting_run(
     directory carries, which differs from the crew run that produced it, so a
     lookup by the promoting run's own id finds nothing. The report's
     ``dispatch.json`` names that crew run, so the delivered report is the join
-    between the promoting run and the record it delivered. Its report directory
-    is resolved from the plan the run's node names, and its report is stored
-    first when no stored record carries its id yet — the same step a plan build
-    runs, so the record is reachable from the staging store as well as from the
-    commit. A run whose node names no plan, or a plan with no delivered report
-    naming the run, yields nothing.
+    between the promoting run and the record it delivered — resolved by
+    :func:`_delivered_plan_review_for_run`, the one owner of that join. Its
+    report directory is resolved from the plan the run's node names, and its
+    report is stored first when no stored record carries its id yet — a plan
+    build runs the same step, so the record is reachable from the staging store
+    as well as from the commit. A run whose node names no plan, or a plan with
+    no delivered report naming the run, yields nothing.
     """
     from reckon.crew import recovery
 
@@ -2542,16 +2544,7 @@ def _plan_review_record_for_promoting_run(
     plan_slug = node_id[len(prefix) :]
     if not plan_slug:
         return None
-    matched: Mapping[str, Any] | None = None
-    for sidecar in plan_review.delivered_reports(project, plan_slug):
-        composed = str(sidecar.get("review_run_id") or "")
-        if (
-            review_module._plan_review_crew_run_id(project, plan_slug, composed)
-            != run_id
-        ):
-            continue
-        matched = sidecar
-        break
+    matched = _delivered_plan_review_for_run(project, plan_slug, run_id)
     if matched is None:
         return None
     if not matched.get("stored"):

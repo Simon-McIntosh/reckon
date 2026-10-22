@@ -253,6 +253,34 @@ def _stage_store_record(run_id: str) -> Path:
     return path
 
 
+def _stage_plan_review_store_record(run_id: str) -> Path:
+    """A stored plan review, filed under the review run that produced it.
+
+    A plan review is staged on the store's version-keyed path, which is the
+    ``*.json`` the store's index scans, and the record carries the plan slug its
+    own store writes and a run review never does.
+    """
+    directory = review_module.review_store_root() / PROJECT
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / f"plan-{PLAN}.v1.json"
+    _write_json(
+        path,
+        {
+            "project": PROJECT,
+            "plan_slug": PLAN,
+            "plan_version": 1,
+            "status": "parsed",
+            "review_run_id": run_id,
+            "findings": [
+                {"id": "wiring-1", "type": "wiring", "would_change": True},
+                {"id": "naming-1", "type": "naming", "would_change": False},
+            ],
+            "timestamp": "2026-10-21T20:10:00Z",
+        },
+    )
+    return path
+
+
 def test_a_queue_launched_run_review_composes_its_outcome_from_the_store(
     repository: Path,
 ) -> None:
@@ -273,6 +301,35 @@ def test_a_queue_launched_run_review_composes_its_outcome_from_the_store(
 
     assert f"review scored {RUN_REVIEW_TOTAL}" in outcome, outcome
     assert "1 finding(s)" in outcome, outcome
+
+
+def test_a_stored_plan_review_is_summarised_by_its_own_figures(
+    repository: Path,
+) -> None:
+    """A record carrying a plan slug takes its plan's figures, not a score.
+
+    The summary a stored record earns is picked by which kind the record is, and
+    the plan slug is what the plan-review store keys on and the run-review store
+    never writes. A record that carries one holds findings rather than a score,
+    so it is summarised by its finding count and by how many of them would
+    change the plan, under the identity the store filed it for rather than under
+    a node id a rebuilt record no longer carries.
+    """
+    _stage_plan_review_store_record(COMPOSED_RUN_ID)
+    rebuilt = {
+        "run_id": COMPOSED_RUN_ID,
+        "project": PROJECT,
+        "repo": str(repository),
+        "role": "",
+        "node": {},
+        "rebuilt_from_run_directory": True,
+    }
+
+    outcome = _outcome(rebuilt, COMPOSED_RUN_ID)
+
+    assert "plan review stored with 2 finding(s)" in outcome, outcome
+    assert "1 of which would change the plan" in outcome, outcome
+    assert "review scored" not in outcome, outcome
 
 
 def test_a_run_that_stored_no_review_is_still_refused(
