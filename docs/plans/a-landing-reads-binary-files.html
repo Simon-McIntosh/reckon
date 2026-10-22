@@ -24,7 +24,7 @@
   <title>A Landing Reads Binary Files | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="23">
+<meta name="plan-version" content="24">
 <meta name="plan-modified" content="2026-10-22">
 <meta name="plan-section-depends-on" content="{&quot;s2&quot;:[&quot;a-landing-reads-binary-files#s1&quot;]}">
 </head>
@@ -90,6 +90,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-22T00:05:00Z">
     <div class="r-comment-body"><p>§2 landed at <code>b133c102b</code>. A land step that fails after promotion now exits non-zero, with <code>steps.land.ok: false</code>, the error and the resume command. <code>crew merge</code> refuses such a failure rather than printing a traceback. A promoted but unmerged run can no longer read as landed. <a href="/reckon/evidence/archive/a-landing-reads-binary-files-landed.html#s2">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-s2-exit-zero-explained" data-who="reckon-build" data-when="2026-10-22T00:20:00Z">
+    <div class="r-comment-body"><p>The "exited 0" in this plan's opening report is explained, and the cause was not reckon. The reporting session ran <code>reckon crew complete … --land 2>&1 | tail -c 600; echo EXIT=$?</code>, so <code>$?</code> was <code>tail</code>'s status. That matches §2's base reproduction at <code>e3c761311</code>, which gave exit 1 with an escaping traceback. The reporting session has withdrawn the exit-0 part of the report, and it now reads <code>steps.land.ok</code> and takes exit codes from <code>PIPESTATUS</code>.</p></div>
 </div>
 </section>
 </main>
