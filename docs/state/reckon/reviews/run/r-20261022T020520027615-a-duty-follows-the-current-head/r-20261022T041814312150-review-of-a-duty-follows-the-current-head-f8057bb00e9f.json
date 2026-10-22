@@ -3,6 +3,13 @@
   "added_failure_ids": [],
   "completed_at": "2026-10-22T04:32:46.771Z",
   "dispatched_at": "2026-10-22T04:19:51Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the fragment names the last gate-measured revision as final; the head adds only that fragment section",
+      "recorded_at": "2026-10-22T04:38:24.772288+00:00"
+    }
+  },
   "findings": [
     "docs/evidence/fragments/a-coordinator-can-clear-its-own-duties/a-duty-follows-the-current-head.html:125 follow-on: the repair section states '588ab2ed is this node's final revision', but the node's final commit is f8057bb00, which adds this very section; the sentence is true of the last revision the gate measured and false of the head, and a reader comparing the fragment against the manifest's commits (which end at f8057bb00) meets a disagreement the prose does not explain.",
     "tests/test_a_duty_follows_the_current_head.py:252 follow-on: assert recovery.same_revision(dry['superseded_head'], world['delivered']) compares the refusal's reported head against the very head the test handed the fixture at line 244 (_write_run(..., head=world['delivered'])), so the two sides move together; it is not vacuous, since a refusal reporting no head fails it, but it cannot catch a path that echoes the fixture head where it should report a different one, and the durability score does not rest on it."
