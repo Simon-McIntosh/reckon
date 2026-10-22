@@ -26,7 +26,7 @@
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s5b&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s6-the-probe-reader-and-the-undeclared-dialect&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="e302ad39,04a479ef,4ef8356f,e219aa99,b2594d65,bacd8e17,6a915fd7,4d043fd0,fd4a158f,95ba8ea7,cb69a87f,768a9285,e5cf008e,6001f577,e6dd0dc4,c011b6f9,82095575,87c98418,8e70585c,b7ba4786,3f0e9621,798f87f8,e37ac897,d34eaf27">
 <meta name="plan-impl" content="0.97">
-<meta name="plan-version" content="245">
+<meta name="plan-version" content="246">
 <meta name="plan-modified" content="2026-10-22">
 </head>
 <body>
@@ -2613,6 +2613,9 @@ allowance_5h      = remaining_budget / remaining_windows</code></pre>
 </div>
 <div class="r-comment" data-section="s20" data-id="c-close-s20" data-who="reckon-build" data-when="2026-10-22T09:45:00Z">
     <div class="r-comment-body"><p>Landed: both budget verdicts a dispatch takes are judged against the dispatching session's lift; review 115/120. Evidence: <a href="/reckon/evidence/archive/a-window-paces-the-lane-landed.html#s20">§20 landing record</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s20" data-id="c-run-r-20261022T083802161983-a-spent-global-lift-does-not-mask-a-session-lift" data-who="reckon-build" data-when="2026-10-22T09:00:16.143Z">
+    <div class="r-comment-body"><p>dispatch() now passes its dispatching session to both of its budget verdicts, so a live session credit lift under its own cap admits its session&#x27;s dispatch (and its fallback substitute&#x27;s) past a spent global credit lift on the same group while another session is still held; new file 4 passed, gate 43 passed with 1 pre-existing failure outside scope.</p></div>
 </div>
 </section>
 </main>
