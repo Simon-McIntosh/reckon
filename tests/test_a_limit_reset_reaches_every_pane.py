@@ -21,6 +21,7 @@ the real crew home is untouched.
 
 from __future__ import annotations
 
+import contextlib
 import json
 from collections.abc import Iterator, Sequence
 from datetime import UTC, datetime, timedelta
@@ -28,7 +29,14 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import budget_reset, lift_watch, recovery_watch, runs, ticker
+from reckon.crew import (
+    budget_reset,
+    lift_watch,
+    model_catalogue,
+    recovery_watch,
+    runs,
+    ticker,
+)
 from reckon.crew.recovery_watch import format_watch_transition
 from reckon.crew_follow_commands import follower_row_path, lift_claim_dir
 
@@ -357,9 +365,12 @@ def test_a_process_that_is_not_the_producer_writes_no_reset_row(
 
 
 class _ProducerStub:
-    """The one attribute the sweep registry is read for after a test."""
+    """The attributes the producer loop and its teardown read off the seat."""
 
     sweep_thread = None
+
+    def __init__(self) -> None:
+        self.seeded_states: dict = {}
 
 
 def test_the_registered_producer_writes_the_row(tmp_path, monkeypatch):
@@ -372,3 +383,97 @@ def test_the_registered_producer_writes_the_row(tmp_path, monkeypatch):
     seen = recovery_watch._sweep_reset_rows(PROJECTS[0], None)
     assert seen, "the registered producer announced nothing"
     assert len(_reset_rows(_rows(stream))) == 1
+
+
+# ── the call site: the clock block, not the change gate ─────────────────────
+
+
+class _StopTickingError(Exception):
+    """Ends the producer once the case's steps have all run."""
+
+
+def _drive_producer(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    project: str,
+    steps: list,
+    marks: list[dict],
+) -> None:
+    """Run one producer with a simulated clock, stepping on each quiet boundary.
+
+    Each boundary appends the tally of the pass that has just finished, so a
+    case can name the pass a call happened on rather than only that it happened.
+    """
+    clock = {"t": 1_000.0, "i": 0}
+    tally = {"list": 0, "reset": 0}
+    real_list = recovery_watch.list_live
+    real_reset = recovery_watch._sweep_reset_rows
+
+    def counting_list(*args, **kwargs):
+        tally["list"] += 1
+        return real_list(*args, **kwargs)
+
+    def counting_reset(sweep_project, seen):
+        tally["reset"] += 1
+        return real_reset(sweep_project, seen)
+
+    monkeypatch.setattr(recovery_watch, "_utc_seconds", lambda: clock["t"])
+    monkeypatch.setattr(recovery_watch, "list_live", counting_list)
+    monkeypatch.setattr(recovery_watch, "_sweep_reset_rows", counting_reset)
+    # The block's other neighbours are somebody else's measurement: stub them so
+    # a failure here can only be the reset sweep's.
+    monkeypatch.setattr(runs, "sweep_unfollowed_sessions", lambda _project: None)
+    monkeypatch.setattr(recovery_watch, "_stop_delivered_reviews", lambda *a, **k: None)
+    monkeypatch.setattr(model_catalogue, "check_model_catalogue", lambda _project: None)
+
+    def sleeper(_interval: float) -> None:
+        index = clock["i"]
+        clock["i"] += 1
+        marks.append(dict(tally))
+        if index >= len(steps):
+            raise _StopTickingError
+        clock["t"] += recovery_watch.WATCHER_SWEEP_INTERVAL_SECONDS
+        steps[index]()
+
+    generator = recovery_watch.watch_ticker(project, poll_interval=0.0, sleeper=sleeper)
+    with contextlib.suppress(_StopTickingError):
+        list(generator)
+
+
+def test_the_reset_sweep_runs_on_a_pass_where_the_change_gate_did_not_move(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+):
+    """The call site is the capability: a still home, a passing clock, the row.
+
+    A reset becomes due when an announced instant passes, so a sweep behind the
+    change gate is never reached — every file the gate reads is still. This pins
+    the call to the clock-driven block by finding a pass that neither listed the
+    fleet nor took the gate, and requiring the reset row to have been written on
+    it. Moving the call behind ``if sweep:`` reddens it.
+    """
+    project = PROJECTS[0]
+    stream = tmp_path / "alpha.events"
+    monkeypatch.setattr(runs, "_WATCH_STREAM_PRODUCERS", {project: _ProducerStub()})
+    monkeypatch.setattr(runs, "watch_stream_path", lambda _project: stream)
+    _announce(moment=datetime.now(UTC))
+
+    marks: list[dict] = []
+    _drive_producer(
+        monkeypatch,
+        project=project,
+        steps=[lambda: None, lambda: None, lambda: None],
+        marks=marks,
+    )
+
+    assert len(marks) >= 3, marks
+    quiet = [
+        index
+        for index in range(1, len(marks))
+        if marks[index]["list"] == marks[index - 1]["list"]
+        and marks[index]["reset"] > marks[index - 1]["reset"]
+    ]
+    assert quiet, (
+        "the reset sweep never ran on a pass where the change gate was still, so "
+        f"it is riding the gate rather than the clock: {marks}"
+    )
+    assert _reset_rows(_rows(stream)), "the due event never reached the stream"
