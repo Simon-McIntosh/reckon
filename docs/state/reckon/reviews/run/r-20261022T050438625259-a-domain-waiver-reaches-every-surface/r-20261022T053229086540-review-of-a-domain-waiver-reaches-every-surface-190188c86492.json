@@ -1,0 +1,32 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-22T05:44:31.725Z",
+  "dispatched_at": "2026-10-22T05:33:44Z",
+  "findings": [
+    {
+      "file": "tests/test_the_domain_waiver_reaches_every_surface.py",
+      "line": 159,
+      "severity": "follow-on",
+      "text": "follow-on: the docstring states that the call the rendered action form offers is the one made, but the test only checks `rendered is not None` at line 165 and then composes the `mcp_module._crew(...)` call by hand, so the render-to-call hop the docstring claims is never exercised; the two hops the change actually guards (option-to-parameter rendering, and parameter-to-guard carriage) are covered separately and do redden on the declared mutation, so this is a misleading claim rather than a missing guard."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to carry the domain-check waiver from the crew tool and the duty commands to the promotion guard; the landed change adds the entry `\"--waive-domain-check\": \"waive_domain_check\"` to `_ACTION_OPTION_PARAM` at reckon/crew/obligations.py:143, so a duty's printed command stating the waiver now renders through `action_form` as a crew-tool action rather than as nothing.\nVERDICT done_when: the done_when names tests/test_the_domain_waiver_reaches_every_surface.py and requires both new tests to fail on the base arm; gate/head.log records 66 passed with EXIT=0 at 190188c86 and gate/base.log records 2 failed with EXIT=1 on the arm with the map entry dropped, those two being exactly the render test and the promotion test the done_when names.\nVERDICT write_paths: the source manifest declares five paths; `git show 190188c86` touches three of them \u2014 reckon/crew/obligations.py, tests/test_the_domain_waiver_reaches_every_surface.py and docs/evidence/fragments/work-is-checked-against-its-domain/a-domain-waiver-reaches-every-surface.html \u2014 and no file outside that set.\nVERDICT manifest: read; status complete, after_suite records 0 failures of 66 against baseline_suite's 2 of 66 with both ids named, the tests: line is the literal command a shell was handed, and negative_control_log names gate/base.log alone.\nVERDICT diff: read commit by commit against 665bf43a27cb979d4314ed244f6c4d9795337ef1; one commit, three files, +259 lines and 0 deletions, of which the entire production delta is the single map entry at reckon/crew/obligations.py:143, the remainder being the new test module and the landing fragment.\nCALL_SITES: reckon/crew/obligations.py:1363 (_with_action_form), reckon/mcp_views.py:3900 (obligations view), reckon/mcp_crew_actions.py:70, reckon/mcp_crew_actions.py:98\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:143 is the one production line changed and it is the option the goal names, while the tool-to-guard half was already carried at the parent revision through the complete and land parameter maps at reckon/mcp_crew_actions.py:70 and :98.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate/base.log's two failures name the two ids the manifest's baseline_suite lists and gate/head.log ends EXIT=0 with 66 passed, but the base arm is the declared mutation applied at the head revision rather than the base commit the done_when names, so the recorded baseline_suite revision is a description a reader cannot resolve to a commit.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in 190188c86 is inside the five the source manifest declares, and the diff carries only the one map entry, the test module the done_when requires and the fragment the landing contract always permits.\nSCORE durability: 18\nJUSTIFICATION durability: dropping the entry at reckon/crew/obligations.py:143 reddens tests/test_the_domain_waiver_reaches_every_surface.py:148 because `action_form` then returns None for the duty command, which is the reproduction gate/base.log records.\nSCORE fit: 18\nJUSTIFICATION fit: the entry at reckon/crew/obligations.py:143 sits among the other `--waive-*` options of the same map, and the test module follows the repository's per-file fixture idiom used at tests/test_domain_rules_reach_the_brief.py:47.\nSCORE reuse: 18\nJUSTIFICATION reuse: the production change extends the existing owner `_ACTION_OPTION_PARAM` at reckon/crew/obligations.py:139 instead of adding a mechanism, and a capability search over reckon/ and tests/ found no existing owner for the fixture-repository-with-in-repo-pointer helper the new module writes.\nFINDING tests/test_the_domain_waiver_reaches_every_surface.py:159 follow-on: the docstring states the call the rendered action form offers is the one made, but the test only asserts `rendered is not None` at line 165 and composes the `mcp_module._crew(...)` call by hand, so the render-to-call hop the docstring claims is not exercised; both hops the change does guard still redden on the declared mutation, so this is a misleading claim rather than an unguarded change.\n",
+  "review_run_id": "r-20261022T053229086540-review-of-a-domain-waiver-reaches-every-surface-190188c86492",
+  "reviewed_base_sha": "665bf43a27cb979d4314ed244f6c4d9795337ef1",
+  "reviewed_head_sha": "190188c864926623300d99034d40dc3d04eea62c",
+  "reviewed_run_id": "r-20261022T050438625259-a-domain-waiver-reaches-every-surface",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T05:49:07.806410+00:00",
+  "total": 109
+}

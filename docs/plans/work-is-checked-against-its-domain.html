@@ -26,7 +26,7 @@
   <title>Work Is Checked Against Its Domain | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="38">
+<meta name="plan-version" content="39">
 <meta name="plan-modified" content="2026-10-22">
 </head>
 <body>
@@ -197,7 +197,10 @@
     <div class="r-comment-body"><p>Landed: one composer for the domain block and its check lines; no heading for an empty rule set; review 113/120. Evidence: <a href="/reckon/evidence/archive/work-is-checked-against-its-domain-landed.html#s9">§9 landing record</a>.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261022T023248970019-one-composer-for-the-domain-block" data-who="reckon-build" data-when="2026-10-22T04:21:04Z">
-    <div class="r-comment-body"><p>One composer for the domain block and its per-check line: `_brief_domain_block` is deleted from `reckon/crew/dispatch_admission.py` and its call sites in `reckon/crew/dispatch.py` and `reckon/crew/dispatch_plan.py` call `prompts.domain_rules_block`, while `prompts.render_review_check` is the one spelling of a declared review check&#x27;s line; `render_domain_rules` composes nothing for a match holding no invariants and no review checks, so a project declaring only `model_paths` gets no empty heading. The brief-digest test pins its expectation to a sha256 computed in the test over the fixture&#x27;s own bytes and the declared block, and the per-check test pins its expectation to the literal line the fixture declares; a mutation arm in `logs/negative-control.log` turns each of them red. Gate `tests/test_one_composer_for_the_domain_block.py tests/test_domain_rules_reach_the_brief.py tests/test_domain_rules.py tests/test_brief_dispatch.py tests/test_brief_prompt.py tests/test_every_module_fits_a_worker_window.py` — 67 passed EXIT=0 at head 7c2934565, 6 failed 61 passed EXIT=1 at base ed60ec494 with the model-paths cases among the failures.</p></div>
+    <div class="r-comment-body"><p>One composer for the domain block and its per-check line: `_brief_domain_block` is deleted from `reckon/crew/dispatch_admission.py` and its call sites in `reckon/crew/dispatch.py` and `reckon/crew/dispatch_plan.py` call `prompts.domain_rules_block`, while `prompts.render_review_check` is the one spelling of a declared review check's line; `render_domain_rules` composes nothing for a match holding no invariants and no review checks, so a project declaring only `model_paths` gets no empty heading. The brief-digest test pins its expectation to a sha256 computed in the test over the fixture's own bytes and the declared block, and the per-check test pins its expectation to the literal line the fixture declares; a mutation arm in `logs/negative-control.log` turns each of them red. Gate `tests/test_one_composer_for_the_domain_block.py tests/test_domain_rules_reach_the_brief.py tests/test_domain_rules.py tests/test_brief_dispatch.py tests/test_brief_prompt.py tests/test_every_module_fits_a_worker_window.py` — 67 passed EXIT=0 at head 7c2934565, 6 failed 61 passed EXIT=1 at base ed60ec494 with the model-paths cases among the failures.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261022T053229086540-review-of-a-domain-waiver-reaches-every-surface-190188c86492" data-who="reckon-build" data-when="2026-10-22T05:44:31.725Z">
+    <div class="r-comment-body"><p>The landed change at 190188c864926623300d99034d40dc3d04eea62c adds `--waive-domain-check: waive_domain_check` to `_ACTION_OPTION_PARAM` in reckon/crew/obligations.py:143, so a duty command stating the promotion&#x27;s domain-check waiver renders through `action_form` as a crew-tool action instead of nothing; reviewed against base 665bf43a27cb979d4314ed244f6c4d9795337ef1, scores goal_fidelity 18, evidence 17, scope_discipline 20, durability 18, fit 18, reuse 18, 0 added failures, one follow-on finding (the promotion test&#x27;s docstring claims the rendered form&#x27;s call is the one made, but the promotion test composes the tool call by hand).</p></div>
 </div>
 </section>
 </main>
