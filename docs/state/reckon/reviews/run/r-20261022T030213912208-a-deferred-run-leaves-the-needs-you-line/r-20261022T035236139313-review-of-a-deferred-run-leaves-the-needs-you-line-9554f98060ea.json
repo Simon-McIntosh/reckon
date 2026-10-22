@@ -1,0 +1,40 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-22T04:19:57.148Z",
+  "dispatched_at": "2026-10-22T04:07:18Z",
+  "findings": [
+    {
+      "file": "reckon/crew/needs_you.py",
+      "line": 151,
+      "severity": "follow-on",
+      "text": "the _deferred_run_ids docstring tells a caller that \"a caller that composes the line for a moment composes the deferral for the same moment\", but the reader it dispatches to, obligations._acknowledgements_in_force, honours the passed instant only for a live pointer: for a promoted run it delegates to runs.recorded_promoted_acknowledgements, which compares each recorded deadline against runs._deferral_clock() (the real clock) and never sees the moment. Not reachable in production, where every call site composes for now, so it is a false uniformity claim in new documentation rather than a live defect."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261022T035236139313-review-of-a-deferred-run-leaves-the-needs-you-line-9554f98060ea",
+  "reviewed_base_sha": "53c9de9a148669f0bc15a2fd8fb7338bfcf49b59",
+  "reviewed_head_sha": "9554f98060ea8596578c2ba17a0ada2b62e985dd",
+  "reviewed_run_id": "r-20261022T030213912208-a-deferred-run-leaves-the-needs-you-line",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T04:22:50.583113+00:00",
+  "total": 117,
+  "verdicts": {
+    "assertions": "test_a_deferred_run_leaves_the_line_until_its_instant asserts deferred-node absent at now and one second before the instant and present exactly once after it, beside the positive control that expired-node is present throughout; test_the_line_reads_the_obligations_deferral_reader injects a deferral visible only in a monkeypatched reader and requires the run to vanish, so it fails if needs_you stops dispatching through that reader. Reinstating the regression (the declared mutation, deferred = frozenset()) reddens both cases at EXIT=1 in logs/negative-control.txt, so the assertions are independent of the values under test rather than moving with them.",
+    "call_sites": "reckon/crew/needs_you.py:needs_you, needs_you_runs and drain_tail; reckon/crew_follow_commands.py:441 _needs_you_runs, :588 the drain row, :1710 the standing pane line; reckon/cli.py:353 re-exports _needs_you_runs.",
+    "diff": "read commit by commit against 53c9de9a; f20ec8a6 adds 54 lines to needs_you.py and a 141-line test, 72c5e780 and 9554f980 add the 58-line landing fragment, all inside the declared scope.",
+    "done_when": "the done_when requires the deferral be read through obligations._acknowledgements_in_force with obligations.py untouched, a three-case test in a temporary home, two git-checkout arms with the four follower variables unset under pytest -n 8, lone-id repeats, the module-window test green and a ruff delta against the base blobs; the manifest records all of these and logs/gate-base.txt, logs/gate-head.txt, logs/negative-control.txt, logs/one-arm-repeat-base.txt and logs/one-arm-repeat-head.txt carry them.",
+    "goal": "the node's goal is to make needs_you_runs leave out a run whose obligations are deferred until the deferral ends; reckon/crew/needs_you.py:233 holds each run in obligations._acknowledgements_in_force out of the rows the line is composed from.",
+    "manifest": "read; it records status complete, the three commits, both arms (base 2 failed/262 passed, head 1 failed/265 passed), the negative control red at EXIT=1, and the module-window test green.",
+    "write_paths": "read the manifest's declared paths (reckon/crew/needs_you.py, tests/test_a_deferred_run_leaves_the_needs_you_line.py, the landing fragment under docs/evidence/fragments/the-monitor-shows-the-work-it-watches/); every path in the diff is inside them."
+  }
+}
