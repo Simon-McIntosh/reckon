@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-22T05:47:56.723Z",
+  "dispatched_at": "2026-10-22T05:34:27Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_admission.py",
+      "line": "1990",
+      "severity": "follow-on",
+      "text": "follow-on: the compares-with lint is delivered through the same findings list the refusal path consumes \u2014 _sandbox_reachability returns it at reckon/crew/dispatch_admission.py:1990 and reckon/crew/dispatch_plan.py:879 turns any non-empty findings list into NodeValidation(ok=False) \u2014 so a model-building node that states no comparison is refused outright instead of warned, which is not the 'lint warning' plan \u00a76 words for this check; the node's own follow_ons records the same reading and the one-line remedy (a non-fatal path in dispatch_plan.py's verdict handling) sits outside its fence, so it is disclosed rather than hidden and does not hold the node."
+    },
+    {
+      "file": "reckon/crew/node.py",
+      "line": "758",
+      "severity": "follow-on",
+      "text": "follow-on: TaskNode gains a third field, admission_findings, where plan \u00a76 says it gains two optional fields, inputs and compares_with; the carrier is a reasonable bridge because _require_write_paths_in_authority returns nothing and the reporting channel is in a later call, but it is not in the node's to_dict and no test covers a node rebuilt from a stored record, so whether a resumed or lane-changed node still reports the lint is unmeasured."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T050115039687-a-node-names-its-inputs-and-measurement/ruff-arm.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the log header names revision 9376bf08b6c0df942fea14ac0d0fed6605efdbeb, which is neither the reviewed base 63e6d9f1829a5bd321b2313e58c25aa10a573193 nor the reviewed head 4bd6d8d7cbda48c3bf899d909dd46437539da259 nor an ancestor of it (git merge-base --is-ancestor returns non-zero); the two commits differ by the landing fragment alone (3 insertions, 2 deletions, no Python), so the eight pre-existing findings the log reports for reckon/crew/node.py hold on the landed tree regardless, but a reader re-running the named command at the named revision stands in a tree that is not the landed head."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to refuse a node whose declared inputs are missing and to lint a model-building node that names no measurement; the two checks are reckon/crew/dispatch_admission.py:1799 node_inputs_finding and :1837 node_measurement_finding, filled from the new --input and --compares-with options at reckon/crew_dispatch_commands.py:1159-1185, and the plan's requirement that reckon/crew/prescription.py stay unchanged holds \u2014 judge_prescribed is untouched and its test passes on the base arm.\nVERDICT done_when: the done_when names tests/test_a_node_names_its_inputs_and_measurement.py and the seven-file gate; the manifest records 123 passed EXIT=0 at head in after-arm.log against 12 failed / 111 passed EXIT=1 at 63e6d9f18 in base-arm.log, and each case the done_when lists maps to a named test \u2014 missing input refused naming the path, the same node admitted once the file exists, a model node linted against models/** and cleared by either stated form, a node writing outside the glob and a project declaring no model_paths both never linted, the dry run reporting both properties together, and judge_prescribed unchanged.\nVERDICT write_paths: the manifest declares reckon/crew/node.py, reckon/crew/dispatch_admission.py, reckon/crew_dispatch_commands.py, skills/reckon-build/SKILL.md, tests/test_a_node_names_its_inputs_and_measurement.py, docs/evidence/fragments/work-is-checked-against-its-domain/a-node-names-its-inputs-and-measurement.html and that plan's figures directory; git diff 63e6d9f1829a5bd321b2313e58c25aa10a573193..4bd6d8d7cbda48c3bf899d909dd46437539da259 touches exactly six files, every one of them inside that set.\nVERDICT manifest: read; status complete, baseline_suite and after_suite both carry completed true with matching failure counts and ids, negative_control_log is a bare path and its log ends EXIT=1 with four failures, test_logs names the four logs, and follow_ons discloses the fatal-lint deviation rather than hiding it.\nVERDICT diff: read commit by commit against 63e6d9f1829a5bd321b2313e58c25aa10a573193; one commit, 4bd6d8d7cbda48c3bf899d909dd46437539da259, touching six files (+657/-19) \u2014 two TaskNode fields plus an internal findings carrier, two new admission checks that reuse rules_for through _node_domain_rules, two dispatch options, the SKILL.md dispatch line at skills/reckon-build/SKILL.md:158-166, 13 tests, and the landing fragment.\nCALL_SITES: reckon/crew/dispatch_plan.py:820 (_require_write_paths_in_authority, which populates node.admission_findings), reckon/crew/dispatch_plan.py:873 (_sandbox_reachability, which returns them into the verdict), reckon/crew_dispatch_commands.py:1376 (crew_dispatch, which binds --input and --compares-with onto the node)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_admission.py:1799 and :1837 implement both halves of the goal and the dispatch options reach them, discounted only because the second is delivered as a refusal rather than the warning plan \u00a76 words.\nSCORE evidence: 17\nJUSTIFICATION evidence: after-arm.log ends '123 passed in 66.69s' EXIT=0 and base-arm.log ends '12 failed, 111 passed in 62.10s' EXIT=1 with all twelve ids in the new file, and the negative-control.log records 4 failed EXIT=1 headed by test_a_missing_input_is_refused_naming_the_path, though the ruff-arm.log header names a revision that is not the reviewed head.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in git diff 63e6d9f18..4bd6d8d7cbda is inside the manifest's declared write paths, and the only unstated addition is the internal admission_findings carrier at reckon/crew/node.py:758.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_node_names_its_inputs_and_measurement.py:87 and :100 fail if either check is made to echo its input rather than test it, and the negative control applied to reckon/crew/dispatch_admission.py:1799 reddens exactly the four tests that depend on the check firing.\nSCORE fit: 18\nJUSTIFICATION fit: the new code follows the module's findings-dict idiom and reuses the DomainRules match at reckon/crew/domain_rules.py:198, introducing no plan label, ticket reference or attributing comment in the diff.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/dispatch_admission.py:1980 resolves the model-path match through rules_for, the owner of that capability, rather than re-matching globs; the only capability with no existing owner is the declared-input existence check, and a search of reckon/crew for path-existence checks found only the placement-requirement check at reckon/crew/dispatch_admission.py:1721, which judges host placement paths and not node inputs.\nFINDING reckon/crew/dispatch_admission.py:1990 follow-on: the compares-with lint rides the same findings list the refusal path consumes (reckon/crew/dispatch_plan.py:879 sets ok=False on any non-empty list), so a model-building node naming no comparison is refused rather than warned, unlike plan \u00a76's 'lint warning'; disclosed in the node's follow_ons and repairable in one line outside its fence.\nFINDING reckon/crew/node.py:758 follow-on: TaskNode gains a third field, admission_findings, beyond the two plan \u00a76 names; it is absent from to_dict, so a node rebuilt from a stored record is not measured for whether it still reports the lint.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T050115039687-a-node-names-its-inputs-and-measurement/ruff-arm.log:1 follow-on: the header names 9376bf08b6c0df942fea14ac0d0fed6605efdbeb, neither the reviewed base nor the reviewed head nor an ancestor of it; the delta is the non-Python landing fragment alone, so the eight pre-existing node.py findings hold, but the receipt names a tree the landed revision is not.\n",
+  "review_run_id": "r-20261022T053330673773-review-of-a-node-names-its-inputs-and-measurement-4bd6d8d7cbda",
+  "reviewed_base_sha": "63e6d9f1829a5bd321b2313e58c25aa10a573193",
+  "reviewed_head_sha": "4bd6d8d7cbda48c3bf899d909dd46437539da259",
+  "reviewed_run_id": "r-20261022T050115039687-a-node-names-its-inputs-and-measurement",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T06:04:52.976754+00:00",
+  "total": 108
+}
