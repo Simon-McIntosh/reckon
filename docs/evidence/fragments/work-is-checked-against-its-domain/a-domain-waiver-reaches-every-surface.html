@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>a-domain-waiver-reaches-every-surface — landed record</title>
+</head>
+<body>
+<main>
+<h2 id="a-domain-waiver-reaches-every-surface-heading">The domain waiver reaches the guard from the duty surface too</h2>
+<p id="a-domain-waiver-reaches-every-surface-what">A duty prints the promotion command a coordinator
+may call, and <code>action_form</code> in <code>reckon/crew/obligations.py</code> renders that
+command in the crew MCP tool's own action form. The promotion's domain-check waiver was carried by
+the tool — <code>waive_domain_check</code> is a parameter of the crew tool's <code>complete</code>
+and <code>land</code> actions and reaches the promotion guard's waiver — but the option
+<code>--waive-domain-check</code> had no entry in <code>_ACTION_OPTION_PARAM</code>. An option that
+map does not carry makes the whole command unrenderable rather than lossily rendered, so a duty
+whose printed command stated that waiver offered a reader no crew-tool call at all. The option now
+maps onto <code>waive_domain_check</code>, the parameter the verb already takes, beside
+<code>--waive-live-run</code> and the other waivers.</p>
+<p id="a-domain-waiver-reaches-every-surface-measure">Measure: the fixture repository declares one invariant whose check fails over the node's own write
+paths, so the guard is live. Through the crew tool the promotion lands with the reason stated and is
+refused naming <code>convergence</code> without one, and the guard is observed receiving exactly the
+stated reason; the CLI arm records the same reason for the same call. The duty command
+<code>reckon crew complete --run run-waiver --gate passed --waive-domain-check "…"</code> renders as
+<code>crew(action="complete", run_id="run-waiver", gate="passed", waive_domain_check="…")</code>.</p>
+<p id="a-domain-waiver-reaches-every-surface-gate">Gate: <code>tests/test_the_domain_waiver_reaches_every_surface.py</code> — 4 passed. The base
+arm, which is the declared mutation (the entry dropped from <code>_ACTION_OPTION_PARAM</code>),
+reddens the duty-render test and the promotion test that is driven from the rendered form
+(<code>base.log</code>, <code>EXIT=1</code>).</p>
+</main>
+</body>
+</html>
