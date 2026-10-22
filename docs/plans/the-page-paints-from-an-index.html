@@ -23,7 +23,7 @@
   <title>The Page Paints From An Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="73">
+<meta name="plan-version" content="74">
 <meta name="plan-modified" content="2026-10-22">
 <meta name="plan-impl" content="0.86">
 <meta name="plan-section-depends-on" content="{&quot;s11&quot;:[&quot;the-page-paints-from-an-index#s10&quot;],&quot;s7&quot;:[&quot;the-page-paints-from-an-index#s2&quot;,&quot;the-page-paints-from-an-index#s3&quot;,&quot;the-page-paints-from-an-index#s4&quot;,&quot;the-page-paints-from-an-index#s5&quot;,&quot;the-page-paints-from-an-index#s6&quot;],&quot;s12&quot;:[&quot;the-page-paints-from-an-index#s11&quot;]}">
@@ -195,6 +195,7 @@
     restart. The gate is hard: every <code>/_index</code> request answers 200 in under 1 s in both
     passes, and the port accepts a connection within 5 s of the restart. A slower request fails the
     gate, and the report names it with a <code>py-spy dump</code> frame. Each clause has its own negative control, run against a temporary <code>reckon serve</code> on another port that mounts the same four projects the report measures, so the controls carry the real corpus's cold cost. That server runs under its own configuration home, a scratch directory holding a copy of the mounts file, so removing its metadata index never touches the index the live service reads. For the port clause, §2's control mutation is applied: <code>_FleetChangeWatch.start</code> arms the watch before the port binds, with a 5 s delay per tree, and the port gate fails. For the <code>/_index</code> clause, the persisted metadata index is removed before the restart, and the first pass's <code>/_index</code> gate fails. The report is recorded under an <code>s7</code> anchor in <code>docs/evidence/archive/the-page-paints-from-an-index-landed.html</code>, and its raw logs sit under the run directory.</p>
+    <p><strong>What counts as a restart, and who measures what.</strong> A restart is any new start of the served process: <code>reckon service restart</code> on the serving host, or the service's own re-execution on stale code, which <code>/_server</code> shows as a new <code>code.started_at</code>. Before each restart pass, the persisted metadata index exists for each of the four projects, so the cold pass measures a start with its index on disk; the report records each project's index file and its modification time. A fenced worker cannot reach the live service, so the coordinator runs the two live passes and records them, with a <code>py-spy dump</code> of the served process for any request that fails the gate. The four negative controls run as a worker node on the fleet allocation, against the temporary <code>reckon serve</code> described above, and write their logs under that node's run directory. The section is done when both halves are recorded under the <code>s7</code> anchor. A live pass that fails the gate is recorded as a failure, with the frame that names its cost, and the repair becomes a new section, not a retry of this one.</p>
 
     <h2 id="s8">&sect;8 &mdash; Agent readers answer from the same index</h2>
     <p>The MCP server and the CLI call <code>discover_plans</code> in their own processes
