@@ -20,7 +20,7 @@
 <meta name="plan-capability-class" content="orchestrator">
 <meta name="plan-capability-reasoning" content="deep">
 <meta name="plan-capability-verification" content="strict">
-<meta name="plan-version" content="22">
+<meta name="plan-version" content="23">
 <meta name="plan-modified" content="2026-10-22">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;}">
 </head>
@@ -104,7 +104,10 @@
     <div class="r-comment-body"><p>Landed: the bare admit loop prints each pass's verdicts as one JSON line; review 116/120. Evidence: <a href="/reckon/evidence/archive/a-coordinator-can-clear-its-own-duties-landed.html#s6">§6 landing record</a>.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261022T110527934249-review-of-a-manual-admission-pass-reports-its-verdicts-5b06d60ce56f" data-who="reckon-build" data-when="2026-10-22T11:42:57.389Z">
-    <div class="r-comment-body"><p>Review of r-20261022T101719372774-a-manual-admission-pass-reports-its-verdicts at base a3395779221d2f5cbfd88c1becdfe049453c3330 / head 5b06d60ce56f808d962cb1fcc5da3a4588892843 — parsed record scoring goal_fidelity 20, evidence 18, scope_discipline 20, durability 18, fit 20, reuse 20 (116/120); the bare admit loop publishes each pass&#x27;s verdicts as one JSON line and the test fails on the declared mutation; added_failure_count 0; one follow-on finding (the help&#x27;s hardcoded five-second bound), no blocking finding.</p></div>
+    <div class="r-comment-body"><p>Review of r-20261022T101719372774-a-manual-admission-pass-reports-its-verdicts at base a3395779221d2f5cbfd88c1becdfe049453c3330 / head 5b06d60ce56f808d962cb1fcc5da3a4588892843 — parsed record scoring goal_fidelity 20, evidence 18, scope_discipline 20, durability 18, fit 20, reuse 20 (116/120); the bare admit loop publishes each pass's verdicts as one JSON line and the test fails on the declared mutation; added_failure_count 0; one follow-on finding (the help's hardcoded five-second bound), no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261022T101719372774-a-manual-admission-pass-reports-its-verdicts" data-who="reckon-build" data-when="2026-10-22T11:04:42.818Z">
+    <div class="r-comment-body"><p>§6 landed: the bare `crew admit` loop prints each pass&#x27;s verdicts as one JSON line — the same record admission-verdicts.jsonl holds for that pass — while `--once` is unchanged, and the admit help names the loop, the single manual pass and the pass bound (the lane and fleet gate reads, each under a five-second deadline); gate tests/test_a_manual_admission_pass_reports_its_verdicts.py plus the queued-run admission, queued-run-identity and crew-help suites read 33 passed, EXIT=0 at 038da9f3d, and the declared mutation (loop publishes nothing) fails the two-pass case at EXIT=1.</p></div>
 </div>
 </section>
 </main>
