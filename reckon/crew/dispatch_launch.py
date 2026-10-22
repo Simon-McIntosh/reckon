@@ -1480,12 +1480,17 @@ _VANISHED_BIND_REFUSAL_PHRASES = ("Can't bind mount", "Can't find source path")
 # directly exec'd sandbox is covered too — it writes its refusal and exits well
 # inside this window, as do the seconds a client takes to hand the step over.
 # The watch ends early on either of two facts, so the window bounds only what it
-# must: the launch's stream beginning, or the child's own exit. A child that
-# exits inside the window is collected as a launch failure, so the window is
-# kept well clear of the interval a healthy child of this launch stays alive —
-# a window that reached that far would turn a worker that is merely quiet into a
-# recorded failure.
-SANDBOX_STARTUP_WINDOW_SECONDS = 15.0
+# must: the launch's stream beginning, or the child's own exit. Thirty seconds
+# is a floor rather than a comfortable margin against the four seconds a
+# recorded placed launch took from launch to exit: what the window has to cover
+# is the step start *before* that refusal, and a step start on a loaded host is
+# exactly the interval a shorter window would return before. A child that exits
+# inside the window is collected as a launch failure, so the window is counted
+# from before each try's own spawn (see
+# :func:`_died_over_a_vanished_bind_source`): a child whose life is the window
+# itself then outlives it, rather than being read as the launch's failure at the
+# window's last poll.
+SANDBOX_STARTUP_WINDOW_SECONDS = 30.0
 VANISHED_BIND_STARTUP_POLL_SECONDS = 0.01
 
 
@@ -1535,6 +1540,7 @@ def _died_over_a_vanished_bind_source(
     argv: Iterable[str],
     stderr_path: Path,
     log_path: Path | None = None,
+    started: float | None = None,
 ) -> bool:
     """Whether a just-spawned worker refused over a missing bind source.
 
@@ -1560,6 +1566,13 @@ def _died_over_a_vanished_bind_source(
     nothing but the refusal already written, and is left alone for the same
     reason. A launch that reaches the end of the window with neither fact is
     left running: the answer is no, and the caller keeps the child it spawned.
+
+    The window is counted from ``started`` when a caller names one, and from now
+    otherwise. A retry names the moment its try began, before the spawn, because
+    the window is the try's and not the child's: a child whose own life is
+    exactly the window then outlives it, so it is left running rather than
+    collected at the window's last poll and written into the launch's failure
+    record as a worker that never started.
     """
     sources = _read_only_bind_sources(argv)
     if not sources:
@@ -1567,7 +1580,8 @@ def _died_over_a_vanished_bind_source(
     poll = getattr(process, "poll", None)
     if poll is None:
         return False
-    deadline = time.monotonic() + SANDBOX_STARTUP_WINDOW_SECONDS
+    began = time.monotonic() if started is None else started
+    deadline = began + SANDBOX_STARTUP_WINDOW_SECONDS
     while True:
         if _stream_began(log_path):
             return False
@@ -1595,15 +1609,19 @@ def _spawn_worker_retrying_a_vanished_bind(
     composition's own wait uses. The watch between tries keys on the refusal
     text in the launch's own stderr inside a window sized for a placed launch,
     so a step that reaches its refusal seconds in is retried as well as one that
-    meets it at exec — see :func:`_died_over_a_vanished_bind_source`. A spawn
-    that failed for any other reason is returned at once for its caller to
-    record as the launch failure it is.
+    meets it at exec — see :func:`_died_over_a_vanished_bind_source`. The window
+    is counted from before each try's spawn, so it bounds the try rather than
+    the child: a healthy child of this launch that lives as long as the window
+    is left running, not collected as a failure at the window's end.
+    A spawn that failed for any other reason is returned at once for its caller
+    to record as the launch failure it is.
     """
+    started = time.monotonic()
     process = attempt()
     tries = 1
     limit = max(1, _backends.PROTECTED_BIND_WAIT_ATTEMPTS)
     while tries < limit and _died_over_a_vanished_bind_source(
-        process, argv=argv, stderr_path=stderr_path, log_path=log_path
+        process, argv=argv, stderr_path=stderr_path, log_path=log_path, started=started
     ):
         # Only an exited try is dead, and the watch answers for nothing else:
         # a child still running is the launch, so the retry keeps it rather
@@ -1615,6 +1633,7 @@ def _spawn_worker_retrying_a_vanished_bind(
         process.wait()
         time.sleep(_backends.PROTECTED_BIND_WAIT_INTERVAL_SECONDS)
         tries += 1
+        started = time.monotonic()
         process = attempt()
     return process
 
