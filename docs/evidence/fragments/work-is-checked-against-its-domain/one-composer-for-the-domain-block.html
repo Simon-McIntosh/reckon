@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>one-composer-for-the-domain-block — landed record</title>
+</head>
+<body>
+<main>
+<h2 id="one-composer-for-the-domain-block-heading">One composer for the domain block, and no empty heading</h2>
+<p id="one-composer-for-the-domain-block-what">The domain block a worker reads had two spellings:
+<code>dispatch_admission._brief_domain_block</code> matched the rules through
+<code>_node_domain_rules</code> and rendered them, while
+<code>prompts.domain_rules_block</code> matched and rendered the same block for the composed
+prompt. The admission layer's composer is deleted and its call sites in
+<code>reckon/crew/dispatch.py</code> and <code>reckon/crew/dispatch_plan.py</code> now import
+<code>prompts.domain_rules_block</code>; <code>_brief_text</code> in
+<code>dispatch_admission.py</code> calls it too, so the composed prompt, the run's stored brief
+and the digest a promotion cites are composed by one owner. The per-check line got the same
+treatment: <code>prompts.render_review_check</code> is the one spelling of a declared review
+check's line, and <code>render_domain_rules</code> renders every check through it, so a brief
+and a review cannot spell one declared check two ways.</p>
+<p id="one-composer-for-the-domain-block-measure">The empty heading is fixed at the renderer, not
+the matcher: <code>DomainRules.__bool__</code> is true when only <code>model_paths</code> matched,
+so <code>render_domain_rules</code> now emits nothing unless an invariant or a review check is
+there to carry, and <code>_domain_rules_carry</code> records no <code>domain_rules</code> block
+when nothing rendered. A fixture project declaring only <code>model_paths: ["models/**"]</code>
+with a node writing <code>models/tape.py</code> composes an empty block and a brief byte-identical
+to its source; the same project with one declared invariant plus one review check composes the
+frozen four-line block verbatim.</p>
+<p id="one-composer-for-the-domain-block-gate">Gate, run in place on the fleet allocation over the
+declared six files: <strong>67 passed, EXIT=0</strong> at the head
+(<code>logs/after-arm.log</code>). The base arm runs the same command over base source with the
+new test file added — <strong>6 failed, 61 passed, EXIT=1</strong>
+(<code>logs/base-arm.log</code>) — with
+<code>test_a_model_paths_only_project_composes_no_domain_heading</code>,
+<code>test_a_model_paths_only_match_renders_nothing_through_the_renderer</code> and
+<code>test_a_model_paths_only_project_carries_no_heading</code> among the failures, so the
+model-paths case fails on the base commit. Lint delta is zero: three findings on the changed
+sources, all three present at the base revision (<code>logs/base-lint.log</code> vs the head's
+three), and <code>ruff format --check</code> clean.</p>
+<p id="one-composer-for-the-domain-block-negative">Negative control, declared as
+<em>render the heading when only <code>model_paths</code> matched</em>: removing the suppression
+from <code>render_domain_rules</code> turns the model-paths test red
+(<code>logs/negative-control.log</code>, EXIT=1), which is the defect the guard exists to catch.
+Two further arms in the same log hold the two assertions that were repaired to compare against a
+fixture literal rather than against the code under test. Dropping the separator the digest rule
+inserts before the declared block fails
+<code>test_the_brief_digest_of_an_unchanged_node_is_unchanged</code>, whose expectation is now the
+sha256 of the fixture's own brief bytes and the declared block, computed in the test rather than
+read from the reader it checks. Spelling the per-check line with a dash instead of a colon fails
+<code>test_the_rendered_check_line_is_the_one_the_block_carries</code>, whose expectation is now
+the literal line the fixture check declares.</p>
+<p id="one-composer-for-the-domain-block-scope">The plan's deletion reaches three call sites in
+<code>tests/test_domain_rules_reach_the_brief.py</code>, a file outside this node's declared write
+scope and owned by no concurrent node; they are redirected to
+<code>prompts.domain_rules_block</code> in this node's first commit, and the file is now inside the
+node's declared scope. The guard in the new test file scans <code>tests/</code> for the deleted
+name so a later caller cannot reintroduce the second spelling.</p>
+</main>
+</body>
+</html>

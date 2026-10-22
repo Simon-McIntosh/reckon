@@ -1987,14 +1987,6 @@ def _render_domain_rules(rules: Any) -> str:
     return render_domain_rules(rules)
 
 
-def _brief_domain_block(
-    node: TaskNode, project: str, *, project_path: str | None = None
-) -> str:
-    """Render the declared domain rules this node touches, under the heading."""
-    rules = _node_domain_rules(node, project, project_path=project_path)
-    return _render_domain_rules(rules)
-
-
 def _domain_rules_carry(
     node: TaskNode, project: str, *, project_path: str | None = None
 ) -> dict[str, Any] | None:
@@ -2002,10 +1994,14 @@ def _domain_rules_carry(
 
     The ids are carried beside the block so a reader — a review, a coordinator
     or a later dispatch — can name the rules a brief was given without parsing
-    the brief's prose.
+    the brief's prose. A match that renders nothing composes no record: a record
+    naming no rule would say the brief carried rules it did not.
     """
     rules = _node_domain_rules(node, project, project_path=project_path)
     if not rules:
+        return None
+    text = _render_domain_rules(rules)
+    if not text:
         return None
     from reckon.crew.prompts import DOMAIN_RULES_HEADING
 
@@ -2013,7 +2009,7 @@ def _domain_rules_carry(
         "heading": DOMAIN_RULES_HEADING,
         "invariants": [invariant.id for invariant in rules.invariants],
         "review_checks": [check.id for check in rules.review_checks],
-        "text": _render_domain_rules(rules),
+        "text": text,
     }
 
 
@@ -2141,7 +2137,9 @@ def _brief_text(
         text = Path(source).expanduser().read_text(encoding="utf-8")
     except OSError as exc:
         raise CrewError(f"the brief {node.brief!r} is not readable: {exc}") from exc
-    block = _brief_domain_block(node, project, project_path=project_path)
+    from reckon.crew.prompts import domain_rules_block
+
+    block = domain_rules_block(project=project, node=node, project_path=project_path)
     if not block or _brief_carries_heading(text):
         return text
     return f"{text}\n\n{block}"

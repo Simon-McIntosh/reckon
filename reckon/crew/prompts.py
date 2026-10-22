@@ -395,17 +395,34 @@ def render_domain_rules(rules: object) -> str:
     Split from the matcher so a caller that has already matched the rules — the
     brief's own composer, which needs the invariant ids as well as the text —
     renders them through this function rather than a second spelling of the
-    heading.
+    heading. An empty match, and a match that declares only where a repository's
+    models live, both compose nothing: the heading names a rule set a reader
+    would then look for and not find, so it is emitted only when a rule or a
+    review check is there to carry.
     """
     if not rules:
         return ""
+    invariants = tuple(getattr(rules, "invariants", ()) or ())
+    review_checks = tuple(getattr(rules, "review_checks", ()) or ())
+    if not invariants and not review_checks:
+        return ""
     lines = [DOMAIN_RULES_HEADING]
-    for invariant in rules.invariants:
+    for invariant in invariants:
         lines.append(f"  {invariant.id}: {invariant.rule}")
         if invariant.check:
             lines.append(f"    check: {invariant.check}")
-    lines.extend(f"  {check.id}: {check.question}" for check in rules.review_checks)
+    lines.extend(render_review_check(check) for check in review_checks)
     return "\n".join(lines)
+
+
+def render_review_check(check: object) -> str:
+    """The one spelling of a declared review check's line in a domain block.
+
+    The review a node receives renders each check it must answer through this
+    function, so the check a brief names and the check a review asks about are
+    the same line rather than two renderings of one declaration.
+    """
+    return f"  {check.id}: {check.question}"
 
 
 # This portion is deliberately constant for every worker, regardless of the
