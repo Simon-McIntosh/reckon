@@ -396,23 +396,65 @@ def no_live_jev(request, tmp_path_factory, monkeypatch):
 # the probe's twenty-second wait instead. Either way a test's outcome and runtime
 # then depend on ambient account state rather than on the code under test.
 #
+# The same ambient account is reachable a second way, which that seam does not
+# cover: a claude-backed backend resolves the login's own OAuth credential and
+# reads its account over HTTPS, running no model. A test that reads one without
+# injecting a transport therefore puts the machine's logged-in account into its
+# answer, and its outcome becomes a property of the box rather than of the code
+# under test — measured, one pre-flight case read 73 % utilisation on a logged-in
+# workstation and unknown on a logged-out one.
+#
 # Isolation is closed here in one place bound to every test, replacing the launch
 # seam with the same "no answer" result the exchange returns when the app server
-# cannot reply, so the callers' documented no-answer path stays exercised. A test
-# whose own subject is the probe exchange passes the probe a ``runner`` of its
-# own, or patches ``reckon._backends.run_probe`` itself, which replaces this
-# guard for that test.
+# cannot reply, so the callers' documented no-answer path stays exercised, and
+# replacing the account-surface read with a no-answer stub. A test whose own
+# subject is the probe exchange passes the probe a ``runner`` of its own, injects
+# its own ``fetch`` — honoured by the stub, since a fetch is a transport the test
+# already owns — or patches ``reckon._backends.run_probe`` itself, which replaces
+# this guard for that test.
 _ACCOUNT_PROBE_GUARD_DISABLE_ENV = "RECKON_TEST_DISABLE_ACCOUNT_PROBE_GUARD"
+
+# Carried on the replacement below, so that a test can assert the guard is in
+# force without depending on this box being logged in. A reading-shaped
+# assertion cannot: an unguarded read on a logged-out machine answers unknown
+# too, so it would pass with the guard removed. The replacement itself is the
+# fact that holds everywhere.
+ACCOUNT_SURFACE_GUARD_MARKER = "_reckon_test_account_surface_is_stubbed"
+
+
+def _account_surface_without_a_live_read(original):
+    """Wrap a dialect's account read so it cannot leave the machine.
+
+    The no-answer result is the same one the dialect returns when its surface
+    says nothing, so a caller's documented unknown path stays exercised. An
+    injected ``fetch`` is passed through: it is the test's own transport, and
+    the read that uses it never touches the account of the login running the
+    suite.
+    """
+
+    def read(self, *, backend, fetch=None, now=None):
+        if fetch is not None:
+            return original(self, backend=backend, fetch=fetch, now=now)
+        return None
+
+    setattr(read, ACCOUNT_SURFACE_GUARD_MARKER, True)
+    return read
 
 
 @pytest.fixture(autouse=True)
 def no_live_account_probe(monkeypatch):
-    """No test spawns a real provider account probe, whatever the codex home."""
+    """No test spawns a provider probe or reads the login's live account."""
     if os.environ.get(_ACCOUNT_PROBE_GUARD_DISABLE_ENV) == "1":
         return
     from reckon import _backends
 
     monkeypatch.setattr(_backends, "run_probe", lambda probe: None)
+    surface = type(_backends.dialect_for({"command": "claude"}))
+    monkeypatch.setattr(
+        surface,
+        "read_account_surface",
+        _account_surface_without_a_live_read(surface.read_account_surface),
+    )
 
 
 # The served process's discovery walk-reuse window. ``serve.main`` assigns

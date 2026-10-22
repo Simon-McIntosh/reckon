@@ -2494,18 +2494,8 @@ def probe_budget(
         dialect = dialect_for(backend)
     except BackendError as exc:
         return unknown_budget(str(exc))
-    # A caller that supplies its own probe runner has named the instrument it
-    # observes through, so the account's live surface is not read behind it: a
-    # reader that made its own request anyway would let a caller confine reads
-    # to the box it runs on and still reach the account of the login it runs
-    # under. An explicit fetch is a request for the surface read and is honoured
-    # either way.
     try:
-        reading = (
-            None
-            if runner is not None and fetch is None
-            else dialect.read_account_surface(backend=backend, fetch=fetch, now=now)
-        )
+        reading = dialect.read_account_surface(backend=backend, fetch=fetch, now=now)
     except (OSError, subprocess.SubprocessError, ValueError) as exc:
         reading = unknown_budget(f"account-limit read failed to run — {exc}")
     # The on-disk copy mirrors the account surface, so it is consulted only

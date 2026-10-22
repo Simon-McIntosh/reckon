@@ -171,6 +171,28 @@ def test_an_answer_naming_neither_window_is_refused_in_the_readers_own_words():
         assert "account answer" in block["detail"]
 
 
+# ── No test reads the login's own account ───────────────────────────────────
+
+
+def test_a_test_cannot_read_the_logins_own_account():
+    """The suite guard replaces the account-surface read with a no-answer stub.
+
+    Asserted on the replacement rather than on a reading, because a reading
+    cannot tell a guarded read from an unguarded one: an unguarded read on a
+    logged-out machine answers unknown exactly as the stub does, so a
+    reading-shaped assertion would pass with the guard removed and only fail on
+    a machine that happens to be logged in. The claude dialect's own read
+    returns a budget block on every path it can take — known, or unknown naming
+    the reason — so it answers nothing at all only where it has been replaced,
+    and that holds whatever this machine's account state is.
+    """
+    from reckon import _backends
+
+    claude = _backends.dialect_for({"command": "claude"})
+
+    assert claude.read_account_surface(backend={"command": "claude"}) is None
+
+
 # ── An all-unknown account is due for a probe ───────────────────────────────
 
 
