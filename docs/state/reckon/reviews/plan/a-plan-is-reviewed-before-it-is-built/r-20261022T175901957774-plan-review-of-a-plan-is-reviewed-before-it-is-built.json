@@ -1,0 +1,137 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T18:26:28.491Z",
+  "dispatched_at": "2026-10-22T18:01:31Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html:315",
+      "id": "reasoning-1",
+      "reason": "a node implementing \"skip any review that lists an absent item\" silently re-reviews 51 plans whose design reviews were complete when written, and the section must state that census and decide (grandfather the item the rubric gained, or accept the re-review) as \u00a714 did for its own sidecar census, or scope the skip to the content rubric.",
+      "text": "the deliverable says a delivered review whose `absent_items` is not empty \"covers no unit\", as though the only such review were \u00a740's incident; a census of `docs/state/reckon/reviews/plan/**/*.json` (1388 stored plan reviews) finds 122 with a non-empty `absent_items`, of which exactly 1 is the content review of `budget-fits-a-worker-window` (`['anchors_resolve']`, the incident) and 121 are design reviews across 51 distinct plans, every one carrying `absent_items: ['interface_budget']` and every one written before 2026-10-05, when \u00a713 added `interface_budget` as the fifth design item \u2014 so their `absent_items` records a rubric that grew after the review was written, not an unread review; a design review contributes coverage (routing.py:2557, \"a design review also covers the content it read\"), and `newest_design_review` (plan_review.py:1179) is consulted for presence alone, so the skip would stop those 121 reviews covering and flip their plans to uncovered.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html:315",
+      "id": "done_when-1",
+      "reason": "the case must also store a design review, or assert that the refusal names the uncovered units, or it passes for a reason unrelated to the fix.",
+      "text": "the second case, \"a plan whose only stored review is missing one rubric item reads as uncovered through `review_coverage`, and `require_plan_reviewed` refuses a dispatch on it\", cannot exercise the coverage predicate as worded: `require_plan_reviewed` refuses before it calls `review_coverage` when the plan carries no stored design review (`newest_design_review` returns None at routing.py:2554-2571, and the refusal names the design rubric), so a plan holding one absent-item content review and nothing else is refused for the design reason and the case proves nothing about the coverage predicate.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html:315",
+      "id": "reasoning-2",
+      "reason": "the plan should say whether the bullet tolerance covers the health grammar (which its tests do), or direct the plan-report parser to its own unshared pattern, so a node does not change an unrelated grammar with no test.",
+      "text": "the deliverable says \"both line patterns read a ... line that a Markdown list marker introduces\", but `_PLAN_RUBRIC_LINE_RE` (review.py:1249) is shared with the health-review grammar: `_opens_health_record` (review.py:1443) and `parse_health_review` (review.py:1585) both read it, while the health grammar reads its findings through the separate `_HEALTH_FINDING_LINE_RE` (review.py:1369), so widening the shared pattern to accept `- `, `* ` or `1. ` also widens the health-review record opener and its RUBRIC lines while leaving its FINDING lines anchored \u2014 an untested change to a grammar the section never mentions.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "4cabf83037a15faed15a673ba7880ae78f9c862546ec7590450a4f77030579f2",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 277,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-22T18:34:50.336340+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-22T18:35:19.909125+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-22T18:35:54.619572+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-22T18:35:19.909125+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-22T18:34:50.336340+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-22T18:35:54.619572+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-plan-is-reviewed-before-it-is-built.v277.json",
+  "review_run_id": "r-20261022T175901957774-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "00b7141b592a137680e8b8d6101ce50f14059b1c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves: `reckon/crew/review.py` \"near line 1249\" is `_PLAN_RUBRIC_LINE_RE` at :1249, `reckon/crew/plan_review.py` \"near line 211\" is `DEFAULT_STATUS` at :211, \"near line 797\" is `review_coverage` at :797, and `reckon/crew/routing.py` \"near line 2489\" is `require_plan_reviewed` at :2489.",
+    "done_when": "a finding \u2014 the gate case as worded cannot reach the coverage predicate it exists to test, and no case measures the population the new skip flips.",
+    "evidence_paths": "pass \u2014 the arms and the fragment log sit under the run directory and `docs/evidence/fragments/...`, not a scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach the test filename, the symbols or the evidence path.",
+    "reasoning": "a finding \u2014 the skip's blast radius is 121 stored design reviews across 51 plans, none named by the section's evidence and none measured by its done-when.",
+    "single_goal": "pass \u2014 the two halves (read a bulleted line; cover no unit when an item is absent) serve one verdict, that a delivered review is read whole, and each carries its own assertion and its own control.",
+    "wiring": "pass \u2014 s40 declares no depends-on, and none is needed: its write paths (`reckon/crew/review.py`, `reckon/crew/plan_review.py`, the new test) are disjoint from \u00a737/\u00a738/\u00a739, and the receipt field it references is explicitly \u00a737's rather than a dependency."
+  },
+  "section_digests": {
+    "_document": "c1226d09f2b3555f4319ecaaa13d382c2d3d4adffe8ba9fc11dc312a10a8164a",
+    "s1": "906b087bcd754848d9ec2aa4c4490b133dbdb4afae9f5c17499132679ea305dd",
+    "s10": "98a91766ca798ebcc3598987231522b39b9ddccc1b7df7872c8581168b36aade",
+    "s11": "02d5638ba0ff8ff5dd2b3c87ccf956cbd9642af42771fd95df9a2b12a65c5aa5",
+    "s12": "32d120b53140ccbc275a965b3f2d903579356680bca3d141eab868656e22f1a9",
+    "s13": "0b983b5335c882d2b5a1e938222637a43c6479acfa2c26796bd1bad6b53fc545",
+    "s14": "e1fc7769c27fba5c11398d91d6a0b95e0bf0b5fbe0348a53ae6bbd11ea67e01e",
+    "s15": "8bbe9d4ecb5d7699700d5ec5ec0e2e68e10eb703ce97c016074036e38c46dbb5",
+    "s16": "405268ed497c37284417b4990ae7587b9d5fdd51e429c59ee23c9fc899dcfd45",
+    "s17": "958a38a3a22f23aff755cc6fb7e95f67abf763621ef344dc4b5afdf2fd261899",
+    "s18": "5be55ae998bf9126a6d5854403395bc2d4dc141a96c747850537376c2b1151bf",
+    "s19": "c955b30374fdf31e71803dac9adb18a3149c1710f64f82faecf6a2e5343806bb",
+    "s2": "0eb83bb364e8325f6db277107654d8f99533fa7458d8f00fa07f41aebea11402",
+    "s20": "d7761564296d90fc766d60ab2d545a71e6b98a3f4cf6e09e3a652b61506adbea",
+    "s21": "9392bdfa49fcf52b6856100b3a6d3824e000fd4e4a4af7900f7ec262acd82fa0",
+    "s22": "5a1cf8eab82a83a4877f9f74ee81283174341d70a24da01bbf97695d84564e9f",
+    "s23": "bb0dab79249984e32a78afb123f52b66fc3170670049bbbc6f7d1b55e1c42124",
+    "s24": "b0870b19487b883350a25f7c90d57a62bc3bcd5f015e3c0e42caa08281ccfb11",
+    "s25": "55c54e0c4d76fc729ae8aae0b9a190890292be3f312bc2851a4557138e3967ee",
+    "s26": "376496ed070fca2ba62310cfbad3a64a716c044bc3c48188338105284b33c5c3",
+    "s27": "4ae9e428c0ae4b25213b1a6dc27ed1bb4add79f05c0c448533947a803910fb6b",
+    "s28": "00f1427c671fbc8c77c5450745a717805c5f71e02da4642612d0e31bcc34ce8b",
+    "s29": "f07a5c4ea029d4c84a0e2e37f4f85b81fd55ba2b01374dbc6725ec9362cbd106",
+    "s3": "46c9c67ed1b393114ccf029e708e97e998691b1283c54b0fb2932ce76f78e01d",
+    "s30": "524315a924e9ea2ed117ffa3497d7c973424aa0fe2f1747216012baa178fe54b",
+    "s31": "109c4c50496bf95da3ad7009025762e6f6203b7aca9bc27b36f9991372594266",
+    "s32": "6f71c6ddc0f515d53dad1398cfc608198a051af77d62d7ef23de5bee1c66d031",
+    "s33": "388b0ebd2758249fd29293434c224835cd9cedf5ab5e3e591eebaa72cd55fb22",
+    "s34": "a1796b7b522c746a6fffb9d84ce9daaadc480a8c182a10a7b546f050d6703270",
+    "s35": "348b0eb16c0690b2e138f28b1353eb6da6f30b89199885ee053a68b35472dcb9",
+    "s36": "1b9c235b3155cc20d2636997e871d553154bcde7170f42fe9c1788c1a3710769",
+    "s37": "580e8de9879c98487d861190d849fbaa300b4fdbfece9a7a4ba24eed4dd480a0",
+    "s38": "0534508fcd761740fdda339862fc74fa43388997b0df6702e53577242d341e4d",
+    "s39": "2dd33aaa16d0d3166c632ce15eac9837f0604222f84564c651c13ee870bba77d",
+    "s4": "7b91ac81d581cc35d0b52204756f087c9a3f39f6180d7b49c782173db05f104e",
+    "s40": "0b0cf9fad31e3fa3251109c2d2ab88c6c373abdce6ab02a60167fd0a96e4e1cc",
+    "s5": "931379e6e61a93111bd4f5be0f477adfac4df292d7f92a1c85da67ae19802e5b",
+    "s6": "d041173b5de95d0e5488fd6cd14ddeb04b6aeb31b2bedbae65328c3f93f022dc",
+    "s7": "658b997db4138d0ee40eca99702b5501c9bb0b620dea973a745e1c2c50ec9e29",
+    "s8": "60b74d52ea05d83fd0d024035a70976e05bc2e1ff165028ebe4589a8fc10c0b4",
+    "s9": "87545911e9ea78d872d01d72f7039ef1759951b05502ca91c7ca97ed86a90a41"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T18:34:28.820216+00:00"
+}
