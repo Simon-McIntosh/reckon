@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-22T10:39:50.929Z",
+  "dispatched_at": "2026-10-22T10:19:26Z",
+  "findings": [
+    {
+      "file": "reckon/crew/query.py",
+      "line": "771",
+      "severity": "follow-on",
+      "text": "follow-on: runs_view builds every row with _compact_row and never calls project_run_rows, so the goal's \"every crew list view's rows through one projection\" holds for three of the four views; the runs row's section is filled and normalized at query.py:488 by a second implementation of the rule project_run_rows owns at query.py:242-247."
+    },
+    {
+      "file": "reckon/mcp.py",
+      "line": "1723",
+      "severity": "follow-on",
+      "text": "follow-on: _row_state re-implements the \"section declaration, falling back to the plan's status\" rule that reckon/roadmap.py:1333-1345 writes inline in the same commit, so that rule now has two owners in two modules and neither extends the other."
+    },
+    {
+      "file": "docs/evidence/fragments/the-mcp-answers-the-question-asked/a-row-is-compact-and-names-its-section.html",
+      "line": "8",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment states that all four views \"build their rows and route them through one projection\", which is untrue for the runs view (reckon/crew/query.py:771), so the landed record overstates the mechanism this review exists to check."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T065817789148-a-row-is-compact-and-names-its-section/manifest.md",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the baseline_suite command carries `<base-arm> ...` angle-bracket placeholders, which the manifest spec forbids (\"the literal command that ran ... no angle-bracket placeholder\"), so the base arm cannot be re-run from the record even though gate-base-section-state.log:3 holds the literal path."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T065817789148-a-row-is-compact-and-names-its-section/gate-head-section-state.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the done-when requires the serialized power_convertor roadmap size measured before and after \"in the gate log\", but this log carries only the pytest run (63 passed, EXIT=0); the size readings live in node-local scratch files that no durable path in the run directory preserves."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that every crew list view's rows pass through one projection that names each run's section; reckon/crew/query.py:221 project_run_rows is that projection and the live (query.py:327), obligations (reckon/crew/obligations.py:1383) and directory (reckon/crew/directory.py:214) views reach it, but the runs view never calls it -- runs_view builds its rows with _compact_row at reckon/crew/query.py:771 and shares only the COMMON_RUN_FIELDS constant through _selected_fields (query.py:131).\nVERDICT done_when: the done-when names four clauses; tests/test_a_row_is_compact_and_names_its_section.py:187 asserts the section in all four views, :195 asserts fields=[\"section\"] accepted by all four, :208 asserts a missing field is refused naming the fields the view has, and :319/:334 assert a done section of an in-progress plan reads its own declaration and blocks nothing; the base arm in gate-base-section-state.log records the same file at 11 failed, and the head arm records 63 passed, EXIT=0, so the gate does assert the measure.\nVERDICT write_paths: the manifest's harness orientation line declares nine paths (reckon/mcp.py, reckon/crew/query.py, reckon/mcp_views.py, reckon/crew/directory.py, reckon/crew/obligations.py, reckon/roadmap.py, the test file, the evidence fragment, the figures dir) while the same run's prompt FENCE SCOPE block lists only six, omitting directory.py, obligations.py and roadmap.py; every path in the diff is inside the nine, so the two listings disagreeing is a dispatch defect rather than an overrun.\nVERDICT manifest: read; status complete, negative_control_log is a bare path, and both suite fields are readable JSON (base exit 1 with 11 failing ids, head exit 0 with none), but baseline_suite.command carries `<base-arm>` angle-bracket placeholders the manifest spec forbids, so the base arm cannot be re-run from the record.\nVERDICT diff: read all five commits against base 8c7e865d7..head ac3b69b77 -- 9a7c6b83d adds project_run_rows and routes the live view through it, eb07961b3 routes directory and obligations through it and narrows the runs row, 00ff2a685 adds the evidence fragment, 59c57322a makes three section-scoped producers report the section's own declaration, ac3b69b77 records the outcome; every changed path is inside the declared scope.\nCALL_SITES: reckon/mcp_views.py:serve_crew_view, reckon/crew_run_commands.py:208, reckon/crew/query.py:runs_view, reckon/mcp.py:_resolve_plan_ref, reckon/mcp_views.py:_section_blocking, reckon/roadmap.py:3248\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/query.py:771 builds the runs row with _compact_row rather than the new projection, so three of the four list views route through project_run_rows (reckon/crew/directory.py:214, reckon/crew/obligations.py:1383, reckon/crew/query.py:327) and the runs view does not.\nSCORE evidence: 13\nJUSTIFICATION evidence: gate-head-section-state.log records 63 passed EXIT=0 at 59c57322a and gate-base-section-state.log 11 failed EXIT=1, so the four row clauses are measured, but the done-when's roadmap-size clause is measured in no gate log -- the readings exist only in node-local scratch (attribute-base-arm.json, 139668 bytes) which does not survive the allocation.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path the diff changes (reckon/crew/query.py, reckon/crew/directory.py, reckon/crew/obligations.py, reckon/roadmap.py, reckon/mcp.py, reckon/mcp_views.py, the test file, the fragment) is inside the harness-declared write paths, and the prompt listing three fewer is an inconsistency in the dispatch rather than in the work.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control.log shows the declared mutation turning test_every_run_view_names_the_section red for three of the four views, and tests/test_a_row_is_compact_and_names_its_section.py:319 reddens if roadmap.py:1345 falls back to _status(target), but no assertion covers the done-when's empty-field-omitted clause.\nSCORE fit: 18\nJUSTIFICATION fit: the added names follow the module's own idiom (reckon/crew/query.py:189 COMMON_RUN_FIELDS, :221 project_run_rows, reckon/mcp.py:1723 _row_state) and carry no plan, sprint or ticket identifier.\nSCORE reuse: 13\nJUSTIFICATION reuse: project_run_rows extends the projection project_live_rows already owned (reckon/crew/query.py:327), but reckon/crew/query.py:488 still computes and normalizes the section for the runs row, and reckon/mcp.py:1723 _row_state re-implements the declaration-or-plan-status rule written inline at reckon/roadmap.py:1333-1345, so two owners now hold that capability.\nFINDING reckon/crew/query.py:771 follow-on: runs_view builds every row with _compact_row and never calls project_run_rows, so the goal's \"every crew list view's rows through one projection\" holds for three of the four views; the runs row's section is filled and normalized at query.py:488 by a second implementation of the rule project_run_rows owns at query.py:242-247.\nFINDING reckon/mcp.py:1723 follow-on: _row_state re-implements the \"section declaration, falling back to the plan's status\" rule that reckon/roadmap.py:1333-1345 writes inline in the same commit, so that rule now has two owners in two modules and neither extends the other.\nFINDING docs/evidence/fragments/the-mcp-answers-the-question-asked/a-row-is-compact-and-names-its-section.html:8 follow-on: the fragment states that all four views \"build their rows and route them through one projection\", which is untrue for the runs view (reckon/crew/query.py:771), so the landed record overstates the mechanism this review exists to check.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T065817789148-a-row-is-compact-and-names-its-section/manifest.md:1 follow-on: the baseline_suite command carries `<base-arm> ...` angle-bracket placeholders, which the manifest spec forbids (\"the literal command that ran ... no angle-bracket placeholder\"), so the base arm cannot be re-run from the record even though gate-base-section-state.log:3 holds the literal path.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T065817789148-a-row-is-compact-and-names-its-section/gate-head-section-state.log:1 follow-on: the done-when requires the serialized power_convertor roadmap size measured before and after \"in the gate log\", but this log carries only the pytest run (63 passed, EXIT=0); the size readings live in node-local scratch files that no durable path in the run directory preserves.\nreviewed_run_id: r-20261022T065817789148-a-row-is-compact-and-names-its-section\nreview_run_id: r-20261022T101345939864-review-of-a-row-is-compact-and-names-its-section-ac3b69b77146\nreviewed_base_sha: 8c7e865d7c686446437a65195c8db5970bfb3567\nreviewed_head_sha: ac3b69b7714690525d1f484311b95bb0a90d135d\n",
+  "review_run_id": "r-20261022T101345939864-review-of-a-row-is-compact-and-names-its-section-ac3b69b77146",
+  "reviewed_base_sha": "8c7e865d7c686446437a65195c8db5970bfb3567",
+  "reviewed_head_sha": "ac3b69b7714690525d1f484311b95bb0a90d135d",
+  "reviewed_run_id": "r-20261022T065817789148-a-row-is-compact-and-names-its-section",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 13,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T10:56:04.826350+00:00",
+  "total": 94
+}
