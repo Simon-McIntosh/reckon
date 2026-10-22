@@ -1,0 +1,80 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T07:17:43.943Z",
+  "dispatched_at": "2026-10-22T07:09:24Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-brief-should-not-cost-what-it-names.html:120",
+      "id": "done_when-1",
+      "reason": "the section's own measure cannot pass against the code it cites, so a reader takes \u00a73 as satisfied when the assertion it names was never made true.",
+      "text": "\u00a73 is declared `done` (meta `plan-section-declarations`), but its done-when requires \"a path appearing only in prose is charged at a reference cost \u2026 requiring the difference to be the reference cost and not the file size\", and the shipped `_declared_input_files` (reckon/crew/routing.py:3026) charges a mention nothing at all \u2014 the authorising comment at html:256 states this outright (\"a mention costs nothing\"), and no `reference_tokens` is ever set for a mention in `_context_file_inputs`",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-brief-should-not-cost-what-it-names.html:136",
+      "id": "done_when-2",
+      "reason": "a section claimed complete on a mechanism its cited rule explicitly declines to build cannot be closed or reviewed on one verdict; \u00a74 must be un-done or its done-when rewritten to what \"not preloaded without an opt-out\" actually establishes.",
+      "text": "\u00a74 is declared `done`, and its done-when requires \"the opt-out is asserted to be recorded on the run\" and \"a path that is both opted out and declared as a write path is refused rather than silently resolved\", but no anchor opt-out exists anywhere in the tree (grep for anchor/opt-out/no-preload over `reckon/crew/` returns no mechanism, and `TaskNode` carries no such field), which is why the same comment claims \u00a74 is met \"without any opt-out\"",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-brief-should-not-cost-what-it-names.html:225",
+      "id": "reasoning-1",
+      "reason": "a section's behaviour was chosen in code without the decision that governs it being locked, so the plan records a settled section and an open decision on the same question.",
+      "text": "\u00a73 is declared `done` while the decision that selects its behaviour, `reference-cost` (`flat` / `capped-head` / `zero`), still has an empty `data-choice`, and the code has in fact settled it at `zero`; \u00a73's body at html:111 and 115 argues for a nonzero reference charge while the shipped behaviour is no charge",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-brief-should-not-cost-what-it-names.html:176",
+      "id": "reasoning-2",
+      "reason": "the section argues its case from a mechanism the code no longer has and measures a directory the code does not grant, so a node dispatched against it would test the wrong scope; \u00a77's `done` status rests on the per-node grant, which is a different resolution from the one its body argues.",
+      "text": "\u00a77 states that `_grant_landing_write_paths` \"gives every dispatched node two shared repository paths \u2014 the cumulative evidence record and the plan file \u2026 so those belong to all of them\", but the function's docstring (reckon/crew/dispatch_claims.py:794) says \"The default scope is the node's fragment, so two nodes on one plan hold disjoint scopes\", `_shared_landing_paths` (dispatch_claims.py:704) says the shared paths \"are no longer granted by default\", and the actual grant is `_landing_fragment_paths` returning `docs/figures/<plan>/<node.id>` plus the node's own evidence fragment \u2014 so \u00a77's premise is false and its done-when (html:201) requires the parent `docs/figures/<plan>/` while the code grants the per-node child",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-brief-should-not-cost-what-it-names.html:213",
+      "id": "single_goal-1",
+      "reason": "two sections for one deliverable cannot each be closed on one verdict, and \u00a78's gap claim would send a node to re-add a breakdown that already exists under another name.",
+      "text": "\u00a78 delivers the same thing as \u00a72 (report the per-file breakdown beside the total) and its supporting evidence (\"the per-file term breakdown is not in the estimator \u2014 grep for `per_file`/`per-file` in `reckon/crew/routing.py` found none\") is a name-based non-detection contradicted by the tree and by \u00a72 itself: `_context_file_inputs` returns per-file records with `estimated_tokens` (routing.py:3153) and `_context_refusal_detail` already renders \"largest contributing files\" (routing.py:3425)",
+      "type": "single_goal",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "555dbf34293202b982de9c60a0baaaf63692670ce10288f3783ee8bdd04ee36d",
+  "plan_slug": "a-brief-should-not-cost-what-it-names",
+  "plan_version": 11,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T070824998304-plan-review-of-a-brief-should-not-cost-what-it-names",
+  "reviewed_blob_sha": "f79f4f22518746f7cef539fa5f6a30286f68cd23",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_declared_input_files`, `_context_file_inputs`, `_grant_landing_write_paths`, `_REGENERATED_PATH_REFERENCE_TOKENS`, `tests/test_a_regenerated_path_is_charged_as_written.py`, the evidence anchors and all five cited commits (`df48984e9`, `1135b00d9`, `bcace6a32d`, `0f9888eda`, `e8bbc2ce0`) resolve; the stale *claim* about one of those symbols is reported under reasoning.",
+    "done_when": "a finding \u2014 \u00a73 and \u00a74 are declared `done` in `plan-section-declarations` while the mechanisms their done-whens name do not exist on the current tree.",
+    "evidence_paths": "pass \u2014 the landing anchors `/reckon/evidence/archive/a-brief-should-not-cost-what-it-names-landed.html#s9` and `#s10` resolve, and no section sends a reader to a scratch or node-local path.",
+    "naming": "pass \u2014 the symbols the plan mandates (`--regenerate-path`, `write_paths`, `regenerate_paths`, `provenance=regenerated`) are named by mechanism, and no plan label, sprint id or ticket number reaches a symbol, filename or comment.",
+    "reasoning": "a finding \u2014 \u00a77's stated premise about `_grant_landing_write_paths` is contradicted by that function's own docstring.",
+    "single_goal": "a finding \u2014 \u00a78 duplicates \u00a72's deliverable (report the per-file breakdown) and rests on an evidence claim \u00a72 contradicts.",
+    "wiring": "pass \u2014 the declared `plan-informs` targets (`background-agent-fitness-and-dispatch-scope`, `a-window-paces-the-lane`) both resolve under `docs/plans/`, and no section asserts a dependency on a node that does not exist."
+  },
+  "section_digests": {
+    "_document": "30b2bc94634fbfe881544257ddb6bee6ef3cb8edb95ed567d833c1078f1d3673",
+    "s1": "d7fcfefe329cb385d8051b6135d5841c859cd5608068c3abc22b2dde5922a542",
+    "s10": "2b9ee6303e741d2d156f9e2cc199120146503ad5facd805ae644d7d7ba96659c",
+    "s2": "de9c3b0e07cca426601fe174741c157b6b3f9a95a4b2f5e1e8a21f881bbf30cf",
+    "s3": "e14931a79e53300c533fc95034238316363b38a267eeaed1deca5c9333ae2ae5",
+    "s4": "6dd62a4cd8a88ef35ef6d86f9e54e1f7eb0aa31424abc4dddc3cf2af0832d524",
+    "s5": "35701fe950d085e6f8efb2262f67db43fbbb02a811be9c5e5acf83a807a811c2",
+    "s6": "243e799cfe9e40125eb1da6d912895d8ebc9fde064b1684dc863e2b84a6c5775",
+    "s7": "e79cc324628f520c4867c6f70df4db194485c3f72b2cbec63defa27e9009fab4",
+    "s8": "5d7a0ddfc529c4b7dd6511fd73f6edd50552945a8665b943641b1b77d577812e",
+    "s9": "6cacd75509f791d5d06f64aac3fd9ab7710d79e68e341a36be215f1a0b1ed346"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T07:20:41.333495+00:00"
+}
