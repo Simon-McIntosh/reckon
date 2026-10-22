@@ -25,13 +25,14 @@
 
   <p id="every-surface-lists-open-decisions-crew">
     The served <code>/crew</code> route carries the same rows for every mounted
-    project under <code>open_decisions</code>, and reaches them through
-    <code>unsettled_decisions(..., waiting_context=True)</code> — the roadmap's
-    own derivation, applied to the plan state the poll already parses and
-    memoises (<code>serve._crew_plan_state</code>, one whole-document read per
-    plan per file identity, shared with the crew row's own sprint/effort read
-    than the crew row's own read under the existing <code>crew-plan-details</code>
-    memo entry). Serving the report's list directly from this route was built
+    project under <code>open_decisions</code>. It reaches them through
+    <code>unsettled_decisions(..., waiting_context=True)</code>, the roadmap's
+    own derivation, applied to plan state this poll has already parsed. The crew
+    row's sprint and effort read and the page's decision list both come from
+    <code>serve._crew_plan_state</code>, which reads one plan document once per
+    file identity and memoises it under the existing
+    <code>crew-plan-details</code> entry. Serving the report's own list from this
+    route was built
     and then refused by two contracts the route already carries: a report build
     reads every plan a second time through <code>_plan_html.read_state</code>,
     so a poll that reads one plan twice reported two reads where the pinned
@@ -63,14 +64,16 @@
     carries an open decision that names no section, so the whole-plan scope has
     a plan of its own to be read from; the second project's plan carries its own
     open and locked decisions, so a row from one project cannot pass for the
-    other's. Five cases: the summary view lists exactly the open and gated
+    other's. Six cases: the summary view lists exactly the open and gated
     decisions, with their sections, their recommendation and who made it, and
     the plan's last-modified date, and excludes the locked one and the other
     project's rows; the <code>/crew</code> payload lists the same rows for every
     mounted project; the two surfaces agree on both projects, compared in order,
-    so a difference in membership or ordering fails; the whole-plan wait states
-    its scope on both surfaces; and locking the open decision removes it from
-    both. The plans' date is written into them rather than taken from today, so
+    so a difference in membership or ordering fails; the project's discovery
+    payload carries <code>waiting_decisions</code> equal to
+    <code>waiting_decision_rows</code> over the same roadmap, and non-empty on
+    the fixture's plans; the whole-plan wait states its scope on both surfaces;
+    and locking the open decision removes it from both. The plans' date is written into them rather than taken from today, so
     the cases cannot pass on the day they are written and expire.
   </p>
 

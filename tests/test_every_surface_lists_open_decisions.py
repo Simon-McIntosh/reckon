@@ -16,11 +16,12 @@ import threading
 from pathlib import Path
 
 import pytest
-
 import reckon.mcp as mcp_module
-import reckon.serve as serve_module
 from reckon._plan_html import write_state
+
+import reckon.serve as serve_module
 from reckon.mcp_views import roadmap_view
+from reckon.roadmap import build_roadmap, waiting_decision_rows
 from tests.mcp_family_reload import reload_mcp_family
 
 PROJECT = "sample"
@@ -247,6 +248,35 @@ def test_crew_payload_lists_every_mounted_projects_decisions(
     assert scoped["plan_modified"] == MODIFIED
     assert rows[(PROJECT, "retention")]["status"] == "gated"
     assert (COMPANION, "timing") not in rows, "a locked decision holds no work"
+
+
+def test_discovery_payload_carries_the_roadmap_waiting_decisions(
+    mounted_projects,
+) -> None:
+    """The project's discovery payload serves the roadmap's own list.
+
+    A surface that wants the decisions a project waits on without polling the
+    crew route reads them here, so the payload must carry the report's
+    derivation rather than a list that drifted from it.
+    """
+
+    _arm(mounted_projects)
+    docs = mounted_projects["docs"]
+    payload = serve_module.discover_plans(docs, PROJECT, serve_module._STATE_ROOT)
+    report = build_roadmap(
+        PROJECT,
+        payload.get("inventory", []),
+        payload.get("sprints", []),
+        active_sprint_id=payload.get("active_sprint_id"),
+        project_manifest=payload,
+        review=payload.get("review") or {},
+        docs_dir=docs,
+    )
+
+    rows = payload["waiting_decisions"]
+    assert rows, "the fixture plans hold open decisions"
+    assert rows == waiting_decision_rows(report)
+    assert {row["id"] for row in rows} == WAITING_IDS
 
 
 def test_a_whole_plan_wait_says_so_on_both_surfaces(mounted_projects) -> None:
