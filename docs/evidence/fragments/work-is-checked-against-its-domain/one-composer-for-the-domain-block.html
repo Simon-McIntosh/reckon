@@ -30,7 +30,7 @@ frozen four-line block verbatim.</p>
 <p id="one-composer-for-the-domain-block-gate">Gate, run in place on the fleet allocation over the
 declared six files: <strong>67 passed, EXIT=0</strong> at the head
 (<code>logs/after-arm.log</code>). The base arm runs the same command over base source with the
-new test file added — <strong>7 failed, 2 passed, EXIT=1</strong>
+new test file added — <strong>6 failed, 61 passed, EXIT=1</strong>
 (<code>logs/base-arm.log</code>) — with
 <code>test_a_model_paths_only_project_composes_no_domain_heading</code>,
 <code>test_a_model_paths_only_match_renders_nothing_through_the_renderer</code> and
@@ -41,13 +41,21 @@ three), and <code>ruff format --check</code> clean.</p>
 <p id="one-composer-for-the-domain-block-negative">Negative control, declared as
 <em>render the heading when only <code>model_paths</code> matched</em>: removing the suppression
 from <code>render_domain_rules</code> turns the model-paths test red
-(<code>logs/negative-control.log</code>, EXIT=1), which is the defect the guard exists to catch.</p>
+(<code>logs/negative-control.log</code>, EXIT=1), which is the defect the guard exists to catch.
+Two further arms in the same log hold the two assertions that were repaired to compare against a
+fixture literal rather than against the code under test. Dropping the separator the digest rule
+inserts before the declared block fails
+<code>test_the_brief_digest_of_an_unchanged_node_is_unchanged</code>, whose expectation is now the
+sha256 of the fixture's own brief bytes and the declared block, computed in the test rather than
+read from the reader it checks. Spelling the per-check line with a dash instead of a colon fails
+<code>test_the_rendered_check_line_is_the_one_the_block_carries</code>, whose expectation is now
+the literal line the fixture check declares.</p>
 <p id="one-composer-for-the-domain-block-scope">The plan's deletion reaches three call sites in
 <code>tests/test_domain_rules_reach_the_brief.py</code>, a file outside this node's declared write
 scope and owned by no concurrent node; they are redirected to
-<code>prompts.domain_rules_block</code> in this commit, because the alternative is a knowingly-red
-declared gate. The guard in the new test file now scans <code>tests/</code> for the deleted name
-so a later caller cannot reintroduce the second spelling.</p>
+<code>prompts.domain_rules_block</code> in this node's first commit, and the file is now inside the
+node's declared scope. The guard in the new test file scans <code>tests/</code> for the deleted
+name so a later caller cannot reintroduce the second spelling.</p>
 </main>
 </body>
 </html>
