@@ -1,0 +1,39 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T13:38:11.458Z",
+  "dispatched_at": "2026-10-22T13:27:28Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-legacy-section-adopts-its-record.html:35",
+      "id": "done_when-1",
+      "reason": "a node implementing as written lands a change that turns a pinned test red, or is forced to edit an out-of-scope file, and either way its gate cannot close; the plan must either add `tests/test_audit_doc_section_contract.py` to the write paths and state that this test is rewritten to assert the new body-less example, or drop the clause requiring it to pass.",
+      "text": "the done-when requires \"`tests/test_audit_doc_section_contract.py` ... pass\", but `test_the_finding_carries_the_write_boundary_example` (tests/test_audit_doc_section_contract.py:101-113) asserts the audit finding's example is byte-for-byte the one `_section_contract_refusal(\"x\")` produces (\"the two cannot drift apart\"), which the deliverable's body-less example naming the reported section's id necessarily breaks \u2014 and the file is not in the declared write paths, so the node is fenced out of the file it must update",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "70de205b71bed2e2398ff461bc22c9e9eb20f0a4a3c2a173c6f62c7bd14d9bed",
+  "plan_slug": "a-legacy-section-adopts-its-record",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T132526188066-plan-review-of-a-legacy-section-adopts-its-record",
+  "reviewed_blob_sha": "d23c8ccac2e98982ec857e6f3c70adcb6100419d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_section_contract_refusal` (`reckon/_store.py:1671`), the finding (`reckon/doccheck.py:126`, built at `:1423`), the body-less append doc (`reckon/mcp.py:1752`), `_splice_section_records` (`reckon/_plan_html.py:1625`), the four test files, commit `e88cec99d`, and both related plans all resolve.",
+    "done_when": "a finding \u2014 the done-when requires `tests/test_audit_doc_section_contract.py` to pass, but that suite pins the audit finding's example byte-for-byte to the shared builder, which this deliverable necessarily changes.",
+    "evidence_paths": "pass \u2014 logs are directed to the run directory with a revision header and an `EXIT=` trailer, not a scratchpad or node-local path.",
+    "naming": "pass \u2014 the new test file follows the repo's established plan-slug test convention (`tests/test_page_paints_from_the_index.py`, `tests/test_every_module_fits_a_worker_window.py`); no stage labels, ticket numbers or version tags reach symbols or comments.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited code: the finding's message is `_section_contract_refusal`'s worked example (`reckon/_store.py:1673-1692`, an `append` to `sections` carrying `body`), the body routes through the insertion effect `_insert_authored_section` (`reckon/_store.py:3039-3048`, `:944`) and is refused `section id '<id>' already exists`, and the body-less append is documented at `reckon/mcp.py:1752`; heading text is available from `reckon/_plan_html.py:plan_headings`, so the new example can be built; the producing caller (`audit_file` \u2192 `_section_contract_findings`) is named by the cited path.",
+    "single_goal": "pass \u2014 \u00a71 carries one deliverable (give the `section-without-contract` finding its own adopting remedy) with one set of write paths.",
+    "wiring": "pass \u2014 `plan-blocks` names `the-page-paints-from-an-index` (active) and `plan-informs` names `section-contract-and-computed-impl`; both targets resolve to plan files, and the informs edge was already declined by an earlier review."
+  },
+  "section_digests": {
+    "_document": "780ba575ef9a66537d32712d9389e6ac0aaf472f91dd1f5ab4bfb8211e21cd65",
+    "s1": "d46f5481c9d566f1715a662cafaffe6ef24d8dd0d6b119aed53a8f4b1beaf21c"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T13:46:04.618281+00:00"
+}
