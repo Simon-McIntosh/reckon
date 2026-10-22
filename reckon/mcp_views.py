@@ -2575,11 +2575,18 @@ def _section_blocking(deps: list[dict[str, Any]]) -> list[dict[str, Any]]:
     A section-scoped row holds one section of the owning plan, so it is
     reported here instead of in the plan-level blocking list, and only while
     its target is unresolved — the same test the plan-level list applies.
+
+    The row states the target section's own condition, not its plan's, and a
+    verdict the row already reached is read here rather than re-derived from
+    the containing plan: a wait whose target section reads satisfied holds
+    nothing, whether the section was declared done or its gate passed.
     """
 
     waits: dict[str, list[dict[str, Any]]] = {}
     for dep in deps:
         if not is_section_scoped(dep):
+            continue
+        if dep.get("satisfied") is True:
             continue
         if dep.get("found") and dep.get("status") in COMPLETED_STATUSES:
             continue

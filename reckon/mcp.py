@@ -1714,10 +1714,29 @@ def _resolve_plan_ref(
     if not data:
         return row
     row["found"] = True
-    row["status"] = data.get("status", "")
+    row["status"] = _row_state(data, parsed.stage)
     row["impl"] = data.get("impl", 0)
     row["title"] = data.get("title", "")
     return row
+
+
+def _row_state(data: dict[str, Any], stage: str) -> str:
+    """The state a resolved row reports for the ref it named.
+
+    A row-level dependency reports the dependency's own state, never the
+    containing plan's: a ref that names a section reports that section's own
+    declaration, and falls back to the plan's status only where the plan
+    declares nothing for it. A plan-level ref has only the plan's status to
+    report.
+    """
+
+    plan_status = str(data.get("status", ""))
+    if not stage:
+        return plan_status
+    declarations = data.get("section_declarations")
+    if not isinstance(declarations, Mapping):
+        return plan_status
+    return str(declarations.get(stage) or "").strip() or plan_status
 
 
 #: Compact dos/don'ts surfaced by read_plan(..., with_schema=True).

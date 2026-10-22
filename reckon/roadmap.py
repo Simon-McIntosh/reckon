@@ -1328,24 +1328,27 @@ def _section_scoped_edges(
                     )
                 )
                 continue
-            section_found = parsed.stage in declared_section_identities(
-                _plan_authored_state(target, docs_dir, project, parsed.slug)
-            )
+            authored = _plan_authored_state(target, docs_dir, project, parsed.slug)
+            declarations = authored.get("section_declarations")
+            section_found = parsed.stage in declared_section_identities(authored)
+            declaration = ""
+            if isinstance(declarations, Mapping):
+                declaration = str(declarations.get(parsed.stage) or "").strip()
             row.update(
                 {
                     "scope": "local",
                     "slug": parsed.slug,
                     "found": True,
-                    "status": _status(target),
+                    # A row-level dependency reports the dependency's own state,
+                    # never the containing plan's: the target section's own
+                    # declaration where the plan declares one, and the plan's
+                    # status only where it declares none. A done section of a
+                    # plan still in progress therefore reads done, not the
+                    # containing plan's in-progress status.
+                    "status": declaration or _status(target),
                     "section_found": section_found,
                     "satisfied": section_found
-                    and _section_satisfied(
-                        target,
-                        parsed.stage,
-                        _plan_authored_state(
-                            target, docs_dir, project, parsed.slug
-                        ).get("section_declarations"),
-                    ),
+                    and _section_satisfied(target, parsed.stage, declarations),
                 }
             )
             rows.append(row)

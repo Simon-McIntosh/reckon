@@ -16,13 +16,16 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+from html import escape
 from pathlib import Path
 
 import pytest
 
+import reckon.mcp as mcp_module
 from reckon.crew import runs
 from reckon.crew.node import normalize_section
 from reckon.mcp_views import serve_crew_view
+from tests.mcp_family_reload import reload_mcp_family
 
 PROJECT = "alpha"
 BRANCH = "main"
@@ -210,3 +213,131 @@ def test_a_field_a_view_lacks_is_refused_naming_its_fields(
     detail = payload["detail"]
     assert "not_a_field_here" in detail
     assert "fields are" in detail
+
+
+# ── a row-level dependency states the section's own condition ───────────────
+
+_LEDGER_PROJECT = "beta"
+_DONE_PLAN = "prerequisite"
+_WAITING_PLAN = "consumer"
+_DONE_SECTION = "s3"
+_WAITING_SECTION = "s1"
+
+
+def _plan_meta(name: str, value: str) -> str:
+    return f'<meta name="{name}" content="{escape(value, quote=True)}">'
+
+
+def _write_plan(
+    docs: Path,
+    slug: str,
+    *,
+    sections: dict[str, str],
+    section_depends_on: dict[str, list[str]] | None = None,
+) -> Path:
+    """One in-progress plan whose sections carry the given declarations."""
+
+    head = [
+        '<!doctype html><html lang="en"><head><meta charset="utf-8">',
+        f'<meta name="docs-project" content="{_LEDGER_PROJECT}">',
+        '<meta name="reckon-type" content="plan">',
+        _plan_meta("plan-slug", slug),
+        _plan_meta("plan-title", slug),
+        '<meta name="plan-status" content="active">',
+        '<meta name="plan-effort" content="M">',
+        _plan_meta(
+            "plan-section-declarations",
+            json.dumps(sections, separators=(",", ":")),
+        ),
+    ]
+    if section_depends_on:
+        head.append(
+            _plan_meta(
+                "plan-section-depends-on",
+                json.dumps(section_depends_on, separators=(",", ":")),
+            )
+        )
+    head.append(f"<title>{slug}</title></head>")
+    body = ['<body><main class="plan-doc">']
+    for name, declaration in sorted(sections.items()):
+        body.append(
+            f'<h2 id="{name}">Section</h2>'
+            '<section data-reckon="section"'
+            f' data-id="{name}"'
+            ' data-effort-hours="2"'
+            ' data-capability-version="1.0" data-capability-class="general"'
+            ' data-capability-reasoning="standard"'
+            ' data-capability-verification="standard"'
+            ' data-capability-risk="low"'
+            f' data-status="{declaration}" data-links=""></section>'
+        )
+    body.append("</main></body></html>")
+    path = docs / "plans" / f"{slug}.html"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(head) + "".join(body), encoding="utf-8")
+    return path
+
+
+@pytest.fixture()
+def section_waits(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """A done section of a plan still in progress, waited on by another plan.
+
+    Both plans are ``active``, so the containing plan's status cannot answer
+    for the section: only the section's own declaration can.
+    """
+
+    docs = tmp_path / "repo" / "docs"
+    docs.mkdir(parents=True)
+    state_root = tmp_path / "state"
+    state_root.mkdir()
+    mounts = tmp_path / "mounts.json"
+    mounts.write_text(json.dumps({_LEDGER_PROJECT: str(docs)}), encoding="utf-8")
+    monkeypatch.setenv("RECKON_MOUNTS_PATH", str(mounts))
+    monkeypatch.setenv("RECKON_STATE_ROOT", str(state_root))
+
+    import reckon.serve as serve_module
+
+    serve_module._MOUNTS_FILE = mounts
+    serve_module._STATE_ROOT = state_root
+    serve_module._DISC_CACHE.clear()
+    reload_mcp_family()
+
+    _write_plan(
+        docs,
+        _DONE_PLAN,
+        sections={_DONE_SECTION: "done", "s9": "implementable"},
+    )
+    _write_plan(
+        docs,
+        _WAITING_PLAN,
+        sections={_WAITING_SECTION: "implementable"},
+        section_depends_on={_WAITING_SECTION: [f"{_DONE_PLAN}#{_DONE_SECTION}"]},
+    )
+    return _LEDGER_PROJECT, docs
+
+
+def test_a_section_row_states_the_sections_declaration(section_waits) -> None:
+    """A done section of an in-progress plan reads done, not the plan's status."""
+
+    project, _docs = section_waits
+    result = mcp_module._roadmap(project)
+    row = next(item for item in result["pending_work"] if item["slug"] == _WAITING_PLAN)
+
+    (edge,) = row["section_depends_on"]
+
+    assert edge["ref"] == f"{_DONE_PLAN}#{_DONE_SECTION}"
+    assert edge["status"] == "done"
+    assert edge["section_found"] is True
+    assert edge["satisfied"] is True
+
+
+def test_a_done_section_of_an_in_progress_plan_blocks_nothing(section_waits) -> None:
+    """The section's own verdict is read, so a satisfied wait is not reported."""
+
+    project, _docs = section_waits
+    summary = mcp_module._read_plan(
+        resource={"project": project, "type": "plan", "id": _WAITING_PLAN}
+    )
+
+    assert summary["section_blocking"] == []
+    assert summary["blocking"] == []
