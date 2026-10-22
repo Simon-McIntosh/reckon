@@ -1,0 +1,41 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-22T00:13:25.235Z",
+  "dispatched_at": "2026-10-22T00:03:51Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_tool_carries_the_write_verbs.py",
+      "line": 71,
+      "severity": "follow-on",
+      "text": "The parity test the node's done-when rests on never supplies waive_domain_check, so it guards only that the call can be placed, not that a stated waiver reason reaches the guard. CASES (line 71) gives the complete/land cases the kwargs {run_id, gate, dry_run} and no waiver, and `grep -rn waive_domain_check tests/` finds no test anywhere that passes one. The landing is therefore true of the code (remove the map entry and the empty-string default together and four tests redden, gate/negative-control.log) but not guarded at the seam that matters: re-point the map entry \"waive_domain_check\": \"waive_live_run\" in reckon/mcp_crew_actions.py:70 and both surfaces would still answer identically on every existing case, because the tool would forward an empty waive_live_run while the CLI forwarded an empty waive_domain_check \u2014 a value-carrying regression no assertion reddens on. Non-blocking because no assertion the run added is self-referential; the defect is an absent case, not a moving one.",
+      "would_change": false
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 119,
+      "severity": "follow-on",
+      "text": "_ACTION_OPTION_PARAM does not carry --waive-domain-check, the option the crew complete verb gained at reckon/crew_run_commands.py:2144, so a duty whose printed command states that waiver renders through action_form as None (the whole command unrenderable) rather than as a crew(action=\"complete\", waive_domain_check=...) call. The file's own comment at line 117 makes completeness load-bearing \u2014 \"Every option the eight verbs accept is listed\" \u2014 and this is the option the landed change is what makes the tool surface able to accept, so the tool now takes a parameter the renderer cannot emit. Non-blocking and outside the node's write scope (obligations.py is not among its declared paths), and no duty composes the option today, so nothing is broken at runtime; it is the next sibling node in this plan that will compose it.",
+      "would_change": false
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261022T000256607730-review-of-the-crew-tool-passes-the-domain-waiver-88323516ecd8",
+  "review_text": "VERDICT goal: the goal is to carry the domain-check waiver through the MCP crew tool's promotion actions to the crew_complete verb; reckon/mcp.py:2090 adds the tool parameter, reckon/mcp.py:2228 forwards it, and reckon/mcp_crew_actions.py:70 puts it on the complete map entry the verb is called through.\nVERDICT done_when: the done_when names the four failing tests and requires them green with a base log showing them red; gate/base.log carries exactly those four FAILED ids and gate/head.log carries '68 passed', both recorded in the manifest's baseline_suite and after_suite.\nVERDICT write_paths: the manifest declares reckon/mcp_crew_actions.py, reckon/mcp.py, reckon/_mcp_tools.py and the two docs/evidence paths; every path in the diff is one of them.\nVERDICT manifest: read; it records status complete, the gate command verbatim, five log paths, the base/after suite JSON, and honestly records that the declared negative control (map entry alone) does not bite while the map-plus-default arm does.\nVERDICT diff: read against 641da12bcabf0c9a653779275474c40f869f236e; three files, 77 insertions, no test file touched \u2014 reckon/mcp_crew_actions.py (+2 map lines, +1 default), reckon/mcp.py (+1 signature parameter, +1 forwarded argument, +1 domain_waiver on the guard dry run), and the landing fragment.\nCALL_SITES: reckon/mcp.py:3225 (_deadline_tool(_crew, ...) registration), reckon/mcp.py:_crew_write_action, reckon/mcp.py:_promotion_guards (reckon/mcp.py:2362), reckon/mcp_crew_actions.py:crew_action/_mapped_arguments, reckon/crew_run_commands.py:crew_complete (reckon/crew_run_commands.py:2219, 2338, 2367)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp.py:2090 and reckon/mcp_crew_actions.py:70 carry waive_domain_check to crew_complete on both the complete and land actions, which is the goal read off the source rather than the manifest.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate/base.log's '4 failed, 64 passed' at 641da12bc names the four done-when ids and its failure text carries the reproduced 'TypeError: crew_complete() missing 1 required positional argument', against gate/head.log's '68 passed' at e513575de.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff at 88323516 (reckon/mcp.py, reckon/mcp_crew_actions.py, the landing fragment) is inside the declared write paths, and reckon/_mcp_tools.py is declared but correctly left unchanged.\nSCORE durability: 14\nJUSTIFICATION durability: the diff adds no test, and the pre-existing parity case at tests/test_crew_tool_carries_the_write_verbs.py:71 reddens only when the map entry and the empty-string default are both removed (gate/negative-control.log), never when the parameter's value is mis-carried.\nSCORE fit: 16\nJUSTIFICATION fit: the new parameter matches the waive_live_run idiom line for line at reckon/mcp.py:2089-2090 and reckon/mcp_crew_actions.py:69-70, but the added entry at reckon/mcp_crew_actions.py:98 lands in the 'land' literal that reckon/mcp_crew_actions.py:191 overwrites with _PARAM_MAP['complete'], so that line of the diff is dead text.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing owner of the tool-to-verb contract (reckon/mcp_crew_actions.py:46) and reckon/mcp.py:2340's existing complete_dry_run guard read rather than forking either; the search over reckon/crew and reckon/mcp* found no other mechanism that maps a tool argument onto a crew verb's parameter.\nFINDING tests/test_crew_tool_carries_the_write_verbs.py:71 follow-on: no case supplies waive_domain_check, so a mis-mapped value would pass every existing assertion even though the block that introduced the parameter is what makes the waiver reachable.\nFINDING reckon/crew/obligations.py:119 follow-on: _ACTION_OPTION_PARAM omits --waive-domain-check, so a printed promotion command stating that waiver is unrenderable, and this change is what makes the tool surface accept the parameter the renderer cannot emit.",
+  "reviewed_base_sha": "641da12bcabf0c9a653779275474c40f869f236e",
+  "reviewed_head_sha": "88323516ecd87a013224784e0426624337439469",
+  "reviewed_run_id": "r-20261021T234155275057-the-crew-tool-passes-the-domain-waiver",
+  "rubric": "code-review",
+  "scores": {
+    "durability": 14,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T00:15:27.770046+00:00",
+  "total": 110
+}
