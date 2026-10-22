@@ -1,0 +1,73 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/_backends.py:2031 (_ClaudeDialect.read_account_surface -> _parse_claude_account)",
+    "reckon/_backends.py:1000 (cached_account_budget -> _parse_claude_account)",
+    "reckon/_backends.py:2517 (probe_budget, reached from reckon/budget.py:1274, reckon/mcp_views.py:446 and reckon/crew/paid_lanes.py:885)",
+    "reckon/crew/paid_lanes.py:698 (_run_reserved_probe, the reserved window probe runner)",
+    "reckon/crew/paid_lanes.py:1451 (publish_document, the timer --once path)"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-22T03:46:17Z",
+  "findings": [
+    {
+      "file": "reckon/_backends.py",
+      "line": "863",
+      "severity": "follow-on",
+      "text": "follow-on: _iso_reset_moment validates an ISO reset stamp with a local datetime.fromisoformat try/except while the same module already imports parse_iso from reckon/_timestamps.py:53, the shared parser whose module docstring fixes the parsing rule once and says callers migrate to it; the addition duplicates that capability rather than wrapping its owner, and skips the owner's Z-suffix and strip handling."
+    },
+    {
+      "file": "docs/evidence/fragments/a-limit-reset-reaches-every-session/the-claude-account-is-read-again.html",
+      "line": "56",
+      "severity": "follow-on",
+      "text": "follow-on: one declared done-when item is unmet and honestly recorded here - reading the published document's claude windows after one timer pass; log-timer-pass.log exits 1 on the read-only publication lock, so the end-to-end confirmation that the account leaves unknown is absent, and it needs one unfenced timer pass after this change reaches the primary branch."
+    },
+    {
+      "file": "tests/test_claude_account_surface.py",
+      "line": "71",
+      "severity": "follow-on",
+      "text": "follow-on: the plan's section 8 write paths name 'the tests pinning the old account answer' as in scope, but this node's fence excluded tests/test_claude_account_surface.py, tests/test_cached_account_age.py and tests/test_backend_observation.py, which still assert the superseded nested spelling (tests/test_claude_account_surface.py:67,71,94,99,105); they pass only because the nested shape is kept readable, so the coordinator still has to migrate them."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T034110168470-the-claude-account-is-read-again/log-ruff.log",
+      "line": "129",
+      "severity": "follow-on",
+      "text": "follow-on: the sole recorded ruff log exits 1 (5 findings plus 2 reformat requests) and its EXIT_ at line 129 predates the style commit a7a7b01c8 that fixed the test-file findings, so the done-when's ruff clause has no log supporting it at the reviewed head; re-running ruff on the head blobs against the same config shows the checked files add no findings over the base blobs (UP017 at reckon/_backends.py:682, RET504 at :3257 and I001 at reckon/crew/paid_lanes.py:35 are present on both sides)."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified a _ClaudeDialect.read_account_surface and cached_account_budget reach _parse_claude_account (reckon/_backends.py:2031 and :1000), probe_budget (:2517) is reached from reckon/budget.py:1274, reckon/mcp_views.py:446 and reckon/crew/paid_lanes.py:885, and publish_document (:823) is reached from reckon/crew/paid_lanes.py:1451, the timer's --once path.",
+    "diff": "read commit by commit against 4b43bb5eb - cf0bdb00 (fix: read the account again), a7a7b01c (style: format the test and scope its raises matches) and 579b78258 (docs: record the landing) - four files, 470 insertions and 23 deletions, every path inside the declared scope; the change is the endpoint and beta header with _live_account_windows/_iso_reset_moment/_nested_account_budget in reckon/_backends.py, _probe_stream_tail plus the all-unknown probe clause in reckon/crew/paid_lanes.py, the new test file, and the fragment.",
+    "done_when": "the done-when's four test bullets are asserted by tests/test_the_claude_account_is_read_again.py and its result is recorded (log-arm-head-focused.log:116 passed, EXIT=0, no added failure over log-arm-base-focused.log, both exit 0), the negative control is recorded and reddens the all-unknown case, and the live request is recorded in log-live-read.log; the sibling done-when item - the published document's claude windows reading observed after one timer pass - is unmet and recorded as such in log-timer-pass.log (EXIT=1) and the fragment.",
+    "goal": "the goal is to make the claude account readable again by keeping the probe's reason, reading the endpoint that answers, and probing an all-unknown account; reckon/crew/paid_lanes.py:598 _probe_stream_tail carries the child's own words into the raise, reckon/_backends.py:719 points the read at https://api.anthropic.com/api/oauth/usage with the anthropic-beta marker, and reckon/crew/paid_lanes.py:877 treats an all-unknown account as due for a probe.",
+    "manifest": "read; status complete, with the literal gate command, seven log paths, both arms' baseline_suite/after_suite JSON (exit 0 each, failure_ids empty), the negative control with its quoted failure, the measured module and cwd, and follow_ons naming the unfenced old tests and the missing timer-pass reading.",
+    "write_paths": "the manifest's orientation_write_paths are reckon/crew/paid_lanes.py, reckon/_backends.py, tests/test_the_claude_account_is_read_again.py and the node's fragment under docs/evidence/fragments/a-limit-reset-reaches-every-session/, and the diff changes exactly those four paths and nothing else."
+  },
+  "justifications": {
+    "durability": "log-negative-control.log shows tests/test_the_claude_account_is_read_again.py's all-unknown case reddening when the all-unknown clause is removed, and the endpoint assertions enforce the new URL and beta header (a revert to claude.ai/api/usage_this_cycle fails), the 0.62/0.74 fractions catch a dropped percentage-to-fraction conversion, and the model_not_found match catches the folded-away stream tail.",
+    "evidence": "log-arm-head-focused.log records 116 passed EXIT=0 with zero added failure ids over the exit-0 base arm, log-negative-control.log records the all-unknown test reddening at EXIT=1, and log-live-read.log records the live request answered at EXIT=0, but the done-when item requiring the published document after one timer pass is unmet (log-timer-pass.log EXIT=1) and the ruff clause has no log at the reviewed head.",
+    "fit": "the new definitions at reckon/_backends.py:833, :863 and :879 follow the module's strict-parse-else-unknown idiom with its heavy explanatory docstrings, and reckon/crew/paid_lanes.py:595 uses the same module-prefixed constant convention as the surrounding clause it sits beside; no plan label, version suffix or ticket reference appears.",
+    "goal_fidelity": "reckon/_backends.py:719 and :833 make the read answer on both windows and parse the live shape (62.0 and 74.0 -> 0.62 and 0.74 at reckon/crew/paid_lanes.py:891), reckon/crew/paid_lanes.py:598 keeps the probe child's reason, and :877 treats an all-unknown account as due, which is the goal's three repairs.",
+    "reuse": "reckon/_backends.py:863 re-implements the ISO-8601 parse-and-refuse capability owned by reckon/_timestamps.py:53 parse_iso, which the same module already imports at line 72, so an added definition duplicates an owned capability instead of extending or wrapping the owner's file.",
+    "scope_discipline": "every path in the diff is inside the manifest's declared write paths, but the plan's section 8 declared path 'the tests pinning the old account answer' is outside this node's fence and was left asserting the superseded spelling at tests/test_claude_account_surface.py:71."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make the claude account readable again by keeping the probe's reason, reading the endpoint that answers, and probing an all-unknown account; reckon/crew/paid_lanes.py:598 _probe_stream_tail carries the child's own words into the raise, reckon/_backends.py:719 points the read at https://api.anthropic.com/api/oauth/usage with the anthropic-beta marker, and reckon/crew/paid_lanes.py:877 treats an all-unknown account as due for a probe.\nVERDICT done_when: the done-when's four test bullets are asserted by tests/test_the_claude_account_is_read_again.py and its result is recorded (log-arm-head-focused.log:116 passed, EXIT=0, no added failure over log-arm-base-focused.log, both exit 0), the negative control is recorded and reddens the all-unknown case, and the live request is recorded in log-live-read.log; the sibling done-when item - the published document's claude windows reading observed after one timer pass - is unmet and recorded as such in log-timer-pass.log (EXIT=1) and the fragment.\nVERDICT write_paths: the manifest's orientation_write_paths are reckon/crew/paid_lanes.py, reckon/_backends.py, tests/test_the_claude_account_is_read_again.py and the node's fragment under docs/evidence/fragments/a-limit-reset-reaches-every-session/the-claude-account-is-read-again.html; the diff changes exactly those four paths and nothing else.\nVERDICT manifest: read; status complete, with the literal gate command, seven log paths, both arms' baseline_suite/after_suite JSON (exit 0 each, failure_ids empty), the negative control with its quoted failure, the measured module and cwd, and follow_ons naming the unfenced old tests and the missing timer-pass reading.\nVERDICT diff: read commit by commit against 4b43bb5eb - cf0bdb00 (fix), a7a7b01c (style) and 579b78258 (docs) - four files, 470 insertions and 23 deletions, every path inside the declared scope.\nCALL_SITES: reckon/_backends.py:2031 (_ClaudeDialect.read_account_surface -> _parse_claude_account), reckon/_backends.py:1000 (cached_account_budget -> _parse_claude_account), reckon/_backends.py:2517 (probe_budget, reached from reckon/budget.py:1274, reckon/mcp_views.py:446 and reckon/crew/paid_lanes.py:885), reckon/crew/paid_lanes.py:698 (_run_reserved_probe), reckon/crew/paid_lanes.py:1451 (publish_document, the timer --once path)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_backends.py:719 and :833 make the read answer on both windows and parse the live shape (62.0 and 74.0 -> 0.62 and 0.74 at reckon/crew/paid_lanes.py:891), reckon/crew/paid_lanes.py:598 keeps the probe child's reason, and :877 treats an all-unknown account as due, which is the goal's three repairs.\nSCORE evidence: 14\nJUSTIFICATION evidence: log-arm-head-focused.log records 116 passed EXIT=0 with zero added failure ids over the exit-0 base arm, log-negative-control.log records the all-unknown test reddening at EXIT=1, and log-live-read.log records the live request answered at EXIT=0, but the done-when item requiring the published document after one timer pass is unmet (log-timer-pass.log EXIT=1) and the ruff clause has no log at the reviewed head.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: every path in the diff is inside the manifest's declared write paths, but the plan's section 8 declared path 'the tests pinning the old account answer' is outside this node's fence and was left asserting the superseded spelling at tests/test_claude_account_surface.py:71.\nSCORE durability: 18\nJUSTIFICATION durability: log-negative-control.log shows tests/test_the_claude_account_is_read_again.py's all-unknown case reddening when the all-unknown clause is removed, and the endpoint assertions enforce the new URL and beta header (a revert to claude.ai/api/usage_this_cycle fails), the 0.62/0.74 fractions catch a dropped percentage-to-fraction conversion, and the model_not_found match catches the folded-away stream tail.\nSCORE fit: 18\nJUSTIFICATION fit: the new definitions at reckon/_backends.py:833, :863 and :879 follow the module's strict-parse-else-unknown idiom with its heavy explanatory docstrings, and reckon/crew/paid_lanes.py:595 uses the same module-prefixed constant convention as the surrounding clause; no plan label, version suffix or ticket reference appears.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/_backends.py:863 re-implements the ISO-8601 parse-and-refuse capability owned by reckon/_backends.py's imported reckon/_timestamps.py:53 parse_iso, so an added definition duplicates an owned capability instead of extending or wrapping the owner's file.\nFINDING reckon/_backends.py:863 follow-on: _iso_reset_moment duplicates the ISO parse capability owned by reckon/_timestamps.py:53 parse_iso which the same module already imports, losing the owner's Z-suffix and strip handling.\nFINDING docs/evidence/fragments/a-limit-reset-reaches-every-session/the-claude-account-is-read-again.html:56 follow-on: the done-when item reading the published document after one timer pass is unmet; log-timer-pass.log exits 1 on the read-only publication lock, so end-to-end confirmation needs one unfenced pass after merge.\nFINDING tests/test_claude_account_surface.py:71 follow-on: the plan's section 8 write path names the tests pinning the old account answer, but this node was fenced away from them and they still assert the superseded spelling, so the coordinator must migrate them.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T034110168470-the-claude-account-is-read-again/log-ruff.log:129 follow-on: the sole recorded ruff log exits 1 and predates the style commit, so the done-when's ruff clause has no supporting log at the reviewed head.\n",
+  "review_run_id": "r-20261022T043858185711-review-of-the-claude-account-is-read-again-579b78258724",
+  "reviewed_base_sha": "4b43bb5ebdb9f06a83fc577f7340be1c777853ee",
+  "reviewed_head_sha": "579b7825872422f1521d347b4c9d2a5795a366ab",
+  "reviewed_run_id": "r-20261022T034110168470-the-claude-account-is-read-again",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T05:05:00.000000+00:00",
+  "total": 88
+}
