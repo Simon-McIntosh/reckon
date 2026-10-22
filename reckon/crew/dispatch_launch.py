@@ -243,12 +243,8 @@ def _empty_stream_launch_failure(
     the failure was found.
     """
     stream = Path(str(record.get("log_path") or ""))
-    try:
-        if stream.stat().st_size:
-            return None
-    except OSError:
-        # A stream never created is the same fact as an empty one.
-        pass
+    if _stream_began(stream):
+        return None
     try:
         raw = Path(str(record.get("stderr_path") or "")).read_bytes()
     except OSError:
@@ -292,11 +288,7 @@ def _record_launch_failure(launched: Mapping[str, Any], *, exit_status: int) -> 
     measured loop of one 0-byte stream every two minutes.
     """
     stream = Path(str(launched.get("stream_path") or ""))
-    try:
-        size = stream.stat().st_size
-    except OSError:
-        # A stream that was never created is the same fact as an empty one.
-        size = 0
+    began = _stream_began(stream)
     run_id = str(launched.get("run_id") or "")
     if not run_id:
         return
@@ -306,7 +298,7 @@ def _record_launch_failure(launched: Mapping[str, Any], *, exit_status: int) -> 
     # to record yet. Only a job that has left the queue is judged.
     if placement and _placement_job_alive(placement, job_id) is True:
         return
-    if size and placement:
+    if began and placement:
         # A placed launch's wait status is the scheduler client's, not the
         # worker's, so a run whose payload log shows a turn ran has nothing
         # here that describes the worker: the client's status says nothing
@@ -316,7 +308,7 @@ def _record_launch_failure(launched: Mapping[str, Any], *, exit_status: int) -> 
     wait_status = _wait_status_record(exit_status)
     failure = (
         None
-        if size
+        if began
         else _launch_failure_record(
             launched,
             exit_status=exit_status,
@@ -1507,7 +1499,14 @@ def _stream_began(path: Path | None) -> bool:
 
     A launch that wrote its first byte reached the worker's own machinery
     whatever it does afterwards, so the stream beginning is what ends the
-    startup watch early on the healthy path.
+    startup watch early on the healthy path. It is also the fact that decides
+    whether a reap has anything to explain: a stream with a turn in it says the
+    worker reached its model, so the exit is not a launch that never started.
+
+    This function is the one owner of that fact, and the launcher and the watch
+    both ask it rather than reading the stream's size for themselves. A stream
+    that was never created counts as one that has not begun, which is the same
+    answer either caller needs for a run whose log was never opened.
     """
     if path is None:
         return False
