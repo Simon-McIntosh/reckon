@@ -2739,7 +2739,10 @@ def _held_path_blockers_by_section(
         claims = runs.scope_claims(
             project, repo_root, derivations=(manifest or {}).get("derivations") or {}
         )
-    except OSError:
+    except (OSError, TypeError):
+        # A registry whose reader refuses the call reads as no registry: the
+        # held paths are one kind of hold among several, and a roadmap that
+        # cannot read them still owes its reader the rest of the page.
         return {}
     placement: dict[str, tuple[str, str]] = {}
     for pointer in pointers:
