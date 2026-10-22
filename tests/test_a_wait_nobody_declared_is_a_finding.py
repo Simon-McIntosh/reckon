@@ -14,7 +14,7 @@ manifest's own blocker line rather than a string handed to the analyser.
 
 from __future__ import annotations
 
-from reckon.roadmap import build_roadmap
+from reckon.roadmap import _mentioned_section_refs, build_roadmap
 
 PROJECT = "sample"
 
@@ -101,6 +101,26 @@ def _write_claims(monkeypatch, claims: list[dict]) -> None:
     )
 
 
+def test_the_extraction_returns_the_refs_a_literal_text_names():
+    """What the reader produces, on literals the test writes down itself.
+
+    The fixture below hands the analyser a blocker string and then reads that
+    same string back off the finding, which cannot show the extraction working:
+    an empty extraction echoes the string just as faithfully. These cases fix
+    the answer to inputs this test chose, so the reader is measured rather than
+    the round trip.
+    """
+
+    assert _mentioned_section_refs("wait beta#s4 must land first") == ["beta#s4"]
+    assert _mentioned_section_refs("wait beta#s4, then gamma#s2.") == [
+        "beta#s4",
+        "gamma#s2",
+    ]
+    assert _mentioned_section_refs("also other:delta#s3 does") == ["other:delta#s3"]
+    assert _mentioned_section_refs("beta#s4 beta#s4") == ["beta#s4"]
+    assert _mentioned_section_refs("no reference here") == []
+
+
 def test_a_blocked_run_naming_an_undeclared_section_is_reported(monkeypatch, tmp_path):
     """The section is held by a wait it never declared, and the text says so."""
 
@@ -126,7 +146,7 @@ def test_a_blocked_run_naming_an_undeclared_section_is_reported(monkeypatch, tmp
     assert finding["severity"] == "warn"
     assert finding["extra"]["waiting"] == "alpha#s1"
     assert finding["extra"]["ref"] == "beta#s4"
-    assert "beta#s4" in finding["extra"]["text"]
+    assert finding["extra"]["source"] == "blocked run"
     assert "beta#s4" in finding["message"]
     assert "alpha#s1" in finding["message"]
 
@@ -249,6 +269,49 @@ def test_two_plans_open_sections_claiming_disjoint_paths_emit_nothing(monkeypatc
     )
 
     assert _wiring(report, "overlapping-scope") == []
+
+
+def test_a_section_declared_done_is_not_reviewed_for_overlapping_scope(monkeypatch):
+    """A landed section is closed work, however long its run pointer lingers.
+
+    Openness is the declaration's: a section the plan has ticked is done even
+    while the run that landed it still holds a claim, and closing it is the
+    plan's own act rather than the dispatcher's. The second half is the control
+    — the same two runs and the same one path, with the section still declared
+    implementable, do collide.
+    """
+
+    monkeypatch.setattr(
+        "reckon.crew.list_live",
+        lambda: [
+            _running_pointer(plan="alpha", section="s1", run_id="run-alpha"),
+            _running_pointer(plan="beta", section="s4", run_id="run-beta"),
+        ],
+    )
+    _write_claims(
+        monkeypatch,
+        [
+            {"run_id": "run-alpha", "path": "src/shared_circuit.py", "binding": True},
+            {"run_id": "run-beta", "path": "src/shared_circuit.py", "binding": True},
+        ],
+    )
+
+    landed = build_roadmap(
+        PROJECT,
+        [
+            _plan("alpha", sections={"s1": "done"}),
+            _plan("beta", sections={"s4": "implementable"}),
+        ],
+        [_sprint("alpha", "beta")],
+    )
+    assert _wiring(landed, "overlapping-scope") == []
+
+    still_open = build_roadmap(
+        PROJECT,
+        [_plan("alpha"), _plan("beta", sections={"s4": "implementable"})],
+        [_sprint("alpha", "beta")],
+    )
+    assert len(_wiring(still_open, "overlapping-scope")) == 1
 
 
 def test_two_sections_of_one_plan_claiming_one_path_emit_nothing(monkeypatch):

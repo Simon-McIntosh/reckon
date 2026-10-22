@@ -1490,7 +1490,7 @@ def _undeclared_wait_findings(
 
 
 def _overlapping_scope_findings(
-    open_sections: Mapping[str, Iterable[str]],
+    open_by_plan: Mapping[str, Iterable[str]],
     section_runs: Mapping[tuple[str, str], Iterable[Mapping[str, Any]]],
     claims: Iterable[Mapping[str, Any]],
 ) -> list[dict[str, Any]]:
@@ -1499,7 +1499,9 @@ def _overlapping_scope_findings(
     A write path is declared by the run that claims it, binding or not, and only
     runs placed on a section are attributed. Two sections of one plan claiming a
     path is that plan's own sequencing; across plans the pairs are read through
-    the dispatcher's own overlap rule.
+    the dispatcher's own overlap rule. Only a section the plan still declares
+    open is reviewed, so a run pointer left on a landed section is not a
+    collision.
     """
 
     from reckon.crew.runs import _scopes_overlap
@@ -1514,7 +1516,7 @@ def _overlapping_scope_findings(
         key = placement.get(str(claim.get("run_id") or ""))
         if key is not None and claim.get("path"):
             paths[key].add(str(claim["path"]))
-    open_keys = (key for key in paths if key[1] in set(open_sections.get(key[0], ())))
+    open_keys = (key for key in paths if key[1] in set(open_by_plan.get(key[0], ())))
     reviewed = sorted(open_keys)
     findings: list[dict[str, Any]] = []
     for index, left in enumerate(reviewed):
@@ -3871,17 +3873,16 @@ def _build_roadmap(
             row for row in dependency_rows.get(slug, []) if row.get("source_section")
         ]
         # The refs each of this plan's sections declares it waits on, and the
-        # sections it still declares implementable; a section carrying a run
-        # is open work whether or not its declaration still says so.
+        # sections it still holds open. Openness is the declaration's, read
+        # through the one open-section predicate: a run pointer left on a
+        # landed section is a record of work, not work still in flight.
         for edge in mapped_edges:
             waiting_section = str(edge.get("source_section") or "")
             if waiting_section:
                 declared_section_refs.setdefault((slug, waiting_section), set()).add(
                     _normalized_section_ref(project, str(edge.get("ref") or ""))
                 )
-        open_sections_by_plan[slug] = set(plan_implementable) | {
-            section for ref_plan, section in section_runs if ref_plan == slug
-        }
+        open_sections_by_plan[slug] = set(open_sections(authored))
         # A decision that names the sections it governs holds those sections
         # rather than the plan: the row keeps the decision in its reported
         # blockers, and the sections it names carry the wait in row form so a
