@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S26">
-<meta name="plan-version" content="135">
+<meta name="plan-version" content="136">
 <meta name="plan-modified" content="2026-10-23">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="f2ea9301,5b1759ab,428477c7">
@@ -641,6 +641,9 @@
 </div>
 <div class="r-comment" data-section="s22" data-id="c-close-s22" data-who="reckon-build" data-when="2026-10-23T06:00:00Z">
     <div class="r-comment-body"><p>§22 landed: a figure review judges only the rendered PNGs and never opens the SVG source (merge <code>87c897a5f</code>). Gate 15 passed, no failure added, review 111. §20 still waits on imas-ambix's markup-leak fix. <a href="/reckon/evidence/archive/a-review-can-see-the-figure-landed.html#s22-a-figure-review-judges-the-rendered-png">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s22" data-id="c-s22-svg-census-baseline" data-who="reckon-build" data-when="2026-10-22T23:24:00Z">
+    <div class="r-comment-body"><p>Baseline for §22's effect, taken before the PNG-only rule merged: over the 75 figure reviews launched from 2026-10-20T00:00Z to 2026-10-22T22:44:15Z, 509 of 4,190 tool calls named an <code>.svg</code> path, in 50 of the 75 runs. The census is <code>~/.config/reckon/crew/reports/reckon/figure-review-svg-census/census.py</code> (a run counts when its id ends in <code>-figure</code>; a call counts when its <code>tool_use</code> input contains <code>.svg</code>), and its log is <code>census-before-png-only.log</code> beside it. No figure review has launched since the merge, so the after-measure waits on the next ones; the rule holds if that count is zero.</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
