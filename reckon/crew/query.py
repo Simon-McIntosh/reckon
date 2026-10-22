@@ -119,18 +119,24 @@ def _refuse_unknown_fields(requested: Iterable[str]) -> None:
 
 
 def _selected_fields(fields: Iterable[str] | None) -> tuple[str, ...]:
-    """Return the fields a runs row carries for one request.
+    """Return the fields a runs row is built with for one request.
 
-    Without a request the whole default row is returned. With one, the row is
-    narrowed to what was asked for beside the common run fields, which is the
-    same projection every other list view applies, so a caller reading one fact
-    receives one fact and the identity of the run it came from.
+    The build carries the whole default row whatever was requested, because the
+    view's own filters read ``classification``, ``session_id`` and ``resumable``
+    off the row before it is projected: a build narrowed to the request answers
+    every such filter with an absent key, and ``row.get`` on an absent key
+    compares unequal, so the filtered request would list nothing.
+
+    Narrowing to the asked-for fields is the projection's job and happens last,
+    after the filters, exactly as it does on the other list views. What is
+    refused here is a name no run row could carry, so the refusal is raised
+    before the fleet is walked rather than after it.
     """
     if fields is None:
         return DEFAULT_RUN_FIELDS
     requested = _requested_field_names(fields)
     _refuse_unknown_fields(requested)
-    return tuple(dict.fromkeys((*COMMON_RUN_FIELDS, *requested)))
+    return tuple(dict.fromkeys((*DEFAULT_RUN_FIELDS, *requested)))
 
 
 def _live_field_vocabulary(
@@ -873,6 +879,7 @@ def runs_view(
         rows,
         fields=fields,
         view="runs",
+        vocabulary=row_fields,
         sections=run_section_index([live_records]),
         keep_empty=("plan",),
     )
