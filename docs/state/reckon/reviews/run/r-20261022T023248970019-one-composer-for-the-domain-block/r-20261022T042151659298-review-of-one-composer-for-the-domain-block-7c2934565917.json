@@ -1,0 +1,33 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-22T04:44:27.194Z",
+  "dispatched_at": "2026-10-22T04:25:22Z",
+  "findings": [
+    {
+      "file": "tests/test_one_composer_for_the_domain_block.py",
+      "line": 179,
+      "severity": "follow-on",
+      "text": "the expectation is built from DOMAIN_RULES_HEADING, which this test imports from the code under test, so a change to the heading's own text moves both sides of the comparison and the assertion still passes; the same coupling sits on DECLARED_RULE_BLOCK at lines 48-53, which line 108 compares a rendered block against. The repair round removed this shape from the check-line and digest expectations but left it. The heading's literal text appears nowhere under tests/ (only reckon/crew/prompts.py:357), so nothing in the suite pins it, and a rename of the heading would ship with every guard green."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to compose the domain block and each check line through one owner in prompts.py with no heading for an empty rule set; this increment (4248c2891..7c2934565) is the guard repair for that composition, and at the reviewed head reckon/crew/prompts.py:400-408 composes nothing for a match holding no invariants and no review checks while reckon/crew/prompts.py:414 renders each check through render_review_check alone.\nVERDICT done_when: the done_when names the six-file pytest gate judged by failure delta against the base revision plus ruff on the changed paths; the manifest's baseline_suite at ed60ec49 records 6 failed 61 passed EXIT=1 and after_suite at 7c2934565 records 67 passed EXIT=0, both logs naming revision, tree and literal command on their header lines and ending in a bare EXIT= line, and logs/base-lint.log carries the same three pre-existing findings the head reports, so the lint delta is 0.\nVERDICT write_paths: the source brief grants reckon/crew/dispatch_admission.py, reckon/crew/dispatch.py, reckon/crew/dispatch_plan.py, reckon/crew/prompts.py, tests/test_one_composer_for_the_domain_block.py and the evidence fragment; both paths this increment changes are inside them, and the fourth file the node had to reach, tests/test_domain_rules_reach_the_brief.py, was authorised at resume-1-advice.txt:1, which also records the repair the two commits perform.\nVERDICT manifest: read; status complete, all four commits named, and the increment's own claims \u2014 that the digest expectation is now a sha256 computed in the test and the check-line expectation a literal \u2014 are recorded with three negative-control arms at logs/negative-control.log whose last line is EXIT=1.\nVERDICT diff: read commit by commit against 4248c289114b9ea662865ac3cb05eda67080a2d8; three commits over two files \u2014 6fb65496 pins the digest expectation to a sha256 the test computes from its own brief bytes and the declared block and the check-line expectation to a literal, 6e74d0a1 adds the source-path digest, which is the branch that appends the block, and 7c2934565 corrects the fragment's base figure to 6 failed 61 passed and records the two further mutation arms.\nCALL_SITES: reckon/crew/prompts.py:414 render_review_check called by render_domain_rules, reckon/crew/prompts.py:389 domain_rules_block, reckon/crew/dispatch.py:1811 dispatch, reckon/crew/dispatch_plan.py:831 _brief_digest(block=domain_rules_block(...)), reckon/crew/dispatch_admission.py:2142 _brief_text, reckon/crew/dispatch_admission.py:2031 _brief_digest\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the increment changes no composition, and the composition it guards is correct at the reviewed head \u2014 reckon/crew/prompts.py:400-408 returns the empty string for a match holding no invariants and no review checks, so a model_paths-only project gets no heading.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/after-arm.log names revision 7c2934565, its tree and the literal command on its header lines and ends EXIT=0 with 67 passed, and the repaired assertions are exercised by arms A and B at logs/negative-control.log; the manifest's test_logs line omits logs/base-lint.log, which is on disk and carries the base arm of the lint delta.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the increment's two paths, tests/test_one_composer_for_the_domain_block.py and docs/evidence/fragments/work-is-checked-against-its-domain/one-composer-for-the-domain-block.html, are both inside the brief's exclusive write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_one_composer_for_the_domain_block.py:217 pins the digest to a sha256 computed in the test over its own bytes and the declared block, and arm A at logs/negative-control.log reddens it by dropping the separator, so the assertion fails on the regression it guards.\nSCORE fit: 18\nJUSTIFICATION fit: the additions follow the file's idiom \u2014 test-local constants at tests/test_one_composer_for_the_domain_block.py:63-64 with a mechanism comment \u2014 and the new names and comments carry no plan, stage or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the increment adds no production definition; the in-test sha256 at tests/test_one_composer_for_the_domain_block.py:206 is an independent derivation of the digest rule rather than a fork of dispatch_admission._brief_digest, and a search of tests/ and reckon/crew for an existing literal pin of the heading or the check line found none.\nFINDING tests/test_one_composer_for_the_domain_block.py:179 follow-on: the expectation is built from DOMAIN_RULES_HEADING, which the test imports from the code under test, so a change to the heading's own text moves both sides of the comparison and the assertion still passes; the heading's literal text appears nowhere under tests/ (only reckon/crew/prompts.py:357), so no assertion in the suite pins it.\n",
+  "review_run_id": "r-20261022T042151659298-review-of-one-composer-for-the-domain-block-7c2934565917",
+  "reviewed_base_sha": "4248c289114b9ea662865ac3cb05eda67080a2d8",
+  "reviewed_head_sha": "7c2934565917a061075c6ac6a524a7572f860efe",
+  "reviewed_run_id": "r-20261022T023248970019-one-composer-for-the-domain-block",
+  "rubric": "code-review",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T04:50:26.092255+00:00",
+  "total": 113
+}
