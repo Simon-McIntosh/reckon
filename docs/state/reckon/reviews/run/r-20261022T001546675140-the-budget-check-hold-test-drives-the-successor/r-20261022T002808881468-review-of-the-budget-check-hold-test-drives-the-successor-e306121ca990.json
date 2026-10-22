@@ -1,0 +1,84 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The reviewed run recorded baseline_suite and after_suite as null, so the delta is derived from the reviewed run's own gate logs: logs/base-reproduction.txt at c01dcbf8b shows 1 failed, 24 passed, EXIT=1 with the single failure id tests/test_a_crew_verb_ok_reads_its_outcome.py::test_preflight_hold_and_clear_result_have_matching_exit_codes, and logs/head-arm.txt at e306121ca shows 25 passed, EXIT=0 with no failures. No failure id is present at head that is absent at base, so the added set is empty; the negative-control red (assert 0 == 3) is a deliberate mutation, not a regression.",
+  "assertion_analysis": [
+    {
+      "failure_condition": "assert held.exit_code == 3 fails if `_budget_check_report` stops returning 3 for a held report, or if crew_budget's `failure_exit=3` is changed; the recorded mutation (failure_exit=0) reddens it with assert 0 == 3. The exit code is independent of the report the test passed in, which is the monkeypatched `budget.preflight` return.",
+      "lines": "tests/test_a_crew_verb_ok_reads_its_outcome.py:103"
+    },
+    {
+      "failure_condition": "assert _payload(held)[\"ok\"] is False / is True fails if _emit_crew_result stops folding `report[\"held\"]` into the `ok` field, so the payload contract is guarded independently of the exit code.",
+      "lines": "tests/test_a_crew_verb_ok_reads_its_outcome.py:104,111"
+    },
+    {
+      "failure_condition": "assert clear.exit_code == 0 fails only if the clear path raises; it does not by itself distinguish a correct clear from a command that always exits 0, which is why :103 carries the pair.",
+      "lines": "tests/test_a_crew_verb_ok_reads_its_outcome.py:110"
+    },
+    {
+      "failure_condition": "assert retired.exit_code == TOMBSTONE_EXIT_CODE fails if the preflight tombstone row is dropped, since `crew preflight` then resolves to an unknown command and the exit code is not 10.",
+      "lines": "tests/test_a_crew_verb_ok_reads_its_outcome.py:114"
+    },
+    {
+      "failure_condition": "assert _payload(retired)[\"successor\"] == \"crew budget --check\" fails if reckon/crew/tombstones.py:157 changes the preflight row's successor; the expected value is a literal, not a variable the test supplied, so the assertion is independent of its input.",
+      "lines": "tests/test_a_crew_verb_ok_reads_its_outcome.py:115"
+    }
+  ],
+  "call_sites": [],
+  "completed_at": "2026-10-22T00:38:34.669Z",
+  "dispatched_at": "2026-10-22T00:29:02Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-suite-is-green-at-head/the-budget-check-hold-test-drives-the-successor.html",
+      "line": 28,
+      "severity": "follow-on",
+      "text": "The Measure paragraph states the 25-passed run was \"at c01dcbf8b in the assigned worktree\" and cites logs/head-arm.txt, but head-arm.txt's own header records revision e306121ca; at c01dcbf8b the base reproduction was 1 failed, 24 passed. The landing record quotes a revision that its cited log contradicts, so a reader reconciling the fragment against the log cannot tell which revision the pass belongs to."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T001546675140-the-budget-check-hold-test-drives-the-successor/logs/base-reproduction.txt",
+      "line": 3,
+      "severity": "follow-on",
+      "text": "The header names the command `... -q tests/test_a_crew_verb_ok_reads_its_outcome.py::test_preflight_hold_and_clear_result_have_matching_exit_codes`, a single-nodeid selection, but the body records a 25-test run (1 failed, 24 passed at line 25). A single selected nodeid cannot yield 24 passed, so the header does not describe what ran; the base reproduction's command is not reconstructable from its own log."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T001546675140-the-budget-check-hold-test-drives-the-successor/logs/negative-control.txt",
+      "line": 6,
+      "severity": "follow-on",
+      "text": "The `# cwd:` line declares the scratch tree /tmp/reckon-crew-scratch/.../negative-control, yet the traceback at line 103 cites the test path under the reviewed worktree (.../the-budget-check-hold-test-drives-the-successor/tests/test_a_crew_verb_ok_reads_its_outcome.py). The record does not establish which tree the control's test file loaded from, so the mutation's provenance is weaker than the log claims; the substantive signal (assert 0 == 3) still shows the held branch was forced to exit 0."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "Read e306121ca against c01dcbf8b commit by commit; two files change (62 insertions, 2 deletions), the test repoint plus the retirement assertion and the landing fragment, with no product source touched.",
+    "done_when": "prompt.txt:95-96 names test_preflight_hold_and_clear_result_have_matching_exit_codes, its reproduction at base, the head pass, the retirement assertion and the ruff delta; logs/base-reproduction.txt and logs/head-arm.txt record the arms and logs/negative-control.txt records the mutation, but no log records the ruff check/format claims the done_when requires.",
+    "goal": "prompt.txt:30 states the goal: point the held-preflight exit-code test at the successor `crew budget --check`; tests/test_a_crew_verb_ok_reads_its_outcome.py:102-107 now invokes `crew budget --check --project sample` for both arms, so the landed change does what the goal states.",
+    "manifest": "Read .../r-20261022T001546675140-the-budget-check-hold-test-drives-the-successor/manifest.md; it names commit e306121ca, the two changed paths, the three gate logs, `25 passed in 1.16s` EXIT=0 and the negative control, and records baseline_suite and after_suite as null.",
+    "write_paths": "prompt.txt:69-72 grants the test file, one fragment and one figures directory; `git diff c01dcbf8b..e306121ca` changes only tests/test_a_crew_verb_ok_reads_its_outcome.py and the fragment, both declared, and the figures directory is unused."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261022T002808881468-review-of-the-budget-check-hold-test-drives-the-successor-e306121ca990",
+  "review_text": "VERDICT goal: prompt.txt:30 states the goal \u2014 point the held-preflight exit-code test at the successor `crew budget --check`; tests/test_a_crew_verb_ok_reads_its_outcome.py:102-107 now invokes `crew budget --check --project sample` for both arms, so the landed change does what the goal states.\nVERDICT done_when: prompt.txt:95-96 names test_preflight_hold_and_clear_result_have_matching_exit_codes, its base reproduction, the head pass, the retirement assertion and the ruff delta; logs/base-reproduction.txt and logs/head-arm.txt record the pytest arms and logs/negative-control.txt records the mutation, but no log records the ruff check/format claims the done_when requires.\nVERDICT write_paths: prompt.txt:69-72 grants the test file, one fragment and one figures directory; git diff c01dcbf8b..e306121ca changes only tests/test_a_crew_verb_ok_reads_its_outcome.py and the fragment, both declared, and the figures directory is unused.\nVERDICT manifest: read .../r-20261022T001546675140-the-budget-check-hold-test-drives-the-successor/manifest.md; it names commit e306121ca, the two changed paths, the three gate logs, `25 passed in 1.16s` EXIT=0 and the negative control, and records baseline_suite and after_suite as null.\nVERDICT diff: read e306121ca against c01dcbf8b commit by commit; two files change (62 insertions, 2 deletions), the test repoint plus the retirement assertion and the landing fragment, with no product source touched.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_a_crew_verb_ok_reads_its_outcome.py:102-107 drives `crew budget --check --project sample` in both arms, which is the successor verb prompt.txt:30 names.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/head-arm.txt and logs/base-reproduction.txt record the pass and the reproduction, but the done_when's ruff claims have no log and logs/base-reproduction.txt:3 does not describe the run recorded beneath it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff c01dcbf8b..e306121ca --stat touches only the two paths declared in prompt.txt:69-72 and no product source.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_crew_verb_ok_reads_its_outcome.py:103 reddens on the reinstated regression failure_exit=0 in logs/negative-control.txt (assert 0 == 3), and :114-115 redden if the preflight tombstone row is removed or its successor changes.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_a_crew_verb_ok_reads_its_outcome.py:20 imports TOMBSTONE_EXIT_CODE rather than the literal 10, matching the CliRunner/_payload idiom the surrounding cases use.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module; it points the existing case at the owners it should have used, reckon/crew_run_commands.py:3313 and reckon/crew/tombstones.py:157, so nothing is duplicated.\nFINDING docs/evidence/fragments/the-suite-is-green-at-head/the-budget-check-hold-test-drives-the-successor.html:28 follow-on: the Measure paragraph attributes the 25-passed run to c01dcbf8b while its cited logs/head-arm.txt records revision e306121ca, and c01dcbf8b was 1 failed/24 passed, so the landing record contradicts its own log.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T001546675140-the-budget-check-hold-test-drives-the-successor/logs/base-reproduction.txt:3 follow-on: the header names a single-nodeid pytest command while the body records a 25-test run (1 failed, 24 passed), so the base reproduction's command is not reconstructable from its own log.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T001546675140-the-budget-check-hold-test-drives-the-successor/logs/negative-control.txt:6 follow-on: the declared scratch cwd contradicts the traceback path under the reviewed worktree, so which tree the control's test file loaded from is not confirmable from the record.\n",
+  "reviewed_base_sha": "c01dcbf8bd3f063698e51f9c318b5d8c6e31c28e",
+  "reviewed_head_sha": "e306121ca990703ba5b8744c6d90357b636e713d",
+  "reviewed_run_id": "r-20261022T001546675140-the-budget-check-hold-test-drives-the-successor",
+  "score_justifications": {
+    "durability": "tests/test_a_crew_verb_ok_reads_its_outcome.py:103 reddens on the reinstated regression `failure_exit=0` (logs/negative-control.txt: assert 0 == 3), and :114-115 redden if the preflight tombstone row is removed or its successor changes.",
+    "evidence": "logs/head-arm.txt and logs/base-reproduction.txt record the pass and the reproduction, but the done_when's ruff claims have no log and logs/base-reproduction.txt:3 does not describe the run recorded beneath it.",
+    "fit": "tests/test_a_crew_verb_ok_reads_its_outcome.py:20 imports TOMBSTONE_EXIT_CODE rather than the literal 10, matching the CliRunner/_payload idiom the surrounding cases use.",
+    "goal_fidelity": "tests/test_a_crew_verb_ok_reads_its_outcome.py:102-107 drives `crew budget --check --project sample` in both arms, which is the successor verb prompt.txt:30 names.",
+    "reuse": "The diff adds no function, class or module; it points the existing case at the owners it should have used, reckon/crew_run_commands.py:3313 (crew budget --check) and reckon/crew/tombstones.py:157 (preflight row), so nothing is duplicated.",
+    "scope_discipline": "`git diff c01dcbf8b..e306121ca --stat` touches only the two paths declared in prompt.txt:69-72 and no product source."
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T00:38:35.605285+00:00",
+  "total": 112
+}
