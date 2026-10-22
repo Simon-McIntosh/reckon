@@ -160,6 +160,54 @@ def _publish_stopped_holder(repo: Path, tmp_path: Path) -> tuple[str, str, str]:
     return HOLDER_RUN, base, head
 
 
+def _record_stacking_directly(repo: Path, tmp_path: Path) -> tuple[str, str, str]:
+    """Publish a holder and a live stacked descendant, and record the stacking.
+
+    The dispatch that admits a stacked run is what the done-when is about, and
+    its arms are the two that need the dispatch's base handed to the check. The
+    recording, registry and promotion arms below are reachable without it, so
+    they are asserted here as well rather than left unproven behind the wiring:
+    what this helper skips is one argument, not the mechanism.
+    """
+    from reckon.crew.runs import record_stacked_dispatch
+
+    holder, _base, head = _publish_stopped_holder(repo, tmp_path)
+    descendant = "r-20261022T101900000000-" + DESCENDANT_NODE
+    manifest = tmp_path / (HOLDER_RUN + "-manifest.md")
+    manifest.write_text(
+        "node: " + HOLDER_NODE + "\nstatus: complete\ncommits: " + head + "\n"
+        "changed_paths: " + CLAIMED_PATH + "\n",
+        encoding="utf-8",
+    )
+    holder_record = read_pointer(holder)
+    holder_record["manifest_path"] = str(manifest)
+    crew._write_json(pointer_path(holder), holder_record)
+    crew._write_json(
+        pointer_path(descendant),
+        {
+            "run_id": descendant,
+            "project": PROJECT,
+            "repo": str(repo),
+            "worktree": str(tmp_path / "descendant-tree"),
+            "base": head,
+            "base_sha": head,
+            "pid": os.getpid(),
+            "phase": "working",
+            "created_at": "2026-10-22T10:19:00Z",
+            "node": {
+                "id": DESCENDANT_NODE,
+                "plan": "fixture",
+                "section": "s5",
+                "write_paths": [CLAIMED_PATH],
+            },
+        },
+    )
+    stacked_record = read_pointer(descendant)
+    record_stacked_dispatch(holder, descendant, descendant_record=stacked_record)
+    crew._write_json(pointer_path(descendant), stacked_record)
+    return holder, descendant, head
+
+
 def _descendant_node(tmp_path: Path) -> crew.TaskNode:
     return crew.TaskNode(
         id=DESCENDANT_NODE,
@@ -246,9 +294,7 @@ def test_the_registry_names_the_stacked_run_and_still_binds(
 ) -> None:
     """The scopes view's row for the holder carries the stacking beside binding."""
     _config_home, repo = _held_repository(tmp_path, monkeypatch)
-    _run_id, _base, head = _publish_stopped_holder(repo, tmp_path)
-    record = _dispatch_on(repo, tmp_path, monkeypatch, base=head)
-    descendant = str(record["run_id"])
+    _holder, descendant, _head = _record_stacking_directly(repo, tmp_path)
 
     rows = [
         row
@@ -266,12 +312,62 @@ def test_promoting_the_holder_names_its_live_descendant(
 ) -> None:
     """The holder leaves while its descendant is live, and the result says which."""
     _config_home, repo = _held_repository(tmp_path, monkeypatch)
-    _run_id, _base, head = _publish_stopped_holder(repo, tmp_path)
-    record = _dispatch_on(repo, tmp_path, monkeypatch, base=head)
-    descendant = str(record["run_id"])
+    _holder, descendant, head = _record_stacking_directly(repo, tmp_path)
 
-    result = crew.complete(HOLDER_RUN, gate="passed", commits=[head], root=repo)
+    result = crew.complete(
+        HOLDER_RUN,
+        gate="passed",
+        commits=[head],
+        root=repo,
+        review_waiver="the holder's review is out of this fixture's subject",
+    )
 
     assert result["stacked_descendants"] == [descendant]
     assert not pointer_path(HOLDER_RUN).exists()
     assert pointer_path(descendant).exists()
+
+
+def test_the_check_admits_the_tip_and_refuses_the_branch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The exception itself, exercised with the base the dispatcher would pass.
+
+    The two dispatch arms above cannot reach this state until the dispatch
+    hands its base down, so the check is called here with the same claim list
+    ``_repository_scope_claims`` builds for a real dispatch and the base the
+    dispatcher resolves. The tip is admitted and named; the integration branch
+    is refused, which is the control that keeps the claim's own rule intact.
+    """
+    from reckon.crew.dispatch import (
+        _raise_repository_scope_conflict,
+        _repository_scope_claims,
+    )
+    from reckon.crew.routing import resolve_dispatch_authority
+
+    _config_home, repo = _held_repository(tmp_path, monkeypatch)
+    holder, base, head = _publish_stopped_holder(repo, tmp_path)
+    node = _descendant_node(tmp_path)
+    claims = _repository_scope_claims()
+    authority = resolve_dispatch_authority(PROJECT, repo)
+
+    stacked: list[dict[str, Any]] = []
+    _raise_repository_scope_conflict(
+        node,
+        project=PROJECT,
+        repo=repo,
+        authority=authority,
+        claims=claims,
+        base_revision=head,
+        stacked=stacked,
+    )
+    assert [row["run_id"] for row in stacked] == [holder]
+
+    with pytest.raises(crew.ScopeConflict):
+        _raise_repository_scope_conflict(
+            node,
+            project=PROJECT,
+            repo=repo,
+            authority=authority,
+            claims=claims,
+            base_revision=base,
+        )
