@@ -15,6 +15,7 @@ what separates two rows is the signal the test is about.
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime, timedelta
 from html import escape
 from pathlib import Path
 from typing import Any
@@ -23,6 +24,7 @@ import pytest
 
 import reckon.mcp as mcp_module
 import reckon.roadmap as roadmap_module
+from reckon import crew as crew_module
 from tests.mcp_family_reload import reload_mcp_family
 
 PROJECT = "sample"
@@ -31,7 +33,19 @@ PROJECT = "sample"
 # hub beside it, so nothing on the path can be confused with the reach reading.
 SLOW_HOURS = 40.0
 ORDINARY_HOURS = 1.0
-REASONS = {"critical path", "reach", "stuck"}
+
+# Every signal a ranked ready row may report in its reason: one vocabulary
+# shared with the plan rows, plus the signal for a row nothing separates.
+REASONS = {
+    "critical path",
+    "sprint",
+    "roi",
+    "reach",
+    "stuck",
+    "effort",
+    "after hold",
+    "ready",
+}
 
 
 @pytest.fixture()
@@ -65,8 +79,9 @@ def _write_plan(
     *,
     sections: dict[str, float],
     section_depends_on: dict[str, list[str]] | None = None,
+    roi: str = "high",
 ) -> Path:
-    """Write one ROI-high, effort-M plan whose sections are all implementable."""
+    """Write one effort-M plan whose sections are all implementable."""
 
     declarations = json.dumps(
         dict.fromkeys(sections, "implementable"), separators=(",", ":")
@@ -78,7 +93,7 @@ def _write_plan(
         _meta("plan-slug", slug),
         _meta("plan-title", slug),
         '<meta name="plan-status" content="active">',
-        '<meta name="plan-roi" content="high">',
+        _meta("plan-roi", roi),
         '<meta name="plan-effort" content="M">',
         _meta("plan-section-declarations", declarations),
     ]
@@ -160,6 +175,22 @@ def equal_sections_project(mounted_project):
         "twin",
         sections={"s1": ORDINARY_HOURS, "s2": ORDINARY_HOURS},
     )
+    return project, docs
+
+
+@pytest.fixture()
+def roi_project(mounted_project):
+    """Two sections off the path that differ in nothing but their plans' ROI.
+
+    ``anchor`` holds the critical path with a long section, and both other plans
+    are one ordinary section off it: they agree on hours, reach, sprint position
+    and attempts, so ROI is the only term that separates their sections.
+    """
+
+    project, docs = mounted_project
+    _write_plan(docs, "anchor", sections={"s1": SLOW_HOURS}, roi="low")
+    _write_plan(docs, "alpha", sections={"s1": ORDINARY_HOURS}, roi="high")
+    _write_plan(docs, "beta", sections={"s1": ORDINARY_HOURS}, roi="low")
     return project, docs
 
 
@@ -253,3 +284,68 @@ def test_two_attempts_outrank_an_equal_section_with_none(
 
     assert _reason(result, "twin#s2") == "stuck"
     assert refs.index("twin#s2") < refs.index("twin#s1")
+
+
+def test_a_section_placed_by_roi_says_roi(roi_project):
+    result = mcp_module._roadmap(roi_project[0])
+
+    critical_ids = set(result["critical_path"]["sections"])
+    refs = _refs(result)
+
+    # Both sections are off the meantime path and equal on hours, reach and
+    # attempts, so their plans' ROI is what separates them — and the row says so
+    # rather than reporting reach, which releases nothing here.
+    assert "alpha#s1" not in critical_ids
+    assert _row(result, "alpha#s1")["unlocks"] == []
+    assert _reason(result, "alpha#s1") == "roi"
+    assert refs.index("alpha#s1") < refs.index("beta#s1")
+
+
+def test_a_run_blocked_for_over_a_day_marks_its_section_stuck(
+    equal_sections_project, monkeypatch
+):
+    project = equal_sections_project[0]
+    now = datetime.now(UTC)
+
+    def pointer(run_id: str, section: str, *, started: datetime) -> dict:
+        return {
+            "run_id": run_id,
+            "project": project,
+            "node": {"plan": "twin", "section": section},
+            "created_at": started.isoformat(),
+        }
+
+    monkeypatch.setattr(
+        crew_module,
+        "list_live",
+        lambda: [
+            pointer(
+                "run-long-blocked",
+                "s1",
+                started=now - timedelta(hours=30),
+            ),
+            pointer(
+                "run-briefly-blocked",
+                "s2",
+                started=now - timedelta(hours=1),
+            ),
+        ],
+    )
+    monkeypatch.setattr(
+        roadmap_module,
+        "recorded_live_run_classifications",
+        lambda _project: {
+            "run-long-blocked": {"classification": "blocked"},
+            "run-briefly-blocked": {"classification": "blocked"},
+        },
+    )
+
+    result = mcp_module._roadmap(project)
+
+    # Both runs report themselves blocked; only the one that has been blocked
+    # for longer than a day lifts its section, so the rule reads the age rather
+    # than the classification alone.
+    assert _row(result, "twin#s1")["stuck"] is True
+    assert _row(result, "twin#s2")["stuck"] is False
+    assert _reason(result, "twin#s1") == "stuck"
+    assert _refs(result).index("twin#s1") < _refs(result).index("twin#s2")

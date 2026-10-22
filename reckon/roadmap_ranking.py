@@ -27,8 +27,30 @@ _EFFORT_UNIT = "worker-hours"
 # The signal names a ranked ready row reports in its ``reason``. One vocabulary
 # for plan rows and section rows alike: a row says which signal placed it.
 CRITICAL_PATH_SIGNAL = "critical path"
+SPRINT_SIGNAL = "sprint"
+ROI_SIGNAL = "roi"
 REACH_SIGNAL = "reach"
 STUCK_SIGNAL = "stuck"
+EFFORT_SIGNAL = "effort"
+HOLD_SIGNAL = "after hold"
+
+# The signal a row reports when no term of the shared key separates it from the
+# row it is ranked above: it is ready, and nothing more specific placed it.
+READY_SIGNAL = "ready"
+
+# The signal each term of the shared key reports, in key order. A smaller value
+# leads, so the signal that placed a row is the first term on which its key is
+# smaller than the key of the row below it.
+_KEY_SIGNALS = (
+    HOLD_SIGNAL,
+    CRITICAL_PATH_SIGNAL,
+    SPRINT_SIGNAL,
+    ROI_SIGNAL,
+    REACH_SIGNAL,
+    STUCK_SIGNAL,
+    EFFORT_SIGNAL,
+    READY_SIGNAL,
+)
 
 # A section is stuck when it has been attempted twice without the attempts
 # settling, or when a run on it has been blocked for over a day. Both readings
@@ -36,10 +58,6 @@ STUCK_SIGNAL = "stuck"
 # that keeps coming back, so it leads the rows it is otherwise equal to.
 STUCK_ATTEMPT_THRESHOLD = 2
 STUCK_BLOCKED_RUN_SECONDS = 86400.0
-
-# The classification the shared classifier gives a run whose manifest reports a
-# blocker. It is what the stuck rule reads a run's age against.
-BLOCKED_RUN_CLASSIFICATION = "blocked"
 
 # A row that names no sprint is ranked after every row that names one.
 _NO_SPRINT_PLACE = 10**6
@@ -255,19 +273,33 @@ def section_ranking_key(
     )
 
 
-def ready_section_reason(*, on_critical_path: bool, stuck: bool) -> str:
-    """The placing signal a ranked section row reports.
+def leading_signal(winner: tuple[Any, ...], loser: tuple[Any, ...]) -> str:
+    """The term of the shared key on which one ranked row leads another.
 
-    A row reports the signal that put it where it is: critical-path membership
-    when the section is on the path, the stuck signal when the section is one
-    that keeps coming back, and reach otherwise.
+    A row's placing signal is the term that puts it above the row below it, so
+    the answer is the first term on which its key is smaller. Naming the key's
+    own terms is what stops a row reporting reach when ROI, sprint position or
+    another term is what actually placed it; two rows equal on every term are
+    separated by identity alone, which places nothing and reads as ready.
     """
 
-    if on_critical_path:
-        return CRITICAL_PATH_SIGNAL
-    if stuck:
-        return STUCK_SIGNAL
-    return REACH_SIGNAL
+    for index, signal in enumerate(_KEY_SIGNALS):
+        if winner[index] < loser[index]:
+            return signal
+    return READY_SIGNAL
+
+
+def section_row_floor(key: tuple[Any, ...]) -> tuple[Any, ...]:
+    """The least favourable section row key one section row's own key admits.
+
+    The last section row of a read has nothing below it to be placed above, so
+    it is measured against this floor. The terms that separate two section rows
+    from one another — reach, sprint position and ROI — carry the row's own value
+    in the floor, so only the terms a section carries outright can move it: off
+    the critical path, not stuck, and costing nothing.
+    """
+
+    return (key[0], 1, key[2], key[3], key[4], 1, 0.0, key[7])
 
 
 def rank_open_paths(

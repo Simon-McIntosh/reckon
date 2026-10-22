@@ -62,6 +62,12 @@ from reckon.lifecycle import (
     effective_status,
     unpassed_gate_blockers,
 )
+from reckon.live_run_classification import (
+    BLOCKED_RUN_CLASSIFICATION,
+    recorded_live_run_classifications,
+    run_classification,
+    run_classification_record,
+)
 from reckon.mcp_views import (
     compose_review,
     load_composed_review,
@@ -82,14 +88,14 @@ from reckon.resources import (
 )
 from reckon.roadmap_ranking import (
     _EFFORT_UNIT,
-    BLOCKED_RUN_CLASSIFICATION,
     _lift_section_edges,
     _section_effort_hours,
+    leading_signal,
     plan_ranking_key,
     rank_open_paths,
-    ready_section_reason,
     section_is_stuck,
     section_ranking_key,
+    section_row_floor,
 )
 from reckon.schedule import derive_schedule
 from reckon.sprint_liveness import sprint_liveness
@@ -2665,58 +2671,6 @@ def _plans_released_by_cleared_blockers(
     return released
 
 
-def _recorded_run_classifications(project: str) -> Mapping[str, Mapping[str, Any]]:
-    """The latest watcher event per run, as the live-run classification reads it.
-
-    One stream reduction serves every reader of a run's recorded state, so the
-    stuck signal and the recovery surfaces act on the same event rather than on
-    two parses that could disagree. A stream that cannot be read leaves every
-    run to the pointer classifier, which is the same fallback the live-run
-    partition takes.
-    """
-
-    from reckon.crew.runs import watch_stream_latest_events
-
-    try:
-        return watch_stream_latest_events(project)
-    except OSError:
-        return {}
-
-
-def _pointer_reports_blocked(
-    pointer: Mapping[str, Any],
-    classify: Callable[[Mapping[str, Any]], Mapping[str, Any]],
-    recorded: Mapping[str, Mapping[str, Any]],
-) -> bool:
-    """Whether one run reports its node blocked rather than working.
-
-    The recorded watcher event leads and the pointer classifier is the
-    fallback, which is the resolution the live-run partition applies, so a run
-    the roadmap counts as live cannot read as stuck here for a different
-    reason. The three classification keys are read in the partition's order.
-    A classifier that refuses a pointer is no reading rather than a stuck
-    section, so a refusal reads as unblocked.
-    """
-
-    recorded_event = recorded.get(str(pointer.get("run_id") or ""))
-    if recorded_event is not None:
-        classified: Mapping[str, Any] = recorded_event
-    else:
-        try:
-            classified = classify(pointer)
-        except Exception:  # noqa: BLE001 — a refusal is no reading, not a hold
-            return False
-    return (
-        str(
-            classified.get("recovery_classification")
-            or classified.get("classification")
-            or classified.get("to_state")
-            or ""
-        )
-        == BLOCKED_RUN_CLASSIFICATION
-    )
-
-
 def _blocked_section_run_seconds(
     project: str, pointers: Iterable[Mapping[str, Any]]
 ) -> dict[tuple[str, str], float]:
@@ -2730,7 +2684,7 @@ def _blocked_section_run_seconds(
 
     from reckon.crew.recovery import classify_pointer
 
-    recorded = _recorded_run_classifications(project)
+    recorded = recorded_live_run_classifications(project)
     now = datetime.now(UTC)
     seconds: dict[tuple[str, str], float] = {}
     for pointer in pointers:
@@ -2742,7 +2696,10 @@ def _blocked_section_run_seconds(
         section_ref = str(node.get("section") or "")
         if not plan_ref or not section_ref:
             continue
-        if not _pointer_reports_blocked(pointer, classify_pointer, recorded):
+        classified = run_classification_record(
+            pointer, classify=classify_pointer, recorded=recorded
+        )
+        if run_classification(classified) != BLOCKED_RUN_CLASSIFICATION:
             continue
         started = parse_utc(pointer.get("created_at"))
         if started is None:
@@ -3538,6 +3495,11 @@ def _build_roadmap(
                 f"held behind {schedule_boundary}; the schedule window starts at "
                 f"{open_sprints[0]} and spans {schedule_horizon} sprints holding open work"
             )
+        # A plan's implementable sections are enumerated once per read; the row
+        # both reports them and counts their attempts with.
+        plan_implementable = implementable_sections(
+            authored.get("section_declarations")
+        )
         row = {
             "slug": slug,
             "title": plan.get("title") or slug,
@@ -3583,16 +3545,12 @@ def _build_roadmap(
             "unlocks": sorted(dependents.get(slug, set())),
             "ready": is_ready,
             "readiness": readiness,
-            "implementable_sections": implementable_sections(
-                authored.get("section_declarations")
-            ),
+            "implementable_sections": plan_implementable,
             "section_attempts": {
                 section: attempts_by_plan.get(slug, {})
                 .get(section_record_id(section), {})
                 .get("attempts", 0)
-                for section in implementable_sections(
-                    authored.get("section_declarations")
-                )
+                for section in plan_implementable
             },
             "dependency_ready": is_ready,
             "dependency_readiness": readiness,
@@ -3807,9 +3765,6 @@ def _build_roadmap(
                     "unlocks": sorted(dependents.get(node, set())),
                     "stuck": stuck,
                     "after_hold": bool(row.get("after_hold")),
-                    "reason": ready_section_reason(
-                        on_critical_path=node in critical_sections, stuck=stuck
-                    ),
                 }
             )
     # One ordering over both populations: a plan row and a section row are ranked
@@ -3827,6 +3782,18 @@ def _build_roadmap(
         for row in section_rows
     )
     ranked.sort(key=lambda entry: entry[0])
+    # A section row reports the term of the shared key on which it leads the
+    # section row below it, so its reason names the signal that did the placing
+    # rather than the one left over once the stronger signals are absent. Plan
+    # rows keep the reason the readiness walk gives them.
+    section_entries = [entry for entry in ranked if "ref" in entry[1]]
+    for index, (key, row) in enumerate(section_entries):
+        rival = (
+            section_entries[index + 1][0]
+            if index + 1 < len(section_entries)
+            else section_row_floor(key)
+        )
+        row["reason"] = leading_signal(key, rival)
     immediate: list[dict[str, Any]] = []
     for position, (_key, row) in enumerate(ranked, start=1):
         row["order"] = position
