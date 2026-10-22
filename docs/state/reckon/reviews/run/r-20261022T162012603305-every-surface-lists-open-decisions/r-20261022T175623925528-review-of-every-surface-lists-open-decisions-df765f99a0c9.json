@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-22T18:22:50.807Z",
+  "dispatched_at": "2026-10-22T17:59:20Z",
+  "findings": [
+    {
+      "file": "reckon/roadmap.py",
+      "line": 1068,
+      "severity": "follow-on",
+      "summary": "unscoped decision rows carry no marker for whole-plan scope",
+      "text": "an open or gated decision that names no sections emits no 'sections' key at all, so the row cannot express the '(or the whole plan)' half of section 15's deliverable: a consumer of the /crew rows, including the crew page section 16 governs, cannot tell a whole-plan wait from a row whose sections field is simply absent."
+    },
+    {
+      "file": "reckon/serve.py",
+      "line": 808,
+      "severity": "follow-on",
+      "summary": "crew rows re-walk mounts instead of reading the roadmap report list",
+      "text": "_waiting_decision_rows re-walks every mounted project's plans directory and re-derives the rows from freshly parsed plan state rather than reading the roadmap report's own waiting_decisions list, so the rows are computed on two independently parsed inputs; the parity case builds one project with one plan, so a multi-project ordering or membership divergence between the remains untested."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/serve.py:3126 the /crew route response, reckon/mcp_views.py:3519 _roadmap_project_summary reaching roadmap_view(view=summary), reckon/roadmap.py:3771 _build_roadmap populating waiting_decisions.",
+    "diff": "read commit by commit against base 9a9492e0a38ed30092b4e01cb3ff67d36a410bd3 to head df765f99a0c92098c4886ed42bfa1ca054b6f400; 496fdf6a adds the waiting_context option, the waiting_decisions report list, the summary key and the /crew rows, df765f99 adds the evidence fragment.",
+    "done_when": "the done_when names the delta over the eighteen-file gate plus the parity of the two surfaces at base and head; the manifest records base 10 failed/197 passed and head 6 failed/201 passed, all six head failures present in the base arm, so the delta is four fixed and zero added.",
+    "goal": "the node's goal is to serve one derivation of the open decisions through the roadmap summary and the /crew payload; reckon/mcp_views.py:3519 attaches waiting_decision_rows(raw) as open_decisions and reckon/serve.py:3126 attaches _waiting_decision_rows(mounts, project) to the /crew response, both reading the roadmap's _decision_rows derivation.",
+    "manifest": "read the reviewed run's manifest.md; it records status complete, the two commits, both gate logs under the run directory, and the negative-control log.",
+    "write_paths": "read the manifest's declared write paths (reckon/roadmap.py, reckon/mcp_views.py, reckon/serve.py, the new test, the evidence fragment); every path in the diff lies inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_every_surface_lists_open_decisions.py:154 asserts summary_rows == crew_rows, comparing two independent code paths (the roadmap report versus serve._crew_plan_state), and the recorded negative control reddens on removing the summary key; it does not show the parity comparison catching a same-shape divergence, since the control raises KeyError instead.",
+    "evidence": "both gate arms are recorded in the reviewed run's manifest with revision, failure_ids and an EXIT= log line, and the head arm ran at 496fdf6a70efa5908251a7c84ff029566e465aa4 (the code commit) rather than the manifest head df765f99, whose only added content is the evidence fragment.",
+    "fit": "reckon/roadmap.py:1096 and reckon/serve.py:698 follow the surrounding module idiom and name mechanisms rather than plan labels, though waiting_decision_rows (reckon/roadmap.py:1109) and _waiting_decision_rows (reckon/serve.py:808) differ only by a leading underscore.",
+    "goal_fidelity": "reckon/mcp_views.py:3519-3520 exposes the derived rows as the summary view's open_decisions and its count, and reckon/serve.py:3126 carries the same rows on /crew, the goal's two named surfaces.",
+    "reuse": "the row derivation extends its owner reckon/roadmap.py:_decision_rows with the waiting_context option rather than forking it, but reckon/serve.py:808 duplicates the fleet-wide mount walk _build_roadmap already performs, and reckon/mcp_views.py:2495 already owns a narrower enumerate-a-plan's-open-decisions helper.",
+    "scope_discipline": "git diff 9a9492e0a..df765f99a --stat shows only reckon/roadmap.py, reckon/mcp_views.py, reckon/serve.py, tests/test_every_surface_lists_open_decisions.py and the evidence fragment, all within the declared write paths."
+  },
+  "notes": "Reviewed at base 9a9492e0a and head df765f99a. The reviewed run's worktree was already removed; the diff, the test and the evidence fragment were read from the shared object store via git show at those revisions. No test was re-run; the verdict rests on the artefacts and the recorded gate logs.",
+  "project": "reckon",
+  "review_run_id": "r-20261022T175623925528-review-of-every-surface-lists-open-decisions-df765f99a0c9",
+  "reviewed_base_sha": "9a9492e0a38ed30092b4e01cb3ff67d36a410bd3",
+  "reviewed_head_sha": "df765f99a0c92098c4886ed42bfa1ca054b6f400",
+  "reviewed_run_id": "r-20261022T162012603305-every-surface-lists-open-decisions",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T18:48:01.097653+00:00",
+  "total": 103
+}
