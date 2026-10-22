@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs, since manifest.md leaves baseline_suite and after_suite empty: base arm logs/wider-arm-base.log is '7 failed, 398 passed' EXIT=1 and head arm logs/wider-arm-head.log is '2 failed, 403 passed' EXIT=1; the two head ids (tests/test_follower_freshness.py::test_running_follower_reloads_without_stream_or_registration_gap and tests/test_one_check_trusts_a_moved_checkout.py::test_a_clean_moved_checkout_answers_on_the_current_code) both appear in the base arm's seven, so head-minus-base is empty and zero ids are added. The base arm's seven also carry the node's own new test reddening as its negative control, which is green at head (logs/... repair-head-focus.log, 4 passed EXIT=0).",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:_follow_watch_lines (def 1356, calls _fleet_replay at 2290 and _follow_gap_rows at 2234)",
+    "reckon/crew_follow_commands.py:3060 (_follow_watch_lines follow loop)",
+    "reckon/cli.py:302 (re-exports _fleet_replay)"
+  ],
+  "completed_at": "2026-10-22T09:24:27.534Z",
+  "dispatched_at": "2026-10-22T09:05:22Z",
+  "findings": [
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "1294",
+      "text": "follow-on: the pane's restored memory is seeded with no duty (reckon/crew_follow_commands.py:1230) and 'duty is None' makes the suppression fall back to word equality, so a replayed baseline whose word repeats but whose duty changed since the checkpoint is dropped; the changed-duty guarantee docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-reload-replay-prints-no-self-transition.html states holds only for rows delivered inside one replay, and tests/test_a_reload_replay_prints_no_self_transition.py:176 sidesteps it by placing the run's transition in the same stream."
+    },
+    {
+      "file": "logs/wider-arm-head.log",
+      "line": "1",
+      "text": "follow-on: the wider arm the done-when names was rebuilt from 58e11382f, so the repair commit 6e091764a, which changed reckon/crew_follow_commands.py by 98 lines, is covered only by the focus file and the 'no added failure against a base arm' claim is not measured at the revision being promoted, fa067f5ef."
+    },
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "1251",
+      "text": "follow-on: _pane_shown_memory re-lists the duty fields that reckon/crew/ticker.py declares_a_wait and _actionable_recovery already select (wait_condition_state, wait_overdue, expected_horizon_seconds, recovery_classification) rather than reading them through the owner, so a field added to the ticker's news evidence would not be compared here and the replay would silently drift from the live row path it claims to match."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read the three commits against base 08b02ee48: 58e11382f adds the suppression and its test, 6e091764a shares one predicate with _follow_gap_rows and compares the duty, fa067f5ef records the fragment; +389/-5 lines across three files.",
+    "done_when": "the done-when names tests/test_a_reload_replay_prints_no_self_transition.py and two arms; the manifest records the focus file green at head (logs/repair-head-focus.log, 4 passed EXIT=0; re-run by this reviewer, 4 passed), the control red (logs/negative-control-repair-reverted.log, 2 failed 2 passed EXIT=1), and the wider arms logs/wider-arm-base.log (7 failed, 398 passed) and logs/wider-arm-head.log (2 failed, 403 passed), which is the measure, though the head arm is at 58e11382f rather than the landed head.",
+    "goal": "the node goal is to make the follower print no row for a replayed baseline that repeats the state the pane last showed; reckon/crew_follow_commands.py:1234 drops such a baseline through _replayed_row_repeats_the_pane while a first sighting, a change of word, and every transition still print, so the goal is met.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T031347119295-a-reload-replay-prints-no-self-transition/manifest.md; status complete, commits 58e11382f 6e091764a fa067f5ef, the 3-rows-to-2-rows measure and eight named logs, but baseline_suite and after_suite are empty so the arm counts are readable only from the logs.",
+    "write_paths": "read the manifest's declared paths (reckon/crew_follow_commands.py, reckon/crew/follower_reload.py, tests/test_a_reload_replay_prints_no_self_transition.py, one evidence fragment, a figures dir); git diff --stat 08b02ee48..fa067f5ef changes reckon/crew_follow_commands.py, tests/test_a_reload_replay_prints_no_self_transition.py and the fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_reload_replay_prints_no_self_transition.py:176 fails when the duty comparison at reckon/crew_follow_commands.py:1294 is reverted and :99 fails when the suppression is removed, but the seeded-memory path at :1230 is not exercised.",
+    "evidence": "tests/test_a_reload_replay_prints_no_self_transition.py is green at head (logs/repair-head-focus.log, 4 passed EXIT=0, re-run by the reviewer) and its control reddens (logs/negative-control-repair-reverted.log, 2 failed EXIT=1), but logs/wider-arm-head.log names revision 58e11382f, not the landed head fa067f5ef.",
+    "fit": "the helpers at reckon/crew_follow_commands.py:1251 and :1270 follow the module's underscore-prefixed, lazily-imported idiom and the extra blank lines around _FOLLOW_REATTACH_FRAME were removed.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:1234 drops a baseline whose word equals the pane's shown state and admits a first sighting, a changed word and every transition, matching the goal.",
+    "reuse": "one predicate is shared by both callers (reckon/crew_follow_commands.py:1234 and :1347) and ticker.is_baseline is reused, but :1251 re-lists ticker's duty fields instead of reading them through their owner.",
+    "scope_discipline": "git diff --stat 08b02ee48..fa067f5ef lists exactly the three declared paths and nothing outside them."
+  },
+  "node": "review-of-a-reload-replay-prints-no-self-transition-fa067f5ef9ea",
+  "node:reviewed": "a-reload-replay-prints-no-self-transition",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the follower print no row for a replayed baseline that repeats the state the pane last showed; reckon/crew_follow_commands.py:1234 drops such a row via _replayed_row_repeats_the_pane while a first sighting, a change of word, and every transition still print.\nVERDICT done_when: the done-when names tests/test_a_reload_replay_prints_no_self_transition.py and the two arms; the manifest records the focus file green at head (logs/repair-head-focus.log, 4 passed EXIT=0; re-run by this reviewer, 4 passed) and the negative control red (logs/negative-control-repair-reverted.log, 2 failed 2 passed EXIT=1), and the wider arms (logs/wider-arm-base.log 7 failed/398 passed, logs/wider-arm-head.log 2 failed/403 passed) are the measure it names, though measured at 58e11382f rather than the landed head.\nVERDICT write_paths: read the manifest's declared paths; git diff --stat 08b02ee48..fa067f5ef lists only reckon/crew_follow_commands.py, tests/test_a_reload_replay_prints_no_self_transition.py and the evidence fragment, all inside the declared scope.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T031347119295-a-reload-replay-prints-no-self-transition/manifest.md; status complete, commits 58e11382f 6e091764a fa067f5ef, with the 3-rows-to-2-rows measure and eight named logs, but baseline_suite and after_suite are empty so the arm results are readable only from the logs it names.\nVERDICT diff: read commit by commit against base 08b02ee48: 58e11382f adds the suppression, its helper and the test; 6e091764a shares the predicate with _follow_gap_rows, compares the duty, advances the memory for every delivered row and fixes the blank-line idiom; fa067f5ef records the evidence fragment.\nCALL_SITES: reckon/crew_follow_commands.py:_follow_watch_lines (def 1356, calls _fleet_replay at 2290 and _follow_gap_rows at 2234), reckon/crew_follow_commands.py:3060 (_follow_watch_lines follow loop), reckon/cli.py:302 (re-exports _fleet_replay)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:1234 drops a baseline whose word equals the pane's shown state and admits a first sighting, a changed word and every transition, matching the goal.\nSCORE evidence: 14\nJUSTIFICATION evidence: tests/test_a_reload_replay_prints_no_self_transition.py is green at head (logs/repair-head-focus.log, 4 passed EXIT=0, re-run by the reviewer) and its control reddens (logs/negative-control-repair-reverted.log, 2 failed EXIT=1), but logs/wider-arm-head.log names revision 58e11382f, not the landed head fa067f5ef.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 08b02ee48..fa067f5ef lists exactly the three declared paths and nothing outside them.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_reload_replay_prints_no_self_transition.py:176 fails when the duty comparison at reckon/crew_follow_commands.py:1294 is reverted and :99 fails when the suppression is removed, but the seeded-memory path at :1230 is not exercised.\nSCORE fit: 17\nJUSTIFICATION fit: the helpers at reckon/crew_follow_commands.py:1251 and :1270 follow the module's underscore-prefixed, lazily-imported idiom and the extra blank lines around _FOLLOW_REATTACH_FRAME were removed.\nSCORE reuse: 14\nJUSTIFICATION reuse: one predicate is shared by both callers (reckon/crew_follow_commands.py:1234 and :1347) and ticker.is_baseline is reused, but :1251 re-lists ticker's duty fields instead of reading them through their owner.\nFINDING reckon/crew_follow_commands.py:1294 follow-on: the pane's restored memory is seeded with no duty (reckon/crew_follow_commands.py:1230) and duty is None makes the suppression fall back to word equality, so a replayed baseline whose word repeats but whose duty changed since the checkpoint is dropped - the changed-duty guarantee docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-reload-replay-prints-no-self-transition.html states holds only for rows delivered inside one replay, and tests/test_a_reload_replay_prints_no_self_transition.py:176 sidesteps it by placing the run's transition in the same stream.\nFINDING logs/wider-arm-head.log:1 follow-on: the wider arm the done-when names was rebuilt from 58e11382f, so the repair commit 6e091764a - which changed reckon/crew_follow_commands.py by 98 lines - is covered only by the 4-test focus file and the 'no added failure against a base arm' claim is not measured at the revision being promoted, fa067f5ef.\nFINDING reckon/crew_follow_commands.py:1251 follow-on: _pane_shown_memory re-lists the duty fields that reckon/crew/ticker.py declares_a_wait and _actionable_recovery already select (wait_condition_state, wait_overdue, expected_horizon_seconds, recovery_classification) rather than reading them through the owner, so a field added to the ticker's news evidence would not be compared here and the replay would silently drift from the live row path it claims to match.",
+  "review_run_id": "r-20261022T090257034759-review-of-a-reload-replay-prints-no-self-transition-fa067f5ef9ea",
+  "reviewed_base_sha": "08b02ee48ecdd23edf3c09c47d8ddf496a195e22",
+  "reviewed_head_sha": "fa067f5ef9ea1ca2155462e168f00b53bb2d0ed1",
+  "reviewed_run_id": "r-20261022T031347119295-a-reload-replay-prints-no-self-transition",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T09:25:00+00:00",
+  "total": 99
+}
