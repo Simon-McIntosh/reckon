@@ -1482,6 +1482,35 @@ def synthesize_evidence(project, plan_slug, checkout_path):
 
 
 
+def _print_roadmap_brief(result: dict, project: str, since: str | None) -> None:
+    """Print the brief composed from one report, or one per portfolio project.
+
+    A portfolio read carries one report per project, and each composes its own
+    brief; the project key a report names is the one the brief prints, so a
+    portfolio runs without a second scan.
+    """
+
+    from reckon.project_brief import project_brief
+
+    reports = (
+        [report for report in result.get("projects", []) if report.get("ok", True)]
+        if project == "*"
+        else [result]
+    )
+    for index, report in enumerate(reports):
+        if index:
+            click.echo()
+        try:
+            brief = project_brief(
+                str(report.get("project") or project), since, payload=report
+            )
+        except ValueError as exc:
+            # The composition refused rather than truncated, so the reader gets
+            # the reason on the error channel instead of a traceback.
+            raise click.ClickException(str(exc)) from exc
+        click.echo(brief.text)
+
+
 def _print_roadmap_report(report: dict) -> None:
     project = report.get("project", "")
     completion = report.get("completion", {})
@@ -1524,8 +1553,23 @@ def _print_roadmap_report(report: dict) -> None:
 )
 @click.option("--max-paths", default=5, show_default=True, type=click.IntRange(1, 50))
 @click.option("--json-output", is_flag=True, help="Emit the lossless JSON report.")
-def roadmap(project, sprint, checkout_path, max_paths, json_output):
+@click.option(
+    "--brief",
+    is_flag=True,
+    help="Print the one-page brief composed from the report instead of the report.",
+)
+@click.option(
+    "--since",
+    default=None,
+    help="With --brief, also report what moved after this ISO timestamp.",
+)
+def roadmap(project, sprint, checkout_path, max_paths, json_output, brief, since):
     """Show pending work, blockers, sprint progress, and critical paths."""
+
+    if since and not brief:
+        raise click.UsageError(
+            "--since describes a change window, and only --brief reads one"
+        )
 
     from reckon.mcp import _roadmap
 
@@ -1539,6 +1583,9 @@ def roadmap(project, sprint, checkout_path, max_paths, json_output):
         raise click.ClickException(str(result.get("detail") or result.get("error")))
     if json_output:
         click.echo(json.dumps(result, indent=2))
+        return
+    if brief:
+        _print_roadmap_brief(result, project, since)
         return
     if project == "*":
         portfolio = result.get("portfolio", {})
