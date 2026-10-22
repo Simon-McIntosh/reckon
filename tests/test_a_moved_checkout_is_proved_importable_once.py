@@ -25,7 +25,7 @@ import pytest
 
 from reckon import checkout_trust
 from reckon import crew_follow_commands as follow
-from reckon.crew import runs
+from reckon.crew import follower_reload, runs
 
 TREE_ID = "a" * 40
 OTHER_TREE_ID = "b" * 40
@@ -272,7 +272,7 @@ def _time_out(monkeypatch):
 def test_the_timeout_retry_wait_carries_jitter(reloader, monkeypatch):
     instance, clock = reloader
     _time_out(monkeypatch)
-    monkeypatch.setattr(follow.random, "uniform", lambda low, high: high * 0.5)
+    monkeypatch.setattr(follower_reload.random, "uniform", lambda low, high: high * 0.5)
 
     instance.poll({})
 
@@ -304,7 +304,7 @@ def test_the_jitter_spreads_two_followers_that_timed_out_together(
     def draw(low, high):
         return high * next(draws)
 
-    monkeypatch.setattr(follow.random, "uniform", draw)
+    monkeypatch.setattr(follower_reload.random, "uniform", draw)
 
     instance.poll({})
     first_gap = instance.probe_retry_gap
