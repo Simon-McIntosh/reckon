@@ -327,9 +327,10 @@ PANE_STATES = {
 #
 # A line the follower prints reaches its coordinator through the session host as
 # a notification that starts a turn, so the stream carries a row only when it
-# names something only the coordinator can do next. Six kinds qualify, and each
-# lands a run in one of the two pane words below, is a limit reset, or is the
-# follower's own end:
+# names something only the coordinator can do next. Eight kinds qualify. Six
+# land a run in one of the two pane words below, or are a limit reset or the
+# follower's own end; the last two are carried by their own facts, because
+# neither lands a run in a word the stream can read off the row:
 #
 #   delivered      a run of this session delivered and unpromoted;
 #   halted         a run halted, which is blocked, failed, stalled, or carried
@@ -341,6 +342,13 @@ PANE_STATES = {
 #                  halted as above with a blocking finding or a dimension below
 #                  the floor;
 #   limit-reset    a limit reset reaching this session;
+#   lift           a budget lift granted or ending that covers the session,
+#                  drawn once per pane as it already is: the lead grants a lift
+#                  in one session and relies on every session hearing it, so a
+#                  coordinator can dispatch to the lane it opens and stop when
+#                  it ends;
+#   declared-wait  a wait a worker addresses to the coordinator, read from the
+#                  declaration's own facts rather than from the state word;
 #   follower-end   the follower ending with no session host to take over.
 #
 # Every other row stays in ``crew view`` and the pane's history and is not
@@ -1190,17 +1198,21 @@ def stream_carries(event: Mapping[str, Any]) -> bool:
     A carried line names something only the coordinator can do next: a run
     delivered and unpromoted, a run halted (a queued run refused at launch and a
     review finding that needs the coordinator land these same words), a limit
-    reset, or the follower's own end. A row about anything else — a launch, a
-    ``working`` or ``waiting`` transition, a ``landed`` or ``dropped`` row the
-    coordinator's own merge or discard caused, a re-arm baseline, a reload notice
-    — carries no such duty, so it is left to ``crew view`` and the pane's
-    history and is not printed.
+    reset, a budget lift granted or ending that covers the session, a declared
+    wait a worker addresses to the coordinator, or the follower's own end. A row
+    about anything else — a launch, a ``working`` or ``waiting`` transition, a
+    ``landed`` or ``dropped`` row the coordinator's own merge or discard caused,
+    a re-arm baseline, a reload notice — carries no such duty, so it is left to
+    ``crew view`` and the pane's history and is not printed.
 
     This is the rule the row policy applies to every row it would release, and
     the rule the follower's summary lines read before naming anything, stated
     once here so the stream and the summaries cannot disagree about what is news.
     """
-    if str(event.get("to_state") or "") == LIMIT_RESET:
+    to_state = str(event.get("to_state") or "")
+    if to_state == LIMIT_RESET or to_state in LIFT_STATES:
+        return True
+    if declares_a_wait(event):
         return True
     return _pane_word(event) in CARRIED_PANE_WORDS
 
