@@ -255,6 +255,83 @@ def test_a_runs_row_omits_an_empty_field(fleet: Path) -> None:
     assert "worktree" not in committed[0], committed[0]
 
 
+# ── a view's fields are its own, not the ones its rows happen to hold ───────
+
+
+def test_obligations_accepts_its_fields_when_nothing_is_acknowledged(
+    fleet: Path,
+) -> None:
+    """The two duty lists are one vocabulary, however empty either of them is.
+
+    The fixture owes one duty and has acknowledged none, which is the ordinary
+    case: a view whose accepted fields collapsed to what the lists in hand carry
+    would refuse ``kind`` on the strength of the empty list.
+    """
+
+    payload = serve_crew_view(
+        "obligations",
+        project=PROJECT,
+        session=SESSION,
+        checkout_path=str(fleet),
+        fields=["kind", "age_seconds"],
+    )
+    assert payload.get("ok") is True, payload
+    assert payload["acknowledged"] == []
+    rows = payload["obligations"]
+    assert rows, payload
+    assert rows[0]["kind"] == "needs-help"
+    assert rows[0]["age_seconds"] == 0
+    assert set(rows[0]) <= {"run_id", "node", "plan", "section", "kind", "age_seconds"}
+
+
+def test_directory_accepts_a_field_the_unowned_list_cannot_carry(fleet: Path) -> None:
+    """A coordinator row's own fields are the view's, though no run is unowned.
+
+    Every run in the fixture belongs to a session, so ``unowned_runs`` is empty;
+    ``phase`` rides only the coordinator's rows, and asking for it must not be
+    refused on the strength of the list that cannot carry it.
+    """
+
+    payload = serve_crew_view(
+        "directory", project=PROJECT, checkout_path=str(fleet), fields=["phase"]
+    )
+    assert payload.get("ok") is True, payload
+    assert payload["unowned_runs"] == []
+    rows = payload["coordinators"][0]["runs"]
+    assert rows, payload
+    assert rows[0]["phase"] == "blocked"
+    assert set(rows[0]) <= {"run_id", "node", "plan", "section", "phase"}
+
+
+def test_a_narrowed_runs_row_still_answers_the_views_own_filters(
+    fleet: Path,
+) -> None:
+    """A request that narrows the row does not narrow what the filters read.
+
+    The runs view filters on ``classification`` and ``resumable`` before the row
+    is projected, so a build narrowed to the request would answer every such
+    filter with an absent key and list nothing. The fixture's run is blocked and
+    is not resumable, so both filters must keep it — and a filter naming a
+    classification the run does not carry must still drop it.
+    """
+
+    matched = _run_rows(
+        _view_call("runs", fleet, fields=["section"], classification="blocked")
+    )
+    assert matched, "the classification filter dropped the run it names"
+    assert matched[0]["section"] == CANONICAL_SECTION
+
+    resumable = _run_rows(
+        _view_call("runs", fleet, fields=["section"], resumable=False)
+    )
+    assert resumable, "the resumable filter dropped the run it names"
+
+    dropped = _run_rows(
+        _view_call("runs", fleet, fields=["section"], classification="promotable")
+    )
+    assert dropped == [], dropped
+
+
 # ── a row-level dependency states the section's own condition ───────────────
 
 _LEDGER_PROJECT = "beta"
