@@ -1,0 +1,39 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T14:46:43.722Z",
+  "dispatched_at": "2026-10-22T14:29:30Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-legacy-section-adopts-its-record.html:35",
+      "id": "done_when-1",
+      "reason": "the node is told to implement exactly as written, so it would either run control (2) in this fixture and record a green control that exercises the opposite behaviour, or silently extend the fixture with an `s2` heading; the plan should move control (2) to `tests/test_audit_doc_section_contract.py`, whose fixture already carries `s1` with a record and `s2` without, or say that the new case must add a second heading.",
+      "text": "control (2) says \"submit the default example instead; it is refused with `already exists`\", but the case is placed in `tests/test_record_attaches_to_existing_section.py`, whose fixture holds one heading, `_HEADING = '<h2 id=\"s1\">\u00a71 \u2014 Existing work</h2>'` (tests/test_record_attaches_to_existing_section.py:32), while the default example's id is `s2` (the plan states this in control (1)); with no `s2` heading the append is not refused \u2014 it succeeds and writes a second heading, measured against the worktree at 621d37d3c: appending the default item to that fixture printed `RESULT: default example SUCCEEDED (no already-exists refusal)` and left headings `['<h2 id=\"s1\">\u00a71 \u2014 Existing work</h2>', '<h2 id=\"s2\">Implement and verify</h2>']`, and the same script with an `s2` heading added printed `RESULT: refused -> OpError section id 's2' already exists`",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "dfe4a85de350f8f039fef1226adb8abb6c60d01ea94b8037a6cd518582bef8a6",
+  "plan_slug": "a-legacy-section-adopts-its-record",
+  "plan_version": 4,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T142541408989-plan-review-of-a-legacy-section-adopts-its-record",
+  "reviewed_blob_sha": "e48b4c6cfb796b681211b79c8032bafe3007a3aa",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_section_contract_findings` (reckon/doccheck.py:1390), `_section_contract_refusal` and `_carries_authored_prose` (reckon/_store.py:1671, :1728), the body-less append doc (reckon/mcp.py:1752) and the four named test files all resolve, the commit `e88cec99d` resolves and is the one that gave `the-page-paints-from-an-index` \u00a77 its record (docs/plans/the-page-paints-from-an-index.html:186-187), and `the-page-paints-from-an-index` exists.",
+    "done_when": "a finding \u2014 \u00a71's done-when names three controls, but control (2)'s claimed refusal cannot occur in the fixture it names.",
+    "evidence_paths": "pass \u2014 each log sits under the run directory with a revision header and an `EXIT=` terminator, and suites are pinned to the fleet allocation rather than the login node.",
+    "naming": "pass \u2014 the section names mechanisms and symbols (`_carries_authored_prose`, `section id '<id>' already exists`) with no plan labels, stage names, ticket numbers or version tags in code.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited evidence (the one fixed example carries a `body`, `_carries_authored_prose` therefore routes it to authoring a heading, and the refusal is `section id {id!r} already exists` at reckon/_store.py:944); the mechanism produces the done-when, since a body-less item for an existing heading is validated by `_new_section_record`, skips `_queue_authored_section` and lands in `sections` (reckon/_store.py:3037-3052); and it runs on the real path, with the caller named \u2014 `_section_contract_findings` is called with `html_text` at reckon/doccheck.py:1672, so the heading's text is in scope for the item the finding builds.",
+    "single_goal": "pass \u2014 \u00a71 declares one deliverable: `_section_contract_refusal` gains an optional item, and the `section-without-contract` finding passes a body-less one.",
+    "wiring": "pass \u2014 `plan-blocks` names `the-page-paints-from-an-index` and `plan-informs` names `section-contract-and-computed-impl`, both of which exist; the section carries no dependency it needs and none of the declaration edges points at a node that cannot act on it."
+  },
+  "section_digests": {
+    "_document": "780ba575ef9a66537d32712d9389e6ac0aaf472f91dd1f5ab4bfb8211e21cd65",
+    "s1": "e39529e0112507d5f1fb930edf5ff41d05b4c9d77d725a154c2a08b58b8ebd47"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T14:50:54.036353+00:00"
+}
