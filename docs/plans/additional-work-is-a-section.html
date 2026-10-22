@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="Work found beyond a node becomes a plan section or goes into the dispatching prompt; reckon stops writing a deferred-work bucket in reviews, manifests or plans">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
-  <meta name="plan-effort-hours" content="10">
+  <meta name="plan-effort-hours" content="10.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-reasoning" content="standard">
@@ -25,7 +25,7 @@
   <title>Additional Work Is A Section | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-10-22">
 </head>
 <body>
@@ -44,7 +44,7 @@
     <h2 id="s2">§2 — A review finding is blocking or non-blocking</h2>
 <section data-reckon="section" data-id="s2" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
     <p><strong>Deliverable.</strong> A finding's severity is <code>blocking</code> or <code>non-blocking</code>. The review prompts (<code>reckon/crew/prompts/review.md</code>, <code>reckon/crew/prompts/figure_review.md</code>) teach those two words. <code>FINDING_SEVERITIES</code> and <code>NON_BLOCKING_SEVERITIES</code> name them, and so does every refusal or report message that names a severity, in <code>reckon/crew/reports.py</code>, <code>reckon/crew/repair.py</code>, <code>reckon/crew/findings.py</code> and <code>reckon/crew/review_lifecycle.py</code>. <code>repair.follow_on_findings</code> takes a name for what it returns, such as <code>non_blocking_findings</code>.</p>
-    <p>The prompts say what a non-blocking finding is for: the coordinator answers it with a section, with a fold into the node's next prompt, or with an exemption that states its reason, the three dispositions <code>crew dispose</code> already records. A stored review that says <code>follow-on</code> still reads as <code>non-blocking</code>. The reader maps the old word on the way in and never writes it back.</p>
+    <p>The prompts say what a non-blocking finding is for, in the two dispositions <code>crew dispose</code> already records, from the closed set <code>DIMENSION_DISPOSITION_KINDS = ("folded", "exempted")</code> (<code>reckon/crew/review.py</code>, near line 3426). <code>folded</code> names the node that carries the work. That is either the next dispatch, whose prompt the coordinator writes the work into, or the node a new plan section dispatches. <code>exempted</code> states why the finding is not acted on. A new section is answered by folding into its node, so no disposition kind is added and the closed set is unchanged. A stored review that says <code>follow-on</code> still reads as <code>non-blocking</code>. The reader maps the old word on the way in and never writes it back.</p>
     <p><strong>Done when</strong> <code>tests/test_a_finding_is_blocking_or_non_blocking.py</code> holds all of these:</p>
     <ul>
       <li>a review report whose findings say <code>non-blocking</code> is stored and read with that severity, and the repair reflex composes no repair from it;</li>
@@ -63,12 +63,12 @@
       <li>a manifest written with the old key reads the same way;</li>
       <li>the worker prompt carries the new field and the rule, and not the old word.</li>
     </ul>
-    <p>Negative control: restore the followup conversion, and the first case finds a followup written. The gate runs the new test with every test file the census lists for the manifest field and the ledger key, at base and at head, judged by delta. Write paths: the modules named above, <code>tests/test_work_outside_scope_returns_to_the_coordinator.py</code>, <code>docs/evidence/fragments/additional-work-is-a-section/work-outside-scope-returns-to-the-coordinator.html</code>. Other test files are granted from the failure ids the worker reports.</p>
+    <p>Negative control: restore the followup conversion, and the first case finds a followup written. The gate runs the new test with every test file the census lists for the manifest field and the ledger key, at base and at head, judged by delta. The two comment-only sites the census found outside every list also take the new wording: <code>reckon/crew/promotion_release.py</code> (near line 131) and <code>reckon/crew/promotion_records.py</code> (near line 126). Write paths: the modules named above, those two, <code>tests/test_work_outside_scope_returns_to_the_coordinator.py</code>, <code>docs/evidence/fragments/additional-work-is-a-section/work-outside-scope-returns-to-the-coordinator.html</code>. Other test files are granted from the failure ids the worker reports.</p>
     <p><strong>Sequence.</strong> This section runs after §2, because both write <code>reckon/crew/reports.py</code>, and after the-suite-is-green-at-head §32, which is splitting <code>reckon/ledger.py</code>.</p>
 
     <h2 id="s4">§4 — A plan write carrying the bucket's language is refused</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> The plan store refuses a write that adds the term <code>follow-on</code>, or its plural, to a plan's prose. That covers a new plan through <code>edit_plan</code>'s create, a new section through <code>insert_section</code>, a text-mode edit, and a section body. The refusal names the rule, that additional work is a section or a prompt, and quotes the offending fragment. The term inside a <code>&lt;code&gt;</code> element is a citation of a symbol, not a bucket, so it is allowed. Text already in a plan is never refused. Only the fragment a write adds is checked, so editing an old plan stays possible. <code>reckon audit-doc</code> reports the term in prose as a warning on any plan.</p>
+    <p><strong>Deliverable.</strong> The plan store refuses a write that adds the term <code>follow-on</code>, or its plural, to a plan's prose. That covers a new plan through <code>edit_plan</code>'s create, a new section through <code>insert_section</code>, a text-mode edit, and a section body. The refusal names the rule, that additional work is a section or a prompt, and quotes the offending fragment. The term inside a <code>&lt;code&gt;</code> element is a citation of a symbol, not a bucket, so it is allowed. Text already in a plan is never refused. Only the fragment a write adds is checked, so editing an old plan stays possible. <code>reckon audit-doc</code> reports the term in prose as a warning on any plan.</p><p>The check extends the one predicate every authoring path already shares: <code>_forged_plan_structure</code> and <code>_refuse_forged_body_structure</code> (<code>reckon/_store.py</code>, near lines 899 and 924). <code>reckon/_store_section_ops.py</code>'s <code>_refuse_forged_structure</code> imports that predicate, so <code>insert_section</code>, <code>append_evidence</code> and section-body writes refuse the same fragments. No fourth check is written beside it. The prose it reads, with <code>&lt;code&gt;</code> and <code>&lt;pre&gt;</code> left out, comes from the reader that already owns that: <code>reckon/doccheck.py</code>'s <code>_prose_text</code> (near line 384) for <code>audit-doc</code>, and <code>reckon/_plan_html.py</code>'s <code>section_prose</code> (near line 474) for the store. Neither is copied.</p><p>On the interface: the refusal is one more reason inside the forged-body refusal family, so it adds no family code. The <code>audit-doc</code> check is one new warning kind. It retires nothing, and this section is where it is accounted for.</p>
     <p><strong>Done when</strong> <code>tests/test_a_plan_write_refuses_the_bucket.py</code> holds all of these:</p>
     <ul>
       <li>a section inserted with the term in its prose is refused, naming the rule;</li>
@@ -85,14 +85,13 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-awias-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-22" data-recommends-skill="/reckon-build additional-work-is-a-section">
-    <h4 class="r-fu-title">Build the four sections once the plan's reviews are answered</h4>
+<article class="r-fu" data-id="f-awias-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-22" data-recommends-skill="/reckon-build additional-work-is-a-section" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build the four sections once the plan&#x27;s reviews are answered</h4>
     <div class="r-fu-body"><p>The plan is written and owes a design review and a content review. §2 and §4 can run in parallel. §3 follows §2 and the-suite-is-green-at-head §32, and §5 runs last.</p></div>
     <pre class="r-fu-prompt">/reckon-build additional-work-is-a-section</pre>
     </article>
 </section>
-  <section data-reckon="comments" id="comments" class="r-comments">
-</section>
+  
   </main>
 </body>
 </html>
