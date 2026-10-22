@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/repair.py:125 review_findings parses a review's raw_text through parse_review with no required check set",
+    "reckon/crew/reports.py:1921 _unmarked_findings_in_record parses a review's raw_text through parse_review with no required check set"
+  ],
+  "completed_at": "2026-10-22T01:17:11.821Z",
+  "dispatched_at": "2026-10-22T01:06:52Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "780",
+      "severity": "blocking",
+      "text": "blocking: parse_review gains review_checks as the required set that makes an omitted check leave the record incomplete (review.py:965-966, 1018), but no production caller passes it \u2014 the only two callers, repair.py:125 and reports.py:1921, call parse_review with the defaults \u2014 so the guard the node goal and plan \u00a75 promise never runs in production; a reviewer that ignores a declared check still delivers a record the delivery contract accepts as complete."
+    },
+    {
+      "file": "reckon/crew/recovery_review_subject.py",
+      "line": "549",
+      "severity": "follow-on",
+      "text": "follow-on: _declared_check_block renders f'  {check.id}: {check.question}' for the review brief, duplicating the identical per-check line rendered for review_checks by render_domain_rules at reckon/crew/prompts.py:407; the two spellings can drift, which is the defect plan \u00a79 exists to remove."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit: 78268a3d6 adds the declared-check block to the review brief composer and the required-set handling to parse_review, and e6c35bde9 adds the evidence fragment; both are inside the declared write paths.",
+    "done_when": "The done_when is the four measures in tests/test_a_review_answers_the_domain_checks.py; the manifest records the eight-file gate at base 6 failed/48 passed and head 54 passed, and the negative-control log records the block dropped from the composed prompt as 3 failed/3 passed.",
+    "goal": "The node goal is to hold a review to a verdict on every declared domain check its node touches; reckon/crew/recovery_review_subject.py:543-553 now composes a 'Declared review checks this node touches' block naming exactly the checks rules_for matches, and reckon/crew/review.py:780 accepts the check ids as a required set, but no production caller supplies that set, so the hold fires only where a test supplies it.",
+    "manifest": "a-review-answers-the-domain-checks/manifest.md is complete: commits 78268a3d6 and e6c35bde9, changed_paths inside the declared scope, baseline_suite and after_suite carrying the gate command and revision, and a negative_control_log whose first line and EXIT=1 line are present; its follow_ons name the delivery-contract gap left open.",
+    "write_paths": "The brief grants review.py, recovery_review_subject.py, the new test file, the evidence fragment and a figures directory; git diff 607718a36..e6c35bde9 changes exactly the first four and touches no path outside them; no figure was written, which the done-when does not name."
+  },
+  "justifications": {
+    "durability": "tests/test_a_review_answers_the_domain_checks.py:104-132 fails if parse_review drops the review_checks required set (status would read parsed and item_aggregate would omit the checks), and the base arm at 607718a36 reddens all six new tests, so the guard is shown to fail rather than assumed.",
+    "evidence": "gate-base.log and gate-after.log name their revision, tree, cwd, module.__file__ and command on the header lines and end EXIT=1 (6 failed, 48 passed) and EXIT=0 (54 passed), and negative-control.log ends EXIT=1 (3 failed, 3 passed), all recorded in the manifest's baseline_suite and after_suite.",
+    "fit": "reckon/crew/review.py:113-152 follows the module's existing declaration style (CHECK_VERDICT_OUTCOMES beside FINDING_SEVERITIES) and introduces no plan, ticket or version name; the new symbols are named by what they do.",
+    "goal_fidelity": "reckon/crew/recovery_review_subject.py:459-465 wires the ask into the composed source brief, but reckon/crew/review.py:780's required set has no production caller (only repair.py:125 and reports.py:1921 parse a review, both without it), so a delivered record that omits a declared check is never held incomplete in production.",
+    "reuse": "reckon/crew/recovery_review_subject.py:549 re-spells the per-check line '  {id}: {question}' already rendered for review_checks by render_domain_rules at reckon/crew/prompts.py:407, a second spelling of one capability the repository is actively consolidating under the same plan.",
+    "scope_discipline": "git diff 607718a36a20d1f988de4314bf2c3cfd8f72a7fc e6c35bde95c7fcaa141a80fcf6971abba857c11f changes only reckon/crew/review.py, reckon/crew/recovery_review_subject.py, tests/test_a_review_answers_the_domain_checks.py and docs/evidence/fragments/work-is-checked-against-its-domain/a-review-answers-the-domain-checks.html, all inside the declared paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to hold a review to a verdict on every declared domain check its node touches; reckon/crew/recovery_review_subject.py:543-553 now composes a 'Declared review checks this node touches' block naming exactly the checks rules_for matches, and reckon/crew/review.py:780 accepts the check ids as a required set, but no production caller supplies that set, so the hold fires only where a test supplies it.\nVERDICT done_when: The done_when is the four measures in tests/test_a_review_answers_the_domain_checks.py; the manifest records the eight-file gate at base 6 failed/48 passed and head 54 passed, and the negative-control log records the block dropped from the composed prompt as 3 failed/3 passed.\nVERDICT write_paths: The brief grants review.py, recovery_review_subject.py, the new test file, the evidence fragment and a figures directory; git diff 607718a36..e6c35bde9 changes exactly the first four and touches no path outside them; no figure was written, which the done-when does not name.\nVERDICT manifest: a-review-answers-the-domain-checks/manifest.md is complete: commits 78268a3d6 and e6c35bde9, changed_paths inside the declared scope, baseline_suite and after_suite carrying the gate command and revision, and a negative_control_log whose first line and EXIT=1 line are present; its follow_ons name the delivery-contract gap left open.\nVERDICT diff: Read commit by commit: 78268a3d6 adds the declared-check block to the review brief composer and the required-set handling to parse_review, and e6c35bde9 adds the evidence fragment; both are inside the declared write paths.\nCALL_SITES: reckon/crew/repair.py:125 review_findings parses a review's raw_text through parse_review with no required check set, reckon/crew/reports.py:1921 _unmarked_findings_in_record parses a review's raw_text through parse_review with no required check set\nSCORE goal_fidelity: 12\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_subject.py:459-465 wires the ask into the composed source brief, but reckon/crew/review.py:780's required set has no production caller (only repair.py:125 and reports.py:1921 parse a review, both without it), so a delivered record that omits a declared check is never held incomplete in production.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-base.log and gate-after.log name their revision, tree, cwd, module.__file__ and command on the header lines and end EXIT=1 (6 failed, 48 passed) and EXIT=0 (54 passed), and negative-control.log ends EXIT=1 (3 failed, 3 passed), all recorded in the manifest's baseline_suite and after_suite.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 607718a36a20d1f988de4314bf2c3cfd8f72a7fc e6c35bde95c7fcaa141a80fcf6971abba857c11f changes only reckon/crew/review.py, reckon/crew/recovery_review_subject.py, tests/test_a_review_answers_the_domain_checks.py and docs/evidence/fragments/work-is-checked-against-its-domain/a-review-answers-the-domain-checks.html, all inside the declared paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_review_answers_the_domain_checks.py:104-132 fails if parse_review drops the review_checks required set (status would read parsed and item_aggregate would omit the checks), and the base arm at 607718a36 reddens all six new tests, so the guard is shown to fail rather than assumed.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/review.py:113-152 follows the module's existing declaration style (CHECK_VERDICT_OUTCOMES beside FINDING_SEVERITIES) and introduces no plan, ticket or version name; the new symbols are named by what they do.\nSCORE reuse: 12\nJUSTIFICATION reuse: reckon/crew/recovery_review_subject.py:549 re-spells the per-check line '  {id}: {question}' already rendered for review_checks by render_domain_rules at reckon/crew/prompts.py:407, a second spelling of one capability the repository is actively consolidating under the same plan.\nFINDING reckon/crew/review.py:780 blocking: parse_review gains review_checks as the required set that makes an omitted check leave the record incomplete (review.py:965-966, 1018), but no production caller passes it \u2014 the only two callers, repair.py:125 and reports.py:1921, call parse_review with the defaults \u2014 so the guard the node goal and plan \u00a75 promise never runs in production; a reviewer that ignores a declared check still delivers a record the delivery contract accepts as complete.\nFINDING reckon/crew/recovery_review_subject.py:549 follow-on: _declared_check_block renders f'  {check.id}: {check.question}' for the review brief, duplicating the identical per-check line rendered for review_checks by render_domain_rules at reckon/crew/prompts.py:407; the two spellings can drift, which is the defect plan \u00a79 exists to remove.\n",
+  "review_run_id": "r-20261022T010438697511-review-of-a-review-answers-the-domain-checks-e6c35bde95c7",
+  "reviewed_base_sha": "607718a36a20d1f988de4314bf2c3cfd8f72a7fc",
+  "reviewed_head_sha": "e6c35bde95c7fcaa141a80fcf6971abba857c11f",
+  "reviewed_run_id": "r-20261022T003334326604-a-review-answers-the-domain-checks",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 12,
+    "reuse": 12,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T01:20:00.000000+00:00",
+  "total": 98
+}
