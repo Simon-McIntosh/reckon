@@ -244,10 +244,11 @@ FOLLOWER_END_EVENT = "follower-end"
 FOLLOWER_SETTLE_EVENT = "follower-settle"
 
 
-# The standing line: it names the session's runs that need the coordinator, and
-# repeats on a cadence whether or not the set is empty so a quiet pane is a
-# heartbeat rather than a silence a dead follower also shows.
-FOLLOWER_NEEDS_YOU_EVENT = "follow.needs-you"
+# The standing needs-you summary line is gone from the stream: no constant and
+# no emitter, because a line that repeats a list the stream already carries woke
+# the coordinator to read what it had just seen. What a reader can act on is the
+# runs' own rows, and the settle row's tail naming what a drained session owes.
+# The rule is stated once in :func:`reckon.crew.ticker.stream_carries`.
 
 
 # How long a follower's population must hold no unfinished run before the pane
@@ -1735,85 +1736,21 @@ def _follow_watch_lines(
         _check_settle()
         _renew_producer_lease()
 
-    # The standing line's emitter. It is a generator because the caller yields
-    # the row to the pane, and it is called wherever ``_tick`` is: the wait pass
-    # is the only place a follower can speak with nothing moving in the stream.
+    # The follower prints no standing summary line. Under the session host every
+    # printed line is a notification that starts a coordinator turn, and the
+    # needs-you summary named the orchestrator rather than the lead, repeated the
+    # rows the stream already carries, and was restated by the obligations hook
+    # on every prompt; its reminder cadence woke a coordinator to read a list it
+    # had just seen. The rule is stated once, in
+    # :func:`reckon.crew.ticker.stream_carries`: the stream carries a line only
+    # when it names something only the coordinator can do next. The settle row's
+    # tail still names the runs a drained session owes, which is the one summary
+    # a reader can act on.
     #
-    # The list is scanned on a bounded cadence rather than on every wait pass.
-    # The scan is a live-pointer read and the wait pass is fast, so it is
-    # throttled so a follower costs no more than the settle check already does.
-    # The line is emitted when the set has changed since the set last scanned
-    # and on the interval while the set is non-empty, whichever comes first.
-    #
-    # The cadence carries a non-empty set only. An unpromoted or blocked run is
-    # work the coordinator still owes, so repeating it is a reminder; an empty
-    # set is not news, and under a session host it is not even evidence, since
-    # the host restarts a follower that exits and a quiet pane there already
-    # means a quiet fleet. The empty line prints once, when a set the pane has
-    # been shown drains, so a reader told there is work is told it has gone.
-    #
-    # The interval is the command's: an arming with no --remind carries
-    # needs_you.DEFAULT_REMIND_SECONDS, and --remind overrides it. A caller that
-    # drives this generator directly and passes no interval asks for no standing
-    # line at all, so its rows are exactly the rows it always drew — which is
-    # what a scripted read of a gap and a relayed payload expect of this
-    # generator, both of them reading its output as data.
-    #
-    # The first scan is the baseline rather than news: the fleet as it stands at
-    # arming is what the arming's own closing row already names, so the standing
-    # line is emitted when the set changes from there.
-    needs_remind_seconds = None if remind is None else float(remind)
-    needs_scan_seconds = (
-        0.0
-        if needs_remind_seconds is None
-        else min(max(0.0, needs_remind_seconds), FOLLOWER_SETTLE_SAMPLE_SECONDS)
-    )
-    needs_scanned_at: float | None = None
-    last_needs_signature: tuple | None = None
-    # The set the last standing line printed, which the settle row's tail reads
-    # so the closing row never restates what the pane was just told. ``None``
-    # until a line is shown at all: a pane shown no set has been told nothing.
+    # ``shown`` is what the settle tail compares against. With no standing line
+    # to show a set, nothing has been shown, so the tail names every outstanding
+    # run rather than suppressing a set a line already named.
     shown_needs_signature: tuple | None = None
-    needs_emitted_at: float | None = None
-
-    def _needs_you_events() -> Iterable[dict[str, Any]]:
-        nonlocal needs_scanned_at, last_needs_signature, needs_emitted_at
-        nonlocal shown_needs_signature
-        interval = needs_remind_seconds
-        if interval is None:
-            return
-        moment = clock()
-        if (
-            needs_scanned_at is not None
-            and moment - needs_scanned_at < needs_scan_seconds
-        ):
-            return
-        needs_scanned_at = moment
-        summary = needs_you_module.needs_you(project, session=session)
-        signature = needs_you_module.needs_you_signature(summary)
-        if needs_emitted_at is None:
-            last_needs_signature = signature
-            needs_emitted_at = moment
-            return
-        changed = signature != last_needs_signature
-        last_needs_signature = signature
-        if not signature:
-            # An empty set names nothing the coordinator can act on, so it is
-            # never printed -- not on the change, not on the cadence. The pane's
-            # last shown set is left as it was, so the settle tail still knows
-            # whether the pane was told about the runs it may still owe.
-            return
-        if not changed and moment - needs_emitted_at < interval:
-            return
-        shown_needs_signature = signature
-        needs_emitted_at = moment
-        yield {
-            "event": FOLLOWER_NEEDS_YOU_EVENT,
-            "project": project,
-            "session": session or "",
-            "run_id": None,
-            "line": needs_you_module.needs_you_line(summary),
-        }
 
     from reckon.crew.resumption import DEFAULT_SWEEP_SECONDS
 
@@ -2103,8 +2040,6 @@ def _follow_watch_lines(
             # reader is waiting for.
             _sweep_on_cadence()
             _tick()
-            for event in _needs_you_events():
-                yield event
             sleeper(poll_interval)
             continue
         producer_reload_failure_reported = False
@@ -2343,8 +2278,6 @@ def _follow_watch_lines(
             if _stopped():
                 return
             _tick()
-            for event in _needs_you_events():
-                yield event
             if _producer_reload_pending():
                 # A deferred mismatch is re-read on the wait pass rather than
                 # only on attach: the producer's reload window can close while
@@ -2384,8 +2317,6 @@ def _follow_watch_lines(
                         offset=stream.tell(),
                         identity=stream_file_identity,
                     )
-                    for event in _needs_you_events():
-                        yield event
                     if lifetime_elapsed or consumer_gone or settled:
                         break
                     _sweep_on_cadence()
@@ -2404,8 +2335,6 @@ def _follow_watch_lines(
                     offset=stream.tell(),
                     identity=stream_file_identity,
                 )
-                for event in _needs_you_events():
-                    yield event
                 if _producer_reload_pending():
                     # The idle wait pass is where a deferred mismatch is
                     # re-read: the producer's reload window can close while the
@@ -3109,17 +3038,6 @@ def crew_follow(
                     _emit_crew_result(event, pretty, observation=True)
                 elif line:
                     _echo_follow_line(line)
-                continue
-            if event.get("event") == FOLLOWER_NEEDS_YOU_EVENT:
-                # The standing line is about the pane rather than any one run,
-                # so it is printed as it was composed rather than rendered as a
-                # fleet row. It is never written to the pane history: it is a
-                # repetition of a standing fact, not a transition, and replaying
-                # it on a re-arm would draw the same list several times.
-                if json_output:
-                    _emit_crew_result(event, pretty, observation=True)
-                else:
-                    _echo_follow_line(str(event.get("line") or ""))
                 continue
             if event.get("event") == FOLLOWER_FORMAT_EVENT:
                 # The follower reloaded onto a new image mid-stream. The rows it
