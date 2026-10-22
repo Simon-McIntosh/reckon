@@ -1,0 +1,28 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-22T04:32:46.771Z",
+  "dispatched_at": "2026-10-22T04:19:51Z",
+  "findings": [
+    "docs/evidence/fragments/a-coordinator-can-clear-its-own-duties/a-duty-follows-the-current-head.html:125 follow-on: the repair section states '588ab2ed is this node's final revision', but the node's final commit is f8057bb00, which adds this very section; the sentence is true of the last revision the gate measured and false of the head, and a reader comparing the fragment against the manifest's commits (which end at f8057bb00) meets a disagreement the prose does not explain.",
+    "tests/test_a_duty_follows_the_current_head.py:252 follow-on: assert recovery.same_revision(dry['superseded_head'], world['delivered']) compares the refusal's reported head against the very head the test handed the fixture at line 244 (_write_run(..., head=world['delivered'])), so the two sides move together; it is not vacuous, since a refusal reporting no head fails it, but it cannot catch a path that echoes the fixture head where it should report a different one, and the durability score does not rest on it."
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is 'Withdraw a resumed run's duties for its replaced head until it delivers again'; the incremental change makes the snapshot's sibling caller obey that withdrawal at reckon/crew/obligation_snapshot.py:1025, so both readers of the derivation agree.\nVERDICT done_when: the source node's done_when is the FENCE-EVIDENCE paragraph of its prompt (cases in tests/test_a_duty_follows_the_current_head.py, a gate judged by failure delta, ruff clean on the changed paths); the manifest records that gate and its base arm and a guard-removed mutation arm.\nVERDICT write_paths: the source prompt's FENCE-SCOPE lists reckon/crew/obligations.py, reckon/crew/recovery_review_dispatch.py, reckon/crew/resumption.py, tests/test_a_duty_follows_the_current_head.py and the evidence fragment, and the repair rounds extended it to reckon/crew/obligation_snapshot.py and tests/test_obligations_snapshot_is_published.py (resume-1-advice.txt, resume-2-advice.txt); every path in the incremental diff is inside that set.\nVERDICT manifest: read the reviewed run's manifest.md; it reports status complete, a gate of 70 passed EXIT=0 at 588ab2ed, a base arm of 5 failed/65 passed EXIT=1 at dec005048c, and a declared negative control at the guard-removed mutation.\nVERDICT diff: read the three commits gained since the prior review head df5d00595; d8f64182f guards the snapshot append, 588ab2edb is a formatter-only wrap of four pre-existing lines in the same test file, f8057bb00 adds only the repair section to the evidence fragment; four files changed, all in scope.\nCALL_SITES: reckon/crew/runs.py:2437\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/obligation_snapshot.py:1025 now skips the absent duty the derivation withholds, so the snapshot's reader agrees with the mirror at reckon/crew/obligations.py:1305.\nSCORE evidence: 17\nJUSTIFICATION evidence: after_suite.log ends '70 passed in 446.08s' EXIT=0 at 588ab2ed and baseline_suite.log '5 failed, 65 passed' EXIT=1 at dec005048c, both naming revision, tree and command, though the gate ran one commit below the reviewed head, which adds only documentation.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/obligation_snapshot.py, tests/test_a_duty_follows_the_current_head.py, tests/test_obligations_snapshot_is_published.py, the evidence fragment) is inside the declared scope or its two recorded extensions.\nSCORE durability: 18\nJUSTIFICATION durability: negative_control.log removes the guard and reads 1 failed/5 passed EXIT=1, failing tests/test_obligations_snapshot_is_published.py::test_a_resumed_run_is_published_and_owes_no_duty_for_the_head_it_replaced, so the new case has a named condition under which it fails.\nSCORE fit: 18\nJUSTIFICATION fit: the guard and its comment at reckon/crew/obligation_snapshot.py:1026 follow the module's mirror-the-derivation idiom and the shape at reckon/crew/obligations.py:1305, and no added name carries a plan label or ticket id.\nSCORE reuse: 19\nJUSTIFICATION reuse: the slice reuses module._review_duty_item, the owner of the review-duty derivation at reckon/crew/obligations.py:649, and mirrors the None-skip already written at obligations.py:1305 rather than forking a second duty reader.\nFINDING docs/evidence/fragments/a-coordinator-can-clear-its-own-duties/a-duty-follows-the-current-head.html:125 follow-on: the repair section states '588ab2ed is this node's final revision' when the node's final commit is f8057bb00, so the fragment disagrees with the manifest's commit list on which revision the node ended at.\nFINDING tests/test_a_duty_follows_the_current_head.py:252 follow-on: the refusal's reported head is asserted equal to the head the test itself passed into the fixture, so the assertion moves with its input and cannot catch a refusal that echoes it; the durability score rests on the snapshot case, not this one.",
+  "review_run_id": "r-20261022T041814312150-review-of-a-duty-follows-the-current-head-f8057bb00e9f",
+  "reviewed_base_sha": "df5d00595028177153d4ea32cbcc6ab762464b0d",
+  "reviewed_head_sha": "f8057bb00e9f833f5b3e026db607278513365640",
+  "reviewed_run_id": "r-20261022T020520027615-a-duty-follows-the-current-head",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T04:33:35.186817+00:00",
+  "total": 108
+}
