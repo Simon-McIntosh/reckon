@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T08:35:44.144Z",
+  "dispatched_at": "2026-10-22T08:27:01Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-coordinator-can-clear-its-own-duties.html:49",
+      "id": "reasoning-1",
+      "reason": "the change section would key the exception on the existing `unintegrated` field instead of adding a field to a dataclass whose own docstring says only `binding` must be acted on.",
+      "text": "\u00a75 says `ClaimDisposition` \"gains a `stopped` flag beside `binding` (it already tells the two cases apart, but only in its reason text)\", but the cited class already carries `unintegrated: tuple[str, ...]` (reckon/crew/node.py:1497), which is non-empty exactly for the stopped-holder-holding-work case and empty for running, pid-less and stopped-and-empty, so the disposition already distinguishes the two cases structurally and the planned flag duplicates `unintegrated`",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-coordinator-can-clear-its-own-duties.html:49",
+      "id": "reasoning-2",
+      "reason": "the change must name how the fact reaches that second site (carried on `_LiveScopeClaim` from the same disposition) or state that the exception is confined to the dispatch route.",
+      "text": "\u00a75 states each `_RepositoryScopeClaim` carries the holder's run id and stopped state \"read from `claim_disposition`\", but `_RepositoryScopeClaim` has a second construction site, the registry facade in `reckon/crew/runs.py:1198-1215`, which rebuilds the claims from `_LiveScopeClaim` and never calls `claim_disposition` (it does not carry `binding` across either, so that field defaults True there), so the new stopped fact would sit at its default on that route and the exception would not apply where that facade is the check",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "9a3910efdfb020634c01156558c0e069e1c2af27a497a8f6ee1483241c8a5a58",
+  "plan_slug": "a-coordinator-can-clear-its-own-duties",
+  "plan_version": 19,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T082600259886-plan-review-of-a-coordinator-can-clear-its-own-duties",
+  "reviewed_blob_sha": "207a8edf8ce153c7eb31f8f8ea68fed1855ae005",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every s5 anchor resolves: `_raise_repository_scope_conflict` at dispatch_claims.py:1567 and `_RepositoryScopeClaim` at dispatch_claims.py:127; `claim_disposition`/`ClaimDisposition` at node.py:1500/1487; `_head_revision` at promotion_scope.py:1814 and `_revision_is_ancestor` at promotion_scope.py:2389; `_is_ancestor` at merge.py:538; `_live_scope_claims` at runs.py:902 and the pointer writer `_mutate_pointer` at runs.py:328; `discard` at promotion.py:1832, and the promotion entry point in that same module is `complete`/`_complete_locked`; the extensionless href `/reckon/evidence/archive/a-coordinator-can-clear-its-own-duties-landed.html#s2` resolves as the house convention.",
+    "done_when": "pass \u2014 \u00a75's done-when is measurable and names its negative control explicitly: \"refuses one based on main with `ScopeConflict`\", plus \"On the base commit the stacked dispatch is refused `ScopeConflict`, so the test fails there\"; the other five sections each carry the same two-arm form.",
+    "evidence_paths": "pass \u2014 the plan cites no scratch path; the landed \u00a72\u2013\u00a74 records sit at `docs/evidence/archive/a-coordinator-can-clear-its-own-duties-landed.html`, which exists on disk (4335 bytes), so the durable-path practice the item asks about is verifiable.",
+    "naming": "pass \u2014 s5 names mechanisms (`_raise_repository_scope_conflict`, `_head_revision`, `_revision_is_ancestor`) rather than plan labels, carries no ticket number or version tag, and `s21-nova` is a session identity in the incident report rather than a symbol or filename.",
+    "reasoning": "two findings \u2014 \u00a75's premise that the disposition \"already tells the two cases apart, but only in its reason text\" is contradicted by the cited class, and \u00a75's \"each `_RepositoryScopeClaim` \u2026 read from `claim_disposition`\" has a counterexample construction site.",
+    "single_goal": "pass \u2014 \u00a75 names one deliverable (a dispatch built on a held chain tip may write its holder's paths), and the promotion/discard naming clause is that exception's consequence rather than a second objective.",
+    "wiring": "pass \u2014 the plan declares `plan-after: work-is-checked-against-its-domain#s2`, that plan file exists with an `id=\"s2\"` section, \u00a75 and \u00a76 write disjoint files as followup f-accd-002 states, and no declared relationship points at a wrong node."
+  },
+  "section_digests": {
+    "_document": "5856fc5e825e56071b67e7e76cfa10ea4c284a7424cd7e9fed8aef6670f4eb53",
+    "s1": "43085e648cc19c93f778cca423c4bc64fcf292fd5751f0b768a6d900a2dc6f99",
+    "s2": "933e62d10b3381ed03c0f019a65289e14b557412b102f39aa4a770ec912a74f5",
+    "s3": "b0aed5170f3bee16722263b2bd44c1b29dece8bb4f30f50f921ccf768e16aa23",
+    "s4": "b894ac78377b3dbd1cb6e04ff8829d39275d930a6f04671cdeeebd95f9cdc1c0",
+    "s5": "65f51167f8a8336171245eadc60333e2269af1ba1dc4bfe5b6dac30f0f2d4340",
+    "s6": "ef6ea3ed02381f59920675f97d17e071fb37761446ffb484e987801a9ef8cce5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T08:41:29.513902+00:00"
+}
