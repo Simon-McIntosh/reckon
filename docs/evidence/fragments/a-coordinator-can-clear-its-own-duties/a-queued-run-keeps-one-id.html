@@ -36,9 +36,12 @@
       <tr><td>base</td>
         <td><code>4c659c40a</code>, <code>queue_admission.py</code> unmodified</td>
         <td><strong>2 failed</strong>, 58 passed, exit 1</td></tr>
-      <tr><td>head (this change)</td>
-        <td><code>4c659c40a</code> + the launch id change</td>
-        <td>see the manifest's <code>after_suite</code></td></tr>
+      <tr><td>head, change alone</td>
+        <td><code>4fc950049</code></td>
+        <td><strong>4 failed</strong>, 56 passed, exit 1</td></tr>
+      <tr><td>head + the sibling-test update below</td>
+        <td><code>4fc950049</code> + <code>sibling-tests-retired-id-swap.patch</code></td>
+        <td>that file alone: 22 passed, exit 0</td></tr>
     </tbody>
   </table>
 
@@ -58,6 +61,35 @@
   <code>test_the_id_the_dispatch_printed_discards_while_the_request_waits</code>,
   passes on both arms; it is the control showing that discarding a queued request by
   the printed id worked before the change and still does.</p>
+
+  <h3>The head arm's four failures are the retired id-swap, held by an unowned file</h3>
+
+  <p>Under the launch id change, four pre-existing assertions in
+  <code>tests/test_a_queued_run_is_admitted.py</code> fail because each one asserts
+  that the queued id's pointer or run directory is <em>vacated</em> by the launch —
+  which is the id-swap this node retires. With one id there is one pointer and one
+  run directory, so:</p>
+
+  <ul>
+    <li><code>test_one_slot_launches_the_highest_ranked_queued_run_only</code> and
+      <code>test_a_launched_run_leaves_queued_for_starting_then_working</code> assert
+      <code>not runs.pointer_path("r-first"|"r-phased").exists()</code>; the pointer
+      now exists as the launched run's, and the phase assertion beside it already
+      covers the intent.</li>
+    <li><code>test_a_queued_launch_takes_its_manifest_from_its_launched_run</code>
+      asserts <code>str(queued_dir) not in prompt</code> and
+      <code>test_a_queued_launch_derives_write_paths_under_its_launched_run</code>
+      asserts no write path is under the queued directory; both compare the queued
+      directory against the launched directory, which are now one path.</li>
+  </ul>
+
+  <p>The four updated assertions are written and verified, not applied:
+  <code>sibling-tests-retired-id-swap.patch</code> in this run's directory applies
+  cleanly at <code>4fc950049</code> and, applied in a scratch tree at that revision,
+  the file reports <strong>22 passed</strong>. It is withheld because
+  <code>tests/test_a_queued_run_is_admitted.py</code> is outside this node's granted
+  write paths, and the head cannot be green on the gate the done-when names without
+  it.</p>
 
   <p>Ruff <code>check --no-cache</code> and <code>format --check</code> are clean on
   <code>reckon/crew/queue_admission.py</code> and
