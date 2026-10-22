@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T15:57:38.203Z",
+  "dispatched_at": "2026-10-22T15:43:01Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html:82",
+      "id": "reasoning-1",
+      "reason": "an implementer following \u00a72 literally joins on the worker harness session, so the fixture's stated sessions (cdb769a4, 83d14db1, e1b445e1) resolve to the wrong rows, or the test is built against the wrong field and passes while the board labels runs with the worker's session.",
+      "text": "\u00a72 declares \"A plan's coordinator is the `session_id` of its most recent dispatched run\", but the ledger's `session_id` is the worker's own harness session and the coordinator is the dispatching crew session, held in the separate `session` field (`reckon/ledger.py:162-165` and `reckon/run_record.py:538-539`: \"The crew session that dispatched the run, distinct from `session_id` (the worker's own harness session)\"). \u00a72's own cited artefacts contradict it: `_live_review_runs` (`reckon/crew/obligations.py:430`) filters pointers on `pointer.get(\"session\")`, which \u00a72 describes as \"filters runs by the dispatching session\", and `reckon/crew/directory.py:146-157` groups coordinator rows by `record.get(\"session\")` \u2014 the field \u00a75 says resolves the coordinator's peer name",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html:163",
+      "id": "done_when-1",
+      "reason": "\u00a71's whole motivation is reads refused at the 80,000-character MCP ceiling and \u00a78 measures the new reads against that ceiling, so boundedness is load-bearing; the plan must either state that paging is added to the directory view or drop the bound rather than assert a paging capability the cited view does not have.",
+      "text": "\u00a75's done-when requires the board to \"stay bounded at workstation scope through its paging\", and \u00a75's mechanism fixes the interface budget as \"no crew view is added; directory gains fields\" \u2014 but `crew(view=\"directory\")` has no paging to page with: `reckon/mcp_views.py:3805-3813` returns `crew_directory(project, run_id=..., node_id=...)` early, passing neither `limit` nor `cursor`, and `reckon/crew/directory.py` carries no limit/cursor handling. \u00a73's parallel claim that the ready-idle read \"pages with the view's own paging\" rests on the same gap, since `ready_set_view` (`reckon/mcp_views.py:1128) takes no cursor or limit and returns every ready row",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html:208",
+      "id": "reasoning-2",
+      "reason": "the decision sanctions a new crew view and the sections forbid one, so an implementer must guess which governs; the decision rationale is a leftover of the pre-change design and needs rewording to match the extended-directory and extended-lanes design the sections now describe.",
+      "text": "the `board-surface` decision's rationale records that the board (\u00a75) and the lane share (\u00a76) \"are one new bounded crew view joining directory, scopes, live and lanes\", while the \u00a75 the change produced states \"Interface budget: no crew view is added; directory gains fields\" and \u00a76 states \"no view is added\"",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html:167",
+      "id": "anchors_resolve-1",
+      "reason": "the file and module resolve and any implementer reads the lane parser there regardless, so the stale line number costs a lookup but does not change what a node builds.",
+      "text": "\u00a76 cites \"The document is parsed once, in `reckon/crew/lane_document.py:447`\", but line 447 is `read_lane_admission`, a downstream reader of an already-parsed document, while the parser is `read_lane_document` at `reckon/crew/lane_document.py:303`",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "300c49963daa9fab670f8a764c020e6b785bc2e5f5fb672baa76afb9b55b416e",
+  "plan_slug": "a-coordinator-sees-the-board",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T150345309200-plan-review-of-a-coordinator-sees-the-board",
+  "reviewed_blob_sha": "2a34b601b80e76df4c6c576c6d0ffb9d47835401",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a76's parser anchor points at the wrong function in a file that otherwise resolves.",
+    "done_when": "a finding \u2014 \u00a75's done-when makes the board's boundedness rest on paging (`stays bounded at workstation scope through its paging`) that the `directory` view it extends does not have.",
+    "evidence_paths": "pass \u2014 s2\u2013s6 require no session-scratch path; their fixtures are the committed power_convertor ledger at 2026-10-22T08:50Z and the gate logs stay on the node that runs them.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags appear in any symbol or comment introduced by s2\u2013s6.",
+    "reasoning": "a finding \u2014 \u00a72 derives the coordinator from the ledger's `session_id`, but that field is the worker's harness session; the dispatching crew session is the ledger's separate `session` field, which the plan's own cited artefacts key on.",
+    "single_goal": "pass \u2014 each of s2\u2013s6 names one deliverable (the coordinator resolver, the extended ready-set view, the critical-path state fields, the extended directory, the extended lanes view).",
+    "wiring": "pass \u2014 the rewritten `plan-section-depends-on` map keeps s3\u2192{aspect#s4, acsb#s2}, s4\u2192{aspect#s2, acsb#s3}, s5\u2192{mcp#s3, acsb#s2, acsb#s3}, s7\u2192{acsb#s3, acsb#s5}, s8\u2192{acsb#s3, acsb#s4, acsb#s5, acsb#s6}; s6's former deps were correctly dropped because \u00a76 no longer consumes s3 or s5, and every target resolves to a section that exists."
+  },
+  "section_digests": {
+    "_document": "0d796267381a01f0fe9d9aaeb1cf289906ed817f925a03dc492a6ee545b12912",
+    "s1": "4f48bcfe2c71d1397f0eeb277ff928920d1ed0ae7cfb0da777c94e4943eadf87",
+    "s2": "21ae097df4f18a5f9f3e6b8f3a1de0044dabfbeba31aeab83c6399cb3211c2ac",
+    "s3": "e4cd7ce8696d0d9fb511a9be2379e2561a08418a1d1f759c42a926231bad6e36",
+    "s4": "ba6bafca3a7e3ae7fb186980afd26dd26e183bf99b72272ea15f06fbaeb19e5f",
+    "s5": "40337f35170c406e8eb4299d37ba269114e09fd5fa4301664cbed7ae59eafb95",
+    "s6": "48b11528a81159ac7002f5630089791ca92cb3340744a7ce7d1eaa555abaebe6",
+    "s7": "4428c6858fc7f10400173c2e619ad379aa49779cef060ae4b50d866fde4a59a7",
+    "s8": "f9f58e76a5713eb901b1e780fcb93d48ca773a573fded72ec476738a59629b67"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T16:07:29.477935+00:00"
+}
