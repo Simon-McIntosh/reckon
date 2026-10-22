@@ -1192,6 +1192,8 @@ def _fleet_replay(
     that draws the same fleet leaves the history it restores alone rather than
     doubling it. A gap transition is news and is recorded.
     """
+    from reckon.crew import ticker as ticker_module
+
     recorded = _recorded_fleet_times(stream_path, boundary=boundary)
     rows: list[dict] = []
     announced: set[str] = set()
@@ -1217,9 +1219,47 @@ def _fleet_replay(
         rows.append(row)
     rows.sort(key=_follow_row_stamp)
     printed: list[dict] = []
+    # The state the pane last showed for each run: what it showed before this
+    # arming, carried on the row path, plus what this replay has already
+    # delivered for the run. A replayed baseline is judged against it so that a
+    # row re-announcing a state the pane already shows is inventory rather than
+    # a self-transition, while a first sighting and a real move still print.
+    shown = dict(path.reported)
     for row in rows:
+        if _replayed_baseline_repeats_the_pane(row, shown):
+            continue
+        if not ticker_module.is_baseline(row):
+            run_id = str(row.get("run_id") or "")
+            if run_id:
+                shown[run_id] = str(row.get("to_state") or "")
         printed.extend(path.feed(row, now=clock()))
     return printed
+
+
+
+def _replayed_baseline_repeats_the_pane(row, shown) -> bool:
+    """Whether a replayed baseline row re-announces what the pane already shows.
+
+    A producer reload replays every live run as a fresh baseline row, so each
+    run's row returns after every reload. Where the row's destination is the
+    state the pane last showed for that run the row is inventory, not news: the
+    grid draws its left half from the memory of what it showed and the row
+    renders as a self-transition carrying only a growing elapsed. A row that
+    names a state the pane has not shown — a different state, or a run the pane
+    has not drawn at all — is left to the row path, so a first sighting and a
+    real move still print.
+    """
+    from reckon.crew import ticker as ticker_module
+
+    if not ticker_module.is_baseline(row):
+        return False
+    run_id = str(row.get("run_id") or "")
+    if not run_id:
+        return False
+    previous = shown.get(run_id)
+    if previous is None:
+        return False
+    return str(row.get("to_state") or "") == str(previous)
 
 
 

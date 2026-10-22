@@ -1,0 +1,34 @@
+<section id="a-reload-replay-prints-no-self-transition">
+  <h3 id="a-reload-replay-prints-no-self-transition-summary">A reload's replayed baseline prints no self-transition</h3>
+  <p id="a-reload-replay-prints-no-self-transition-why">
+    A producer reload replays every live run as a fresh baseline row. For a run
+    standing where the pane last showed it, that row renders as
+    <code>waiting &rarr; waiting</code>: the grid draws the left half from its
+    memory of what it showed, and the row carries only a growing elapsed. The
+    row reached the pane because a run in <code>waiting</code> declares the
+    external condition it waits on, and that declaration is what carries a
+    same-word row past the row policy's duplicate rule.
+  </p>
+  <p id="a-reload-replay-prints-no-self-transition-measure">
+    Measured on the follower's own fleet replay over a recorded stream of three
+    rows &mdash; the run's move into <code>waiting</code>, the reload's replayed
+    <code>new &rarr; waiting</code> baseline, then a real
+    <code>waiting &rarr; working</code> &mdash; the base revision draws
+    <strong>three</strong> rows for the run and the head revision draws
+    <strong>two</strong>, the first sighting and the real change, matching the
+    section's done-when.
+  </p>
+  <p id="a-reload-replay-prints-no-self-transition-change">
+    <code>_fleet_replay</code> in <code>reckon/crew_follow_commands.py</code>
+    now carries the state the pane last showed for each run &mdash; what the row
+    path already holds plus what the replay has delivered so far &mdash; and
+    drops a baseline row re-announcing it. A baseline naming a state the pane
+    has not shown, a run the pane has not drawn, and every real transition still
+    print.
+  </p>
+  <p id="a-reload-replay-prints-no-self-transition-negative-control">
+    Removing the suppression returns the first case to three rows and fails it:
+    <code>1 failed, 1 passed</code>, exit 1, in the base arm at
+    <code>08b02ee4</code>.
+  </p>
+</section>
