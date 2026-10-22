@@ -5,10 +5,12 @@ onto the same published image at the same moment, so a herd of them used to run
 the same thirty-second import proof together. Whether an image imports is a fact
 about the image and the interpreter, not about the process asking, so the first
 asker proves it once under an exclusive lock in the image's own directory and
-records the verdict beside it, keyed by the interpreter. A source checkout has
-no immutable tree and keeps the per-process proof. A retry earned by a timeout
-is spread across the nodes' followers by a jitter, so a herd does not stay in
-step.
+records the verdict beside it, keyed by the interpreter. An asker that finds the
+proof lock held is told the proof is pending at once and reads the verdict at
+its next check, so a slow proof never stalls a follower that is not running it.
+A source checkout has no immutable tree and keeps the per-process proof. A retry
+earned by a timeout is spread across the nodes' followers by a jitter, so a herd
+does not stay in step.
 """
 
 from __future__ import annotations
@@ -96,7 +98,16 @@ def test_concurrent_askers_on_one_image_start_one_probe(tmp_path, probe):
         thread.join()
 
     assert len(probe.calls) == 1, f"{len(probe.calls)} probes ran for one image"
-    assert results == [(True, "")] * askers
+    assert (True, "") in results, results
+    assert all(
+        result == (True, "") or isinstance(result[1], checkout_trust.ImportProofPending)
+        for result in results
+    ), results
+    # Every asker told the proof was pending reads the one verdict next time.
+    assert [checkout_trust.reckon_imports(image) for _ in range(askers)] == [
+        (True, "")
+    ] * askers
+    assert len(probe.calls) == 1, "a later ask proved the image again"
 
 
 def test_concurrent_askers_all_receive_a_recorded_failure(tmp_path, probe):
@@ -118,8 +129,16 @@ def test_concurrent_askers_all_receive_a_recorded_failure(tmp_path, probe):
         thread.join()
 
     assert len(probe.calls) == 1, f"{len(probe.calls)} probes ran for one image"
-    assert all(not ok and reason == results[0][1] for ok, reason in results)
-    assert "a_module_that_is_gone" in results[0][1], results[0]
+    answered = [
+        result
+        for result in results
+        if not isinstance(result[1], checkout_trust.ImportProofPending)
+    ]
+    assert answered, results
+    assert all(not ok and "a_module_that_is_gone" in reason for ok, reason in answered)
+    later = [checkout_trust.reckon_imports(image) for _ in range(askers)]
+    assert all(result == answered[0] for result in later), later
+    assert len(probe.calls) == 1, "a later ask proved the image again"
 
 
 def test_a_timed_out_probe_records_nothing_and_the_next_asker_probes(tmp_path, probe):
@@ -198,12 +217,8 @@ def _hold_probe_lock(image: Path) -> int:
     return descriptor
 
 
-def test_a_held_lock_makes_the_waiting_asker_time_out_without_probing(
-    tmp_path, probe, monkeypatch
-):
+def test_a_held_lock_reports_a_pending_proof_at_once(tmp_path, probe):
     image = _image(tmp_path)
-    monkeypatch.setattr(checkout_trust, "IMPORT_PROBE_TIMEOUT", 0.2)
-    monkeypatch.setattr(checkout_trust, "IMPORT_PROBE_LOCK_POLL_SECONDS", 0.01)
     holder = _hold_probe_lock(image)
     try:
         started = time.monotonic()
@@ -213,33 +228,53 @@ def test_a_held_lock_makes_the_waiting_asker_time_out_without_probing(
         os.close(holder)
 
     assert imports is False
-    assert isinstance(reason, checkout_trust.ImportProbeTimedOut), reason
-    assert "lock" in reason, reason
-    assert probe.calls == [], "the waiter ran a probe of its own on a held lock"
-    assert waited < 5.0, waited
+    assert isinstance(reason, checkout_trust.ImportProofPending), reason
+    assert not isinstance(reason, checkout_trust.ImportProbeTimedOut), reason
+    assert probe.calls == [], "the asker ran a probe of its own on a held lock"
+    assert waited < 1.0, f"the asker waited {waited:.2f} s on a held lock"
 
 
-def test_a_verdict_recorded_while_the_asker_waits_is_read(tmp_path, probe, monkeypatch):
+def test_the_holders_verdict_is_read_at_the_next_ask(tmp_path, probe):
     image = _image(tmp_path)
-    monkeypatch.setattr(checkout_trust, "IMPORT_PROBE_LOCK_POLL_SECONDS", 0.01)
     holder = _hold_probe_lock(image)
-
-    def prove_and_release():
-        time.sleep(0.1)
+    try:
+        _, reason = checkout_trust.reckon_imports(image)
+        assert isinstance(reason, checkout_trust.ImportProofPending), reason
         checkout_trust._record_import_verdict(
             image, imports=False, reason="ModuleNotFoundError: gone"
         )
+        later = checkout_trust.reckon_imports(image)
+    finally:
         os.close(holder)
 
-    writer = threading.Thread(target=prove_and_release)
-    writer.start()
-    try:
-        imports, reason = checkout_trust.reckon_imports(image)
-    finally:
-        writer.join()
+    assert later == (False, "ModuleNotFoundError: gone"), later
+    assert probe.calls == [], "the asker probed although the holder answered"
 
-    assert (imports, reason) == (False, "ModuleNotFoundError: gone"), (imports, reason)
-    assert probe.calls == [], "the waiter probed although a verdict arrived"
+
+def test_a_held_pin_is_renewed_once_per_interval(tmp_path, monkeypatch):
+    image = _image(tmp_path)
+    clock = [5000.0]
+    monkeypatch.setattr(checkout_trust.time, "monotonic", lambda: clock[0])
+    stamps: list = []
+    real_utime = os.utime
+
+    def counting_utime(target, *args, **kwargs):
+        stamps.append(target)
+        return real_utime(target, *args, **kwargs)
+
+    descriptor = checkout_trust.pin_materialized_tree(image)
+    monkeypatch.setattr(checkout_trust.os, "utime", counting_utime)
+    try:
+        for _ in range(50):
+            checkout_trust.refresh_materialized_tree_pin(descriptor, image)
+            clock[0] += 0.1
+        assert stamps == [], f"{len(stamps)} renewals inside one interval"
+
+        clock[0] += checkout_trust.COMMITTED_TREE_LEASE_RENEW_SECONDS
+        checkout_trust.refresh_materialized_tree_pin(descriptor, image)
+        assert stamps == [descriptor], stamps
+    finally:
+        os.close(descriptor)
 
 
 @pytest.fixture()
@@ -317,3 +352,69 @@ def test_the_jitter_spreads_two_followers_that_timed_out_together(
     instance.poll({})
     second = instance.probe_retry_gap - instance.probe_retry_jitter
     assert 0.0 < second < instance.probe_retry_gap
+
+
+def _pending(monkeypatch):
+    monkeypatch.setattr(
+        follow.checkout_trust,
+        "reckon_imports",
+        lambda root: (
+            False,
+            follow.checkout_trust.ImportProofPending("another process is proving"),
+        ),
+    )
+
+
+def test_a_pending_proof_is_rechecked_soon_and_silently(reloader, monkeypatch, capsys):
+    instance, clock = reloader
+    _pending(monkeypatch)
+    initial_gap = instance.probe_retry_gap
+
+    instance.poll({})
+
+    assert capsys.readouterr().out == "", "a pending proof printed a line"
+    assert instance.probe_retry_gap == initial_gap, "a pending proof doubled the gap"
+    assert instance.timeout_deferral is False
+    assert instance.deferred_stamp is None
+    pending = follow.FOLLOWER_RELOAD_PROOF_PENDING_SECONDS
+    assert instance.probe_retry_at == pytest.approx(clock[0] + pending)
+
+
+def test_a_poll_inside_a_retry_wait_leaves_the_image_alone(
+    reloader, monkeypatch, tmp_path
+):
+    instance, clock = reloader
+    monkeypatch.setattr(runs, "follower_code_stamp", lambda: TREE_ID)
+    instance.code_stamp = OTHER_TREE_ID
+    materialised: list = []
+
+    def materialise(head):
+        materialised.append(head)
+        return tmp_path, [], [], None
+
+    monkeypatch.setattr(instance, "_materialize_replacement", materialise)
+    _pending(monkeypatch)
+    instance.poll({})
+    assert materialised == [TREE_ID]
+
+    clock[0] += runs.FOLLOWER_FRESHNESS_SECONDS
+    assert clock[0] < instance.probe_retry_at - instance.probe_retry_jitter
+    instance.poll({})
+
+    assert materialised == [TREE_ID], "the image was re-materialised inside its wait"
+
+
+def test_a_pending_proof_reloads_once_its_verdict_is_read(reloader, monkeypatch):
+    instance, clock = reloader
+    _pending(monkeypatch)
+    instance.poll({})
+    executed: list = []
+    monkeypatch.setattr(follow.os, "execve", lambda *args, **kwargs: executed.append(1))
+    monkeypatch.setattr(
+        follow.checkout_trust, "reckon_imports", lambda root: (True, "")
+    )
+
+    clock[0] = instance.probe_retry_at
+    instance.poll({})
+
+    assert executed == [1], "the follower did not reload once the verdict arrived"

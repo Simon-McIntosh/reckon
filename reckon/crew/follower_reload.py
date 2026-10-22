@@ -281,6 +281,7 @@ class _FollowerReloader:
             _FOLLOWER_SOURCE_ROOT_ENV,
             _SHIM_PYTHON_ENV,
             FOLLOWER_RELOAD_PROBE_RETRY_CAP_SECONDS,
+            FOLLOWER_RELOAD_PROOF_PENDING_SECONDS,
             _dim_history_line,
             _echo_follow_line,
         )
@@ -334,6 +335,17 @@ class _FollowerReloader:
             # The code moved, so a gap earned by the checkout that timed out no
             # longer describes the one now on disk: this checkout starts afresh.
             self._clear_probe_retry()
+        if (
+            self.probe_retry_at is not None
+            and moment < self.probe_retry_at - self.probe_retry_jitter
+        ):
+            # A probe on this stamp timed out or is pending elsewhere, and the
+            # wait it earned has not passed. Leave the image alone until then:
+            # materialising it again re-pins, re-stamps and re-ranks a tree on
+            # the shared filesystem every cadence for nothing. The jitter only
+            # ever brings the wait forward, so the nominal gap stays the longest
+            # a checkout waits.
+            return
         if current_head and current_stamp == current_head:
             materialized = self._materialize_replacement(current_head)
             if materialized is None:
@@ -356,18 +368,18 @@ class _FollowerReloader:
                 return
             self.replacement_root = self.import_root
         self.dirty_deferral = False
-        if (
-            self.probe_retry_at is not None
-            and moment < self.probe_retry_at - self.probe_retry_jitter
-        ):
-            # A probe on this stamp ran out of its bound a moment ago, and the
-            # wait it earned has not passed: leave it alone rather than spending
-            # another thirty seconds on a node that is still slow. The jitter
-            # only ever brings that wait forward, so the nominal gap stays the
-            # longest a checkout waits.
-            return
         reloadable, reason = self._replacement_imports()
         if not reloadable:
+            if isinstance(reason, checkout_trust.ImportProofPending):
+                # Another process is proving this image and nothing has failed:
+                # read its verdict after a short jittered wait, saying nothing
+                # and leaving the timeout backoff and the seat record untouched.
+                self.probe_retry_stamp = current_stamp
+                self.probe_retry_at = moment + FOLLOWER_RELOAD_PROOF_PENDING_SECONDS
+                self.probe_retry_jitter = _probe_retry_jitter(
+                    FOLLOWER_RELOAD_PROOF_PENDING_SECONDS
+                )
+                return
             if isinstance(reason, checkout_trust.ImportProbeTimedOut):
                 # A probe that ran out of its bound says nothing about the code:
                 # the checkout may load perfectly and merely have been slow under
