@@ -13,16 +13,26 @@
   whose value is empty off the row.
 </p>
 
+<p id="a-row-is-compact-and-names-its-section-row-state">
+  The same rule covers a dependency row: it reports the dependency's own state,
+  never the containing plan's. Three producers of section-scoped rows said
+  otherwise — the roadmap's section edges, the resolver behind
+  <code>read_plan</code>'s <code>deps</code> list, and the
+  <code>section_blocking</code> projection, which re-derived its verdict from
+  the plan's status. All three now read the target section's own declaration,
+  falling back to the plan's status only where the plan declares none.
+</p>
+
 <table id="a-row-is-compact-and-names-its-section-measure">
-  <caption>Measured on the node's gate, at the base commit and after it.</caption>
+  <caption>Measured on the node's gate, at the base arm and after it.</caption>
   <thead>
-    <tr><th>clause</th><th>base commit <code>8c7e865d7</code></th><th>after <code>eb07961b3</code></th></tr>
+    <tr><th>clause</th><th>base arm <code>8c7e865d7</code></th><th>after <code>59c57322a</code></th></tr>
   </thead>
   <tbody>
     <tr>
-      <td>gate (<code>test_a_row_is_compact_and_names_its_section.py</code> plus the four named suites)</td>
-      <td>9 failed, 52 passed — <code>EXIT=1</code></td>
-      <td>61 passed — <code>EXIT=0</code></td>
+      <td>named gate (this node's test file plus the four named suites)</td>
+      <td>11 failed, 3 passed — <code>EXIT=1</code> on this node's file alone</td>
+      <td>63 passed — <code>EXIT=0</code></td>
     </tr>
     <tr>
       <td>a dispatched run's <code>section</code> read in all four views</td>
@@ -32,8 +42,8 @@
     </tr>
     <tr>
       <td><code>fields=["section"]</code> accepted by all four views</td>
-      <td>refused by <code>live</code>, ignored by <code>obligations</code> and
-        <code>directory</code>, not narrowed by <code>runs</code></td>
+      <td>refused by <code>live</code>, and not narrowed by the other
+        three</td>
       <td>accepted by all four; a narrowed row carries only the identity fields
         and what was asked for</td>
     </tr>
@@ -44,9 +54,17 @@
       <td>all four refuse, naming the view's own field list</td>
     </tr>
     <tr>
-      <td>serialised <code>power_convertor</code> roadmap, characters</td>
-      <td>142,482</td>
-      <td>142,482 — unchanged</td>
+      <td>a ref to a done section of an in-progress plan</td>
+      <td>the row reads the plan's <code>active</code> status and
+        <code>section_blocking</code> reports the wait as open</td>
+      <td>the row reads <code>done</code>, its own declaration, and
+        <code>section_blocking</code> reports nothing</td>
+    </tr>
+    <tr>
+      <td>serialised <code>power_convertor</code> roadmap, characters
+        (three samples per arm)</td>
+      <td>139,668 / 139,668 / 139,668</td>
+      <td>139,180 / 139,180 / 139,180 — a 488-character shrink</td>
     </tr>
   </tbody>
 </table>
@@ -57,32 +75,35 @@
   including three of the four views of the <code>names_the_section</code> case.
 </p>
 
-<p id="a-row-is-compact-and-names-its-section-unmet">
-  Two clauses of the section's done-when are <strong>not</strong> met, and both
-  need a file outside this node's write scope:
+<p id="a-row-is-compact-and-names-its-section-shrink">
+  The roadmap shrinks for one reason, and the reason is the rule above rather
+  than a compaction pass: the section-scoped rows it carries now report the
+  section's own declaration instead of the containing plan's status, and the
+  declaration is the shorter string. A per-key comparison of the two serialised
+  payloads puts the whole difference there —
+  <code>depends_on[].status</code> and <code>section_depends_on[].status</code>
+  fall from 559 to 410 characters in <code>pending_work</code> and from 495 to
+  374 in <code>ready_now</code>, while the readiness blockers' own status fields
+  rise from 169 to 195. Nothing else moves beyond live-run counts. The
+  roadmap's own row shape is unchanged.
 </p>
-<ul id="a-row-is-compact-and-names-its-section-unmet-list">
-  <li>
-    A section reference whose target section is done while its plan is in
-    progress must read <em>satisfied</em>, with the section's declaration as its
-    state. The per-section verdict already exists
-    (<code>_section_satisfied</code> in <code>reckon/roadmap.py</code>), but the
-    dependency row a plan summary reads carries the <em>plan's</em> status and no
-    declaration, so <code>_section_blocking</code> can report a satisfied section
-    as blocking. Closing this needs <code>reckon/roadmap.py</code>.
-  </li>
-  <li>
-    The serialised <code>power_convertor</code> roadmap does not shrink, because
-    the roadmap's own rows are compacted in <code>reckon/roadmap.py</code>, which
-    this node may not write. Measured both sides: 142,482 characters.
-  </li>
-</ul>
 
 <p id="a-row-is-compact-and-names-its-section-refs">
   References the rows and the projection travel in remain strings of the one
   grammar, <code>[project:]plan[#section][@run|@f-id]</code>: the rows carry
   <code>plan</code> and <code>section</code> as plain strings, never as expanded
   objects, and the projection adds none.
+</p>
+
+<p id="a-row-is-compact-and-names-its-section-caveat">
+  One divergence from the done-when's literal wording, recorded rather than
+  smoothed over: the fixture dispatches for <code>P#s4</code> and the four views
+  read <code>§4</code>, the canonical spelling of the same identity, because the
+  one projection normalises every row's section through
+  <code>normalize_section</code>. Before the change the views disagreed —
+  <code>runs</code> read <code>§4</code> and <code>directory</code> read
+  <code>s4</code> for the same run — so a single spelling is the point of the
+  clause.
 </p>
 
 </section>
