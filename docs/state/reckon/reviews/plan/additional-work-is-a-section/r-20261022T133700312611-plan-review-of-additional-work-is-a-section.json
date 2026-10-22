@@ -1,0 +1,163 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T13:51:47.506Z",
+  "dispatched_at": "2026-10-22T13:39:18Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/review.py:3426",
+      "id": "reuse_search-1",
+      "reason": "\u00a72's line about dispositions is what tells the worker whether to extend `DIMENSION_DISPOSITION_KINDS` or invent a parallel space; as written it does neither and misnames the mechanism it cites.",
+      "text": "\u00a72 says \"the three dispositions `crew dispose` already records\" and names them as a section, a fold into the node's next prompt, and an exemption, but the closed set is `DIMENSION_DISPOSITION_KINDS: tuple[str, ...] = (\"folded\", \"exempted\")` \u2014 two kinds, written through `crew_dispose` (`reckon/crew_run_commands.py:565`), whose docstring states the same two (\"a fold naming the dispatched node \u2026, or an exemption naming why\"). \"A section\" is not a recorded disposition at all; adopting it would add a third member to a closed set the plan never mentions. If the implementer takes the plan's wording at face value the new disposition is invented instead of the existing two extended.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_store.py:899",
+      "id": "reuse_search-2",
+      "reason": "naming the existing predicate turns \u00a74 from a new check into a case added to the one predicate the plan store already routes every authored body through, and names the established refusal/warning pairing to copy. The review's own rubric also exists to catch a rebuild of present machinery, which is exactly what an uncited parallel scan is.",
+      "text": "\u00a74 names `reckon/_store.py` and `reckon/_store_section_ops.py` as write paths but nowhere cites the mechanism those two files already share: `_forged_plan_structure` / `_refuse_forged_body_structure` (`reckon/_store.py:899,924`), whose own docstring says it exists because \"Three sites write an authored body into plan HTML \u2026 and all three must refuse the same fragments \u2026 One predicate keeps the three from drifting apart\", and which `reckon/_store_section_ops.py:124` `_refuse_forged_structure` imports precisely so its path \"refuses exactly the fragments `insert_section` and `append_evidence` refuse\". \u00a74 must say it extends that predicate; a term scan written beside it is a fourth, drifting check. The refusal-plus-read-warning pattern \u00a74 proposes is also already in the tree at `reckon/_store.py:667` `_unparsed_section_warnings` (\"The write path refuses the splice; this read-time warning is its partner\"), which the plan does not cite as its precedent.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/doccheck.py:384",
+      "id": "duplicate_owner-1",
+      "reason": "the plan should name the prose extractor to extend and say whether the store guard and the `audit-doc` warning share one scanner or are two, instead of leaving three implementations of \"prose without `<code>`\" to accrete.",
+      "text": "\u00a74 requires the term to be refused in a body's prose but allowed inside `<code>`, and proposes to implement that scan in `reckon/_store.py` and to add a matching `audit-doc` warning in `reckon/doccheck.py`. Both halves of that `<code>`-excluding prose read already have an owner this plan does not name: `reckon/doccheck.py:384` `_prose_text(el)` (\"Visible text with the verbatim subtrees removed \u2026 Text inside `<pre>` and `<code>` renders literally, so an asterisk pair there is the subject a document is quoting\"), and `reckon/_plan_html.py:474` `section_prose`, described at its caller `reckon/crew/dispatch_sections.py:161` as \"the one reader the review digests and the \u2026\" and used at seven call sites (`mcp_views.py:2116,2256`, `dispatch_sections.py:202`, `plan_review.py:338,705,2357`). A third, independently written `<code>`-stripping regex will disagree with those, and two implementations means they can drift silently \u2014 which is the exact failure `_forged_plan_structure`'s docstring names.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/promotion_release.py:131",
+      "id": "duplicate_owner-2",
+      "reason": "\u00a71 states the term is purged from every reckon surface; without these two paths named, the purge completes with the term still in `reckon/` and nothing reports it, and a worker cannot add a path the brief does not grant.",
+      "text": "census of production sites carrying the term that appear in no section's write-path list. \u00a71's census says the term lives in 19 production files, and the sections between them name every one except two: `reckon/crew/promotion_release.py:131` (\"landing line, a checkpoint or a follow-on naming another session's\") and `reckon/crew/promotion_records.py:126` (\"discarded run that reached main through a follow-on\"). Both are module comments naming the term rather than code, which is why they fall between \u00a72's list (review/repair/findings/reports) and \u00a73's (prompts/ledger-carried key readers) \u2014 \u00a72 grants \"other test files the change breaks \u2026 from the failure ids the worker reports\", but \u00a75's prose sweep is scoped to `skills/` alone, so a comment-only site in `reckon/` reaches neither list and no gate fails on it.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "<plan>#s4",
+      "id": "interface_budget-1",
+      "reason": "the item exists to make a section account for the interface it adds; \u00a74 is the only section that adds a refusal and it is the only one that accounts for none, so the accounting is presently impossible to check.",
+      "text": "counted refusal_families 23 (the counter reads \"distinct literal family codes passed to `format_refusal`\", `reckon/interface_counts.py:30`), yet \u00a74 adds a refusal surface in the plan store and a new `audit-doc` warning kind and says nothing about what either retires, merges, or joins. The section must state whether the refusal is a new family code or an existing one, and what warning kind the `audit-doc` case reuses or replaces.",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "<plan>#s2",
+      "id": "interface_budget-2",
+      "reason": "a section that adds a member to a closed set must name what it retires or merges, or say why nothing can; as written the added kind arrives unaccounted for and the reader cannot tell it from the existing exemptions.",
+      "text": "\u00a72 lands a disposition kind that does not exist (\"a section\") alongside the two `crew dispose` records, which adds a member to the closed `DIMENSION_DISPOSITION_KINDS` tuple (`reckon/crew/review.py:3426`) and therefore to the interface, while \u00a72's prose accounts only for the severity rename.",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "d1c37fecdf403f5108660277195f0a926efdf3bfe245a83a91de25aaef54338d",
+  "plan_slug": "additional-work-is-a-section",
+  "plan_version": 1,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-1",
+      "reason": "",
+      "when": "2026-10-22T13:54:48.165269+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reuse_search-2",
+      "reason": "",
+      "when": "2026-10-22T13:55:48.854312+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "duplicate_owner-1",
+      "reason": "",
+      "when": "2026-10-22T13:56:55.388306+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "duplicate_owner-2",
+      "reason": "",
+      "when": "2026-10-22T13:57:31.283156+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "interface_budget-1",
+      "reason": "",
+      "when": "2026-10-22T13:58:28.380789+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "interface_budget-2",
+      "reason": "",
+      "when": "2026-10-22T13:59:15.563939+00:00"
+    }
+  ],
+  "responses": {
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-22T13:56:55.388306+00:00"
+    },
+    "duplicate_owner-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-22T13:57:31.283156+00:00"
+    },
+    "interface_budget-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-22T13:58:28.380789+00:00"
+    },
+    "interface_budget-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-22T13:59:15.563939+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-22T13:54:48.165269+00:00"
+    },
+    "reuse_search-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-22T13:55:48.854312+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-additional-work-is-a-section.v1.json",
+  "review_run_id": "r-20261022T133700312611-plan-review-of-additional-work-is-a-section",
+  "reviewed_blob_sha": "e06b864e18314e6d5e390dc88d5a2a429cd233e0",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 no new module is proposed; \u00a73 removes the promotion conversion rather than layering over it, and \u00a74's guard lands inside `reckon/_store.py`, the deep owner of plan writes already reached by `_store_section_ops`.",
+    "duplicate_owner": "a finding \u2014 \u00a74's `<code>`-excluding term scan duplicates prose extraction already owned elsewhere, and a census of the term's production sites shows two files carrying it under no section's write paths.",
+    "interface_budget": "a finding \u2014 public_definitions 2014, cli_options 400, mcp_views 19, refusal_families 23; \u00a74 adds a store refusal and an `audit-doc` warning kind, and \u00a72 adds a third disposition kind to a closed two-kind set, with neither section naming what it retires or merges.",
+    "reuse_search": "a finding \u2014 \u00a72 misstates the closed set `crew dispose` already records, and \u00a74 proposes a plan-body term guard without citing `reckon/_store.py`'s existing single body predicate `_forged_plan_structure` / `_refuse_forged_body_structure` that every authoring path already routes through.",
+    "thin_wrapper": "pass \u2014 the three mechanism changes are renames (\u00a72 severities, \u00a73 manifest field and ledger key) and one deletion (\u00a73's followup conversion); nothing in the plan forwards to existing machinery behind a thinner interface."
+  },
+  "section_digests": {
+    "_document": "0e1b33dda748890b04794a11496bc9a6a0039acae4b7d3b73b632dfda3e05469",
+    "s1": "53035db610c769f9fabc12038e7a13898064f071d29b27f9e4b9cfe7e6e9cbfb",
+    "s2": "ba9191e8ce080a5058be8345900d5f22984f6cc500c4cd123eac131488f9b8a8",
+    "s3": "ebc4eea359b6628d83075ef3d4c4d151ff4a42bebd620940545a646167dbb73f",
+    "s4": "24fac554ab8a2212de7c2d75871b86b39aa885779ee07dc8754003881639ffad",
+    "s5": "a6fa784958eef11b006d0cb4912714d98031c18adf47e32ecc1f84a23d578e4d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T13:54:15.622202+00:00"
+}
