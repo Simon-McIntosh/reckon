@@ -19,7 +19,8 @@ Run: python docs/figures/a-project-reads-as-one-picture/
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
+from itertools import pairwise
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -33,15 +34,21 @@ FRESH = "#2f6fb3"  # the classifier asked the pointer now
 STALE = "#b0564f"  # the answer that disagrees
 INK = "#222222"
 
-DISPATCH = datetime(2026, 10, 21, 23, 45, 15)
+
+def _at(*parts: int) -> datetime:
+    """A UTC instant on the run's timeline, so the axis arithmetic is explicit."""
+    return datetime(*parts, tzinfo=UTC)
+
+
+DISPATCH = _at(2026, 10, 21, 23, 45, 15)
 TRANSITIONS = (
-    (datetime(2026, 10, 21, 23, 45, 15), "dispatched"),
-    (datetime(2026, 10, 21, 23, 45, 34), "working"),
-    (datetime(2026, 10, 22, 2, 6, 1), "completed_unpromoted"),
-    (datetime(2026, 10, 22, 2, 8, 45), "working"),
-    (datetime(2026, 10, 22, 2, 54, 21), "waiting"),
+    (_at(2026, 10, 21, 23, 45, 15), "dispatched"),
+    (_at(2026, 10, 21, 23, 45, 34), "working"),
+    (_at(2026, 10, 22, 2, 6, 1), "completed_unpromoted"),
+    (_at(2026, 10, 22, 2, 8, 45), "working"),
+    (_at(2026, 10, 22, 2, 54, 21), "waiting"),
 )
-MEASURED = datetime(2026, 10, 22, 3, 9, 54)
+MEASURED = _at(2026, 10, 22, 3, 9, 54)
 
 STATES = ("dispatched", "working", "completed_unpromoted", "waiting", "interrupted")
 
@@ -57,7 +64,7 @@ def _hours(moment: datetime) -> float:
 
 def _samples(vertices, per_segment: int = 24):
     points = []
-    for (x0, y0), (x1, y1) in zip(vertices, vertices[1:]):
+    for (x0, y0), (x1, y1) in pairwise(vertices):
         for step in range(per_segment + 1):
             fraction = step / per_segment
             points.append((x0 + (x1 - x0) * fraction, y0 + (y1 - y0) * fraction))
@@ -166,7 +173,10 @@ def _timeline(axis) -> None:
         zorder=3,
     )
 
-    carry = ((_hours(TRANSITIONS[-1][0]), recorded["waiting"]), (_hours(MEASURED), recorded["waiting"]))
+    carry = (
+        (_hours(TRANSITIONS[-1][0]), recorded["waiting"]),
+        (_hours(MEASURED), recorded["waiting"]),
+    )
     DATA_LINES.append(carry)
     axis.plot(
         [x for x, _ in carry],
@@ -269,8 +279,24 @@ def _readers(axis) -> None:
         RECORDED,
         dashed=True,
     )
-    axis.text(2.22, 3.42, "answer: waiting", ha="center", va="center", fontsize=14, color=RECORDED)
-    axis.text(7.37, 3.42, "answer: interrupted", ha="center", va="center", fontsize=14, color=FRESH)
+    axis.text(
+        2.22,
+        3.42,
+        "answer: waiting",
+        ha="center",
+        va="center",
+        fontsize=14,
+        color=RECORDED,
+    )
+    axis.text(
+        7.37,
+        3.42,
+        "answer: interrupted",
+        ha="center",
+        va="center",
+        fontsize=14,
+        color=FRESH,
+    )
 
     _arrow(axis, (2.22, 8.3), (2.22, 7.4))
     _arrow(axis, (7.37, 8.3), (7.37, 7.4), FRESH)
