@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own baseline_suite and after_suite blocks. baseline_suite: revision fd27ce7217bae94d79bf715df649b9fed25e4e40, exit_status 1, completed true, failure_count 6, failure_ids the six cases of tests/test_a_review_passes_its_sessions_queue_cap.py. after_suite: revision be63596b00d4f64c4f163bced94f811850903563, exit_status 0, completed true, failure_count 0, failure_ids []. added = after minus before = the empty set, so zero added failures. The failure ids in both blocks reconcile with the FAILED lines of the logs they name: gate-base.log carries exactly those six, gate-head.log none.",
+  "baseline_log_revision": "fd27ce7217bae94d79bf715df649b9fed25e4e40",
+  "call_sites": [
+    "reckon/crew/dispatch.py:323 calls queue_dispatch(record, cap=queued_dispatch_cap(_queued_share_cap(backend))), the production path the review exemption changes",
+    "reckon/crew/dispatch.py:1649 calls queue_dispatch on a second dispatch path",
+    "reckon/crew/dispatch.py:1715 calls queue_dispatch on a third dispatch path",
+    "reckon/crew/dispatch.py:376 calls queue_order.admission_order(queued, live, now=moment) to launch queued work in order",
+    "reckon/crew/queue_admission.py:325 calls runs.queue_dispatch(snapshot) from the admission pass",
+    "reckon/crew/queue_admission.py:1005 reads queue_order.admission_order(...)[1] for a run's place in the order",
+    "reckon/crew/queue_admission.py:1076 calls queue_order.admission_order(placeable, live, now=moment) to launch queued work in order",
+    "reckon/crew/runs.py:627 calls admission_order(queued, live, now=datetime.now(UTC)) to compute the position queue_dispatch returns"
+  ],
+  "completed_at": "2026-10-22T00:02:08.557Z",
+  "dispatched_at": "2026-10-21T23:54:05Z",
+  "findings": [
+    {
+      "file": "tests/test_a_review_passes_its_sessions_queue_cap.py",
+      "line": 97,
+      "severity": "follow-on",
+      "text": "follow-on: 'assert review[\"phase\"] == \"queued\"' compares the returned record's phase against the value this test itself supplied -- _request at tests/test_a_review_passes_its_sessions_queue_cap.py:50 sets \"phase\": \"queued\" unconditionally, and reckon/crew/runs.py:633 returns 'record, position', the very dict that was handed in -- so the two sides move together and the assertion reddens on no regression it was added to guard. The case's discriminating power is elsewhere: a minted-id exemption that stopped working would make the review dispatch raise QueueFull at line 94 before the assertion is reached, which is why the case still fails at base and under the negative control. The echo buys no protection and should not be counted as durability coverage. Does not hold the node."
+    },
+    {
+      "file": "manifest.md",
+      "line": 13,
+      "severity": "follow-on",
+      "text": "follow-on: the reviewed manifest's baseline_suite.command in the directory of r-20261021T212738927975-a-review-passes-its-sessions-queue-cap names the full nine-file gate list, but gate-base.log:5, the log_path that same block cites, records '# command: ... -q tests/test_a_review_passes_its_sessions_queue_cap.py' -- the new test file alone. The measurement is sound (the six FAILED ids match the block's failure_ids exactly), but the recorded command is not the literal command that produced the arm, so a reader reconciling the manifest against its log finds a disagreement where the contract asks for none. Does not hold the node; record the base arm's own command line, or re-run the base arm over the full list."
+    }
+  ],
+  "head_log_revision": "be63596b00d4f64c4f163bced94f811850903563",
+  "item_verdicts": {
+    "call_sites": "verified 8 production call sites",
+    "diff": "two commits against base 10f40d447: ac662708 removes pointer_is_review from reckon/crew/queue_order.py:16-27 and the queue_order re-export from reckon/crew/runs.py:30 and routes both the census and the refusal through reckon.crew.recovery_review_delivery._is_review_run imported at call time, plus the test's role parameter becoming optional and a minted-node-id case; be63596b is the landing fragment recording the repair. No other file is touched.",
+    "done_when": "the done_when names tests/test_a_review_passes_its_sessions_queue_cap.py with its two required cases and the implementation control, and the gate asserts each: gate-head.log records '62 passed in 181.00s' EXIT=0 at revision be63596b, gate-base.log records '6 failed in 0.93s' EXIT=1 at fd27ce721 for the same file, and negative-control.log records '3 failed, 3 passed' EXIT=1, which is the failure delta the fence requires.",
+    "goal": "the goal is to exempt review dispatches from the per-session queue cap and admit them ahead of that session's queued implementation; the gained commits do not move either clause -- reckon/crew/runs.py:616 excludes a review from the cap's census and runs.py:618 from its refusal, and reckon/crew/queue_order.py:32 launches a session's review first -- and they repair the predicate both clauses read, so the goal remains landed.",
+    "manifest": "read; it reports status complete with commits 10f40d447, ac662708 and be63596b, the gate command, and baseline_suite/after_suite JSON blocks that reconcile with the logs, though its baseline_suite.command names the nine-file gate list while the log it cites for that arm ran only the new test file.",
+    "write_paths": "the manifest declares reckon/crew/runs.py, reckon/crew/queue_order.py, tests/test_a_review_passes_its_sessions_queue_cap.py, the landing fragment and a figures directory; git diff --stat 10f40d447..be63596b lists exactly four files -- reckon/crew/queue_order.py, reckon/crew/runs.py, the test file and the fragment -- 50 insertions and 32 deletions, nothing outside the declared scope."
+  },
+  "justifications": {
+    "durability": "the added test tests/test_a_review_passes_its_sessions_queue_cap.py::test_a_review_is_exempt_by_its_minted_node_id_alone reddens at base fd27ce721 (gate-base.log) and under the restored cap check (negative-control.log), so the minted-id half is a real guard, but its assertion at tests/test_a_review_passes_its_sessions_queue_cap.py:97 compares the returned phase against the value the test itself supplied.",
+    "evidence": "gate-head.log records '62 passed in 181.00s' EXIT=0 at revision be63596b and gate-base.log records '6 failed in 0.93s' EXIT=1 at fd27ce721, which is the done_when's failure delta, but the manifest's baseline_suite.command at manifest.md:13 names the nine-file gate list while gate-base.log:5 ran only tests/test_a_review_passes_its_sessions_queue_cap.py.",
+    "fit": "reckon/crew/queue_order.py:29 imports the owner's predicate at call time with a comment stating the import-order reason, and no changed path, symbol or comment carries a plan, version or ticket label.",
+    "goal_fidelity": "reckon/crew/runs.py:616-618 exempts a review from the cap's census and its refusal and reckon/crew/queue_order.py:32 orders a session's review first, and the gained commits strengthen the same predicate rather than altering either clause, so the goal is neither under- nor over-delivered.",
+    "reuse": "reckon/crew/queue_order.py:32 now reads a review through reckon/crew/recovery_review_delivery.py:45 _is_review_run, the repository's owner of that capability, so the fork the previous review scored 5 is retired; the residual is that the owner's underscore-prefixed name is imported across a module boundary rather than reached through a shared low-level module.",
+    "scope_discipline": "git diff --stat 10f40d447..be63596b lists only reckon/crew/queue_order.py, reckon/crew/runs.py, tests/test_a_review_passes_its_sessions_queue_cap.py and the landing fragment, all inside the manifest's declared write paths, with no drive-by edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to exempt review dispatches from the per-session queue cap and admit them ahead of that session's queued implementation; the gained commits do not move either clause -- reckon/crew/runs.py:616 excludes a review from the cap's census and runs.py:618 from its refusal, and reckon/crew/queue_order.py:32 launches a session's review first -- and they repair the predicate both clauses read, so the goal remains landed.\nVERDICT done_when: the done_when names tests/test_a_review_passes_its_sessions_queue_cap.py with its two required cases and the implementation control, and the gate asserts each: gate-head.log records '62 passed in 181.00s' EXIT=0 at revision be63596b, gate-base.log records '6 failed in 0.93s' EXIT=1 at fd27ce721 for the same file, and negative-control.log records '3 failed, 3 passed' EXIT=1, which is the failure delta the fence requires.\nVERDICT write_paths: the manifest declares reckon/crew/runs.py, reckon/crew/queue_order.py, tests/test_a_review_passes_its_sessions_queue_cap.py, the landing fragment and a figures directory; git diff --stat 10f40d447..be63596b lists exactly four files -- reckon/crew/queue_order.py, reckon/crew/runs.py, the test file and the fragment -- 50 insertions and 32 deletions, nothing outside the declared scope.\nVERDICT manifest: read; it reports status complete with commits 10f40d447, ac662708 and be63596b, the gate command, and baseline_suite/after_suite JSON blocks that reconcile with the logs, though its baseline_suite.command names the nine-file gate list while the log it cites for that arm ran only the new test file.\nVERDICT diff: two commits against base 10f40d447: ac662708 removes pointer_is_review from reckon/crew/queue_order.py:16-27 and the queue_order re-export from reckon/crew/runs.py:30 and routes both the census and the refusal through reckon.crew.recovery_review_delivery._is_review_run imported at call time, plus the test's role parameter becoming optional and a minted-node-id case; be63596b is the landing fragment recording the repair. No other file is touched.\nCALL_SITES: reckon/crew/dispatch.py:323, reckon/crew/dispatch.py:1649, reckon/crew/dispatch.py:1715, reckon/crew/dispatch.py:376, reckon/crew/queue_admission.py:325, reckon/crew/queue_admission.py:1005, reckon/crew/queue_admission.py:1076, reckon/crew/runs.py:627\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:616-618 exempts a review from the cap's census and its refusal and reckon/crew/queue_order.py:32 orders a session's review first, and the gained commits strengthen the same predicate rather than altering either clause.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head.log records '62 passed in 181.00s' EXIT=0 at revision be63596b and gate-base.log records '6 failed in 0.93s' EXIT=1 at fd27ce721, but the manifest's baseline_suite.command at manifest.md:13 names the nine-file gate list while gate-base.log:5 ran only tests/test_a_review_passes_its_sessions_queue_cap.py.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 10f40d447..be63596b lists only reckon/crew/queue_order.py, reckon/crew/runs.py, tests/test_a_review_passes_its_sessions_queue_cap.py and the landing fragment, all inside the manifest's declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_review_passes_its_sessions_queue_cap.py::test_a_review_is_exempt_by_its_minted_node_id_alone reddens at base fd27ce721 and under the restored cap check, but its assertion at line 97 compares the returned phase against the value the test itself supplied.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/queue_order.py:29 imports the owner's predicate at call time with a comment stating the import-order reason, and no changed path, symbol or comment carries a plan, version or ticket label.\nSCORE reuse: 17\nJUSTIFICATION reuse: reckon/crew/queue_order.py:32 now reads a review through reckon/crew/recovery_review_delivery.py:45 _is_review_run, the repository's owner of that capability, retiring the fork the previous review scored 5, with the residual that the owner's private name is imported across a module boundary.\nFINDING tests/test_a_review_passes_its_sessions_queue_cap.py:97 follow-on: assert review[\"phase\"] == \"queued\" compares the returned record's phase against the value this test supplied at line 50, and runs.py:633 returns the dict that was handed in, so the assertion reddens on no regression; the case's guard is the QueueFull raise reached at line 94 when the minted-id exemption breaks. Does not hold the node.\nFINDING manifest.md:13 follow-on: baseline_suite.command names the nine-file gate list while gate-base.log:5, the log_path that block cites, ran only tests/test_a_review_passes_its_sessions_queue_cap.py, so the recorded command is not the literal command that produced the arm. Does not hold the node.\n",
+  "review_run_id": "r-20261021T235239846274-review-of-a-review-passes-its-sessions-queue-cap-be63596b00d4",
+  "reviewed_base_sha": "10f40d447a355770941a0566628416c79ed8d561",
+  "reviewed_commits": [
+    "ac662708c4ca8343781c32af12d32742671fd9d8",
+    "be63596b00d4f64c4f163bced94f811850903563"
+  ],
+  "reviewed_head_sha": "be63596b00d4f64c4f163bced94f811850903563",
+  "reviewed_run_id": "r-20261021T212738927975-a-review-passes-its-sessions-queue-cap",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T00:06:14.850262+00:00",
+  "total": 108
+}
