@@ -3539,9 +3539,15 @@ def crew_admit(lane, once, pretty):
     One pass reads the fleet gate, then the queued run pointers, and launches
     each in fair-share order through the same dispatch path a coordinator uses.
     A held or paused gate launches nothing, and a launch the shared path
-    refuses leaves the request queued with the failure recorded. Declared as a
-    fleet service, the verb repeats its pass on a cadence until stopped;
-    ``--once`` is the single pass a caller drives directly.
+    refuses leaves the request queued with the failure recorded.
+
+    The bare form is the loop: it repeats that pass on its cadence until it is
+    stopped, printing each pass's verdicts as one JSON line, and it is what the
+    fleet runs as its admit service. ``--once`` is the single manual pass: it
+    runs one pass and returns instead of looping. One pass is bounded by the
+    lane and fleet gate reads it makes, each under a five-second deadline, so a
+    caller that needs it to return asks for ``--once`` rather than wrapping the
+    loop in a timeout of its own.
     """
     from reckon.crew import queue_admission
     from reckon.crew.node import CrewError

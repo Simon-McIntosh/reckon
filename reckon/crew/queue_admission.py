@@ -16,6 +16,7 @@ from __future__ import annotations
 import contextlib
 import copy
 import fcntl
+import json
 import os
 import sys
 import time
@@ -919,9 +920,43 @@ def _record_gated_verdicts(
         )
 
 
+def _pass_verdict_record(
+    result: Mapping[str, Any], *, lane: str, code_stamp: str
+) -> dict[str, Any] | None:
+    """The one record a pass leaves, or ``None`` when it examined no pointer.
+
+    The same object is what the verdict log holds and what the service loop
+    prints, so a coordinator reading the log and a caller reading stdout see
+    one account of the pass rather than two that can drift.
+    """
+    verdicts = result.get("verdicts") or []
+    if not verdicts:
+        return None
+    return {
+        "at": _utc_now(),
+        "lane": lane,
+        "code_stamp": code_stamp,
+        "gate": result.get("gate"),
+        "pointers": list(verdicts),
+    }
+
+
+def _publish_pass_verdicts(record: Mapping[str, Any] | None) -> None:
+    """Write one pass's verdicts to stdout as one JSON line.
+
+    The bare ``crew admit`` verb is the fleet's admit service: a coordinator
+    watching it must see each decision as the pass reaches it rather than only
+    afterwards out of the verdict log. A pass that examined no queued pointer
+    decided nothing, so it prints nothing — the same silence it records.
+    """
+    if record is None:
+        return
+    print(json.dumps(record), flush=True)
+
+
 def _record_pass_verdicts(
     result: Mapping[str, Any], *, lane: str, code_stamp: str
-) -> None:
+) -> dict[str, Any] | None:
     """Write one log line for a pass whose lane had a queued pointer.
 
     A pass that examined no queued pointer writes nothing: an idle pass is the
@@ -939,20 +974,12 @@ def _record_pass_verdicts(
     """
     verdicts = result.get("verdicts") or []
     if not verdicts:
-        return
+        return None
     from reckon.crew.fleet_supervisor import trim_service_log
     from reckon.crew.picker import _append_crew_log_line
 
-    _append_crew_log_line(
-        ADMISSION_VERDICT_LOG,
-        {
-            "at": _utc_now(),
-            "lane": lane,
-            "code_stamp": code_stamp,
-            "gate": result.get("gate"),
-            "pointers": list(verdicts),
-        },
-    )
+    record = _pass_verdict_record(result, lane=lane, code_stamp=code_stamp)
+    _append_crew_log_line(ADMISSION_VERDICT_LOG, record)
     try:
         trim_service_log(
             runs.crew_home() / ADMISSION_VERDICT_LOG,
@@ -960,7 +987,8 @@ def _record_pass_verdicts(
             keep=ADMISSION_VERDICT_LOG_MAX_BYTES,
         )
     except OSError:  # a pass never fails on its own record
-        return
+        return record
+    return record
 
 
 def queued_placements(
@@ -1330,6 +1358,12 @@ def admit_until_stopped(
     can be read afterwards rather than inferred from a pointer that may since
     have been discarded. A pass that examined no queued pointer writes nothing.
 
+    The loop also prints that same line to stdout as it is recorded, so a
+    coordinator watching the bare verb sees what each pass decided while it is
+    running rather than having to read the log afterwards to learn whether it
+    was working. ``--once`` returns its pass to the caller instead and prints
+    nothing here, because the verb reports that pass itself.
+
     The code stamp is compared at the head of every pass, before the pass runs.
     A pass must never validate or launch a queued request with code older than
     the checkout it launches from, and the checkout can move during the wait
@@ -1352,8 +1386,10 @@ def admit_until_stopped(
         while True:
             if _admit_code_stamp() != code_stamp and _checkout_code_is_trusted():
                 _reexec_into_current_code()
-            _record_pass_verdicts(
-                admit_once(lane=lane), lane=lane, code_stamp=code_stamp
+            _publish_pass_verdicts(
+                _record_pass_verdicts(
+                    admit_once(lane=lane), lane=lane, code_stamp=code_stamp
+                )
             )
             passes += 1
             _pause(interval)
