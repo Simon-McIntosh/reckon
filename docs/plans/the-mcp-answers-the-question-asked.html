@@ -26,7 +26,7 @@
   <title>The MCP Answers the Question Asked | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="22">
+<meta name="plan-version" content="23">
 <meta name="plan-modified" content="2026-10-22">
 </head>
 <body>
@@ -217,7 +217,10 @@
     <div class="r-comment-body"><p>Loading a flight config is now forward-compatible while authoring stays strict: the generator emits `extra="ignore"` (scripts/regen_flight_schema.py, one setting, regenerated), and `resolve` walks every contributing layer against the model's own field declarations to report the undeclared key paths on `ResolvedFlight.unknown_keys`, published as `flight_unknown_keys` on `flight_report` — the field `crew(view="flight")` already spreads. `reckon flight --check` resolves with `strict=True` and refuses the first such key by path with `Extra inputs are not permitted`. The two tests that pinned the old load-time strictness kept their cases and moved their vehicle: tests/test_budget_lift.py's ceilings test refuses an undeclared `budget.lift.nope` through the strict read, and tests/test_one_check_trusts_a_moved_checkout.py's probe breaks a declared shipped default (`budget.exhausted_statuses`) instead of adding an unknown key. Measure: a fixture host layer carrying `a_key_from_newer_code` and `budget.a_key_from_newer_code` resolves and reports exactly those two paths (empty for the shipped defaults and for this workstation's real `~/.config/reckon/flight.yaml`), `--check` on the same file exits non-zero naming the key, and a type error on a declared key is still refused at load; the load test fails on the base revision with `Extra inputs are not permitted` (2 failed, EXIT=1 under the declared mutation).</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261022T101345939864-review-of-a-row-is-compact-and-names-its-section-ac3b69b77146" data-who="reckon-build" data-when="2026-10-22T10:39:50.929Z">
-    <div class="r-comment-body"><p>review of r-20261022T065817789148-a-row-is-compact-and-names-its-section at head ac3b69b77 read against base 8c7e865d7: scores goal_fidelity 15, evidence 13, scope_discipline 17, durability 18, fit 18, reuse 13, added_failure_count 0; five follow-on findings, the first that reckon/crew/query.py:771 builds the runs view&#x27;s rows through _compact_row and never routes them through the new project_run_rows, so the goal&#x27;s &quot;every crew list view&quot; holds for three of the four views.</p></div>
+    <div class="r-comment-body"><p>review of r-20261022T065817789148-a-row-is-compact-and-names-its-section at head ac3b69b77 read against base 8c7e865d7: scores goal_fidelity 15, evidence 13, scope_discipline 17, durability 18, fit 18, reuse 13, added_failure_count 0; five follow-on findings, the first that reckon/crew/query.py:771 builds the runs view's rows through _compact_row and never routes them through the new project_run_rows, so the goal's "every crew list view" holds for three of the four views.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261022T135212100068-review-of-a-row-is-compact-and-names-its-section-b84305f7af0f" data-who="reckon-build" data-when="2026-10-22T14:34:54.843Z">
+    <div class="r-comment-body"><p>review-of-a-row-is-compact-and-names-its-section@b84305f7af0f — reviewed the one commit the run gained since its prior review (ac3b69b77..b84305f7a, refactor(crew): route the runs view through the one row projection); goal_fidelity 19, evidence 15, scope_discipline 19, durability 14, fit 18, reuse 20; added_failure_count 1 (the attributed test_mcp_tools provenance flake, green in isolation); two follow-on findings (keep_empty disables the projection&#x27;s omission rule for the runs view; the section assertion shares the normalizer it guards).</p></div>
 </div>
 </section>
 </main>

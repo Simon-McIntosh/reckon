@@ -1,0 +1,40 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_mcp_tools.py::test_typed_read_write_provenance_tracks_selected_checkout"
+  ],
+  "completed_at": "2026-10-22T14:34:54.843Z",
+  "dispatched_at": "2026-10-22T14:00:19Z",
+  "findings": [
+    {
+      "file": "reckon/crew/query.py",
+      "line": "871",
+      "severity": "follow-on",
+      "text": "follow-on: runs_view passes keep_empty=row_fields, the full declared field set, so project_run_rows' empty-field omission rule (query.py:281-284) is disabled for the runs view; a probe shows a runs row keeps plan=None, brief_sha256='', classification={} and worktree_exists=None."
+    },
+    {
+      "file": "tests/test_a_row_is_compact_and_names_its_section.py",
+      "line": "200",
+      "severity": "follow-on",
+      "text": "follow-on: the section assertion compares against CANONICAL_SECTION = normalize_section(SECTION) (:33), the same normalizer the code under test applies, so it is not independent of the value under test."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source goal is \"Route every crew list view's rows through one projection that names each run's section\"; the commits added since the prior review close the one gap that review named, and reckon/crew/query.py:866 now routes the runs view through project_run_rows so all four views (live query.py:336/344, obligations.py:1383, directory.py:214/217, runs query.py:866) reach it.\nVERDICT done_when: the done-when names a four-view section measure; yes -> tests/test_a_row_is_compact_and_names_its_section.py:187/:195/:208 and the section-state cases :319/:334, gated by gate.log (62 passed, 1 failed, EXIT=1) with the base arm gate-base-section-state.log (11 failed, EXIT=1); the done-when's roadmap-size clause is now recorded in roadmap-size.log and ruff is recorded in the manifest.\nVERDICT write_paths: the source prompt FENCE-SCOPE lists six paths and the manifest's orientation_write_paths lists nine (adding reckon/crew/directory.py, reckon/crew/obligations.py, reckon/roadmap.py); every path this commit changes -- reckon/crew/query.py, reckon/mcp.py, reckon/roadmap.py, the evidence fragment -- is inside both listings.\nVERDICT manifest: read; status complete, negative_control_log is a bare path, baseline_suite/after_suite are readable JSON with literal (placeholder-free) commands, and after_suite records 1 failed of 63 with the id attributed and shown green in isolation at gate-flake-isolation.log.\nVERDICT diff: read the single commit b84305f7a against ac3b69b77 -- four files, all inside the declared scope: query.py adds keep_empty and the runs_view projection call and drops the section copy from _compact_row, mcp.py deletes _row_state and calls dependency_row_state, roadmap.py adds dependency_row_state (called at :1368 and mcp.py:1722), and the fragment is rewritten to the new mechanism.\nCALL_SITES: reckon/mcp_views.py:3938 (serve_crew_view dispatch to crew_runs_view), reckon/crew/query.py:runs_view, reckon/mcp.py:1007 (read_plan deps -> _resolve_plan_ref), reckon/mcp.py:1682, reckon/roadmap.py:3268 (_section_scoped_edges -> dependency_row_state)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/query.py:866 routes the runs rows through project_run_rows last, so the runs view now shares the projection with the other three views and the goal holds for all four.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate.log records the gate at ac3b69b77 plus the node's uncommitted fixes (62 passed, 1 failed, EXIT=1) rather than at the landed commit b84305f7a, and the one head failure is the attributed test_mcp_tools flake shown green in gate-flake-isolation.log; the node's own file is green at b84305f7a (14 passed, re-run by this review).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff changes only reckon/crew/query.py, reckon/mcp.py, reckon/roadmap.py and the node's own evidence fragment (git diff --stat ac3b69b77 b84305f7a), all inside the declared write paths.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_row_is_compact_and_names_its_section.py:187 reddens if the runs_view projection call is removed (the row reverts to the raw 's4' spelling, per negative-control.log:200), but the added keep_empty behaviour has no assertion anywhere (git grep keep_empty finds only query.py:228/261/871) and the section assertion compares against the same normalizer under test (:33).\nSCORE fit: 18\nJUSTIFICATION fit: the added name dependency_row_state (reckon/roadmap.py:621) extends the module's existing _status/_section_satisfied vocabulary ('s4' -> '\u00a74'), and none of the changed symbols carry a plan, sprint or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the commit removes the duplicate rule, deleting mcp.py's _row_state and the inline declaration fallback at roadmap.py:1333-1345 and replacing both with one owner, dependency_row_state at roadmap.py:621.\nFINDING reckon/crew/query.py:871 follow-on: runs_view passes keep_empty=row_fields, i.e. the full declared field set (DEFAULT_RUN_FIELDS plus member), so project_run_rows' empty-field omission rule (query.py:281-284, documented at query.py:240) is disabled for the runs view -- a probe shows a runs row keeps plan=None, brief_sha256='', classification={} and worktree_exists=None, so the runs view does not satisfy the goal's shared 'empty fields are omitted' clause, and the commit's stated rationale (a brief run's null plan) is one field rather than all seventeen.\nFINDING tests/test_a_row_is_compact_and_names_its_section.py:200 follow-on: the assertion compares the row's section against CANONICAL_SECTION, computed at :33 as normalize_section(SECTION) with the same normalizer the projection applies, so it is not independent of the code under test -- a regression making normalize_section the identity would leave both sides equal and the assertion green, though it does still redden if the runs_view projection call is removed.\n",
+  "review_run_id": "r-20261022T135212100068-review-of-a-row-is-compact-and-names-its-section-b84305f7af0f",
+  "reviewed_base_sha": "ac3b69b7714690525d1f484311b95bb0a90d135d",
+  "reviewed_head_sha": "b84305f7af0f7293fb24d8b85139f36c807b2b8f",
+  "reviewed_run_id": "r-20261022T065817789148-a-row-is-compact-and-names-its-section",
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T14:55:28.632592+00:00",
+  "total": 105
+}
