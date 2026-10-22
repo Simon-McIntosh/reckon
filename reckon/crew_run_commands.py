@@ -2781,6 +2781,53 @@ crew_ledger = tombstone_command("ledger")
 crew_velocity = tombstone_command("velocity")
 
 
+def _budget_reset_reach() -> dict[str, Any]:
+    """Name the sessions a reset announcement reaches, and those it does not.
+
+    The pane that draws a reset row is the one a live follower registration
+    feeds, so the liveness verdict is ``follower_registration.list_followers``'s
+    own and nothing here decides it again. For every mounted project this reads
+    that project's registrations and folds them by session: a session holding
+    any live registration is reached, and a session whose registrations are all
+    not live is listed separately, because that is the session the announcer
+    has to message by hand. A session's own identity is its registration's,
+    not this process's, and the read writes nothing.
+    """
+    from reckon.crew import follower_registration
+    from reckon.flight import mounted_project_docs
+
+    reached: set[str] = set()
+    unreached: set[str] = set()
+    for project in sorted(mounted_project_docs()):
+        for row in follower_registration.list_followers(project):
+            name = str(row.get("session") or "")
+            if not name:
+                continue
+            if row.get("live"):
+                reached.add(name)
+                unreached.discard(name)
+            elif name not in reached:
+                unreached.add(name)
+    reached_sessions = sorted(reached)
+    unreached_sessions = sorted(unreached)
+    total = len(reached_sessions) + len(unreached_sessions)
+    if total:
+        detail = (
+            f"the announcement reaches {len(reached_sessions)} of {total} "
+            f"registered sessions' panes; message the "
+            f"{len(unreached_sessions)} listed under 'unreached' directly"
+        )
+    else:
+        detail = (
+            "no session holds a follower registration, so no pane will draw the row"
+        )
+    return {
+        "reached": reached_sessions,
+        "unreached": unreached_sessions,
+        "detail": detail,
+    }
+
+
 def _budget_reset_payload(
     group,
     mark_available,
@@ -2799,7 +2846,9 @@ def _budget_reset_payload(
     ``--used`` records the reset, which clears the flag when the event is global.
     Budget preflight and the picker read the flag from the same durable record,
     so flagging it here changes the pace they report, and the event itself is
-    what a pane announces and ``crew budget --list`` shows.
+    what a pane announces and ``crew budget --list`` shows. ``--used`` also
+    reports the announcement's reach, from every mounted project's follower
+    registrations, so the recorder learns which sessions it has to tell by hand.
     """
     from reckon.crew import budget_reset as budget_reset_module
 
@@ -2825,6 +2874,10 @@ def _budget_reset_payload(
             clock=clock,
             session=session,
         )
+        # The announcement's audience is the whole point of recording it: a
+        # pane fed by a live registration draws the row, and the sessions left
+        # out are the ones the announcer has to reach some other way.
+        result["reach"] = _budget_reset_reach()
     else:
         found = budget_reset_module.record(group)
         found = found or {}
@@ -3243,7 +3296,8 @@ def _budget_lifts_payload(group):
     is_flag=True,
     help=(
         "With --reset, record that the reset happened, clearing a banked flag "
-        "when the event is global. Requires --reason."
+        "when the event is global, and report which sessions the announcement "
+        "reaches. Requires --reason."
     ),
 )
 @click.option(

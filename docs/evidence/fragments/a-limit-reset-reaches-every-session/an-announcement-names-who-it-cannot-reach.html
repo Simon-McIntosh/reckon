@@ -1,0 +1,24 @@
+<article class="r-evidence" data-node="an-announcement-names-who-it-cannot-reach">
+<h3 id="an-announcement-names-who-it-cannot-reach-what">A recorded reset now says which sessions its broadcast reaches</h3>
+<p id="an-announcement-names-who-it-cannot-reach-body">At the base revision <code>crew budget --reset --used</code> wrote the durable
+reset event and said nothing about who hears it, so an announcer relaying a reset had no way to
+learn which sessions were left out and messaged every one of them by hand. The command's result
+now carries a <code>reach</code> block, folded from every mounted project's
+<code>follower_registration.list_followers</code>: <code>reached</code> lists the sessions holding a
+live registration, whose panes will draw the row, and <code>unreached</code> lists the sessions
+whose registrations are all dead, which are the ones to tell directly. The liveness verdict stays
+with <code>list_followers</code> — the report derives none of its own — and the read writes nothing.
+The block appears in the JSON document and in the pretty output, and the <code>--used</code> help
+and the payload's docstring say so.</p>
+<h3 id="an-announcement-names-who-it-cannot-reach-measure">Measure</h3>
+<p id="an-announcement-names-who-it-cannot-reach-figures">Both arms were rebuilt from git checkouts
+under the run's own scratch directory with the four follower variables unset and run in place on
+the fleet node at <code>-n 8</code>: base <code>f990f8063</code> <strong>15 failed, 478
+passed</strong>, head <code>f76fbd7a7</code> <strong>15 failed, 483 passed</strong> — the same fifteen
+failure ids in both arms, none added and none removed. The five added passes are the new file's
+cases. The fifteen are pre-existing at the base revision: thirteen drive the retired
+<code>budget-reset</code>, <code>budget-lift</code> and <code>preflight</code> verbs, and two are in
+<code>test_a_lane_change_keeps_its_waivers.py</code>. The new file alone is <strong>5 passed,
+EXIT=0</strong>; under the declared mutation — every registration treated as live — the stale session
+is listed as reached and <strong>3 failed, 2 passed, EXIT=1</strong>.</p>
+</article>
