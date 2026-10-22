@@ -1,0 +1,76 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:1681",
+    "reckon/crew/dispatch_launch.py:2518",
+    "reckon/crew/dispatch_launch.py:1618",
+    "reckon/crew/dispatch_launch.py:1452",
+    "reckon/crew/dispatch.py:3020"
+  ],
+  "completed_at": "2026-10-22T16:36:55.584Z",
+  "dispatched_at": "2026-10-22T16:07:22Z",
+  "findings": [
+    {
+      "file": "after-suite.log",
+      "line": 1,
+      "severity": "follow-on",
+      "summary": "the head arm's log names revision 5ef717f82, which does not carry the change the arm measures",
+      "text": "follow-on: the header of after-suite.log reads '# revision: 5ef717f82 (the gate at the head carrying the repair)', but 5ef717f82 carries SANDBOX_STARTUP_WINDOW_SECONDS = 15.0 and a test file collecting six of this node's cases, while the arm it prefixes collected 21 and passed. The arm therefore ran a working tree whose repair was not yet committed, and the log names neither that tree nor its dirtiness, so the receipt the manifest's after_suite quotes as the gate at the head cannot be tied to the reviewed head. The identical mismatch was reported at the prior reviewed head (after-suite.log naming 2b78bd010) and left unrepaired; re-running the gate at the committed head costs one gate and removes it."
+    },
+    {
+      "file": "docs/evidence/fragments/a-worker-cannot-write-your-home/a-slow-launch-retries-a-vanished-bind.html",
+      "line": 53,
+      "severity": "follow-on",
+      "summary": "the landing fragment states the base arm's figure twice, with two different values",
+      "text": "follow-on: the bullet states the base arm as '4 failed, 16 passed, EXIT=1' where line 42 of the same fragment and the baseline-suite.log it cites both record '5 failed, 16 passed, EXIT=1'. Four failures sum to a twenty-case collection, which is the pre-repair test file, so the older arm's figure is presented beside the newer arm's log; the landing record contradicts its own cited measure and understates by one the cases this node's file turns from red to green."
+    },
+    {
+      "file": "tests/test_a_slow_launch_retries_a_vanished_bind.py",
+      "line": 391,
+      "severity": "follow-on",
+      "summary": "the window-bounds assertions take their threshold from the constant of the code under test",
+      "text": "follow-on: 'assert elapsed >= WINDOW' compares the launch's elapsed time against dispatch_module.SANDBOX_STARTUP_WINDOW_SECONDS, so the expectation moves with the value it is testing: at the 0.5-second window the retry cases were built to detect, this assertion still holds, and the case's own message admits it would then measure nothing. The same self-referential threshold governs tests/test_a_slow_launch_retries_a_vanished_bind.py:281, :439 and :468. The retry cases do not rest on these assertions, so the regression class is still caught, but a window regression narrows these four to tautologies."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": 1505,
+      "severity": "follow-on",
+      "summary": "_stream_began is a third copy of the module's existing stream-has-no-bytes read",
+      "text": "follow-on: _stream_began re-implements a predicate this module already writes inline twice, at dispatch_launch.py:247 and :296, down to the same try/except OSError and the same 'a stream never created is the same fact as an empty one' comment. Nothing is forked that changes behaviour, so this does not hold the node, but the module would read better with one owner for the fact and three callers of it."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit from 6d3c43bbd to e0edff7ba; three files changed, 672 insertions and 32 deletions, and the production change is confined to reckon/crew/dispatch_launch.py, all inside the declared write paths.",
+    "done_when": "the done-when names a gate over four test files and four fixtures; tests/test_a_slow_launch_retries_a_vanished_bind.py drives the four-second refusal under both phrases, a same-delay refusal over something else, a healthy child that outlives the window, and a twenty-second refusal; the manifest records the gate at the head as 21 passed EXIT=0 against 5 failed/16 passed EXIT=1 at base 6d3c43bbd, the existing early-exit control tests/test_an_early_exit_keeps_its_status.py is green at both heads, and the gate log records that the four-second delay alone reproduces the recorded failure.",
+    "goal": "the goal is to retry a launch whose sandbox refuses a vanished bind source however long the launch took to start; reckon/crew/dispatch_launch.py:1493 holds SANDBOX_STARTUP_WINDOW_SECONDS at 30.0 and the watch at dispatch_launch.py:1537 decides from the launch's own stderr inside a window counted from before the try's spawn, so the four-second refusal the plan section records is retried.",
+    "manifest": "read at the reviewed head; status complete, the eight commits listed, the gate command literal, after_suite 21 passed in 239.32s EXIT=0, baseline_suite 5 failed/16 passed EXIT=1, a negative control and a repair control, and a follow_ons block naming the reworked window rule and the reaper's unguarded pointer write.",
+    "write_paths": "the source node's declared scope is reckon/crew/dispatch_launch.py, tests/test_a_slow_launch_retries_a_vanished_bind.py, docs/evidence/fragments/a-worker-cannot-write-your-home/a-slow-launch-retries-a-vanished-bind.html and an unused figures directory; the three files the diff touches are the first three, and nothing else."
+  },
+  "justifications": {
+    "durability": "the retry cases are falsified by construction rather than merely green: negative-control2.log reddens the four-second case (2 failed, EXIT=1) at a 0.5-second window and repair-control.log reddens the twenty-second case (1 failed in 17.51s, EXIT=1) with the floor reverted to 15.0.",
+    "evidence": "the manifest's after_suite quotes after-suite.log, whose header at after-suite.log:1 names revision 5ef717f82, a commit whose window constant is 15.0 and whose test file collects six of this node's cases rather than the seven the 21-test arm ran.",
+    "fit": "the docstrings and names at reckon/crew/dispatch_launch.py:1497 and :1505 follow the module's own style and describe mechanism, but the fragment at docs/evidence/fragments/a-worker-cannot-write-your-home/a-slow-launch-retries-a-vanished-bind.html:53 states a base figure its own line 42 contradicts.",
+    "goal_fidelity": "reckon/crew/dispatch_launch.py:1493 restores the 30.0-second floor the prior review found lowered, and dispatch_launch.py:1580-1588 retries only once the child has exited over a refusal naming one of this launch's own read-only bind sources.",
+    "reuse": "_stream_began at reckon/crew/dispatch_launch.py:1505 is a third implementation of the module's own stream-has-no-bytes fact, already read inline at dispatch_launch.py:247 and :296; a grep over reckon/ for read-text-or-empty and stat().st_size owners found no named owner for either predicate, so this duplicates an idiom rather than extending a named mechanism.",
+    "scope_discipline": "every path in the range 6d3c43bbd..e0edff7ba is one of the three declared write paths, and the figures directory the node was also granted is unused."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to retry a launch whose sandbox refuses a vanished bind source however long the launch took to start; reckon/crew/dispatch_launch.py:1493 holds SANDBOX_STARTUP_WINDOW_SECONDS at 30.0 and the watch at dispatch_launch.py:1537 decides from the launch's own stderr inside a window counted from before the try's spawn, so the four-second refusal the plan section records is retried.\nVERDICT done_when: the done-when names a gate over four test files and four fixtures; tests/test_a_slow_launch_retries_a_vanished_bind.py drives the four-second refusal under both phrases, a same-delay refusal over something else, a healthy child that outlives the window, and a twenty-second refusal; the manifest records the gate at the head as 21 passed EXIT=0 against 5 failed/16 passed EXIT=1 at base 6d3c43bbd, the existing early-exit control tests/test_an_early_exit_keeps_its_status.py is green at both heads, and the gate log records that the four-second delay alone reproduces the recorded failure.\nVERDICT write_paths: the source node's declared scope is reckon/crew/dispatch_launch.py, tests/test_a_slow_launch_retries_a_vanished_bind.py, docs/evidence/fragments/a-worker-cannot-write-your-home/a-slow-launch-retries-a-vanished-bind.html and an unused figures directory; the three files the diff touches are the first three, and nothing else.\nVERDICT manifest: read at the reviewed head; status complete, the eight commits listed, the gate command literal, after_suite 21 passed in 239.32s EXIT=0, baseline_suite 5 failed/16 passed EXIT=1, a negative control and a repair control, and a follow_ons block naming the reworked window rule and the reaper's unguarded pointer write.\nVERDICT diff: read commit by commit from 6d3c43bbd to e0edff7ba; three files changed, 672 insertions and 32 deletions, and the production change is confined to reckon/crew/dispatch_launch.py, all inside the declared write paths.\nCALL_SITES: reckon/crew/dispatch_launch.py:1681 (_spawn_detached_worker calls _spawn_worker_retrying_a_vanished_bind with log_path), reckon/crew/dispatch_launch.py:2518 (_supervisor_spawn_worker, the supervisor child entry reached from dispatch_launch.py:3461, calls the same with log_path), reckon/crew/dispatch_launch.py:1618 (_spawn_worker_retrying_a_vanished_bind calls _died_over_a_vanished_bind_source), reckon/crew/dispatch_launch.py:1447 and :1452 (_spawn reaching the detached path with log_path), reckon/crew/dispatch.py:3020 and :3008 (re-exports of _supervisor_spawn_worker and _spawn_worker_retrying_a_vanished_bind)\nSCORE goal_fidelity: 19\nSCORE evidence: 15\nSCORE scope_discipline: 18\nSCORE durability: 18\nSCORE fit: 16\nSCORE reuse: 15\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:1493 restores the 30.0-second floor the prior review found lowered, and dispatch_launch.py:1580-1588 retries only once the child has exited over a refusal naming one of this launch's own read-only bind sources.\nJUSTIFICATION evidence: the manifest's after_suite quotes after-suite.log, whose header at after-suite.log:1 names revision 5ef717f82, a commit whose window constant is 15.0 and whose test file collects six of this node's cases rather than the seven the 21-test arm ran.\nJUSTIFICATION scope_discipline: every path in the range 6d3c43bbd..e0edff7ba is one of the three declared write paths, and the figures directory the node was also granted is unused.\nJUSTIFICATION durability: the retry cases are falsified by construction rather than merely green: negative-control2.log reddens the four-second case (2 failed, EXIT=1) at a 0.5-second window and repair-control.log reddens the twenty-second case (1 failed in 17.51s, EXIT=1) with the floor reverted to 15.0.\nJUSTIFICATION fit: the docstrings and names at reckon/crew/dispatch_launch.py:1497 and :1505 follow the module's own style and describe mechanism, but the fragment at docs/evidence/fragments/a-worker-cannot-write-your-home/a-slow-launch-retries-a-vanished-bind.html:53 states a base figure its own line 42 contradicts.\nJUSTIFICATION reuse: _stream_began at reckon/crew/dispatch_launch.py:1505 is a third implementation of the module's own stream-has-no-bytes fact, already read inline at dispatch_launch.py:247 and :296; a grep over reckon/ for read-text-or-empty and stat().st_size owners found no named owner for either predicate, so this duplicates an idiom rather than extending a named mechanism.\nFINDING after-suite.log:1 follow-on: the header of after-suite.log reads '# revision: 5ef717f82 (the gate at the head carrying the repair)', but 5ef717f82 carries SANDBOX_STARTUP_WINDOW_SECONDS = 15.0 and a test file collecting six of this node's cases, while the arm it prefixes collected 21 and passed. The arm therefore ran a working tree whose repair was not yet committed, and the log names neither that tree nor its dirtiness, so the receipt the manifest's after_suite quotes as the gate at the head cannot be tied to the reviewed head. The identical mismatch was reported at the prior reviewed head (after-suite.log naming 2b78bd010) and left unrepaired; re-running the gate at the committed head costs one gate and removes it.\nFINDING docs/evidence/fragments/a-worker-cannot-write-your-home/a-slow-launch-retries-a-vanished-bind.html:53 follow-on: the bullet states the base arm as '4 failed, 16 passed, EXIT=1' where line 42 of the same fragment and the baseline-suite.log it cites both record '5 failed, 16 passed, EXIT=1'. Four failures sum to a twenty-case collection, which is the pre-repair test file, so the older arm's figure is presented beside the newer arm's log; the landing record contradicts its own cited measure and understates by one the cases this node's file turns from red to green.\nFINDING tests/test_a_slow_launch_retries_a_vanished_bind.py:391 follow-on: 'assert elapsed >= WINDOW' compares the launch's elapsed time against dispatch_module.SANDBOX_STARTUP_WINDOW_SECONDS, so the expectation moves with the value it is testing: at the 0.5-second window the retry cases were built to detect, this assertion still holds, and the case's own message admits it would then measure nothing. The same self-referential threshold governs tests/test_a_slow_launch_retries_a_vanished_bind.py:281, :439 and :468. The retry cases do not rest on these assertions, so the regression class is still caught, but a window regression narrows these four to tautologies.\nFINDING reckon/crew/dispatch_launch.py:1505 follow-on: _stream_began re-implements a predicate this module already writes inline twice, at dispatch_launch.py:247 and :296, down to the same try/except OSError and the same 'a stream never created is the same fact as an empty one' comment. Nothing is forked that changes behaviour, so this does not hold the node, but the module would read better with one owner for the fact and three callers of it.\n",
+  "review_run_id": "r-20261022T154027791853-review-of-a-slow-launch-retries-a-vanished-bind-e0edff7baf3c",
+  "reviewed_base_sha": "6d3c43bbd859d822e5dfd31f0925fee5148238b3",
+  "reviewed_head_sha": "e0edff7baf3c1a0e036951362283f3a8463114a1",
+  "reviewed_run_id": "r-20261022T090956316216-a-slow-launch-retries-a-vanished-bind",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T16:29:12Z",
+  "total": 101
+}
