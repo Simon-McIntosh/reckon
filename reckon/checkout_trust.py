@@ -58,19 +58,16 @@ COMMITTED_TREE_RETENTION = 3
 # same moment, and a herd of them would otherwise run the same thirty-second
 # proof together. The first asker records the verdict beside the image, keyed by
 # the interpreter, and every later asker reads it; an exclusive lock in the
-# image's own directory serialises the proofs, so a concurrent asker waits for
-# the first's verdict rather than spending a probe of its own.
+# image's own directory serialises the proofs, so only one asker spends a probe.
+#
+# The lock is tried once and never waited on. A follower asks on its delivery
+# path, and on a node whose shared filesystem is congested one proof can take
+# longer than any bound a waiter could afford: every waiter then stopped
+# streaming for the whole bound and printed a deferral line about a proof it
+# was not running. An asker that finds the lock held is told the proof is
+# pending and reads the recorded verdict at its next check instead.
 IMPORT_VERDICT_PREFIX = ".import-verdict-"
 IMPORT_PROBE_LOCK = ".import-probe.lock"
-
-# A waiter on an image's proof polls for the lock in short steps and gives up at
-# a deadline of its own. A follower asks this question on its delivery path, so
-# an unbounded wait would stop it streaming for as long as a proof runs, and one
-# timed-out proof would then be paid by every waiter in turn -- sixteen waiters,
-# sixteen probes, exactly the herd this serialisation exists to prevent. The
-# deadline is the probe's own bound, so a waiter never waits longer than the one
-# proof it is waiting on.
-IMPORT_PROBE_LOCK_POLL_SECONDS = 0.05
 
 # Both the verdict and the lock live inside the image directory, which
 # :func:`_images_ranked_for_pruning` orders by directory mtime. Writing either
@@ -145,6 +142,15 @@ class IdentityReadError(Exception):
 COMMITTED_TREE_PUBLISH_GRACE_SECONDS = 300.0
 COMMITTED_TREE_LEASE_WINDOW_SECONDS = 600.0
 COMMITTED_TREE_LEASE_MARKER = ".lease"
+
+# How often one process renews a held image's lease. Every follower and
+# producer on a node holds the same image, and renewing on each poll stamped
+# one shared inode and rewrote one shared record several times a second per
+# process, which on a shared filesystem queues every holder behind the others'
+# write tokens. A renewal per minute stays well inside both the lease window and
+# the publish grace that a pruner on another node reads.
+COMMITTED_TREE_LEASE_RENEW_SECONDS = 60.0
+_LEASE_RENEWED_AT: dict[int, float] = {}
 
 # The model catalogue is versioned data beside the package rather than inside
 # it, so a reload image carries it explicitly at the checkout's own relative
@@ -540,16 +546,20 @@ def pin_materialized_tree(root: Path) -> int:
         os.close(descriptor)
         raise RuntimeError(f"materialized tree vanished before its lease: {root}")
     _record_lease_node(root)
+    _LEASE_RENEWED_AT[descriptor] = time.monotonic()
     return descriptor
 
 
 def refresh_materialized_tree_pin(descriptor: int, root: Path) -> None:
-    """Renew the held image lease on every follower or producer poll.
+    """Renew the held image lease, at most once per renewal interval.
 
-    The lease itself is renewed on the descriptor and the node's name in the
-    tree's lease record is re-stamped, which is the renewal a pruner on
-    another node reads: that node cannot see this one's lock, so the record is
-    the only evidence it has that the tree is still imported from.
+    A follower or producer calls this on every poll; only a call at least
+    :data:`COMMITTED_TREE_LEASE_RENEW_SECONDS` after this descriptor's last
+    renewal writes anything. The lease itself is renewed on the descriptor and
+    the node's name in the tree's lease record is re-stamped, which is the
+    renewal a pruner on another node reads: that node cannot see this one's
+    lock, so the record is the only evidence it has that the tree is still
+    imported from.
 
     A tree removed from under this process by a pruner elsewhere is a tree
     with no lease left to renew and no record left to stamp, and neither half
@@ -559,6 +569,11 @@ def refresh_materialized_tree_pin(descriptor: int, root: Path) -> None:
     and neither is allowed to end the watch, which is what a follower serving
     a session has to survive.
     """
+    moment = time.monotonic()
+    renewed = _LEASE_RENEWED_AT.get(descriptor)
+    if renewed is not None and moment - renewed < COMMITTED_TREE_LEASE_RENEW_SECONDS:
+        return
+    _LEASE_RENEWED_AT[descriptor] = moment
     with contextlib.suppress(OSError):
         os.utime(descriptor, None)
     with contextlib.suppress(OSError):
@@ -718,6 +733,16 @@ class ImportProbeTimedOut(str):
     differently -- the follower, which retries a timeout at its next check
     rather than waiting for the code to move -- tells the two apart by this
     type; every other reader takes it as the printable reason it also is.
+    """
+
+
+class ImportProofPending(str):
+    """Another process holds the image's proof lock and has not answered yet.
+
+    Not a refusal of the image and not a timeout: nothing about the image or
+    the node has been learned. A reader that only asks whether the code loads
+    still gets a refusal for now; the follower tells this apart by type, says
+    nothing, and reads the recorded verdict on its next check.
     """
 
 
@@ -891,43 +916,29 @@ def _probe_imports(root: Path) -> tuple[bool, str]:
     return False, (lines[-1] if lines else f"exit {completed.returncode}")
 
 
-def _take_import_probe_lock(descriptor: int, deadline: float) -> bool:
-    """Take the image's lock, or report that it was still held at ``deadline``.
-
-    The lock is asked for without blocking and in a loop rather than by one
-    blocking call, so the wait has an end. The asker ahead is bounded by
-    :data:`IMPORT_PROBE_TIMEOUT` of its own, so a waiter that gives up at that
-    same bound waits no longer than one proof can take.
-    """
-    while True:
-        try:
-            fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
-            if time.monotonic() >= deadline:
-                return False
-            time.sleep(IMPORT_PROBE_LOCK_POLL_SECONDS)
-            continue
-        return True
+def _take_import_probe_lock(descriptor: int) -> bool:
+    """Take the image's proof lock if it is free, without waiting for it."""
+    try:
+        fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        return False
+    return True
 
 
 def _published_image_imports(root: Path) -> tuple[bool, str]:
-    """Prove a published image once, under its wait-bounded lock, and share it.
+    """Prove a published image once, under its lock, and share the verdict.
 
     The verdict is read first, so an asker arriving after another has proved the
-    image pays nothing. When none is recorded the asker takes the image's
-    exclusive lock and reads again: a concurrent asker may have recorded the
-    verdict while this one waited, which is what the lock is for -- the second
-    asker reads the first's answer rather than proving the image again. Only
-    then does it run the proof, and it records a pass and an import failure
-    alike. A timeout is never recorded, because it says nothing about the image:
-    the next asker under the lock proves it alone.
+    image pays nothing. When none is recorded the asker tries the image's
+    exclusive lock once. Holding it, the asker reads again -- the holder before
+    it may have just recorded the verdict -- and only then runs the proof,
+    recording a pass and an import failure alike. A timeout is never recorded,
+    because it says nothing about the image: the next asker proves it alone.
 
-    The wait for the lock is bounded by :data:`IMPORT_PROBE_TIMEOUT`. A waiter
-    that reaches its deadline reads the verdict one last time -- a proof that
-    answered while this one waited is exactly what the lock is for -- and, with
-    none, refuses with a timeout naming the wait rather than proving the image
-    on a follower's delivery path. The caller then takes the ordinary jittered
-    timeout retry, instead of every waiter proving in turn.
+    An asker that finds the lock held reads the verdict one last time and, with
+    none, returns :class:`ImportProofPending` at once. It neither waits for the
+    holder nor proves the image itself, so a slow proof costs its one prover and
+    no one else.
     """
     verdict_path = _import_verdict_path(root)
     remembered = _read_import_verdict(verdict_path)
@@ -940,14 +951,13 @@ def _published_image_imports(root: Path) -> tuple[bool, str]:
         # and this open, or one this process may not write to -- so the proof is
         # run without one rather than skipped.
         return _probe_imports(root)
-    deadline = time.monotonic() + IMPORT_PROBE_TIMEOUT
     try:
-        if not _take_import_probe_lock(descriptor, deadline):
+        if not _take_import_probe_lock(descriptor):
             remembered = _read_import_verdict(verdict_path)
             if remembered is None:
-                return False, ImportProbeTimedOut(
-                    "the import proof lock was still held after "
-                    f"{IMPORT_PROBE_TIMEOUT:g} s"
+                return False, ImportProofPending(
+                    "another process is proving this image; its verdict is read "
+                    "at the next check"
                 )
             return remembered
         remembered = _read_import_verdict(verdict_path)
@@ -966,9 +976,11 @@ def reckon_imports(root: Path) -> tuple[bool, str]:
     """Whether the checkout's current code loads in a throwaway interpreter.
 
     The reason returned with a refusal is an :class:`ImportProbeTimedOut` when
-    the probe ran out of its bound rather than answering, and a line of the
-    failed import's own output otherwise. Both still refuse: a timeout is not a
-    proof that the image loads, whatever the reader does with the distinction.
+    the probe ran out of its bound rather than answering, an
+    :class:`ImportProofPending` when another process is proving the same image,
+    and a line of the failed import's own output otherwise. All three refuse:
+    neither a timeout nor a pending proof shows that the image loads, whatever
+    the reader does with the distinction.
 
     A published reload image is proved once, under an exclusive lock in the
     image's own directory, and the verdict is recorded beside it keyed by the

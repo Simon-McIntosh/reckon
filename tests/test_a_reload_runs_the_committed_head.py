@@ -327,7 +327,7 @@ def test_a_pruner_between_open_and_lock_never_leaves_a_plain_file(source, monkey
         os.close(pin)
 
 
-def test_a_materialized_image_renews_its_lease_on_each_poll(source, monkeypatch):
+def test_a_materialized_image_renews_its_lease_each_interval(source, monkeypatch):
     root, _, execs = source
     reloader = follow._FollowerReloader("test-project", None)
     commit = _commit(root, "second")
@@ -343,6 +343,12 @@ def test_a_materialized_image_renews_its_lease_on_each_poll(source, monkeypatch)
         os.utime(lease, ns=(old, old))
         running.checked_at = follow.time.monotonic()
         monkeypatch.setattr(runs, "FOLLOWER_FRESHNESS_SECONDS", 60)
+        # A poll inside the renewal interval of the pin just taken writes nothing.
+        running.poll({})
+        assert lease.stat().st_mtime_ns == old
+        real = follow.time.monotonic
+        renew = follow.checkout_trust.COMMITTED_TREE_LEASE_RENEW_SECONDS
+        monkeypatch.setattr(follow.time, "monotonic", lambda: real() + renew + 1)
         running.poll({})
         assert lease.stat().st_mtime_ns > old
     finally:

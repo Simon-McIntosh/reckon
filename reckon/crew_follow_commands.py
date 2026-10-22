@@ -236,6 +236,12 @@ FOLLOWER_RELOAD_PROBE_RETRY_CAP_SECONDS = 900.0
 # so the gap and its cap remain a true ceiling on how long a checkout waits.
 FOLLOWER_RELOAD_PROBE_RETRY_JITTER_FRACTION = 0.25
 
+# The wait before a follower re-reads an image's verdict when another process
+# held the proof lock. Nothing failed, so the gap neither doubles nor earns a
+# deferral line; it only keeps a follower from re-materialising the image on
+# every one-second cadence while the one prover finishes.
+FOLLOWER_RELOAD_PROOF_PENDING_SECONDS = 3.0
+
 
 FOLLOWER_END_EVENT = "follower-end"
 
