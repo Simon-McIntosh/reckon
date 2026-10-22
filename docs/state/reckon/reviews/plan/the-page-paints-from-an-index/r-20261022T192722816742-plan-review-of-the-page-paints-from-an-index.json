@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T19:47:07.642Z",
+  "dispatched_at": "2026-10-22T19:29:28Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-page-paints-from-an-index.html:195",
+      "id": "done_when-1",
+      "reason": "the plan claims each clause has its own negative control, and without a named probe path the two controls cross-fire, so the recorded evidence would not say which clause the failure belonged to.",
+      "text": "the changed port clause records and gates \"how long the port takes \u2026 to answer its first request with 200\" without naming the request, while its sibling clause's probe path is `/_index` and \u00a72's landed gate for the same property asks `/_projects/mounts.json`. A reporter who takes the port's first request to be an `/_index` read couples the port gate to the `/_index` clause: in the `/_index` control arm (index removed, no mutation) that read pays the same cold rebuild, so the port gate can fail there too, and a failure under one control stops identifying the clause it belongs to. Naming the probe (\u00a72's `/_projects/mounts.json`, or any non-index route) restores two independently falsifiable clauses.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-page-paints-from-an-index.html:196",
+      "id": "reasoning-1",
+      "reason": "\u00a77 already cites \"\u00a72's control mutation\", and \u00a72's landed record pins that mutation precisely (arm every tree on the calling thread after the bind, before `serve_forever`), so the worker builds the control that makes the gate fail either way; only the summary wording is off.",
+      "text": "the newly added justification for the measure (\"the socket listens before the server serves\") and the port control's stated mutation (\"`_FleetChangeWatch.start` arms the watch before the port binds\") describe two different start modes: the first holds only when the socket is already bound (as the landed `main` has it \u2014 bind at `reckon/serve.py:4134`, watch at `4137`, `serve_forever` at `4151`), the second is a mode the tree cannot produce. A worker following the words moves `start_fleet_change_watch` above the `ThreadingHTTPServer` construction, where the socket never listens.",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "cded83c8e15ad996a5aefd7948faf1dff71be1ab918b7861336d914cac50f39d",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 78,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T192722816742-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "54b04fe4530b3d1bb88d9178faa538156fb97f12",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the evidence file, `reckon/metadata_index.py`, `/_server`'s `code.started_at` and \u00a72's control mutation, all cited by \u00a77, resolve; the `s7` anchor is \u00a77's own deliverable, not a dangling pointer.",
+    "done_when": "a finding \u2014 the changed port clause measures \"its first request\" without naming which request, so the two cold-start clauses are not independently falsifiable and a reporter's probe choice can make the port gate fail inside the `/_index` clause's own control arm.",
+    "evidence_paths": "pass \u2014 the report is anchored in `docs/evidence/archive/the-page-paints-from-an-index-landed.html`, raw logs go under the measuring node's run directory, and the live-pass record is written by the coordinator; nothing lands in a session scratchpad.",
+    "naming": "pass \u2014 \u00a77's text carries no ticket number, version tag or plan label, and its added clauses name mechanisms (`_FleetChangeWatch.start`, the persisted metadata index) rather than tracker entries.",
+    "reasoning": "a finding \u2014 the added rationale (\"the socket listens before the server serves\") is verified true of the landed code, but the control it justifies is still described as arming the watch \"before the port binds\", the opposite start mode.",
+    "single_goal": "pass \u2014 \u00a77's deliverable is one measurement record (\"a timing report records \u2026\"), and the \"What counts as a restart, and who measures what\" paragraph assigns halves of that same record rather than adding a second deliverable.",
+    "wiring": "pass \u2014 `plan-section-depends-on` carries `s7: [s2, s3, s4, s5, s6]` (plan line 29), which is the full set \u00a77 measures (\"Once \u00a72 to \u00a76 are merged\"), and \u00a77's prose carries the \"shares `reckon/serve.py`\" sentence its siblings carry."
+  },
+  "section_digests": {
+    "_document": "4cef2d0dcb8155ca1e683b8ec01695c1fba4d5c88e28b6f05a0f380d0e2424c1",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "17515cc4d212280b53e77d7279aa81e37c7d58f877ada031f77705b31e53d437",
+    "s11": "bb32b98b9a0a5070d5ec6b5387862bef5af3ba37b5956ac7c9d734723c2ac9fa",
+    "s12": "071a3e9ff829e6cc2047658d80b57b5d30603318f0fa4a31084d94b5ed308185",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "8384a370fbbdca36e2052b9734e682c5db21b40e97c8088edac92eeea4ac77b1",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T19:50:56.125108+00:00"
+}
