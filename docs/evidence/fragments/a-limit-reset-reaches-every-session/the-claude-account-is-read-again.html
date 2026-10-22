@@ -1,0 +1,63 @@
+<article class="r-evidence" data-node="the-claude-account-is-read-again">
+<h3 id="the-claude-account-is-read-again-what">The account reads again, and a refusal now names its cause</h3>
+<p id="the-claude-account-is-read-again-body">Three defects held the claude account's windows
+at <code>unknown</code>, and each hid the others. The reserved probe ran the harness and kept only
+its exit status, so the <code>model_not_found</code> the child reported reached the operator as a bare
+number. The account read was pointed at a host that refuses it. And the publish gate looked only for a
+window that had gone <em>stale-or-unknown</em>: a window nobody has ever observed can never go stale,
+so an all-unknown account could only leave that state through a read the gate declined to make.</p>
+
+<table id="the-claude-account-is-read-again-repairs">
+  <thead>
+    <tr><th>Defect</th><th>Repair</th><th>Evidence</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td id="the-claude-account-is-read-again-repair-probe">The probe folded its child's stream</td>
+      <td id="the-claude-account-is-read-again-fix-probe">The raise carries the child's own last
+      words beside the exit status</td>
+      <td id="the-claude-account-is-read-again-ev-probe">A child reporting
+      <code>model_not_found</code> and exiting 1 yields
+      <code>reserved window probe exited 1: …model_not_found…</code>; a silent child yields the
+      status alone, unchanged</td>
+    </tr>
+    <tr>
+      <td id="the-claude-account-is-read-again-repair-endpoint">The read asked a host that refuses it</td>
+      <td id="the-claude-account-is-read-again-fix-endpoint">The read calls
+      <code>https://api.anthropic.com/api/oauth/usage</code> with
+      <code>anthropic-beta: oauth-2025-04-20</code>, and parses the top-level
+      <code>five_hour</code> / <code>seven_day</code></td>
+      <td id="the-claude-account-is-read-again-ev-endpoint">The recorded answer — 62.0 % and 74.0 % —
+      parses to <code>0.62</code> and <code>0.74</code> on the document's own clocks, with both
+      <code>resets_at</code> moments kept; one live request confirms it</td>
+    </tr>
+    <tr>
+      <td id="the-claude-account-is-read-again-repair-gate">An all-unknown account was never due</td>
+      <td id="the-claude-account-is-read-again-fix-gate">Unknown is itself a reason to probe, under
+      the same recent guard that bounds the stale case</td>
+      <td id="the-claude-account-is-read-again-ev-gate">An account whose every window is unknown,
+      last attempted outside the guard, is probed; the same account attempted inside it is not</td>
+    </tr>
+  </tbody>
+</table>
+
+<p id="the-claude-account-is-read-again-live">One live request in the foreground was made against the
+real endpoint from this revision. It answered with both windows, and its bearer token is nowhere in
+the log — the credential is read by the module's own loader and only the answer's window keys and the
+parsed block were printed. That the surface answers at all is the fact the base revision could not
+establish, because the base pointed its read elsewhere and reported the refusal as a 403.</p>
+
+<p id="the-claude-account-is-read-again-negative-control">The negative control stated before the work
+was performed as declared: restoring the stale check as the gate's only reason to probe leaves the
+all-unknown case never reaching the probe, and its test fails. Measured:
+<code>1 failed, 7 passed</code>, exit 1, the failure being
+<code>the-claude-account-is-read-again</code>'s all-unknown case alone.</p>
+
+<p id="the-claude-account-is-read-again-open">One item of the stated measure is <strong>not</strong>
+met and is recorded rather than claimed: reading the published document's claude windows after one
+timer pass. This worker runs under a write fence that mounts the publication directory read-only, so
+the pass the node ran exited 1 on
+<code>Read-only file system: /home/ITER/mcintos/public/reckon/paid-lanes.json.lock</code>, and the
+document read afterwards is the previous tick's. The pass will produce a reading once this change is
+on the primary branch and the timer runs unfenced.</p>
+</article>
