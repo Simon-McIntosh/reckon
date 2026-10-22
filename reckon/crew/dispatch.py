@@ -187,6 +187,7 @@ from reckon.crew.runs import (
     queued_dispatch_cap as queued_dispatch_cap,
     read_pointer as read_pointer,
     record_process_alive as record_process_alive,
+    record_stacked_dispatch as record_stacked_dispatch,
     reports_dir as reports_dir,
     run_dir as run_dir,
     scheduler_job_reason as scheduler_job_reason,
@@ -1910,6 +1911,13 @@ def dispatch(
                     refuse_member_in_flight(effective_member, pointer)
         disregarded_claims: list[str] = []
         accepted_directory_claims: list[dict[str, Any]] = []
+        # The scope check judges one pointer at a time, so it cannot tell a
+        # dispatch cut from a stopped holder's chain tip from one cut from the
+        # integration branch unless it is told the revision this dispatch builds
+        # on. Resolve it once here and hand it to both checks; the admissions
+        # they grant land on the pointers after the second one passes.
+        dispatch_base = _resolve_commit(repo_root, base)
+        stacked_admissions: list[dict[str, Any]] = []
         if shadow_lineage:
             adjacent_peers = []
         else:
@@ -1932,6 +1940,8 @@ def dispatch(
                 **_directory_claim_acceptance_kwargs(
                     accept_directory_claim, accepted_directory_claims
                 ),
+                base_revision=dispatch_base,
+                stacked=stacked_admissions,
                 own_run_id=run_id,
                 own_registered_at=claim_registered_at,
             )
@@ -2575,9 +2585,21 @@ def dispatch(
                 **_directory_claim_acceptance_kwargs(
                     accept_directory_claim, accepted_directory_claims
                 ),
+                base_revision=dispatch_base,
+                stacked=stacked_admissions,
                 own_run_id=run_id,
                 own_registered_at=claim_registered_at,
             )
+            # Both checks have passed, so the dispatch stands. Write the stacking
+            # on both pointers now, before the pointer write below: the holder
+            # gains this run in its ``stacked_runs``, and the record about to be
+            # published carries the run it was stacked on.
+            for admission in stacked_admissions:
+                record_stacked_dispatch(
+                    str(admission.get("run_id") or ""),
+                    run_id,
+                    descendant_record=record,
+                )
         # Publish the pointer before probing the watcher. Otherwise a watcher
         # could drain an empty fleet between the probe and this write, leaving
         # a new run behind a payload that incorrectly said it was watched.

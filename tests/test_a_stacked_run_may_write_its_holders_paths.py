@@ -269,7 +269,11 @@ def test_a_dispatch_on_the_holders_chain_tip_is_admitted(
 
     run_id = str(record["run_id"])
     assert run_id.startswith("r-")
-    assert [str(row["run_id"]) for row in crew.list_live(project=PROJECT)] == [run_id]
+    live = {str(row["run_id"]) for row in crew.list_live(project=PROJECT)}
+    assert run_id in live
+    # The holder stays live: its claim is what fences its paths against every
+    # other dispatch, and it keeps fencing until it is promoted or discarded.
+    assert HOLDER_RUN in live
     assert read_pointer(HOLDER_RUN).get("stacked_runs") == [run_id]
     assert read_pointer(run_id).get("stacked_on") == HOLDER_RUN
 
