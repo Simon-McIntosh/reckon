@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-22T22:03:19.274Z",
+  "dispatched_at": "2026-10-22T21:53:33Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-code-report-is-read-by-its-own-grammar",
+      "recorded_at": "2026-10-22T22:50:24.060612+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "a-code-report-is-read-by-its-own-grammar",
+      "recorded_at": "2026-10-22T22:51:06.137864+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "a-code-report-is-read-by-its-own-grammar",
+      "recorded_at": "2026-10-22T22:51:46.430811+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "1283",
+      "severity": "follow-on",
+      "text": "follow-on: the added clause asserts of the code subject that 'the guard cannot pass a report whose own grammar reads nothing in it', and that is measurably false. report_carries_review_lines matches the *plan* patterns on the lines the health reader yields, but parse_health_review keeps a RUBRIC line only when the item it names is in HEALTH_REVIEW_ITEMS (review.py:1485) and a FINDING only under _HEALTH_FINDING_LINE_RE with the same membership test. HEALTH_REVIEW_ITEMS and PLAN_REVIEW_ITEMS are disjoint, so a code report whose only emitted line reads 'RUBRIC evidence: pass' plus a TREATMENT line passes the guard (report_carries_review_lines -> True) while parse_health_review returns rubric_items {} and findings [] and all six items absent: the guard admits a code report its own grammar reads nothing in, and _code_review_record stores it with every rubric item absent \u2014 the composed-but-undelivered false pass the guard exists to prevent. Measured at the reviewed head with plan_review.report_carries_review_lines(rep, subject='code') and review.parse_health_review(rep): guard=True, items={}, findings=[], absent=6 for 'RUBRIC bogus: pass' and for 'RUBRIC evidence: pass'. This is pre-existing rather than introduced \u2014 the base guard at d85e543c read every subject through _review_text_lines with the same plan patterns, so the repair restores base behaviour exactly \u2014 but the claim is new in this diff and a reader would rely on it, so it is recorded rather than scored as a regression."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "2091",
+      "severity": "follow-on",
+      "text": "follow-on: _report_line_reader re-tests the subject that delivered_report_record already branches on at plan_review.py:2154, so the subject->dialect mapping now lives in two independent places, and its default (subject='' or any subject other than 'code') is the permissive plan reading. A caller that reads a code report without passing subject='code' therefore re-opens exactly the guard/parser divergence the repair closes, and no case delivers a code report through the default subject \u2014 the two added tests both pass subject='code' or reach it through delivered_report_record. Preferring one dispatch would remove the second place for the mapping to drift."
+    },
+    {
+      "file": "tests/test_a_bulleted_finding_is_read.py",
+      "line": "278",
+      "severity": "follow-on",
+      "text": "follow-on: 'sorted(record[\"rubric_items\"]) == sorted(CODE_ITEMS)' compares the stored record against the same constant _code_report used to build the report text the test handed in, so the two sides derive from one source and the assertion cannot tell a correct parse from a code path that echoes back the items it was given. It does redden when the record drops items, so it is coverage; it would be independent with a hand-written expected item list."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the round's goal is to answer the two blocking findings an independent review left on the first delivery, and both are answered \u2014 reckon/crew/plan_review.py:2091 selects the guard's line reader from the report's subject so a code report is refused on the lines _review_text_lines yields, and the fragment at docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-bulleted-finding-is-read.html:33 records the false pass the review found.\nVERDICT done_when: the repair round's done-when requires each finding answered by a commit whose check fails without it and every finding named by id; the manifest names 'acted f07477b08c3: 59243e490' and 'acted fff71b33811: fd989af87', and logs/repair-negative-control.log records the declared mutation (the subject-scoped reader removed) reddening test_a_bulleted_code_report_is_not_admitted_as_a_review alone at 1 failed, 5 passed, EXIT=1, while logs/base-gate-repair.log shows both new cases failing at the base revision.\nVERDICT write_paths: the repair round declares reckon/crew/review.py, reckon/crew/plan_review.py, tests/test_a_bulleted_finding_is_read.py, the fragment and a figures directory; git diff 55431f34..fd989af87 touches exactly the three source/test paths plus the fragment and nothing else, so every changed path is inside the declared set.\nVERDICT manifest: read; status complete, five commits listed, both 'acted <id>: <commit>' lines present, and baseline_suite and after_suite now load as flat suite records with failure_count 4 and 0 (logs/repair-record-check.log loads both arms and fails json.loads on the shape the first manifest landed), which answers the second finding.\nVERDICT diff: read commit by commit against 55431f34a695; 59243e490 changes reckon/crew/plan_review.py (+42/-10: _report_line_reader, the subject keyword and the code call site), reckon/crew/review.py (comment only) and tests/test_a_bulleted_finding_is_read.py (+65: two cases and their helpers), and fd989af87 changes only the evidence fragment (+14/-8).\nCALL_SITES: reckon/crew/plan_review.py:2154 (delivered_report_record dispatches on subject), reckon/crew/plan_review.py:2250 (the store path that calls delivered_report_record), reckon/crew/promotion_checks.py:1497, reckon/crew_dispatch_commands.py:2553, reckon/crew/routing.py:2553, reckon/crew/dispatch_plan.py:851\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:2212 now reads a code report through subject='code' and the guard's reader matches parse_health_review's, which is what the prior review's blocking finding asked for, with only the residual item-membership gap of review.py:1283 left outside it.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/repair-head-gate.log opens '# revision 59243e490...' and closes 'EXIT=0' with 164 passed against logs/base-gate-repair.log's 4 failed, 160 passed, EXIT=1, but the head arm ran at the code commit 59243e490 while the promoted head is the docs commit fd989af87.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 55431f34..fd989af87 touches only reckon/crew/plan_review.py, reckon/crew/review.py, tests/test_a_bulleted_finding_is_read.py and the fragment, all inside the declared write paths, and the declared figures directory is untouched.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_bulleted_finding_is_read.py:266 and :269 redden under the declared mutation recorded at logs/repair-negative-control.log, and both new cases fail at the base revision in logs/base-gate-repair.log, with only the input-derived comparison at :278 weakening the set.\nSCORE fit: 17\nJUSTIFICATION fit: _report_line_reader at reckon/crew/plan_review.py:2080 follows the module's Callable[[str], Iterator[str]] idiom, but its subject test at :2091 duplicates the branch at plan_review.py:2154 rather than sharing one dispatch.\nSCORE reuse: 20\nJUSTIFICATION reuse: _report_line_reader at reckon/crew/plan_review.py:2092-2093 returns the existing owners _review_store._review_text_lines and _review_store._plan_report_lines, and a search over reckon/crew for an existing subject->line-reader selector found only the record-builder dispatch at plan_review.py:2154, which selects builders rather than readers.\nFINDING reckon/crew/review.py:1283 follow-on: the added clause claims the guard cannot pass a code report whose own grammar reads nothing in it, but the guard matches the plan patterns while parse_health_review keeps only items in HEALTH_REVIEW_ITEMS, so 'RUBRIC evidence: pass' plus a TREATMENT line passes the guard with items {} and findings [] and all six items absent (measured at the reviewed head).\nFINDING reckon/crew/plan_review.py:2091 follow-on: _report_line_reader re-tests the subject already branched on at plan_review.py:2154 and defaults to the permissive plan reader, so a caller that omits subject='code' re-opens the divergence the repair closes and no case covers that default.\nFINDING tests/test_a_bulleted_finding_is_read.py:278 follow-on: the assertion compares the stored record against CODE_ITEMS, the same constant that built the report text handed in, so it cannot distinguish a correct parse from an echo of the supplied items.\n",
+  "review_run_id": "r-20261022T214954806505-review-of-a-bulleted-finding-is-read-fd989af87e55",
+  "reviewed_base_sha": "55431f34a6959a51e51f15a0b0904f3eb30bd2ee",
+  "reviewed_head_sha": "fd989af87e55c587753b113ecd66787b8046e1a9",
+  "reviewed_run_id": "r-20261022T192836923875-a-bulleted-finding-is-read",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T22:03:25.375018+00:00",
+  "total": 109
+}
