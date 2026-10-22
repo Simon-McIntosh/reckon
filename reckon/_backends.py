@@ -716,11 +716,21 @@ def _credit_reading(raw: Any) -> dict[str, Any] | None:
 # unknown the same way, so a lane can be blind but never falsely clear.
 # Times attach UTC via timezone.utc, not the datetime.UTC alias, because this
 # runtime's datetime class does not define the alias despite exporting its name.
-CLAUDE_ACCOUNT_USAGE_URL = "https://claude.ai/api/usage_this_cycle"
+CLAUDE_ACCOUNT_USAGE_URL = "https://api.anthropic.com/api/oauth/usage"
+# The beta marker the account surface requires beside the bearer token. Its
+# value is the surface's own contract rather than a user setting, so it is
+# recorded here; the read is refused without it.
+CLAUDE_ACCOUNT_BETA_HEADER = "oauth-2025-04-20"
 CLAUDE_CREDENTIAL_PATH = Path("~/.claude/.credentials.json")
-# The named window a claude lane's reading is fenced against: the account-wide
-# figure, never a scoped window whose identity the client only names by label.
-ACCOUNT_WINDOW = "weekly"
+# The two account-wide windows the surface reports at the top level, each with
+# the span it covers, so a figure lands on the document's own five-hour and
+# seven-day clocks rather than on a scoped window the client only labels.
+CLAUDE_ACCOUNT_WINDOWS = (("five_hour", 300), ("seven_day", 10080))
+# The nested spelling the surface used before it moved: one fractional weekly
+# window under a ``windows`` map. The last-known position kept on disk carries
+# it, so it stays readable beside the live shape.
+CLAUDE_NESTED_ACCOUNT_WINDOW = "weekly"
+CLAUDE_NESTED_ACCOUNT_WINDOW_MINUTES = 10080
 
 
 def _load_claude_credential() -> dict[str, Any]:
@@ -771,7 +781,10 @@ def _fetch_claude_account(oauth: Mapping[str, Any]) -> object:
     """
     request = urllib.request.Request(
         CLAUDE_ACCOUNT_USAGE_URL,
-        headers={"Authorization": f"Bearer {oauth['accessToken']}"},
+        headers={
+            "Authorization": f"Bearer {oauth['accessToken']}",
+            "anthropic-beta": CLAUDE_ACCOUNT_BETA_HEADER,
+        },
     )
     # The URL is the module constant above, pinned to https; no scheme comes
     # from any input, so the open cannot be steered toward a file or custom
@@ -783,33 +796,117 @@ def _fetch_claude_account(oauth: Mapping[str, Any]) -> object:
 def _parse_claude_account(payload: object) -> dict[str, Any]:
     """Parse the account answer strictly into the shared budget block.
 
-    The answer's shape is the client's internal contract and can change without
-    notice. The named window a lane is fenced against, a numeric utilisation
-    inside it and a reset time are required; an unrecognised shape, a missing
-    window, or a non-numeric figure resolves to an honest unknown rather than
-    to a plausible low utilisation, because the quiet failure runs toward
-    headroom.
+    The live surface states its account-wide windows at the top level, each with
+    utilisation as a percentage and a reset time as ISO text. The answer's shape
+    is the harness's internal contract and can change without notice, so a
+    window carrying no usable figure is left out rather than guessed at, and an
+    answer carrying no window at all resolves to an honest unknown rather than
+    to a plausible low utilisation — the quiet failure runs toward headroom. An
+    answer in the nested spelling the surface used before it moved is read by
+    its own contract, so a last-known position written then still parses.
     """
     if not isinstance(payload, Mapping):
         return unknown_budget("account answer was not an object")
+    windows = _live_account_windows(payload)
+    if not windows:
+        if "windows" in payload:
+            return _nested_account_budget(payload)
+        return unknown_budget("account answer carried no named windows")
+    name, binding = max(
+        windows.items(), key=lambda item: float(item[1]["used_percent"])
+    )
+    budget = unknown_budget("")
+    budget.update(
+        {
+            "headroom": "known",
+            "utilisation_pct": binding["used_percent"],
+            "rate_limit_type": name,
+            "rate_limit_period_minutes": binding["window_minutes"],
+            "resets_at": binding["resets_at"],
+            "quota_windows": windows,
+            "detail": "account surface reports utilisation and reset time",
+        }
+    )
+    return budget
+
+
+def _live_account_windows(payload: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
+    """Every account window the live surface reports, keyed by its own name.
+
+    Utilisation is carried as the percentage the surface reports, which is the
+    unit the budget block holds; the document's own figures are that percentage
+    as a fraction. A window whose figure is not a number, or which names no
+    reset time a reader can parse, is skipped rather than refused, so a sibling
+    window still yields its figure while the malformed one's clock stays
+    honestly unknown.
+    """
+    found: dict[str, dict[str, Any]] = {}
+    for name, minutes in CLAUDE_ACCOUNT_WINDOWS:
+        window = payload.get(name)
+        if not isinstance(window, Mapping):
+            continue
+        utilisation = window.get("utilization")
+        if not isinstance(utilisation, (int, float)) or isinstance(utilisation, bool):
+            continue
+        resets_at = _iso_reset_moment(window.get("resets_at"))
+        if resets_at is None:
+            continue
+        found[name] = {
+            "window_minutes": minutes,
+            "used_percent": float(utilisation),
+            "resets_at": resets_at,
+            "rate_limit_type": name,
+        }
+    return found
+
+
+def _iso_reset_moment(value: Any) -> str | None:
+    """The reset moment the live surface states as ISO text, or None.
+
+    The live surface states the moment as a timestamp rather than the epoch
+    seconds the nested spelling used, so it is accepted as text and refused
+    when it is not a string a reader can parse.
+    """
+    if not isinstance(value, str):
+        return None
+    try:
+        datetime.fromisoformat(value)
+    except ValueError:
+        return None
+    return value
+
+
+def _nested_account_budget(payload: Mapping[str, Any]) -> dict[str, Any]:
+    """Read the nested account spelling the surface used before it moved.
+
+    Its window carries utilisation as a fraction of the weekly window and the
+    reset moment as epoch seconds, so it is parsed by its own contract rather
+    than through the live one.
+    """
     windows = payload.get("windows")
     if not isinstance(windows, Mapping) or not windows:
         return unknown_budget("account answer carried no named windows")
-    window = windows.get(ACCOUNT_WINDOW)
+    window = windows.get(CLAUDE_NESTED_ACCOUNT_WINDOW)
     if not isinstance(window, Mapping):
-        return unknown_budget(f"account answer carried no {ACCOUNT_WINDOW} window")
+        return unknown_budget(
+            f"account answer carried no {CLAUDE_NESTED_ACCOUNT_WINDOW} window"
+        )
     utilisation = window.get("utilization")
     if not isinstance(utilisation, (int, float)) or isinstance(utilisation, bool):
-        return unknown_budget(f"account {ACCOUNT_WINDOW} utilisation is not numeric")
+        return unknown_budget(
+            f"account {CLAUDE_NESTED_ACCOUNT_WINDOW} utilisation is not numeric"
+        )
     resets_at = _epoch_to_iso(window.get("resetsAt"))
     if resets_at is None:
-        return unknown_budget(f"account {ACCOUNT_WINDOW} window names no reset time")
+        return unknown_budget(
+            f"account {CLAUDE_NESTED_ACCOUNT_WINDOW} window names no reset time"
+        )
     budget = unknown_budget("")
     budget.update(
         {
             "headroom": "known",
             "utilisation_pct": round(100.0 * float(utilisation), 1),
-            "rate_limit_type": ACCOUNT_WINDOW,
+            "rate_limit_type": CLAUDE_NESTED_ACCOUNT_WINDOW,
             "rate_limit_period_minutes": window.get("windowMinutes"),
             "resets_at": resets_at,
             "detail": "account surface reports utilisation and reset time",
@@ -1904,10 +2001,10 @@ class _ClaudeDialect(Dialect):
         The dialect owns the whole read: the OAuth credential comes from the
         harness's own store, the transport is an HTTPS account read that runs
         no model, and the answer is parsed strictly so a shape change resolves
-        to an honest unknown rather than to a plausible low utilisation. The
-        one window a lane is fenced against is required; anything else — an
-        unrecognised shape, a missing window, a non-numeric figure — returns
-        unknown, because the quiet parse failure runs toward headroom.
+        to an honest unknown rather than to a plausible low utilisation. An
+        answer naming no account window is required to be refused; anything
+        else — an unrecognised shape, a missing window, a non-numeric figure —
+        returns unknown, because the quiet parse failure runs toward headroom.
 
         Every way this can fail returns an unknown block naming the reason,
         matching the probe exchange's contract, so a pre-flight is never
