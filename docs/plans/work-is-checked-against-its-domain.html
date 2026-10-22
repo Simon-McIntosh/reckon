@@ -26,8 +26,8 @@
   <title>Work Is Checked Against Its Domain | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="49">
-<meta name="plan-modified" content="2026-10-22">
+<meta name="plan-version" content="51">
+<meta name="plan-modified" content="2026-10-23">
 </head>
 <body>
   <main class="plan-doc">
@@ -102,7 +102,7 @@
 
     <h2 id="s11">§11 — A domain waiver is written to the promoted row</h2>
 <section data-reckon="section" data-id="s11" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-<p><strong>Why.</strong> §10 made the domain-check waiver reachable from every surface, and its landing measured that the stated reason reaches the promotion guard and the promotion's own outcome. It does not reach the promoted ledger row. <code>reckon/crew/promotion.py</code> unpacks <code>_domain_checks</code> from its guard set and passes nothing on to <code>_complete_locked</code>, and <code>reckon/run_record.py</code> seeds only <code>boundary_waiver</code> and <code>resume_waiver</code>. So a reviewer auditing a landed run cannot see that a declared check failed and was waived, or why. Every other waiver a promotion accepts rides the row; this one is dropped.</p><p><strong>Change.</strong> The waived checks and their stated reason are recorded on the promoted row the way <code>boundary_waiver</code> is, through the same record seeding in <code>reckon/run_record.py</code>, so the ledger, <code>crew(view="records")</code> and the run's landed record all read one field. No new waiver option is added.</p><p><strong>Done when:</strong> a fixture promotion whose declared invariant check fails over the node's write paths, landed with <code>--waive-domain-check</code> and a reason, carries the waived check names and that reason on its ledger row, read back through <code>crew(view="records")</code>; a promotion with no waiver carries the field empty. On the base commit the row carries no such field, so the test fails there.</p>
+<p><strong>Why.</strong> §10 made the domain-check waiver reachable from every surface, and its landing measured that the stated reason reaches the promotion guard. It reaches nothing after the guard: the guard's returned waiver record is bound to <code>_domain_checks</code> and discarded (<code>reckon/crew/promotion.py</code> near line 535), so neither the promotion's outcome nor the promoted ledger row carries it. <code>reckon/crew/promotion.py</code> unpacks <code>_domain_checks</code> from its guard set and passes nothing on to <code>_complete_locked</code>, and <code>reckon/run_record.py</code> seeds only <code>boundary_waiver</code> and <code>resume_waiver</code>. So a reviewer auditing a landed run cannot see that a declared check failed and was waived, or why. Every other waiver a promotion accepts rides the row; this one is dropped.</p><p><strong>Change.</strong> The waived checks and their stated reason are recorded on the promoted row the way <code>boundary_waiver</code> is, through the same record seeding in <code>reckon/run_record.py</code>, so the ledger, <code>crew(view="records")</code> and the run's landed record all read one field. No new waiver option is added.</p><p><strong>Done when:</strong> a fixture promotion whose declared invariant check fails over the node's write paths, landed with <code>--waive-domain-check</code> and a reason, carries the waived check names and that reason on its ledger row, read back through <code>crew(view="records")</code>; a promotion with no waiver carries the field empty. On the base commit the row carries no such field, so the test fails there.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -112,10 +112,16 @@
     <pre class="r-fu-prompt">/reckon-build work-is-checked-against-its-domain §2</pre>
     <p class="r-fu-outcome">§2, §3, §4, §5, §8, §9 and §10 have landed; §6's first node landed with its comparison report refusing where the section asks for a warning, so §6 stays open behind a repair node, and §7 replays the cases once §6 closes. The next invocation is f-wicd-002.</p>
     </article>
-<article class="r-fu" data-id="f-wicd-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-22" data-recommends-skill="/reckon-build work-is-checked-against-its-domain §6" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-wicd-002" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-22" data-recommends-skill="/reckon-build work-is-checked-against-its-domain §6" data-resolved-at="2026-10-22T23:15:41+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Close §6, then replay the cases in §7</h4>
     <div class="r-fu-body">§6's repair node turns the unnamed-comparison report into a dispatch warning and keeps the missing-input refusal. When it lands, §6 is ticked and §7 replays the recorded cases against the landed checks.</div>
     <pre class="r-fu-prompt">/reckon-build work-is-checked-against-its-domain §6</pre>
+    <p class="r-fu-outcome">§6 landed: a missing declared input is refused and an unnamed comparison is a dispatch warning. The remaining work is §11 (a domain waiver written to the promoted row) and §7 (the replay); the next invocation is f-wicd-003.</p>
+    </article>
+<article class="r-fu" data-id="f-wicd-003" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-23" data-recommends-skill="/reckon-build work-is-checked-against-its-domain §11" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §11, then replay the cases in §7</h4>
+    <div class="r-fu-body">§11 writes a waived domain check and its reason onto the promoted ledger row. §7 replays the recorded cases once the checks are complete.</div>
+    <pre class="r-fu-prompt">/reckon-build work-is-checked-against-its-domain §11</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -234,7 +240,7 @@
     <div class="r-comment-body"><p>Landed: a missing declared input is refused and an unnamed comparison is a dispatch warning; review 115/120. The stored-record rebuild still drops the two fields, so a resumed node is warned again. Evidence: <a href="/reckon/evidence/archive/work-is-checked-against-its-domain-landed.html#s6">§6 landing record</a>.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261022T064745942842-an-unnamed-comparison-warns" data-who="reckon-build" data-when="2026-10-22T07:09:17.220Z">
-    <div class="r-comment-body"><p>Admission now marks each of its two node-declaration checks with an outcome, so a declared input the repository does not hold stays a refusal while a model-building node that names no comparison is admitted and its finding rendered onto the dispatch warning channel naming --compares-with; the four-file gate passed 42 at bcd9e8855, and the base arm at 4bd6d8d7 failed 5, every one in this node&#x27;s test file.</p></div>
+    <div class="r-comment-body"><p>Admission now marks each of its two node-declaration checks with an outcome, so a declared input the repository does not hold stays a refusal while a model-building node that names no comparison is admitted and its finding rendered onto the dispatch warning channel naming --compares-with; the four-file gate passed 42 at bcd9e8855, and the base arm at 4bd6d8d7 failed 5, every one in this node's test file.</p></div>
 </div>
 </section>
 </main>
