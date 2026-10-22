@@ -1,0 +1,76 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/mcp_views.py:1882 partition_live_runs (imports recorded_live_run_classifications, run_classification_record, run_classification)",
+    "reckon/roadmap.py:2687 _blocked_section_run_seconds (same three imports)",
+    "reckon/mcp_views.py:1936 and :1946 in_flight_by_plan / interrupted_by_plan (call partition_live_runs)",
+    "reckon/roadmap.py:3796 _build_roadmap (calls leading_signal for each section row)"
+  ],
+  "completed_at": "2026-10-22T01:26:08.852Z",
+  "dispatched_at": "2026-10-22T01:13:25Z",
+  "findings": [
+    {
+      "file": "tests/test_ready_sections_are_ranked.py",
+      "line": 301,
+      "severity": "follow-on",
+      "text": "The ordering assertion `refs.index(\"alpha#s1\") < refs.index(\"beta#s1\")` cannot fail on the term it is meant to test: the section key falls through to identity (roadmap_ranking.py:302 index 7), and \"alpha#s1\" < \"beta#s1\" preserves the order, so dropping the ROI term from _priority_key leaves the assertion green. Only line 300 is a guard for the ROI claim."
+    },
+    {
+      "file": "tests/test_ready_sections_are_ranked.py",
+      "line": 351,
+      "severity": "follow-on",
+      "text": "The same shape: `_refs(result).index(\"twin#s1\") < _refs(result).index(\"twin#s2\")` is also satisfied by the identity tie-break (\"twin#s1\" < \"twin#s2\"), so it does not discriminate the stuck signal's effect on rank. The stuck claim is carried by the two `stuck` assertions and line 350, not by line 351."
+    },
+    {
+      "file": "reckon/roadmap_ranking.py",
+      "line": 293,
+      "severity": "follow-on",
+      "text": "The docstring calls the returned tuple the least favourable key the row admits, but index 6 is set to 0.0 while lower is better for effort (roadmap_ranking.py:302, _priority_key orders remaining_effort_hours ascending), so the floor's effort is the most favourable, not the least. The effect is intended \u2014 the last section row can never report `effort` \u2014 but the prose says the opposite of the arithmetic and a future reader adjusting this floor would be misled."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261021T194841917920-ready-sections-are-ranked/manifest.md",
+      "line": 17,
+      "severity": "follow-on",
+      "text": "baseline_suite.command carries angle-bracket placeholders (`env -C <scratch basearm tree> PYTHONPATH=<same tree> ...`) where the record contract requires the literal command with absolute paths and no placeholder; the literal command is present only in baseline-suite.log's `command:` header. The `tests` line is literal and correct, so this is a record-shape risk for promotion rather than a wrong measurement (the log itself reads: 2 failed, 103 passed, EXIT=1)."
+    },
+    {
+      "file": "docs/evidence/fragments/a-project-reads-as-one-picture/ready-sections-are-ranked.html",
+      "line": 30,
+      "severity": "follow-on",
+      "text": "The brief's item 4 asked the ranked rows to be built from the plan row's ready_sections; the node declined and kept implementable_sections less blocked_sections, recording the reason and the contradictory pins in tests/test_roadmap.py:190 and :666. The departure is disclosed in the fragment and in the manifest rather than taken silently, so it is for the coordinator to ratify, not a defect of the landed code."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_ready_sections_are_ranked.py:300 fails if leading_signal reverts to the reach fallback and :339 fails if section_is_stuck drops the blocked-run half, but :301 and :351 are also satisfied by the identity tie-break and so cannot fail on the terms they are named for.",
+    "evidence": "The manifest's baseline_suite and after_suite name literal commands and log paths whose own headers carry the revision, tree and command, and the logs end in EXIT=1 and EXIT=0, so the recorded result reconciles with the artefacts rather than resting on the worker's claim.",
+    "fit": "The delta matches the surrounding idiom \u2014 a neutral module with a lazy import to break the cycle (reckon/live_run_classification.py:34), a reasoned noqa at :61, mechanism-named symbols \u2014 with one inaccurate phrase in the section_row_floor docstring at reckon/roadmap_ranking.py:293.",
+    "goal_fidelity": "reckon/roadmap.py:3790-3796 sets each section row's reason from leading_signal over the ranked section entries, so a row names the shared-key term that placed it, which is the ranking the goal is about.",
+    "reuse": "The resolution that was duplicated across reckon/mcp_views.py and reckon/roadmap.py now has one owner, reckon/live_run_classification.py, which both readers import (reckon/mcp_views.py:42-46, reckon/roadmap.py:65-70) and which wraps rather than reimplements the stream reduction owned by reckon/crew/runs.py watch_stream_latest_events.",
+    "scope_discipline": "Every path in the delta lies inside the node's declared write paths as extended by the resume advice, and the two extra files are the ones the advice names."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261022T011227919868-review-of-ready-sections-are-ranked-f99ba9b33b28",
+  "reviewed_base_sha": "f55370232e302adbb8b5c8d13587ad7aea7505d9",
+  "reviewed_head_sha": "f99ba9b33b28c65f57c7fa76288fd348e7369846",
+  "reviewed_run_id": "r-20261021T194841917920-ready-sections-are-ranked",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T01:27:04.684718+00:00",
+  "total": 108,
+  "verdicts": {
+    "diff": "Read commit by commit against f55370232; the delta is the single commit f99ba9b33b28c65f57c7fa76288fd348e7369846 touching exactly the six files named in the node goal, adding reckon/live_run_classification.py (78 lines) and routing both readers through it.",
+    "done_when": "The done_when names the eleven-file pytest gate with the section-ranking tests and a failure delta against the base revision; the manifest records that command literally and the logs carry both arms (baseline-suite.log: 2 failed / 103 passed / EXIT=1; after-suite.log: 105 passed / EXIT=0).",
+    "goal": "The node goal is to rank ready sections in the immediate roadmap by section-aware critical path, reach and stuck signals; the delta commit f99ba9b3 refactors that ranking (reckon/roadmap.py:3790-3796 assigns each section row's placing signal) without changing what the ranking is for.",
+    "manifest": "Read in full: it reports the second repair round, the committed head f99ba9b3, baseline_suite and after_suite as flat records with log paths, a negative-control log, and a disclosed deviation on the section enumeration rather than a claim that the brief's item 4 was followed.",
+    "write_paths": "The node's declared write paths are reckon/roadmap.py, reckon/roadmap_ranking.py, tests/test_ready_sections_are_ranked.py, tests/roadmap_fixtures.py, the evidence fragment and the figures directory; the resume advice extends them with reckon/mcp_views.py and reckon/live_run_classification.py, and every path in the delta is inside that combined set."
+  }
+}
