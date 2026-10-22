@@ -18,6 +18,31 @@ class DirectoryError(RuntimeError):
     """A directory selector does not identify one live run."""
 
 
+#: The fields a directory run row carries.
+#:
+#: The coordinator rows and the unowned rows are projected by their own calls,
+#: and either list can be empty — a project whose runs all belong to a session
+#: has no unowned run, and a session whose runs have all ended has no
+#: coordinator row — so the vocabulary is declared here rather than read from
+#: the rows in hand. An empty list says nothing about which fields the view has;
+#: a name is accepted whether or not a row of that kind is in it, and a field
+#: whose value is empty is left off the row by the projection.
+DIRECTORY_RUN_FIELDS = (
+    "run_id",
+    "node",
+    "project",
+    "repository",
+    "plan",
+    "section",
+    "phase",
+    "classification",
+    "process_alive",
+    # Present only where the pointer recorded one.
+    "sprint",
+    "transport",
+)
+
+
 def _node(record: Mapping[str, Any]) -> Mapping[str, Any]:
     value = record.get("node")
     return value if isinstance(value, Mapping) else {}
@@ -212,9 +237,17 @@ def directory(
     sections = run_section_index([records])
     for coordinator in coordinators:
         coordinator["runs"] = project_run_rows(
-            coordinator["runs"], fields=fields, view="directory", sections=sections
+            coordinator["runs"],
+            fields=fields,
+            view="directory",
+            vocabulary=DIRECTORY_RUN_FIELDS,
+            sections=sections,
         )
     result["unowned_runs"] = project_run_rows(
-        unowned_runs, fields=fields, view="directory", sections=sections
+        unowned_runs,
+        fields=fields,
+        view="directory",
+        vocabulary=DIRECTORY_RUN_FIELDS,
+        sections=sections,
     )
     return result
