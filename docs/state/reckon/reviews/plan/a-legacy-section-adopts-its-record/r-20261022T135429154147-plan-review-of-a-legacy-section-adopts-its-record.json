@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T14:07:24.717Z",
+  "dispatched_at": "2026-10-22T13:57:17Z",
+  "findings": [
+    {
+      "anchor": "reckon/_store.py:1671",
+      "id": "duplicate_owner-1",
+      "reason": "parameterising the owner satisfies all three of the plan's controls and its \"callers unchanged\" constraint, so the plan should name that as the mechanism instead of a second example site.",
+      "text": "the plan will have `_section_contract_findings` (`reckon/doccheck.py:1390`, call at `:1423`) carry an adopting example built outside `_section_contract_refusal`, whose `json.dumps(example)` envelope at `reckon/_store.py:1693` is the single owner of the section-record example; the plan then states the owner \"and its other callers are unchanged\", which forecloses the one change that keeps a single owner \u2014 passing the item in (`_section_contract_refusal(detail, item=...)`, default preserving every caller named at `_store.py:1706`, `:1725`, `:1855`, `:1888`, `:1895`, `:3035`, `:3048` and `reckon/_store_section_ops.py:169`). Two examples and two envelope literals in one repo drift, and this plan's own Done-when control (1) \u2014 \"return the finding to the shared builder\" \u2014 asserts drift as the expected result rather than removing it.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/doccheck.py:1390",
+      "id": "thin_wrapper-1",
+      "reason": "the plan must either extend the owner or state why the envelope cannot be shared, since that is the whole difference between a reworded finding and a forked one.",
+      "text": "the plan adds a second example to `_section_contract_findings` without a line saying why `_section_contract_refusal` cannot be extended; the deliverable justifies keeping the *body* example for new sections (which is correct, `_carries_authored_prose` at `reckon/_store.py:1728` is the real discriminator) but that argument is about the item shape, not about the envelope, and it is used to justify a parallel assembly path that was never weighed against extension.",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "tests/test_record_attaches_to_existing_section.py:111",
+      "id": "reuse_search-1",
+      "reason": "the new file should reduce to its real delta (the example parses, names the reported id and heading text, carries no body, and submits unchanged) plus the rewritten pin at `tests/test_audit_doc_section_contract.py:101`, rather than re-proving the append mechanism a second time.",
+      "text": "the plan's Done-when (2) requires a new test proving that a body-less append adopts the section, the audit stops reporting it and the prose is byte-identical, all three of which `tests/test_record_attaches_to_existing_section.py::test_attach_writes_the_record_and_leaves_the_heading_and_prose_alone` (`:111`) and `::test_audit_stops_reporting_the_section_once_its_record_attaches` (`:141`) already assert against a ready `_item()` fixture (`:77`); the same pass misses two support mechanisms it relies on and one mis-cited one \u2014 the discriminator `_carries_authored_prose` (`reckon/_store.py:1728`), the validator that makes a body-less item legal `_new_section_record` (`reckon/_store.py:1696`), and `_splice_section_records`, which the plan presents with `reckon/mcp.py` but which lives at `reckon/_plan_html.py:1625` (`reckon/mcp.py:1752` documents the shape, it does not splice it).",
+      "type": "reuse_search",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "7389b77bcdc78890fa3ed0b3cccc776da09c8c7b852887f0da099943cb8cf2eb",
+  "plan_slug": "a-legacy-section-adopts-its-record",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T135429154147-plan-review-of-a-legacy-section-adopts-its-record",
+  "reviewed_blob_sha": "2955b5fe750389fc05b95299d7feb5da6db71a83",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the change adds no module and no interface; it rewords one existing finding and adds one test file, which is the correct size for a wrong-message defect.",
+    "duplicate_owner": "a finding \u2014 the section-record example and its `Use edit_plan mode=state. Example: <json>` envelope are owned by `_section_contract_refusal` (`reckon/_store.py:1671`, envelope at `:1693`); the plan's finding assembles a second one rather than extending that owner.",
+    "interface_budget": "pass \u2014 public_definitions 2014, cli_options 400, mcp_views 19, refusal_families 23; the section adds to none of them (the `section-without-contract` code already exists at `reckon/doccheck.py:126`, and a private helper plus a test file count to no family), so there is nothing to name as retired or merged.",
+    "reuse_search": "a finding \u2014 the plan cites `_section_contract_refusal`, `doccheck.py` and the `append` doc at `reckon/mcp.py:1752`, but never finds the body/no-body discriminator it depends on (`reckon/_store.py:1728`) nor the test that already proves the adopting write (`tests/test_record_attaches_to_existing_section.py:111`).",
+    "thin_wrapper": "a finding \u2014 the plan gives `reckon/doccheck.py` a second worked example over the same machinery without saying why the `_section_contract_refusal` owner cannot take the item shape."
+  },
+  "section_digests": {
+    "_document": "780ba575ef9a66537d32712d9389e6ac0aaf472f91dd1f5ab4bfb8211e21cd65",
+    "s1": "6dd918cf9b8a550bb7d284f3b6444730a84cbe44bb9b7f755626d9fb7e980707"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T14:15:08.418066+00:00"
+}
