@@ -68,6 +68,7 @@ from reckon.live_run_classification import (
     GATE_BLOCKER,
     SECTION_DEPENDENCY_BLOCKER,
     held_path_blockers,
+    held_path_rows,
     recorded_live_run_classifications,
     run_blocker_rows,
     run_classification,
@@ -2716,39 +2717,51 @@ def _blocked_section_run_seconds(
     return seconds
 
 
-def _held_path_blockers_by_section(
+def _read_scope_claims(
     project: str,
-    pointers: Iterable[Mapping[str, Any]],
     docs_dir: Path | None,
     manifest: Mapping[str, Any] | None,
+) -> list[Mapping[str, Any]]:
+    """The scope registry's claims, read once for every holder question.
+
+    The claims come from the same registry the scopes view reads, so a path
+    reported from them is one the dispatcher would refuse a second writer.
+    A checkout with no measurable repository, or a registry whose reader refuses
+    the call, reads as no registry rather than as a guess: a roadmap that cannot
+    read the claims still owes its reader the rest of the page.
+    """
+
+    if docs_dir is None:
+        return []
+    from reckon.crew import runs
+
+    repo_root = Path(docs_dir).parent
+    try:
+        return list(
+            runs.scope_claims(
+                project,
+                repo_root,
+                derivations=(manifest or {}).get("derivations") or {},
+            )
+        )
+    except (OSError, TypeError):
+        return []
+
+
+def _held_path_blockers_by_section(
+    claims: Iterable[Mapping[str, Any]],
+    pointers: Iterable[Mapping[str, Any]],
 ) -> dict[tuple[str, str], list[dict[str, Any]]]:
     """The held paths of each waiting section, keyed by its plan and section.
 
-    The claims are read from the same registry the scopes view reads, so a path
-    reported here is one the dispatcher would refuse a second writer, and the
-    blocker lands on the waiting run's section — the row that has to say why
-    work on it has not started. A checkout with no measurable repository, or a
-    registry that cannot be read, reports no held path rather than guessing one.
+    The blocker lands on the waiting run's section — the row that has to say why
+    work on it has not started.
 
     Which runs are queued is read from the pointers, because the registry
     records a claim's binding but not the condition that stopped it binding, and
     only a queued claim waits on the path it names.
     """
 
-    if docs_dir is None:
-        return {}
-    from reckon.crew import runs
-
-    repo_root = Path(docs_dir).parent
-    try:
-        claims = runs.scope_claims(
-            project, repo_root, derivations=(manifest or {}).get("derivations") or {}
-        )
-    except (OSError, TypeError):
-        # A registry whose reader refuses the call reads as no registry: the
-        # held paths are one kind of hold among several, and a roadmap that
-        # cannot read them still owes its reader the rest of the page.
-        return {}
     placement: dict[str, tuple[str, str]] = {}
     queued_runs: set[str] = set()
     for pointer in pointers:
@@ -2769,6 +2782,32 @@ def _held_path_blockers_by_section(
         if key is not None:
             grouped[key].append(blocker)
     return dict(grouped)
+
+
+def _held_paths_by_section(
+    claims: Iterable[Mapping[str, Any]],
+    section_runs: Mapping[tuple[str, str], Iterable[Mapping[str, Any]]],
+) -> dict[tuple[str, str], list[dict[str, Any]]]:
+    """The paths each section's own runs hold, keyed by its plan and section.
+
+    A section reports what the work on it has fenced, and one run holding a path
+    is the whole of that fact for the section: nothing has to be waiting on the
+    path for the run to hold it. The waiting-section blockers above cannot say
+    so, because they are a pair, so a section whose single running run holds a
+    path would otherwise report no path at all.
+
+    Read from the same claims those blockers are read from, so a path reported
+    here is one the dispatcher would refuse a second writer.
+    """
+
+    grouped: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for key, rows in section_runs.items():
+        held = held_path_rows(
+            claims, run_ids=[str(row.get("run_id") or "") for row in rows]
+        )
+        if held:
+            grouped[key] = held
+    return grouped
 
 
 def build_roadmap(
@@ -2878,9 +2917,15 @@ def _build_roadmap(
             for plan_ref in {*live_runs, *interrupted_runs}
         }
     )
+    # One read of the scope registry answers both holder questions — which
+    # waiting section is stopped by a path, and which paths each section's own
+    # runs hold — so a claim cannot hold a path for one row and be missing from
+    # the other.
+    scope_claims = _read_scope_claims(project, resolved_docs, project_manifest)
     held_path_blockers_by_section = _held_path_blockers_by_section(
-        project, pointers, resolved_docs, project_manifest
+        scope_claims, pointers
     )
+    held_paths_by_section = _held_paths_by_section(scope_claims, section_runs)
     attempts_by_plan = section_attempts_by_plan(
         project,
         root=resolved_docs.parent if resolved_docs is not None else None,
@@ -3891,6 +3936,7 @@ def _build_roadmap(
                     "after_hold": bool(row.get("after_hold")),
                     "ready": section in plan_ready_sections,
                     "runs": section_holders,
+                    "held_paths": held_paths_by_section.get((plan_slug, section), []),
                     "blockers": blockers,
                 }
             )

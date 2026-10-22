@@ -124,6 +124,32 @@ def _dead_pid() -> int:
     return finished.pid
 
 
+def _record_watch_event(run_id: str, state: str) -> None:
+    """Append one classified transition to the project's watch stream.
+
+    The stream is where a run's recorded state lives, and the readers reduce it
+    per run, so the newest line for a run is the state every reader sees. The
+    path is resolved from the config home the test has pointed at its own temp
+    directory, so no test writes into a real fleet's stream.
+    """
+
+    from reckon.crew.run_paths import watch_stream_path
+
+    stream = watch_stream_path(PROJECT)
+    stream.parent.mkdir(parents=True, exist_ok=True)
+    with stream.open("a", encoding="utf-8") as handle:
+        handle.write(
+            json.dumps(
+                {
+                    "run_id": run_id,
+                    "to_state": state,
+                    "observed_at": "2026-10-01T00:00:00Z",
+                }
+            )
+            + "\n"
+        )
+
+
 def _section_rows(report: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return {str(row["ref"]): row for row in report["immediate_roadmap"] if "ref" in row}
 
@@ -160,6 +186,37 @@ def test_a_live_run_sits_on_its_section_row_with_its_classification(
     assert [run["run_id"] for run in runs] == ["run-live"]
     assert runs[0]["classification"] == live["alpha"][0]["classification"]
     assert row["plan"] == "alpha"
+
+
+def test_a_section_row_carries_the_recorded_state_not_the_pointer_alone(
+    mounted_project, monkeypatch, tmp_path
+):
+    """A run whose recorded stream says one thing and whose pointer says another
+    is reported as the stream records it, on its section row.
+
+    The pointer on its own reads the run as gone, and the run's newest recorded
+    transition reads it otherwise. The row has to carry the recorded answer: a
+    row that classified the pointer itself would report the run differently from
+    every other surface that reads the same stream, which is the disagreement
+    this one classification exists to end."""
+
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    pointer = _pointer(process_alive=False)
+
+    # The pointer read on its own says the worker is gone.
+    alone = recovery.classify_pointer(pointer)["classification"]
+    # The run's own stream says something else, written after dispatch.
+    _record_watch_event("run-live", "working")
+
+    live, _interrupted = partition_live_runs(PROJECT, [pointer])
+    assert alone != "working"
+    assert live["alpha"][0]["classification"] == "working"
+
+    report = _build(mounted_project, [pointer], monkeypatch)
+
+    row = _section_rows(report)["alpha#s1"]
+
+    assert row["runs"][0]["classification"] == "working"
 
 
 def test_a_blocked_manifest_makes_its_section_run_blocked(
@@ -237,34 +294,62 @@ def test_two_runs_over_one_path_report_the_holder_then_the_queued_run(
     ] == []
 
 
-def test_a_stopped_run_that_left_nothing_releases_its_path(
+def test_a_section_row_lists_the_paths_its_own_runs_hold(
     mounted_project, monkeypatch, tmp_path
 ):
-    """A stopped run with no unintegrated work holds nothing, so the run queued
-    behind the same path waits on nobody and no section row names either.
+    """One running run on a section, holding one path, is what that section has
+    fenced — so the row names the path and the run holding it.
 
-    The fence stops a claim binding for two reasons and only one of them means a
-    run is waiting: this is the other one, where the path is free and the queued
-    run is held by nothing."""
+    A held path reaches a section row as a holder-and-waiter pair, which needs a
+    second run stopped behind the first. Nothing waits here, so a row that
+    reported only pairs would leave the path unsaid and the section looking as
+    though its run holds nothing."""
 
     repo = tmp_path / "repo"
-    # ``process_alive`` is carried for the display; the fence reads the pid, so
-    # the fixture records one whose process has exited and no worktree, which is
-    # the released condition rather than a claim still holding work.
-    stopped = _pointer(
-        run_id="run-stopped",
+    holder = _pointer(
+        run_id="run-holder",
         section="s1",
-        phase="completed",
-        pid=_dead_pid(),
-        process_alive=False,
         repo=repo,
         write_paths=[CLAIMED_PATH],
     )
-    queued = _pointer(
-        run_id="run-queued",
+    report = _build(mounted_project, [holder], monkeypatch)
+
+    row = _section_rows(report)["alpha#s1"]
+
+    assert row["held_paths"] == [
+        {"kind": "held-path", "path": CLAIMED_PATH, "run_id": "run-holder"}
+    ]
+
+
+def test_a_released_holder_is_named_neither_holder_nor_waiter(
+    mounted_project, monkeypatch, tmp_path
+):
+    """A stopped run that left nothing released its path, and a path is still
+    held by the run that does hold it.
+
+    The fence stops a claim binding for two reasons and only one of them means a
+    run is waiting: a queued request waits, while a run that stopped and left no
+    process and no unintegrated work has released the path and is waiting on
+    nothing. The holder is here so the pair exists to be misreported — with no
+    holder the blocker is never emitted, and a row that read every non-binding
+    claim as waiting would pass unnoticed."""
+
+    repo = tmp_path / "repo"
+    holder = _pointer(
+        run_id="run-holder",
+        section="s1",
+        repo=repo,
+        write_paths=[CLAIMED_PATH],
+    )
+    # ``process_alive`` is carried for the display; the fence reads the pid, so
+    # the fixture records one whose process has exited and no worktree, which is
+    # the released condition rather than a claim still holding work.
+    released = _pointer(
+        run_id="run-released",
         section="s2",
-        phase="queued",
-        process_alive=None,
+        phase="completed",
+        pid=_dead_pid(),
+        process_alive=False,
         repo=repo,
         write_paths=[CLAIMED_PATH],
     )
@@ -272,20 +357,28 @@ def test_a_stopped_run_that_left_nothing_releases_its_path(
     # the stopped run's own claim is disregarded before anything is asserted
     # about the row — and disregarded for the released reason, since a claim
     # that stopped and left unintegrated work binds and would hold the path.
-    disposition = claim_disposition(stopped)
+    disposition = claim_disposition(released)
     assert disposition.binding is False
     assert "left no process and no unintegrated work" in disposition.reason
 
-    report = _build(mounted_project, [stopped, queued], monkeypatch)
+    report = _build(mounted_project, [holder, released], monkeypatch)
 
+    rows = _section_rows(report)
     held = [
         hold
-        for row in _section_rows(report).values()
+        for row in rows.values()
         for hold in row["blockers"]
         if hold["kind"] == "held-path"
     ]
 
+    # Nothing waits on the path, so no pair is reported at all: naming the
+    # released run as a waiter would invent a run stopped behind a free path.
     assert held == []
+    # The holder still holds it, and the released run holds nothing.
+    assert rows["alpha#s1"]["held_paths"] == [
+        {"kind": "held-path", "path": CLAIMED_PATH, "run_id": "run-holder"}
+    ]
+    assert rows["alpha#s2"]["held_paths"] == []
 
 
 def test_a_plan_with_no_runs_reports_no_section_row_for_an_undeclared_section(

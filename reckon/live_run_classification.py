@@ -125,6 +125,36 @@ def held_path_blockers(
     ]
 
 
+def held_path_rows(
+    claims: Iterable[Mapping[str, Any]],
+    *,
+    run_ids: Iterable[str],
+) -> list[dict[str, Any]]:
+    """The paths the named runs hold, one row per path and holding run.
+
+    A section reports what the run on it has fenced, and that is a fact about
+    one run: a path a single run holds is held whether or not a second run is
+    waiting on it, and the holder-and-waiter blockers cannot say so because they
+    need the waiter. The rows come from the same claims those blockers read, so
+    a path reported as held here is one the dispatcher would refuse a second
+    writer.
+
+    A claim that does not bind holds nothing, and a run the caller did not name
+    is not reported even where its claim does bind — a section reports its own
+    runs' paths and no other run's.
+    """
+
+    wanted = {str(run_id) for run_id in run_ids}
+    rows: dict[tuple[str, str], dict[str, Any]] = {}
+    for claim in claims:
+        path = str(claim.get("path") or "")
+        run_id = str(claim.get("run_id") or "")
+        if not path or run_id not in wanted or not claim.get("binding", True):
+            continue
+        rows[(path, run_id)] = {"kind": HELD_PATH, "path": path, "run_id": run_id}
+    return [rows[key] for key in sorted(rows)]
+
+
 def recorded_live_run_classifications(project: str) -> dict[str, dict[str, Any]]:
     """The latest watcher event per run of one project, keyed by run id. One
     stream reduction serves every reader of a run's recorded state, so the
