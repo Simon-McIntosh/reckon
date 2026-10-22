@@ -66,13 +66,15 @@ def _words(printed) -> list[str]:
 
 
 def test_only_the_actionable_kinds_reach_the_stream():
-    """One event of every kind; a line for exactly the actionable six."""
+    """One event of every kind; a line for the kinds that ask for the coordinator."""
     printed = _lines(
         [
             # A launch: the arrival and the start. Neither asks anything.
             _row(RUN, None, "dispatched"),
             _row(RUN, "dispatched", "working"),
-            # A working/waiting change, and back.
+            # A move to waiting is an audited coordinator kind: the run needs the
+            # coordinator, whatever the word says. The resume out of it asks
+            # nothing and leaves.
             _row(RUN, "working", "waiting"),
             _row(RUN, "waiting", "working"),
             # A re-arm baseline replaying a run the pane already shows.
@@ -85,7 +87,7 @@ def test_only_the_actionable_kinds_reach_the_stream():
     )
 
     words = _words(printed)
-    assert words == ["delivered"], words
+    assert words == ["waiting", "delivered"], words
 
 
 def test_a_halted_run_reaches_the_stream_and_its_recovery_does_not():
