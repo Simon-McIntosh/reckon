@@ -111,12 +111,16 @@ def test_the_extraction_returns_the_refs_a_literal_text_names():
     the round trip.
     """
 
-    assert roadmap._mentioned_section_refs("wait beta#s4 must land first") == ["beta#s4"]
+    assert roadmap._mentioned_section_refs("wait beta#s4 must land first") == [
+        "beta#s4"
+    ]
     assert roadmap._mentioned_section_refs("wait beta#s4, then gamma#s2.") == [
         "beta#s4",
         "gamma#s2",
     ]
-    assert roadmap._mentioned_section_refs("also other:delta#s3 does") == ["other:delta#s3"]
+    assert roadmap._mentioned_section_refs("also other:delta#s3 does") == [
+        "other:delta#s3"
+    ]
     assert roadmap._mentioned_section_refs("beta#s4 beta#s4") == ["beta#s4"]
     assert roadmap._mentioned_section_refs("no reference here") == []
 
