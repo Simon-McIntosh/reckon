@@ -2535,9 +2535,7 @@ def _sweep_lift_rows(
         return seen
 
 
-def _sweep_reset_rows(
-    project: str, seen: set[str] | None
-) -> set[str] | None:
+def _sweep_reset_rows(project: str, seen: set[str] | None) -> set[str] | None:
     """Fold the workstation's recent limit resets into the project's stream.
 
     A reset is workstation-wide and the stream is per project, so the same reset

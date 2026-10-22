@@ -95,9 +95,7 @@ def _sweep(
     now: datetime = NOW,
 ) -> set[str]:
     """One clock-block pass of the reset sweep, into a named stream."""
-    return lift_watch.sweep_resets(
-        project, seen=seen, now=now, stream_path=stream
-    )
+    return lift_watch.sweep_resets(project, seen=seen, now=now, stream_path=stream)
 
 
 def _reset_rows(rows: Sequence[dict]) -> list[dict]:
@@ -134,9 +132,7 @@ def _lift_row(group: str = GROUP, *, kind: str = "transition", ended=None) -> di
         "scope": "global",
         "id": f"{group}-lift",
     }
-    return lift_watch._lift_row(
-        PROJECTS[0], lift, kind=kind, ended=ended
-    )
+    return lift_watch._lift_row(PROJECTS[0], lift, kind=kind, ended=ended)
 
 
 # ── one reset, one row per project, one row per pane ────────────────────────
@@ -211,9 +207,7 @@ def test_a_producer_armed_twenty_minutes_later_appends_a_row_the_pane_keeps(
     assert _sweep(PROJECTS[0], stream, seen=None) == first
     again = _reset_rows(_rows(stream))[1:]
     assert len(rows) == 1 and len(again) > 0, "the pass re-appended the same event"
-    assert _reset_rows(_feed(pane, again)) == [], (
-        "the pane drew the reset twice"
-    )
+    assert _reset_rows(_feed(pane, again)) == [], "the pane drew the reset twice"
 
 
 # ── the scope decides which panes see it ────────────────────────────────────
@@ -373,9 +367,7 @@ def test_the_registered_producer_writes_the_row(tmp_path, monkeypatch):
     real_now = datetime.now(UTC)
     _announce(moment=real_now)
     stream = tmp_path / "alpha.events"
-    monkeypatch.setattr(
-        runs, "_WATCH_STREAM_PRODUCERS", {PROJECTS[0]: _ProducerStub()}
-    )
+    monkeypatch.setattr(runs, "_WATCH_STREAM_PRODUCERS", {PROJECTS[0]: _ProducerStub()})
     monkeypatch.setattr(runs, "watch_stream_path", lambda stream_project: stream)
     seen = recovery_watch._sweep_reset_rows(PROJECTS[0], None)
     assert seen, "the registered producer announced nothing"
