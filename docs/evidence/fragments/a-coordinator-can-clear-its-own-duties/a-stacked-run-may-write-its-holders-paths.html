@@ -1,0 +1,143 @@
+<section id="a-stacked-run-may-write-its-holders-paths-landing">
+  <h2>A run built on a stopped holder's chain tip is admitted onto its paths</h2>
+
+  <p><strong>What changed.</strong> A stopped run that committed past its own
+  dispatch base still fences its declared paths, and that refusal is right for a
+  dispatch cut from the integration branch: a second writer there would bury
+  commits that survive only while the holder's worktree does. It is wrong for a
+  dispatch deliberately cut from the holder's own chain tip, whose worktree
+  already carries every one of those commits — refusing that one strands the
+  repair the holder cannot make for itself.</p>
+
+  <p>The exception is relational: it depends on the base of the dispatch under
+  admission, which the claim walk cannot see because it judges one pointer at a
+  time. So <code>_raise_repository_scope_conflict</code> in
+  <code>reckon/crew/dispatch_claims.py</code> is given the two facts it lacked.
+  It now takes <code>base_revision</code>, and passes over a stopped holder whose
+  claim overlaps the dispatch when the holder's chain tip is that revision or an
+  ancestor of it — reading the holder's head from its worktree with
+  <code>_head_revision</code>, because the pointer records only the base the
+  holder was dispatched from. A holder with no commits past its base still
+  refuses, so the claim keeps its own rule for everything that is not a stacked
+  dispatch.</p>
+
+  <p>Both claim build sites carry the same facts, so the exception applies
+  whichever route reaches the check: the dispatch sweep in
+  <code>dispatch_claims.py</code>, and the registry facade in
+  <code>reckon/crew/runs.py</code> that rebuilds claims from
+  <code>_LiveScopeClaim</code>. The admitted stacking is written on both pointers
+  by <code>record_stacked_dispatch</code> — the holder gains the descendant in
+  its <code>stacked_runs</code>, the descendant records the run it was stacked on
+  — and the registry row the holder's claim already produced lists the stacked
+  runs while still reading <code>binding</code>. Promoting or discarding the
+  holder while a descendant is live is not refused: the promotion and discard
+  results read the stacking and name each descendant still live. No refusal
+  family is added.</p>
+
+  <p><strong>Handing the check what it needs.</strong> The base exists only inside
+  <code>dispatch()</code>, so <code>reckon/crew/dispatch.py</code> resolves the
+  revision the dispatch builds on once, before the first claim check, and passes
+  it to both <code>_raise_repository_scope_conflict</code> call sites together
+  with the sink the admitted holders land in. Once both checks have passed the
+  stacking is written on both pointers, before the pointer the descendant is
+  published under. That is the whole of the dispatch-side change: one value
+  threaded, plus the write that records an admission the check has granted.</p>
+
+  <h3>Measured</h3>
+
+  <p>Gate: <code>tests/test_a_stacked_run_may_write_its_holders_paths.py</code>,
+  run in the foreground on the fleet allocation with the repository venv. Each
+  log's first line names its revision, its tree and the literal command, and its
+  last line reads <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>before the base is threaded</td>
+        <td><code>2539356</code></td>
+        <td><strong>1 failed</strong>, 4 passed, exit 1</td></tr>
+      <tr><td>head</td>
+        <td><code>33be2a080</code></td>
+        <td><strong>5 passed</strong>, exit 0</td></tr>
+      <tr><td>declared mutation (both sites pass no base)</td>
+        <td><code>33be2a</code> mutated, then restored</td>
+        <td><strong>1 failed</strong>, 4 passed, exit 1</td></tr>
+    </tbody>
+  </table>
+
+  <p>The five arms are the dispatch admit arm, its refusal control, the registry
+  row, the promotion naming, and the check-level tip/branch pair. Before the
+  wiring only the admit arm fails, and it fails on the very refusal the change
+  removes, quoted from the log on the fixture's holder:</p>
+
+  <pre><code>reckon.crew.ScopeConflict: write scope 'nova/equilibrium/contour_tree.py'
+  conflicts with live claim 'nova/equilibrium/contour_tree.py' held by run
+  'r-20261021T005136987306-read-correction-path' (node 'read-correction-path');
+  run 'r-20261021T005136987306-read-correction-path' has stopped but its
+  worktree still holds 1 commit(s) beyond its base that main cannot reach —
+  promote or recover it before dispatching over its paths</code></pre>
+
+  <p>The pytest traceback named the cause on the rule itself — <code>base_revision
+  = None, stacked = None</code> at the call — which is what makes the fixture the
+  right one: the check's own rule is intact and only its input was missing.</p>
+
+  <p>The declared mutation is that state: both call sites passing
+  <code>base_revision=None</code>. Applied to the committed source with a single
+  <code>sed</code> over the two sites (two sites mutated), the admit arm fails
+  again with <code>ScopeConflict</code> while the refusal control, the registry
+  row, the promotion naming and the check-level pair all still pass. The file was
+  then restored from its commit; its <code>sha256</code> is identical before and
+  after, and the worktree is clean. This is the direction that matters: the
+  mutation fails the arm the change exists to make pass, and nothing else.</p>
+
+  <h3>The suite around it</h3>
+
+  <p>The gate is this node's own file. The wider recording is the eleven existing
+  modules that import the changed scope-fence, claim-registry and promotion
+  functions, run as a matched pair under the same method (<code>pytest -n 8</code>,
+  eight workers on the shared allocation, each with its own basetemp) so the two
+  numbers are comparable:</p>
+
+  <table>
+    <thead><tr><th>run</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td><code>baseline_suite</code></td>
+        <td><code>2539356</code> (this attempt's base; source-identical to
+          <code>dcb3b7133</code> for every module but this node's own test file,
+          which is not in the set)</td>
+        <td><strong>2 failed</strong>, 76 passed, exit 1</td></tr>
+      <tr><td><code>after_suite</code></td>
+        <td><code>33be2a080</code></td>
+        <td><strong>2 failed</strong>, 76 passed, exit 1</td></tr>
+    </tbody>
+  </table>
+
+  <p>The two baseline failures are
+  <code>tests/test_concurrent_dispatch_of_one_node.py::test_a_fresh_empty_claim_refuses</code>
+  and
+  <code>tests/test_crew_dispatch_guard.py::test_the_exclusive_claim_walk_reads_every_live_claim_at_refusal</code>.
+  Both fail at the base revision, with no part of this change in the tree, so they
+  are pre-existing under parallel execution rather than anything this node
+  introduces. The head arm fails on exactly those two ids and no others, so the
+  delta this change adds is <strong>zero</strong>: two failures on each arm, 76
+  passed on each, and no id in either arm's failure list that the other lacks.
+  Judged by delta against the stated base, the change adds no failure to any
+  module in the set.</p>
+
+  <p>One evidentiary caveat, stated rather than smoothed over: an earlier serial
+  run of the same eleven modules at <code>dcb3b7133</code> read
+  <em>78 passed</em>, exit 0, in <code>gate-wider.log</code>. That log's file has
+  since been overwritten by this attempt's <code>after_suite</code> run, so the
+  serial baseline now survives only as the quotation above and cannot be
+  re-read from disk. The recalled-and-quoted serial result and the measured
+  parallel baseline disagree on two tests, which is why the pair above is
+  recorded with both arms under one method: a matched pair answers the delta
+  question without depending on the lost run.</p>
+
+  <p><code>ruff check --no-cache</code> reports two findings on
+  <code>reckon/crew/dispatch.py</code> both before and after this change
+  (<code>SIM102</code> at the roster-member branch and <code>SIM105</code> in the
+  launch unwind), so the change adds none; <code>ruff format --check</code> is
+  clean on it. The same delta holds for the four in-scope modules, which were
+  staged clean at <code>2539356</code>.</p>
+</section>
