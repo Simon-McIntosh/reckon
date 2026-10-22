@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T06:37:44.886Z",
+  "dispatched_at": "2026-10-22T06:29:30Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-checked-against-its-domain.html:105",
+      "id": "wiring-1",
+      "reason": "a coordinator reading the plan's forward state would dispatch \u00a72 again and would not see the \u00a76 repair node at all, so the plan must resolve `f-wicd-001` and open a followup naming that repair node.",
+      "text": "the plan's only followup `f-wicd-001` is still `data-status=\"open\"` with `data-recommends-skill=\"/reckon-build work-is-checked-against-its-domain \u00a72\"` and the prompt `/reckon-build work-is-checked-against-its-domain \u00a72`, and its body still reads \"\u00a72 and \u00a73 can start at once \u2026 \u00a77 replays the cases once the rest land\", while \u00a72, \u00a73, \u00a74, \u00a75, \u00a78, \u00a79 and \u00a710 are all declared `done` and \u00a76 is half landed \u2014 so the chain that is supposed to carry the next one-line invocation instead names a section that is already built, and the \u00a76 landing comment's own \"a repair node follows\" is carried nowhere",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c31d615b29e07bdf271a87430bc9b7a61e897f4fcf91fa3e050bbee9d5a3a584",
+  "plan_slug": "work-is-checked-against-its-domain",
+  "plan_version": 44,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T062836436790-plan-review-of-work-is-checked-against-its-domain",
+  "reviewed_blob_sha": "2c2dc27b648a4b383431197b8be9083286090b1e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a76's cited `reckon/crew/dispatch_admission.py`, `reckon/crew/prescription.py`, `reckon/crew/node.py` and `reckon/crew/domain_rules.py` all exist with the named symbols (`judge_prescribed` at prescription.py:130, `TaskNode.inputs`/`compares_with` at node.py:756-757, `rules_for` at domain_rules.py:160, `admission_domain_findings` at dispatch_admission.py:1873), `rules_for` does match `model_paths` against write paths (domain_rules.py:198-204), the cited purity docstring is real (prescription.py:29-35), and the landing comment's `#s6-inputs` anchor resolves in the evidence archive.",
+    "done_when": "pass \u2014 \u00a76's done-when names a declared negative control (\"A project that declares no `model_paths` is never linted\"), a positive arm for each check, and a regression clause for the moved decision (`judge_prescribed` still judges a synthesised node with no repository).",
+    "evidence_paths": "pass \u2014 \u00a76's landing record sits at `docs/evidence/archive/work-is-checked-against-its-domain-landed.html`, a committed durable path, not a scratchpad or node-local temporary.",
+    "naming": "pass \u2014 `inputs`, `compares_with` and `none-exists` are mechanism names; the changed units carry no plan label, ticket number or version tag, and the landing comment's \"refuses rather than warns\" is a state record rather than changelog prose in code.",
+    "reasoning": "pass \u2014 \u00a76's root cause matches the \u00a71 evidence (a fit started on constants nobody holds; two node rounds that no one asked \"is there a measurement of this?\"), the mechanism produces its done-when, and the mechanism runs on a production path: `_require_write_paths_in_authority` (dispatch_admission.py:1918-1932) is called from `reckon/crew/dispatch_plan.py:820` and its `admission_findings` are merged into the verdict by `_sandbox_reachability` (dispatch_admission.py:1951), so the checks are not test-only.",
+    "single_goal": "pass \u2014 \u00a76 carries one deliverable, a node declaring its prerequisites at admission; the two fields `inputs` and `compares_with` are two aspects of that one declaration and the section's node landed both.",
+    "wiring": "a finding \u2014 \u00a76's depends-on `work-is-checked-against-its-domain#s3` resolves and is correct, but the plan's own forward wiring is dead: its sole followup `f-wicd-001` still carries \u00a72's build invocation while \u00a72 is declared `done`."
+  },
+  "section_digests": {
+    "_document": "7fded4ea1a542cbb913993e2eb8ee522c76d0d809a8ab16da1717b6fe544ae0e",
+    "s1": "096b2231b1cf1ab1c4476bbab2ea39d0ee87ea2bbfae045a542369206b4fbbf2",
+    "s10": "b56ed0d1f986fb9b41deb555b006f3ce22e9344bb04ac0efa3d87658a7061eb6",
+    "s2": "f58c33e1d5efdd77473d24dbd96aa04b4eafedff3df86cbb94db6ca520d1f639",
+    "s3": "eca25029a7c8cca2e22a3d4d879135d32aa739c860c67cbd0f563910c524a0b7",
+    "s4": "4e977ee3102a5bb6e0f0ddeadeead92dd3753ffcbdb411d4d5d57d9266a43a35",
+    "s5": "43dd5f8401bfb239df6459a7313dc79f279335e3a6fd514e3cd36907fa3bedb4",
+    "s6": "18f0e2163a6488f09429208429eec18345f675af939a88c13637006a5639037c",
+    "s7": "ca3f9f129fae7eeff42ece50be5f648250554ce1998644ad4d07e46b7c6fb742",
+    "s8": "3e81a90c6c14d49fab5a52690b64e2f1ab769994c4c3be458a42db18af91e666",
+    "s9": "935dc7353f3dac93b40a3ff757e12028572d0a1726e114369c0ee80114c5ffbc"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T06:42:18.923090+00:00"
+}
