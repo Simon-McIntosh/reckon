@@ -17,9 +17,20 @@
     answer. A try counts as dead only once its child has exited, because the
     retry collects a dead try by waiting on it: reading the refusal on its own
     would declare a worker that is still running a failed launch and then block
-    in it. The window is kept well clear of the interval a healthy child of this
-    launch stays alive, since an exit inside the window is recorded as a launch
-    failure. The stream path is threaded through both spawn sites.
+    in it.
+  </p>
+  <p id="a-slow-launch-retries-a-vanished-bind-floor">
+    The window is thirty seconds, and it is a floor rather than a margin: what
+    it has to cover is the step start <em>before</em> the child's own refusal,
+    and a step start on a loaded host is exactly the interval a window narrowed
+    to the four seconds one recorded launch took would return before. The window
+    is counted from before each try's own spawn, so it bounds the try rather
+    than the child. That is what lets the floor stand: an earlier attempt at
+    this node had cut it to fifteen seconds to keep a healthy child whose own
+    life is thirty seconds from being collected at the window's last poll and
+    written into the launch's failure record — the upper bound was real, and it
+    is answered by where the window starts rather than by lowering it. The
+    stream path is threaded through both spawn sites.
   </p>
   <ul id="a-slow-launch-retries-a-vanished-bind-measures">
     <li>
@@ -27,9 +38,9 @@
       <code>tests/test_spawn_retries_a_vanished_bind.py</code>,
       <code>tests/test_an_early_exit_keeps_its_status.py</code>,
       <code>tests/test_a_failed_launch_does_not_block_its_node.py</code>):
-      <strong>20 passed, EXIT=0</strong> at the head carrying both review fixes,
-      against <strong>4 failed, 16 passed, EXIT=1</strong> for the same gate at
-      the base revision. The existing early-exit control is green unchanged.
+      <strong>21 passed, EXIT=0</strong> at the head carrying the repair, against
+      <strong>5 failed, 16 passed, EXIT=1</strong> for the same gate at the base
+      revision. The existing early-exit control is green unchanged.
     </li>
     <li>
       The case this fix adds is red before it: at the head that preceded it, a
@@ -52,6 +63,15 @@
       <code>test_a_launch_refused_after_the_step_starts_is_retried</code> under
       each refusal phrase, neither of which the head arm fails.
     </li>
+    <li>
+      The window's floor, measured rather than asserted: a case whose refusal
+      arrives <strong>twenty seconds</strong> in — past a window narrowed to the
+      recorded four-second delay and well inside the thirty-second floor —
+      is retried, and the launch returns only after the sandbox has refused.
+      With the floor reverted to fifteen seconds in a scratch tree the case is
+      red (<strong>1 failed in 17.51s, EXIT=1</strong>, one process spawned),
+      which is the retry the narrowed window loses.
+    </li>
   </ul>
   <p id="a-slow-launch-retries-a-vanished-bind-delay">
     The four-second delay alone reproduces the recorded failure: the
@@ -61,7 +81,8 @@
   </p>
   <p id="a-slow-launch-retries-a-vanished-bind-paths">
     Changed: <code>reckon/crew/dispatch_launch.py</code> (the startup watch, the
-    stream check, and the <code>log_path</code> argument at both spawn sites) and
-    the new test file. Commits <code>046863d4</code>, <code>935bd7f1</code>.
-  </p>
+    stream check, the try-wide window, and the <code>log_path</code> argument at
+    both spawn sites) and the new test file. Commits <code>046863d4</code>,
+    <code>935bd7f1</code>, <code>b3712dcd</code>, <code>a91f88cb</code>,
+    <code>99621ce9</code>.
 </section>
