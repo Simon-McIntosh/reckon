@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-22T12:19:29.771Z",
+  "dispatched_at": "2026-10-22T12:08:54Z",
+  "findings": [
+    {
+      "file": "reckon/project_brief.py",
+      "line": "359",
+      "severity": "follow-on",
+      "text": "follow-on: the ready line's largest-reach trio is cut with TOP_WIRING_FINDINGS (declared at line 39 for the wiring-finding count) rather than a reach constant, so one name stands for two unrelated limits and a reader of line 359 reads a wiring name where a reach limit is meant; retuning either limit silently moves the other."
+    },
+    {
+      "file": "reckon/project_maintenance_commands.py",
+      "line": "1557",
+      "severity": "follow-on",
+      "text": "follow-on: --since is declared on the roadmap verb but read only inside the --brief branch at line 1578, so `reckon roadmap --project X --since <ts>` prints the ordinary report and exits 0; the option is silently inert without --brief, where the surrounding verb's idiom (--max-paths, --json-output) is that a supplied option does something or is refused."
+    },
+    {
+      "file": "reckon/project_maintenance_commands.py",
+      "line": "1503",
+      "severity": "follow-on",
+      "text": "follow-on: project_brief raises ValueError when the composed text exceeds BRIEF_CHAR_BUDGET (reckon/project_brief.py:102) and the new CLI path neither catches it nor converts it, so a project whose payload overfills the budget prints a traceback and no ClickException message, unlike the surrounding verb which wraps a failed read at line 1570."
+    },
+    {
+      "file": "reckon/project_maintenance_commands.py",
+      "line": "1485",
+      "severity": "follow-on",
+      "text": "follow-on: no test in the diff reaches _print_roadmap_brief or the --brief option; tests/test_one_brief_an_agent_can_act_on.py exercises project_brief only with a payload passed in, so the surface the plan names (docs/plans/a-project-reads-as-one-picture.html:111) is unguarded and a regression that passed the wrong report or dropped the portfolio branch would leave the gate green."
+    },
+    {
+      "file": "docs/plans/a-project-reads-as-one-picture.html",
+      "line": "111",
+      "severity": "follow-on",
+      "text": "follow-on: the section's done-when requires the power_convertor brief to name 'the run blocked since 2026-10-17', and the landed brief names r-20261021T161941406279-integrated-assembly-stability blocked since 2026-10-21T16:20:57Z (brief-power_convertor.log); the node's dispatch done-when dropped the date to 'its oldest blocked run' and its manifest records the plan example as stale rather than reconciled, so the plan's worked example still asserts a head and a date the live mount no longer reports."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T095832133667-one-brief-an-agent-can-act-on/gate.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the gate log's first line names revision 83945c06f59bcb50e2151cf9a3e23b9b67cdca2a, at which reckon/project_brief.py \u2014 the module under test \u2014 does not exist, so the literal command on line 5 of the same log cannot be re-run at the named revision and reproduce the recorded `71 passed`; the tree and measurement_module lines below it name the worktree, which is what actually disambiguates the receipt."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to compose the project brief from the roadmap payload in its own module, and reckon/project_brief.py:81 defines project_brief(project, since=None) reading the payload's own fields into the seven lines docs/plans/a-project-reads-as-one-picture.html:111 lists, exposed at reckon/project_maintenance_commands.py:1552 as --brief on the roadmap verb.\nVERDICT done_when: the dispatch done-when names tests/test_one_brief_an_agent_can_act_on.py with three suites, and the manifest's tests: line and gate.log carry that literal command green at `71 passed in 24.24s` EXIT=0, with the four fixture-fixed items asserted at tests/test_one_brief_an_agent_can_act_on.py:240, 252, 256 and 261 and the rewire arm moving the critical-path line at 329-333; the plan's own done-when additionally names the power_convertor run blocked since 2026-10-17, and brief-power_convertor.log names 2026-10-21 instead, which the manifest records under follow_ons as an example grown stale.\nVERDICT write_paths: the manifest declares reckon/project_brief.py, reckon/project_maintenance_commands.py, tests/test_one_brief_an_agent_can_act_on.py and the fragment under docs/evidence/fragments/a-project-reads-as-one-picture/, and `git diff --stat 83945c06f59bcb50e2151cf9a3e23b9b67cdca2a e7ab60a39f2111ffd578e9243aaa4bb9d3d6d7a3` names exactly those four files and no other.\nVERDICT manifest: read at the reviewed head; status complete, commits 4b499ff78d3cde71f4880d17bcb2770e1980bdaa and e7ab60a39f2111ffd578e9243aaa4bb9d3d6d7a3, tests: is the literal shell command, test_logs names gate.log, negative_control.log and brief-power_convertor.log, and neither baseline_suite nor after_suite is present because this is an implement-role node, so no added-failure row can be derived from the record and the count is zero.\nVERDICT diff: read commit by commit against 83945c06f; 4b499ff78 adds reckon/project_brief.py (578 lines), the --brief/--since options on the roadmap verb and tests/test_one_brief_an_agent_can_act_on.py (438 lines), and e7ab60a39 adds the 33-line landing fragment, +1087/-1 in total, all inside the declared scope and with no plan meta line touched.\nCALL_SITES: reckon/project_maintenance_commands.py:1578 (roadmap verb reaches _print_roadmap_brief), reckon/project_maintenance_commands.py:1503 (_print_roadmap_brief reaches project_brief)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/project_brief.py:81 composes the payload into every line \u00a77 lists, but the plan's clause that the MCP serves the brief as roadmap's default answer is not landed and no reckon/mcp.py path was in the fence, and the sprint line at reckon/project_brief.py:274 prints an end date where \u00a77 asks for time left.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate.log's own `71 passed in 24.24s` at EXIT=0 and brief-power_convertor.log's critical-path head, blocked run and largest-reach trio are recorded receipts, but gate.log:1 names 83945c06f where the module does not exist, so the receipt cannot be replayed at the revision it names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 83945c06f59bcb50e2151cf9a3e23b9b67cdca2a..e7ab60a39f2111ffd578e9243aaa4bb9d3d6d7a3 touches exactly the four declared paths, with no plan meta line, no reckon/mcp.py and no docs/figures entry.\nSCORE durability: 16\nJUSTIFICATION durability: the assertions redden without the module because tests/test_one_brief_an_agent_can_act_on.py:50-51 fix the head and the chain as literals the brief must match and the declared mutation reddens three of them at negative_control.log (EXIT=1, `assert 'plan-a' == 'plan-a#s2'`), and no added assertion compares the brief against a value the test itself handed in, but nothing reaches the CLI path at reckon/project_maintenance_commands.py:1485.\nSCORE fit: 16\nJUSTIFICATION fit: the module follows the surrounding dataclass-and-docstring idiom of reckon/roadmap_ranking.py:1 and adds no name the naming rules forbid, but the reach cut at reckon/project_brief.py:359 borrows TOP_WIRING_FINDINGS for a different quantity.\nSCORE reuse: 19\nJUSTIFICATION reuse: searched reckon/roadmap.py, reckon/roadmap_ranking.py, reckon/mcp_views.py and reckon/crew for a brief composed from the roadmap payload and found only dispatch and review briefs over different subjects (reckon/crew/plan_review.py:2574), so reckon/project_brief.py extends the payload's owner rather than forking a capability the repository holds.\nFINDING reckon/project_brief.py:359 follow-on: the ready line's largest-reach trio is cut with TOP_WIRING_FINDINGS, declared at line 39 for the wiring-finding count, so one constant stands for two unrelated limits.\nFINDING reckon/project_maintenance_commands.py:1557 follow-on: --since is accepted without --brief and silently ignored, so `roadmap --project X --since <ts>` prints the ordinary report and exits 0 while the reader believes the window applied.\nFINDING reckon/project_maintenance_commands.py:1503 follow-on: project_brief raises ValueError over BRIEF_CHAR_BUDGET and the new CLI path does not convert it, so an over-budget project prints a traceback where the surrounding verb raises click.ClickException.\nFINDING reckon/project_maintenance_commands.py:1485 follow-on: no test in the diff reaches _print_roadmap_brief or the --brief option, so the CLI surface the plan names is unguarded against a regression that misroutes the report.\nFINDING docs/plans/a-project-reads-as-one-picture.html:111 follow-on: the section's done-when names the power_convertor run blocked since 2026-10-17 while brief-power_convertor.log names 2026-10-21, and the node records the example as stale rather than reconciling it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T095832133667-one-brief-an-agent-can-act-on/gate.log:1 follow-on: the header names revision 83945c06f, where reckon/project_brief.py does not exist, so the command on gate.log:5 cannot be re-run at the named revision to reproduce the recorded result.\n",
+  "review_run_id": "r-20261022T120758127002-review-of-one-brief-an-agent-can-act-on-e7ab60a39f21",
+  "reviewed_base_sha": "83945c06f59bcb50e2151cf9a3e23b9b67cdca2a",
+  "reviewed_head_sha": "e7ab60a39f2111ffd578e9243aaa4bb9d3d6d7a3",
+  "reviewed_run_id": "r-20261022T095832133667-one-brief-an-agent-can-act-on",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T13:07:59.683328+00:00",
+  "total": 104
+}
