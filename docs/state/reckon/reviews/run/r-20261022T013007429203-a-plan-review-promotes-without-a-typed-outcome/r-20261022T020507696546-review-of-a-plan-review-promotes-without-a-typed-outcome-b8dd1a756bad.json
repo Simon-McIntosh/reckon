@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/promotion.py:334"
+  ],
+  "completed_at": "2026-10-22T02:21:38.608Z",
+  "dispatched_at": "2026-10-22T02:06:25Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_checks.py",
+      "id": "duplicated-delivered-report-join",
+      "line": 1448,
+      "severity": "follow-on",
+      "text": "The added helper _delivered_plan_review_for_run re-implements the delivered-report join (iterate plan_review.delivered_reports, match review_module._plan_review_crew_run_id == run_id) that the existing owner _plan_review_record_for_promoting_run already performs inline at :2546; the node lifted the join out into a second copy instead of refactoring the owner to call it, so a change to the dispatch.json join now has to be made in two places or the two will disagree."
+    },
+    {
+      "file": "reckon/crew/promotion_checks.py",
+      "id": "untested-summary-discriminator-branch",
+      "line": 1444,
+      "severity": "follow-on",
+      "text": "The plan_slug branch of the added _stored_review_outcome is exercised by no test in tests/test_a_plan_review_promotes_without_a_typed_outcome.py; every stored record the tests stage omits plan_slug, so a regression in this branch (or its unreachability) would not be caught by the case that reaches _stored_review_outcome."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "The only production caller of the changed _resolve_promotion_outcome is reckon/crew/promotion.py:334 inside complete(), the crew-complete promotion path; the new helpers are reached only through it.",
+    "diff": "Read commit by commit against adefd63bd: 36450343e adds three helpers and a 40-line branch in promotion_checks.py, b8dd1a756 adds the 322-line test file and the evidence fragment; no other path is touched.",
+    "done_when": "The done_when asks both refusals be reproduced at the base revision, a test in a temporary home covering each case, and every importing test file adding no failure; the manifest records all of it and logs/base-arn-new-test.log shows '5 failed, 2 passed' with the strings 'no head-keyed record path' (line 25) and 'a non-passing gate requires --outcome' (line 180) both present.",
+    "goal": "The node's goal is a review's promotion composing its default outcome without a hand-typed one, for plan reviews and queue-launched run reviews; reckon/crew/promotion_checks.py:1561 branches on the plan-review node-id prefix into _plan_review_promotion_outcome, and :1563-1566 adds the review-store fallback for a rebuilt run review, so both kinds resolve without --outcome.",
+    "manifest": "Read in full; it records the two commits, the literal gate command, five test logs, baseline_suite and after_suite both at failure_count 0, the negative-control path and its '4 failed, 3 passed' EXIT=1 result, and the ruff before/after counts.",
+    "write_paths": "The manifest declares reckon/crew/promotion_checks.py, tests/test_a_plan_review_promotes_without_a_typed_outcome.py and the evidence fragment; git diff adefd63b..b8dd1a75 changes exactly those three paths and nothing else, with the granted figures directory unused."
+  },
+  "justifications": {
+    "durability": "The declared mutation reddens four plan-review cases into logs/negative-control-...log ('4 failed, 3 passed', EXIT=1), and test_a_queue_launched_run_review_composes_its_outcome_from_the_store fails if the store-lookup fallback at promotion_checks.py:1563-1566 is removed; the plan_slug branch of _stored_review_outcome at :1444 is exercised by no test.",
+    "evidence": "logs/base-arn-new-test.log:25 and :180 show both refusals reproduced at the base revision, and logs/head-arm-new-test.log ends '7 passed in 23.23s' (EXIT=0) while both 29-file arms record '300 passed' at failure_count 0.",
+    "fit": "reckon/crew/promotion_checks.py:1411 mirrors the existing _review_outcome_summary at :1394 in shape and naming, and the new symbols name the mechanism rather than any plan stage.",
+    "goal_fidelity": "reckon/crew/promotion_checks.py:1561-1566 resolves a plan review from its own report and a rebuilt run review from the review store, which is the goal's two cases.",
+    "reuse": "reckon/crew/promotion_checks.py:1448 _delivered_plan_review_for_run duplicates the delivered-report join already performed inline by the owner _plan_review_record_for_promoting_run at :2520 (loop at :2547-2558) without refactoring that owner to share it.",
+    "scope_discipline": "git diff --stat adefd63bd b8dd1a756 lists only promotion_checks.py, the named test file and the fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261022T020507696546-review-of-a-plan-review-promotes-without-a-typed-outcome-b8dd1a756bad",
+  "reviewed_base_sha": "adefd63bd264aae64356f1003fe6cc4b992e913a",
+  "reviewed_head_sha": "b8dd1a756badbd1ce2a05453ae2f26a15d92a3df",
+  "reviewed_run_id": "r-20261022T013007429203-a-plan-review-promotes-without-a-typed-outcome",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T02:30:40.220352+00:00",
+  "total": 96
+}
