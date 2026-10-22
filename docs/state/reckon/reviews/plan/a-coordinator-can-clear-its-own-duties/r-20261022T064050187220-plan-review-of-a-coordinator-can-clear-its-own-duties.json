@@ -1,0 +1,82 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T06:49:02.815Z",
+  "dispatched_at": "2026-10-22T06:41:52Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew_run_commands.py:3477",
+      "id": "reuse_search-1",
+      "reason": "\u00a76 would ship a base arm that cannot fail and re-implement a shipped feature; the plan must re-aim at the cadence-loop path or delete the section.",
+      "text": "\u00a76's whole change (\"`reckon crew admit --once` emits one JSON document per pass naming each queued run it considered and its verdict with the detail admission-verdicts records\") is already implemented: the `--once` option has existed since commit `8514b9773` (2026-10-12, ten days before \u00a76's 2026-10-22 report), `admit_once` already builds `result[\"verdicts\"]` (`queue_admission.py:1048`) whose rows carry `verdict=\"refused\"` with the refusal's own `failure` detail (`queue_admission.py:1247`, row shape `_verdict_row` at `:863`), and `crew_admit` already emits the whole result as JSON (`crew_run_commands.py:3496`); \u00a76's \"Done when\" (\"On the base commit the pass prints nothing, so the test fails there\") is therefore false for `--once` \u2014 the silent case is the *bare* verb, whose loop discards every pass's result at `queue_admission.py:1355` and returns only `{\"passes\": passes}` at `:1361`, which is exactly the invocation nova-47 ran",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/node.py:1559",
+      "id": "reuse_search-2",
+      "reason": "an implementer following the cited line puts the stacking exception in the reporter instead of the enforcer, and the ScopeConflict nova-47 saw would still be raised.",
+      "text": "\u00a75 cites \"the scope fence in `reckon/crew/node.py` (the refusal near line 1559)\", but line 1559 is only the disposition branch that *reports* unintegrated work inside `claim_disposition` (`node.py:1500`); the refusal is composed and raised at `dispatch_claims.py:1696` by `_raise_repository_scope_conflict` (`dispatch_claims.py:1567`), which consumes `claim.disposition_reason`",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/queue_admission.py:922",
+      "id": "thin_wrapper-1",
+      "reason": "the honest change is one line of emission on the loop path plus a bound stated in the help text at `crew_run_commands.py:3482`, not a second record of the same verdicts.",
+      "text": "\u00a76 adds a per-pass JSON document \"with the detail admission-verdicts records\" as a new emission path, while the same pass already writes precisely that row set to `admission-verdicts.jsonl` through `_record_pass_verdicts` (`queue_admission.py:922`, log name at `:59`, write at `:959`), and adds `--once` (`crew_run_commands.py:3477`) which already exists; the section says nothing about why the existing flag and the existing log cannot serve, nor that the real gap is the loop path at `queue_admission.py:1355`",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/node.py:1500",
+      "id": "duplicate_owner-1",
+      "reason": "an unnamed fourth ancestry helper forks a mechanism with three owners and guarantees the three drift; naming the owner is a one-line change to \u00a75's Change paragraph.",
+      "text": "\u00a75 needs two mechanisms it does not place: an ancestry test for \"the dispatch's base is that run's chain tip\", which three existing owners already provide (`reckon/crew/merge.py:538` `_is_ancestor`, `reckon/crew/velocity.py:706` `_is_ancestor`, `reckon/crew/promotion_scope.py:2389` `_revision_is_ancestor`), and a place to \"record the stacking on both runs\", whose owner is the pointer writer `reckon/crew/runs.py` (`_mutate_pointer`, reached from `queue_admission.py:770` `_write_pointer`)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/runs.py:932",
+      "id": "duplicate_owner-2",
+      "reason": "\u00a75's \"Done when\" asserts dispatch admits and refuses on the right base but never asserts the registry agrees, so the two readings of the same claim would disagree silently.",
+      "text": "\u00a75 changes the claim decision `claim_disposition` (`node.py:1500`) but names only one of its two consumers; the second, `_live_scope_claims` (`reckon/crew/runs.py:932`), builds the registry a worker and `crew observe` read, and its own docstring says it deliberately carries \"the same per-pointer disposition the dispatch scope check takes\", so a stacked admission that changes binding in the enforcer but not here leaves the registry reporting the holder's paths as binding while dispatch admits over them; the other consumer is `_repository_scope_claims` (`dispatch_claims.py:286`, 267), which also feeds `refuse_widen_scope_conflicts` (`dispatch_claims.py:1714`) and every call site in `dispatch.py:1920`, `dispatch.py:2567`, `dispatch_plan.py:1122`",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew_run_commands.py:3477",
+      "id": "interface_budget-1",
+      "reason": "a section that adds to these families must say in its own text what it retires, merges, or why nothing can be; for \u00a76 the true answer is that nothing needs adding, which is itself the plan change.",
+      "text": "public_definitions 2012, cli_options 400, mcp_views 19, refusal_families 23: \u00a76 adds `--once` to `cli_options` without naming anything it retires or merges (and without recording that the option already exists), and \u00a75 adds a refusal family (\"promoting the holder while its descendant is live is refused naming the descendant\") plus new pointer state on both runs without naming a refusal it retires or merges",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "7884cb3c1f179cc81f091c685560b3cfc0bf853e4f361590028fc193c0625767",
+  "plan_slug": "a-coordinator-can-clear-its-own-duties",
+  "plan_version": 14,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T064050187220-plan-review-of-a-coordinator-can-clear-its-own-duties",
+  "reviewed_blob_sha": "36498373623790e883416300d470d718cf7d19ce",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 neither section adds a module; \u00a75 extends the existing deep module `claim_disposition` (`reckon/crew/node.py:1500`), which already hides process liveness, worktree inspection and integration-ref ancestry behind one call, and \u00a76 extends one existing verb.",
+    "duplicate_owner": "a finding \u2014 \u00a75 adds a fourth ancestry test beside `merge.py:538`, `velocity.py:706` and `promotion_scope.py:2389`, and names neither the pointer writer that must record the stacking (`reckon/crew/runs.py`) nor the second consumer of the claim decision it changes (`reckon/crew/runs.py:932`).",
+    "interface_budget": "a finding \u2014 public_definitions 2012, cli_options 400, mcp_views 19, refusal_families 23; \u00a76 adds a CLI option without naming what it retires or merges (or saying that the option already exists), and \u00a75 adds a refusal family and new pointer fields without naming a refusal that is retired or merged.",
+    "reuse_search": "a finding \u2014 \u00a76 proposes to create `reckon crew admit --once` and its per-request verdict document, both of which already exist in `reckon/crew_run_commands.py:3477` and `reckon/crew/queue_admission.py:1048`/`:1247`.",
+    "thin_wrapper": "a finding \u2014 \u00a76 adds a second emission path for admission verdicts beside the verdict log the same pass already writes, and re-declares a flag that exists, with no statement of why the existing flag and log cannot be used."
+  },
+  "section_digests": {
+    "_document": "5856fc5e825e56071b67e7e76cfa10ea4c284a7424cd7e9fed8aef6670f4eb53",
+    "s1": "43085e648cc19c93f778cca423c4bc64fcf292fd5751f0b768a6d900a2dc6f99",
+    "s2": "933e62d10b3381ed03c0f019a65289e14b557412b102f39aa4a770ec912a74f5",
+    "s3": "b0aed5170f3bee16722263b2bd44c1b29dece8bb4f30f50f921ccf768e16aa23",
+    "s4": "b894ac78377b3dbd1cb6e04ff8829d39275d930a6f04671cdeeebd95f9cdc1c0",
+    "s5": "ecdb34e2364dd5978aed52a6636ce2949badeed67fcf1409ff1e8ce87e548fda",
+    "s6": "415e0b432695c1534315ea7352383744aef58b269ef23f915df320aa1eaa155b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T06:52:27.683093+00:00"
+}
