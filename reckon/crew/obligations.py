@@ -140,6 +140,7 @@ _ACTION_OPTION_PARAM: dict[str, str] = {
     "--accept-path": "accepted_paths",
     "--no-impl-change": "no_impl_change",
     "--waive-live-run": "waive_live_run",
+    "--waive-domain-check": "waive_domain_check",
     "--plan-link": "plan_link",
     "--unplanned-reason": "unplanned_reason",
     # dispose
