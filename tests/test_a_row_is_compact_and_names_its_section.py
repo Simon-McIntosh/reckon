@@ -23,7 +23,6 @@ import pytest
 
 import reckon.mcp as mcp_module
 from reckon.crew import runs
-from reckon.crew.node import normalize_section
 from reckon.mcp_views import serve_crew_view
 from tests.mcp_family_reload import reload_mcp_family
 
@@ -36,7 +35,10 @@ PLAN = "the-plan"
 #: same identity, which is the one grammar's `#section` figure reduced to its
 #: canonical form, so the four views cannot disagree about which section it is.
 SECTION = "s4"
-CANONICAL_SECTION = normalize_section(SECTION)
+#: The canonical spelling, written out rather than derived: comparing the views
+#: against the same normalizer the projection applies would pass whatever that
+#: normalizer returned, including a spelling no reader expects.
+CANONICAL_SECTION = "§4"
 
 _VIEWS = ("live", "runs", "obligations", "directory")
 
@@ -213,6 +215,44 @@ def test_a_field_a_view_lacks_is_refused_naming_its_fields(
     detail = payload["detail"]
     assert "not_a_field_here" in detail
     assert "fields are" in detail
+
+
+def test_a_runs_row_omits_an_empty_field(fleet: Path) -> None:
+    """The runs view leaves an empty field off its row, as the others do.
+
+    The fixture's run read a plan section and no brief, so the fields only a
+    live session or a brief would fill are empty. A row that serialised them as
+    nulls would report an absence a reader has to interpret, and would read the
+    same as a row whose values nobody had read. ``plan`` is the one field this
+    view keeps when empty, because a brief run carries a null plan and the key's
+    presence is what says the row's authority is a digest.
+    """
+
+    rows = _run_rows(_view_call("runs", fleet))
+    assert rows, "the live arm listed no run"
+    live = rows[0]
+
+    # What the run does have is stated.
+    assert live["plan"] == PLAN
+    assert live["section"] == CANONICAL_SECTION
+    assert live["source"] == "live"
+
+    # What it does not have is left off: the fixture's pointer names no session
+    # and no transcript.
+    assert "session_id" not in live, live
+    assert "session_id_source" not in live, live
+    assert "transcript_path" not in live, live
+
+    # The same holds on the committed arm, where the ledger records neither a
+    # classification nor a worktree for the run.
+    committed = _run_rows(
+        serve_crew_view(
+            "runs", project=PROJECT, checkout_path=str(fleet), source="ledger"
+        )
+    )
+    assert committed, "the committed arm listed no run"
+    assert "classification" not in committed[0], committed[0]
+    assert "worktree" not in committed[0], committed[0]
 
 
 # ── a row-level dependency states the section's own condition ───────────────

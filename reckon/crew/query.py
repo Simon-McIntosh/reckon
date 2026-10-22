@@ -863,12 +863,18 @@ def runs_view(
     # fills a section the row does not carry from the run's own pointer,
     # canonicalises every section to the one spelling, and leaves an empty
     # field off the row. This view holds no copy of any of those rules.
+    #
+    # ``plan`` is the one field this view keeps when its value is empty: a brief
+    # run read no plan, and the key's presence beside an absent digest is what
+    # says so. Every other field it declares — an empty digest, an empty
+    # classification, an absent worktree — is left off exactly as the other
+    # views leave their own empty fields off.
     rows = project_run_rows(
         rows,
         fields=fields,
         view="runs",
         sections=run_section_index([live_records]),
-        keep_empty=row_fields,
+        keep_empty=("plan",),
     )
     return {
         "ok": True,
