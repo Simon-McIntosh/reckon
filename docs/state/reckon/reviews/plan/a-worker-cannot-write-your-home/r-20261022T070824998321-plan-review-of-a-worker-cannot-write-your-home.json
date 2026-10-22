@@ -1,0 +1,73 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T07:20:42.176Z",
+  "dispatched_at": "2026-10-22T07:09:44Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-worker-cannot-write-your-home.html:1592",
+      "id": "reasoning-1",
+      "reason": "the section names no signal that proves the worker started (a longer bounded poll on the refusal text in stderr, or the step's own start record), so a builder either re-introduces a window of the same too-short kind or holds every launch record until its worker exits.",
+      "text": "the fix is stated as \"keys on the refusal itself, read from the run's stderr when the child exits, however long it took to start\", but on the real path the child of a placed launch is the local `srun` client, which stays alive for the worker's whole run (`reckon/crew/dispatch_launch.py:2404` composes the step argv; `_spawn_detached_worker` returns its pid at `:1606-1627` and `_supervisor_spawn_worker` returns it at `:2439`), so an exit-keyed check has no exit to key on until the run ends, and the only thing that currently separates a late refusal from a healthy launch is the 0.5 s clock this section removes (`_died_over_a_vanished_bind_source`, `dispatch_launch.py:1524-1527`)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-worker-cannot-write-your-home.html:1592",
+      "id": "done_when-1",
+      "reason": "as it stands the node's measure cannot fail on the one defect the section's mechanism risks, so its gate would pass for a blocking retry.",
+      "text": "the stated control (\"a child that exits over any other refusal after the same delay is not retried\") discriminates the refusal's text only, and no arm of the done-when fails for an implementation that waits on a healthy launch's exit, which the mechanism's own wording invites; the gate's third clause asks the log to \"record whether\" the failure reproduced, which is a record rather than an arm that can fail",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-worker-cannot-write-your-home.html:1592",
+      "id": "anchors_resolve-1",
+      "reason": "a builder that follows the citation to reproduce the fault finds no refusal in `r-20261021T070136277339` and may record the fault as not reproducible, and the re-queue story the section rests on is the reverse of what the records show.",
+      "text": "the section attributes the refusal to run `r-20261021T070136277339-jt60sa-2023-shot-census` and calls `r-20261021T073526532476` its re-queue, but that first run's directory holds no launch record (only `harness/` and a `manifest.md` reading `status: complete`, mtime 10:45) and the quoted refusal is in the second run's own stderr, whose record reads `ended_during: launch`, `launched_at: 2026-10-21T07:35:53Z`, `exited_at: 2026-10-21T07:35:57Z` (= 09:35:53/09:35:57 CEST), `stream_records_seen: 0` \u2014 so the two ids are swapped against their artifacts, the cited 09:35:59 CEST matches neither record, and the run called the recovery is one that itself died at launch",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "8e408693401a35b7892d1bebdd674fc88fdc035f84e2b3d1bbd1b216c80ea30c",
+  "plan_slug": "a-worker-cannot-write-your-home",
+  "plan_version": 219,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T070824998321-plan-review-of-a-worker-cannot-write-your-home",
+  "reviewed_blob_sha": "bf8d4a41818dc50039cc1f3d3c5d532bd40b46ae",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the refusal \u00a719 quotes sits in the run it calls the re-queue, while the run it names as the failure holds no launch record at all.",
+    "done_when": "a finding \u2014 the only control splits refusals by kind, and no arm measures the launch path the mechanism risks blocking.",
+    "evidence_paths": "pass \u2014 the evidence is named run directories under the crew run root and the gate log follows the plan's run-directory convention.",
+    "naming": "pass \u2014 no plan label, ticket number or version tag reaches the mechanism; the section names the retry and the window by what they do.",
+    "reasoning": "a finding \u2014 a check keyed on the child's exit cannot fire on the launch path this section targets, because the launched child outlives the window by hours and the section names no signal that proves the worker started.",
+    "single_goal": "pass \u2014 one deliverable: the vanished-bind retry covers a launch whose refusal arrives after the startup window.",
+    "wiring": "pass \u2014 \u00a719 is the only section touching `reckon/crew/dispatch_launch.py` (no other open section, \u00a76, holds it), and it declares no depends-on, which fits a section that composes on the fence argv \u00a715\u2013\u00a718 already deliver."
+  },
+  "section_digests": {
+    "_document": "b5d967f50774b69a535b2a66f93e45dbcb2d30ef90fb55298a1ec94c1604642f",
+    "s1": "20aea2196f748a0a26dcd8c4f13a51e89056dc090927dcbf7c88e3384e3a5ab4",
+    "s10": "c5c7fe720643fd4e73b5f1c9fff30c26f8357f46808e3b91eb33b5271d3a19bc",
+    "s11": "f2f305292dacd47d88930479053d919c6bce05b3f863e60a502ce40a2b1c1239",
+    "s12": "bcbf84b314096bf944f58481d98177c11ed6732c763472dc6bc259bc0ad8f54e",
+    "s13": "274d2cd914af10830f75d7ac253c9a1833d25cf9ac0e37e28c0c48ba60b77628",
+    "s14": "fcefb6cd20b26029bf0d8c785373a493532289cca9f2b4b01a93bf7b4ef7c19a",
+    "s15": "2d4c8c79a854bdbb21757053e30b9cf1366a1b627dc8c8ef6e7760cb15af06a2",
+    "s16": "f2c003eb41a15d4a475407c4f28b7405bf87620a7ee1c9732c823c0bd535923c",
+    "s17": "2d2d08c8567a83cca3bdd3a30b5cca94fa8e377c6e1552aed6dfb8e1d15db707",
+    "s18": "8f63d2e9144312cbecd9a2f55a3526ba207f322d3d1f237392b076ed1b4abf53",
+    "s19": "eea60894009af40081b4a65d27d234821b2882fc9a6156b95f5275c165e5d55f",
+    "s2": "dfbb662d3da9aa4d3d153e8d2cd5e2c614534034829ebd298f56063c2150b8b6",
+    "s3": "8a798e91551442bdcf324bf0e8f2801e9ced17b35f45f3867f8314e98619dde9",
+    "s4": "b249a7c0cf7296d1b03a7dcdc45216481b546ee13550784bcaabea3f34abe51d",
+    "s5": "b591d224f29bac0f9b5918e6ee3a87b55260f3424887d057e5a8bec79aec03b1",
+    "s6": "a2ea9ae61376b301400c70bae6a0060a2a2abf072b89cbf83a102cea2ab5f3b4",
+    "s7": "b363364b7464f2f7c7af654833037ddd56f6af79fd55aa44a6d3327083f626a5",
+    "s8": "af9d785f0f9f36ee58ec7010366aec4f06efdf850c84cf4ce0619311174d54dd",
+    "s9": "131001034a4d533c7f8c0beb295eb3570f2b7e1fc7853a1a09da023955ff5c4d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T07:36:23.678625+00:00"
+}
