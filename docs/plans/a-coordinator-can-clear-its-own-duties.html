@@ -20,7 +20,7 @@
 <meta name="plan-capability-class" content="orchestrator">
 <meta name="plan-capability-reasoning" content="deep">
 <meta name="plan-capability-verification" content="strict">
-<meta name="plan-version" content="24">
+<meta name="plan-version" content="25">
 <meta name="plan-modified" content="2026-10-22">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;}">
 </head>
@@ -110,7 +110,10 @@
     <div class="r-comment-body"><p>§6 landed: the bare `crew admit` loop prints each pass's verdicts as one JSON line — the same record admission-verdicts.jsonl holds for that pass — while `--once` is unchanged, and the admit help names the loop, the single manual pass and the pass bound (the lane and fleet gate reads, each under a five-second deadline); gate tests/test_a_manual_admission_pass_reports_its_verdicts.py plus the queued-run admission, queued-run-identity and crew-help suites read 33 passed, EXIT=0 at 038da9f3d, and the declared mutation (loop publishes nothing) fails the two-pass case at EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261022T143007949068-review-of-a-stacked-run-may-write-its-holders-paths-1660bb5eaa24" data-who="reckon-build" data-when="2026-10-22T15:08:03.318Z">
-    <div class="r-comment-body"><p>reviewed r-20261022T100057429591-a-stacked-run-may-write-its-holders-paths at base 79446127ba head 1660bb5eaa247465bcdd8b23749e91fc539b7d9e; one blocking finding, three follow-on, scores goal_fidelity 16 evidence 8 scope_discipline 15 durability 12 fit 16 reuse 19; the blocking defect is that the new base_revision/stacked kwargs reach a seam the existing test tests/test_crew_dispatch_guard.py:587 wraps with a fixed signature, so that module reddens (recorded in the reviewed run&#x27;s own gate-wider.log as one of its two failures, which its manifest left out of follow_ons).</p></div>
+    <div class="r-comment-body"><p>reviewed r-20261022T100057429591-a-stacked-run-may-write-its-holders-paths at base 79446127ba head 1660bb5eaa247465bcdd8b23749e91fc539b7d9e; one blocking finding, three follow-on, scores goal_fidelity 16 evidence 8 scope_discipline 15 durability 12 fit 16 reuse 19; the blocking defect is that the new base_revision/stacked kwargs reach a seam the existing test tests/test_crew_dispatch_guard.py:587 wraps with a fixed signature, so that module reddens (recorded in the reviewed run's own gate-wider.log as one of its two failures, which its manifest left out of follow_ons).</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261022T155119902080-review-of-a-stacked-run-may-write-its-holders-paths-96f902caad67" data-who="reckon-build" data-when="2026-10-22T17:02:28.262Z">
+    <div class="r-comment-body"><p>The review of r-20261022T100057429591-a-stacked-run-may-write-its-holders-paths at head 96f902caad67a251050ca9e7b0e3b347bac97de0 is stored as a parsed record scoring all six dimensions in 0..20 (goal_fidelity 17, evidence 14, scope_discipline 14, durability 18, fit 17, reuse 19) with reviewed_base_sha 79446127ba0f72f614260e478d8e457b6530c68d and reviewed_head_sha 96f902caad67a251050ca9e7b0e3b347bac97de0; added_failure_count 0 and added_failure_ids [] derived from the reviewed run&#x27;s after_suite gate-wider.log (the two ids there are this change&#x27;s guard test, fixed at 191f191d4, and a pre-existing empty-claim failure red at the base copy too), and the prior blocking finding is answered with five follow-on findings left open.</p></div>
 </div>
 </section>
 </main>

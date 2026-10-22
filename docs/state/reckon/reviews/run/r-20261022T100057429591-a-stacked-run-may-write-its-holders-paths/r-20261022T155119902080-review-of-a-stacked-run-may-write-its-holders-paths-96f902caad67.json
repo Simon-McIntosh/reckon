@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-22T17:02:28.262Z",
+  "dispatched_at": "2026-10-22T16:48:54Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_dispatch_guard.py",
+      "line": "587",
+      "severity": "follow-on",
+      "text": "the repair edited this file, which is outside the reviewed run's delivered FENCE SCOPE block and its own declared orientation_write_paths; the edit is the one the prior review's blocking finding required (forwarding the wrapper's whole keyword seam), but the fence granted no such path and a later reader cannot reconcile the diff against the scope."
+    },
+    {
+      "file": "reckon/crew/dispatch_plan.py",
+      "line": "1133",
+      "severity": "follow-on",
+      "text": "the dry-run path reaches _raise_repository_scope_conflict with no base_revision and no stacked sink, so a dry run of a dispatch cut from a stopped holder's chain tip still reports 'refused' where the real dispatch admits it; the enclosing signature already carries base and the file's contract requires a dry run to reach the real dispatch's verdict."
+    },
+    {
+      "file": "reckon/crew/dispatch_claims.py",
+      "line": "1793",
+      "severity": "follow-on",
+      "text": "refuse_widen_scope_conflicts judges added fence paths with the same check and is likewise given no base, so a stacked descendant that widens its fence onto the holder's other claimed paths is refused on the very relation the exception exists to admit; the widening run's own base_sha is on its pointer."
+    },
+    {
+      "file": "docs/evidence/fragments/a-coordinator-can-clear-its-own-duties/a-stacked-run-may-write-its-holders-paths.html",
+      "line": "57",
+      "severity": "follow-on",
+      "text": "the table row attributes '1 failed, 4 passed, exit 1' to revision 2539356, but no log at 2539356 records it (gate-baseline-corrected.log at that revision died EXIT=124); the reading exists only as the mutation of 33be2a080 in negative-control.log, so the manifest cites the wrong revision for the arm it shows."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T100057429591-a-stacked-run-may-write-its-holders-paths/manifest.md",
+      "line": "20",
+      "severity": "follow-on",
+      "text": "baseline_suite and after_suite are prose paragraphs rather than the required JSON arms, so promotion's suite-delta check reads no log_path, revision or record complete flag from them."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a dispatch built on a stopped holder's chain tip is admitted onto that holder's claimed paths; reckon/crew/dispatch.py:1916 resolves dispatch_base once and threads it into both _raise_repository_scope_conflict calls at :1930 and :2579, and reckon/crew/dispatch_claims.py:1633 passes over a holder whose chain tip is contained in that base.\nVERDICT done_when: the done-when names tests/test_a_stacked_run_may_write_its_holders_paths.py plus every existing module importing the changed scope-fence, claim-registry or promotion functions; the node gate is recorded at gate-stacked-claim.log as '5 passed in 251.72s', EXIT=0, with the declared mutation red at negative-control.log ('1 failed, 4 passed', EXIT=1), so the node's own arm and its base control are measured; the wider gate the same done-when names is recorded at gate-wider.log as '2 failed, 76 passed', EXIT=1, with one id pre-existing (empty_claim_base.log/empty_claim_head.log) and one fixed at 191f191d4 (repair-guard-module.log '14 passed', EXIT=0), but the manifest's baseline_suite is prose ('unmeasured') rather than a readable arm, so a suite-level delta is unmeasured.\nVERDICT write_paths: the manifest's orientation_write_paths lists reckon/crew/node.py, reckon/crew/dispatch.py, reckon/crew/dispatch_claims.py, reckon/crew/runs.py, reckon/crew/promotion.py, tests/test_a_stacked_run_may_write_its_holders_paths.py, the landing fragment and the figures directory; all seven paths in git diff 79446127ba..96f902caa are inside that list except tests/test_crew_dispatch_guard.py, which the repair edited to answer the prior review's blocking finding.\nVERDICT manifest: read at the reviewed head 96f902caa - status complete, changed_paths names the seven landed files, negative_control_log is the bare path and tests: is a literal pytest command, but baseline_suite and after_suite are prose strings rather than the required JSON arms, so no log_path, revision or completed flag can be read from them.\nVERDICT diff: read commit by commit against 79446127ba - dcb3b7133 adds the tip-containment exception, the pointer writer and the registry fields; 253935672 adds the five-arm gate; 33be2a080 threads the resolved base through both dispatch call sites and writes the stacking; cd426702a, 1660bb5ea, 191f191d4 and 96f902caa record the evidence and forward the guard wrapper's whole keyword seam; seven files, +820/-37.\nCALL_SITES: reckon/crew/dispatch.py:1930 and reckon/crew/dispatch.py:2579 (_raise_repository_scope_conflict, both wired with base_revision and stacked), reckon/crew/dispatch.py:2598 (record_stacked_dispatch), reckon/crew/runs.py:1261 (_raise_live_scope_conflict delegating to the check), reckon/crew/promotion.py:1143, :1767 and :1882 (stacked_descendants_still_live on promotion and discard), reckon/crew/dispatch_plan.py:1133 and reckon/crew/dispatch_claims.py:1793 (the same check, reached without the base)\nSCORE goal_fidelity: 17\nSCORE evidence: 14\nSCORE scope_discipline: 14\nSCORE durability: 18\nSCORE fit: 17\nSCORE reuse: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:1930 and reckon/crew/dispatch_claims.py:1633 admit the stacked dispatch on the real path and write the stacking on both pointers, but the check's other two production callers (reckon/crew/dispatch_plan.py:1133, reckon/crew/dispatch_claims.py:1793) still reach it without the base, so a dry run of the same dispatch still refuses.\nJUSTIFICATION evidence: reckoned from the reviewed run's own arms - gate-stacked-claim.log records the node gate green (5 passed, EXIT=0) and negative-control.log reddens the admit arm under the declared mutation, but gate-wider.log's module set is a placeholder and the manifest's baseline_suite is prose, so the suite-level delta the done-when implies is unmeasured.\nJUSTIFICATION scope_discipline: every diffed path is inside the manifest's declared write paths except tests/test_crew_dispatch_guard.py, and reckon/crew/runs.py and reckon/crew/promotion.py carry unrelated ruff reflow the goal does not imply.\nJUSTIFICATION durability: tests/test_a_stacked_run_may_write_guard.py is the gate; negative-control.log shows the admit arm (tests/test_a_stacked_run_may_write_its_holders_paths.py:191 read_pointer(HOLDER_RUN).get('stacked_runs')) reddens to ScopeConflict when both call sites are reverted to base_revision=None, and repair-guard-module.log shows the wrapper's forwarded seam is what keeps tests/test_crew_dispatch_guard.py green.\nJUSTIFICATION fit: the new names reckon/crew/runs.py:1274 record_stacked_dispatch and :1306 stacked_descendants_still_live and reckon/crew/dispatch_claims.py:1737 _claim_holds_the_dispatch_base name the mechanism and carry no plan, ticket or version label.\nJUSTIFICATION reuse: reckon/crew/dispatch_claims.py:1759 imports _head_revision and _revision_is_ancestor from reckon/crew/promotion_scope.py rather than re-deriving ancestry, and the exception extends the owner check at reckon/crew/dispatch_claims.py:1587 rather than forking it; the search over reckon/crew found no prior owner of a stacked-dispatch record.\nFINDING tests/test_crew_dispatch_guard.py:587 follow-on: the repair edited this file, which is outside the reviewed run's delivered FENCE SCOPE block and its own declared orientation_write_paths; the edit is the one the prior review's blocking finding required (forwarding the wrapper's whole keyword seam), but the fence granted no such path and a later reader cannot reconcile the diff against the scope.\nFINDING reckon/crew/dispatch_plan.py:1133 follow-on: the dry-run path reaches _raise_repository_scope_conflict with no base_revision and no stacked sink, so a dry run of a dispatch cut from a stopped holder's chain tip still reports 'refused' where the real dispatch admits it; the enclosing signature already carries base and the file's contract requires a dry run to reach the real dispatch's verdict.\nFINDING reckon/crew/dispatch_claims.py:1793 follow-on: refuse_widen_scope_conflicts judges added fence paths with the same check and is likewise given no base, so a stacked descendant that widens its fence onto the holder's other claimed paths is refused on the very relation the exception exists to admit; the widening run's own base_sha is on its pointer.\nFINDING docs/evidence/fragments/a-coordinator-can-clear-its-own-duties/a-stacked-run-may-write-its-holders-paths.html:57 follow-on: the table row attributes '1 failed, 4 passed, exit 1' to revision 2539356, but no log at 2539356 records it (gate-baseline-corrected.log at that revision died EXIT=124); the reading exists only as the mutation of 33be2a080 in negative-control.log, so the row cites the wrong revision for the arm it shows.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T100057429591-a-stacked-run-may-write-its-holders-paths/manifest.md:20 follow-on: baseline_suite and after_suite are prose paragraphs rather than the required JSON arms, so promotion's suite-delta check reads no log_path, revision or record complete flag from them.",
+  "review_run_id": "r-20261022T155119902080-review-of-a-stacked-run-may-write-its-holders-paths-96f902caad67",
+  "reviewed_base_sha": "79446127ba0f72f614260e478d8e457b6530c68d",
+  "reviewed_head_sha": "96f902caad67a251050ca9e7b0e3b347bac97de0",
+  "reviewed_run_id": "r-20261022T100057429591-a-stacked-run-may-write-its-holders-paths",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T17:51:05.948338+00:00",
+  "total": 99
+}
