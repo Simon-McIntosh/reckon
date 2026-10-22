@@ -1,0 +1,30 @@
+<article class="r-evidence" data-node="a-limit-reset-is-one-record">
+<h3 id="a-limit-reset-is-one-record-what">A reset is one durable event, whether or not a flag was there to clear</h3>
+<p id="a-limit-reset-is-one-record-body">At the base revision <code>budget_reset.mark_used</code> returned
+<code>changed: false</code> and wrote nothing whenever no banked flag was available, so a reset the lead
+announced left no record at all — the eleven idle sessions had nothing to read. It now appends a
+<code>used</code> event to the group's record either way, carrying <code>id</code>
+(<code>reset-&lt;group&gt;-&lt;UTC stamp&gt;</code>), <code>detected_at</code> (now, or the instant
+<code>--from</code> names), <code>clock</code>, <code>by</code>, <code>reason</code> and
+<code>session</code> (absent for a global event). Only a global event clears an available flag, because
+that is the account's own reset arriving; a session-scoped one is a rehearsal that reaches one session
+and leaves the flag standing. A global event for a group and clock that already carries a global event
+within ten minutes returns that event and writes nothing, so several sessions relaying the same news
+produce one record. Consumed events, which <code>observe</code> already wrote when the window readings
+show a banked reset spent early, gain an id in the same form, and the new
+<code>budget_reset.recent_resets(session=None, now=None, horizon=...)</code> reads both kinds across
+every group that apply to a session within the horizon. <code>crew budget --reset --used</code> passes
+<code>--reason</code>, <code>--from</code>, <code>--clock</code> and <code>--session</code> through and
+refuses a used reset with no reason, and <code>crew budget --list</code> shows the last 24 hours' events
+beside the lifts through the same reader.</p>
+<h3 id="a-limit-reset-is-one-record-measure">Measure</h3>
+<p id="a-limit-reset-is-one-record-figures">Both arms were rebuilt from git checkouts under the run's own
+scratch directory with the four follower variables unset and run in place on the fleet node at
+<code>-n 8</code>: base <code>5a11af30c</code> <strong>13 failed, 320 passed</strong>, head
+<code>569ab36e2</code> <strong>13 failed, 330 passed</strong> — the same 13 failure ids in both arms, none
+added and none removed. The ten added passes are the new file's cases. The 13 are pre-existing at the
+base revision and belong to the retirement of the <code>budget-reset</code>, <code>budget-lift</code> and
+<code>preflight</code> verbs, not to this change. With the ten-minute coalescing rule removed
+(<code>DUPLICATE_WINDOW = timedelta(0)</code>) the case that announces twice five minutes apart writes
+two events and fails: <strong>1 failed, 9 passed, EXIT=1</strong>.</p>
+</article>
