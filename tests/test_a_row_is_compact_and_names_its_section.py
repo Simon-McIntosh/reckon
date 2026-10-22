@@ -40,6 +40,43 @@ SECTION = "s4"
 #: normalizer returned, including a spelling no reader expects.
 CANONICAL_SECTION = "§4"
 
+#: The fields a runs row declares and serves whole: the ones it answers by
+#: default plus the optional ones a caller may ask for. Written out rather than
+#: read from the view's own constant, because the row's shape is a contract a
+#: reader relies on and a set compared against the declaration it came from
+#: would pass whatever that declaration said.
+RUN_ROW_FIELDS = (
+    "run_id",
+    "node",
+    "plan",
+    "section",
+    "source",
+    "classification",
+    "process_alive",
+    "session_id",
+    "session_id_source",
+    "worktree",
+    "worktree_exists",
+    "transcript_path",
+    "transcript_exists",
+    "resumable",
+    "resumable_reason",
+)
+#: The fields this view answers only when asked, so a row that was not asked
+#: carries none of them however easily it could fill them.
+RUN_OPTIONAL_FIELDS = (
+    "lane",
+    "model_key",
+    "member",
+    "agent",
+    "base_sha",
+    "manifest_present",
+    "commits",
+    "commits_beyond_base",
+    "log_age_seconds",
+    "manifest_reported_status",
+)
+
 _VIEWS = ("live", "runs", "obligations", "directory")
 
 #: The identity a worker's own git wrapper reads; dropped so the synthesised
@@ -198,12 +235,26 @@ def test_every_run_view_accepts_the_section_field(view: str, fleet: Path) -> Non
     payload = _view_call(view, fleet, fields=["section"])
     rows = _run_rows(payload)
     assert rows, f"{view} listed no run: {payload.get('error')} {payload.get('detail')}"
+    # What a request carries differs by view, and each difference is that view's
+    # contract rather than this case's. A view serving a compact row carries the
+    # shared run identity beside the field asked for, so a caller reading one
+    # fact still sees which run, plan and section answered. The runs view serves
+    # its whole declared row, so a request adds to that row instead of cutting
+    # it down, and the row is exactly the declaration. Neither arm may carry an
+    # optional field nobody asked for — the default-read case below holds that
+    # for the runs view on its own.
+    expected = (
+        set(RUN_ROW_FIELDS)
+        if view == "runs"
+        else {"run_id", "node", "plan", "section", "mine"}
+    )
     for row in rows:
         assert row.get("section") == CANONICAL_SECTION
-        # The projection always carries the identity of the run it describes,
-        # so a caller that asked for one field can still tell which run
-        # answered. Nothing else may ride along.
-        assert set(row) <= {"run_id", "node", "plan", "section", "mine"}
+        assert not set(row) & set(RUN_OPTIONAL_FIELDS), row
+        if view == "runs":
+            assert set(row) == expected, row
+        else:
+            assert set(row) <= expected, row
 
 
 @pytest.mark.parametrize("view", _VIEWS)
@@ -217,15 +268,17 @@ def test_a_field_a_view_lacks_is_refused_naming_its_fields(
     assert "fields are" in detail
 
 
-def test_a_runs_row_omits_an_empty_field(fleet: Path) -> None:
-    """The runs view leaves an empty field off its row, as the others do.
+def test_a_runs_row_is_the_fields_it_declares(fleet: Path) -> None:
+    """A runs row is the view's declared row, whatever this run filled in.
 
-    The fixture's run read a plan section and no brief, so the fields only a
-    live session or a brief would fill are empty. A row that serialised them as
-    nulls would report an absence a reader has to interpret, and would read the
-    same as a row whose values nobody had read. ``plan`` is the one field this
-    view keeps when empty, because a brief run carries a null plan and the key's
-    presence is what says the row's authority is a digest.
+    The row's shape is the read model the crew tool documents, so it does not
+    depend on which fields the run it describes happened to fill: the fixture's
+    pointer names no transcript, and ``transcript_path`` is on the row, empty,
+    because the view can answer for the field at all. A field the view answers
+    only on request is absent until it is asked for, so a default read carries
+    no field the caller did not ask for and the view does not serve by default —
+    and ``brief_sha256`` is absent because this run's authority is a plan
+    section, whose key is what distinguishes the two authorities.
     """
 
     rows = _run_rows(_view_call("runs", fleet))
@@ -237,11 +290,20 @@ def test_a_runs_row_omits_an_empty_field(fleet: Path) -> None:
     assert live["section"] == CANONICAL_SECTION
     assert live["source"] == "live"
 
-    # What it does not have is left off: the fixture's pointer names no session
-    # and no transcript.
-    assert "session_id" not in live, live
-    assert "session_id_source" not in live, live
-    assert "transcript_path" not in live, live
+    # The declared row is served whole: a field this run left empty is present
+    # with its empty value rather than left off, so a reader tells a field the
+    # view cannot answer from a value this run has none of.
+    assert set(live) == set(RUN_ROW_FIELDS), live
+    assert live["transcript_path"] in (None, ""), live
+    assert not set(live) & set(RUN_OPTIONAL_FIELDS), live
+    assert "brief_sha256" not in live, live
+
+    # An optional field the view can answer joins the same row when asked for,
+    # present whether or not this run has a value for it — the fixture's pointer
+    # names no member, and the key is on the row all the same.
+    asked = _run_rows(_view_call("runs", fleet, fields=["member"]))[0]
+    assert set(asked) == set(RUN_ROW_FIELDS) | {"member"}, asked
+    assert asked["member"] in (None, ""), asked
 
     # The same holds on the committed arm, where the ledger records neither a
     # classification nor a worktree for the run.
@@ -251,8 +313,9 @@ def test_a_runs_row_omits_an_empty_field(fleet: Path) -> None:
         )
     )
     assert committed, "the committed arm listed no run"
-    assert "classification" not in committed[0], committed[0]
-    assert "worktree" not in committed[0], committed[0]
+    assert set(committed[0]) == set(RUN_ROW_FIELDS), committed[0]
+    assert committed[0]["classification"] in (None, "", {}), committed[0]
+    assert committed[0]["worktree"] in (None, ""), committed[0]
 
 
 # ── a view's fields are its own, not the ones its rows happen to hold ───────

@@ -53,6 +53,15 @@ OPTIONAL_RUN_FIELDS = (
     "manifest_reported_status",
 )
 
+#: Every field a runs row declares: the ones the view serves by default and the
+#: optional ones a caller may ask for. The runs row is served whole, so a field
+#: the view declares is on the row whether or not it holds a value. A key that
+#: vanished when it was empty would make the row's shape depend on the run it
+#: describes, and a caller comparing two rows — or reading one against the field
+#: list this view documents — could not tell an unanswerable field from an
+#: unanswered one.
+RUN_ROW_FIELDS: tuple[str, ...] = (*DEFAULT_RUN_FIELDS, *OPTIONAL_RUN_FIELDS)
+
 RUN_SOURCES = frozenset({"all", "ledger", "live"})
 RUN_SCOPES = frozenset({"project", "workstation"})
 WORKSTATION_RUN_FIELDS = ("project", "repo", "repo_exists")
@@ -121,16 +130,17 @@ def _refuse_unknown_fields(requested: Iterable[str]) -> None:
 def _selected_fields(fields: Iterable[str] | None) -> tuple[str, ...]:
     """Return the fields a runs row is built with for one request.
 
-    The build carries the whole default row whatever was requested, because the
-    view's own filters read ``classification``, ``session_id`` and ``resumable``
-    off the row before it is projected: a build narrowed to the request answers
-    every such filter with an absent key, and ``row.get`` on an absent key
-    compares unequal, so the filtered request would list nothing.
+    A request does not narrow a runs row. It adds the optional fields asked for
+    to the row the view declares, so a caller receives the view's own row —
+    every field this view is able to answer for, one of which it asked to be
+    sure of — rather than a different, smaller row. The whole default row is
+    built whatever was requested for a second reason: the view's own filters
+    read ``classification``, ``session_id`` and ``resumable`` off the row before
+    and after the projection, so a build narrowed to the request would answer
+    those filters with an absent key and list nothing.
 
-    Narrowing to the asked-for fields is the projection's job and happens last,
-    after the filters, exactly as it does on the other list views. What is
-    refused here is a name no run row could carry, so the refusal is raised
-    before the fleet is walked rather than after it.
+    What is refused here is a name no run row could carry, so the refusal is
+    raised before the fleet is walked rather than after it.
     """
     if fields is None:
         return DEFAULT_RUN_FIELDS
@@ -232,6 +242,7 @@ def project_run_rows(
     vocabulary: Iterable[str] | None = None,
     sections: Mapping[str, str] | None = None,
     keep_empty: Iterable[str] = (),
+    identity: Iterable[str] | None = None,
 ) -> list[dict[str, Any]]:
     """Route one list view's run rows through the single projection.
 
@@ -243,12 +254,22 @@ def project_run_rows(
     run's identity is always kept, so a caller that asked for one field can
     still tell which run answered.
 
+    ``identity`` is what a narrowed row carries whatever was asked for. A view
+    of compact run rows names the shared run fields, so a caller reading one
+    fact still sees which run, plan and section answered; a view that serves its
+    rows whole, as the live view serves whole classifications, names none of
+    them, because three fields riding along with a request for one is the shape
+    that view's own contract refuses. Every narrowed row carries
+    :data:`LIVE_ROW_ANCHOR` either way; omitting ``identity`` names
+    :data:`COMMON_RUN_FIELDS`.
+
     ``keep_empty`` names the fields a view declares as part of its row, whose
     presence is itself the statement a reader makes: a brief run's row carries
     ``plan`` null, and the key's presence beside an absent digest is what
     distinguishes it. Such a field keeps its empty value.
     """
 
+    shared = tuple(COMMON_RUN_FIELDS if identity is None else identity)
     rows = [dict(row) for row in rows]
     for row in rows:
         if not row.get("section") and sections is not None:
@@ -258,7 +279,7 @@ def project_run_rows(
         if row.get("section"):
             row["section"] = _canonical_section(row["section"])
 
-    carried: set[str] = set(COMMON_RUN_FIELDS)
+    carried: set[str] = set(shared)
     for row in rows:
         carried.update(row)
     if vocabulary is not None:
@@ -275,13 +296,13 @@ def project_run_rows(
                 + f"; {view} fields are "
                 + ", ".join(sorted(carried))
             )
-        selected = tuple(dict.fromkeys((*COMMON_RUN_FIELDS, *requested)))
+        selected = tuple(dict.fromkeys((*shared, *requested)))
     else:
         selected = ()
 
     projected: list[dict[str, Any]] = []
     for row in rows:
-        names = selected or tuple(dict.fromkeys((*COMMON_RUN_FIELDS, *row)))
+        names = selected or tuple(dict.fromkeys((*shared, *row)))
         narrowed = {name: row.get(name) for name in names if name in row}
         narrowed = {
             name: value
@@ -347,12 +368,24 @@ def project_live_rows(
         )
     requested = _requested_field_names(fields)
     _refuse_unknown_live_fields(requested, classified, with_mine=with_mine)
-    rows = project_run_rows(classified, fields=fields, view="live", sections=sections)
+    # ``mine`` is a field of the request rather than of the classification: the
+    # projection narrows each row to what was asked for, and a narrowing drops
+    # the ``session`` the marker is read from. The verdict is taken here, where
+    # every classification is still whole, and carried across the projection by
+    # run id, so a narrowed row still says which rows are the caller's.
+    mine_by_run = {
+        str(row.get(LIVE_ROW_ANCHOR) or ""): bool(row.get("mine")) for row in classified
+    }
+    rows = project_run_rows(
+        classified,
+        fields=fields,
+        view="live",
+        sections=sections,
+        identity=(LIVE_ROW_ANCHOR,),
+    )
     if with_mine:
-        # ``mine`` is a field of the request rather than of the classification,
-        # so it is added after the projection to every row the caller owns.
         for row in rows:
-            row["mine"] = str(row.get("session") or "") == session
+            row["mine"] = mine_by_run.get(str(row.get(LIVE_ROW_ANCHOR) or ""), False)
     return rows
 
 
@@ -867,21 +900,21 @@ def runs_view(
     # The rows are built, so they are routed through the one projection last,
     # exactly as the live, obligations and directory views route theirs. It
     # fills a section the row does not carry from the run's own pointer,
-    # canonicalises every section to the one spelling, and leaves an empty
-    # field off the row. This view holds no copy of any of those rules.
+    # canonicalises every section to the one spelling, and refuses a field this
+    # view cannot answer before the fleet is walked. This view holds no copy of
+    # any of those rules.
     #
-    # ``plan`` is the one field this view keeps when its value is empty: a brief
-    # run read no plan, and the key's presence beside an absent digest is what
-    # says so. Every other field it declares — an empty digest, an empty
-    # classification, an absent worktree — is left off exactly as the other
-    # views leave their own empty fields off.
+    # The row itself is served whole: every field this view declares is kept,
+    # empty or not, so a runs row is the read model the crew tool documents
+    # rather than whichever keys this run happened to fill. A brief run's null
+    # plan is one of them, and the key's presence beside an absent digest is
+    # what says that row's authority is a digest.
     rows = project_run_rows(
         rows,
-        fields=fields,
         view="runs",
         vocabulary=row_fields,
         sections=run_section_index([live_records]),
-        keep_empty=("plan",),
+        keep_empty=RUN_ROW_FIELDS,
     )
     return {
         "ok": True,
