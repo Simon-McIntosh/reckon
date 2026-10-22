@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T08:00:56.593Z",
+  "dispatched_at": "2026-10-22T07:55:30Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-coordinator-can-clear-its-own-duties.html:49",
+      "id": "anchors_resolve-1",
+      "reason": "a node sent to runs.py for the discard result finds no such surface and must either edit the wrong module or add a second discard result beside the real one in promotion.py, the exact duplication the section's reuse stance forbids.",
+      "text": "\u00a75 says \"the discard result in `reckon/crew/runs.py` reads the stacking recorded on the holder's pointer and name[s] each descendant still live\", but `reckon/crew/runs.py` defines no discard: `discard(run_id: str) -> dict[str, Any]`, which is the discard result, is at `reckon/crew/promotion.py:1832`, and the string \"discard\" appears in runs.py only inside two comments (reckon/crew/runs.py:604, reckon/crew/runs.py:1454)",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-coordinator-can-clear-its-own-duties.html:49",
+      "id": "reasoning-1",
+      "reason": "the only revision a node finds on the pointer is `base_sha`, so compiling the equality against it admits a dispatch based beneath the holder's tip, which carries none of the holder's 38 unlanded commits \u2014 the opposite of the exception's purpose \u2014 and the guard would then pass a case it was written to refuse.",
+      "text": "\u00a75 requires \"the dispatch's base is the holder's head\" and says each `_RepositoryScopeClaim` carries \"its head revision and whether its process has stopped as fields, read from `claim_disposition`, whose `ClaimDisposition` gains a `stopped` flag beside `binding`\", but `ClaimDisposition` gains only the `stopped` flag (reckon/crew/node.py:1487-1497) and the live pointer records `base_sha` \u2014 the holder's own dispatch base \u2014 and never a head (reckon/crew/node.py:1465); the holder's head is only obtainable by reading its worktree, as `unintegrated_claim_work` does (`rev-list HEAD ^integration_ref ^base_sha`, reckon/crew/node.py:1467-1469) or via `_head_revision` (reckon/crew/promotion_scope.py:1814). The same gap leaves the ancestry test unspecified: the pass condition is stated as an equality (\"the dispatch's base is the holder's head\"), yet the mechanism names `_revision_is_ancestor` / `_is_ancestor` without stating which two revisions must stand in that relation",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "fe50a11f2ee15e54855e856be2869efdb89512ce9062c5c798e0454dbcdba63b",
+  "plan_slug": "a-coordinator-can-clear-its-own-duties",
+  "plan_version": 18,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T075429573169-plan-review-of-a-coordinator-can-clear-its-own-duties",
+  "reviewed_blob_sha": "9c51bd9532bee43327f82909c6999ef4771a9f34",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a75 cites the discard result at `reckon/crew/runs.py`, where no discard function exists.",
+    "done_when": "pass \u2014 \u00a75's done-when is falsifiable and carries a control: the fixture dispatch based on main is refused `ScopeConflict`, and on the base commit the stacked dispatch is refused, so the test fails there.",
+    "evidence_paths": "pass \u2014 \u00a75's measure is an in-repo fixture test and it names no scratch or node-local path; \u00a76's evidence is the pass JSON on stdout plus `admission-verdicts.jsonl`, a durable run-store path.",
+    "naming": "pass \u2014 \u00a75 and \u00a76 introduce no plan labels, ticket numbers or version tags into symbols or comments; the run ids and revisions in \u00a75's Why are the plan document's own evidence.",
+    "reasoning": "a finding \u2014 \u00a75 names the holder's head revision as a fact the claim carries but names no source for it, and the only revision on the holder's live pointer is its dispatch base.",
+    "single_goal": "pass \u2014 \u00a75 carries one deliverable, the base-conditional exception, with its recording and result-naming as the same mechanism's consequences rather than a second goal.",
+    "wiring": "pass \u2014 the plan's only declared relationship, `plan-after` \u2192 `work-is-checked-against-its-domain#s2`, resolves to a \u00a72 that exists in that plan, and the nodes \u00a75 and \u00a76 name write disjoint files as `f-accd-002` states."
+  },
+  "section_digests": {
+    "_document": "5856fc5e825e56071b67e7e76cfa10ea4c284a7424cd7e9fed8aef6670f4eb53",
+    "s1": "43085e648cc19c93f778cca423c4bc64fcf292fd5751f0b768a6d900a2dc6f99",
+    "s2": "933e62d10b3381ed03c0f019a65289e14b557412b102f39aa4a770ec912a74f5",
+    "s3": "b0aed5170f3bee16722263b2bd44c1b29dece8bb4f30f50f921ccf768e16aa23",
+    "s4": "b894ac78377b3dbd1cb6e04ff8829d39275d930a6f04671cdeeebd95f9cdc1c0",
+    "s5": "ca1d8c8461a43f1bc76ecb644529cda0de013875141f3e0d40e7971dc5dc136e",
+    "s6": "ef6ea3ed02381f59920675f97d17e071fb37761446ffb484e987801a9ef8cce5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T08:06:03.940249+00:00"
+}
