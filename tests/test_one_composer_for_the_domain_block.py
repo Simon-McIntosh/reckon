@@ -11,6 +11,7 @@ mislead a reader into looking for one.
 
 from __future__ import annotations
 
+import hashlib
 import re
 from pathlib import Path
 
@@ -55,6 +56,13 @@ DECLARED_RULE_BLOCK = (
 # second module restating it fails a test rather than drifting silently.
 CHECK_LINE_SHAPE = re.compile(r"\{check\.id\}:\s*\{check\.question\}")
 
+# The brief every fixture node carries verbatim, and the separator the digest
+# rule inserts before the block. Held here as the fixture's own bytes so the
+# digest expectation below is derived from the document rather than from the
+# reader it is checking.
+BRIEF_TEXT = "Build the tape model.\n"
+BLOCK_SEPARATOR = b"\n\n"
+
 CREW_DIR = Path(prompts_module.__file__).resolve().parent
 
 
@@ -70,7 +78,7 @@ def _node(write_paths: list[str]) -> TaskNode:
 
 def _node_with_brief(tmp_path: Path, write_paths: list[str]) -> TaskNode:
     source = tmp_path / "brief.md"
-    source.write_text("Build the tape model.\n", encoding="utf-8")
+    source.write_text(BRIEF_TEXT, encoding="utf-8")
     node = _node(write_paths)
     node.brief = str(source)
     node.brief_sha256 = "f" * 64
@@ -156,16 +164,20 @@ def test_the_per_check_line_has_one_spelling() -> None:
 
 
 def test_the_rendered_check_line_is_the_one_the_block_carries() -> None:
-    """The block and a lone per-check render compose from the same helper."""
-    from reckon.crew.prompts import render_review_check
+    """The block renders each check as the literal line the fixture declares.
 
+    Both sides of the comparison are written out here rather than derived from
+    the code under test, so a regression inside the check renderer — a dropped
+    indent, a different separator between the id and the question — turns this
+    red instead of moving both sides together.
+    """
     check = DomainReviewCheck(
         id="dc-limit",
         question="what is the limit behaviour at DC?",
         applies_to=["models/**"],
     )
-    rendered = render_domain_rules(DomainRules(review_checks=(check,)))
-    assert rendered == "\n".join([DOMAIN_RULES_HEADING, render_review_check(check)])
+    expected = f"{DOMAIN_RULES_HEADING}\n  dc-limit: what is the limit behaviour at DC?"
+    assert render_domain_rules(DomainRules(review_checks=(check,))) == expected
 
 
 def test_a_model_paths_only_match_renders_nothing_through_the_renderer() -> None:
@@ -176,23 +188,29 @@ def test_a_model_paths_only_match_renders_nothing_through_the_renderer() -> None
 def test_the_brief_digest_of_an_unchanged_node_is_unchanged(tmp_path: Path) -> None:
     """A node carrying a declared rule keeps the block, its text and its digest.
 
-    The digest covers the brief's bytes with the block appended, so freezing the
-    block's own text for a rule-declaring node freezes the digest a promotion
-    cites. Recomputing it twice over the same document must agree.
+    The digest rule is applied here to the fixture's own document — the brief's
+    bytes with the block appended — and asserted against the value the reader
+    returns, so a change to what the digest covers (the separator, or whether
+    the block is included at all) turns this red rather than agreeing with
+    itself. The pinned value also makes the stability claim checkable: two reads
+    of one document cannot agree on the wrong constant.
     """
     flight = _flight_file(tmp_path, DECLARED_RULE_FLIGHT)
     node = _node_with_brief(tmp_path, ["models/tape.py"])
+    block = domain_rules_block(project="fixture", node=node, project_path=str(flight))
+    assert block == DECLARED_RULE_BLOCK
     stored = dispatch_admission._store_brief(
-        tmp_path / "run",
-        Path(node.brief),
-        block=domain_rules_block(
-            project="fixture", node=node, project_path=str(flight)
-        ),
+        tmp_path / "run", Path(node.brief), block=block
     )
     node.brief_path = str(stored)
+    pinned = hashlib.sha256(
+        BRIEF_TEXT.encode("utf-8")
+        + BLOCK_SEPARATOR
+        + DECLARED_RULE_BLOCK.encode("utf-8")
+    ).hexdigest()
     first = dispatch_admission._brief_digest(stored)
     second = dispatch_admission._brief_digest(stored)
-    assert first == second
+    assert first == second == pinned
     assert stored.read_text(encoding="utf-8").count(DOMAIN_RULES_HEADING) == 1
     assert DECLARED_RULE_BLOCK in stored.read_text(encoding="utf-8")
 
