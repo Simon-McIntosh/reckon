@@ -94,45 +94,71 @@
 
   <p>The gate is this node's own file. The wider recording is the eleven existing
   modules that import the changed scope-fence, claim-registry and promotion
-  functions, run as a matched pair under the same method (<code>pytest -n 8</code>,
-  eight workers on the shared allocation, each with its own basetemp) so the two
-  numbers are comparable:</p>
+  functions, run under one method (<code>pytest -n 8</code>, eight workers on the
+  shared allocation, each with its own basetemp):</p>
 
   <table>
-    <thead><tr><th>run</th><th>revision</th><th>result</th></tr></thead>
+    <thead><tr><th>run</th><th>tree it imported</th><th>result</th></tr></thead>
     <tbody>
-      <tr><td><code>baseline_suite</code></td>
-        <td><code>2539356</code> (this attempt's base; source-identical to
-          <code>dcb3b7133</code> for every module but this node's own test file,
-          which is not in the set)</td>
-        <td><strong>2 failed</strong>, 76 passed, exit 1</td></tr>
-      <tr><td><code>after_suite</code></td>
-        <td><code>33be2a080</code></td>
-        <td><strong>2 failed</strong>, 76 passed, exit 1</td></tr>
+      <tr><td><code>run 1</code> (recorded as
+        <code>baseline_suite</code>)</td>
+        <td><strong>the head tree</strong>, not the base — see below</td>
+        <td>2 failed, 76 passed, exit 1</td></tr>
+      <tr><td><code>run 2</code> (recorded as <code>after_suite</code>)</td>
+        <td>the head tree at <code>33be2a080</code></td>
+        <td>2 failed, 76 passed, exit 1</td></tr>
     </tbody>
   </table>
 
-  <p>The two baseline failures are
+  <p><strong>The pair as first recorded was confounded, and the run that was
+  meant to be the baseline is not one.</strong> Run 1 was launched with
+  <code>PYTHONPATH</code> pointed at a base-revision worktree under the run's
+  scratch path, and that worktree was never created — <code>git worktree add</code>
+  failed and nothing checked its result before the suite started. With
+  <code>PYTHONPATH</code> naming a directory that does not exist and the command
+  run from this node's own checkout, <code>python -m pytest</code> put the
+  working directory first on <code>sys.path</code> and the run imported the head
+  tree. So run 1 measures the head, and the two rows above are two runs of one
+  revision, which is why they agree to the test id.</p>
+
+  <p>What that pair does establish is repeatability, which is not nothing: the
+  same two ids fail on both runs,
   <code>tests/test_concurrent_dispatch_of_one_node.py::test_a_fresh_empty_claim_refuses</code>
   and
-  <code>tests/test_crew_dispatch_guard.py::test_the_exclusive_claim_walk_reads_every_live_claim_at_refusal</code>.
-  Both fail at the base revision, with no part of this change in the tree, so they
-  are pre-existing under parallel execution rather than anything this node
-  introduces. The head arm fails on exactly those two ids and no others, so the
-  delta this change adds is <strong>zero</strong>: two failures on each arm, 76
-  passed on each, and no id in either arm's failure list that the other lacks.
-  Judged by delta against the stated base, the change adds no failure to any
-  module in the set.</p>
+  <code>tests/test_crew_dispatch_guard.py::test_the_exclusive_claim_walk_reads_every_live_claim_at_refusal</code>,
+  and 76 pass on both. Neither id bears on the paths this change touches, so
+  <strong>this node's change is not implicated in either</strong>; but the delta
+  against the base revision is <em>unmeasured</em>, and no claim to the contrary
+  is made here.</p>
 
-  <p>One evidentiary caveat, stated rather than smoothed over: an earlier serial
-  run of the same eleven modules at <code>dcb3b7133</code> read
-  <em>78 passed</em>, exit 0, in <code>gate-wider.log</code>. That log's file has
-  since been overwritten by this attempt's <code>after_suite</code> run, so the
-  serial baseline now survives only as the quotation above and cannot be
-  re-read from disk. The recalled-and-quoted serial result and the measured
-  parallel baseline disagree on two tests, which is why the pair above is
-  recorded with both arms under one method: a matched pair answers the delta
-  question without depending on the lost run.</p>
+  <p><strong>The corrected arm was then attempted, and it does not exist
+  either.</strong> A base worktree is not available inside this run's fence:
+  <code>git worktree add</code> is refused outright — <code>fatal: could not
+  create directory of '&hellip;/reckon/.git/worktrees/&hellip;': Read-only file
+  system</code>, exit 125, reproduced this attempt — which is the true root cause
+  of the confound above rather than an oversight. The method that does work is a
+  plain revised tree from <code>git archive 2539356 | tar -x -C &lt;dir&gt;</code>,
+  and the identity check the first attempt lacked was run on both sides before
+  anything else: the module resolved under the base copy and its source carried
+  neither <code>record_stacked_dispatch</code> nor the
+  <code>base_revision=dispatch_base</code> kwarg, while the head tree's source
+  carried both. With the trees verified the arm still did not complete — it was
+  run twice and both runs were killed by their own time bound before
+  <code>pytest</code> printed a summary (<code>EXIT=124</code>): the sixteen-module
+  run reached 58% at 900 s, and the two-module base/head pair reached 13 and 14
+  items of 20 at 300 s. Partial progress marks are not attributable to test ids,
+  so those logs yield no result and <strong>neither may be read as an arm</strong>.
+  The delta against the base revision therefore remains unmeasured, and the
+  manifest says so in the same words. A successor with a larger bound and a
+  quiet node can complete it from the verified-tree recipe above.</p>
+
+  <p>An earlier serial run of the same eleven modules at <code>dcb3b7133</code>
+  read <em>78 passed</em>, exit 0, in <code>gate-wider.log</code>. That file has
+  since been overwritten by run 2, so the serial result survives only as this
+  quotation and cannot be re-read from disk. It is quoted here because it says
+  the two ids above are an artefact of eight-way parallel execution rather than
+  of the revision — but it is a recalled number, not a checkable log, and the
+  corrected baseline is what settles the delta.</p>
 
   <p><code>ruff check --no-cache</code> reports two findings on
   <code>reckon/crew/dispatch.py</code> both before and after this change
