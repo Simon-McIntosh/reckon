@@ -138,6 +138,16 @@ item, use isolated worktrees by default, and never dispatch two workers that
 write the same file. Each node carries a brief citing the reuse map: the module
 to extend, the interface not to widen, the question the worker may not settle.
 
+**Fill the lane every beat.** Read the ready-idle set: sections that are
+implementable, dependency-ready and gate-clear with no live run, plus plans that
+read `closable`. Dispatch every one of your own, critical-path links first. Name
+a peer's idle critical-path link to its owner. A full lane queues the dispatch
+centrally, so a full lane is never a reason to wait. Neither one node in flight
+nor a question the plan already answers licenses an idle section. The recipe and
+the measured failure are in
+[references/sprint-orchestration.md §12](references/sprint-orchestration.md);
+`/reckon-roadmap` reads the set.
+
 Each implementation dispatch carries a `health_review` block: the newest code
 review whose neighbourhood covers the node's write paths, its age and the open
 findings already stored against them, or the compose command when no covering

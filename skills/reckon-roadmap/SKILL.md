@@ -59,7 +59,8 @@ The tool returns:
 | `schedule` | Configured sprint window, ordered sprints holding open work, horizon depth, and schedule-ready/deferred counts |
 | `schedule_deferred` | Plans outside the configured sprint window, retained in roadmap order with the sprint each sits behind |
 | `immediate_roadmap` | Ready work ordered by critical-path membership, sprint order, ROI, unlocks, and remaining effort |
-| `critical_path` | Longest remaining local dependency chain weighted by effort and progress |
+| `critical_path` | Longest remaining local dependency chain weighted by effort and progress; `critical_path.sections` names its links section by section |
+| `pending_work[].implementable_sections` / `ready_sections` | Per plan, the sections declared buildable and the sections whose section waits and gates are clear; their intersection, less sections with a live run, is the ready-idle set |
 | `open_paths` | Alternative longest execution paths, capped by `max_paths` |
 | `cycles` | Exact local dependency cycles |
 | `wiring_findings` | Invalid, dangling, non-executable, inactive, contradictory, cyclic, sprint-order, and membership faults |
@@ -76,6 +77,41 @@ The project manifest may declare `schedule_horizon_sprints` as a positive
 integer. Reckon derives the ordered window from the earliest sprint holding open
 work and reports the total count as `schedule.horizon_depth`. With no declaration,
 the schedule axis remains visible but does not silently impose a queue.
+
+## Ready-idle sections, owners and the critical path
+
+A plan reads `ready` while most of its sections wait, and a ready section with
+no run leaves the lane empty unnoticed. So the plan-level answer is not the
+coordination answer. The coordination answer is section-level, joined with live
+runs and owners:
+
+1. **The ready-idle set** is each plan's `implementable_sections ∩
+   ready_sections`, less every section `crew(project, view="live")` shows a run
+   on. A plan whose `dependency_readiness` reads `closable` belongs in the set
+   too: it is owed a close, or a descope decision.
+2. **The owner** of each section is the coordinator that dispatches its plan:
+   `crew(view="directory", project=<project>)`. A plan no live coordinator holds
+   is unowned; report it as such.
+3. **The critical path, link by link.** For each entry in
+   `critical_path.sections`, state one of: in flight (run id), ready-idle
+   (owner), gated (gate id), or waiting (the ref it waits on). An idle link at
+   the head of the path is the most expensive idle work in the project.
+
+`roadmap(view="summary")` carries none of the section fields, and on a project
+with many plans `view="detail"` and `view="raw"` exceed the MCP response ceiling.
+Until the tool serves the set as one bounded view, read the lossless CLI report:
+
+```bash
+reckon roadmap --project <project> --json-output | python3 -c '
+import json,sys; d=json.load(sys.stdin)
+print("critical path:", d["critical_path"].get("sections"))
+for p in d["pending_work"]:
+    ready=set(p.get("ready_sections") or [])&set(p.get("implementable_sections") or [])
+    if ready or p.get("dependency_readiness")=="closable":
+        print(p.get("slug") or p.get("plan"), sorted(ready), p.get("dependency_readiness"))'
+```
+
+`reckon-build` acts on this set every beat (its references/sprint-orchestration.md §12).
 
 ## Wiring diagnosis
 
@@ -130,10 +166,13 @@ instructions or user authority.
 Lead with the result:
 
 1. project and sprint completion percentages;
-2. ready-now work in execution order;
-3. critical path and alternative open paths;
-4. true blockers, separated from wiring defects;
-5. exact wiring repairs and the skill that owns each mutation.
+2. the ready-idle sections, each with its owner, critical-path links first, and
+   the closable plans nobody has closed;
+3. ready-now work in execution order;
+4. the critical path link by link (in flight, ready-idle, gated or waiting), and
+   the alternative open paths;
+5. true blockers, separated from wiring defects;
+6. exact wiring repairs and the skill that owns each mutation.
 
 For a portfolio, preserve project boundaries. Cross-project prerequisites stay
 qualified and remain blockers until their owning project completes them.
