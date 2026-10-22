@@ -1,0 +1,102 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T15:08:52.262Z",
+  "dispatched_at": "2026-10-22T14:53:20Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/additional-work-is-a-section.html:71",
+      "id": "reasoning-1",
+      "reason": "a worker follows the instruction, extends the one predicate, satisfies the gate, and leaves create and text mode unguarded.",
+      "text": "\u00a74 claims the forged-body predicate is \"the one predicate every authoring path already shares\", but `_refuse_forged_body_structure` has exactly two call sites and neither is plan creation or text-mode edit, so two of \u00a74's four coverage claims are unmet by the mechanism it names while the plan forbids adding the check that would meet them",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/additional-work-is-a-section.html:54",
+      "id": "reasoning-2",
+      "reason": "the node renames a function used by production code it may not touch and the whole-word sentence it leaves behind is the defect the section exists to remove.",
+      "text": "\u00a72 renames `repair.follow_on_findings` but its write-path list omits `reckon/crew/recovery_repair_dispatch.py`, the module that calls it twice; that module also emits the old word in two messages \u00a72's done-when forbids",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/additional-work-is-a-section.html:59",
+      "id": "anchors_resolve-1",
+      "reason": "the files do need the change and a worker grepping the old word still finds every site in them, so the wrong attribution costs a lookup rather than sending the node at the wrong code.",
+      "text": "\u00a73 names `recovery_repair_dispatch.py`, `recovery_watch.py` and `dispatch_peer.py` as readers of the ledger key `follow_on_paths`, but that symbol does not occur in any of the three",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "a7e94dea8aa8cb9bdef1b724216a157526b8838769a25ba9d2e8e8c99513ea5a",
+  "plan_slug": "additional-work-is-a-section",
+  "plan_version": 4,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-22T15:12:32.974748+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-22T15:13:07.667817+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "the three files do need the change and a worker searching for the old word finds every site in them; the attribution costs a lookup, not a wrong edit",
+      "when": "2026-10-22T15:13:45.488156+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "the three files do need the change and a worker searching for the old word finds every site in them; the attribution costs a lookup, not a wrong edit",
+      "when": "2026-10-22T15:13:45.488156+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-22T15:12:32.974748+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-22T15:13:07.667817+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-additional-work-is-a-section.v4.json",
+  "review_run_id": "r-20261022T145118341064-plan-review-of-additional-work-is-a-section",
+  "reviewed_blob_sha": "9c37feff0ec22dec4b0790e2ef7199ab2eb64010",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 every file and line anchor resolves, but \u00a73 attributes three files to the ledger key `follow_on_paths` whose occurrences in those files are of a different symbol.",
+    "done_when": "pass \u2014 each of \u00a72\u2013\u00a75 names a measurable gate and a declared negative control (the old word restored in `FINDING_SEVERITIES`; the followup conversion restored; the check removed; one old skill sentence restored), and \u00a75's gate is judged by delta against base.",
+    "evidence_paths": "pass \u2014 every section writes its evidence under `docs/evidence/fragments/additional-work-is-a-section/`, a durable repository path, and no section names a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 the proposed names (`non_blocking_findings`, `outside_scope`, `outside_scope_paths`) and the test filenames describe the mechanism; no plan label, stage name, ticket number or changelog prose reaches a symbol, filename or comment.",
+    "reasoning": "a finding \u2014 \u00a74's named mechanism reaches neither `edit_plan`'s create nor a text-mode edit, and \u00a72 renames a function whose two production callers its write paths omit.",
+    "single_goal": "pass \u2014 \u00a72 is the severity grammar, \u00a73 is work found outside a fence returning to its coordinator, \u00a74 is the plan-write refusal, \u00a75 is the skill prose; \u00a73's manifest-field and ledger-key renames are two surfaces of one concept and close on one verdict.",
+    "wiring": "pass \u2014 s3 declares depends-on `additional-work-is-a-section#s2` and `the-suite-is-green-at-head#s32`, both of which resolve (s32 exists at `docs/plans/the-suite-is-green-at-head.html:759` with `data-status=\"done\"`); s5 declares depends-on s2/s3/s4, matching a section that names their grammar, field and guard as landed."
+  },
+  "section_digests": {
+    "_document": "0e1b33dda748890b04794a11496bc9a6a0039acae4b7d3b73b632dfda3e05469",
+    "s1": "53035db610c769f9fabc12038e7a13898064f071d29b27f9e4b9cfe7e6e9cbfb",
+    "s2": "75a9b7dbeef3a7a8d1ef92a5e1116776433d6fb6b488ec36e95ae96f893c06f0",
+    "s3": "5e0b4c0b11d5a7d4c468bf9e723c12d087c1219af2cb13c3a1e723138f47b73a",
+    "s4": "a659356e89ede5565143e26bfba115a866f39307f5ddf7b13d7255390dcd4082",
+    "s5": "a6fa784958eef11b006d0cb4912714d98031c18adf47e32ecc1f84a23d578e4d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T15:11:56.609797+00:00"
+}
