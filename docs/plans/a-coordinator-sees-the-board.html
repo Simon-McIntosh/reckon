@@ -25,7 +25,7 @@
   <title>A Coordinator Sees the Board | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="3">
 <meta name="plan-modified" content="2026-10-22">
 </head>
 <body>
@@ -73,6 +73,7 @@
     a-project-reads-as-one-picture §7.</p>
 
     <h2 id="s2">§2 — A plan's coordinator is derived from the ledger, beside its recorded owner</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
     <p>Two ownership facts already exist, and this section joins them instead of adding a third.</p>
     <ul>
       <li><strong>The person.</strong> The plan's <code>&lt;meta name="plan-owner"&gt;</code> names who is
@@ -107,6 +108,7 @@
     </ul>
 
     <h2 id="s3">§3 — The ready-idle set extends the ready-set view</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p><code>ready_set_view</code> (<code>reckon/mcp_views.py:1128</code>) already projects ready sections
     from the canonical roadmap. This section extends it instead of adding a second projection. Each ready
     row gains three fields:</p>
@@ -126,6 +128,7 @@
     the filtered set, and the test must fail if it stays.</p>
 
     <h2 id="s4">§4 — The critical path reads link by link, on its existing rows</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p>The roadmap's <code>critical_path.sections</code> rows (a-project-reads-as-one-picture §2) gain a
     primary state and the full list of what holds each link. The primary state is the first that applies,
     in this order:</p>
@@ -146,6 +149,7 @@
     fail the test.</p>
 
     <h2 id="s5">§5 — The board extends the coordinator directory</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p><code>reckon/crew/directory.py</code> owns the coordinator read model (<code>_run_row</code>,
     <code>_observed_transport</code>), and <code>crew(view="directory")</code> serves it. The board is that
     view, extended with three things:</p>
@@ -168,6 +172,7 @@
     section and no run must not appear, and the test must fail if it does.</p>
 
     <h2 id="s6">§6 — The lane share lives on the lanes view alone</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
     <p><code>crew(view="lanes")</code> already attaches the parsed lane document to each lane row
     (<code>_attach_lane_document</code>, <code>reckon/mcp_views.py:724</code>). The document is parsed once,
     by <code>read_lane_document</code> in <code>reckon/crew/lane_document.py:303</code>, and
@@ -183,6 +188,7 @@
     test must fail if it is read as fresh.</p>
 
     <h2 id="s7">§7 — The build skill and the roadmap skill read these views, and the recipe retires</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
     <p><code>reckon-build</code>'s per-beat rule (references/sprint-orchestration.md §12, "An idle lane with
     ready work is a defect") and <code>reckon-roadmap</code>'s "Ready-idle sections, owners and the critical
     path" both carry a lossless-report recipe as a stopgap. That recipe is retired. The skills name §3's
@@ -194,6 +200,7 @@
     that the build skill names them. Negative control: restoring the recipe line must fail that test.</p>
 
     <h2 id="s8">§8 — Measured on the incident and on a second mount</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
     <p>Replay power_convertor's 08:50Z state, and one other mounted project's current state, through the
     three reads. Record what each returns, its size against the MCP ceiling and its wall clock. On the
     replay, the idle sections and owners of §1 must come out of the first call, with no hand join.</p>
