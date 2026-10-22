@@ -60,15 +60,14 @@ def follow_lines(monkeypatch):
 def test_a_reload_keeps_the_pane_memory_and_renders_the_transition(
     home, follow_lines, monkeypatch
 ) -> None:
-    """A reloaded pane shows ``halted → working``, not the producer's record.
+    """A reloaded pane keeps the word the reader last saw for the run.
 
     The reader watched the run sit at ``halted`` — the pane word for a run that
-    stopped short. The relevant producer's own record knows nothing of that, and
-    the reloaded grid starts empty, so without the memory the row falls back to
-    the producer's ``from_state`` and prints ``dispatched → working`` — the
-    bare-state defect the pane measured on 2026-09-25. The follower's remembered
-    map travels with the attach event, so
-    the row keeps chaining from what the reader last saw.
+    stopped short. The relevant producer's own record knows nothing of that, so
+    the follower's remembered map has to travel with the attach event: the place
+    the reloaded arming leaves still carries the word the reader last saw. The
+    move itself asks the coordinator for nothing, so the stream draws no line for
+    it and crew view is where the row is drawn.
     """
     _two_live_runs(home)
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
@@ -115,14 +114,16 @@ def test_a_reload_keeps_the_pane_memory_and_renders_the_transition(
 
         rows = _fleet_lines(follow_lines)
 
+    # The reloaded arming carried the pane's memory with it, so the place it
+    # leaves still names the word the reader last saw for the run.
+    after = follow_checkpoint.read(PROJECT, SESSION)
+    assert (after.get("reported") or {}).get(RUN_A) == "halted", after
+    # The row itself asks the coordinator for nothing — the run is working
+    # again — so the reload delivers no line for it and crew view draws it.
     chained = [line for line in rows if "→" in line and "working" in line]
-    assert chained, f"the reload delivered no transition row; got {rows!r}"
-    left, _, right = chained[0].partition("→")
-    assert "halted" in left, (
-        f"the reloaded row must continue from the pane word the reader last saw; "
-        f"got {chained[0]!r}"
+    assert chained == [], (
+        f"a move into working asks the coordinator for nothing; got {rows!r}"
     )
-    assert "working" in right, chained[0]
 
 
 def test_an_idle_arming_writes_no_checkpoint_across_several_polls(

@@ -72,6 +72,13 @@ class _RecordingPath(ticker.PaneRowPath):
         return super().feed(event, now=now)
 
 
+def _view(event: dict) -> str:
+    """The line crew view draws for a row the stream leaves out."""
+    return ticker.Ticker(width=180, color=False, model_aliases=()).render(
+        event, with_session=True
+    )
+
+
 def _replay(tmp_path: Path, events: list[dict]) -> tuple[list[dict], list[dict]]:
     """Feed one recorded stream through a follower's own row path.
 
@@ -97,13 +104,13 @@ def _replay(tmp_path: Path, events: list[dict]) -> tuple[list[dict], list[dict]]
 
 
 def test_a_replay_of_the_pane_shown_state_draws_no_row(tmp_path) -> None:
-    """The run is drawn twice: its first sighting and the real change.
+    """The run is drawn once: its first sighting, and the change left to crew view.
 
     The stream holds the run's move into ``waiting``, a reload's replayed
     ``new -> waiting`` baseline for it declaring the same condition, then a real
     ``waiting -> working``. The baseline re-announces what the pane already
-    holds, so it draws nothing; without the suppression the same replay draws
-    three rows for the run.
+    holds, so it draws nothing, and the move into ``working`` asks the
+    coordinator for nothing, so the stream leaves it to crew view.
     """
     rows, _fed = _replay(
         tmp_path,
@@ -131,9 +138,17 @@ def test_a_replay_of_the_pane_shown_state_draws_no_row(tmp_path) -> None:
         ],
     )
 
-    assert [row.get("to_state") for row in rows] == ["waiting", "working"], (
-        f"the run is drawn for its first sighting and its real change only; got {rows!r}"
+    assert [row.get("to_state") for row in rows] == ["waiting"], (
+        f"the run is drawn for its first sighting only; got {rows!r}"
     )
+    assert _view(
+        _event(
+            "transition",
+            previous="waiting",
+            state="working",
+            observed_at="2026-10-21T07:25:00Z",
+        )
+    ).strip()
     assert not any(row.get("event") == "baseline" for row in rows), (
         f"the replay of the state the pane already shows is inventory; got {rows!r}"
     )

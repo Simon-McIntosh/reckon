@@ -6,11 +6,11 @@ holds that record opens with one header line — how many live runs it found and
 how many changed since the record was written — and then draws the runs whose
 state differs from the record, as ordinary transitions from the recorded state.
 A run that did not move draws nothing, and a run the record does not name at all
-is replayed from ``dispatched``, the state every launch passes through. The
-pane delivers its own session's run starts, so a replay that resolves into a
-progress state such as ``working`` is drawn once as that run's start, while a
-peer session's start is still held back as observer context the pane withholds.
-The record holds the states the pane actually showed.
+is replayed from ``dispatched``, the state every launch passes through. A
+replay that resolves into a progress state such as ``working`` asks the
+coordinator for nothing, so the stream leaves it to crew view, whether the run
+is the pane's own or a peer's. The record holds the states the pane actually
+showed.
 
 The record is written where a row is written to the pane, never where one is
 generated: a row this reader never received is not one it saw, and a replay
@@ -182,6 +182,27 @@ def _naming(lines, node: str) -> list[str]:
     return [line for line in _fleet_rows(lines) if node in line]
 
 
+def _replayed_into_working(run_id: str, node: str) -> dict:
+    """The transition a replay into ``working`` names, as the producer writes it."""
+    return {
+        "project": PROJECT,
+        "event": "transition",
+        "run_id": run_id,
+        "node": node,
+        "session": SESSION,
+        "from_state": "dispatched",
+        "to_state": "working",
+        "observed_at": "2026-10-15T09:19:30Z",
+    }
+
+
+def _view(event: dict) -> str:
+    """The line crew view draws for a row the stream leaves out."""
+    return ticker_module.Ticker(width=180, color=False, model_aliases=()).render(
+        event, with_session=True
+    )
+
+
 def test_a_reattach_replays_only_the_runs_that_moved(home, follow_lines) -> None:
     """The gap is one action row per moved run, under one header, and nothing else.
 
@@ -242,10 +263,10 @@ def test_a_run_the_record_does_not_name_is_replayed_from_dispatched(
     The record names the two runs the pane was last shown. A third pointer is
     written afterwards, so the re-attach finds a live run the record does not
     name; it is replayed from ``dispatched``, which is the state its launch
-    passed through, and resolves into ``working``. The replay is this session's
-    own run's start, so the pane delivers it once. The two runs the record does
-    name and that did not move draw nothing, while the header still counts the
-    new run among the changed.
+    passed through, and resolves into ``working``. The replay asks the
+    coordinator for nothing, so the stream leaves it to crew view while the
+    header still counts the new run among the changed. The two runs the record
+    does name and that did not move draw nothing.
     """
     _two_live_runs(home)
     _deliver(home, RUN_A, "failed")
@@ -267,12 +288,11 @@ def test_a_run_the_record_does_not_name_is_replayed_from_dispatched(
     header = follow_lines[0]
     assert "3 live runs" in header, header
     assert "1 changed" in header, header
-    arrived = _naming(follow_lines, "node-c")
-    assert len(arrived) == 1, (
-        f"a run the pane's own session dispatched is delivered once as its "
-        f"start; got {follow_lines!r}"
+    assert not _naming(follow_lines, "node-c"), (
+        f"a replay that asks the coordinator for nothing leaves the stream; got "
+        f"{follow_lines!r}"
     )
-    assert "new → working" in arrived[0], arrived[0]
+    assert _view(_replayed_into_working(RUN_C, "node-c")).strip()
     assert not _naming(follow_lines, "node-a"), follow_lines
     assert not _naming(follow_lines, "node-b"), follow_lines
 
@@ -309,9 +329,7 @@ def test_the_record_follows_every_row_the_pane_receives(home, follow_lines) -> N
     assert not _naming(follow_lines, "node-b"), follow_lines
 
 
-def test_a_json_arming_records_only_what_a_pane_would_draw(
-    home, follow_lines
-) -> None:
+def test_a_json_arming_records_only_what_a_pane_would_draw(home, follow_lines) -> None:
     """The record is the pane's memory, not the JSON consumer's.
 
     A session can be armed as a JSON reader and later as a pane in front of a
@@ -321,7 +339,8 @@ def test_a_json_arming_records_only_what_a_pane_would_draw(
     attach would diff against a state it never showed, and read the run's
     re-dispatch as a promotion the reader was never told about. The run shown as
     failed is the pane's own row, so it is recorded; the re-dispatched run's
-    replay resolves into working, this session's own start, and is delivered.
+    replay resolves into working, which asks the coordinator for nothing, so the
+    stream leaves it to crew view.
     """
     repo = home / "repo"
     repo.mkdir()
@@ -350,9 +369,8 @@ def test_a_json_arming_records_only_what_a_pane_would_draw(
         _run_follow()
 
     assert "re-attached" in follow_lines[0], follow_lines
-    rows = _naming(follow_lines, "node-p")
-    assert len(rows) == 1, (
-        f"a run the pane's own session dispatched is delivered once as its "
-        f"start; got {follow_lines!r}"
+    assert not _naming(follow_lines, "node-p"), (
+        f"a replay that asks the coordinator for nothing leaves the stream; got "
+        f"{follow_lines!r}"
     )
-    assert "new → working" in rows[0], rows[0]
+    assert _view(_replayed_into_working(RUN_P, "node-p")).strip()

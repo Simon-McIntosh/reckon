@@ -216,6 +216,13 @@ def _fixture_events() -> list[dict]:
     ]
 
 
+def _view(event: dict) -> str:
+    """The line crew view draws for a row the stream leaves out."""
+    return ticker.Ticker(width=180, color=False, model_aliases=()).render(
+        event, with_session=True
+    )
+
+
 def _states(rows: list[tuple[float, dict]]) -> list[tuple[object, object]]:
     return [(row["from_state"], row["to_state"]) for _, row in rows]
 
@@ -256,12 +263,15 @@ def test_the_pane_receives_only_the_settled_changes(home) -> None:
     # The attach's own re-announcements ask for nothing, so the first arming
     # wakes nobody.
     assert first == [], first
-    assert len(rows) == 3, rows
+    assert len(rows) == 2, rows
     assert _states(rows) == [
-        ("dispatched", "working"),
         ("working", "complete"),
         ("exited-unfinished", "blocked"),
     ], rows
+    # The launch asks the coordinator for nothing, so the stream leaves it to
+    # crew view, which still draws it.
+    assert ("dispatched", "working") not in _states(rows), rows
+    assert _view(_fixture_events()[1]).strip()
 
 
 def test_a_completion_prints_on_its_own_within_the_settle_window(home) -> None:
@@ -283,17 +293,21 @@ def test_a_completion_prints_on_its_own_within_the_settle_window(home) -> None:
     )
 
 
-def test_observer_context_shown_delivers_the_start_rows_too(
+def test_observer_context_shown_still_leaves_the_start_rows_out(
     home, observer_pane
 ) -> None:
-    """Negative control: the pane built with observer context shown prints more.
+    """The pane built with observer context shown draws no row that asks nothing.
 
-    This is the mutation the node's gate fails against. With the follower's row
-    path built to show observer context, the start and the bare working rows
-    reach the pane, so the two-row assertion above cannot hold -- proving that
-    assertion is about the hold and not about a follower that reads nothing.
+    The observer path keeps more context for the rows it draws -- the second run
+    is named out of ``working`` rather than ``exited-unfinished`` -- and it still
+    withholds a launch and a bare re-announcement, because the carriage rule reads
+    the row's own duty rather than which pane is reading it. Crew view is where
+    those rows stay visible.
     """
     _, rows, _ = _deliver(home)
-    assert len(rows) != 2, rows
-    assert ("dispatched", "working") in _states(rows), rows
-    assert (None, "working") in _states(rows), rows
+    assert _states(rows) == [
+        ("working", "complete"),
+        ("working", "exited-unfinished"),
+    ], rows
+    assert ("dispatched", "working") not in _states(rows), rows
+    assert _view(_fixture_events()[1]).strip()

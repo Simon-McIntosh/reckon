@@ -481,18 +481,17 @@ def test_a_second_follower_takes_over_when_the_first_registration_goes(home) -> 
     second.release()
 
 
-def test_an_attaching_follower_reports_its_fleet_as_transitions(home) -> None:
+def test_an_attaching_follower_carries_no_row_that_asks_nothing(home) -> None:
     """Attaching prints the fleet, in the ticker's own vocabulary and nothing else.
 
     Measured: a session armed the prescribed line, both of its runs sat in a
     progress state, and the pane read `No output available` for minutes — the
     silence this surface exists to remove. The fix is that a follower carries no
-    state filter, so the baseline reports every live run as a transition. It is
-    not a second stream of follower status: a reader wants worker transitions
-    and the fleet posture, and nothing about the follower itself. A run's
-    arrival in dispatched is held for its window and printed late when the run
-    has not moved, so the fleet is reported whole without a launch repeating
-    itself where it does move.
+    state filter, so the fleet posture is read from the same rows as everything
+    else. It is not a second stream of follower status: a reader wants worker
+    transitions and the fleet posture, and nothing about the follower itself. A
+    run's arrival asks the coordinator for nothing, so an attach whose whole
+    fleet is still progressing carries no line at all.
     """
     _write_pointer(home, "r-one", "one-node", session="mine", phase="starting")
     _write_pointer(home, "r-two", "two-node", session="mine", phase="working")
@@ -508,9 +507,7 @@ def test_an_attaching_follower_reports_its_fleet_as_transitions(home) -> None:
     # transition, and only prints late — here on the stop that drains the hold —
     # if it never moves. The run that did move into working is observer context
     # the pane withholds.
-    assert [(e["node"], e["to_state"]) for e in events] == [
-        ("one-node", "dispatched"),
-    ], events
+    assert events == [], events
     assert all(e.get("event") in {"baseline", "transition"} for e in events), (
         "the follower's own lifecycle is not fleet state and does not belong here"
     )

@@ -1200,7 +1200,8 @@ def stream_carries(event: Mapping[str, Any]) -> bool:
     review finding that needs the coordinator land these same words), a limit
     reset, a budget lift granted or ending that covers the session, a declared
     wait a worker addresses to the coordinator, or the follower's own end. A row
-    about anything else — a launch, a ``working`` or ``waiting`` transition, a
+    about anything else — a launch, a ``working`` or ``waiting`` transition that
+    asks nothing, a
     ``landed`` or ``dropped`` row the coordinator's own merge or discard caused,
     a re-arm baseline, a reload notice — carries no such duty, so it is left to
     ``crew view`` and the pane's history and is not printed.
@@ -1214,7 +1215,12 @@ def stream_carries(event: Mapping[str, Any]) -> bool:
         return True
     if declares_a_wait(event):
         return True
-    return _pane_word(event) in CARRIED_PANE_WORDS
+    if _pane_word(event) in CARRIED_PANE_WORDS:
+        return True
+    return (
+        transition_class(event.get("from_state"), event.get("to_state"))
+        == ROW_COORDINATOR
+    )
 
 
 class RowPolicy:

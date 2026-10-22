@@ -47,6 +47,15 @@ def _row(run_id: str, from_state: object, to_state: object, **extra: object):
     return row
 
 
+def _view(row: dict) -> str:
+    """The line crew view draws for a row the stream leaves out."""
+    event = {"project": PROJECT, "session": SESSION, "node": SESSION}
+    event.update(row)
+    return ticker.Ticker(width=180, color=False, model_aliases=()).render(
+        event, with_session=True
+    )
+
+
 def _window(kind: tuple[object, object]) -> float:
     return ticker.NOISE_PAIRS[kind][1]
 
@@ -314,15 +323,16 @@ def test_every_coordinator_kind_prints_with_its_plain_reason():
         assert printed[0]["reason"] == "landed clean"
 
 
-def test_observer_rows_print_unmarked():
+def test_an_observer_row_asks_the_coordinator_for_nothing():
     assert ticker.transition_class("unreadable", "working") == ticker.ROW_OBSERVER
-    # A pane that shows observer context prints the row as it always did; the
-    # coordinator's default pane holds it back.
-    policy = ticker.RowPolicy(show_observer=True)
     row = _row("run-j", "unreadable", "working")
-    printed = policy.feed(row, now=1.0)
-    assert printed == [row]
-    assert printed[0] is row
+    # The observer pane releases the row the way it always did, and the stream
+    # still leaves it out: it asks the coordinator for nothing, so crew view is
+    # where a reader finds it.
+    policy = ticker.RowPolicy(show_observer=True)
+    assert policy.feed(row, now=1.0) == []
+    assert not ticker.stream_carries(row)
+    assert _view(row).strip()
 
 
 def test_re_derived_baseline_row_is_silent():
@@ -510,22 +520,21 @@ def test_a_row_the_policy_held_is_not_remembered_as_delivered(home) -> None:
         ], rearmed
 
 
-def test_a_resume_baseline_stays_quiet_for_a_row_the_pane_already_shows(
-    home, observer_pane
-) -> None:
-    """A re-derived baseline is fed through the row path, so a known row is silent.
+def test_a_resume_baseline_answers_the_pane_with_no_row(home, observer_pane) -> None:
+    """A re-derived baseline is fed through the row path, so it draws no row.
 
     A resume carries the states the pane last drew. When its checkpoint no longer
     names this stream, the arming re-derives the fleet baseline rather than
     continuing from a place that does not name the file — and that baseline is
     fed through the same row path the pane reads, so a run the pane already
-    shows at its current state must not be announced a second time. The run the
-    resume does not name is genuinely new, so it reaches the pane: an arming
-    that printed nothing at all cannot pass this.
+    shows at its current state must not be announced a second time, and the run
+    the resume does not name is not announced either, because a baseline asks
+    the coordinator for nothing however new the run is. A row of that shape is
+    one crew view draws.
 
     The baseline is observer context, so the pane is built with
-    ``show_observer`` true — the coordinator's own pane holds it back, and this
-    test is about the resume's baseline routing rather than the hold.
+    ``show_observer`` true — the carriage rule leaves it out either way, because
+    it reads the row's own duty rather than which pane is reading it.
     """
     _live_runs(home, RUN_A, RUN_B)
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, seat):
@@ -535,9 +544,7 @@ def test_a_resume_baseline_stays_quiet_for_a_row_the_pane_already_shows(
         # Read the state the fleet's own baseline carries, rather than writing
         # the literal here, so the expectation comes from the same fixture the
         # follower reads.
-        first = _arm()
-        states = {event["run_id"]: event["to_state"] for event in first}
-        assert set(states) == {RUN_A, RUN_B}, first
+        assert _arm() == [], "a baseline asks the coordinator for nothing"
 
         # The pane this image replaces already shows RUN_A at its current
         # state. The recorded stream does not name this file, so the arming
@@ -546,15 +553,13 @@ def test_a_resume_baseline_stays_quiet_for_a_row_the_pane_already_shows(
             resume={
                 "stream_path": f"{stream_path}.replaced",
                 "offset": 0,
-                "reported": {RUN_A: states[RUN_A]},
+                "reported": {RUN_A: "working"},
             }
         )
-        by_run = {event["run_id"]: event for event in resumed}
-        assert RUN_A not in by_run, resumed
-        assert RUN_B in by_run, resumed
-        # The row that did reach the pane came from the re-derived baseline, so
-        # the arming took the baseline branch rather than a continuation.
-        assert by_run[RUN_B]["event"] == "baseline", resumed
+        assert resumed == [], resumed
+        assert _view(
+            _event(RUN_B, "node-b", state="dispatched", observed_at=_iso(0.0))
+        ).strip()
 
 
 def test_a_resume_that_names_a_replaced_stream_owes_its_rows_on_its_first_pass(
@@ -580,19 +585,17 @@ def test_a_resume_that_names_a_replaced_stream_owes_its_rows_on_its_first_pass(
         assert acquired
         stream_path = Path(seat["stream_path"])
         crew.list_live(project=PROJECT)
-        first = _arm()
-        states = {event["run_id"]: event["to_state"] for event in first}
-        assert set(states) == {RUN_A, RUN_B}, first
+        assert _arm() == [], "a baseline asks the coordinator for nothing"
 
         resumed = _arm(
             lifetime=0.0,
             resume={
                 "stream_path": f"{stream_path}.replaced",
                 "offset": 0,
-                "reported": {RUN_A: states[RUN_A]},
+                "reported": {RUN_A: "working"},
             },
         )
-        by_run = {event["run_id"]: event for event in resumed}
-        assert RUN_A not in by_run, resumed
-        assert RUN_B in by_run, resumed
-        assert by_run[RUN_B]["event"] == "baseline", resumed
+        assert resumed == [], resumed
+        assert _view(
+            _event(RUN_B, "node-b", state="dispatched", observed_at=_iso(0.0))
+        ).strip()
