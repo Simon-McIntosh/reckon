@@ -173,7 +173,9 @@ def test_the_review_refusal_appears_in_the_sessions_obligations(
     """The obligations item names the refusal and the command that clears it."""
     _write_queued("r-review-refusal", failure=_review_refusal())
     owed = obligations_module.obligations(PROJECT, SESSION)
-    listed = [item for item in owed["obligations"] if item["run_id"] == "r-review-refusal"]
+    listed = [
+        item for item in owed["obligations"] if item["run_id"] == "r-review-refusal"
+    ]
     assert len(listed) == 1, owed["obligations"]
     assert listed[0]["kind"] == obligations_module.QUEUED_AWAITING_SESSION_DUTY_KIND
     assert listed[0]["next_command"] == _review_invocation(), listed[0]["next_command"]
