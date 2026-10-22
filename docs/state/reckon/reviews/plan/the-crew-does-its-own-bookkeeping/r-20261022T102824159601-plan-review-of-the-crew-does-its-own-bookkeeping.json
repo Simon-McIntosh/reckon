@@ -1,0 +1,88 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T11:04:27.453Z",
+  "dispatched_at": "2026-10-22T10:48:59Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-crew-does-its-own-bookkeeping.html:98",
+      "id": "anchors_resolve-1",
+      "reason": "the node would be dispatched at a dead command surface, and its done-when could only pass by exercising a verb the codebase has already replaced.",
+      "text": "\u00a713's deliverable requires `crew check-manifest` to refuse a manifest citing a log absent from the run directory, but `check-manifest` is tombstoned at `reckon/crew/tombstones.py:184` with successor `crew check --manifest`; a worker implementing or testing the named verb would build against a command that only emits the retirement message, not the check",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-does-its-own-bookkeeping.html:24",
+      "id": "wiring-1",
+      "reason": "with no declared relationships a coordinator reads eighteen independent nodes and can dispatch them in parallel, and the shared write paths then serialise by luck rather than by plan, which is exactly the overwrite the one-writer-per-file rule exists to prevent.",
+      "text": "the plan declares no `depends-on`, `informs` or `gates` edge at all (every section's `data-links` is empty), yet five sections \u2014 \u00a79, \u00a714, \u00a715, \u00a716 and \u00a717 \u2014 list `reckon/crew/recovery_classification.py` among their write paths, and \u00a71/\u00a78 share `reckon/crew/promotion_checks.py`, \u00a75/\u00a76 share `reckon/crew_dispatch_commands.py`, \u00a74/\u00a79/\u00a718 share `reckon/crew/promotion.py`; dispatched together, they collide on one file with nothing declaring the order",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-does-its-own-bookkeeping.html:65",
+      "id": "single_goal-1",
+      "reason": "the node can be closed on the reopen verdict while its third deliverable is unmeasured, so the resume-reporting defect the section exists to fix would ship untested.",
+      "text": "\u00a77 carries three separate mechanisms (a halted run accepted by `--reopen`, a `--write-path` required only when the repair needs a new one, and a resume reporting its own launch instead of the second-resume guard) under a single done-when; the done-when and its one negative control cover the reopen behaviour alone, so the reporting defect is closed by nothing",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-does-its-own-bookkeeping.html:48",
+      "id": "single_goal-2",
+      "reason": "dispatch replacement and brief regeneration are independently verifiable behaviours with different callers, and one section cannot be reviewed or reverted on one verdict.",
+      "text": "\u00a73 bundles two unrelated mechanisms: a coordinator's brief replacing or being reported unused, and the review brief being regenerated whenever the reviewed head moves",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-does-its-own-bookkeeping.html:37",
+      "id": "reasoning-1",
+      "reason": "two sections prescribe different fixes for the same field, and a node implementing each from its own section alone would land them in conflict.",
+      "text": "\u00a71's stated root cause is that the manifest's `tests:` field is a JSON list which promotion reads as one command string, but \u00a710 (line 83) requires each field have one written shape and `reckon/crew/reports.py:163` declares `tests` accepts `text` or `mapping` only; the plan never says which side changes, so \u00a71 could make promotion accept a list while \u00a710 closes the schema against one",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ba75779d29764156872522297941fc7882fd990cc09dab44a608be77a57bc376",
+  "plan_slug": "the-crew-does-its-own-bookkeeping",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T102824159601-plan-review-of-the-crew-does-its-own-bookkeeping",
+  "reviewed_blob_sha": "797edf1e03b76d7ac89d24b38e7f455708436eb5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a713 names `crew check-manifest`, which is a retired verb (`reckon/crew/tombstones.py:184`, successor `crew check --manifest`), so the cited surface does not resolve to a live command.",
+    "done_when": "pass \u2014 all eighteen sections declare a negative control that removes the named mechanism and shows the guarded case flip, and each done-when names a failing/finding outcome a test can assert.",
+    "evidence_paths": "pass \u2014 every section requires its gate logs under the run directory, starting with the revision and the literal command and ending in `EXIT=`, which is a durable path a later reader can open.",
+    "naming": "pass \u2014 the plan names modules and behaviours, not symbols; no plan label, stage name, ticket number or version tag is carried into code, and the run ids and session ids it quotes are evidence, not identifiers applied to new symbols.",
+    "reasoning": "a finding \u2014 \u00a71 asserts the manifest's `tests:` field is a JSON list that promotion reads as one command string, while \u00a710 asserts each field has one written shape and `reckon/crew/reports.py:163` declares `tests` accepts only `text` or `mapping`, so the two sections prescribe opposite fixes for the same field.",
+    "single_goal": "a finding \u2014 \u00a77 carries three deliverables (reopen accepts a halted run, write-path optional, and a resume reporting its own launch) under one done-when and one negative control.",
+    "wiring": "a finding \u2014 no section carries any relationship (every section element has `data-links=\"\"`), while sections \u00a79, \u00a714, \u00a715, \u00a716 and \u00a717 all name `reckon/crew/recovery_classification.py` in their write paths."
+  },
+  "section_digests": {
+    "_document": "1c2ac1cae59eed87eeb33b1eb10c8bbfcd6d01eb7d5b42bc44b961c03742decf",
+    "s1": "4f25c5f1457e0336535cb62eb98d1cc6e603084c78fb48877d5da26165b8fe23",
+    "s10": "e82fbab2018040775f4ca4cbc485081cd00eb8468228b01f351544acdae9a684",
+    "s11": "528ecce7a53f57e54bcf1efa83ff458958c3437b3432895ddecdd835a0e62505",
+    "s12": "cf7304fd49c4d28e5bca798e2fca486ef137e59bce341c819316936d77daf719",
+    "s13": "0e5494ec14aa2aae205ce2fe0776c05d7859bc4173bbf819bd8ab27829b253e9",
+    "s14": "37143d66ebad07f999845341b909080392b4fffa341c7553bbece98ce2d93af1",
+    "s15": "327a3b6261f327ba147b39dd2d6fbd1ce595e493e1834f8eb9ef957ea33f55c6",
+    "s16": "738604ff6516e5303088fb5f37ce17d56c02dc7217d2ebd64cdad839f6fd1eb5",
+    "s17": "f7a6d1fb09a597263b98f3f9db11f0a156337a303d2ccf5eb3b0d44899d7956f",
+    "s18": "526aabfb15ccc6205c07b6cf24a8c3fd22579f4776d2bd7a971164251a7d6f95",
+    "s2": "0fe853c67da217879c5c8672e5902b9a76353e03c761fc4b411b7d92af3feb8f",
+    "s3": "6ff447d65595bcf8a51d4d5d834aa47f2c3b97f187a540e32f7e10b14e31645e",
+    "s4": "725c875cfeb877f71fdc01870943889b9c403c08aa0ee675bdbb100c60d896ee",
+    "s5": "7c304261c964b9ccae1e7148a9bffe48cc81416987e9ed2e9d50d6c5a77df7b7",
+    "s6": "f293425c956b5e910273b5c23cfe8ee7a3a4c1d5565a0c10742e9f7beee7c269",
+    "s7": "10b21095de0e778af9db7725f012399e0f14650f4a63e56844bb7ba4b6bba746",
+    "s8": "be2663bedb99a28c51e5004beeaefd28019b60ee0e5a799af90dc3dbdb8e23ea",
+    "s9": "c5acdc2406e91d62930f4e8772839567aca54b6df3e16cbe65878db520b53043"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T12:59:05.393105+00:00"
+}
