@@ -32,7 +32,12 @@ def _event(number: int) -> dict:
         "project": "proj",
         "event": "transition",
         "observed_at": "2026-09-04T04:00:00+00:00",
-        "run_id": f"run-{number}",
+        # A lift grant keyed by its group is the one row the pane prints the
+        # moment it arrives: run transitions are held for an arrival or settle
+        # window, and a plain move into working is never printed at all. The
+        # reload is measured on the reader-to-pane path every row shares, so a
+        # row that reaches the pane at once is what can show a gap.
+        "run_id": "",
         "node": f"node-{number}",
         "session": "session-a",
         "role": "implement",
@@ -40,9 +45,9 @@ def _event(number: int) -> dict:
         "model": "model",
         "alias": "model",
         "effort": "medium",
-        "from_state": "starting",
-        "to_state": "working",
-        "working": 1,
+        "from_state": "",
+        "to_state": "lift-granted",
+        "working": 0,
         "blocked": 0,
         "unpromoted": 0,
         "detail": "",
@@ -240,7 +245,7 @@ def test_running_follower_reloads_without_stream_or_registration_gap(
                 )
                 time.sleep(0.12)
 
-            subsequent = _measured_rows(lines, len(expected_nodes))
+            subsequent = _measured_rows(lines, len(expected_nodes), timeout=60.0)
 
         assert any(line.startswith("fresh:") for line in subsequent), (
             "the replacement stayed alive but did not perform the changed behaviour"

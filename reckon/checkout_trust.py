@@ -873,25 +873,25 @@ def _read_import_verdict(path: Path) -> tuple[bool, str] | None:
 
 
 def _record_import_verdict(root: Path, *, imports: bool, reason: str) -> None:
-    """Publish an image's verdict beside it, by rename.
+    """Publish an image's verdict beside it, through the shared atomic writer.
 
-    The rename makes the record appear whole to a concurrent reader, so no asker
-    ever reads a half-written verdict. A record that cannot be written costs a
-    later asker its probe and nothing else, so the failure is swallowed rather
-    than allowed to end the asker that has just proved the image.
+    The writer renames a whole temporary into place, so no asker ever reads a
+    half-written verdict. The verdict is a cache an asker can rebuild by proving
+    the image again, so it is not made durable before the rename. A record that
+    cannot be written costs a later asker its probe and nothing else, so the
+    failure is swallowed rather than allowed to end the asker that has just
+    proved the image.
     """
+    from reckon._store import write_atomically
+
     payload = json.dumps({"ok": imports, "reason": reason})
-    try:
-        descriptor, staged = tempfile.mkstemp(prefix=IMPORT_VERDICT_PREFIX, dir=root)
-    except OSError:
-        return
-    try:
-        with os.fdopen(descriptor, "w") as handle:
-            handle.write(payload)
-        os.replace(staged, _import_verdict_path(root))
-    except OSError:
-        with contextlib.suppress(OSError):
-            os.unlink(staged)
+    with contextlib.suppress(OSError):
+        write_atomically(
+            _import_verdict_path(root),
+            lambda handle: handle.write(payload),
+            fsync=False,
+            mode=0o600,
+        )
 
 
 def _probe_imports(root: Path) -> tuple[bool, str]:
