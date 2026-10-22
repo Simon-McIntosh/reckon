@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T19:53:47.687Z",
+  "dispatched_at": "2026-10-22T19:36:01Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:364",
+      "id": "wiring-1",
+      "reason": "the followup is the chain head a coordinator reads for the next one-line invocation, so as written it dispatches a finished section and hides the two dependencies \u00a720 actually waits on.",
+      "text": "the open followup `f-arcstf-007` still recommends `/reckon-build a-review-can-see-the-figure \u00a721` and its body still presents \u00a720 as waiting only on \u00a721's verdict, but the plan declares s21 done and s22 implementable, and \u00a720 now also depends on s22 and `imas-ambix:a-tool-call-carries-no-model-markup#s3`",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "8b61eab5fa2cf0f8035664d8be7136ad632eea943b802fe03def6e26ab70775b",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 130,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T191147916123-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "fab171e8973f81837c6c309b445f21d280892c56",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/prompts/figure_review.md`, `reckon/crew/recovery_review_subject.py`, `load_figure_review_prompt()` in `reckon/crew/review.py`, the `vs3-linkage-repair` figure-review run named with `5d52a37bc4eb`, and the imas-ambix section edge all resolve; extensionless hrefs were resolved as `<path>.html` before judging.",
+    "done_when": "pass \u2014 \u00a722's done-when is measurable (prompt text, brief text, ruff, log shape) and names a control that can fail: remove the PNG-only paragraph and the prompt-text test must go red.",
+    "evidence_paths": "pass \u2014 \u00a722's gate logs go under the run directory and \u00a721's report sits at the durable `~/.config/reckon/crew/reports/reckon/figure-review-pairs/clive/report.md`, not a scratchpad.",
+    "naming": "pass \u2014 \u00a722 names existing symbols by what they do and introduces no plan label, ticket number or version tag into code, a path or a symbol name.",
+    "reasoning": "pass \u2014 the stated cause matches the evidence and the mechanism runs on the real path: a census I re-ran over the cited local figure review shows it did open the PNG renders and also ran ~20 `git show <head>:\u2026vs3-jacket-positive-linkage.svg` pipelines through `grep`/`sed`, and `load_figure_review_prompt()` is called at `reckon/crew/recovery_review_subject.py:422`, so rewriting that prompt and `_review_brief_text` reaches the composed review brief.",
+    "single_goal": "pass \u2014 \u00a722 carries one deliverable (judge the rendered PNG, never the SVG source) across its two surfaces, and its gate closes on that alone.",
+    "wiring": "a finding \u2014 the new edges resolve (s20 now names s22 and `imas-ambix:a-tool-call-carries-no-model-markup#s3`, both of which exist), but the open followup `f-arcstf-007` still carries `/reckon-build a-review-can-see-the-figure \u00a721` while the plan declares s21 done and s22 implementable."
+  },
+  "section_digests": {
+    "_document": "9612aa11d63e8fa9159ca4e405f03c58fd6e0d8c8968cbc716d2296f691059c1",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s10": "aee314dbe26192cd678dc467a9b229b8cb46873cacefcd4ce369fcbe469a1e37",
+    "s11": "22d519df0a82a0edfb23ceef10d63c14a08f3d8d656ce95a4cd03e5049d4e228",
+    "s12": "234f9999257c9e64bf69518cdf0b98e319850465374deeac091e90b1ed118647",
+    "s13": "d2f0977c2749f5e1d4e28f3962e8b01a182615a0a75edb530e5e4fde18d9a123",
+    "s14": "f06507899a512533562b6d0b348e9b18bec6d1667d6e619d05352d7ce535eb7c",
+    "s15": "18683ff3a4d13534aa9e29ac4a495e86d07a452b032538d3ae4b7a47d2a9966b",
+    "s16": "a1648c89c8b99c37facb6da9eb6deca43ba8418449557c78627654670ea39fa1",
+    "s17": "c856114a206af086b77fc4d7b867a4cf4dbafd15fdce96f7d52c4a2a36c1e544",
+    "s18": "d6fb6505577d6af2a722c58e82e85d9efd01bb5ce9b4d5fa6408d237ab731651",
+    "s19": "43a12c4fa79a496156abb38028fc5f1c3ea4245ebaaea0e2f007f25079c44f2d",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s20": "ab2db294a1f747ecd69c0027b85fc38e86bf9e2aead12af975002255af4af1b5",
+    "s21": "c9ed658bd81ee95aca671c4c50b6f524c6200537628625fad8284c60c56925f0",
+    "s22": "c459fe692437be93f44bffcad0813f9f98189d953074b617c388d7375ba98df2",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "ce9705dbaad70ab2b3a9425eead9900cc284deb7f1d5ecacb553d3745679b3d7",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a",
+    "s8": "2c200fdd964f328342811e9362e4cd14da60f3c8352368899ccf87797d9e7f5b",
+    "s9": "b62ffeb55dd71d5f62b49f372e069f227a57c7caec9c6c3b45f81a945d284e11"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T19:59:10.511803+00:00"
+}
