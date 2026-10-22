@@ -30,6 +30,11 @@
     <p>Run <code>a-queued-run-keeps-one-id</code>, landed at <code>af9bc8109</code>. The launch of a queued run in <code>reckon/crew/queue_admission.py</code> (<code>_launch_queued</code>) passes the queued pointer's run id to the dispatch, so the id a dispatch returned is the id the run launches under: <code>crew observe</code>, <code>crew discard</code> and the ledger answer for it, and the watch stream records no <code>dropped</code> transition for a run that launched. Four assertions in <code>tests/test_a_queued_run_is_admitted.py</code> pinned the retired id swap (that the queued id's pointer and directory are vacated at launch); they now assert the identity the change guarantees, with no case deleted.</p><p>Gate: base 2 failed, 58 passed; head 60 passed, EXIT=0. Review: 112/120 (goal 20, evidence 18, scope 19, durability 17, fit 18, reuse 20); one follow-on exempted. The first attempt blocked correctly on a file outside its grant and was widened.</p>
   </section>
 
+  <section id="s3">
+    <h2>§3 — an obligation follows the run&#x27;s current head</h2>
+    <p>Run <code>a-duty-follows-the-current-head</code>, landed at <code>f8057bb00</code> after one repair round. From the moment a complete run is resumed until it delivers again, <code>reckon/crew/obligations.py</code> withdraws its <code>review-missing</code> and <code>promotable-stale</code> duties for the replaced head; a review queued for that head is withdrawn rather than launched and recorded as superseded by the resume, and the reflex refuses to compose one; when the run delivers, the duties return naming the new head. The published obligation snapshot skips a withdrawn duty rather than failing its whole sweep, which the first round's head did.</p><p>Gate: base 5 failed, head 70 passed, EXIT=0; a mutation arm reproduces the sweep failure. Reviews: 99 (the snapshot sweep raised on a withdrawn duty), then 108/120; two follow-ons exempted.</p>
+  </section>
+
 </main>
 </body>
 </html>
