@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import json
 import shlex
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -37,6 +37,7 @@ from reckon.crew import (
 )
 from reckon.crew import review as review_module
 from reckon.crew.node import INTERRUPTED_RUN_PHASE, CrewError, parse_duration
+from reckon.crew.query import project_run_rows, run_section_index
 from reckon.crew.recovery_review_dispatch import supersedes_head
 from reckon.crew.routing import (
     WorktreeRecordIndex,
@@ -1255,13 +1256,19 @@ def _sub_floor_items(
     return _sub_floor_items_by_session(project, floors, now=now).get(session, [])
 
 
-def obligations(project: str, session: str) -> dict[str, Any]:
+def obligations(
+    project: str, session: str, *, fields: Iterable[str] | None = None
+) -> dict[str, Any]:
     """Return every current duty owed by one coordinator session.
 
     Live duty kinds are a projection of :func:`recovery.recover`; the
     promotable grace comes from the same resolved flight configuration used by
     dispatch.  The result is ordered oldest first so the first row is also the
     most urgent age signal.
+
+    Every duty row is built here and projected here, through the one projection
+    :func:`reckon.crew.query.project_run_rows`, so this view carries the section
+    the run was dispatched for and refuses a field it does not have.
     """
     now = _utc_now()
     resolved = flight.resolve(project)
@@ -1362,16 +1369,22 @@ def obligations(project: str, session: str) -> dict[str, Any]:
     closure = runs.drain(project, session=session)
     items = [_with_action_form(item) for item in items]
     acknowledged = [_with_action_form(item) for item in acknowledged]
+    sections = run_section_index([pointers.values()])
+    summary = {
+        "count": len(items),
+        "oldest_age_seconds": max(
+            (int(item["age_seconds"]) for item in items), default=0
+        ),
+        "unreconciled_runs": int(closure["unreconciled_runs"]),
+    }
     return {
         "project": project,
         "session": session,
-        "obligations": items,
-        "acknowledged": acknowledged,
-        "summary": {
-            "count": len(items),
-            "oldest_age_seconds": max(
-                (int(item["age_seconds"]) for item in items), default=0
-            ),
-            "unreconciled_runs": int(closure["unreconciled_runs"]),
-        },
+        "obligations": project_run_rows(
+            items, fields=fields, view="obligations", sections=sections
+        ),
+        "acknowledged": project_run_rows(
+            acknowledged, fields=fields, view="obligations", sections=sections
+        ),
+        "summary": summary,
     }

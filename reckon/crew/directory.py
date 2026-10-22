@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from reckon import ledger
+from reckon.crew.query import project_run_rows, run_section_index
 from reckon.crew.recovery import classify_pointer
 from reckon.crew.runs import list_live
 
@@ -108,8 +109,15 @@ def directory(
     run_id: str | None = None,
     node_id: str | None = None,
     pointers: Iterable[Mapping[str, Any]] | None = None,
+    fields: Iterable[str] | None = None,
 ) -> dict[str, Any]:
-    """Group every live pointer by its owning coordinator session."""
+    """Group every live pointer by its owning coordinator session.
+
+    Each run row is built here and projected here, through the one projection
+    :func:`reckon.crew.query.project_run_rows`, so this view and every other
+    view that lists a run carry the same field vocabulary and the same refusal
+    for a field the view does not have.
+    """
     if run_id and node_id:
         raise DirectoryError("select by run id or node id, not both")
     records = list(pointers) if pointers is not None else list_live()
@@ -201,4 +209,12 @@ def directory(
             "node": run["node"],
             "session": coordinators[0]["session"] if owned else None,
         }
+    sections = run_section_index([records])
+    for coordinator in coordinators:
+        coordinator["runs"] = project_run_rows(
+            coordinator["runs"], fields=fields, view="directory", sections=sections
+        )
+    result["unowned_runs"] = project_run_rows(
+        unowned_runs, fields=fields, view="directory", sections=sections
+    )
     return result

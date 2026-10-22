@@ -119,13 +119,18 @@ def _refuse_unknown_fields(requested: Iterable[str]) -> None:
 
 
 def _selected_fields(fields: Iterable[str] | None) -> tuple[str, ...]:
-    """Return default fields plus validated opt-in fields, in stable order."""
+    """Return the fields a runs row carries for one request.
+
+    Without a request the whole default row is returned. With one, the row is
+    narrowed to what was asked for beside the common run fields, which is the
+    same projection every other list view applies, so a caller reading one fact
+    receives one fact and the identity of the run it came from.
+    """
     if fields is None:
         return DEFAULT_RUN_FIELDS
     requested = _requested_field_names(fields)
     _refuse_unknown_fields(requested)
-    extras = tuple(field for field in OPTIONAL_RUN_FIELDS if field in requested)
-    return (*DEFAULT_RUN_FIELDS, *extras)
+    return tuple(dict.fromkeys((*COMMON_RUN_FIELDS, *requested)))
 
 
 def _live_field_vocabulary(
@@ -157,7 +162,10 @@ def _live_field_vocabulary(
 
 
 def _refuse_unknown_live_fields(
-    requested: Iterable[str], classified: Sequence[Mapping[str, Any]], *, with_mine: bool
+    requested: Iterable[str],
+    classified: Sequence[Mapping[str, Any]],
+    *,
+    with_mine: bool,
 ) -> None:
     """Reject field names a live row does not carry, naming the live set."""
     vocabulary = _live_field_vocabulary(classified, with_mine=with_mine)
@@ -195,7 +203,9 @@ def _run_section(record: Mapping[str, Any]) -> str:
     return _canonical_section(node_mapping.get("section"))
 
 
-def run_section_index(record_sets: Iterable[Iterable[Mapping[str, Any]]]) -> dict[str, str]:
+def run_section_index(
+    record_sets: Iterable[Iterable[Mapping[str, Any]]],
+) -> dict[str, str]:
     """Map every run id in the given pointer sets to the section it names."""
 
     index: dict[str, str] = {}
@@ -233,6 +243,8 @@ def project_run_rows(
             section = sections.get(str(row.get("run_id") or ""))
             if section:
                 row["section"] = section
+        if row.get("section"):
+            row["section"] = _canonical_section(row["section"])
 
     carried: set[str] = set(COMMON_RUN_FIELDS)
     for row in rows:
@@ -320,9 +332,7 @@ def project_live_rows(
         )
     requested = _requested_field_names(fields)
     _refuse_unknown_live_fields(requested, classified, with_mine=with_mine)
-    rows = project_run_rows(
-        classified, fields=fields, view="live", sections=sections
-    )
+    rows = project_run_rows(classified, fields=fields, view="live", sections=sections)
     if with_mine:
         # ``mine`` is a field of the request rather than of the classification,
         # so it is added after the projection to every row the caller owns.
