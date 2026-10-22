@@ -25,6 +25,7 @@ from reckon._plan_html import (
     derive_fleet_impl_imputing_effort,
     open_sections,
     read_state_and_text_file,
+    section_record_id,
 )
 from reckon._schema import (
     GATE_TRANSITIONS,
@@ -55,7 +56,7 @@ from reckon.doccheck import (
     unwired_plan_finding,
 )
 from reckon.file_memo import memoized
-from reckon.followup_pointers import classify_followup
+from reckon.followup_pointers import classify_followup, find_invocation
 from reckon.lifecycle import (
     COMPLETED_STATUSES,
     TERMINAL_STATUSES,
@@ -1371,6 +1372,177 @@ def _finding(
     if extra:
         result["extra"] = extra
     return result
+
+
+#: Section references as prose writes them: ``slug#sN`` or ``project:slug#sN``.
+#: Candidates are validated by ``parse_plan_ref``, so the grammar stays the
+#: ``depends_on`` ref's rather than a second copy of it.
+_SECTION_REF_IN_TEXT_RE = re.compile(r"[A-Za-z0-9_.:\-]+#[A-Za-z0-9_.\-]+")
+
+
+def _mentioned_section_refs(text: str) -> list[str]:
+    """The section references a block of prose names, once each.
+
+    A sentence's closing punctuation is trimmed before the candidate is
+    validated, so a trailing full stop names no section.
+    """
+
+    found: list[str] = []
+    for match in _SECTION_REF_IN_TEXT_RE.findall(str(text or "")):
+        ref = match.rstrip(".,;:")
+        parsed = parse_plan_ref(ref)
+        if parsed is not None and parsed.stage and ref not in found:
+            found.append(ref)
+    return found
+
+
+def _normalized_section_ref(project: str, ref: str) -> str:
+    """One section reference spelled one way, so two spellings compare equal."""
+
+    parsed = parse_plan_ref(ref)
+    if parsed is None:
+        return str(ref)
+    prefix = f"{parsed.project}:" if parsed.project not in (None, project) else ""
+    return f"{prefix}{parsed.slug}#{parsed.stage or ''}"
+
+
+def _undeclared_wait_findings(
+    project: str,
+    plans: Mapping[str, Mapping[str, Any]],
+    docs_dir: Path | None,
+    open_plan_slugs: Iterable[str],
+    section_runs: Mapping[tuple[str, str], Iterable[Mapping[str, Any]]],
+    section_holds_by_plan: Mapping[str, Mapping[str, Iterable[Mapping[str, Any]]]],
+    declared_refs: Mapping[tuple[str, str], Iterable[str]],
+) -> list[dict[str, Any]]:
+    """Report a section held by something that names a wait it never declared.
+
+    Three kinds of hold can name the section another one waits on: a run the
+    classifier read blocked, whose reason carries the manifest's own blocker
+    text; a gate measure whose verdict is not passed; and an open followup,
+    attributed to the section its invocation names. The ref a hold names is a
+    dependency in everything but the declaration, so the repair is one
+    ``section_depends_on.<sid>`` write; the analyser never invents the edge.
+    """
+
+    open_plans = set(open_plan_slugs)
+    mentions: dict[tuple[str, str], list[tuple[str, str]]] = defaultdict(list)
+    for (plan_ref, section), rows in sorted(section_runs.items()):
+        if plan_ref not in open_plans:
+            continue
+        for row in run_blocker_rows(rows):
+            text = str(row.get("blocker") or "")
+            if text:
+                mentions[(plan_ref, section)].append(("blocked run", text))
+    for plan_ref in sorted(open_plans):
+        for section, holds in sorted(section_holds_by_plan.get(plan_ref, {}).items()):
+            for hold in holds:
+                if str(hold.get("kind") or "") == GATE_BLOCKER and hold.get("measure"):
+                    mentions[(plan_ref, section)].append(
+                        ("gate measure", str(hold["measure"]))
+                    )
+        for followup in _plan_followups(
+            plans.get(plan_ref) or {}, docs_dir, project, plan_ref
+        ):
+            if not isinstance(followup, Mapping):
+                continue
+            if str(followup.get("status") or "open") != "open":
+                continue
+            section = str(getattr(find_invocation(followup), "section", "") or "")
+            if not section:
+                continue
+            text = " ".join(
+                str(followup.get(field) or "")
+                for field in ("prompt", "recommends_skill")
+            ).strip()
+            if text:
+                mentions[(plan_ref, section)].append(("open followup", text))
+    findings: list[dict[str, Any]] = []
+    for (plan_ref, section), entries in sorted(mentions.items()):
+        declared = {
+            _normalized_section_ref(project, ref)
+            for ref in declared_refs.get((plan_ref, section), ())
+        }
+        waiting = f"{plan_ref}#{section_record_id(section)}"
+        reported: set[str] = set()
+        for source, text in entries:
+            for ref in _mentioned_section_refs(text):
+                mentioned = _normalized_section_ref(project, ref)
+                if mentioned == waiting or mentioned in declared | reported:
+                    continue
+                reported.add(mentioned)
+                findings.append(
+                    _finding(
+                        "undeclared-wait",
+                        "warn",
+                        f"{waiting}: the {source} names {mentioned}, which "
+                        f"{waiting}'s dependencies do not include",
+                        slug=plan_ref,
+                        extra={
+                            "waiting": waiting,
+                            "ref": mentioned,
+                            "source": source,
+                            "text": text,
+                        },
+                    )
+                )
+    return findings
+
+
+def _overlapping_scope_findings(
+    open_by_plan: Mapping[str, Iterable[str]],
+    section_runs: Mapping[tuple[str, str], Iterable[Mapping[str, Any]]],
+    claims: Iterable[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    """The section pairs whose claimed write paths intersect across plans.
+
+    A write path is declared by the run that claims it, binding or not, and only
+    runs placed on a section are attributed. Two sections of one plan claiming a
+    path is that plan's own sequencing; across plans the pairs are read through
+    the dispatcher's own overlap rule. Only a section the plan still declares
+    open is reviewed, so a run pointer left on a landed section is not a
+    collision.
+    """
+
+    from reckon.crew.runs import _scopes_overlap
+
+    placement = {
+        str(row.get("run_id") or ""): key
+        for key, rows in section_runs.items()
+        for row in rows
+    }
+    paths: dict[tuple[str, str], set[str]] = defaultdict(set)
+    for claim in claims:
+        key = placement.get(str(claim.get("run_id") or ""))
+        if key is not None and claim.get("path"):
+            paths[key].add(str(claim["path"]))
+    open_keys = (key for key in paths if key[1] in set(open_by_plan.get(key[0], ())))
+    reviewed = sorted(open_keys)
+    findings: list[dict[str, Any]] = []
+    for index, left in enumerate(reviewed):
+        for right in reviewed[index + 1 :]:
+            if left[0] == right[0]:
+                continue
+            shared = [
+                {"left_path": first, "right_path": second}
+                for first in sorted(paths[left])
+                for second in sorted(paths[right])
+                if _scopes_overlap(first, second)
+            ]
+            if not shared:
+                continue
+            left_ref, right_ref = f"{left[0]}#{left[1]}", f"{right[0]}#{right[1]}"
+            findings.append(
+                _finding(
+                    "overlapping-scope",
+                    "warn",
+                    f"{left_ref} and {right_ref} declare intersecting write "
+                    f"paths: {', '.join(pair['left_path'] for pair in shared)}",
+                    slug=left[0],
+                    extra={"sections": [left_ref, right_ref], "paths": shared},
+                )
+            )
+    return findings
 
 
 def _standalone_reason(docs_dir: Path | None, project: str, slug: str) -> str | None:
@@ -2951,6 +3123,12 @@ def _build_roadmap(
     # reports beside the runs sitting on it.
     section_holds_by_plan: dict[str, dict[str, list[dict[str, Any]]]] = {}
     authored_by_plan: dict[str, Mapping[str, Any]] = {}
+    # The sections each open plan still declares implementable, and the refs
+    # each of its sections declares it waits on. The first scopes the wiring
+    # findings to work that is still open, the second is what an undeclared
+    # wait is judged against.
+    open_sections_by_plan: dict[str, set[str]] = {}
+    declared_section_refs: dict[tuple[str, str], set[str]] = {}
     blocked_run_seconds = _blocked_section_run_seconds(project, pointers)
     north_stars = [
         dict(item)
@@ -3694,6 +3872,17 @@ def _build_roadmap(
         mapped_edges = [
             row for row in dependency_rows.get(slug, []) if row.get("source_section")
         ]
+        # The refs each of this plan's sections declares it waits on, and the
+        # sections it still holds open. Openness is the declaration's, read
+        # through the one open-section predicate: a run pointer left on a
+        # landed section is a record of work, not work still in flight.
+        for edge in mapped_edges:
+            waiting_section = str(edge.get("source_section") or "")
+            if waiting_section:
+                declared_section_refs.setdefault((slug, waiting_section), set()).add(
+                    _normalized_section_ref(project, str(edge.get("ref") or ""))
+                )
+        open_sections_by_plan[slug] = set(open_sections(authored))
         # A decision that names the sections it governs holds those sections
         # rather than the plan: the row keeps the decision in its reported
         # blockers, and the sections it names carry the wait in row form so a
@@ -3813,6 +4002,23 @@ def _build_roadmap(
         decision_blockers_report.extend(decision_blockers)
         open_decisions_report.extend(open_decisions)
         deferred_decisions_report.extend(deferred_decisions)
+
+    # The two wiring findings that make the edges coordinators carry in
+    # messages visible, emitted through the one helper every finding uses.
+    findings.extend(
+        _undeclared_wait_findings(
+            project,
+            plans,
+            resolved_docs,
+            authored_by_plan,
+            section_runs,
+            section_holds_by_plan,
+            declared_section_refs,
+        )
+    )
+    findings.extend(
+        _overlapping_scope_findings(open_sections_by_plan, section_runs, scope_claims)
+    )
 
     open_paths, critical, critical_members = rank_open_paths(
         plans,
