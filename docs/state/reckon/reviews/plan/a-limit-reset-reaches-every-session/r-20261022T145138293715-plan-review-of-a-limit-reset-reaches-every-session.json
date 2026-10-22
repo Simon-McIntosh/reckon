@@ -1,0 +1,47 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T15:39:46.015Z",
+  "dispatched_at": "2026-10-22T15:29:49Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-limit-reset-reaches-every-session.html:145",
+      "id": "reasoning-1",
+      "reason": "as written the node cannot satisfy both clauses, so it will either leave \u00a72's landed test red or edit it while its own done-when declares it passes unchanged; the plan must say \u00a79 supersedes that assertion.",
+      "text": "\u00a79's done-when claims \"\u00a72's landed tests pass unchanged\", but \u00a79's own mechanism (\"prints the detail in place of the from and to state words\", with the done-when requiring \"no `new \u2192 working`\") deletes the state cell that \u00a72's landed test asserts: `tests/test_a_limit_reset_reaches_every_pane.py:170` requires `\"working\" in rendered` (beside `ticker.LIMIT_STAGE in rendered` at :169), and the row the renderer builds today reads `new \u2192 working` because `PANE_STATES` maps the `limit-reset` state to `ticker.py`'s `working` word. Remove the from/to cells and no \"working\" reaches the rendered string, so that assertion fails at head \u2014 the superseded row and the \"pass unchanged\" clause are the same test, and \u00a79 names it only obliquely in its write paths (\"the tests asserting the superseded row, named from the failure ids\")",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "5a187184eb3990d2ac52bb81e4efac270f5e2ffb597af82a55df438af2022330",
+  "plan_slug": "a-limit-reset-reaches-every-session",
+  "plan_version": 46,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T145138293715-plan-review-of-a-limit-reset-reaches-every-session",
+  "reviewed_blob_sha": "aadbdad5593248e65f109de55672194e41cb2d46",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_reset_detail` resolves at `reckon/crew/lift_watch.py:355`, `Painter.render` at `reckon/crew/ticker.py:2282`, dotfiles `fabae49` exists (\"docs(agents): announce a usage-limit reset once, for orchestrators only\"), `tests/test_every_module_fits_a_worker_window.py` exists, and the cited event id `reset-claude-sub-20261022T123236Z` is present in `~/.config/reckon/crew/budget-resets.json`.",
+    "done_when": "pass \u2014 \u00a79's done-when is measurable (a printed line's cells and substrings) and declares a negative control (\"restores the transition rendering, and the first case then prints `new \u2192 working`\"); its conflict with \u00a72's landed test is a reasoning defect, raised below, not a missing measure.",
+    "evidence_paths": "pass \u2014 the gate log, both arms' git checkouts, and the reproduction log are named under the run directory, not a scratchpad or node-local temp path.",
+    "naming": "pass \u2014 \u00a79 introduces no plan label, stage name, ticket number or version tag into a symbol, file or comment.",
+    "reasoning": "a finding \u2014 \u00a79's mechanism removes the from/to state words, and \u00a72's landed test asserts the state cell reads `working`.",
+    "single_goal": "pass \u2014 one deliverable: the reset row prints the composed wording in place of the state transition; the \"confirm with a reproduction\" step is the same goal, not a second one.",
+    "wiring": "pass \u2014 `plan-section-depends-on` for `s9` names `a-limit-reset-reaches-every-session#s2` (exists) and `the-monitor-shows-the-work-it-watches#s83`, which resolves to `docs/plans/the-monitor-shows-the-work-it-watches.html:667`; no edge is missing that would order live work, since every other section \u00a79 leans on (s1, s6) is already `done`."
+  },
+  "section_digests": {
+    "_document": "c522e5b13c4b851f322252da39fc5748ef0d53318036908f367886b5d750f38c",
+    "s1": "94def7b6fb41cc276c0577018bcc106bab7eaaa9d39a5df760e2d77ee1a7595d",
+    "s2": "844aada0f6b4aae72bc45795e96c553e16bf3ff92f9e2c27666fc952d0187a40",
+    "s3": "a481ce43e07f6167db0a1f56a9c3a147b001b2973383c03f33151bc407e5cb4a",
+    "s4": "136bf6f43df2d99c1f758324927ab05eabd9aec938251a8d408a96c67841f596",
+    "s5": "7c0dc3556a9d6a54cf58532f9b8aa1054d9bd3725c15c82e0aa9da736a5e9309",
+    "s6": "c8ff3c099e9d217a97c0f6232689f76a21d7c9cc4b1a7d5ced6db85300180b0a",
+    "s7": "b35e0e8820af110a5858364a331330a3a6c886f10fe5701e5471afe28563c83f",
+    "s8": "300e4261969417e426a548a6e07a93240c47b0c26af35e8c15a54b63c7930b86",
+    "s9": "7bc31a2088b1c2b6e220a1cf6cca44c567809a2d318c9f32dc3ec4ac95e96c4f"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T15:45:13.087574+00:00"
+}
