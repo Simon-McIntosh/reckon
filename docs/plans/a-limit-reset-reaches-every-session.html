@@ -22,11 +22,11 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="It reuses the lift broadcast a-window-paces-the-lane built and the pane rows the-monitor-shows-the-work-it-watches draws, but no live plan waits on it and its first section waits on neither.">
   <meta name="plan-section-depends-on" content="{&quot;s2&quot;:[&quot;a-limit-reset-reaches-every-session#s1&quot;],&quot;s3&quot;:[&quot;a-limit-reset-reaches-every-session#s1&quot;],&quot;s4&quot;:[&quot;a-limit-reset-reaches-every-session#s2&quot;,&quot;a-limit-reset-reaches-every-session#s3&quot;,&quot;a-limit-reset-reaches-every-session#s5&quot;],&quot;s5&quot;:[&quot;a-limit-reset-reaches-every-session#s1&quot;],&quot;s6&quot;:[&quot;a-limit-reset-reaches-every-session#s2&quot;,&quot;a-limit-reset-reaches-every-session#s3&quot;,&quot;a-limit-reset-reaches-every-session#s5&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>A Limit Reset Reaches Every Session | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="31">
+<meta name="plan-version" content="32">
 <meta name="plan-modified" content="2026-10-22">
 </head>
 <body>
@@ -47,7 +47,7 @@
     <p><strong>Why an announcement, and where detection fits.</strong> Two detectors exist, and neither can see this reset today. A Claude Code transcript records a refusal as <code>quotaLimits</code> with a <code>resetsAt</code> epoch. At 14:23 UTC on 2026-10-21 this repository's coordinator transcript recorded a <code>seven_day</code> refusal with <code>resetsAt</code> 2026-10-22T18:00, and three minutes later the lead reported the limit reset, so an early reset leaves that stamp where it was. The window readings could see it. <code>budget_lift._reset_observed</code> reads a fall in utilisation below the grant figure as a reset that left its stamp in place, and <code>budget_reset.observe</code> reads a boundary that jumps a whole window ahead as a banked reset spent. But both read the headroom document that <code>reckon-paid-lanes.timer</code> publishes, and in <code>~/public/reckon/paid-lanes.json</code> at 19:25 UTC the same day both of the <code>claude</code> account's windows read <code>unknown</code>. Its reserved probe last ran at 2026-10-19T03:51Z and exited 1, and its account read failed at 12:39Z the same day with HTTP 403. Nothing has been attempted since, although the timer runs every five minutes. So the announcement is the source this plan builds on. A detected <code>consumed</code> event is announced the same way (§2), and §7 finds why the readings stopped, so that detection has something to read again. A scheduled reset needs no broadcast: the harness already releases a session it stopped, as the <code>usageLimitNote</code> pairs <code>wrap_up</code> 08:15 and <code>release</code> 08:38 the same day show.</p>
 
     <h2 id="s1">§1 — A limit reset is one durable record</h2>
-<section data-reckon="section" data-id="s1" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s1" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> <code>reckon crew budget --reset --group &lt;group&gt; --used --reason "&lt;why&gt;"</code> records one reset event in the group's record in <code>&lt;crew-home&gt;/budget-resets.json</code>, through <code>budget_reset.mark_used</code>. Today that function changes nothing when no banked flag is available. It will record the event either way, and it will clear the flag only when one is available and the event is global, because an early reset applied to the account is the banked reset being spent. No new module, store or flag is added. <code>--reason</code>, <code>--from</code>, <code>--clock</code> and <code>--session</code> already exist on <code>crew budget</code> for <code>--lift</code>, and their help and validation extend to <code>--reset --used</code>.</p>
     <p>An event carries:</p>
     <ul>
@@ -142,10 +142,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-alrres-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-21" data-recommends-skill="/reckon-build a-limit-reset-reaches-every-session §1" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-alrres-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-21" data-recommends-skill="/reckon-build a-limit-reset-reaches-every-session §1" data-resolved-at="2026-10-22T01:49:54+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Build §1: a limit reset is one durable record</h4>
     <div class="r-fu-body"><p>The store and the announcing option come first; every later section reads the record.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-limit-reset-reaches-every-session §1</pre>
+    <p class="r-fu-outcome"><p>Landed at <code>a0131cd7c</code>.</p></p>
     </article>
 <article class="r-fu" data-id="f-alrres-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-21" data-recommends-skill="/reckon-build a-limit-reset-reaches-every-session §2" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Build §2: every pane draws a limit reset once</h4>
@@ -198,6 +199,9 @@
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20261022T004529434937-review-of-a-limit-reset-is-one-record-5ae4bd657f5e" data-who="reckon-build" data-when="2026-10-22T00:58:52.667Z">
     <div class="r-comment-body"><p>review of r-20261022T000855182556-a-limit-reset-is-one-record at base 5a11af30c752576180d226a3511cbd03d3a6b0b4 and head 5ae4bd657f5e39c69b0aac41b1b4148dd1000aff scores goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 18, reuse 19 (total 111), records added_failure_count 0 with added_failure_ids empty, and carries two follow-on findings and no blocking one.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-close-s1" data-who="reckon-build" data-when="2026-10-22T01:45:00Z">
+    <div class="r-comment-body"><p>§1 landed at <code>a0131cd7c</code>: <code>crew budget --reset --used</code> records one reset event, coalesced within ten minutes, read back through <code>budget_reset.recent_resets</code>. Reviewed 111/120. The population at merge adds one load-only timeout. <a href="/reckon/evidence/archive/a-limit-reset-reaches-every-session-landed.html#s1">evidence</a></p></div>
 </div>
 </section>
 </main>
