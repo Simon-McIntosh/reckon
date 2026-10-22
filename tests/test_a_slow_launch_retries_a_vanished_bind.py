@@ -50,6 +50,16 @@ RUN_ID = "r-slow-launch"
 # seconds, so a watch that only covers the sandbox's own startup never sees it.
 RECORDED_LAUNCH_DELAY_SECONDS = 4.0
 
+# A refusal far slower than that one launch's, and still inside the floor the
+# window is held to. The four seconds above is the delay one recorded launch
+# showed, not the slowest step start the retry has to reach: on a loaded host
+# the step start before the sandbox's own refusal is the interval the window is
+# sized for, so a window narrowed to the recorded delay returns while the
+# sandbox is still starting, and records as failed a launch that a moment later
+# would have run. This case refuses here, past any such narrowed window, and
+# requires the retry a narrowed window loses.
+SLOW_REFUSAL_DELAY_SECONDS = 20.0
+
 # The two phrases bubblewrap answers with when a bind source is gone at mount
 # time. Both name the source after the phrase, which is what distinguishes them
 # from a refusal over something else.
@@ -270,6 +280,50 @@ def test_a_launch_refused_after_the_step_starts_is_retried(
         # the four seconds the refusal takes, not the whole bound.
         assert time.monotonic() - started < WINDOW, (
             "the retry waited the window out instead of ending on the refusal"
+        )
+    finally:
+        _cleanup(*spawn.processes)
+
+
+def test_a_refusal_after_a_slow_step_start_is_still_retried(
+    tmp_path: Path,
+    isolated_run: tuple[Path, Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A step start slower than the recorded one is inside the window too."""
+    home, directory = isolated_run
+    protected = home / ".claude.json"
+    argv = _fenced_argv(home, directory, protected)
+    source = str(_backends.resolved_destination(protected))
+    refused = _refusal_script(
+        tmp_path / "slow-refused.sh",
+        REFUSALS[0],
+        source,
+        delay=SLOW_REFUSAL_DELAY_SECONDS,
+    )
+    # The second attempt reaches its turn at once, so what the elapsed time below
+    # measures is the first attempt's watch over the slow refusal.
+    live = _script(
+        tmp_path / "slow-live.sh",
+        'echo \'{"type":"thread.started"}\'\nsleep 60\n',
+    )
+    spawn = _recording_spawn(monkeypatch, [[str(refused)], [str(live)]])
+
+    try:
+        started = time.monotonic()
+        pid = _launch(argv, directory)
+        elapsed = time.monotonic() - started
+        assert len(spawn.processes) == 2, (
+            "a refusal slower than the recorded delay was not retried"
+        )
+        assert _reaped(spawn.processes[0].pid), "the refused try was left unreaped"
+        assert pid == spawn.processes[-1].pid
+        record = runs.read_pointer(RUN_ID)
+        assert record.get("launch_failures") in (None, [])
+        assert record.get("phase") == "working"
+        assert elapsed >= SLOW_REFUSAL_DELAY_SECONDS, (
+            "the launch returned before the sandbox had refused, so this case "
+            "measured a window narrower than the step start it names"
         )
     finally:
         _cleanup(*spawn.processes)
