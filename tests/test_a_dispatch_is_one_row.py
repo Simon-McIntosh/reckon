@@ -8,9 +8,9 @@ already carry, and a launch that settles into an observer kind such as
 exception: the pane's own session's start. That exception lives in
 ``tests/test_a_pane_shows_its_own_starts.py``; the cases here are a pane that
 follows no session, where every start is a foreign run's and stays held. An
-arrival that never moves prints at its window, because a run still sitting in
-``dispatched`` is a duty the pane must show, and an arrival whose first
-transition is a coordinator row prints as the arrival collapsed into it.
+arrival that never moves asks for nothing either, so its release at the window
+leaves the stream to crew view, while an arrival whose first transition is a
+coordinator row prints as the arrival collapsed into it.
 
 The clock is a stub, so a case states the instant each row arrives and the
 window is measured rather than waited out.
@@ -51,6 +51,11 @@ def _kinds(rows):
     return [(row.get("from_state"), row.get("to_state")) for row in rows]
 
 
+def _view(row):
+    """The line crew view draws for a row the stream leaves out."""
+    return ticker.Ticker(width=180, color=False, model_aliases=()).render(row)
+
+
 def test_arrival_then_working_prints_no_row_for_a_foreign_session() -> None:
     """A start that is not the pane's own session is still observer context.
 
@@ -64,13 +69,18 @@ def test_arrival_then_working_prints_no_row_for_a_foreign_session() -> None:
     assert path.flush(now=1e9) == []
 
 
-def test_arrival_alone_prints_at_the_window() -> None:
+def test_arrival_alone_prints_no_row_at_the_window() -> None:
+    """An arrival that never moves asks the coordinator for nothing.
+
+    A run still sitting in ``dispatched`` is posture a reader takes from the
+    fleet, not a line asking the coordinator to act, so neither the arrival nor
+    its release at the window reaches the stream; crew view draws the arrival.
+    """
     path = ticker.PaneRowPath()
     assert path.feed(_arrival(), now=0.0) == []
     assert path.flush(now=ticker.ARRIVAL_WINDOW - 1.0) == []
-    printed = path.flush(now=ticker.ARRIVAL_WINDOW)
-    assert len(printed) == 1, printed
-    assert _kinds(printed) == [(None, "dispatched")]
+    assert path.flush(now=ticker.ARRIVAL_WINDOW) == []
+    assert _view(_arrival()).strip()
 
 
 def test_arrival_collapses_through_the_launch_flicker() -> None:

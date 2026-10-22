@@ -1,12 +1,13 @@
-"""RowPolicy draws no round trip on the pane.
+"""RowPolicy draws no round trip, and no coordinator-made withdrawal, on the pane.
 
 A run can leave the word the pane last showed for it and come back within
-seconds — a requeue, a lane change, a resume that is refused. Both halves would
-print and cancel each other, so the departure is held for the settle window and
-dropped together with the return; a departure that does not come back inside
-the window is delivered when the window passes, so a real withdrawal still
-reaches the reader. The clock is a stub, so every window is measured rather
-than waited out.
+seconds — a requeue, a lane change, a resume that is refused. Neither half asks
+the coordinator for anything, so neither reaches the stream: the departure and
+its return are held and dropped together, and a departure that never returns
+prints nothing either, because a withdrawal the coordinator made is the
+coordinator's own act. The duty such an away run can still hit — a stop that
+asks for the coordinator — is carried, and is not swallowed by the hold. The
+clock is a stub, so every window is measured rather than waited out.
 """
 
 from __future__ import annotations
@@ -26,10 +27,6 @@ def _row(from_state, to_state, **extra):
     }
     row.update(extra)
     return row
-
-
-def _kinds(rows):
-    return [(row.get("from_state"), row.get("to_state")) for row in rows]
 
 
 def _showing_queued():
@@ -56,30 +53,34 @@ def test_a_run_that_returns_to_its_shown_word_draws_no_row() -> None:
     assert policy.flush(now=1e9) == []
 
 
-def test_a_departure_that_does_not_return_is_delivered_when_the_window_passes() -> None:
-    """The same departure with no return delivers its dropped row at the window.
+def test_a_departure_that_does_not_return_still_prints_no_row() -> None:
+    """The same departure with no return prints nothing when the window passes.
 
-    It is held for the window, not suppressed: before the window closes nothing
-    is delivered, and once it passes the withdrawal reaches the pane exactly as
-    it would have without the round-trip rule.
+    A withdrawal the coordinator made is the coordinator's own act, so it is
+    drawn in the view and never carried: neither before the window closes nor
+    after it.
     """
     policy = _showing_queued()
     departure = _row("queued", "withdrawn")
     assert policy.feed(departure, now=0.0) == []
     assert policy.flush(now=ticker.SETTLE_WINDOW - 1.0) == []
-    assert policy.flush(now=ticker.SETTLE_WINDOW) == [departure]
+    assert policy.flush(now=ticker.SETTLE_WINDOW) == []
+    assert policy.flush(now=1e9) == []
+    assert ticker._pane_word(departure) == "dropped"
+    assert "dropped" in ticker.Ticker().render(departure)
 
 
-def test_a_run_that_never_reached_the_pane_ends_unheld() -> None:
+def test_a_run_that_never_reached_the_pane_ends_with_no_row() -> None:
     """A run whose word the pane never showed is not a departure.
 
-    Its end is the only notice the reader gets that it stopped, so it is
-    delivered at once rather than held for a return that cannot be measured
-    against any word.
+    Its end is a discard the coordinator made, which the discarding call already
+    reported, so it prints nothing whether or not any word was shown for it.
     """
     policy = ticker.RowPolicy()
     end = _row("working", "discarded")
-    assert policy.feed(end, now=1.0) == [end]
+    assert policy.feed(end, now=1.0) == []
+    assert policy.flush(now=1e9) == []
+    assert ticker._pane_word(end) == "dropped"
 
 
 def test_a_terminal_echo_the_pane_withholds_stays_hidden() -> None:
@@ -101,19 +102,20 @@ def test_a_terminal_echo_the_pane_withholds_stays_hidden() -> None:
 
 
 def test_a_duty_arriving_while_away_still_reaches_the_pane() -> None:
-    """A coordinator duty while the run is away prints, and the departure with it.
+    """A coordinator duty while the run is away prints, and the departure does not.
 
-    The hold suppresses the round trip's middle, not a real duty: a stop that
-    asks for the coordinator is news, so it is not swallowed by a departure
-    that has not returned yet.
+    A stop that asks for the coordinator is news and is carried, even behind a
+    departure the pane never returned from; the departure itself is the
+    coordinator's own withdrawal and prints nothing beside it.
     """
     policy = _showing_queued()
     departure = _row("queued", "withdrawn")
     assert policy.feed(departure, now=0.0) == []
     duty = _row("withdrawn", "failed", recovery_classification="failed")
     first = policy.feed(duty, now=1.0)
-    # The departure prints ahead of the duty, which is a coordinator row held on
-    # its own settle window.
-    assert departure in first, first
+    # The duty is a coordinator row held on its own settle window, so it lands
+    # when the window passes; the departure behind it contributes no row.
+    assert departure not in first, first
     released = policy.flush(now=1.0 + ticker.SETTLE_WINDOW)
     assert any(row.get("to_state") == "failed" for row in released), released
+    assert all(row.get("to_state") != "withdrawn" for row in released), released

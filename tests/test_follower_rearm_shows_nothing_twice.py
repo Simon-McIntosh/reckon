@@ -673,8 +673,9 @@ def test_a_flapping_run_discarded_before_the_stop_is_not_re_emitted(
         _discard_pointer(RUN_C)
         crew.list_live(project=PROJECT)
         _run_follow(follow_lines)
-        assert [line for line in follow_lines if "dropped" in line], (
-            f"the withdrawal is drawn before the stop: {follow_lines!r}"
+        assert [line for line in follow_lines if "dropped" in line] == [], (
+            f"a withdrawal the coordinator's own discard caused asks for nothing; "
+            f"got {follow_lines!r}"
         )
         follow_lines.clear()
 

@@ -33,6 +33,13 @@ DELIVERED = "completed_unpromoted"
 AWAY = "running"
 
 
+def _view(event: dict[str, Any]) -> str:
+    """The line crew view draws for a row the stream leaves out."""
+    return ticker.Ticker(width=180, color=False, model_aliases=()).render(
+        event, with_session=True
+    )
+
+
 def _row(from_state: str, to_state: str, **extra: Any) -> dict[str, Any]:
     """One transition row as the producer writes it for this run."""
     event: dict[str, Any] = {
@@ -93,12 +100,13 @@ def test_a_round_trip_out_of_delivered_draws_nothing() -> None:
     assert released == [], released
 
 
-def test_a_departure_out_of_delivered_that_does_not_return_reaches_the_pane() -> None:
-    """A run that really leaves delivered is drawn once the window passes.
+def test_a_departure_out_of_delivered_is_left_to_crew_view() -> None:
+    """A run that leaves delivered for a working word asks the coordinator nothing.
 
-    It is held for the window, not suppressed: before the window closes nothing
-    is drawn, and once it passes the departure reaches the pane as it would
-    have without the hold, on a row the grid can render.
+    The hold drops it with its return inside the window, and past the window it
+    reaches the stream as no row either: the move into a working word asks the
+    coordinator for nothing, so crew view draws the departure while the stream
+    carries only the finished word it left.
     """
     pane = _Pane()
     departure = _row(DELIVERED, AWAY, recovery_classification="running")
@@ -109,7 +117,5 @@ def test_a_departure_out_of_delivered_that_does_not_return_reaches_the_pane() ->
     assert released == [], released
     released += pane.flush(now=1000.0 + ticker.SETTLE_WINDOW)
 
-    assert [(row["from_state"], row["to_state"]) for row, _ in released] == [
-        (DELIVERED, AWAY)
-    ], released
-    assert all(text for _, text in released), released
+    assert released == [], released
+    assert _view(departure).strip()

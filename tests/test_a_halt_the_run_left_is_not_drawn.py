@@ -75,6 +75,18 @@ def _destinations(rows: list[tuple[dict, str]]) -> list[str]:
     return [str(row.get("to_state") or "") for row, _ in rows]
 
 
+def _view(event: dict[str, Any]) -> str:
+    """The line crew view draws for a row, which the stream need not carry.
+
+    Rendered through a grid of its own, because the pane's grid suppresses a row
+    that returns to the word it last drew; a reader coming to the view fresh sees
+    the row.
+    """
+    return ticker.Ticker(width=180, color=False, model_aliases=()).render(
+        event, with_session=True
+    )
+
+
 def _texts(rows: list[tuple[dict, str]]) -> list[str]:
     return [text for _, text in rows]
 
@@ -97,12 +109,18 @@ def test_a_return_inside_the_window_leaves_no_halt_on_the_pane() -> None:
     released += pane.flush(now=4909.0)
 
     assert [(r["from_state"], r["to_state"]) for r, _ in released] == [
-        START,
+        STOP,
         BLOCK,
     ], released
-    assert "stopped" not in _destinations(released), released
     assert all(text for text in _texts(released)), released
-    assert "working → halted" in released[1][1], released[1][1]
+    assert "halted" in released[0][1], released[0][1]
+    # The launch and the return ask the coordinator for nothing, so the stream
+    # withholds both and only crew view draws them.
+    assert _view(_row(*START)).strip(), _view(_row(*START))
+    assert _view(_row(*RETURN)).strip(), _view(_row(*RETURN))
+    assert START not in [(r["from_state"], r["to_state"]) for r, _ in released], (
+        released
+    )
 
 
 def test_a_return_after_the_window_draws_both_halves_as_before() -> None:
@@ -122,14 +140,15 @@ def test_a_return_after_the_window_draws_both_halves_as_before() -> None:
     released += pane.flush(now=4909.0)
 
     assert [(r["from_state"], r["to_state"]) for r, _ in released] == [
-        START,
         STOP,
-        RETURN,
         BLOCK,
     ], released
     assert all(text for text in _texts(released)), released
-    assert "working → halted" in released[1][1], released[1][1]
-    assert "halted → working" in released[2][1], released[2][1]
+    assert "halted" in released[0][1], released[0][1]
+    # The launch and the return ask nothing, so both leave the stream to crew
+    # view while the halt the run left behind is drawn as it was.
+    assert _view(_row(*START)).strip(), _view(_row(*START))
+    assert _view(_row(*RETURN)).strip(), _view(_row(*RETURN))
 
 
 def test_a_move_to_another_live_word_draws_the_halt_at_once() -> None:
@@ -147,13 +166,14 @@ def test_a_move_to_another_live_word_draws_the_halt_at_once() -> None:
     released += pane.feed(_row(*WAIT), now=1020.0)
 
     assert [(r["from_state"], r["to_state"]) for r, _ in released] == [
-        START,
         STOP,
-        WAIT,
     ], released
     assert all(text for text in _texts(released)), released
-    assert "working → halted" in released[1][1], released[1][1]
-    assert "halted → waiting" in released[2][1], released[2][1]
+    assert "halted" in released[0][1], released[0][1]
+    # A move to another live word asks nothing unless it also declares a wait, so
+    # the stream withholds it and crew view still draws it.
+    assert _view(_row(*WAIT)).strip(), _view(_row(*WAIT))
+    assert WAIT not in [(r["from_state"], r["to_state"]) for r, _ in released], released
 
 
 def test_the_terminal_echo_still_supersedes_nothing() -> None:
@@ -172,7 +192,10 @@ def test_the_terminal_echo_still_supersedes_nothing() -> None:
     released += pane.flush(now=1030.0)
 
     assert [(r["from_state"], r["to_state"]) for r, _ in released] == [
-        START,
         COMPLETE,
     ], released
     assert all(text for text in _texts(released)), released
+    # The launch and the echo ask nothing, so the stream withholds both and crew
+    # view still draws them, while the held completion reaches the pane.
+    assert _view(_row(*START)).strip(), _view(_row(*START))
+    assert _view(_row(*ECHO)).strip(), _view(_row(*ECHO))

@@ -230,11 +230,18 @@ def _nodes_in_line(line: str) -> set[str]:
     return {match.group(1) for match in _ENTRY_TOKEN.finditer(line)}
 
 
+# The event name the standing summary line was written under. It is spelled
+# here as a literal rather than read from the module, because the follower no
+# longer writes it: a case asserts the stream carries no such row, and a restored
+# emitter is exactly what the negative control reinstates.
+NEEDS_YOU_EVENT = "follow.needs-you"
+
+
 def _needs_you_lines(events: list[dict]) -> list[str]:
     return [
         str(event.get("line") or "")
         for event in events
-        if event.get("event") == follow.FOLLOWER_NEEDS_YOU_EVENT
+        if event.get("event") == NEEDS_YOU_EVENT
     ]
 
 
@@ -255,12 +262,17 @@ def _run_needs_you(
     finally:
         stop.set()
         thread.join(timeout=5.0)
-    rows = [e for e in events if e.get("event") == follow.FOLLOWER_NEEDS_YOU_EVENT]
+    rows = [e for e in events if e.get("event") == NEEDS_YOU_EVENT]
     return _needs_you_lines(events), rows
 
 
-def test_the_line_names_your_unpromoted_run_and_repeats(home):
-    """The first case: a standing line, repeated, naming only your own needs."""
+def test_the_line_never_prints_however_long_the_set_holds(home):
+    """The first case: no standing summary line, however long the set holds.
+
+    This is the case the negative control fails: restore the standing line and
+    the 35 minutes below emit one line per beat of the interval, naming the
+    unpromoted run, beside the rows the stream already carries for it.
+    """
     _write_pointer(
         home,
         "r-own-unpromoted",
@@ -283,16 +295,18 @@ def test_the_line_names_your_unpromoted_run_and_repeats(home):
         manifest_status="blocked",
     )
 
-    lines, _rows = _run_needs_you(home)
-
-    assert len(lines) >= 2, f"expected the cadence to repeat the line: {lines!r}"
-    first = lines[0]
-    assert first.startswith("needs you:"), first
-    assert "own-unpromoted" in first, first
-    assert "unpromoted" in first, first
-    assert _AGE_TOKEN.search(first), f"no age token in: {first!r}"
-    assert not any("peer-block-node" in line for line in lines), lines
-    assert not any("blocked" in line for line in lines), lines
+    fake = _Clock()
+    events: list[dict] = []
+    stop = threading.Event()
+    thread = _drive_at_own_pace(events, stop, fake, session=SESSION)
+    try:
+        time.sleep(0.2)
+        _advance(fake, 35 * 60, step=10.0)
+        assert _needs_you_lines(events) == [], _needs_you_lines(events)
+    finally:
+        stop.set()
+        thread.join(timeout=2.0)
+        assert not thread.is_alive()
 
 
 def test_an_empty_set_is_never_announced(home):
@@ -336,19 +350,15 @@ def test_a_draining_set_prints_nothing(home):
             manifest_status="complete",
         )
         _advance(clock, 2.0)
-        shown = _wait_for_lines(events, 1)
-        assert shown and "own-node" in shown[0], shown
-
         crew.pointer_path("r-own").unlink()
         _advance(clock, 2.0)
-        # Nothing follows the drain: the empty set prints no line at all.
-        lines = _needs_you_lines(events)
-        assert len(lines) == 1, lines
+        # The stream carries no standing line at all: not while the run is owed,
+        # and not when the set drains.
+        assert _needs_you_lines(events) == [], _needs_you_lines(events)
 
-        # And then nothing, for as long as the fleet stays quiet -- including
-        # well past the reminder cadence an unchanged non-empty set would beat.
+        # And then nothing, for as long as the fleet stays quiet.
         _advance(clock, 35 * 60, step=10.0)
-        assert len(_needs_you_lines(events)) == 1, _needs_you_lines(events)
+        assert _needs_you_lines(events) == [], _needs_you_lines(events)
     finally:
         stop.set()
         thread.join(timeout=2.0)
@@ -363,8 +373,6 @@ def test_an_arming_with_no_flag_carries_the_default_cadence(home):
     clock is stepped by hand, which makes a ten-minute cadence observable here
     in a fraction of a second.
     """
-    assert follow._needs_remind_seconds(None) == need_module.DEFAULT_REMIND_SECONDS
-
     _write_pointer(
         home, "r-own-work", "own-node", session=SESSION, manifest_status="running"
     )
@@ -373,12 +381,12 @@ def test_an_arming_with_no_flag_carries_the_default_cadence(home):
     stop = threading.Event()
     thread = _drive_at_own_pace(events, stop, clock, session=SESSION)
     try:
-        # The arming's own row already names the fleet as it stands, so the
-        # standing line is not news until something moves.
+        # Nothing prints while the fleet works.
         time.sleep(0.2)
         assert _needs_you_lines(events) == [], _needs_you_lines(events)
 
-        # A run reaching a delivered state is a change of the set.
+        # A run reaching a delivered state prints nothing either: its own row
+        # carries the news, not a summary line over it and not a cadence.
         _write_pointer(
             home,
             "r-own-unpromoted",
@@ -386,17 +394,8 @@ def test_an_arming_with_no_flag_carries_the_default_cadence(home):
             session=SESSION,
             manifest_status="complete",
         )
-        clock.advance(2.0)
-        changed = _wait_for_lines(events, 1)
-        assert changed, "no line after the set changed"
-        assert "own-unpromoted" in changed[0], changed
-
-        # Then nothing moves, and the default cadence beats anyway: a quarter
-        # of an hour of an unchanged non-empty set is two reminders of it.
         _advance(clock, 25 * 60, step=10.0)
-        beaten = _needs_you_lines(events)
-        assert len(beaten) == 3, f"the default cadence did not repeat: {beaten!r}"
-        assert all("own-unpromoted" in line for line in beaten), beaten
+        assert _needs_you_lines(events) == [], _needs_you_lines(events)
     finally:
         stop.set()
         thread.join(timeout=2.0)
@@ -498,9 +497,13 @@ def test_a_stored_review_marks_its_run(home):
 
     lines, _rows = _run_needs_you(home)
 
-    assert lines, "no standing line was emitted"
-    assert "reviewed-node" in lines[0], lines[0]
-    assert "reviewed" in lines[0], lines[0]
+    # The stream carries no standing line, so the mark is asserted on the
+    # composer the reader of a composed line reads.
+    rows, _counts = need_module.needs_you_rows(PROJECT, session=SESSION)
+    composed = need_module.needs_you_line({"working": 0, "runs": rows})
+    assert lines == [], lines
+    assert "reviewed-node" in composed, composed
+    assert "reviewed" in composed, composed
 
 
 def test_the_follower_and_the_derivation_name_the_same_runs(home):
@@ -525,10 +528,11 @@ def test_the_follower_and_the_derivation_name_the_same_runs(home):
     derived_nodes = {str(row["node"]) for row in derived_rows}
     assert derived_nodes == {"own-unpromoted"}, derived_rows
 
-    # Read the node names back off the pane's own text. Comparing the follower's
-    # wrapper with the module's helper compares one function with itself, since
-    # the wrapper delegates; the emitted line is what a reader actually sees.
-    emitted_nodes: set[str] = set()
-    for line in lines:
-        emitted_nodes |= _nodes_in_line(line)
-    assert emitted_nodes == derived_nodes, (emitted_nodes, derived_nodes, lines)
+    # The stream carries no summary line at all, so the node names are read off
+    # the derivation's own composition, which is what a reader who composes a
+    # line sees. Comparing it with the emitted lines is vacuous now: the stream
+    # names no set.
+    assert lines == [], lines
+    composed = need_module.needs_you_line({"working": 0, "runs": derived_rows})
+    emitted_nodes = _nodes_in_line(composed)
+    assert emitted_nodes == derived_nodes, (emitted_nodes, derived_nodes, composed)

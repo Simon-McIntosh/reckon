@@ -342,16 +342,15 @@ def test_a_drain_names_the_run_that_needs_you(
         assert needs_you_module.needs_you_runs(PROJECT, session=SESSION) == []
 
 
-def test_a_drain_keeps_silent_about_a_set_the_standing_line_named(
+def test_a_drain_names_the_set_no_standing_line_carried(
     home: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A set the standing line already printed is not restated by the closing row.
+    """The closing row names the owed runs, because no standing line did.
 
-    Restating a standing fact is what made the pane noise, and the closing row
-    is the pane's last one: a reader who was already told which runs are owed
-    learns nothing from hearing it again. This arming carries a cadence, so the
-    standing line fires while the pane lives and the closing row has nothing
-    left to add.
+    The stream carries no standing needs-you summary, so the closing row is the
+    only line that can name what a drained session owes. Restating a set a line
+    already named is what made the pane noise, and there is no such line now, so
+    the tail names every outstanding run.
     """
     sighting = time.time() - 3 * 3600
     wall = _Wall(sighting)
@@ -371,6 +370,7 @@ def test_a_drain_keeps_silent_about_a_set_the_standing_line_named(
         )
         assert len(settles) == 1, settles
         line = settles[0]["line"]
-        assert line == "", (
-            f"the closing row restated a set the standing line already named: {line!r}"
+        assert "needs you:" in line, (
+            f"the closing row named nothing the session still owes: {line!r}"
         )
+        assert RUN_MINE in line, line

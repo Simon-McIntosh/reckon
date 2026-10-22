@@ -323,6 +323,42 @@ PANE_STATES = {
     "dropped": frozenset({"withdrawn", "discarded", "departed"}),
 }
 
+# ── What the Monitor stream carries ───────────────────────────────────────────
+#
+# A line the follower prints reaches its coordinator through the session host as
+# a notification that starts a turn, so the stream carries a row only when it
+# names something only the coordinator can do next. Eight kinds qualify. Six
+# land a run in one of the two pane words below, or are a limit reset or the
+# follower's own end; the last two are carried by their own facts, because
+# neither lands a run in a word the stream can read off the row:
+#
+#   delivered      a run of this session delivered and unpromoted;
+#   halted         a run halted, which is blocked, failed, stalled, or carried
+#                  an unreadable manifest;
+#   queued-refused a queued run refused at launch for a reason the coordinator
+#                  must clear, carrying the two words above and the remedy the
+#                  refusal names;
+#   review         a review finding that needs the coordinator, which is a run
+#                  halted as above with a blocking finding or a dimension below
+#                  the floor;
+#   limit-reset    a limit reset reaching this session;
+#   lift           a budget lift granted or ending that covers the session,
+#                  drawn once per pane as it already is: the lead grants a lift
+#                  in one session and relies on every session hearing it, so a
+#                  coordinator can dispatch to the lane it opens and stop when
+#                  it ends;
+#   declared-wait  a wait a worker addresses to the coordinator, read from the
+#                  declaration's own facts rather than from the state word;
+#   follower-end   the follower ending with no session host to take over.
+#
+# Every other row stays in ``crew view`` and the pane's history and is not
+# printed: a launch, a ``working``/``waiting`` transition, a ``landed`` or
+# ``dropped`` row the coordinator's own merge or discard caused, a re-arm or
+# reload baseline, and a reload notice. The row policy and the summary lines
+# read the rule from here rather than restating it, so a row the stream withholds
+# is withheld by one decision.
+CARRIED_PANE_WORDS = frozenset({"delivered", "halted"})
+
 # The dispatch vocabulary, verbatim. Kept here rather than derived from a
 # config so that a role is known the moment it is dispatched; the word IS the
 # display form, so no table or glossary has to stay in step with a new role.
@@ -1156,6 +1192,37 @@ def _pane_word(event: Mapping[str, Any]) -> str:
     return _display_state(entry)
 
 
+def stream_carries(event: Mapping[str, Any]) -> bool:
+    """Whether this row is a line the Monitor stream carries.
+
+    A carried line names something only the coordinator can do next: a run
+    delivered and unpromoted, a run halted (a queued run refused at launch and a
+    review finding that needs the coordinator land these same words), a limit
+    reset, a budget lift granted or ending that covers the session, a declared
+    wait a worker addresses to the coordinator, or the follower's own end. A row
+    about anything else — a launch, a ``working`` or ``waiting`` transition that
+    asks nothing, a
+    ``landed`` or ``dropped`` row the coordinator's own merge or discard caused,
+    a re-arm baseline, a reload notice — carries no such duty, so it is left to
+    ``crew view`` and the pane's history and is not printed.
+
+    This is the rule the row policy applies to every row it would release, and
+    the rule the follower's summary lines read before naming anything, stated
+    once here so the stream and the summaries cannot disagree about what is news.
+    """
+    to_state = str(event.get("to_state") or "")
+    if to_state == LIMIT_RESET or to_state in LIFT_STATES:
+        return True
+    if declares_a_wait(event):
+        return True
+    if _pane_word(event) in CARRIED_PANE_WORDS:
+        return True
+    return (
+        transition_class(event.get("from_state"), event.get("to_state"))
+        == ROW_COORDINATOR
+    )
+
+
 class RowPolicy:
     """Decide which rows reach the pane, holding back the ones that ask for none.
 
@@ -1510,8 +1577,18 @@ class RowPolicy:
         return out
 
     def feed(self, event: Mapping[str, Any], *, now: float) -> list[Mapping[str, Any]]:
-        """Take one delivered row and return the rows that should print for it."""
-        out = self._feed(event, now=now)
+        """Take one delivered row and return the rows that should print for it.
+
+        The pass decides how a row is held, and the last word is
+        :func:`stream_carries`': a row the holds released that carries no duty
+        the coordinator must act on is dropped here, so the stream shows a launch
+        or a ``working``/``waiting`` churn to nobody while ``crew view`` still
+        draws it. The memory of what printed is written from the carried rows
+        alone, so a withheld row is never read as shown. ``_feed`` keeps its own
+        ``_reported`` bookkeeping, which is what makes a later re-derivation of a
+        withheld row silent.
+        """
+        out = [row for row in self._feed(event, now=now) if stream_carries(row)]
         self._note_shown(out)
         return out
 
@@ -1814,9 +1891,15 @@ class RowPolicy:
         return out
 
     def flush(self, *, now: float) -> list[Mapping[str, Any]]:
-        """Print every opener still held whose window has closed by ``now``."""
+        """Print every opener still held whose window has closed by ``now``.
+
+        The released rows are filtered by :func:`stream_carries` exactly as
+        ``feed`` filters its own, so a hold that expires into a row carrying no
+        duty leaves the stream as silently as it would have entered it.
+        """
         out: list[Mapping[str, Any]] = []
         self._release_expired(now, out)
+        out = [row for row in out if stream_carries(row)]
         self._note_shown(out)
         return out
 

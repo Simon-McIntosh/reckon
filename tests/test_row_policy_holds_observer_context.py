@@ -91,18 +91,22 @@ def test_a_settle_chain_prints_once_as_its_latest_row() -> None:
     assert printed[0]["to_state"] == "blocked", printed
 
 
-def test_a_printed_duty_withholds_its_transient_recovery_row() -> None:
+def test_a_printed_duty_is_carried_and_its_recovery_is_not() -> None:
     """A blocked row printed at its window, then ``blocked -> working``.
 
     With the exit phantom's window passed, the blocked opener is a real event
-    and prints late; the return to working then reads as a recovery and prints.
+    and prints late; the return to working asks the coordinator for nothing, so
+    the recovery is drawn in the view and prints no row.
     """
     policy = ticker.RowPolicy()
     assert policy.feed(_row("working", "blocked"), now=0.0) == []
     printed = policy.flush(now=ticker.NOISE_PAIRS[("working", "blocked")][1])
     assert _kinds(printed) == [("working", "blocked")], printed
-    recovery = policy.feed(_row("blocked", "working"), now=301.0)
-    assert _kinds(recovery) == [("blocked", "working")], recovery
+    recovery = _row("blocked", "working")
+    assert policy.feed(recovery, now=301.0) == []
+    assert policy.flush(now=1e9) == []
+    assert ticker._pane_word(recovery) == "working"
+    assert "working" in ticker.Ticker().render(recovery)
 
 
 def test_a_refused_dispatch_is_never_unexplained() -> None:
@@ -156,27 +160,33 @@ def test_a_pair_wider_than_its_window_prints_both_sides() -> None:
     assert _kinds(tail) == [("blocked", "completed_unpromoted")], tail
 
 
-def test_a_stall_chain_wider_than_its_window_prints_both_sides() -> None:
-    """``working -> stalled`` then ``stalled -> working`` 400 s apart."""
+def test_a_stall_chain_wider_than_its_window_carries_the_stall() -> None:
+    """``working -> stalled`` then ``stalled -> working`` 400 s apart.
+
+    The stall halts a run and prints; the return to working is not a line the
+    stream carries, so the chain reaches the pane as its stall alone.
+    """
     policy = ticker.RowPolicy()
     assert policy.feed(_row("working", "stalled"), now=0.0) == []
     printed = policy.feed(
         _row("stalled", "working", recovery_classification="observe"), now=400.0
     )
-    assert _kinds(printed) == [("working", "stalled"), ("stalled", "working")], printed
+    assert _kinds(printed) == [("working", "stalled")], printed
     assert policy.flush(now=1e9) == []
 
 
-def test_a_run_that_never_asked_reaches_the_pane_when_it_ends() -> None:
-    """A working run whose next row is ``working -> discarded`` prints the discard.
+def test_a_run_discarded_by_the_coordinator_prints_nothing() -> None:
+    """A working run whose next row is ``working -> discarded``.
 
-    The run never produced a coordinator row, so its end is the only notice the
-    reader gets that it stopped.
+    The discard is the coordinator's own act, which the discarding call already
+    reported, so it leaves the stream and the view still draws it.
     """
     policy = ticker.RowPolicy()
     assert policy.feed(_baseline("working"), now=0.0) == []
-    printed = policy.feed(_row("working", "discarded"), now=1.0)
-    assert _kinds(printed) == [("working", "discarded")], printed
+    discarded = _row("working", "discarded")
+    assert policy.feed(discarded, now=1.0) == []
+    assert policy.flush(now=1e9) == []
+    assert ticker._pane_word(discarded) == "dropped"
 
 
 def test_a_fast_changing_run_prints_within_the_cap() -> None:
@@ -206,8 +216,13 @@ def test_a_fast_changing_run_prints_within_the_cap() -> None:
     assert elapsed <= ticker.SETTLE_CAP, (elapsed, printed)
 
 
-def test_a_shown_observer_pane_prints_today_rows() -> None:
-    """With observer context shown, the launch sequence prints every row."""
+def test_a_shown_observer_pane_still_carries_only_the_delivery() -> None:
+    """The launch sequence over a pane that shows observer context.
+
+    An operator who asks the pane to show observer context gets the rows the
+    view draws for a run that began working; the stream still carries only the
+    delivery, so the launch, the start and the terminal echo print nothing.
+    """
     printed = _drive(
         [
             (_baseline("dispatched"), 0.0),
@@ -217,8 +232,8 @@ def test_a_shown_observer_pane_prints_today_rows() -> None:
         ],
         show_observer=True,
     )
-    assert _kinds(printed) == [
-        ("dispatched", "working"),
-        ("working", "complete"),
-        ("complete", "recorded"),
-    ], printed
+    assert _kinds(printed) == [("working", "complete")], printed
+    view = ticker.Ticker()
+    for event in (_baseline("dispatched"), _row("dispatched", "working")):
+        assert ticker._pane_word(event), event
+    assert "working" in view.render(_row("dispatched", "working", node="one"))

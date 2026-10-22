@@ -1,12 +1,11 @@
-"""A run resumed out of a stop is drawn working again.
+"""A run resumed out of a stop is left to crew view.
 
 The producer records a resume as a move out of the state the run stopped on
 into ``working`` — ``blocked -> working``, not ``dispatched -> working`` and not
-``starting -> working``. That kind was neither a start nor a coordinator row, so
-the pane held it as observer context and the reader kept the red ``halted`` word
-the run stopped on until delivery, for the whole time the resumed worker was
-working. A move out of any stop state the pane draws as ``halted`` into
-``working`` is the same news as a fresh launch's start, so the pane draws it.
+``starting -> working``. A move out of any stop state the pane draws as
+``halted`` into ``working`` asks the coordinator for nothing: the worker is
+working again and there is no duty in that, so the stream carries the halt the
+run stopped on and leaves the resume to crew view.
 
 The rows below drive ``PaneRowPath`` with an injected clock and render every row
 it releases through one ``Ticker``, so what is measured is the pane's own output
@@ -89,6 +88,13 @@ def _kinds(rows: list[tuple[dict, str]]) -> list[tuple[Any, Any]]:
     return [(row.get("from_state"), row.get("to_state")) for row, _ in rows]
 
 
+def _view(event: dict[str, Any]) -> str:
+    """The line crew view draws for a row the stream leaves out."""
+    return ticker.Ticker(width=180, color=False, model_aliases=()).render(
+        event, with_session=True
+    )
+
+
 def _observed_stream() -> list[dict[str, Any]]:
     """The stream the pane watched: a stop, a repeat, the resume, delivery."""
     return [
@@ -99,33 +105,36 @@ def _observed_stream() -> list[dict[str, Any]]:
     ]
 
 
-def test_a_resume_out_of_a_stop_is_drawn_working_again() -> None:
-    """The resume prints a working row between the halted row and the delivered row.
+def test_a_resume_out_of_a_stop_asks_the_coordinator_for_nothing() -> None:
+    """A resume into a working word is left to crew view.
 
     The repeated ``blocked`` row releases the held stop opener, so the pane shows
-    the halt. The resume then prints as a start — ``blocked -> working`` — where
-    it used to be held as observer context, and delivery follows once its settle
-    window closes.
+    the halt. The resume asks the coordinator for nothing — the run is working
+    again and there is no duty in that — so the stream carries the halt and the
+    delivered word alone, and the working row is one crew view draws.
     """
     pane = _Pane()
     released, now = _drive(pane, _observed_stream())
 
-    assert _kinds(released) == [(WORKING, STOP), (STOP, WORKING)], released
+    assert _kinds(released) == [(WORKING, STOP)], released
     assert all(text for _, text in released), released
+    assert (STOP, WORKING) not in _kinds(released), released
+    assert _view(_row(STOP, WORKING)).strip()
 
     delivered = pane.flush(now=now)
     assert _kinds(delivered) == [(WORKING, DELIVERED)], delivered
     assert all(text for _, text in delivered), delivered
 
 
-def test_the_working_row_is_between_the_halted_and_delivered_rows() -> None:
-    """The printed rows read halted, then working, then delivered, in that order."""
+def test_the_halted_row_is_followed_by_the_delivered_row() -> None:
+    """The printed rows read halted then delivered, with the resume in crew view."""
     pane = _Pane()
     released, now = _drive(pane, _observed_stream())
     released += pane.flush(now=now)
 
     words = [ticker._pane_word(row) for row, _ in released]
-    assert words == ["halted", "working", "delivered"], released
+    assert words == ["halted", "delivered"], released
+    assert _view(_row(STOP, WORKING)).strip()
 
 
 def test_a_peer_sessions_resume_prints_no_working_row() -> None:
@@ -147,11 +156,13 @@ def test_a_peer_sessions_resume_prints_no_working_row() -> None:
     assert (STOP, WORKING) not in _kinds(released), released
 
 
-def test_each_stop_state_the_pane_draws_halted_resumes_working() -> None:
-    """Every stop state the pane draws ``halted`` pairs with ``working`` as a start.
+def test_each_stop_state_the_pane_draws_halted_leaves_the_resume_out() -> None:
+    """Every stop state the pane draws ``halted`` is followed by a withheld resume.
 
     The stop vocabulary is the pane's own, so a resume out of ``stalled`` or
-    ``exited-unfinished`` draws exactly as one out of ``blocked`` does.
+    ``exited-unfinished`` asks the coordinator for nothing just as one out of
+    ``blocked`` does: the halt reaches the stream and the resume is left to crew
+    view, whichever stop word the run came out of.
     """
     for stop in ("blocked", "stalled", "exited-unfinished", "abandoned"):
         pane = _Pane()
@@ -164,15 +175,17 @@ def test_each_stop_state_the_pane_draws_halted_resumes_working() -> None:
             ],
         )
         released += pane.flush(now=now)
-        assert (stop, WORKING) in _kinds(released), (stop, released)
+        assert (stop, WORKING) not in _kinds(released), (stop, released)
+        assert _view(_row(stop, WORKING)).strip(), stop
 
 
-def test_a_delivered_run_read_as_working_is_still_held() -> None:
-    """A producer re-reading a rewritten manifest as working is not a resume.
+def test_a_delivered_run_read_as_working_is_left_to_crew_view() -> None:
+    """A producer re-reading a rewritten manifest as working asks for nothing.
 
     The run reached a finished word the pane shows, so the departure out of it
     and its return are one round trip: the pane draws neither half while the
-    window is open, and only a run that stays away reaches the reader.
+    window is open, and past the window the move into a working word still asks
+    the coordinator for nothing, so crew view is where the departure is drawn.
     """
     pane = _Pane()
     pane.path.remember(RUN, DELIVERED)
@@ -182,4 +195,5 @@ def test_a_delivered_run_read_as_working_is_still_held() -> None:
     assert released == [], released
 
     delivered = pane.flush(now=1000.0 + ticker.SETTLE_WINDOW)
-    assert _kinds(delivered) == [(DELIVERED, WORKING)], delivered
+    assert delivered == [], delivered
+    assert _view(departure).strip()
