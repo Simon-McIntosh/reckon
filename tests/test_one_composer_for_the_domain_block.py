@@ -208,9 +208,13 @@ def test_the_brief_digest_of_an_unchanged_node_is_unchanged(tmp_path: Path) -> N
         + BLOCK_SEPARATOR
         + DECLARED_RULE_BLOCK.encode("utf-8")
     ).hexdigest()
+    # The digest dispatch takes before storing: the source's own bytes with the
+    # block appended, which is the branch the digest rule lives in, so a change
+    # to what it covers — the separator, or the block at all — lands here.
+    from_source = dispatch_admission._brief_digest(node.brief, block=block)
     first = dispatch_admission._brief_digest(stored)
     second = dispatch_admission._brief_digest(stored)
-    assert first == second == pinned
+    assert from_source == first == second == pinned
     assert stored.read_text(encoding="utf-8").count(DOMAIN_RULES_HEADING) == 1
     assert DECLARED_RULE_BLOCK in stored.read_text(encoding="utf-8")
 
