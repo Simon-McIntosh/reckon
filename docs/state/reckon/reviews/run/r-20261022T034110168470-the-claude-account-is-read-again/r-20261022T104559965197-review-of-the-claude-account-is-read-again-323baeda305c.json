@@ -1,0 +1,70 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/_backends.py:952 (cached_account_budget -> _parse_claude_account)",
+    "reckon/_backends.py:1983 (ClaudeDialect.read_account_surface -> _parse_claude_account)",
+    "reckon/_backends.py:2498 (probe_budget -> dialect.read_account_surface)",
+    "reckon/budget.py:1274 (probe_budget call site)",
+    "reckon/crew/paid_lanes.py:923 (probe_budget call site)",
+    "reckon/mcp_views.py:446 (probe_budget call site)",
+    "reckon/budget.py:1303 (_quota_windows reads the re-keyed map)",
+    "reckon/crew/paid_lanes.py:787 (_probe_reading reads the re-keyed rows)"
+  ],
+  "completed_at": "2026-10-22T11:14:26.727Z",
+  "dispatched_at": "2026-10-22T10:48:17Z",
+  "findings": [
+    {
+      "file": "reckon/_backends.py",
+      "line": "791",
+      "severity": "follow-on",
+      "text": "follow-on: the nested-spelling compatibility reader was deleted, which changes what cached_account_budget (reckon/_backends.py:952) makes of an on-disk copy written in that spelling, from a figure to unknown with its reason. The manifest records that as an intended visible change, but no assertion in the diff pins it: the migrated tests all carry the new top-level shape (tests/test_claude_account_surface.py:84-86) and nothing feeds a nested payload to _parse_claude_account, so a re-added compat read, or a differently broken one, would not redden the suite."
+    },
+    {
+      "file": "reckon/_backends.py",
+      "line": "805",
+      "severity": "follow-on",
+      "text": "follow-on: the detail string 'account answer carried no named windows' is emitted for every answer that yields no readable window, including one that does name a window whose utilisation or reset stamp is malformed and was dropped at reckon/_backends.py:841-846; the new assertion at tests/test_claude_account_surface.py:115 now pins that text, so a reader of the published reason cannot tell a shape change from a refused figure."
+    },
+    {
+      "file": "tests/fixtures/backends/claude-account-limits.json",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the gained diff writes tests/fixtures/backends/claude-account-limits.json, tests/test_claude_account_surface.py, tests/test_cached_account_age.py, tests/test_backend_observation.py and tests/test_crew_lanes_view.py outside the node's five fenced write paths; the plan's section-8 write-path line ('the tests pinning the old account answer') does authorise them and the worker declares the expansion in follow_ons and blockers, so this is a declared expansion, not a silent one, and the coordinator must authorise it knowingly."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified reckon/_backends.py:952 cached_account_budget and :1983 ClaudeDialect.read_account_surface reach _parse_claude_account, :2498 probe_budget reaches read_account_surface (the dialect definitions at :1210 and :1944), and probe_budget is called from reckon/budget.py:1274, reckon/crew/paid_lanes.py:923 and reckon/mcp_views.py:446; the re-keyed quota_windows is consumed by reckon/budget.py:1303 _quota_windows and by reckon/crew/paid_lanes.py:787 _probe_reading, both reading window_minutes off the row rather than the key.",
+    "diff": "read commit by commit against 579b78258 - 4088c6913 (fix: read one account answer shape and one timestamp parser) and 323baeda305 (docs: land the repair round in the account-read fragment) - eight files, 187 insertions and 172 deletions: _backends.py deletes the nested reader and the name-keyed windows, re-keys quota_windows by minutes and routes the reset stamp through parse_iso; the fixture and four test files are migrated to the top-level shape; the fragment records the round.",
+    "done_when": "the done-when is the plan's four recorded-answer bullets plus the live request, the published document after one timer pass, arms run with pytest -n 8 adding no failure, and the ruff clause; the manifest records the repaired arms (log-arm-base-focused.log 132 passed EXIT=0 at 4b43bb5e, log-arm-head-focused.log 140 passed EXIT=0 at 4088c691, no id failing in one arm only), the negative control re-applied at 4088c691 (log-negative-control.log 1 failed 7 passed EXIT=1, the failure being the all-unknown case), the head-only structural invariant (log-structural-invariant.log 2 passed EXIT=0) and log-ruff.log (three findings, all present in the base blobs, format clean, EXIT=0); the timer-pass item is recorded as the coordinator's rather than claimed.",
+    "goal": "the node goal is to make the claude account readable again by keeping the probe's reason, reading the endpoint that answers, and probing an all-unknown account; the gained commits are the repair round closing the prior review's four findings, and they land one answer shape (reckon/_backends.py:803 reads only the surface's own top-level windows through _live_account_windows) and one timestamp parser (:856 validates through reckon/_timestamps.parse_iso), with _nested_account_budget and CLAUDE_NESTED_ACCOUNT_WINDOW gone, so a reader can no longer be unsure which spelling is canonical.",
+    "manifest": "read; status complete, the literal gate command naming the head-r2 tree with -n 8, both arms' baseline_suite/after_suite JSON (exit_status 0, completed true, empty failure_ids, log paths on disk), the negative control with its quoted failure id, measurement_module reckon and measurement_cwd /tmp/reckon-crew-scratch/r-20261022T034110168470-the-claude-account-is-read-again/arms/head-r2, and follow_ons naming the expanded fence and the legacy-cache behaviour change.",
+    "write_paths": "the node was fenced to reckon/crew/paid_lanes.py, reckon/_backends.py, tests/test_the_claude_account_is_read_again.py, docs/evidence/fragments/a-limit-reset-reaches-every-session/the-claude-account-is-read-again.html and docs/figures/a-limit-reset-reaches-every-session/the-claude-account-is-read-again; the gained diff writes reckon/_backends.py, the fragment and the node's own test inside that list, and tests/fixtures/backends/claude-account-limits.json, tests/test_claude_account_surface.py, tests/test_cached_account_age.py, tests/test_backend_observation.py plus tests/test_crew_lanes_view.py outside it, all authorised by the plan's section-8 line and declared by the worker in follow_ons."
+  },
+  "justifications": {
+    "durability": "tests/test_the_claude_account_is_read_again.py:133 asserts block[\"quota_windows\"][300][\"used_percent\"] and :138 its rate_limit_type, which redden if the windows are re-keyed by name, and tests/test_structural_invariants.py:112 redden if a local fromisoformat returns to reckon/_backends.py, so the keying and parser halves of the repair are guarded, but no assertion pins the retirement of the nested reader at reckon/_backends.py:791.",
+    "evidence": "the manifest's after_suite names 4088c691 with log-arm-head-focused.log recording 140 passed EXIT=0 against an exit-0 base arm, and the negative control is re-applied at that revision, but no arm re-runs the prior review's head 579b78258, so the recorded 132-to-140 delta spans both rounds rather than isolating the gained commits, and the timer-pass item stays the coordinator's.",
+    "fit": "the added and rewritten definitions keep the module's strict-parse-else-unknown idiom and its mechanism-only docstrings (reckon/_backends.py:824-838), and tests/test_crew_lanes_view.py:583 derives its ISO stamp from the epoch constant rather than restating it so the two cannot drift; no plan label, version suffix, ticket reference or author attribution appears in the gained diff.",
+    "goal_fidelity": "reckon/_backends.py:806-819 picks the most-exhausted top-level window and publishes it against that window's own minutes and name, which is the one-shape account read the node goal and the plan's section-8 deliverable ask for.",
+    "reuse": "the gained commit removes the duplicated parse: reckon/_backends.py:856 now validates the reset stamp through reckon/_timestamps.py:53 parse_iso, the module that owns the Z-suffix and strip handling, and the one-definition-of-the-helper invariant at tests/test_structural_invariants.py:142 holds at this head, so no added definition forks a capability the repository already owns.",
+    "scope_discipline": "the gained diff writes tests/fixtures/backends/claude-account-limits.json and four migrated test files that sit outside the node's five fenced paths, authorised by the plan's section-8 write-path line and declared in the manifest's follow_ons and blockers rather than left silent."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the claude account readable again by keeping the probe's reason, reading the endpoint that answers, and probing an all-unknown account; the gained commits are the repair round closing the prior review's four findings, and they land one answer shape (reckon/_backends.py:803 reads only the surface's own top-level windows) and one timestamp parser (:856 validates through reckon/_timestamps.parse_iso), with _nested_account_budget and CLAUDE_NESTED_ACCOUNT_WINDOW gone.\nVERDICT done_when: the done-when is the plan's four recorded-answer bullets plus the live request, the published document after one timer pass, arms run with pytest -n 8 adding no failure, and the ruff clause; the manifest records the repaired arms (132 passed EXIT=0 at 4b43bb5e, 140 passed EXIT=0 at 4088c691), the negative control re-applied (1 failed 7 passed EXIT=1), the head-only structural invariant (2 passed EXIT=0) and log-ruff.log (three pre-existing findings, format clean, EXIT=0); the timer-pass item is recorded as the coordinator's, not claimed.\nVERDICT write_paths: the node was fenced to five paths; the gained diff writes reckon/_backends.py, the fragment and the node's own test inside that list, and the fixture plus four migrated test files outside it, which the plan's section-8 line authorises and the worker declares in follow_ons.\nVERDICT manifest: read; status complete, both arms' baseline_suite/after_suite JSON (exit 0, empty failure_ids), the negative control with its failure id, the measurement module and cwd, and follow_ons naming the expanded fence and the legacy-cache behaviour change.\nVERDICT diff: read commit by commit against 579b78258 - 4088c6913 and 323baeda305 - eight files, 187 insertions and 172 deletions.\nCALL_SITES: reckon/_backends.py:952, reckon/_backends.py:1983, reckon/_backends.py:2498, reckon/budget.py:1274, reckon/crew/paid_lanes.py:923, reckon/mcp_views.py:446, reckon/budget.py:1303, reckon/crew/paid_lanes.py:787\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_backends.py:806-819 picks the most-exhausted top-level window and publishes it against that window's own minutes and name.\nSCORE evidence: 15\nJUSTIFICATION evidence: log-arm-head-focused.log records 140 passed EXIT=0 at 4088c691 and the negative control is re-applied, but no arm re-runs 579b78258, so the recorded delta spans both rounds rather than isolating the gained commits.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: the gained diff writes the fixture and four test files outside the node's fenced paths, authorised by the plan and declared in the manifest's follow_ons rather than left silent.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_the_claude_account_is_read_again.py:133 reddens if windows are re-keyed by name and tests/test_structural_invariants.py:112 reddens if a local fromisoformat returns, but no assertion pins the nested-read retirement at reckon/_backends.py:791.\nSCORE fit: 18\nJUSTIFICATION fit: the mechanism-only docstrings at reckon/_backends.py:824-838 and the derived stamp at tests/test_crew_lanes_view.py:583 show no plan label, version suffix or attribution.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/_backends.py:856 now wraps reckon/_timestamps.py:53 parse_iso, the owner of that capability, and no added definition forks a capability the repository owns.\nFINDING reckon/_backends.py:791 follow-on: the nested-spelling reader was deleted, changing what an on-disk copy in that spelling parses to, and no assertion in the diff pins the behaviour.\nFINDING reckon/_backends.py:805 follow-on: 'carried no named windows' is also emitted when a named window was dropped for a malformed figure, and the new test pins that text.\nFINDING tests/fixtures/backends/claude-account-limits.json:1 follow-on: the gained diff writes outside the node's fenced paths, authorised by the plan and declared in follow_ons.\n",
+  "review_run_id": "r-20261022T104559965197-review-of-the-claude-account-is-read-again-323baeda305c",
+  "reviewed_base_sha": "579b7825872422f1521d347b4c9d2a5795a366ab",
+  "reviewed_head_sha": "323baeda305ce22616d31cfd4c86a787260ff653",
+  "reviewed_run_id": "r-20261022T034110168470-the-claude-account-is-read-again",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T11:05:00.000000+00:00",
+  "total": 102
+}
