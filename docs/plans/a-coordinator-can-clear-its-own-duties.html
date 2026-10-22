@@ -20,7 +20,7 @@
 <meta name="plan-capability-class" content="orchestrator">
 <meta name="plan-capability-reasoning" content="deep">
 <meta name="plan-capability-verification" content="strict">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-modified" content="2026-10-22">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
 </head>
@@ -90,6 +90,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-22T04:40:00Z">
     <div class="r-comment-body"><p>Landed: a resumed run's duties for the replaced head are withdrawn until it delivers again; review 108/120. Evidence: <a href="/reckon/evidence/archive/a-coordinator-can-clear-its-own-duties-landed.html#s3">§3 landing record</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261022T020520027615-a-duty-follows-the-current-head" data-who="reckon-build" data-when="2026-10-22T04:16:49Z">
+    <div class="r-comment-body"><p>A run&#x27;s duties follow its current head. The resume records the revision it replaced on the pointer (resume_superseded_head); the obligations reader derives no review duty while the run still carries that revision and returns review-missing at the head the run owns; a queued review for the replaced head is withdrawn and its pointer discarded with the supersession recorded; and the reflex refuses to compose a review against a superseded head. The snapshot&#x27;s per-session slice now skips an absent duty instead of appending it, so a session holding a resumed run keeps its snapshot. Gate 70 passed EXIT=0 at 588ab2ed over the ten files named in tests:; the same ten read 5 failed/65 passed EXIT=1 at base dec005048c, failing only the five cases this change introduces. Evidence: /reckon/evidence/fragments/a-coordinator-can-clear-its-own-duties/a-duty-follows-the-current-head</p></div>
 </div>
 </section>
 </main>
