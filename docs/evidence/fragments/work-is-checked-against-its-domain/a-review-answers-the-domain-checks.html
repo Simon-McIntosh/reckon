@@ -136,4 +136,54 @@
     <li><strong>Lint delta.</strong> <code>ruff check</code> and
     <code>ruff format --check</code> are clean on both changed paths.</li>
   </ul>
+
+  <h3>The guard does not switch itself off when its subject is promoted</h3>
+
+  <p>A second review, of the repaired head, found the resolution above still had one
+  way to fail quietly: it read the reviewed node from the run's live pointer alone and
+  returned no checks when that pointer was unreadable. A run's pointer is reclaimed the
+  moment it is promoted — which is when its review is filed — so the guard switched
+  itself off at exactly the point it was needed, and a review of a promoted subject
+  could skip every declared check and still file as complete.</p>
+
+  <p>The resolution now distinguishes three states rather than two. The node comes from
+  the live pointer, or failing that from the committed per-run row beside the project's
+  ledger, which carries the node definition the run was dispatched from, or failing that
+  from the run's own delivered manifest, whose declared write paths are read before its
+  changed ones. When none of the three can be read the contract refuses the record and
+  says the checks cannot be established, instead of reading an unreadable subject as
+  owing nothing. A project that declares no check under any node is not in that state:
+  every node beneath it owes the same empty checklist, so it resolves to nothing owed
+  without the node, and no record is refused merely because its subject cannot be read.
+  Only a project that declares checks can be unable to say which of them the node
+  touched, and only that case is refused.</p>
+
+  <h3>Measured after the second repair</h3>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>baseline (the revision the review read, with the repaired test file)</td>
+        <td><code>b4132f14c</code></td><td>2 failed, 57 passed, exit 1</td></tr>
+      <tr><td>after (repaired tree)</td><td><code>b6510e1bb</code></td>
+        <td><strong>59 passed</strong>, exit 0 — no failure id the baseline does not carry</td></tr>
+    </tbody>
+  </table>
+
+  <ul>
+    <li><strong>The two failures are the two tests the repair adds</strong>, and only
+    those: <code>test_a_promoted_subject_whose_review_skips_a_check_is_still_refused</code>
+    and <code>test_a_subject_with_no_readable_record_is_refused_for_that</code>. The
+    third test the repair adds is the control — a project declaring nothing is unaffected
+    by the contract — and holds on both arms, as a control should.</li>
+    <li><strong>A broad sweep bounded the blast radius.</strong> The first cut of this
+    repair refused every record whose subject was unreadable, which red seven tests
+    across two other files that seed a record naming a run they never create. Narrowing
+    the refusal to projects that declare checks leaves those tests untouched, since no
+    project declares one today; the sweep over the review-shaped tests then carries the
+    three failures that predate this work and no new one.</li>
+    <li><strong>Lint delta.</strong> <code>ruff check</code> and
+    <code>ruff format --check</code> are clean on all three changed paths, recorded in
+    the manifest's test logs.</li>
+  </ul>
 </section>
