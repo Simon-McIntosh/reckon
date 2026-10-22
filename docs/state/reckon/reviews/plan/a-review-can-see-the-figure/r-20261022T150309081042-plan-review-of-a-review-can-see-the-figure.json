@@ -1,0 +1,75 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T15:45:23.447Z",
+  "dispatched_at": "2026-10-22T15:25:34Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:354",
+      "id": "wiring-1",
+      "reason": "the next node dispatched by the plan's own open chain would be sent at \u00a73 and would either duplicate \u00a721 or stop, leaving the local-lane measurement unbuilt while \u00a720 routes every figure review to that lane.",
+      "text": "the plan's open followup `f-arcstf-007` carries the next one-line invocation as `/reckon-build a-review-can-see-the-figure \u00a73`, but \u00a721 is the section that performs that measurement (its Why is written from \u00a73's evaluation and it is the only implementable section for it), while \u00a73 is a prose design section with no `data-id` or status, so the chain points at a section that cannot be built and s21 is reachable from nothing",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:311",
+      "id": "reasoning-1",
+      "reason": "\u00a720 makes clive the only lane a figure review may take and can be built before s21 runs, so the plan enables routing on the evidence it says is insufficient, and an `untrusted` verdict would leave live figure reviews on a lane measured as unable to judge figures with nothing to act on it.",
+      "text": "s21's Why says \u00a713 measured only that clive receives an image, not that it applies one of the rules, yet \u00a720 (and the `figure-review-on-metered-lane` rationale) rests on \u00a713's receipt as the reason figure reviews may run only on clive, and neither an edge nor the decision makes \u00a720's rule wait on s21's `trusted`/`partly`/`untrusted` verdict",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:314",
+      "id": "done_when-1",
+      "reason": "a reader taking the discriminates rule literally would count every pair as failing it and write `untrusted`, which is the inverse of what the same section's control requirement (\"opened no file\") asks for; the fix is one clause exempting the control from the sha256 term, and one of the two readings is wrong either way.",
+      "text": "the rule \"A pair discriminates when the bad figure's word is FAIL, the good figure's is PASS, the control's is not FAIL, and every run involved passes the Read and sha256 checks\" applies a sha256 check to the control run of each pair, which has no input image, so as written the control cannot satisfy the condition that decides whether the pair counts",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "8c0b3469b48eeaeba5db0f52523fb098f925206dc797c14a4b9aecd6a4176498",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 123,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T150309081042-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "8b39bbb3795d306db1e3e3ef0d40eddb49bcfa2d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor resolves at revision 222a7aa38: the ten `pair-N-{a,b}.png` sources exist, \u00a78's `key.json` exists and names them, \u00a78's report states PNG 5 of 5, and \u00a713's recorded verdict is `receives`; \u00a713's done-when needs no resolution beyond the section. (s21's Why credits \u00a73 with \"a control that withholds the image\"; \u00a73 requires a negative control but does not name that one, and s21's own Change defines it, so no reader is misled.)",
+    "done_when": "a finding \u2014 s21's discriminates rule applies \"the Read and sha256 checks\" to the five image-withheld controls, which carry no input image and so no hash to compare; the clause immediately before it defines the control's check as \"opened no file\", so the two readings disagree on what a control must pass.",
+    "evidence_paths": "pass \u2014 the report, the copies, the key and the briefs sit under `~/.config/reckon/crew/reports/reckon/figure-review-pairs/clive/`, a durable path outside any scratchpad, as \u00a713's own evidence does.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches a symbol or path, and the prose describes mechanisms (a shuffled copy, a sha256 comparison, a read limit) rather than a plan's stage.",
+    "reasoning": "a finding \u2014 \u00a720's rule rests on \u00a713's receipt measurement while s21's own Why states that receipt is not judgement, and no section, edge or decision makes \u00a720's rule depend on s21's verdict, so an `untrusted` verdict leaves figure reviews routed to a lane the plan has just measured as unable to judge.",
+    "single_goal": "pass \u2014 the section carries one deliverable, the report on the local lane's discrimination, with the coordinator's inputs and briefs as its setup rather than a second goal: it declares one write path and one verdict.",
+    "wiring": "a finding \u2014 s21's work has no relationship carrying it: the open followup `f-arcstf-007` recommends `/reckon-build a-review-can-see-the-figure \u00a73`, a prose section with no status, while \u00a721 is the section that runs the pairs on the local lane, and nothing in the plan points at s21."
+  },
+  "section_digests": {
+    "_document": "a52ba3a4ba134b225256bf083ac1ac6da063ca3b3e8f92b57c81a7e1651fa924",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s10": "aee314dbe26192cd678dc467a9b229b8cb46873cacefcd4ce369fcbe469a1e37",
+    "s11": "22d519df0a82a0edfb23ceef10d63c14a08f3d8d656ce95a4cd03e5049d4e228",
+    "s12": "234f9999257c9e64bf69518cdf0b98e319850465374deeac091e90b1ed118647",
+    "s13": "d2f0977c2749f5e1d4e28f3962e8b01a182615a0a75edb530e5e4fde18d9a123",
+    "s14": "f06507899a512533562b6d0b348e9b18bec6d1667d6e619d05352d7ce535eb7c",
+    "s15": "18683ff3a4d13534aa9e29ac4a495e86d07a452b032538d3ae4b7a47d2a9966b",
+    "s16": "a1648c89c8b99c37facb6da9eb6deca43ba8418449557c78627654670ea39fa1",
+    "s17": "c856114a206af086b77fc4d7b867a4cf4dbafd15fdce96f7d52c4a2a36c1e544",
+    "s18": "d6fb6505577d6af2a722c58e82e85d9efd01bb5ce9b4d5fa6408d237ab731651",
+    "s19": "43a12c4fa79a496156abb38028fc5f1c3ea4245ebaaea0e2f007f25079c44f2d",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s20": "ab2db294a1f747ecd69c0027b85fc38e86bf9e2aead12af975002255af4af1b5",
+    "s21": "5f669639df016cc7a6fbd520c486859468fef3bf7a57f9467ba3aa53601337be",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "ce9705dbaad70ab2b3a9425eead9900cc284deb7f1d5ecacb553d3745679b3d7",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a",
+    "s8": "2c200fdd964f328342811e9362e4cd14da60f3c8352368899ccf87797d9e7f5b",
+    "s9": "b62ffeb55dd71d5f62b49f372e069f227a57c7caec9c6c3b45f81a945d284e11"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T15:49:38.801705+00:00"
+}
