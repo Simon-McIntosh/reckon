@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T19:55:48.407Z",
+  "dispatched_at": "2026-10-22T19:41:07Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-coordinator-sees-the-board.html:87",
+      "id": "reasoning-1",
+      "reason": "a node implementing the rule as written resolves `shared-coil-supply-model` to `83d14db1` and fails its own gate, or else must invent the node-id matching the plan never states; the real mechanism (plan from the node identity of a brief-dispatched run) is missing from the rule.",
+      "text": "\u00a72 matches a run to its plan \"by the row's `plan` field, and, where that is null \u2026 by its `plan_link`; a run carrying neither belongs to no plan\", but the fixture's most recent rows referencing `shared-coil-supply-model` are `plan_link='shared-coil-supply-model'` at session `83d14db1` (2026-10-19), while the done-when at line 97 demands `cdb769a4`, whose runs all carry `plan: null` and `plan_link: null` and whose only link to the plan is the node id `plan-review-of-shared-coil-supply-model` \u2014 a run the rule explicitly assigns to no plan",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-coordinator-sees-the-board.html:99",
+      "id": "done_when-1",
+      "reason": "the node cannot satisfy a done-when that two of its five bullets make mutually exclusive, so the fixture or the rule must change before dispatch.",
+      "text": "the done-when's third bullet asserts `tf-co-wound-tape-validation` resolves to `e1b445e1`, but no fixture row carries that plan in `plan` or `plan_link` (the 18 matching files carry it only in the node id, with `plan: null` and `plan_link: null`), so under the same section's rule the plan is unowned and the bullet contradicts the fourth bullet (\"a plan given no ledger rows in the fixture to unowned\")",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "2ca5c66b83545c7b3624e054682237e65755d0972707b726c6f706316da16c96",
+  "plan_slug": "a-coordinator-sees-the-board",
+  "plan_version": 5,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T190246513682-plan-review-of-a-coordinator-sees-the-board",
+  "reviewed_blob_sha": "0ae40c348ee540e6c46fba750ffc83ac0ae2faa4",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/ledger.py:162-165` holds the `session`/`session_id` comment, `reckon/run_record.py:538-539` and `:489` hold the fields and the `plan: None if brief is not None` line, `reckon/crew/obligations.py:429` is `_live_review_runs` filtering on `session`, and `reckon/crew/directory.py` exists.",
+    "done_when": "a finding \u2014 \u00a72's done-when asserts `tf-co-wound-tape-validation \u2192 e1b445e1`, but no fixture row carries that plan in `plan` or `plan_link`.",
+    "evidence_paths": "pass \u2014 the node's only written artifact is the review report on the dispatch-named durable path; \u00a72 itself declares no gate log.",
+    "naming": "pass \u2014 \u00a72 introduces no symbol or comment carrying a plan label, stage name or ticket number.",
+    "reasoning": "a finding \u2014 \u00a72's stated matching rule cannot produce the coordinator its own done-when names for `shared-coil-supply-model`.",
+    "single_goal": "pass \u2014 \u00a72 carries one deliverable, the plan\u2192coordinator resolver.",
+    "wiring": "pass \u2014 the node table's `depends-on` set is internally consistent after the earlier wiring findings were acted on; \u00a72 declares no dependencies and \u00a73/\u00a75 depend on it, which is correct for a prerequisite."
+  },
+  "section_digests": {
+    "_document": "179fd781683b8de3429431d31d2da583319fc0fdb80b1db1734a86c481d7f66c",
+    "s1": "4f48bcfe2c71d1397f0eeb277ff928920d1ed0ae7cfb0da777c94e4943eadf87",
+    "s2": "8a55db32d39bc48b3ac9e91606bc3d71805ee7ddfdad8e5682dfd9e839415302",
+    "s3": "e4cd7ce8696d0d9fb511a9be2379e2561a08418a1d1f759c42a926231bad6e36",
+    "s4": "ba6bafca3a7e3ae7fb186980afd26dd26e183bf99b72272ea15f06fbaeb19e5f",
+    "s5": "c7676f30d627a592319ab4f34cbd8352167ba0b9b92a20d5cbafea4a685b90ae",
+    "s6": "b5875d403856eb185e06155d0c62410ab30a447353779fe729a12b57c2607cf0",
+    "s7": "4428c6858fc7f10400173c2e619ad379aa49779cef060ae4b50d866fde4a59a7",
+    "s8": "f9f58e76a5713eb901b1e780fcb93d48ca773a573fded72ec476738a59629b67"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T22:34:55.929710+00:00"
+}
