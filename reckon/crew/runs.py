@@ -536,6 +536,11 @@ def queue_dispatch(
     the count and the requeue decision are taken under the queue's own lock, so
     two concurrent dispatches from one session cannot both pass the check.
 
+    A review is exempt from the cap: reviewing a delivered run is what lets it
+    land, so it is the last dispatch the cap may refuse. A review is neither
+    refused when the session holds its allowance nor counted against it, so a
+    session's queued reviews do not shrink its room for implementation.
+
     A dispatch of a node whose request is already being admitted, or whose run
     is otherwise in flight, writes nothing: the existing run is returned with
     its phase and ``None`` for the position, because a run that is not queued is
@@ -600,14 +605,17 @@ def queue_dispatch(
                     # afresh rather than reading a pointer that is gone.
             if not requeued:
                 if cap is not None:
+                    from reckon.crew.recovery_review_delivery import _is_review_run
+
                     session = str(record.get("session") or "")
                     held = sum(
                         1
                         for pointer in live
                         if pointer.get("phase") == "queued"
                         and str(pointer.get("session") or "") == session
+                        and not _is_review_run(pointer)
                     )
-                    if held >= cap:
+                    if not _is_review_run(record) and held >= cap:
                         raise QueueFull(session=session, held=held, cap=cap)
                 run_id = str(record["run_id"])
                 with _pointer_lock(run_id):
