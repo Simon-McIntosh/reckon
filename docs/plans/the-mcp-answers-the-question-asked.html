@@ -26,7 +26,7 @@
   <title>The MCP Answers the Question Asked | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="27">
+<meta name="plan-version" content="28">
 <meta name="plan-modified" content="2026-10-22">
 </head>
 <body>
@@ -233,6 +233,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-22T20:30:00Z">
     <div class="r-comment-body"><p>Landed: one projection serves every run-listing crew view, names each run's section and keeps each view's field contract; a section dependency reports the section's declaration; review 109/120. Evidence: <a href="/reckon/evidence/archive/the-mcp-answers-the-question-asked-landed.html#s3">§3 landing record</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261022T065817789148-a-row-is-compact-and-names-its-section" data-who="reckon-build" data-when="2026-10-22T18:28:46Z">
+    <div class="r-comment-body"><p>a-row-is-compact-and-names-its-section — every crew list view that lists runs (live, runs, obligations, directory) builds its rows and routes them through one projection, project_run_rows in reckon/crew/query.py, which names each run&#x27;s section, refuses a field the view lacks naming the fields it has, and omits empty fields; each view declares the field set it is able to answer for, so a field the view has is answerable whatever rows a read happened to return, and the runs view serves its row whole, so its own filters read a complete row and a request cannot answer with a smaller row than the view documents. The live view&#x27;s narrowed row carries the run id and what was asked for, and its mine marker is taken from the whole classification and carried across the projection, so a narrowed row still says which rows are the caller&#x27;s. A section-scoped dependency row reports the target section&#x27;s own declaration as its state rather than the containing plan&#x27;s status, through one function, dependency_row_state in reckon/roadmap.py, called by the roadmap&#x27;s section edges and by the resolver behind read_plan&#x27;s deps, with the section-blocking projection reading the verdict the row already reached.</p></div>
 </div>
 </section>
 </main>
