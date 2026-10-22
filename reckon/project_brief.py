@@ -38,6 +38,10 @@ INTERRUPTED_RUN = "interrupted"
 TOP_READY_SECTIONS = 10
 TOP_WIRING_FINDINGS = 3
 
+#: How many of the ready sections releasing the most work are named beside the
+#: ranked list, so a reader sees which one opens the most before reading down.
+TOP_REACH_SECTIONS = 3
+
 #: The share of open plans carrying one ROI value above which the concentration
 #: is worth a reader's attention, because the field no longer orders work.
 ROI_SHARE_THRESHOLD = 0.8
@@ -356,7 +360,7 @@ def _ready_sections_line(section_rows: list[Mapping[str, Any]]) -> BriefLine:
     ]
     largest_reach = sorted(
         entries, key=lambda entry: (-entry["unlocks"], entry["ref"])
-    )[:TOP_WIRING_FINDINGS]
+    )[:TOP_REACH_SECTIONS]
     if not entries:
         text = "Ready sections: none ranked."
     else:

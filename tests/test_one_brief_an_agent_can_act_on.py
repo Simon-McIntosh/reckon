@@ -383,6 +383,16 @@ def test_every_figure_in_the_brief_equals_its_roadmap_field(
         for row in ranked
     ]
 
+    # Three is the fixture's own fact — its ranked list holds at least three
+    # entries — so this is compared against the fixture, not against the constant.
+    assert len(ranked) >= 3
+    by_reach = sorted(
+        brief.row("ready_sections")["sections"],
+        key=lambda entry: (-entry["unlocks"], entry["ref"]),
+    )[:3]
+    assert brief.row("ready_sections")["largest_reach"] == by_reach
+    assert len(brief.row("ready_sections")["largest_reach"]) == 3
+
     assert brief.row("wiring")["total"] == len(payload["wiring_findings"])
     assert brief.row("wiring")["top"] == [
         {
@@ -436,3 +446,130 @@ def test_the_brief_guard_refuses_a_composition_over_its_budget(
 
     with pytest.raises(ValueError, match="over the"):
         project_brief(PROJECT, payload=inflated)
+
+
+def _invoke_brief(arguments: list[str], monkeypatch, payload: Any):
+    """Run the roadmap verb through Click with the scan replaced by a payload.
+
+    The verb reads its report from ``reckon.mcp._roadmap``, so patching that
+    name exercises the command's own branches — the print path, the portfolio
+    split and the refusals — without a mounted-project scan.
+    """
+
+    monkeypatch.setattr("reckon.mcp._roadmap", lambda *args, **kwargs: payload)
+    from click.testing import CliRunner
+
+    from reckon import cli as cli_module
+
+    return CliRunner().invoke(cli_module.main, ["roadmap", *arguments])
+
+
+def test_the_brief_prints_from_the_command_line_for_one_project(
+    three_plan_project, monkeypatch, tmp_path
+):
+    """``--brief`` prints the composed page for the project named."""
+
+    payload = _roadmap(three_plan_project, [_blocked_pointer(tmp_path)], monkeypatch)
+    result = _invoke_brief(["--project", PROJECT, "--brief"], monkeypatch, payload)
+
+    assert result.exit_code == 0, result.output
+    assert EXPECTED_HEAD in result.output
+    assert BLOCKED_RUN in result.output
+
+
+def test_the_brief_prints_one_page_per_project_in_a_portfolio(
+    three_plan_project, monkeypatch, tmp_path
+):
+    """A portfolio read prints one brief per project that was read.
+
+    A project whose report failed carries no payload to compose a brief from,
+    so it is skipped rather than printed as an empty page beside the rest.
+    """
+
+    first = _roadmap(three_plan_project, [_blocked_pointer(tmp_path)], monkeypatch)
+    second = copy.deepcopy(first)
+    second["project"] = "second-project"
+    second["critical_path"] = {"sections": ["second#s1"], "plans": ["second"]}
+    failed = {"project": "third-project", "ok": False, "detail": "scan refused"}
+
+    result = _invoke_brief(
+        ["--project", "*", "--brief"],
+        monkeypatch,
+        {"projects": [first, second, failed]},
+    )
+
+    assert result.exit_code == 0, result.output
+    assert first["project"] in result.output
+    assert "second-project" in result.output
+    assert "second#s1" in result.output
+    assert "third-project" not in result.output
+
+
+def test_the_brief_refuses_over_budget_with_a_message_not_a_traceback(
+    three_plan_project, monkeypatch, tmp_path
+):
+    """A composition the budget refuses reaches the reader as a message.
+
+    The guard raises, and the command line must print the reason rather than
+    let the exception out as an unhandled traceback.
+    """
+
+    payload = _roadmap(three_plan_project, [_blocked_pointer(tmp_path)], monkeypatch)
+    inflated = copy.deepcopy(payload)
+    inflated["sprints"] = [
+        {
+            "id": "fixture-sprint",
+            "interrupted": [
+                {
+                    "run_id": f"run-interrupted-{index:04d}-" + "z" * 24,
+                    "classification": "interrupted",
+                    "started_at": "2026-10-01T00:00:00Z",
+                }
+                for index in range(400)
+            ],
+        }
+    ]
+
+    result = _invoke_brief(["--project", PROJECT, "--brief"], monkeypatch, inflated)
+
+    assert result.exit_code == 1, result.output
+    assert "Error:" in result.output
+    assert "over the" in result.output
+    assert "Traceback" not in result.output
+
+
+def test_a_change_window_without_a_brief_is_refused_before_the_scan(
+    three_plan_project, monkeypatch, tmp_path
+):
+    """``--since`` names a thing only the brief reads, so the pair is required.
+
+    The refusal is a usage error and it is raised before the report is read, so
+    a mistyped invocation costs no scan and says which option is missing.
+    """
+
+    payload = _roadmap(three_plan_project, [_blocked_pointer(tmp_path)], monkeypatch)
+
+    def refused(*args, **kwargs):
+        raise AssertionError("the scan ran before the option pair was checked")
+
+    monkeypatch.setattr("reckon.mcp._roadmap", refused)
+    from click.testing import CliRunner
+
+    from reckon import cli as cli_module
+
+    without = CliRunner().invoke(
+        cli_module.main,
+        ["roadmap", "--project", PROJECT, "--since", "2026-09-01T00:00:00Z"],
+    )
+
+    assert without.exit_code == 2, without.output
+    assert "--brief" in without.output
+
+    with_brief = _invoke_brief(
+        ["--project", PROJECT, "--brief", "--since", "2026-09-01T00:00:00Z"],
+        monkeypatch,
+        payload,
+    )
+
+    assert with_brief.exit_code == 0, with_brief.output
+    assert BLOCKED_RUN in with_brief.output

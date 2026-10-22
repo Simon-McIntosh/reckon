@@ -1500,9 +1500,14 @@ def _print_roadmap_brief(result: dict, project: str, since: str | None) -> None:
     for index, report in enumerate(reports):
         if index:
             click.echo()
-        brief = project_brief(
-            str(report.get("project") or project), since, payload=report
-        )
+        try:
+            brief = project_brief(
+                str(report.get("project") or project), since, payload=report
+            )
+        except ValueError as exc:
+            # The composition refused rather than truncated, so the reader gets
+            # the reason on the error channel instead of a traceback.
+            raise click.ClickException(str(exc)) from exc
         click.echo(brief.text)
 
 
@@ -1560,6 +1565,11 @@ def _print_roadmap_report(report: dict) -> None:
 )
 def roadmap(project, sprint, checkout_path, max_paths, json_output, brief, since):
     """Show pending work, blockers, sprint progress, and critical paths."""
+
+    if since and not brief:
+        raise click.UsageError(
+            "--since describes a change window, and only --brief reads one"
+        )
 
     from reckon.mcp import _roadmap
 
