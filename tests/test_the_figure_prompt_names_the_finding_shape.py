@@ -148,6 +148,87 @@ def test_a_figure_record_missing_the_ledger_fields_is_refused() -> None:
     assert "missing or invalid added_failure_ids" in refusals
 
 
+def test_the_prompt_judges_each_figure_only_from_the_named_pngs() -> None:
+    collapsed = " ".join(review_module.load_figure_review_prompt().split())
+
+    assert (
+        "Judge every figure only from the rendered PNGs named in this review."
+        in collapsed
+    ), (
+        "the figure prompt does not state that each figure is judged from the "
+        "named PNGs only, so a reviewer may judge the SVG source instead"
+    )
+
+
+def test_the_prompt_forbids_every_route_to_the_svg_source() -> None:
+    collapsed = " ".join(review_module.load_figure_review_prompt().split())
+
+    assert (
+        "Open, read, list, search, render or `git show` no SVG, and no image other than the named PNGs."
+        in collapsed
+    ), (
+        "the figure prompt does not forbid opening, reading, searching, "
+        "rendering or git show of an SVG or another image, so a reviewer can "
+        "read the SVG source and report a label the picture clips"
+    )
+
+
+def test_the_prompt_anchors_a_finding_to_the_figure_path_or_the_drawing_script() -> (
+    None
+):
+    collapsed = " ".join(review_module.load_figure_review_prompt().split())
+
+    assert (
+        "Anchor a finding to the figure's repository path, or, where the run's "
+        "own diff shows the script that draws the figure, to a line in that "
+        "script."
+    ) in collapsed, (
+        "the figure prompt does not anchor a finding to the figure's path or to "
+        "a line of the script that draws it"
+    )
+    assert "Never anchor a finding to a line of SVG markup." in collapsed, (
+        "the figure prompt does not forbid anchoring a finding to a line of SVG markup"
+    )
+
+
+def test_the_prompt_no_longer_anchors_a_finding_to_the_svg_source_line() -> None:
+    prompt = review_module.load_figure_review_prompt()
+
+    assert "the source figure path" not in prompt, (
+        "the figure prompt still points a finding's file at the source figure "
+        "path, which is generated SVG markup rather than the drawing script"
+    )
+    assert "a line in that source" not in prompt, (
+        "the figure prompt still asks a finding's line to name a line of the "
+        "source figure, which is SVG markup"
+    )
+
+
+def test_the_figure_brief_states_the_png_only_rule() -> None:
+    text = _review_brief_text({"run_id": RUN_ID}, "2" * 40, rubric="figure")
+    contract = " ".join(_contract_block(text).split())
+
+    assert (
+        "Judge each figure only from the rendered PNGs named in this review:"
+        in contract
+    )
+    assert "no image other than the named PNGs" in contract
+    assert (
+        "anchor a finding to the figure's repository path, or to a line of the "
+        "script the run's diff shows drawing it, never to a line of SVG markup."
+    ) in contract
+
+
+def test_the_text_brief_states_no_png_only_rule() -> None:
+    text = _review_brief_text({"run_id": RUN_ID}, "2" * 40, rubric="design")
+    contract = " ".join(_contract_block(text).split())
+
+    assert "rendered PNGs named in this review" not in contract, (
+        "the text rubric's brief carries the figure-only PNG rule, which does "
+        "not apply to a review that judges no figure"
+    )
+
+
 def test_the_text_brief_still_requires_scores_with_all_six_dimensions() -> None:
     text = _review_brief_text({"run_id": RUN_ID}, "2" * 40, rubric="design")
     contract = _contract_block(text)
