@@ -86,6 +86,32 @@ def _manifest_is_the_predecessor_attempts_report(
     )
 
 
+# The command a refusal quotes as its remedy, in backticks. A gate states the
+# remedy by naming it, so the remedy travels with the refusal rather than being
+# spelled again by the reader. A review command is preferred when one is quoted,
+# because the plan-review gate's refusal carries its `reckon crew review`
+# invocation beside other bare verbs ("then `reckon crew dispatch`").
+_QUOTED_COMMAND = re.compile(r"`(reckon [a-z][^`]*)`")
+_QUOTED_REVIEW_COMMAND = re.compile(r"`(reckon crew review[^`]*)`")
+
+
+def _remedy_command_stated_by(text: str) -> str | None:
+    """The command a refusal quotes as the one that clears it, if it quotes one.
+
+    A gate refuses in prose and names the command that clears it in backticks,
+    so the command is read from the refusal's own text rather than reproduced
+    by whoever reads it. The longest quoted command is taken, because a refusal
+    may name a bare verb beside the full invocation that carries its arguments
+    — the plan-review gate quotes its whole ``reckon crew review`` line and, in
+    the guidance that follows, the shorter verb alone.
+    """
+    for pattern in (_QUOTED_REVIEW_COMMAND, _QUOTED_COMMAND):
+        commands = pattern.findall(text)
+        if commands:
+            return max(commands, key=len)
+    return None
+
+
 def _queued_failure_remedy(record: Mapping[str, Any]) -> dict[str, str] | None:
     """The remedy for a queued request the session itself must unblock.
 
@@ -93,15 +119,18 @@ def _queued_failure_remedy(record: Mapping[str, Any]) -> dict[str, str] | None:
     a coordinator acts on: the lane will launch it when a slot frees, and the
     session has only to wait. An admission attempt refused by a condition of
     the session — a follower that is not registered, a delivery that reaches
-    nothing — is the one case no amount of waiting clears, and the refusal
-    sits in the pointer's ``failure`` where neither the live view nor the
-    obligations view read it.
+    nothing, a plan whose review is missing — is the one case no amount of
+    waiting clears, and the refusal sits in the pointer's ``failure`` where
+    neither the live view nor the obligations view read it.
 
     A lane hold is told apart by its own message: it is the lane speaking and
-    is left to the waiting reading. Any other refusal that names the session is
-    a condition of that session, and its remedy is the follower the session
-    arms. The remedy travels as the run's next action so the reader is told
-    what the session must do rather than what the lane will do.
+    is left to the waiting reading. Any other refusal is surfaced, and the
+    remedy is the one the failure itself states. A refusal that names the
+    session is a condition of that session and keeps the follower the session
+    arms; a refusal that names no session but quotes the command which clears
+    it — the ``reckon crew review`` a plan-review gate names — publishes that
+    command. A refusal that does neither has no remedy to publish and keeps
+    the waiting reading rather than raising a duty with no command behind it.
 
     The command is the one the rest of the crew arms a session with, taken from
     the helper that owns it rather than spelled again here: a reader who runs
@@ -116,29 +145,30 @@ def _queued_failure_remedy(record: Mapping[str, Any]) -> dict[str, str] | None:
 
     if _is_lane_hold(failure):
         return None
-    session = str(record.get("session") or "").strip()
-    if not session:
-        return None
     text = _failure_text(failure)
-    if session not in text:
-        return None
-    project = str(record.get("project") or "").strip()
-    # The plain follower name is what the record falls back to when no attach
-    # line was written, and it is also all a process with no resolvable console
-    # script can name: the same condition that refuses the helper is what would
-    # make an absolute path to it unrunnable. Classification reads a project's
-    # whole pointer set, so it publishes the duty it found rather than raising.
-    command = "reckon crew follow"
-    if project:
-        with contextlib.suppress(CrewError):
-            command = _watch_attach_line(project, session=session)
-    return {
-        "detail": (
+    session = str(record.get("session") or "").strip()
+    if session and session in text:
+        project = str(record.get("project") or "").strip()
+        # The plain follower name is what the record falls back to when no
+        # attach line was written, and it is also all a process with no
+        # resolvable console script can name: the same condition that refuses
+        # the helper is what would make an absolute path to it unrunnable.
+        # Classification reads a project's whole pointer set, so it publishes
+        # the duty it found rather than raising.
+        command = "reckon crew follow"
+        if project:
+            with contextlib.suppress(CrewError):
+                command = _watch_attach_line(project, session=session)
+        detail = (
             f"the last admission attempt was refused for a condition of this "
             f"session rather than of the lane: {text}"
-        ),
-        "next_command": command,
-    }
+        )
+    else:
+        command = _remedy_command_stated_by(text)
+        if command is None:
+            return None
+        detail = f"the queued launch was refused: {text}"
+    return {"detail": detail, "next_command": command}
 
 
 def classify_pointer(
