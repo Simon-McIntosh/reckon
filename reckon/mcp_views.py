@@ -3779,7 +3779,12 @@ def serve_crew_view(
     from reckon.crew import obligations as obligations_module
     from reckon.crew.directory import DirectoryError
     from reckon.crew.directory import directory as crew_directory
-    from reckon.crew.query import RunQueryError, project_live_rows
+    from reckon.crew.query import (
+        RunQueryError,
+        project_live_rows,
+        project_run_rows,
+        run_section_index,
+    )
     from reckon.crew.query import runs_view as crew_runs_view
     from reckon.crew.runs import project_watch_visibility
     from reckon.mcp_deadlines import _stale_plan_review
@@ -3804,7 +3809,22 @@ def serve_crew_view(
             }
     if view == "directory":
         try:
-            return crew_directory(project, run_id=run_id, node_id=node)
+            payload = crew_directory(project, run_id=run_id, node_id=node)
+            sections = run_section_index([crew_module.list_live()])
+            for coordinator in payload.get("coordinators") or []:
+                coordinator["runs"] = project_run_rows(
+                    coordinator.get("runs") or [],
+                    fields=fields,
+                    view="directory",
+                    sections=sections,
+                )
+            payload["unowned_runs"] = project_run_rows(
+                payload.get("unowned_runs") or [],
+                fields=fields,
+                view="directory",
+                sections=sections,
+            )
+            return payload
         except DirectoryError as exc:
             return {
                 "ok": False,
@@ -3909,10 +3929,19 @@ def serve_crew_view(
                         "pass the session id given to crew dispatch"
                     ),
                 }
+            payload = obligations_module.obligations(project, session)
+            sections = run_section_index([crew_module.list_live()])
+            for key in ("obligations", "acknowledged"):
+                payload[key] = project_run_rows(
+                    payload.get(key) or [],
+                    fields=fields,
+                    view="obligations",
+                    sections=sections,
+                )
             return {
                 "ok": True,
                 "view": view,
-                **obligations_module.obligations(project, session),
+                **payload,
             }
         if view == "velocity":
             # The window parsing, the mount resolution, the default summary and

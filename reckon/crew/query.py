@@ -150,6 +150,7 @@ def _live_field_vocabulary(
     # such a row exists.
     vocabulary.update(LIVE_OVERRUN_FIELDS)
     vocabulary.update(LIVE_PLACEMENT_FIELDS)
+    vocabulary.update(COMMON_RUN_FIELDS)
     if with_mine:
         vocabulary.add("mine")
     return vocabulary
@@ -169,6 +170,101 @@ def _refuse_unknown_live_fields(
         + "; live fields are "
         + ", ".join(sorted(vocabulary))
     )
+
+
+#: The fields every list view's run rows carry, so a caller reads one
+#: vocabulary wherever a run is listed however it is listed. ``section`` is the
+#: name this set exists to guarantee: a run is dispatched for one section of one
+#: plan, and every view that lists runs names it. A view routes its rows through
+#: :func:`project_run_rows`, which fills ``section`` from the run's pointer and
+#: leaves a field whose value is empty off the row.
+COMMON_RUN_FIELDS: tuple[str, ...] = ("run_id", "node", "plan", "section")
+
+
+def _canonical_section(value: Any) -> str:
+    """Normalize a section identity, treating absence as the empty string."""
+
+    return normalize_section(str(value)) if value else ""
+
+
+def _run_section(record: Mapping[str, Any]) -> str:
+    """Return the section a live pointer's run was dispatched for."""
+
+    node = record.get("node")
+    node_mapping = node if isinstance(node, Mapping) else {}
+    return _canonical_section(node_mapping.get("section"))
+
+
+def run_section_index(record_sets: Iterable[Iterable[Mapping[str, Any]]]) -> dict[str, str]:
+    """Map every run id in the given pointer sets to the section it names."""
+
+    index: dict[str, str] = {}
+    for records in record_sets:
+        for record in records:
+            run_id = str(record.get("run_id") or "")
+            if not run_id:
+                continue
+            index.setdefault(run_id, _run_section(record))
+    return index
+
+
+def project_run_rows(
+    rows: Iterable[Mapping[str, Any]],
+    *,
+    fields: Iterable[str] | None = None,
+    view: str,
+    vocabulary: Iterable[str] | None = None,
+    sections: Mapping[str, str] | None = None,
+) -> list[dict[str, Any]]:
+    """Route one list view's run rows through the single projection.
+
+    Every list view that lists runs calls this, so one vocabulary, one refusal
+    and one omission rule serve all of them. ``sections`` supplies the
+    ``section`` for a row that does not carry it; a field a view does not carry
+    is refused, naming the fields it has; and a field whose value is empty is
+    left off the row rather than serialised as an empty string or a null. The
+    run's identity is always kept, so a caller that asked for one field can
+    still tell which run answered.
+    """
+
+    rows = [dict(row) for row in rows]
+    for row in rows:
+        if not row.get("section") and sections is not None:
+            section = sections.get(str(row.get("run_id") or ""))
+            if section:
+                row["section"] = section
+
+    carried: set[str] = set(COMMON_RUN_FIELDS)
+    for row in rows:
+        carried.update(row)
+    if vocabulary is not None:
+        carried.update(vocabulary)
+
+    requested = _requested_field_names(fields)
+    if requested:
+        unknown = sorted(set(requested) - carried)
+        if unknown:
+            raise RunQueryError(
+                f"unknown {view} fields "
+                + ", ".join(repr(field) for field in unknown)
+                + f"; {view} fields are "
+                + ", ".join(sorted(carried))
+            )
+        selected = tuple(dict.fromkeys((*COMMON_RUN_FIELDS, *requested)))
+    else:
+        selected = ()
+
+    projected: list[dict[str, Any]] = []
+    for row in rows:
+        names = selected or tuple(dict.fromkeys((*COMMON_RUN_FIELDS, *row)))
+        narrowed = {name: row.get(name) for name in names if name in row}
+        narrowed = {
+            name: value
+            for name, value in narrowed.items()
+            if name == LIVE_ROW_ANCHOR or value not in (None, "", [], {})
+        }
+        projected.append(narrowed)
+    return projected
 
 
 def project_live_rows(
@@ -213,20 +309,26 @@ def project_live_rows(
     if session is not None:
         for row in classified:
             row["mine"] = str(row.get("session") or "") == session
-    if fields is None:
-        return classified
-    requested = _requested_field_names(fields)
+    sections = run_section_index([records])
     with_mine = session is not None
+    if fields is None:
+        return project_run_rows(
+            classified,
+            view="live",
+            vocabulary=_live_field_vocabulary(classified, with_mine=with_mine),
+            sections=sections,
+        )
+    requested = _requested_field_names(fields)
     _refuse_unknown_live_fields(requested, classified, with_mine=with_mine)
-    always = (LIVE_ROW_ANCHOR, "mine") if with_mine else (LIVE_ROW_ANCHOR,)
-    selected = tuple(dict.fromkeys((*always, *requested)))
-    return [
-        {
-            **{field: row.get(field) for field in selected},
-            **({"lane_event": row["lane_event"]} if row.get("lane_event") else {}),
-        }
-        for row in classified
-    ]
+    rows = project_run_rows(
+        classified, fields=fields, view="live", sections=sections
+    )
+    if with_mine:
+        # ``mine`` is a field of the request rather than of the classification,
+        # so it is added after the projection to every row the caller owns.
+        for row in rows:
+            row["mine"] = str(row.get("session") or "") == session
+    return rows
 
 
 def _resumability(
