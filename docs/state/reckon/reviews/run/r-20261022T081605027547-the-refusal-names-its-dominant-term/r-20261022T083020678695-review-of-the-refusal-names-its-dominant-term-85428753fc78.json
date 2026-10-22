@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-22T08:41:39.777Z",
+  "dispatched_at": "2026-10-22T08:31:25Z",
+  "findings": [
+    {
+      "file": "tests/test_the_refusal_names_its_dominant_term.py",
+      "line": 145,
+      "severity": "follow-on",
+      "summary": "prefix assertion is built from the verdict it renders",
+      "text": "follow-on: the expected prefix is built from verdict['estimated_tokens'], verdict['window_tokens'] and verdict['shortfall_tokens'] \u2014 the same verdict object the detail string is rendered from at reckon/crew/routing.py:3709-3716 \u2014 so the assertion pins the sentence's wording but cannot redden if those three figures are themselves wrong, which is the \"existing total and window figures are asserted unchanged\" half of the done-when; comparing them against the fixture's own window (passed to _backend_settings at tests/test_the_refusal_names_its_dominant_term.py:52) would make it independent."
+    },
+    {
+      "file": "reckon/crew/node.py",
+      "line": 607,
+      "severity": "follow-on",
+      "summary": "surfaced CompetenceLimit message drops the new clause.",
+      "text": "follow-on: CompetenceLimit re-renders the context refusal from the verdict's scalars and drops verdict['detail'], so the message a dispatcher prints (reckon/crew/dispatch.py:1397, reckon/crew/dispatch_sessions.py:1744) never carries the new dominant-term clause; the clause reaches a coordinator only on the run record's competence.detail. node.py is outside this node's declared write scope, so the node recorded it as a follow-on rather than repairing it."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/routing.py:3716, reckon/crew/routing.py:3440, reckon/crew/dispatch.py:1393-1397, reckon/crew/dispatch_sessions.py:1738-1744, reckon/crew/picker/snapshot.py:703-711",
+    "diff": "read commit by commit against 1c734f41243288f7c8d6846e2a7cd4936ab3d82e; one commit, three files, 317 insertions and 3 deletions, all inside the declared scope, and the commit carries no plan, sprint or ticket identifier.",
+    "done_when": "the done_when names a fixture whose dominant term is a write path, one where it is a mention, one where every contribution is small, and the existing total/window/list asserted unchanged, over tests/test_the_refusal_names_its_dominant_term.py tests/test_a_context_refusal_names_the_window.py tests/test_routing_surface.py tests/test_every_module_fits_a_worker_window.py; the manifest records that exact command at the committed revision, 23 passed, EXIT=0.",
+    "goal": "the node goal is to name whether a context-fit refusal's dominant input is a write path or a mention; reckon/crew/routing.py:3448-3451 appends `; dominant term: <path> (<n> tokens), which arrived as a <origin>` to the refusal sentence, and the origin is set per group at reckon/crew/routing.py:3413.",
+    "manifest": "read; it states status complete, the gate command verbatim, 23 passed EXIT=0 at revision 85428753, and names gate.log, bcn-base-arm.log and bcn-negative-control.log.",
+    "write_paths": "read the manifest's four declared paths; the commit's three files (reckon/crew/routing.py, tests/test_the_refusal_names_its_dominant_term.py, docs/evidence/fragments/a-brief-should-not-cost-what-it-names/the-refusal-names-its-dominant-term.html) are all inside them, and the declared figures directory is unused."
+  },
+  "justifications": {
+    "durability": "the literal origin assertions at tests/test_the_refusal_names_its_dominant_term.py:140,173,174,216 redden when the origin clause is reinstated, as bcn-negative-control.log shows, but the prefix assertion at line 145 compares the sentence against the same verdict payload it was rendered from.",
+    "evidence": "gate.log carries the done_when's exact command at 85428753 with 23 passed EXIT=0, bcn-base-arm.log shows 3 failed/1 passed EXIT=1 at 1c734f41, bcn-negative-control.log shows 3 failed EXIT=1 under the declared mutation, and ruff-receipt.log shows every ruff finding and format hunk outside the changed region 3382-3462.",
+    "fit": "the docstrings and the origin/lead names follow the surrounding style of reckon/crew/routing.py:3428-3462 and carry no plan label, though dominant_term names the rendered clause while dominant already names the clause-rendering variable beside it at lines 3446 and 3448.",
+    "goal_fidelity": "reckon/crew/routing.py:3448-3451 emits the dominant term with its token figure and origin, though the surfaced exception message at reckon/crew/node.py:607-613 re-renders the refusal and still omits it.",
+    "reuse": "the change extends _context_contributors at reckon/crew/routing.py:3382, the owner of the contributor list, adding a field rather than a second mechanism; a capability search over reckon/crew for how an input's origin is labelled found only the unrelated serving-origin store in reckon/crew/serving_origin.py:75.",
+    "scope_discipline": "git show --stat 85428753 lists only routing.py, its test file and the landing fragment, every one inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to name whether a context-fit refusal's dominant input is a write path or a mention; reckon/crew/routing.py:3448-3451 appends `; dominant term: <path> (<n> tokens), which arrived as a <origin>` to the refusal sentence, and the origin is set per group at reckon/crew/routing.py:3413.\nVERDICT done_when: the done_when names a fixture whose dominant term is a write path, one where it is a mention, one where every contribution is small, and the existing total/window/list asserted unchanged, over tests/test_the_refusal_names_its_dominant_term.py tests/test_a_context_refusal_names_the_window.py tests/test_routing_surface.py tests/test_every_module_fits_a_worker_window.py; the manifest records that exact command at the committed revision, 23 passed, EXIT=0.\nVERDICT write_paths: read the manifest's four declared paths; the commit's three files (reckon/crew/routing.py, tests/test_the_refusal_names_its_dominant_term.py, docs/evidence/fragments/a-brief-should-not-cost-what-it-names/the-refusal-names-its-dominant-term.html) are all inside them, and the declared figures directory is unused.\nVERDICT manifest: read; it states status complete, the gate command verbatim, 23 passed EXIT=0 at revision 85428753, and names gate.log, bcn-base-arm.log and bcn-negative-control.log.\nVERDICT diff: read commit by commit against 1c734f41; one commit, three files, 317 insertions and 3 deletions, all inside the declared scope, and the card carries no plan, sprint or ticket identifier.\nCALL_SITES: reckon/crew/routing.py:3716 (_context_refusal_detail into the competence verdict's detail), reckon/crew/routing.py:3440 (_context_contributors inside it), reckon/crew/dispatch.py:1393-1397 and reckon/crew/dispatch_sessions.py:1738-1744 (raise CompetenceLimit from that verdict), reckon/crew/picker/snapshot.py:703-711 (reads _competence_verdict and _context_fit_verdict for the pick's reasons)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:3448-3451 emits the dominant term with its token figure and origin, though the surfaced exception message at reckon/crew/node.py:607-613 re-renders the refusal and still omits it.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate.log carries the done_when's exact command at 85428753 with 23 passed EXIT=0, bcn-base-arm.log shows 3 failed/1 passed EXIT=1 at 1c734f41, and bcn-negative-control.log shows 3 failed EXIT=1 under the declared mutation.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --stat 85428753 lists only routing.py, its test file and the landing fragment, every one inside the manifest's declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: the literal origin assertions at tests/test_the_refusal_names_its_dominant_term.py:140,173,174,216 redden when the origin clause is reinstated, as bcn-negative-control.log shows, but the prefix assertion at line 145 compares the sentence against the same verdict payload it was rendered from.\nSCORE fit: 16\nJUSTIFICATION fit: the docstrings and the `origin`/`lead` names follow the surrounding style of reckon/crew/routing.py:3428-3462 and carry no plan label, though `dominant_term` names the rendered clause while `dominant` already names the clause-rendering variable beside it at lines 3446 and 3448.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends `_context_contributors` at reckon/crew/routing.py:3382, the owner of the contributor list, adding a field rather than a second mechanism; a capability search over reckon/crew for how an input's origin is labelled found only the unrelated serving-origin store in reckon/crew/serving_origin.py:75.\nFINDING tests/test_the_refusal_names_its_dominant_term.py:145 follow-on: the expected prefix is built from verdict['estimated_tokens'], verdict['window_tokens'] and verdict['shortfall_tokens'] \u2014 the same verdict object the detail string is rendered from at reckon/crew/routing.py:3709-3716 \u2014 so the assertion pins the sentence's wording but cannot redden if those three figures are themselves wrong, which is the \"existing total and window figures are asserted unchanged\" half of the done-when; comparing them against the fixture's own window (passed to _backend_settings at tests/test_the_refusal_names_its_dominant_term.py:52) would make it independent.\nFINDING reckon/crew/node.py:607 follow-on: CompetenceLimit re-renders the context refusal from the verdict's scalars and drops verdict['detail'], so the message a dispatcher prints (reckon/crew/dispatch.py:1397, reckon/crew/dispatch_sessions.py:1744) never carries the new dominant-term clause; the clause reaches a coordinator only on the run record's competence.detail. node.py is outside this node's declared write scope, so the node recorded it as a follow-on rather than repairing it.\n",
+  "review_run_id": "r-20261022T083020678695-review-of-the-refusal-names-its-dominant-term-85428753fc78",
+  "reviewed_base_sha": "1c734f41243288f7c8d6846e2a7cd4936ab3d82e",
+  "reviewed_head_sha": "85428753fc781728ba2295c5961ecf855f375c33",
+  "reviewed_run_id": "r-20261022T081605027547-the-refusal-names-its-dominant-term",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T08:38:50.718841+00:00",
+  "total": 108
+}
