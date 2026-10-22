@@ -20,9 +20,9 @@
 <meta name="plan-capability-class" content="orchestrator">
 <meta name="plan-capability-reasoning" content="deep">
 <meta name="plan-capability-verification" content="strict">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 <meta name="plan-modified" content="2026-10-22">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
 </head>
 <body>
 <main class="plan-doc">
@@ -41,7 +41,7 @@
 <p>A resume replaces the head a review or a promotion would read. From the moment a complete run is resumed until it delivers again, its <code>review-missing</code> and <code>promotable-stale</code> duties for the prior head are withdrawn, and a review queued for that head is withdrawn rather than launched, recorded as superseded by the resume. When the run delivers again, the duties return for the new head.</p><p><strong>Done when:</strong> a fixture complete run owing a review is resumed and its obligations list no <code>review-missing</code> or <code>promotable-stale</code> for the old head; a review queued before the resume is withdrawn and recorded as superseded; after the run delivers a new head, <code>review-missing</code> names the new head. A run that is not resumed keeps its duties, which is the control. On the base commit the old duties persist, so the test fails there.</p>
 
 <h2 id="s4">§4 — A queued run keeps one id from dispatch to launch</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p>The id a dispatch returns is the one a coordinator records, cites and later acts on. Admission retries and the launch reuse it rather than minting a new one, so <code>crew observe</code>, <code>crew discard</code> and the ledger all answer for the id the dispatch printed, and the monitor never reports a run that launched as dropped.</p><p><strong>Done when:</strong> a fixture dispatch that is queued, retried by admission twice and then launched carries the same run id throughout; <code>crew discard</code> on that id while queued succeeds; the watch stream carries no <code>dropped</code> transition for it. On the base commit the launched run has a different id, so the test fails there.</p>
 
 <h2 id="s5">§5 — A run built on a held chain tip may write its holder&#x27;s paths</h2>
@@ -75,6 +75,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261022T015345882286-review-of-a-queued-run-keeps-one-id-af9bc8109be8" data-who="reckon-build" data-when="2026-10-22T02:10:48.233Z">
     <div class="r-comment-body"><p>independent review of r-20261022T003519782346-a-queued-run-keeps-one-id at head af9bc8109be8264c8e9ee15592b256a463ce0273 over base 4c659c40ac907ba3bab87f9c2c0d83820ea5b399: parsed, six dimensions scored (goal_fidelity 20, evidence 18, scope_discipline 19, durability 17, fit 18, reuse 20), added_failure_count 0, one follow-on finding, no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-22T02:20:00Z">
+    <div class="r-comment-body"><p>Landed: a queued run keeps the id its dispatch returned through admission and launch; gate 60 passed; review 112/120. Evidence: <a href="/reckon/evidence/archive/a-coordinator-can-clear-its-own-duties-landed.html#s4">§4 landing record</a>.</p></div>
 </div>
 </section>
 </main>

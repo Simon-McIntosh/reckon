@@ -25,6 +25,11 @@
     <p>Run <code>a-review-passes-its-sessions-queue-cap</code>, landed at <code>be63596b0</code> after one repair round. The per-session queued-run cap in <code>reckon/crew/runs.py</code> no longer counts or refuses a review dispatch, and <code>admission_order</code> in <code>reckon/crew/queue_order.py</code> launches a session's queued review ahead of an implementation node it queued earlier. A review pointer is recognised through the repository's own definition, <code>_is_review_run</code> in <code>reckon/crew/recovery_review_delivery.py</code>, so a review identified only by its minted node id is exempt as well. The cap still refuses a further implementation dispatch.</p><p>Gate: base 6 failed, EXIT=1; head 62 passed, EXIT=0. Review of the repaired head: 108/120 (goal 19, evidence 17, scope 20, durability 17, fit 18, reuse 17); two follow-ons exempted. The first round scored 98 because it re-implemented the review-pointer predicate; the repair deleted the copy.</p>
   </section>
 
+  <section id="s4">
+    <h2>§4 — a queued run keeps one id from dispatch to launch</h2>
+    <p>Run <code>a-queued-run-keeps-one-id</code>, landed at <code>af9bc8109</code>. The launch of a queued run in <code>reckon/crew/queue_admission.py</code> (<code>_launch_queued</code>) passes the queued pointer's run id to the dispatch, so the id a dispatch returned is the id the run launches under: <code>crew observe</code>, <code>crew discard</code> and the ledger answer for it, and the watch stream records no <code>dropped</code> transition for a run that launched. Four assertions in <code>tests/test_a_queued_run_is_admitted.py</code> pinned the retired id swap (that the queued id's pointer and directory are vacated at launch); they now assert the identity the change guarantees, with no case deleted.</p><p>Gate: base 2 failed, 58 passed; head 60 passed, EXIT=0. Review: 112/120 (goal 20, evidence 18, scope 19, durability 17, fit 18, reuse 20); one follow-on exempted. The first attempt blocked correctly on a file outside its grant and was widened.</p>
+  </section>
+
 </main>
 </body>
 </html>
