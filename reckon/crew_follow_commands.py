@@ -1192,6 +1192,8 @@ def _fleet_replay(
     that draws the same fleet leaves the history it restores alone rather than
     doubling it. A gap transition is news and is recorded.
     """
+    from reckon.crew import ticker as ticker_module
+
     recorded = _recorded_fleet_times(stream_path, boundary=boundary)
     rows: list[dict] = []
     announced: set[str] = set()
@@ -1217,16 +1219,84 @@ def _fleet_replay(
         rows.append(row)
     rows.sort(key=_follow_row_stamp)
     printed: list[dict] = []
+    # What the pane holds for each run: the word it draws as the left half,
+    # paired with the duty it was told beside that word, or None where only the
+    # word survived the handover. A replayed baseline is judged against it, so a
+    # row re-announcing both is inventory rather than a self-transition, while a
+    # first sighting, a real move, and a replay naming the word with a different
+    # duty beside it still print.
+    shown: dict[str, tuple[str, tuple | None]] = {
+        str(run_id): (str(word), None)
+        for run_id, word in dict(path.reported).items()
+    }
     for row in rows:
+        run_id = str(row.get("run_id") or "")
+        if ticker_module.is_baseline(row) and _replayed_row_repeats_the_pane(
+            row, shown
+        ):
+            continue
         printed.extend(path.feed(row, now=clock()))
+        # The pane's memory is what a later replay is judged against, so it
+        # follows every row this replay delivers rather than only the ones drawn
+        # as transitions: a row the policy holds for its settle window is still
+        # the word the pane will show, and the path's own map lags it until the
+        # window passes.
+        if run_id:
+            shown[run_id] = _pane_shown_memory(row)
+            for other, word in dict(path.reported).items():
+                shown.setdefault(str(other), (str(word), None))
     return printed
 
+
+def _pane_shown_memory(row: Mapping[str, Any]) -> tuple[str, tuple]:
+    """The word a row puts on the pane, with the duty the pane is shown beside it.
+
+    The duty is exactly the evidence :func:`reckon.crew.ticker.same_word_row_is_news`
+    reads — the recovery classification the fleet calls actionable, and the
+    external condition the run declares it is waiting on — so a replay is
+    compared on the same terms the live row path uses to keep a same-word row.
+    """
+    return (
+        str(row.get("to_state") or ""),
+        (
+            str(row.get("recovery_classification") or ""),
+            row.get("wait_condition_state"),
+            row.get("wait_overdue"),
+            row.get("expected_horizon_seconds"),
+        ),
+    )
+
+
+def _replayed_row_repeats_the_pane(
+    row: Mapping[str, Any], shown: Mapping[str, tuple[str, tuple | None]]
+) -> bool:
+    """Whether a replayed row re-announces what the pane already holds for its run.
+
+    A producer reload replays every live run as a fresh baseline row, so each
+    run's row returns after every reload. Where the replay names the word the
+    pane already draws and carries the same duty beside it the row is inventory:
+    the grid takes the row's left half from the pane's memory, so it renders as
+    a self-transition carrying only a growing elapsed. The duty is compared with
+    the word because the live row path keeps a same-word row whose declaration
+    the coordinator must be able to read, so a replay naming a changed condition
+    is news and is left to the row path — as are a run the pane has not drawn
+    and a move to another word.
+    """
+    run_id = str(row.get("run_id") or "")
+    if not run_id:
+        return False
+    remembered = shown.get(run_id)
+    if remembered is None:
+        return False
+    word, duty = remembered
+    if str(row.get("to_state") or "") != word:
+        return False
+    return duty is None or duty == _pane_shown_memory(row)[1]
 
 
 _FOLLOW_REATTACH_FRAME = (
     "── re-attached · {live} live runs · {changed} changed since {when} ──"
 )
-
 
 
 def _follow_reattach_line(live: int, changed: int, recorded_at: str) -> str:
@@ -1236,7 +1306,6 @@ def _follow_reattach_line(live: int, changed: int, recorded_at: str) -> str:
     return _FOLLOW_REATTACH_FRAME.format(
         live=live, changed=changed, when=ticker_module.local_clock(recorded_at)
     )
-
 
 
 def _follow_gap_rows(
@@ -1271,14 +1340,17 @@ def _follow_gap_rows(
             continue
         run_id = str(row.get("run_id") or "")
         event = dict(row)
-        current = str(event.get("to_state") or "")
         recorded = states.get(run_id)
-        if recorded == current:
+        # The record names the word alone, so a run still at it repeats what the
+        # pane holds and draws nothing; the duty beside the word was not
+        # recorded and is not compared here.
+        if _replayed_row_repeats_the_pane(
+            event, {run_id: (recorded, None)} if recorded is not None else {}
+        ):
             continue
         event["from_state"] = recorded or "dispatched"
         rows.append(event)
     return rows
-
 
 
 def _follow_watch_lines(
