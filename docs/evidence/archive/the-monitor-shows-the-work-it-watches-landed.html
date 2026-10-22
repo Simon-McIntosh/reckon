@@ -384,6 +384,11 @@ EXIT=0</pre>
     <p><code>needs_you</code> reads a run's deferral through the obligations view's own reader, <code>obligations._acknowledgements_in_force</code>. A run deferred with <code>crew ack</code> therefore leaves the needs-you line until its deferral's instant, and returns once, as a change, when the deferral expires. Changed: <code>reckon/crew/needs_you.py</code>, with <code>tests/test_a_deferred_run_leaves_the_needs_you_line.py</code>. The negative control ignores the deferral, and both cases fail. Merged at <code>34f8b943d</code> (head <code>9554f9806</code>). Reviewed 117/120, with one follow-on: a docstring overstates which clock the reader honours for a promoted run. Population at merge (run <code>r-20261022T042941663096-population-mon79</code>, 48 files): one failing id in each arm, the same one, so none is added.</p>
   </section>
 
+  <section id="s74">
+    <h2>§74 — a queued refusal names its remedy, landed</h2>
+    <p>The obligations item for a queued run names its stamped launch refusal whatever text it carries, with the remedy the refusal states. For a <code>PlanReviewMissingError</code> that is the <code>reckon crew review</code> command its message names. A failure naming the session keeps its follower remedy, and a lane hold still reads as waiting for a slot. Changed: <code>reckon/crew/recovery_classification.py</code>. The negative control restores the session filter, and the refusal reads as waiting again. Merged at <code>8a9566cbc</code> (head <code>2abc618a3</code>). Reviewed 110/120.</p><p>Stacked population at merge (run <code>r-20261022T091436386618-population-stack3</code>, 353 importer files across the stack of monitor §74 and limit-reset §2 and §5, base <code>900f77db</code> against candidate <code>93625b5f</code>, on a node at load average about 75): base 31 failing ids, candidate 35. The four added ids are two cases of <code>tests/test_directory_row_reads_the_derived_phase.py</code>, <code>tests/test_idle_producer_backs_off.py::test_idle_producer_backs_off_to_the_cap_and_returns_to_base</code> and <code>tests/test_standing_suite.py::test_a_run_past_its_budget_is_stopped_with_its_whole_group</code>. Each passes 5 of 5 alone at the candidate, and the producer case also failed 1 of 5 alone at base, so all four are load-only.</p>
+  </section>
+
 </main>
 </body>
 </html>
