@@ -54,6 +54,10 @@ def test_live_pointer_removed_between_scan_and_read_is_skipped(
 
     runs._write_json(removed_path, removed)
     remove_on_survivor_read = True
+    # An unchanged pointer is served from the text already read, so the
+    # survivor would not be read again and the removal it triggers would not
+    # happen; forget the kept text so the second listing reads it.
+    runs._POINTER_TEXT.clear()
     visibility = runs.project_watch_visibility("sample")
 
     assert isinstance(visibility, dict)
