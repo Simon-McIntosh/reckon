@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-22T05:43:13.953Z",
+  "dispatched_at": "2026-10-22T05:33:14Z",
+  "figures": [
+    {
+      "alt": "docs/evidence/fragments/a-project-reads-as-one-picture/work-in-flight-sits-on-its-section.html:27",
+      "attachment": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T053222957037-review-of-work-in-flight-sits-on-its-section-10b12d6eebbc-figure/image-0.png",
+      "attachment_shape": "PNG, 1400 x 661, 8-bit, opened and read",
+      "caption": "docs/evidence/fragments/a-project-reads-as-one-picture/work-in-flight-sits-on-its-section.html:27",
+      "rendered": "docs/figures/a-project-reads-as-one-picture/work-in-flight-sits-on-its-section/section_row_readers.svg",
+      "source": "docs/figures/a-project-reads-as-one-picture/work-in-flight-sits-on-its-section/section_row_readers.py"
+    }
+  ],
+  "findings": [
+    {
+      "file": "docs/figures/a-project-reads-as-one-picture/work-in-flight-sits-on-its-section/section_row_readers.py",
+      "line": 32,
+      "severity": "follow-on",
+      "summary": "RECORDED = '#8a8a8a' is one colour doing two jobs: it is the colour of the plotted step line and the dashed carry-forward, and it is also the colour of four labels a reader must read to get the figure's point - 'record read: waiting', 'the recorded event leads', 'latest watcher 02:54:21Z waiting' and 'answer: waiting'. Measured on the delivered attachment, that grey is 3.45:1 against white, which clears the ~3:1 a data mark needs but not the 4.5:1 normal-size text needs, so the figure's own reading labels are its lowest-contrast text. Does not hold the node: at 14 pt the words are plainly legible in the delivered PNG and the line is unmistakable, so nothing stops a reader. A text-only darkening of those four labels, leaving the data line as it is, would close it."
+    },
+    {
+      "file": "docs/figures/a-project-reads-as-one-picture/work-in-flight-sits-on-its-section/section_row_readers.py",
+      "line": 259,
+      "severity": "follow-on",
+      "summary": "The right panel is titled '(b) one classifier, asked at two ages' and the left panel carries no '(a)', so a reader is handed the second half of a lettered pair and looks for a first panel the figure never designates. The left panel is not untitled by accident - it has an axis unit and nothing else - so the two panels do not read as the pair the '(b)' promises. Does not hold the node: each panel is self-describing from its axis and its block text, and the caption explains both without lettering them, so no reader is stopped."
+    }
+  ],
+  "project": "reckon",
+  "read_only": "no file was edited, created, moved, deleted, redrawn, relabelled or reformatted in any repository or docs tree. The guard control and both mutations ran on copies under the run's scratch directory, and both write paths carry only this record.",
+  "review_run_id": "r-20261022T053222957037-review-of-work-in-flight-sits-on-its-section-10b12d6eebbc-figure",
+  "reviewed_base_sha": "52f79371c393e66873066150fbdd6d60b7592760",
+  "reviewed_head_sha": "10b12d6eebbc89b49d60140b1ab8fcb83c428cc3",
+  "reviewed_run_id": "r-20261022T020156268686-work-in-flight-sits-on-its-section",
+  "rubric": "figure",
+  "rubric_verdicts": {
+    "contrast": "defect - the figure's grey #8a8a8a carries four pieces of text as well as the plotted line, and measures 3.45:1 against white, below the 4.5:1 normal-size text needs. Measured on the delivered attachment: (138,138,138) is the most common non-white colour in the image at 5,456 px, and the same grey is the colour of 'record read: waiting' (line 194), 'the recorded event leads' (line 269), 'latest watcher 02:54:21Z waiting' (line 278) and 'answer: waiting' (line 289). The other text colours clear it: near-black #222222 at 15.91:1, blue #2f6fb3 at 5.19:1, red #b0564f at 4.89:1",
+    "data_ink": "pass - the recorded state is one step line plus a dashed carry-forward, and the right panel is a flow of hairline-outlined boxes with white faces, so the ink is a state, a call site or a served answer and nothing else",
+    "decoration": "pass - no gradient, no background fill, no shaded band, no frame styling and no drop shadow; the box facecolour is white and the only filled mark is the one measurement marker",
+    "label_collision": "pass - no label is clipped, no two labels overlap, and no label covers the step line, the carry-forward or the marker; checked by reading the render and confirmed by the figure's own save-time guard, which the control run passed (EXIT=0) and which refused both mutations (see verification.label_guard_is_live)",
+    "legibility": "pass - at 1400 px every state name (dispatched, working, completed_unpromoted, waiting, interrupted), all six tick times from 23:45 to 04:45, the axis unit, both coloured annotations and both right-hand blocks are readable at a glance; the 2.6 pt step line, the 2.4 pt dashed carry-forward, the dotted measurement rule and the round marker are each distinguishable from the others",
+    "table_form": "pass - the left panel is a recorded time series read as a shape over time, and the right panel is a fan-in mechanism whose subject is the one classifier both call sites reach; neither is a set of rows and columns, and a table of the two call sites would not show the disagreement over the recorded state"
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T05:45:13.884911+00:00",
+  "total": null,
+  "verification": {
+    "attachment_is_the_reviewed_head": "opened the attached image-0.png (1400 x 661) and read it, then rendered the head's own SVG myself: git show 10b12d6eebbc89b49d60140b1ab8fcb83c428cc3:docs/figures/a-project-reads-as-one-picture/work-in-flight-sits-on-its-section/section_row_readers.svg | convert -density 100 -resize 1400x. The two agree panel for panel - same step line, same dashed carry-forward, same marker, same four right-hand blocks, same label placement - and compare -metric RMSE reports 2391.96 (0.0365 normalised), which is the font-rendering difference between the two SVG rasterisers and not a layout difference. The SVG and the .py at this head are byte-identical to their blobs at the earlier reviewed head 2d8197acdcd3 (svg 6b968372e54c1328af7f10c5c8a82e304b014956, py d40c6eacbf344dfa9db4f28c57f28f971e1548aa at both), so the figure did not change between that head and this one.",
+    "caption": "the figcaption at docs/evidence/fragments/a-project-reads-as-one-picture/work-in-flight-sits-on-its-section.html:27 does not merely repeat the figure's title: it names the run, reads the step line as the watcher's recorded sequence, reads the dashed carry-forward as the stored event's answer and the marker as the classifier asked the pointer now, and states the fifteen-minute age that makes the pair one reading taken twice. It is a caption, and no finding is recorded against it.",
+    "contrast_measurement": "counted the attachment's pixels in Python and printed the contrast of each distinct colour against white. The grey (138,138,138) is #8a8a8a at 3.45:1, the near-black (34,34,34) is 15.91:1, the blue (47,111,179) is 5.19:1 and the red (176,86,79) is 4.89:1. The measurement is the figure's own, taken here rather than carried from any earlier record.",
+    "figure_agrees_with_the_recorded_evidence": "the step line's five transitions (23:45:15, 23:45:34, 02:06:01, 02:08:45, 02:54:21) and the measurement instant 03:09:54 are the same instants the reviewed run's manifest names under evidence_inputs, so the figure draws the recorded data rather than a restatement of it.",
+    "label_guard_is_live": "the source refuses to save a figure whose labels leave the canvas, collide, or sit on a plotted line. Control: the unmodified script copied to the run scratch ran and wrote its SVG, EXIT=0. Mutation 1, 'record read: waiting' moved from (3.55, waiting+0.35) to (3.0, waiting) so it lies along the dashed carry-forward, was refused with \"label sits on the plotted line: 'record read: waiting'\", EXIT=1. Mutation 2, the 'fresh read: interrupted' label moved to the same y as 'record read: waiting', was refused with \"labels overlap: 'record read: waiting' / 'fresh read: interrupted'\", EXIT=1. So the pass recorded for label_collision is a guard that was shown to fire, not the absence of an error."
+  }
+}
