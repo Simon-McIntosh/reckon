@@ -27,10 +27,12 @@ run's own scratch directory with the four follower variables unset and run in pl
 <code>pytest -n 8</code> over the 84 test files importing the three changed modules: base
 <code>4b43bb5eb</code> <strong>2 failed, 882 passed</strong> (228.22 s), head
 <code>b613326a5</code> <strong>2 failed, 894 passed</strong> (232.40 s) — the same two failure ids in both
-arms and none added. The twelve added passes are this node's cases. The two shared ids fail in both arms
-and belong to other work; the producer-sweeps id passes when run alone in each arm, so no id failed in
-one arm only. At the post-format head <code>cb79af32c</code>, the new file and
-<code>tests/test_every_module_fits_a_worker_window.py</code> pass together, <strong>16 passed</strong>.
+arms and none added. The thirteen added passes are this node's cases — the last of them added in the
+repair round, whose arm re-run at <code>c811cc79b</code> reads <strong>2 failed, 895 passed</strong>
+against the same two ids. The two shared ids fail in both arms and belong to other work; the
+producer-sweeps id passes when run alone in each arm, so no id failed in one arm only. At the repaired
+head the new file and <code>tests/test_every_module_fits_a_worker_window.py</code> pass together,
+<strong>17 passed</strong>.
 <code>ruff check</code> reports four findings on the changed files and <code>ruff format --check</code>
 is clean; all four are pre-existing in <code>recovery_watch.py</code> at lines this change does not
 touch, and the base blobs carry the same four.</p>
