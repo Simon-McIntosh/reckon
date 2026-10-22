@@ -22,11 +22,11 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="It reuses the lift broadcast a-window-paces-the-lane built and the pane rows the-monitor-shows-the-work-it-watches draws, but no live plan waits on it and its first section waits on neither.">
   <meta name="plan-section-depends-on" content="{&quot;s2&quot;:[&quot;a-limit-reset-reaches-every-session#s1&quot;],&quot;s3&quot;:[&quot;a-limit-reset-reaches-every-session#s1&quot;],&quot;s4&quot;:[&quot;a-limit-reset-reaches-every-session#s2&quot;,&quot;a-limit-reset-reaches-every-session#s3&quot;,&quot;a-limit-reset-reaches-every-session#s5&quot;],&quot;s5&quot;:[&quot;a-limit-reset-reaches-every-session#s1&quot;],&quot;s6&quot;:[&quot;a-limit-reset-reaches-every-session#s2&quot;,&quot;a-limit-reset-reaches-every-session#s3&quot;,&quot;a-limit-reset-reaches-every-session#s5&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>A Limit Reset Reaches Every Session | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="37">
+<meta name="plan-version" content="38">
 <meta name="plan-modified" content="2026-10-22">
 </head>
 <body>
@@ -73,7 +73,7 @@
     <p><code>tests/test_codex_banked_reset.py</code>, which covers the flag, passes unchanged. The negative control removes the ten-minute rule, and the coalescing case then writes two events. The test files that import <code>reckon/crew/budget_reset.py</code> or exercise <code>crew budget</code> add no failure against a base arm. Both arms come from git checkouts under the run's own scratch directory, with the four follower variables unset, and run in place on the fleet node with <code>pytest -n 8</code>. Every log is under the run directory, starts with its revision and the literal command, and ends in <code>EXIT=</code>. <code>ruff check</code> and <code>ruff format --check</code> add no findings. Write paths: <code>reckon/crew/budget_reset.py</code>, <code>reckon/crew_run_commands.py</code> and the new test.</p>
 
     <h2 id="s2">§2 — Every pane draws a limit reset once</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> <code>reckon/crew/lift_watch.py</code>, which already folds lifts into each project's stream, gains the reset row family as a second entry point, <code>sweep_resets(project, seen=None, now=None, ...)</code>. It shares the module's row builder, which goes through <code>recovery_watch._watch_transition</code>, and its <code>_append_rows</code>. It is a separate entry because it runs on a different trigger with a different memory. <code>sweep</code> runs on the poll's change gate and remembers the lifts in force. <code>sweep_resets</code> runs on the clock-driven block and remembers the event ids it has announced. An event stated with a future <code>--from</code>, or written to a store outside the gate's fingerprint, becomes due with no file the gate reads moving.</p>
     <p>Each pass reads <code>budget_reset.recent_resets</code> with a 60-minute horizon. For every event whose instant has passed and whose id it has not yet announced, it appends one row:</p>
     <ul>
@@ -122,7 +122,7 @@
     <p><strong>Done when</strong> the landing record holds the claim directory listed just before the announcement, showing no claim for the rehearsal id, and then the rehearsal's notification text with its timestamp, the stream row from every project's producer, exactly one claim for the pane, and no claim from another session for the rehearsal id. The listing before the announcement is the control: a claim present then would mean the count measured something other than this announcement. The coordinator runs this section, because it is the announcing session.</p>
 
     <h2 id="s5">§5 — An announcement names the sessions it cannot reach</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Deliverable.</strong> <code>reckon crew budget --reset --used</code> reports its reach. For every mounted project it reads <code>follower_registration.list_followers</code>, which owns the liveness verdict. It lists the sessions holding a live registration, whose panes will draw the row, and the sessions holding only registrations that are not live, so the announcer messages only the second list. The report derives no liveness of its own. It is part of the command's output and of its JSON document, and it writes nothing.</p>
     <p><strong>Done when</strong> a test in a temporary home with one session holding a live follower registration and one holding a stale one finds the report listing the first as reached and the second as not. The negative control treats every registration as live, and the second session is then listed as reached. The tests that exercise <code>crew budget</code> add no failure against a base arm on the same terms as §1. Write paths: <code>reckon/crew_run_commands.py</code> and the new test.</p>
 
@@ -148,10 +148,11 @@
     <pre class="r-fu-prompt">/reckon-build a-limit-reset-reaches-every-session §1</pre>
     <p class="r-fu-outcome"><p>Landed at <code>a0131cd7c</code>.</p></p>
     </article>
-<article class="r-fu" data-id="f-alrres-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-21" data-recommends-skill="/reckon-build a-limit-reset-reaches-every-session §2" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-alrres-002" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-21" data-recommends-skill="/reckon-build a-limit-reset-reaches-every-session §2" data-resolved-at="2026-10-22T10:11:25+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Build §2: every pane draws a limit reset once</h4>
     <div class="r-fu-body"><p>The producer sweep and the pane's row branch, after §1's record exists.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-limit-reset-reaches-every-session §2</pre>
+    <p class="r-fu-outcome"><p>Landed at <code>d513f5424</code>.</p></p>
     </article>
 <article class="r-fu" data-id="f-alrres-003" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-21" data-recommends-skill="/reckon-build a-limit-reset-reaches-every-session §3" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Build §3: a session without a pane learns of a reset on its next prompt</h4>
@@ -168,10 +169,11 @@
     <div class="r-fu-body"><p>At the lead's next early reset, announce it globally with <code>reckon crew budget --reset --group claude-sub --used --reason "&lt;what the lead said&gt;"</code> and record the claim directory and the reach report in the landing record under §4.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-limit-reset-reaches-every-session §4</pre>
     </article>
-<article class="r-fu" data-id="f-alrres-006" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-21" data-recommends-skill="/reckon-build a-limit-reset-reaches-every-session §5" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-alrres-006" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-21" data-recommends-skill="/reckon-build a-limit-reset-reaches-every-session §5" data-resolved-at="2026-10-22T10:11:25+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Build §5: an announcement names the sessions it cannot reach</h4>
     <div class="r-fu-body"><p>The reach report on <code>crew budget --reset --used</code>, after §1.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-limit-reset-reaches-every-session §5</pre>
+    <p class="r-fu-outcome"><p>Landed at <code>4f8f1a133</code>.</p></p>
     </article>
 <article class="r-fu" data-id="f-alrres-007" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-21" data-recommends-skill="/reckon-build a-limit-reset-reaches-every-session §6" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Write §6: the global instruction for a reset row</h4>
@@ -212,8 +214,14 @@
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261022T043037681918-review-of-every-pane-draws-a-limit-reset-once-d98efe6070bb" data-who="reckon-build" data-when="2026-10-22T04:52:07.884Z">
     <div class="r-comment-body"><p>independent review of run r-20261022T033422651385-every-pane-draws-a-limit-reset-once at head d98efe607 (base 4b43bb5eb): six dimensions scored, two blocking findings (the evidence fragment credits the baseline-path control's red log to the change-gate control; the plan-named change-gate control is undemonstrated), added_failure_count 0</p></div>
 </div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-22T10:20:00Z">
+    <div class="r-comment-body"><p>§2 landed at <code>d513f5424</code>: a limit-reset row reaches every pane once. Reviewed 114/120. <a href="/reckon/evidence/archive/a-limit-reset-reaches-every-session-landed.html#s2">evidence</a></p></div>
+</div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261022T050643238770-review-of-an-announcement-names-who-it-cannot-reach-c61cb3da3d6c" data-who="reckon-build" data-when="2026-10-22T05:18:47.601Z">
     <div class="r-comment-body"><p>independent review of run r-20261022T034717545596-an-announcement-names-who-it-cannot-reach at head c61cb3da3d6c51faaae74e35b2c4ed2d103e905f (base f990f80631361c8f10b4b184fe7374fe1515adf5): scores goal_fidelity 19, evidence 19, scope_discipline 19, durability 18, fit 18, reuse 17; added_failure_count 0 over the reviewed run's own baseline_suite/after_suite arms; one follow-on finding on the all-reached detail wording at reckon/crew_run_commands.py:2819; status parsed.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-10-22T10:20:00Z">
+    <div class="r-comment-body"><p>§5 landed at <code>4f8f1a133</code>: the announcement names the sessions without a live pane. Reviewed 110/120. <a href="/reckon/evidence/archive/a-limit-reset-reaches-every-session-landed.html#s5">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261022T043831327751-review-of-the-claude-account-is-read-again-579b78258724" data-who="reckon-build" data-when="2026-10-22T05:06:15.141Z">
     <div class="r-comment-body"><p>review record at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T034110168470-the-claude-account-is-read-again/review-records/r-20261022T034110168470-the-claude-account-is-read-again.json (identical copy at the .at-579b7825872422f1521d347b4c9d2a5795a366ab.json path); verdict parsed, added_failure_count 0, no blocking finding, one reuse finding and three follow-on findings</p></div>
