@@ -3083,6 +3083,11 @@ reckon/crew/dispatch.py:4535: TypeError
     <p><code>tests/test_a_crew_verb_ok_reads_its_outcome.py::test_preflight_hold_and_clear_result_have_matching_exit_codes</code> drove <code>crew preflight</code>, a retired verb whose tombstone exits 10, so it failed comparing 10 with the budget-hold code 3. It now drives the successor, <code>crew budget --check</code>: a held check exits 3 with <code>ok</code> false, and a clear one exits 0. A separate assertion finds <code>crew preflight</code> exiting <code>TOMBSTONE_EXIT_CODE</code> and naming its successor. Test-only. The negative control makes the successor's held branch exit 0 in a scratch copy, and the held assertion fails with <code>assert 0 == 3</code>. Merged at <code>fd13a686c</code> (head <code>e306121ca</code>). Reviewed 112/120. At the merge candidate <code>b8f80c2fa</code> the file passes 25 of 25 (log <code>~/.cache/reckon-suite-green/sg35-candidate-b8f80c2fa.log</code>).</p>
   </section>
 
+  <section id="s37">
+    <h2>§37 — the delivery-path test waits for its reader, landed</h2>
+    <p>The window was the test's own. The fixture moved the pointers before the reader had derived its baseline, so the move read as inventory rather than a transition, and the reader never saw <code>dispatched</code>. <code>tests/test_removed_flag_migration.py</code> now holds the fleet until the reader reports its attach. The follower is unchanged, and its first-attach inventory semantics are deliberate. At head the test passed 20 of 20 alone and 10 of 10 under <code>-n 8</code>. The negative control, moving the pointers before the reader attaches, fails 10 of 10 at the set assertion. Merged at <code>8bb4a90a1</code> (head <code>025f314bc</code>). At the merge candidate <code>784315a35</code> the file passes 6 of 6 (log <code>~/.cache/reckon-suite-green/sg37-candidate-784315a35.log</code>).</p><p>Reviewed 96/120, accepted with three follow-ons. The new wait helper, <code>_wait_for_the_first_attach</code>, duplicates <code>_wait_for</code> in the same file, which <code>_wait_for(lambda: attached.is_set())</code> would reuse. The base-arm and xdist logs end in a count line rather than a bare <code>EXIT=</code>, and give a description in place of the literal command. The negative-control log's header names a revision other than the code it ran.</p>
+  </section>
+
 </main>
 </body>
 </html>
