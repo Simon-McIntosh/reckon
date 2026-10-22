@@ -27,7 +27,7 @@ from typing import Any
 import pytest
 from click.testing import CliRunner
 
-from reckon import capability, crew, crew_dispatch_commands
+from reckon import capability, crew, crew_dispatch_commands, ledger
 from reckon import cli as cli_module
 from reckon.crew import routing
 from reckon.crew.routing import _context_file_inputs
@@ -238,6 +238,8 @@ def repo(tmp_path: Path, home: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         encoding="utf-8",
     )
     _seed_large_file(root)
+    (root / "docs" / "state" / PROJECT).mkdir(parents=True, exist_ok=True)
+    ledger.write(PROJECT, {"members": [], "runs": [], "holds": []}, 0, root=root)
     for arguments in (
         ["init", "-q", "-b", "main"],
         ["config", "user.email", "worker@example.invalid"],
@@ -286,9 +288,23 @@ def _dispatch_arguments(
     return arguments
 
 
-def _live_holder(
-    repo: Path, run_id: str, node_id: str, regenerated: tuple[str, ...]
-) -> None:
+def _dispatched_node(repo: Path, node_id: str, regenerate: tuple[str, ...]) -> dict:
+    """The node the dispatch surface builds from ``--regenerate-path`` alone.
+
+    The dry run composes the same ``TaskNode`` a launch does, so the node it
+    emits is the one whose write scope the run would claim — the path is passed
+    through ``--regenerate-path`` and nowhere else.
+    """
+    result = CliRunner().invoke(
+        cli_module.main, _dispatch_arguments(repo, node_id, regenerate=regenerate)
+    )
+    payload = json.loads(result.output)
+    assert result.exit_code == 0, result.output
+    return payload["node"]
+
+
+def _live_holder(repo: Path, run_id: str, node_id: str, definition: dict) -> None:
+    """Write a live pointer whose node is the built definition, as dispatch does."""
     crew._write_json(
         crew.pointer_path(run_id),
         {
@@ -298,12 +314,7 @@ def _live_holder(
             "phase": "working",
             "pid": os.getpid(),
             "launcher_host": socket.gethostname(),
-            "node": {
-                "id": node_id,
-                "plan": PLAN,
-                "write_paths": list(regenerated),
-                "regenerate_paths": list(regenerated),
-            },
+            "node": {**definition, "id": node_id, "plan": PLAN},
         },
     )
 
@@ -312,7 +323,12 @@ def test_a_live_claim_on_a_regenerated_path_refuses_a_second_dispatch(
     home: Path, repo: Path
 ) -> None:
     """A peer holding the regenerated path is named in a scope-conflict refusal."""
-    _live_holder(repo, "r-holder", "node-holder", (LARGE_PATH,))
+    _live_holder(
+        repo,
+        "r-holder",
+        "node-holder",
+        _node(write_paths=[], regenerate_paths=[LARGE_PATH]).as_dict(),
+    )
 
     result = CliRunner().invoke(
         cli_module.main,
@@ -327,17 +343,76 @@ def test_a_live_claim_on_a_regenerated_path_refuses_a_second_dispatch(
     assert payload["candidate_path"] == LARGE_PATH
 
 
-def test_the_live_pointer_carries_the_regenerated_paths(home: Path, repo: Path) -> None:
-    """The pointer node records the regenerated set, and it is a claim."""
-    node = _node(write_paths=[LARGE_PATH], regenerate_paths=[LARGE_PATH])
+def test_a_regenerated_path_is_folded_into_the_claimed_write_scope(
+    home: Path, repo: Path
+) -> None:
+    """A path declared only as regenerated reaches the write scope and the claim.
 
-    definition = node.as_dict()
+    The path is passed through ``--regenerate-path`` alone and never named as a
+    write path, so nothing but the fold in ``TaskNode.__post_init__`` can place
+    it in the built node's write scope. Deleting that fold leaves both
+    ``write_paths`` and the live claim empty.
+    """
+    definition = _dispatched_node(repo, "node-fold", (LARGE_PATH,))
+
     assert definition["regenerate_paths"] == [LARGE_PATH]
-    # A regenerated path is a write path for every scope purpose.
+    # Declared only as regenerated, yet it is a write path for every scope
+    # purpose. The dispatch grants its own landing fragment paths beside it, so
+    # the assertion is membership rather than the whole list.
     assert LARGE_PATH in definition["write_paths"]
 
-    _live_holder(repo, "r-holder", "node-holder", (LARGE_PATH,))
+    _live_holder(repo, "r-holder", "node-holder", definition)
     pointer = json.loads(crew.pointer_path("r-holder").read_text(encoding="utf-8"))
-    assert pointer["node"]["regenerate_paths"] == [LARGE_PATH]
+    assert LARGE_PATH in pointer["node"]["write_paths"]
     claimed = {claim["path"] for claim in crew.scope_claims(PROJECT, repo)}
     assert LARGE_PATH in claimed
+
+
+def test_a_promoted_ledger_row_carries_the_regenerated_paths(
+    home: Path, repo: Path, tmp_path: Path
+) -> None:
+    """The row a promotion lands records the node's regenerated paths.
+
+    The row is written from the serialised node the pointer carries, so the
+    regenerated set only reaches it if ``as_dict`` keeps it.
+    """
+    definition = _dispatched_node(repo, "node-ledger", (LARGE_PATH,))
+    run_id = "r-20261021T000000000000-regenerated-path"
+    base = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    manifest = tmp_path / "manifest.md"
+    manifest.write_text("node: ledger\nstatus: complete\n", encoding="utf-8")
+    crew._write_json(
+        crew.pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": PROJECT,
+            "repo": str(repo.resolve()),
+            "worktree": str(repo.resolve()),
+            "base_sha": base,
+            "launch": "in-harness",
+            "role": "implement",
+            "phase": "complete",
+            "session_id": "s-fold",
+            "commits": [],
+            "node": definition,
+            "manifest_path": str(manifest),
+        },
+    )
+
+    crew.complete(
+        run_id,
+        gate="not-run",
+        outcome="the promoted row records the regenerated paths",
+        no_commit="this fixture changes only the run record",
+        root=repo,
+    )
+    promoted = ledger.runs(PROJECT, repo)[0]
+
+    assert promoted["node_definition"]["regenerate_paths"] == [LARGE_PATH]
+    assert LARGE_PATH in promoted["node_definition"]["write_paths"]
