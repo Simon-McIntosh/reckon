@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T08:34:12.245Z",
+  "dispatched_at": "2026-10-22T08:27:11Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-window-paces-the-lane.html:2012",
+      "id": "done_when-1",
+      "reason": "without a declared test path the node either cannot produce the test its own done-when demands or writes outside its fence, the same write-path omission an earlier review raised against \u00a713.",
+      "text": "\u00a720's done-when requires \"a fixture with a spent global credit lift and a live session credit lift\", a test that \"fails\" on the base commit, and a fallback-path case, but the Change names the write paths as `reckon/crew/dispatch.py` and `reckon/crew/budget_lift.py` \"only where the session must be threaded further\" and names no test file; an implementer has no declared path to write the required test, and every sibling section names its test file in its write paths (\u00a715 `tests/test_pace_dates_a_rollout_by_its_report.py`, \u00a717 `tests/test_the_preflight_reads_the_lift.py`, \u00a718 `tests/test_the_picker_preflight_names_its_session.py`, \u00a719 `tests/test_a_replayed_pick_reads_its_own_session.py`)",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "fd0e1b2f4a05d9bb6302834c14d9d9b56cc92d9e0b1a041fcd08dcc667c6032b",
+  "plan_slug": "a-window-paces-the-lane",
+  "plan_version": 243,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T082600259939-plan-review-of-a-window-paces-the-lane",
+  "reviewed_blob_sha": "0be3b1c22723bc5f1633adeab94e386b5543385c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_governing_lift` and `_applies` (reckon/crew/budget_lift.py:1000, :1033), `budget_group.effective_block` (reckon/crew/budget_group.py:220), `_budget_verdict` (reckon/crew/dispatch.py:1453 and :1536), `plan_dispatch` and \u00a713 all resolve as cited.",
+    "done_when": "a finding \u2014 \u00a720's done-when requires a test that reproduces the refusal and fails on the base commit, but the deliverable's write paths name no test file to hold it.",
+    "evidence_paths": "pass \u2014 \u00a720 places no evidence or gate log on a scratchpad or node-local path; its Change says to name the dropping call in the gate log, whose location the run-directory convention supplies.",
+    "naming": "pass \u2014 the identifiers \u00a720 cites are runtime lift and session ids (`codex-sub-1792529492-26f087`, `s21-nova`) and code symbols, not plan labels, ticket numbers or version tags.",
+    "reasoning": "pass \u2014 the defect and the fix are both confirmed on the code path: `dispatch()` does reach `_governing_lift` through `_budget_verdict` \u2192 `_config_with_effective_budget` (reckon/crew/routing.py:469) \u2192 `budget_group.effective_block` \u2192 `budget_lift.effective_budget` (reckon/crew/budget_lift.py:608), and the two `_budget_verdict` calls in `dispatch()` (reckon/crew/dispatch.py:1453, :1536) are the only calls in the tree that omit `session=` (the two in reckon/crew/dispatch_sessions.py:1272, :1746 pass it), so `_applies` discards the session-scoped lift and the mechanism produces the stated measure.",
+    "single_goal": "pass \u2014 \u00a720 carries one deliverable: thread the dispatching session into the two `_budget_verdict` calls in `dispatch()` so the credit-cap judgement reads the lift governing that session.",
+    "wiring": "pass \u2014 \u00a720 is the plan's only section declared implementable (`plan-section-declarations` s20:implementable), the open followup f-20261022-session-lift (docs/plans/a-window-paces-the-lane.html:2140) recommends `/reckon-build a-window-paces-the-lane \u00a720`, and the plan-level `plan-informs` target resolves (docs/plans/background-agent-fitness-and-dispatch-scope.html)."
+  },
+  "section_digests": {
+    "_document": "dbdc9ab2d72875425db22b43518b4c25d51043f393877d15e568c0e5f6b05bdb",
+    "s1": "fd232b0e9e301983eea254fa355a00f9cfdad5e4ba397415c196946997e8b78a",
+    "s10": "cff30d466dd7580b4623ab4ba85a967692183d1c1fbf0a887b817140c3fe2bf9",
+    "s11": "4f344761a1c7f9eeda684c28b5399f6cc6c50a6961808244c50f4f385a8dfb83",
+    "s12": "d332f915a715e0ce7c1efdd5027285714154977800a9ec70d7b055bf5762609f",
+    "s13": "627916281462553dd6f077d4f3ad0d176f2e5177a66b12b43e0c6d7b6788b3d7",
+    "s14": "5c54d28fac7106fc49f1eb45cc396fb761556bbd5ae16f469c6cf14cdd342fc8",
+    "s15": "5acca22c78776d5b829195bb01b2c5d660f4787c61cd3b04e511e66046bc7cf0",
+    "s16": "3dcf3315f6ba2812e050e78dff00ef7816e3e4ecc36a672d2a94915c9b63b57e",
+    "s17": "389b1f5c6e5ccd170eda4e87d4a50ed8785e7e0ef0485ef2c7e8597176c84370",
+    "s18": "3acd44306ea9cc8f5c0a20e3aeb4221a43ab0edf6ddcb9f12448519ae3b2e7bb",
+    "s19": "4a84b14941d424d93f96d9c90164a3c964ba50a4257edf6ec9082fa198fe2314",
+    "s2": "0c4f642bff7cb6b87908ea9e036cb3161c15e31cb3285273e06bb2ac1f5c368c",
+    "s20": "3e1dd119900262b071715e9fee0a726ed3a0340cb2ec2b9f42f907c712ee768b",
+    "s3": "ae3d7625321a46e7fa6a9ee3bac0272ee77d236811612140ef03b79670883261",
+    "s4": "8f3ac850d09e4745435c5274237c26be090ce2db03ac422e941c3329841d8563",
+    "s5": "3bc104a16d90fb6279e9ab8c70555e1041253ad31f6376c64b455da33489c6b0",
+    "s5b": "1be686d2a1165f13c4f4e81a29ca56c362c3b069dfc80759cf370cca59440d41",
+    "s6": "8e4ab80a317b73fb60010fe92858cbe3b073511ce10c4547c6eb8952a89829f0",
+    "s6-the-probe-reader-and-the-undeclared-dialect": "c463be6993bc79b07591a01d9e1a1d92d699a48d4c322b2cc395a0e78a2d097d",
+    "s7": "39b7111a3bfa256531f953bd33de123967e24fa4ffc75e6d1cbeca26a45c565d",
+    "s8": "9d68431496117798ca30bbebd6828adc5853e02df969ac62de3bb2dcd41512a4",
+    "s9": "5f72c27f2288b837b6513304ec92d0bf2e8950d169b0389c4c3ffeba27c23b6b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T08:36:05.535165+00:00"
+}
