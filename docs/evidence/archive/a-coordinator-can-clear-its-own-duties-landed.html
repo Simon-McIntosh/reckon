@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-coordinator-can-clear-its-own-duties-landed">
+  <meta name="plan-title" content="A Coordinator Can Clear Its Own Duties — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Coordinator Can Clear Its Own Duties: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-coordinator-can-clear-its-own-duties">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Coordinator Can Clear Its Own Duties — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Coordinator Can Clear Its Own Duties — landed record</h1>
+  <p>Closure synthesis for A Coordinator Can Clear Its Own Duties: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s2">
+    <h2>§2 — a review passes its session&#x27;s queue cap and launches first</h2>
+    <p>Run <code>a-review-passes-its-sessions-queue-cap</code>, landed at <code>be63596b0</code> after one repair round. The per-session queued-run cap in <code>reckon/crew/runs.py</code> no longer counts or refuses a review dispatch, and <code>admission_order</code> in <code>reckon/crew/queue_order.py</code> launches a session's queued review ahead of an implementation node it queued earlier. A review pointer is recognised through the repository's own definition, <code>_is_review_run</code> in <code>reckon/crew/recovery_review_delivery.py</code>, so a review identified only by its minted node id is exempt as well. The cap still refuses a further implementation dispatch.</p><p>Gate: base 6 failed, EXIT=1; head 62 passed, EXIT=0. Review of the repaired head: 108/120 (goal 19, evidence 17, scope 20, durability 17, fit 18, reuse 17); two follow-ons exempted. The first round scored 98 because it re-implemented the review-pointer predicate; the repair deleted the copy.</p>
+  </section>
+
+</main>
+</body>
+</html>
