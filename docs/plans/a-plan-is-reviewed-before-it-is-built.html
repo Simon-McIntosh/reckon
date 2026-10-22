@@ -23,8 +23,8 @@
   <title>A plan is reviewed before it is built | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="283">
-<meta name="plan-modified" content="2026-10-22">
+<meta name="plan-version" content="284">
+<meta name="plan-modified" content="2026-10-23">
 <meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;deferred&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;done&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;done&quot;,&quot;s30&quot;:&quot;done&quot;,&quot;s31&quot;:&quot;done&quot;,&quot;s32&quot;:&quot;done&quot;,&quot;s33&quot;:&quot;done&quot;,&quot;s34&quot;:&quot;done&quot;,&quot;s35&quot;:&quot;done&quot;,&quot;s36&quot;:&quot;done&quot;,&quot;s37&quot;:&quot;implementable&quot;,&quot;s38&quot;:&quot;implementable&quot;,&quot;s39&quot;:&quot;implementable&quot;,&quot;s40&quot;:&quot;implementable&quot;}">
 <meta name="plan-section-depends-on" content="{&quot;s37&quot;:[&quot;a-plan-is-reviewed-before-it-is-built#s36&quot;],&quot;s39&quot;:[&quot;a-plan-is-reviewed-before-it-is-built#s37&quot;]}">
 </head>
@@ -766,6 +766,9 @@ _review_is_complete reads the record as complete (no absent dimensions).</p></di
 </div>
 <div class="r-comment" data-section="s37" data-id="c-s37-resumed-review-dropped" data-who="reckon-build" data-when="2026-10-22T15:40:00Z">
     <div class="r-comment-body"><p>Seen again on 2026-10-22 through a resumed review. Plan review <code>r-20261022T145009090497-plan-review-of-lane-and-model-routing</code> ended its first turn without a tool call and was resumed. It then delivered a report carrying one finding, about <code>--project</code> on lane-routing §53. Its staging record, <code>plan-review.json</code> under the report directory <code>r-20261022T144935247923-…</code>, still read zero findings and no <code>review_run_id</code>. Promotion <code>fb22da35f</code> reported <code>store: written</code> and committed only the run record, with no review record, so the finding reached no store and the plan-review view showed nothing unanswered. The same plan's previous review, not resumed, committed its record at <code>946e1a2a7</code>. The coordinator found the finding only by reading <code>report.md</code>.</p></div>
+</div>
+<div class="r-comment" data-section="s40" data-id="c-run-r-20261022T192836923875-a-bulleted-finding-is-read" data-who="reckon-build" data-when="2026-10-22T21:41:37Z">
+    <div class="r-comment-body"><p>reckon/crew/plan_review.py selects the admission guard&#x27;s line reader from the report&#x27;s subject, so a plan report is admitted on the lines the plan-report parser reads, with a leading list marker stripped, and a code report on the lines parse_health_review reads: a bulleted code report is refused rather than stored with every rubric item absent. reckon/crew/review.py reads a bulleted plan finding through the plan-report line reader, and a content review delivered short of a brief rubric item is stored incomplete and skipped by review_coverage, so the dispatch gate refuses naming the uncovered units. The six cases in tests/test_a_bulleted_finding_is_read.py pass, and the 19-file gate reads 0 failed at head against 4 failed at base, every base failure being this node&#x27;s own new case.</p></div>
 </div>
 </section>
 </main>
