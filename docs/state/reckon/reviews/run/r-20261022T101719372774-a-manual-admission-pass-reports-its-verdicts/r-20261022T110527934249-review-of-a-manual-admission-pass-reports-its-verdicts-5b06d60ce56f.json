@@ -1,0 +1,51 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-22T11:42:57.389Z",
+  "dispatched_at": "2026-10-22T11:25:50Z",
+  "findings": [
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": "3548",
+      "severity": "follow-on",
+      "text": "the crew admit help states the pass bound as a hardcoded phrase (\"each under a five-second deadline\") rather than reading LANE_GATE_READ_DEADLINE_SECONDS (reckon/crew/dispatch_admission.py:1166, the constant the pass's lane and fleet gate reads actually pass to _read_text_under_deadline), and the help test asserts the literal substring \"five-second\" (tests/test_a_manual_admission_pass_reports_its_verdicts.py:284), so a change to the deadline constant leaves the help misstating the bound while the test stays green."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against a3395779221d2f5cbfd88c1becdfe049453c3330: 038da9f3d adds _pass_verdict_record, _publish_pass_verdicts and the publish call in the loop and rewrites the admit help; 5b06d60ce adds the landing fragment; both stay inside the declared scope.",
+    "done_when": "the done-when names tests/test_a_manual_admission_pass_reports_its_verdicts.py over two passes of two queued runs (one admitted, one scope-refused), --once unchanged, and the help naming the loop, the single pass and the pass bound, gated with three further suites; the manifest records the four-suite run (33 passed, EXIT=0) in gate-head.log and the declared negative control (1 failed, 2 passed, EXIT=1) in negative-control.log, both on disk.",
+    "goal": "the goal is that the bare crew admit loop print each pass's verdicts as one JSON line; at head reckon/crew/queue_admission.py:1389 calls _publish_pass_verdicts(_record_pass_verdicts(admit_once(...))) inside the loop of admit_until_stopped, and :954 prints json.dumps(record), flush=True, while the once branch at :1381 records without publishing.",
+    "manifest": "read; status complete, commits 038da9f3d and 5b06d60ce, gate-head.log and negative-control.log named with their figures, the two retry_failures attributed as scaffolding, and the landing line present; it carries no baseline_suite/after_suite arms, which the reviewed node's done-when did not declare (it substituted the declared mutation for a base checkout its worktree rules forbid).",
+    "write_paths": "the declared paths are reckon/crew_run_commands.py, reckon/crew/queue_admission.py, tests/test_a_manual_admission_pass_reports_its_verdicts.py, the landing fragment under docs/evidence/fragments/a-coordinator-can-clear-its-own-duties/ and a docs/figures/ directory; git diff a3395779221d2f5cbfd88c1becdfe049453c3330..5b06d60ce56f808d962cb1fcc5da3a4588892843 changes exactly the first four and writes no figure."
+  },
+  "justifications": {
+    "durability": "tests/test_a_manual_admission_pass_reports_its_verdicts.py:221 and :229 fail when the loop stops publishing -- the declared negative control reddens exactly that assertion with 0 printed against 2 required -- but the help case at :284 asserts a literal word, not the deadline constant it describes.",
+    "evidence": "the gate genuinely ran the four suites the done-when names (33 passed, EXIT=0, gate-head.log:5-8) with a recorded negative control (negative-control.log:54-56), but the reviewed run declares no base arm and the help's pass bound is a literal (reckon/crew_run_commands.py:3548) that cannot fail on drift.",
+    "fit": "reckon/crew/queue_admission.py:923 and :944 follow the module's private-helper style beside _record_pass_verdicts at :957, and every added name (_pass_verdict_record, _publish_pass_verdicts) states what it does with no plan, stage or ticket reference.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:1389 publishes each pass's record from the loop and :954 prints it as one JSON line, which is the goal's one-sentence deliverable.",
+    "reuse": "no owner exists for a per-pass stdout publisher: the search over reckon/crew and the CLI commands found only _emit_crew_result (reckon/crew_dispatch_commands.py:292), which emits a single result with a pretty option rather than streaming one line per pass, and _pass_verdict_record consolidates the dictionary that _record_pass_verdicts built inline, so both additions extend the owner rather than forking one.",
+    "scope_discipline": "every path in git diff a3395779221d2f5cbfd88c1becdfe049453c3330..5b06d60ce56f808d962cb1fcc5da3a4588892843 is one of the manifest's declared write paths, and the declared figures directory is left unwritten as the done-when implies."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the bare crew admit loop print each pass's verdicts as one JSON line; at head reckon/crew/queue_admission.py:1389 calls _publish_pass_verdicts(_record_pass_verdicts(admit_once(...))) inside the loop of admit_until_stopped, and :954 prints json.dumps(record), flush=True, while the once branch at :1381 records without publishing.\nVERDICT done_when: the done-when names tests/test_a_manual_admission_pass_reports_its_verdicts.py over two passes of two queued runs (one admitted, one scope-refused), --once unchanged, and the help naming the loop, the single pass and the pass bound, gated with three further suites; the manifest records the four-suite run (33 passed, EXIT=0) in gate-head.log and the declared negative control (1 failed, 2 passed, EXIT=1) in negative-control.log, both on disk.\nVERDICT write_paths: the declared paths are reckon/crew_run_commands.py, reckon/crew/queue_admission.py, tests/test_a_manual_admission_pass_reports_its_verdicts.py, the landing fragment under docs/evidence/fragments/a-coordinator-can-clear-its-own-duties/ and a docs/figures/ directory; git diff a3395779221d2f5cbfd88c1becdfe049453c3330..5b06d60ce56f808d962cb1fcc5da3a4588892843 changes exactly the first four and writes no figure.\nVERDICT manifest: read; status complete, commits 038da9f3d and 5b06d60ce, gate-head.log and negative-control.log named with their figures, the two retry_failures attributed as scaffolding, and the landing line present; it carries no baseline_suite/after_suite arms, which the reviewed node's done-when did not declare (it substituted the declared mutation for a base checkout its worktree rules forbid).\nVERDICT diff: read commit by commit against a3395779221d2f5cbfd88c1becdfe049453c3330: 038da9f3d adds _pass_verdict_record, _publish_pass_verdicts and the publish call in the loop and rewrites the admit help; 5b06d60ce adds the landing fragment; both stay inside the declared scope.\nCALL_SITES: reckon/crew_run_commands.py:3524, reckon/crew_run_commands.py:3556\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:1389 publishes each pass's record from the loop and :954 prints it as one JSON line, which is the goal's one-sentence deliverable.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate genuinely ran the four suites the done-when names (33 passed, EXIT=0, gate-head.log:5-8) with a recorded negative control (negative-control.log:54-56), but the reviewed run declares no base arm and the help's pass bound is a literal (reckon/crew_run_commands.py:3548) that cannot fail on drift.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff a3395779221d2f5cbfd88c1becdfe049453c3330..5b06d60ce56f808d962cb1fcc5da3a4588892843 is one of the manifest's declared write paths, and the declared figures directory is left unwritten as the done-when implies.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_manual_admission_pass_reports_its_verdicts.py:221 and :229 fail when the loop stops publishing -- the declared negative control reddens exactly that assertion with 0 printed against 2 required -- but the help case at :284 asserts a literal word, not the deadline constant it describes.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/queue_admission.py:923 and :944 follow the module's private-helper style beside _record_pass_verdicts at :957, and every added name (_pass_verdict_record, _publish_pass_verdicts) states what it does with no plan, stage or ticket reference.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner exists for a per-pass stdout publisher: the search over reckon/crew and the CLI commands found only _emit_crew_result (reckon/crew_dispatch_commands.py:292), which emits a single result with a pretty option rather than streaming one line per pass, and _pass_verdict_record consolidates the dictionary that _record_pass_verdicts built inline, so both additions extend the owner rather than forking one.\nFINDING reckon/crew_run_commands.py:3548 follow-on: the crew admit help states the pass bound as a hardcoded phrase (\"each under a five-second deadline\") rather than reading LANE_GATE_READ_DEADLINE_SECONDS (reckon/crew/dispatch_admission.py:1166, the constant the pass's lane and fleet gate reads actually pass to _read_text_under_deadline), and the help test asserts the literal substring \"five-second\" (tests/test_a_manual_admission_pass_reports_its_verdicts.py:284), so a change to the deadline constant leaves the help misstating the bound while the test stays green.\n",
+  "review_run_id": "r-20261022T110527934249-review-of-a-manual-admission-pass-reports-its-verdicts-5b06d60ce56f",
+  "reviewed_base_sha": "a3395779221d2f5cbfd88c1becdfe049453c3330",
+  "reviewed_head_sha": "5b06d60ce56f808d962cb1fcc5da3a4588892843",
+  "reviewed_run_id": "r-20261022T101719372774-a-manual-admission-pass-reports-its-verdicts",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T12:40:35.363083+00:00",
+  "total": 116
+}
