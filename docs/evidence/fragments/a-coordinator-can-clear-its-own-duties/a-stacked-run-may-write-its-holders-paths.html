@@ -92,9 +92,10 @@
 
   <h3>The suite around it</h3>
 
-  <p>The gate is this node's own file. The wider recording is the eleven existing
+  <p>The gate is this node's own file. The wider recording is the existing
   modules that import the changed scope-fence, claim-registry and promotion
-  functions, run under one method (<code>pytest -n 8</code>, eight workers on the
+  functions — sixteen of them, counted from those imports rather than from a
+  list — run under one method (<code>pytest -n 8</code>, eight workers on the
   shared allocation, each with its own basetemp):</p>
 
   <table>
@@ -121,18 +122,82 @@
   tree. So run 1 measures the head, and the two rows above are two runs of one
   revision, which is why they agree to the test id.</p>
 
-  <p>What that pair does establish is repeatability, which is not nothing: the
-  same two ids fail on both runs,
+  <p><strong>What that pair was read as saying is withdrawn.</strong> The same two
+  ids fail on both runs —
   <code>tests/test_concurrent_dispatch_of_one_node.py::test_a_fresh_empty_claim_refuses</code>
   and
   <code>tests/test_crew_dispatch_guard.py::test_the_exclusive_claim_walk_reads_every_live_claim_at_refusal</code>,
-  and 76 pass on both. Neither id bears on the paths this change touches, so
-  <strong>this node's change is not implicated in either</strong>; but the delta
-  against the base revision is <em>unmeasured</em>, and no claim to the contrary
-  is made here.</p>
+  with 76 passing on both — and this record first read that as repeatability and
+  as evidence that neither id bore on the change, arguing both were an artefact
+  of eight-way parallel execution. Both halves of that reading were wrong, and an
+  independent review caught it. The two ids have different causes, and only one
+  of them is independent of the change. Neither cause is parallelism.</p>
 
-  <p><strong>The corrected arm was then attempted, and it does not exist
-  either.</strong> A base worktree is not available inside this run's fence:
+  <p><strong>The second id is this change's, and the module it anchors was turned
+  red by it.</strong> The dispatch guard instruments the claim walk by wrapping
+  <code>_raise_repository_scope_conflict</code>, and the wrapper restated the
+  module's keyword list — <code>disregarded</code>, <code>own_run_id</code>,
+  <code>own_registered_at</code> — instead of forwarding the call. The check then
+  gained <code>base_revision</code> and <code>stacked</code> for the revision a
+  dispatch builds on, and every dispatch through this node's own checkout began
+  raising <code>TypeError: wrapped() got an unexpected keyword argument
+  'base_revision'</code> at the call. The wrapper's signature is static, so the
+  red is not a scheduling artefact: the same test fails serially, which is how it
+  was reproduced here (<code>repair-repro.log</code>, <code>EXIT=1</code>, the
+  two named ids, no workers), and it is why the first reading of parallelism was
+  wrong.</p>
+
+  <table>
+    <thead><tr><th>the guard instrument</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the wrapper pinning the keyword list</td>
+        <td><code>1660bb5ea</code></td>
+        <td><strong>1 failed</strong> (<code>TypeError</code>), exit 1</td></tr>
+      <tr><td>the wrapper forwarding the seam</td>
+        <td><code>191f191d4</code></td>
+        <td><strong>14 passed</strong>, exit 0</td></tr>
+      <tr><td>that repair reverted out of the tree</td>
+        <td><code>191f191d4</code> minus its own patch</td>
+        <td><strong>1 failed</strong> (<code>TypeError</code>), exit 1</td></tr>
+    </tbody>
+  </table>
+
+  <p>The repair repeats the seam's positional head and forwards the rest as it
+  arrives, which is how the ledger module already stubs the same check. The
+  instrument counts the claims the walk reads; it is not a statement about the
+  check's argument list, and it should not fail when that list grows. Reverting
+  the repair out of the working tree restores the failure exactly — the third row
+  above, <code>negative-control-repair.log</code> — so the module is green
+  because of the repair and not despite the change.</p>
+
+  <p><strong>The first id is not this change's, and it is finally measured rather
+  than argued.</strong> The corrected arm was attempted under the same fence with
+  a tree from <code>git archive</code>, and at the whole-suite scale it exhausted
+  its bound twice with no summary. Run as a single test, where a bound suffices,
+  the same verified recipe settles it, and this is the matched base/head pair the
+  earlier attempts never produced:</p>
+
+  <table>
+    <thead><tr><th>arm (one test)</th><th>revision and tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td><code>test_a_fresh_empty_claim_refuses</code></td>
+        <td><code>2539356</code>, base copy, module proven under it</td>
+        <td><strong>1 failed</strong>, exit 1, 24.55 s</td></tr>
+      <tr><td><code>test_a_fresh_empty_claim_refuses</code></td>
+        <td><code>1660bb5ea</code>, head</td>
+        <td><strong>1 failed</strong>, exit 1, 24.55 s</td></tr>
+    </tbody>
+  </table>
+
+  <p>It fails identically on a revision whose <code>dispatch.py</code> provably
+  does not carry this change, so it is pre-existing and outside this node's
+  reach. Its refusal is a different rule — the empty-claim case, which the
+  dispatch fixtures here do not reach — and no repair is claimed for it.
+  <code>empty_claim_base.log</code> and <code>empty_claim_head.log</code> carry
+  each arm's revision, tree and command, and its <code>EXIT</code>.</p>
+
+  <p><strong>What remains unmeasured is the whole-suite delta.</strong> A base
+  worktree is not available inside this run's fence:
   <code>git worktree add</code> is refused outright — <code>fatal: could not
   create directory of '&hellip;/reckon/.git/worktrees/&hellip;': Read-only file
   system</code>, exit 125, reproduced this attempt — which is the true root cause
@@ -152,13 +217,14 @@
   manifest says so in the same words. A successor with a larger bound and a
   quiet node can complete it from the verified-tree recipe above.</p>
 
-  <p>An earlier serial run of the same eleven modules at <code>dcb3b7133</code>
-  read <em>78 passed</em>, exit 0, in <code>gate-wider.log</code>. That file has
-  since been overwritten by run 2, so the serial result survives only as this
-  quotation and cannot be re-read from disk. It is quoted here because it says
-  the two ids above are an artefact of eight-way parallel execution rather than
-  of the revision — but it is a recalled number, not a checkable log, and the
-  corrected baseline is what settles the delta.</p>
+  <p>The wider recording is not a fixed set, and that is part of why the first
+  pair misled. Run 1 and run 2 were launched over a set the log itself records
+  only as a placeholder, and the set was later rebuilt from the modules that
+  actually import the changed symbols, which is sixteen of them. The count in
+  this section was first written as eleven for that reason and is corrected here.
+  A recalled serial figure for the older, narrower set was quoted in this
+  section previously; it is withdrawn, because it is not a checkable log and it
+  was quoted in support of the parallelism explanation now disproven above.</p>
 
   <p><code>ruff check --no-cache</code> reports two findings on
   <code>reckon/crew/dispatch.py</code> both before and after this change
