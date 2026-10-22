@@ -177,11 +177,16 @@
     third test the repair adds is the control — a project declaring nothing is unaffected
     by the contract — and holds on both arms, as a control should.</li>
     <li><strong>A broad sweep bounded the blast radius.</strong> The first cut of this
-    repair refused every record whose subject was unreadable, which red seven tests
-    across two other files that seed a record naming a run they never create. Narrowing
-    the refusal to projects that declare checks leaves those tests untouched, since no
-    project declares one today; the sweep over the review-shaped tests then carries the
-    three failures that predate this work and no new one.</li>
+    repair refused every record whose subject was unreadable, and a sweep over the
+    review-shaped tests measured eleven failures: three that fail at the base revision
+    too, and eight caused by the cut, across
+    <code>test_a_figure_review_promotes_without_text_scores.py</code> and
+    <code>test_review_record_contract.py</code>, which seed records naming runs they
+    never create. Narrowing the refusal to projects that declare checks leaves those
+    files untouched — no project declares a check today — and re-running them together
+    with this node's own file gives 29 passed. The verdict drawn from the sweep is
+    therefore a two-population comparison rather than a full green: measured before and
+    after on the same selection.</li>
     <li><strong>Lint delta.</strong> <code>ruff check</code> and
     <code>ruff format --check</code> are clean on all three changed paths, recorded in
     the manifest's test logs.</li>
