@@ -65,6 +65,43 @@ RECOVERY_CLASSIFICATION_DUTY_KINDS = {"needs-help": "needs-help"}
 # run the review is about rather than the reviewing run.
 SUB_FLOOR_DUTY_KIND = "review-dimension-sub-floor"
 
+#: The fields a duty row can carry, beside the ones a duty of one kind adds.
+#:
+#: The two lists this view serves — the duties owed and the ones acknowledged —
+#: are projected by their own call, and a caller may ask either for a field only
+#: the other list's rows carry. The vocabulary is therefore declared here rather
+#: than read from the rows in hand: an empty list says nothing about which fields
+#: this view has, and ``acknowledged`` is empty in the ordinary case, so a
+#: vocabulary read from it would refuse the duty's own ``kind``. A field whose
+#: value is empty is left off the row by the projection; a name is accepted here
+#: whether or not any duty of that kind is currently owed.
+DUTY_ROW_FIELDS = (
+    "kind",
+    "run_id",
+    "node",
+    "plan",
+    "age_seconds",
+    "next_command",
+    "next_action_form",
+    # A queued duty's place in the lane's order, present only while it waits.
+    "position",
+    "rank",
+    # A review duty's reading and the revisions it disagrees about; a refused
+    # attempt's reason and record; the tier a run owes no review at all.
+    "reason",
+    "record",
+    "head",
+    "reviewed_head",
+    "review_tier",
+    "refused_at",
+    "worker_slots",
+    # A sub-floor review dimension's own figures.
+    "dimension",
+    "score",
+    "floor",
+    "exempt_alternative",
+)
+
 # A review whose attempt the lane's admission gate refused with ``lane-paused``
 # is not work the coordinator skipped: the reflex still owns it and retries when
 # a slot frees, so the duty reads as queued rather than missing, is listed like
@@ -1381,10 +1418,18 @@ def obligations(
         "project": project,
         "session": session,
         "obligations": project_run_rows(
-            items, fields=fields, view="obligations", sections=sections
+            items,
+            fields=fields,
+            view="obligations",
+            vocabulary=DUTY_ROW_FIELDS,
+            sections=sections,
         ),
         "acknowledged": project_run_rows(
-            acknowledged, fields=fields, view="obligations", sections=sections
+            acknowledged,
+            fields=fields,
+            view="obligations",
+            vocabulary=DUTY_ROW_FIELDS,
+            sections=sections,
         ),
         "summary": summary,
     }
