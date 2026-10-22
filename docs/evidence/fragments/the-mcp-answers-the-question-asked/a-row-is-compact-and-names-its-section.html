@@ -10,9 +10,15 @@
   the views share, fills each row's <code>section</code> from the run's own
   pointer, canonicalises the spelling, refuses a requested field the view does
   not carry while naming the fields it does have, and leaves a field whose value
-  is empty off the row — in the runs view exactly as in the other three; the one
-  field that view keeps when empty is <code>plan</code>, because a brief run
-  read no plan and the key's presence beside an absent digest is what says so. What each view did before, view by view: the
+  is empty off the row where the view serves a narrowed row. The
+  <code>runs</code> view is the exception, and it is the one its own suite has
+  always asserted: it serves its row whole. Every field it declares — the ones
+  it answers by default plus the optional ones a caller may ask for — is on the
+  row whether or not it holds a value, so a row can be read against the field
+  list the view publishes and an empty field is not confused with one the view
+  cannot answer; an optional field the caller did not ask for is absent, and a
+  request adds that field to the declared row rather than cutting the row down.
+  What each view did before, view by view: the
   <code>live</code> view could not name a run's section at all and refused
   <code>fields=["section"]</code>, because its row builder never carried the
   field; <code>runs</code> carried it but narrowed its own fields and never
@@ -51,8 +57,10 @@
       <td>a runs row that carries an empty field</td>
       <td>the row states every declared field, so an absent session, transcript
         or classification is serialised as a null a reader has to interpret</td>
-      <td>every empty field is left off, except <code>plan</code>, whose
-        presence is what says a brief run's authority is a digest</td>
+      <td>the row states every field the view declares, and nothing else: an
+        empty field it answers for is stated (so an unanswered field is told
+        from one the view has no answer for), while an optional field nobody
+        asked for is absent</td>
     </tr>
     <tr>
       <td>a dispatched run's <code>section</code> read in all four views</td>
@@ -69,8 +77,9 @@
         by narrowing to it — <code>runs</code> narrows in its own row builder
         instead of the projection, and <code>obligations</code> and
         <code>directory</code> have no <code>section</code> to return</td>
-      <td>accepted by all four; a narrowed row carries only the identity fields
-        and what was asked for</td>
+      <td>accepted by all four; a narrowed row carries the view's identity fields
+        and what was asked for, and the runs view answers with its declared row,
+        which the request adds to rather than narrows</td>
     </tr>
     <tr>
       <td>a field a view lacks is refused naming the fields it has</td>
@@ -107,10 +116,12 @@
   <code>dependency_row_state</code> ignore the section declaration and report
   the containing plan's status fails both section-state cases
   (<code>EXIT=1</code>, 2 failed of 14, 12 deselected). A third control covers the
-  empty-field rule the runs view previously switched off: passing the whole
-  declared field set to the projection keeps every empty field, and the case
-  asserting that an empty field is left off goes red under it
-  (<code>EXIT=1</code>, 1 failed). A fourth, fifth and sixth control cover the
+  runs row's shape: returning that view's projection call to the empty-field
+  omission leaves the runs row narrowed and turns the cases that state its shape
+  red — this node's own runs-row case, in the suite that holds the row whole
+  (<code>EXIT=1</code>, 3 failed), and the live view's marker case goes red under
+  a control that reads <code>mine</code> from the narrowed row again
+  (<code>EXIT=1</code>, 1 failed of 2). A fourth, fifth and sixth control cover the
   declared vocabulary, one per view: with each repair reverted in turn — the
   duties' declared field set dropped, the directory rows' dropped, and the runs
   row built narrowed to the request again — the case that names that defect
@@ -146,8 +157,16 @@
   produces its rows, and hands that set to the projection. The declared set is
   what a request is measured against; an empty list, or a list carrying fewer
   fields than the view has, changes nothing about what a caller may ask for.
-  Narrowing a row to the request still happens in the projection, after the
-  filters, which is the order the third defect was about.
+  Narrowing a row to the request still happens in the projection for the views
+  that serve a narrowed row, after the filters, which is the order the third
+  defect was about. The <code>runs</code> view narrows nothing: the row it
+  builds is its declared set, a request adds optional fields to that set, and
+  its own <code>classification</code>, <code>session_id</code> and
+  <code>resumable</code> filters read the whole row because the whole row is
+  what the build produces. That is also the contract its own suite asserts — a
+  row for <code>fields=[...]</code> is the view's default field set plus the
+  requested optional fields — so the request cannot be answered by a smaller row
+  than the one the view documents.
 </p>
 
 <p id="a-row-is-compact-and-names-its-section-refs">
