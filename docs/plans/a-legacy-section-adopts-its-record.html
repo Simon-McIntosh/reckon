@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-legacy-section-adopts-its-record">
+  <meta name="plan-title" content="A Legacy Section Adopts Its Record">
+  <meta name="plan-summary" content="A section written as a heading and prose can be given its typed record, so the audit&#x27;s own remedy for a missing record works">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="mid">
+  <meta name="plan-effort-hours" content="2.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S26">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling">
+  <meta name="plan-blocks" content="the-page-paints-from-an-index">
+  <meta name="plan-informs" content="section-contract-and-computed-impl">
+  <title>A Legacy Section Adopts Its Record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-10-22">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;}">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — A section written as prose adopts its typed record</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> A plan section written before typed section records existed is an <code>&lt;h2&gt;</code> and its prose, with no <code>&lt;section data-reckon="section"&gt;</code> element after the heading. <code>reckon audit-doc</code> reports such a section, once it is declared implementable, as the error <code>section-without-contract</code>, and its message (built by <code>_section_contract_refusal</code>, <code>reckon/_store.py</code> near line 1693) tells the author to append a typed record. Both write paths refuse that section. Measured 2026-10-22 on the-page-paints-from-an-index §7, against current code in a scratch worktree: <code>append</code> to <code>sections</code> answers <code>section id 's7' already exists</code>, because the heading exists. <code>set sections.s7.effort_hours</code> answers <code>plan has no section 's7'</code>, because <code>apply_section_field_set</code> in <code>reckon/_store_section_ops.py</code> looks only in the typed record list. A legacy section therefore can never be given a record, and its audit error can never be cleared without hand-editing the plan's markup.</p><p><strong>Deliverable.</strong> A <code>set sections.&lt;id&gt;.&lt;field&gt;</code> naming a section that has an authored <code>&lt;h2&gt;</code> and a declaration but no typed record adopts that section. The write creates the record from the heading, with the heading's text as its title, and places the record element where <code>insert_section</code> places one: directly after the heading. It then applies the field. The section's prose is left byte-identical. An id with no authored heading is still refused with today's message. The audit's <code>section-without-contract</code> message names a write that succeeds on the section it reports: a <code>set</code> of each of <code>effort_hours</code> and <code>capability</code> on that id.</p><p><strong>Done when</strong> a new <code>tests/test_a_legacy_section_adopts_its_record.py</code> writes a temporary plan whose implementable section is a heading and prose with no record, and proves four things, each with its own control. (1) A <code>set sections.&lt;id&gt;.effort_hours</code> and a <code>set sections.&lt;id&gt;.capability</code> succeed, and a read of the plan returns a section record with that id, those values and the heading's title. Control: route the set to today's lookup only, and the first set is refused with <code>plan has no section</code>. (2) The plan's text outside the inserted record element is byte-identical before and after the writes, and the record element sits directly after the section's heading. Control: write the record element at the end of <code>main</code> instead, and the position assertion fails. (3) <code>reckon audit-doc</code> on the written plan reports no <code>section-without-contract</code> finding, after applying exactly the writes the finding's own message names on the unwritten plan. Control: restore today's message, which names an <code>append</code>; applying it is refused, so the finding remains. (4) A <code>set</code> on an id that has no heading is refused with today's message, and the plan is unchanged. Control: adopt any id, and a heading-less record appears. The tests that already cover section records, <code>tests/test_section_record_round_trips.py</code>, <code>tests/test_section_contract_is_refused.py</code>, <code>tests/test_audit_doc_section_contract.py</code> and <code>tests/test_section_record_moves_between_declarations.py</code>, pass. <code>tests/test_every_module_fits_a_worker_window.py</code> passes. Tests importing <code>reckon/_store.py</code> or <code>reckon/_store_section_ops.py</code> show no added failure against base; the coordinator runs that population at merge. After the merge, the coordinator gives the-page-paints-from-an-index §7 its record through the new write and reports <code>reckon audit-doc</code> on that plan before and after: the <code>section-without-contract</code> error must be present before and absent after, with §7's prose unchanged. Every log sits under the run directory with a revision header and ends in EXIT=, and suites run on the fleet allocation, not the login node. Write paths: <code>reckon/_store_section_ops.py</code>, <code>reckon/_store.py</code> and <code>tests/test_a_legacy_section_adopts_its_record.py</code>.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-legacy-section-1" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-22" data-recommends-skill="/reckon-build a-legacy-section-adopts-its-record §1" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Implement §1 — a section written as prose adopts its typed record</h4>
+    <div class="r-fu-body"><p>Authoring complete. Next: build the adopting write, then give the-page-paints-from-an-index §7 its record through it.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-legacy-section-adopts-its-record §1</pre>
+    </article>
+</section>
+  </main>
+</body>
+</html>
