@@ -225,6 +225,7 @@ def project_run_rows(
     view: str,
     vocabulary: Iterable[str] | None = None,
     sections: Mapping[str, str] | None = None,
+    keep_empty: Iterable[str] = (),
 ) -> list[dict[str, Any]]:
     """Route one list view's run rows through the single projection.
 
@@ -235,6 +236,11 @@ def project_run_rows(
     left off the row rather than serialised as an empty string or a null. The
     run's identity is always kept, so a caller that asked for one field can
     still tell which run answered.
+
+    ``keep_empty`` names the fields a view declares as part of its row, whose
+    presence is itself the statement a reader makes: a brief run's row carries
+    ``plan`` null, and the key's presence beside an absent digest is what
+    distinguishes it. Such a field keeps its empty value.
     """
 
     rows = [dict(row) for row in rows]
@@ -252,6 +258,7 @@ def project_run_rows(
     if vocabulary is not None:
         carried.update(vocabulary)
 
+    declared = set(keep_empty)
     requested = _requested_field_names(fields)
     if requested:
         unknown = sorted(set(requested) - carried)
@@ -273,7 +280,9 @@ def project_run_rows(
         narrowed = {
             name: value
             for name, value in narrowed.items()
-            if name == LIVE_ROW_ANCHOR or value not in (None, "", [], {})
+            if name == LIVE_ROW_ANCHOR
+            or name in declared
+            or value not in (None, "", [], {})
         }
         projected.append(narrowed)
     return projected
@@ -485,7 +494,10 @@ def _compact_row(
         "run_id": str(record.get("run_id") or ""),
         "node": str(node or ""),
         "plan": str(plan) if plan else None,
-        "section": normalize_section(section) if section else "",
+        # The section is carried as the source states it; the single
+        # projection (project_run_rows) canonicalises it, so this row builder
+        # holds no copy of that rule.
+        "section": str(section) if section else "",
         "brief_sha256": brief_sha256,
         "source": source,
         "classification": (
@@ -716,6 +728,7 @@ def runs_view(
         return committed[key]
 
     rows: list[dict[str, Any]] = []
+    live_records: list[Mapping[str, Any]] = []
     if selected_source in {"all", "live"}:
         if selected_run_id:
             live_records = _live_records_for_run(
@@ -845,6 +858,18 @@ def runs_view(
     if "member" not in selected_fields:
         for row in rows:
             row.pop("member", None)
+    # The rows are built, so they are routed through the one projection last,
+    # exactly as the live, obligations and directory views route theirs. It
+    # fills a section the row does not carry from the run's own pointer,
+    # canonicalises every section to the one spelling, and leaves an empty
+    # field off the row. This view holds no copy of any of those rules.
+    rows = project_run_rows(
+        rows,
+        fields=fields,
+        view="runs",
+        sections=run_section_index([live_records]),
+        keep_empty=row_fields,
+    )
     return {
         "ok": True,
         "project": project,

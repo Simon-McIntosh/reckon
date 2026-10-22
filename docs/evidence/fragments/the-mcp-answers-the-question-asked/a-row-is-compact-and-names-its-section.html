@@ -4,23 +4,33 @@
 
 <p id="a-row-is-compact-and-names-its-section-summary">
   Every crew list view that lists runs — <code>live</code>, <code>runs</code>,
-  <code>obligations</code> and <code>directory</code> — now builds its rows and
-  routes them through one projection,
-  <code>project_run_rows</code> in <code>reckon/crew/query.py</code>. That one
-  function owns the field vocabulary the views share, fills each row's
-  <code>section</code> from the run's own pointer, refuses a requested field the
-  view does not carry while naming the fields it does have, and leaves a field
-  whose value is empty off the row.
+  <code>obligations</code> and <code>directory</code> — builds its rows and
+  routes them through one projection, <code>project_run_rows</code> in
+  <code>reckon/crew/query.py</code>. That one function owns the field vocabulary
+  the views share, fills each row's <code>section</code> from the run's own
+  pointer, canonicalises the spelling, refuses a requested field the view does
+  not carry while naming the fields it does have, and leaves a field whose value
+  is empty off the row. What each view did before, view by view: the
+  <code>live</code> view could not name a run's section at all and refused
+  <code>fields=["section"]</code>, because its row builder never carried the
+  field; <code>runs</code> carried it but narrowed its own fields and never
+  reached the projection; <code>obligations</code> had no such field either; and
+  <code>directory</code> carried the author's own spelling, so the same run read
+  <code>s4</code> there and <code>§4</code> in <code>runs</code>. All four now
+  call the projection, so the four agree and one rule answers for all of them.
 </p>
 
 <p id="a-row-is-compact-and-names-its-section-row-state">
-  The same rule covers a dependency row: it reports the dependency's own state,
-  never the containing plan's. Three producers of section-scoped rows said
-  otherwise — the roadmap's section edges, the resolver behind
-  <code>read_plan</code>'s <code>deps</code> list, and the
-  <code>section_blocking</code> projection, which re-derived its verdict from
-  the plan's status. All three now read the target section's own declaration,
-  falling back to the plan's status only where the plan declares none.
+  The dependency row follows the same shape, now with one owner rather than
+  three copies. The state a section-scoped row reports — the section's own
+  declaration, falling back to the containing plan's status only where the plan
+  declares none — is computed by <code>dependency_row_state</code> in
+  <code>reckon/roadmap.py</code>, and both row builders call it: the roadmap's
+  own section edges, and the ref resolver behind <code>read_plan</code>'s
+  <code>deps</code> list. The <code>section_blocking</code> projection does not
+  re-derive the verdict at all; it reads the one the row already reached, so a
+  wait whose target section reads satisfied is reported as holding nothing
+  whether the section was declared <code>done</code> or its gate passed.
 </p>
 
 <table id="a-row-is-compact-and-names-its-section-measure">
@@ -36,14 +46,19 @@
     </tr>
     <tr>
       <td>a dispatched run's <code>section</code> read in all four views</td>
-      <td>live: no such field; obligations and directory: no field to read</td>
+      <td>the four disagree: <code>live</code> and <code>obligations</code> carry
+        no <code>section</code> field at all, <code>runs</code> reads
+        <code>§4</code>, <code>directory</code> reads the dispatched
+        <code>s4</code></td>
       <td>all four read <code>§4</code> (the canonical spelling of the
         dispatched <code>s4</code>)</td>
     </tr>
     <tr>
       <td><code>fields=["section"]</code> accepted by all four views</td>
-      <td>refused by <code>live</code>, and not narrowed by the other
-        three</td>
+      <td><code>live</code> refuses the field; the other three answer, but not
+        by narrowing to it — <code>runs</code> narrows in its own row builder
+        instead of the projection, and <code>obligations</code> and
+        <code>directory</code> have no <code>section</code> to return</td>
       <td>accepted by all four; a narrowed row carries only the identity fields
         and what was asked for</td>
     </tr>
@@ -63,16 +78,25 @@
     <tr>
       <td>serialised <code>power_convertor</code> roadmap, characters
         (three samples per arm)</td>
-      <td>139,668 / 139,668 / 139,668</td>
-      <td>139,180 / 139,180 / 139,180 — a 488-character shrink</td>
+      <td>158,425 / 157,874 / 157,778</td>
+      <td>156,346 / 156,346 — lower than the base arm's lowest sample by
+        1,432</td>
     </tr>
   </tbody>
 </table>
 
 <p id="a-row-is-compact-and-names-its-section-negative-control">
   The declared mutation — returning <code>section</code> to the run row's
-  omitted set — turns the measure red: <code>EXIT=1</code> with six failing ids,
-  including three of the four views of the <code>names_the_section</code> case.
+  omitted set, by dropping the projection's fill-and-canonicalise step — turns
+  the four-view measure red: <code>EXIT=1</code> with eight failing ids, all
+  four views of both the <code>names_the_section</code> and the
+  <code>accepts_the_section_field</code> case. The <code>runs</code> view now
+  fails with the other three, which is the direct evidence that it routes
+  through the projection rather than narrowing its own row. A second control
+  turns the section-state rule red on its own: making
+  <code>dependency_row_state</code> ignore the section declaration and report
+  the containing plan's status fails both section-state cases
+  (<code>EXIT=1</code>, 2 failed of 14, 12 deselected).
 </p>
 
 <p id="a-row-is-compact-and-names-its-section-shrink">

@@ -117,7 +117,12 @@ from reckon.resources import (
     resource_map,
     resource_scan_scope,
 )
-from reckon.roadmap import GraphTargetError, build_roadmap, resolve_graph_target
+from reckon.roadmap import (
+    GraphTargetError,
+    build_roadmap,
+    dependency_row_state,
+    resolve_graph_target,
+)
 
 # Names moved into sibling modules stay importable from reckon.mcp so that
 # `from reckon.mcp import <name>` and attribute access by other modules keep
@@ -1714,29 +1719,10 @@ def _resolve_plan_ref(
     if not data:
         return row
     row["found"] = True
-    row["status"] = _row_state(data, parsed.stage)
+    row["status"] = dependency_row_state(data, parsed.stage)
     row["impl"] = data.get("impl", 0)
     row["title"] = data.get("title", "")
     return row
-
-
-def _row_state(data: dict[str, Any], stage: str) -> str:
-    """The state a resolved row reports for the ref it named.
-
-    A row-level dependency reports the dependency's own state, never the
-    containing plan's: a ref that names a section reports that section's own
-    declaration, and falls back to the plan's status only where the plan
-    declares nothing for it. A plan-level ref has only the plan's status to
-    report.
-    """
-
-    plan_status = str(data.get("status", ""))
-    if not stage:
-        return plan_status
-    declarations = data.get("section_declarations")
-    if not isinstance(declarations, Mapping):
-        return plan_status
-    return str(declarations.get(stage) or "").strip() or plan_status
 
 
 #: Compact dos/don'ts surfaced by read_plan(..., with_schema=True).
