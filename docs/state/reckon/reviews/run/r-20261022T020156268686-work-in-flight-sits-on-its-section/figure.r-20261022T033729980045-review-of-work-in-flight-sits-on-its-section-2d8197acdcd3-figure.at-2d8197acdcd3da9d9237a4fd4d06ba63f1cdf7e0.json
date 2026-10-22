@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-10-22T03:39:38Z",
+  "figures": [
+    {
+      "attachment": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T033729980045-review-of-work-in-flight-sits-on-its-section-2d8197acdcd3-figure/image-0.png",
+      "caption": "docs/evidence/fragments/a-project-reads-as-one-picture/work-in-flight-sits-on-its-section.html:30",
+      "rendered": "docs/figures/a-project-reads-as-one-picture/work-in-flight-sits-on-its-section/section_row_readers.svg",
+      "source": "docs/figures/a-project-reads-as-one-picture/work-in-flight-sits-on-its-section/section_row_readers.py"
+    }
+  ],
+  "findings": [
+    {
+      "file": "docs/figures/a-project-reads-as-one-picture/work-in-flight-sits-on-its-section/section_row_readers.py",
+      "line": 259,
+      "severity": "follow-on",
+      "summary": "The right panel is titled '(b) one classifier, asked at two ages' while the left panel carries no '(a)' label, so a reader is shown the second half of a lettered pair and looks for a first panel that the figure never marks. The left panel is not untitled by design - it has an axis unit and no designation - so the two panels do not read as one lettered pair. Does not hold the node: every panel is still readable, and each is self-describing from its axis and block text."
+    },
+    {
+      "file": "docs/figures/a-project-reads-as-one-picture/work-in-flight-sits-on-its-section/section_row_readers.py",
+      "line": 32,
+      "severity": "follow-on",
+      "summary": "RECORDED = '#8a8a8a' is the colour of both the plotted step line and four pieces of label text ('record read: waiting' at line 193, the 'the recorded event leads' box at line 269, 'latest watcher 02:54:21Z waiting' at line 278 and 'answer: waiting' at line 293). Measured on the render, that grey is 3.45:1 against white, which clears the ~3:1 a data mark needs but not the 4.5:1 normal-size text needs, so the labels carrying the figure's reading are its lowest-contrast text. Does not hold the node: at 14 pt the words are plainly legible in the delivered PNG. A text-only change of the label colour would leave the data line as it is."
+    }
+  ],
+  "project": "reckon",
+  "read_only": "no file was edited, created, moved, deleted, redrawn, relabelled or reformatted; the guard controls ran on copies under the run scratch",
+  "review_run_id": "r-20261022T033729980045-review-of-work-in-flight-sits-on-its-section-2d8197acdcd3-figure",
+  "reviewed_base_sha": "52f79371c393e66873066150fbdd6d60b7592760",
+  "reviewed_head_sha": "2d8197acdcd3da9d9237a4fd4d06ba63f1cdf7e0",
+  "reviewed_run_id": "r-20261022T020156268686-work-in-flight-sits-on-its-section",
+  "rubric": "figure",
+  "rubric_verdicts": {
+    "contrast": "defect - the grey used for text is #8a8a8a and renders at 3.45:1 on white, below the 4.5:1 that normal-size text needs; measured from the rendered pixels of 'record read: waiting' (core colour #8A8A8A, 251 px) and it is the same colour the data line uses (see finding 2). The red #b0564f annotation (4.89:1), the blue #2f6fb3 (5.19:1) and the near-black #222222 all clear it",
+    "data_ink": "pass - the recorded state is one 2.6 pt step line plus a 2.4 pt dashed carry-forward; the right panel is the mechanism the caption describes, drawn in outline with no fill competing with the data",
+    "decoration": "pass - no gradient, no background fill, no shaded band and no styled theme; the box facecolour is white and borders are hairline, so nothing is drawn that does not name a state or a call site",
+    "label_collision": "pass - no label is clipped, no two labels overlap, and no label sits on the plotted line, checked against the render and against the source that refuses such a figure",
+    "legibility": "pass - at 1400 px the state labels, tick times, axis unit, the red annotation and both panel blocks are all readable; the step line and the marker are distinguishable at a glance",
+    "table_form": "pass - the left panel is a recorded time series and the right panel is a fan-in flow whose subject is the shared classifier node; a table of two call sites would not show the convergence the caption is about"
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T03:59:26.294446+00:00",
+  "total": null,
+  "verification": {
+    "attachment_matches_reviewed_head": "rendered docs/.../section_row_readers.svg at 2d8197acdcd3da9d9237a4fd4d06ba63f1cdf7e0 to PNG and compared it with the attached image-0.png: identical layout and identical label placement, so the attachment is the reviewed head's figure and the verdicts below are about what the reader sees. The intermediate commit a45e72061 renders pixel-identically to the head, so the style commit changed no visible mark.",
+    "caption": "the figcaption at docs/evidence/fragments/a-project-reads-as-one-picture/work-in-flight-sits-on-its-section.html:30 explains the step line, the dashed carry-forward, the marker and the fifteen-minute age, and names the run; it does not merely repeat the figure's title",
+    "collision_guard_is_live": "the source refuses to save a figure whose labels leave the canvas, collide, or sit on a plotted line. Control: the unmodified script ran and wrote its SVG (EXIT=0). Mutation: 'record read: waiting' moved from (3.55, waiting+0.35) to (3.0, waiting) put it over the carry-forward line and the guard refused, printing \"label sits on the plotted line: 'record read: waiting'\" (EXIT=1). A first mutation that lowered the label to the same y without moving x did not refuse, because at x=3.55 the label clears the line's end at x=3.41 - recorded here because a mutation that does not reach the guarded condition proves nothing."
+  }
+}

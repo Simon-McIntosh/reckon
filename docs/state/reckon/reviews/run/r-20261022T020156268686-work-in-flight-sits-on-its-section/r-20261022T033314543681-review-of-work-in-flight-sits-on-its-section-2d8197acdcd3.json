@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs as the manifest records them: baseline_suite failure_count 0 with failure_ids [] (logs/baseline_gate.log, 96 passed EXIT=0 at 52f79371c) and after_suite failure_count 0 with failure_ids [] (logs/after_gate.log, 100 passed EXIT=0 at abeebd593); the head adds no failing test the base arm did not already fail, so no added failure ids.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/serve.py:1749",
+    "reckon/mcp.py:1968",
+    "reckon/mcp.py:2992",
+    "reckon/flight.py:2635",
+    "reckon/crew/plan_review.py:3074",
+    "reckon/mcp_views.py:1902"
+  ],
+  "completed_at": "2026-10-22T04:02:25.701Z",
+  "dispatched_at": "2026-10-22T03:36:24Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T020156268686-work-in-flight-sits-on-its-section/logs/docs_paths_gate.log",
+      "line": "1",
+      "text": "blocking: the documentation gate log names its revision but carries no literal command near its head, so `reckon crew check --manifest --run r-20261022T020156268686-work-in-flight-sits-on-its-section` returns ok:false naming exactly this log ('carries no command near its head'), and the same refusal reaches promotion; the log must name the command that produced it, or be dropped from test_logs, before the node can land."
+    },
+    {
+      "file": "reckon/live_run_classification.py",
+      "line": "36",
+      "text": "follow-on: section_run_rows has no caller \u2014 a repository-wide grep for the name returns only this definition \u2014 and it re-implements the grouping the same diff performs inline at reckon/roadmap.py:3860-3863, so the diff ships one capability twice and the copy on the shared-read module is dead."
+    },
+    {
+      "file": "reckon/live_run_classification.py",
+      "line": "91",
+      "text": "follow-on: `side = \"holders\" if claim.get(\"binding\", True) else \"waiting\"` reads every non-binding claim as a run waiting on the path, but reckon/crew/node.py:1531-1554 returns binding=False for two different conditions \u2014 a queued claim, which does wait, and a stopped run holding no unintegrated work, whose path is free \u2014 so the second is reported as a held-path blocker on its section that does not exist."
+    },
+    {
+      "file": "docs/figures/a-project-reads-as-one-picture/work-in-flight-sits-on-its-section/section_row_readers.py",
+      "line": "1",
+      "text": "follow-on: the node's landing contract stated its done-when names no artifact so it writes no figure, and the diff carries a 337-line renderer plus a 1841-line generated SVG, the largest part of the change; the figures directory was in the granted scope so the write was permitted, but the artifact exceeds the brief and should be confirmed as wanted."
+    },
+    {
+      "file": "tests/test_work_in_flight_sits_on_its_section.py",
+      "line": "142",
+      "text": "follow-on: the classification assertion compares the row's value against recovery.classify_pointer(pointer), a call to the same classifier on the same pointer the test handed to build_roadmap, so it holds even if a section row derived its own classification instead of carrying the partition's \u2014 the regression it appears to guard; the run-id assertion at :139 is what actually reddens under the declared mutation."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/serve.py:1749, reckon/mcp.py:1968, reckon/mcp.py:2992, reckon/flight.py:2635, reckon/crew/plan_review.py:3074 and reckon/mcp_views.py:1902 are the production callers of build_roadmap and partition_live_runs, the two functions whose output the change extends.",
+    "diff": "read commit by commit over 52f79371c..2d8197acd: ba405e2c4 and f82ca652e add the evidence fragment, abeebd593 widens the claim-registry except clause, a45e72061 adds the figure, 2d8197acd reformats the figure script and its SVG; the product change is the selective merge of ba405e2c4 into reckon/live_run_classification.py, reckon/mcp_views.py and reckon/roadmap.py.",
+    "done_when": "read from prompt.txt:99 and the plan section docs/plans/a-project-reads-as-one-picture.html:88 \u2014 a fixture live pointer on a section row with the crew-live classification, a blocked manifest making its section run-blocked with the blocker text, two runs over one path reporting holder then queued; tests/test_work_in_flight_sits_on_its_section.py:132, :157 and :184 are those three cases, and the gate log records the power_convertor pair under investigation.",
+    "goal": "read from the reviewed run's prompt.txt:29 \u2014 'List each section's runs, held paths and blocker kinds on its roadmap row using the one run classification'; the landed code does that at reckon/roadmap.py:3882 for runs, :3864-3868 for blocker kinds and held paths, and :3860-3863 groups the rows the plan-level partition classified.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T020156268686-work-in-flight-sits-on-its-section/manifest.md; it states status complete, names all five gate logs, records baseline_suite and after_suite as flat JSON with completed true and failure_count 0, and discloses that f82ca652e carries the feature subject while its content is only the evidence fragment; it fails its own write-time audit (see the first finding).",
+    "write_paths": "read from prompt.txt:69-76 and the manifest's orientation_write_paths; git diff --stat 52f79371c 2d8197acd lists seven files and every one is inside the grant (reckon/roadmap_ranking.py is declared and unused)."
+  },
+  "justifications": {
+    "durability": "tests/test_work_in_flight_sits_on_its_section.py is red at the base revision (logs/base_arm.log, 3 failed, EXIT=1) and red again under the declared mutation (logs/negative_control.log, 1 failed, EXIT=1), so at least one added assertion fails when the change regresses; tests/test_work_in_flight_sits_on_its_section.py:142 compares against the same value the test handed in and guards less than it appears to.",
+    "evidence": "the gate the worker ran asserts the done_when: logs/base_arm.log shows the four new tests 3 failed, 1 passed with EXIT=1 at the base revision 52f79371c and logs/after_gate.log shows 100 passed EXIT=0 at abeebd593, and logs/negative_control.log shows the declared mutation red with EXIT=1; the score is held down because logs/docs_paths_gate.log carries no literal command near its head.",
+    "fit": "the code follows the surrounding idiom \u2014 a defaulted keyword on _run_row, kind constants named by mechanism in reckon/live_run_classification.py:26-31, no plan, sprint or ticket label anywhere in the changed paths \u2014 but reckon/live_run_classification.py:36 adds a definition that nothing calls.",
+    "goal_fidelity": "reckon/roadmap.py:3860-3868 attaches each section row's runs, blocker kinds and held paths, and reckon/mcp_views.py:1902 carries the partition's own classification onto the run row, so the goal sentence is met; the held-path kind's claimant split at reckon/live_run_classification.py:91 is the one place it is not exactly right.",
+    "reuse": "run_blocker_rows and held_path_blockers extend the owners they belong to: they consume the rows reckon/mcp_views.py:1902 already classified and the claim read model reckon/crew/runs.py:779 already serves, and a search of reckon/ for a holder/waiting pairing over scope claims (grep for '\"holder\"', 'holders', 'scope_claims' callers) found no owner to fork; reckon/live_run_classification.py:36 duplicates the grouping the diff performs inline at reckon/roadmap.py:3860.",
+    "scope_discipline": "every path in git diff --stat 52f79371c 2d8197acd is inside the declared write paths (reckon/mcp_views.py, reckon/roadmap.py, reckon/live_run_classification.py, tests/test_work_in_flight_sits_on_its_section.py, the evidence fragment and the figures directory); the 337-line figure script and its 1841-line generated SVG are the largest part of the diff and the landing contract said this node writes no figure."
+  },
+  "node": "review-of-work-in-flight-sits-on-its-section-2d8197acdcd3",
+  "node:reviewed": "work-in-flight-sits-on-its-section",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read from the reviewed prompt, the goal is to list each section's runs, held paths and blocker kinds on its roadmap row using the one run classification; reckon/roadmap.py:3882 attaches the runs, :3864-3868 the blocker kinds and held paths, and the classification travels on the row from reckon/mcp_views.py:1902.\nVERDICT done_when: read the plan's \u00a74 done-when and the dispatch's FENCE \u2014 EVIDENCE; tests/test_work_in_flight_sits_on_its_section.py:132, :157 and :184 are the three named cases, logs/base_arm.log shows 3 failed / 1 passed EXIT=1 at the base revision, and logs/after_gate.log shows 100 passed EXIT=0 at the head.\nVERDICT write_paths: read the manifest's orientation_write_paths and the file fence; every path in git diff --stat 52f79371c 2d8197acd is inside the grant.\nVERDICT manifest: read at the run directory; it reports status complete, names five gate logs with baseline/after as flat records, and discloses the f82ca652e subject/content mismatch; its docs_paths_gate.log fails the write-time manifest audit.\nVERDICT diff: read commit by commit against 52f79371c; five commits, seven files, all inside the declared scope, with the product change confined to three reckon modules and one test file.\nCALL_SITES: reckon/serve.py:1749, reckon/mcp.py:1968, reckon/mcp.py:2992, reckon/flight.py:2635, reckon/crew/plan_review.py:3074, reckon/mcp_views.py:1902",
+  "review_run_id": "r-20261022T033314543681-review-of-work-in-flight-sits-on-its-section-2d8197acdcd3",
+  "reviewed_base_sha": "52f79371c393e66873066150fbdd6d60b7592760",
+  "reviewed_head_sha": "2d8197acdcd3da9d9237a4fd4d06ba63f1cdf7e0",
+  "reviewed_run_id": "r-20261022T020156268686-work-in-flight-sits-on-its-section",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 15,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T04:22:00+00:00",
+  "total": 94
+}
