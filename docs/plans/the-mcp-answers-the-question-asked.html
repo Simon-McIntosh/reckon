@@ -26,7 +26,7 @@
   <title>The MCP Answers the Question Asked | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="20">
+<meta name="plan-version" content="21">
 <meta name="plan-modified" content="2026-10-22">
 </head>
 <body>
@@ -203,6 +203,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-22T00:35:00Z">
     <div class="r-comment-body"><p>Landed: every default MCP read is held to a per-view size row, with detail, raw and findings views paged; head adds no failure; review 110/120. Evidence: <a href="/reckon/evidence/archive/the-mcp-answers-the-question-asked-landed.html#s2">§2 landing record</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261021T195617510887-every-default-read-fits" data-who="reckon-build" data-when="2026-10-21T23:40:05Z">
+    <div class="r-comment-body"><p>Every MCP read view now declares a character budget in VIEW_BUDGETS (reckon/mcp_budget.py) that view_budget resolves per call and that an over-ceiling receipt names; roadmap view=detail, read_plan view=raw and crew view=findings were paged through the existing paginate() instead of serialising whole records, taking roadmap view=detail on a 60-plan/400-section fixture from a response_over_budget receipt — the answer it built there was 177,661 characters against the 80,000 ceiling — to 14,704 characters against its 30,000 row, and on the mounted power_convertor project from response_over_budget to 5,093 characters, with tests/test_every_default_read_fits.py holding every view of every read tool to its row, including the findings read on a populated store, where the paged default answer replaces a 45,986-character unpaged one.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261021T180147626901-review-of-a-newer-flight-key-is-ignored-at-load-8f435107bbad" data-who="reckon-build" data-when="2026-10-21T18:30:30.772Z">
     <div class="r-comment-body"><p>Independent review of r-20261021T160220332694-a-newer-flight-key-is-ignored-at-load at 8f435107bbadf5d5bf83be2c3ff0479786ebf7da (base da1a110ab13de2c3f5b38a38fb807c35cbad06ae), status parsed: all five checklist verdicts and all six dimensions emitted. Scores — goal_fidelity 19, evidence 16, scope_discipline 18, durability 18, fit 18, reuse 20. Added failure ids: none (base log 1 failed / 138 passed and head log 1 failed / 144 passed carry the identical single id, tests/test_one_check_trusts_a_moved_checkout.py::test_a_clean_moved_checkout_answers_on_the_current_code). The change is real and the design is intact: extra="ignore" in the generated schema (reckon/_flight_schema.py:43) plus a schema-driven walk that reports undeclared key paths (reckon/flight.py:1418, published at :2568) with the strict read behind `reckon flight --check` (reckon/project_setup_commands.py:416). Two follow-on findings, neither blocking: keys inside the reckon-owned blocks that `_schema_view` strips are neither refused nor reported, measured at head; and project_setup_commands.py is not `ruff format --check` clean at head though its delta is zero against base (33 complaint lines either side).</p></div>
