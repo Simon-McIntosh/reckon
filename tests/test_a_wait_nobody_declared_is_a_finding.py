@@ -14,7 +14,7 @@ manifest's own blocker line rather than a string handed to the analyser.
 
 from __future__ import annotations
 
-import reckon.roadmap as roadmap
+from reckon import roadmap
 
 PROJECT = "sample"
 
