@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T23:51:13.567Z",
+  "dispatched_at": "2026-10-22T23:36:27Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-page-paints-from-an-index.html:265",
+      "id": "reasoning-1",
+      "reason": "the same file is already in the node's write paths, so extending the node to `_covered_files` (or stating the exclusion) is a scope decision \u00a77's recorded but ungated `/_discover` cold timings depend on, and leaving it silent lets a later reader take the section as closing the walk fallback it does not close.",
+      "text": "\u00a713's Why states the problem as \"any one moved directory sends the read back to a full walk\" and the section is titled \"A changed directory re-scans only itself\", but the deliverable changes only `build_index`'s no-covered-set path; `reckon/serve.py:1278` reads its covered set through `_covered_files_for_project` -> `_covered_files` -> `_reuse_covered`, which still returns None on any moved directory and falls back to `_walk_covered` (reckon/metadata_index.py:707-713), so a cold `/_discover` read and the change-stream signature still walk all 2,505 directories \u2014 the served log shows `/_changes/reckon` at 184731.4 ms and `/_index/reckon` at 155336.1 ms",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "5239bcdaf35c3e8d2250a671a3377e7611315b9a09d226fd346633504a061b80",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 85,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T233238552074-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "cb599f72a509eb5f246e47ef2407574b1462e70e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every path and symbol \u00a713 cites resolves in the tree: `reckon/metadata_index.py` (`index_rows`, `build_index`, `_walk_covered`, `_reuse_covered`, `_content_digest`, `covered_dir_identity`), `reckon/serve.py` (`_served_index_rows`), and `tests/test_every_module_fits_a_worker_window.py`. Its live figures check out: this worktree's `docs/` holds 2,505 directories and `docs/state/reckon` 9,856 files of which 2 are HTML (evidence.log), against the plan's measured 2,514 and 9,983.",
+    "done_when": "pass \u2014 \u00a713's done-when is a measurable scan count (a spy on `os.scandir`) with a declared control per case, and its four controls each name an observable difference from the head: today's whole-tree walk, skipped new subdirectories, kept removed directories, and identities persisted for scanned directories only.",
+    "evidence_paths": "pass \u2014 logs sit under the run directory with a revision header and an `EXIT=` last line, matching \u00a714's \"logs and allocation as for \u00a713\"; no session-scratchpad or node-local path is named.",
+    "naming": "pass \u2014 the test file, symbols and prose carry no plan labels, stage names, ticket numbers or version tags, and the change-detection rule is stated as a mechanism (\"a directory's identity moves whenever an entry is added to it or removed from it\").",
+    "reasoning": "a finding \u2014 \u00a713's fix is scoped to `build_index` only, while the `_reuse_covered` all-or-nothing fallback it calls out is reached unchanged by the discovery-signature reader, so the same moved directory still forces a full tree walk on the `/_discover` read and on the change-stream signature the section's title reads as covering.",
+    "single_goal": "pass \u2014 one deliverable, an incremental build that re-scans only directories whose recorded identity moved.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares `s14 -> s13` and `s7 -> s13, s14`, and \u00a713 names no dependency it does not have: it edits `reckon/metadata_index.py`, whose only predecessor, \u00a73, is `done`."
+  },
+  "section_digests": {
+    "_document": "b7ef0ceb5f1db955f317725bf386aa649aa45d027ce9acba466c67a62e636b39",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "17515cc4d212280b53e77d7279aa81e37c7d58f877ada031f77705b31e53d437",
+    "s11": "bb32b98b9a0a5070d5ec6b5387862bef5af3ba37b5956ac7c9d734723c2ac9fa",
+    "s12": "071a3e9ff829e6cc2047658d80b57b5d30603318f0fa4a31084d94b5ed308185",
+    "s13": "9b5394f3f4c71da976b59f5c59ca77bbb58ab57408d3f74ae439735f8ba03f08",
+    "s14": "81d5ac4cc3ec42e5b1f7e8ee9da1f92e89073fdda2bd21fda06046a2d2e15b68",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "048a1031945a098f9a63b70d985d91dd2d9ee2f67f1ac1a2132e4c7d21b89e7e",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T23:55:06.276721+00:00"
+}
