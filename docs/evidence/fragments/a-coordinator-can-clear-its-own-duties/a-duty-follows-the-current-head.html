@@ -1,0 +1,82 @@
+<!doctype html>
+<title>An obligation follows the run's current head</title>
+<section id="a-duty-follows-the-current-head-landing">
+  <h2>An obligation follows the run's current head</h2>
+
+  <p><strong>What changed.</strong> A resume carries a stopped run forward from the
+  revision it delivered, so every duty that reads against that revision — its
+  missing review, its stale review, the promotion behind either — speaks for work
+  the run has moved past. The run's pointer now records that revision under
+  <code>resume_superseded_head</code>, with the instant the resume happened, and
+  four sites key on it:</p>
+
+  <ul>
+    <li><code>reckon/crew/resumption.py</code> — <code>_record_resume_supersedes_head</code>
+    stamps the head the resume leaves behind from the run's own tree, called from
+    <code>_resume</code> after the new attempt is recorded, so every resume the
+    system performs records it: the hand-typed <code>crew resume</code>, the
+    <code>--reopen</code> form and the sweep's automatic lift all pass through the
+    one launcher. It records nothing when the tree yields no head, because a slot
+    keyed on an empty head would withdraw duties of every kind rather than the
+    superseded one.</li>
+    <li><code>reckon/crew/recovery_review_dispatch.py</code> —
+    <code>supersedes_head</code> is the reader, and <code>withdraw_superseded_review</code>
+    now takes its trigger from the newest resume the run records rather than from
+    the sweep's own <code>auto_resume</code> slot alone. A queued attempt that
+    never spawned a worker is now discarded as well as recorded: the withdrawal
+    text is written onto the review's own departure marker through
+    <code>_discard_stranded_review</code>, so the lane has nothing left to launch
+    for the head the resume replaced — previously the withdrawal was recorded on the
+    reviewed run while the queued review's pointer still stood and was launched by
+    the first admission to reach it. A review whose worker already launched is
+    untouched: it finishes and its verdict carries forward.</li>
+    <li><code>reckon/crew/recovery_review_dispatch.py</code> —
+    <code>_resume_superseded_refusal</code> is the reflex's own arm: it refuses to
+    compose a review for a head the run's own resume replaced, recorded on the run
+    as <code>withdrawn</code>. This is the race the plan's §1 reports, where the
+    reflex queued a review for a head the coordinator was about to replace.</li>
+    <li><code>reckon/crew/obligations.py</code> — <code>_review_duty_item</code>
+    returns nothing for a run that still carries the head its resume superseded, so
+    <code>review-missing</code>, <code>promotable-stale</code> and every other kind
+    this reader derives are withheld until the run delivers a head of its own. The
+    duty returns at the new head because the comparison is against the recorded
+    revision, not against the resume instant.</li>
+  </ul>
+
+  <p><strong>Measure.</strong> <code>tests/test_a_duty_follows_the_current_head.py</code>,
+  four cases over a real git history: a complete run owing a review is resumed and
+  its obligations list nothing for the head the resume replaced; the same run,
+  delivered on to a new head, owes <code>review-missing</code> naming that new head;
+  a review queued before the resume is withdrawn, recorded as superseded by that
+  resume, and its pointer discarded; and a run nobody resumed keeps its
+  <code>review-missing</code> duty at its delivered head, which is the control.</p>
+
+  <p><strong>Gate.</strong> The nine-file gate the node names — this node's test file plus
+  the obligations, obligations-hook, resume and module-window suites — run in place on
+  the fleet allocation at this tree's revision: <strong>56 passed, 0 failed,
+  EXIT=0</strong>. Log: <code>after_suite.log</code> in this run's directory under
+  <code>~/.config/reckon/crew/runs/</code>, whose header names the revision, the tree,
+  the module as imported and the literal command, and whose last line is the exit
+  status.</p>
+
+  <p><strong>Base arm.</strong> At <code>dec005048c</code> (this change's parent, in a
+  scratch tree with the new test file copied in): 3 failed, 1 passed,
+  <code>EXIT=1</code> — the three new cases read the absent seam, and the control
+  passes there as it must. Log: <code>baseline_suite.log</code> in the same run
+  directory.</p>
+
+  <p><strong>Negative control.</strong> The declared mutation — keep the prior head's
+  duties after a resume — removes the withdrawal branch from
+  <code>_review_duty_item</code>. 2 failed, 2 passed, <code>EXIT=1</code>, failing
+  <code>test_a_resume_withdraws_the_review_duty_for_the_head_it_replaced</code> and
+  <code>test_a_run_that_delivers_a_new_head_owes_a_review_for_that_head</code>, which
+  the head arm does not fail. Log named in the manifest's
+  <code>negative_control_log</code>.</p>
+
+  <p><strong>One defect this arm caught.</strong> Inserting the new refusal ahead of
+  the blocking-finding refusal overwrote that refusal's own guard, so its verdict was
+  computed and discarded and a review was composed over a review still owing an
+  answer. <code>tests/test_a_review_waits_for_its_repair.py::test_a_review_is_refused_while_a_blocking_finding_is_undisposed</code>
+  failed on it — green at base, red at the first head — and the guard is restored.
+  The gate was re-run at the corrected revision.</p>
+</section>
