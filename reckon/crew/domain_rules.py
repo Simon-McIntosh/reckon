@@ -23,7 +23,7 @@ from typing import Any
 from reckon import flight
 from reckon._flight_schema import DomainConfig, DomainInvariant, DomainReviewCheck
 
-__all__ = ["DomainRules", "rules_for"]
+__all__ = ["DomainRules", "declares_review_checks", "rules_for"]
 
 
 @dataclass(frozen=True)
@@ -100,6 +100,63 @@ def _write_paths(node: Any) -> tuple[str, ...]:
     return tuple(str(path) for path in raw if str(path).strip())
 
 
+def _domain_config(
+    project: str,
+    *,
+    project_path: str | None = None,
+    host_path: str | None = None,
+    shipped_path: str | None = None,
+    checkout_path: str | None = None,
+) -> DomainConfig | None:
+    """The validated ``domain`` block a project declares, or ``None``.
+
+    The one read of the block, shared by every question asked of it, so a
+    caller asking a project-level question and a caller matching a node read
+    the same validated model. A project with no block at all answers ``None``;
+    a block the schema rejects raises from here, which is the loud failure the
+    module exists to give.
+    """
+    resolved = flight.resolve(
+        project=project,
+        project_path=project_path,
+        host_path=host_path,
+        shipped_path=shipped_path,
+        checkout_path=checkout_path,
+    )
+    block = resolved.config.get("domain")
+    if not isinstance(block, Mapping):
+        return None
+    return DomainConfig.model_validate(dict(block))
+
+
+def declares_review_checks(
+    project: str,
+    *,
+    project_path: str | None = None,
+    host_path: str | None = None,
+    shipped_path: str | None = None,
+    checkout_path: str | None = None,
+) -> bool:
+    """Whether a project declares any review check, for any node.
+
+    :func:`rules_for` answers which checks one node touched, which needs the
+    node. A caller that must tell "this node owes nothing" from "which checks
+    this node touched cannot be established" needs the project-level fact
+    instead, and asks for it here rather than reading the block again: a
+    project declaring no check puts every node beneath it on the same empty
+    checklist, so nothing owed is established without the node. A project with
+    no ``domain`` block, and a block declaring no check, both answer ``False``.
+    """
+    config = _domain_config(
+        project,
+        project_path=project_path,
+        host_path=host_path,
+        shipped_path=shipped_path,
+        checkout_path=checkout_path,
+    )
+    return bool(config and config.review_checks)
+
+
 def rules_for(
     project: str,
     node: Any,
@@ -118,17 +175,15 @@ def rules_for(
     ``host_path`` select the flight layers, so a caller reading a fixture config
     does not have to install one.
     """
-    resolved = flight.resolve(
-        project=project,
+    config = _domain_config(
+        project,
         project_path=project_path,
         host_path=host_path,
         shipped_path=shipped_path,
         checkout_path=checkout_path,
     )
-    block = resolved.config.get("domain")
-    if not isinstance(block, Mapping):
+    if config is None:
         return DomainRules()
-    config = DomainConfig.model_validate(dict(block))
     write_paths = _write_paths(node)
     invariants = tuple(
         invariant

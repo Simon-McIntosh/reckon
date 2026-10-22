@@ -17,6 +17,7 @@ from pathlib import Path
 import pytest
 
 from reckon import ledger
+from reckon.crew import domain_rules
 from reckon.crew import recovery_review_subject as subject_module
 from reckon.crew import review as review_module
 from reckon.crew import runs as runs_module
@@ -311,6 +312,51 @@ def test_a_subject_with_no_readable_record_is_refused_for_that(
     refusals = review_module.review_record_refusals(record)
 
     assert [refusal for refusal in refusals if "cannot be established" in refusal]
+
+
+def test_the_owner_answers_whether_a_project_declares_any_check(
+    fixture_project,
+) -> None:
+    """The project-level question is asked of the module that owns the match.
+
+    One module answers which rules a repository declares, so the check a brief
+    names, the verdict a parser requires and this question are one read rather
+    than three.
+    """
+    fixture_project()
+    assert domain_rules.declares_review_checks("fixture") is True
+
+    fixture_project(NO_DOMAIN_FLIGHT)
+    assert domain_rules.declares_review_checks("fixture") is False
+
+
+def test_a_promoted_subject_reads_its_delivered_manifest(
+    fixture_project,
+) -> None:
+    """The run's own delivered manifest is the last source, and it is read.
+
+    The manifest names the write paths the run's checks were matched against, so
+    it still answers the checklist when the live pointer is reclaimed and no
+    committed row remains. Reading it through the module's manifest-field reader
+    is what makes the field the same field the rest of the contract reads.
+    """
+    fixture_project()
+    owed = _owed_checks(
+        subject_module._review_brief_text(_run_record(["models/tape.py"]), "a" * 40)
+    )
+    directory = runs_module.run_dir(REVIEWED_RUN)
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / review_module._MANIFEST_FILE_NAME).write_text(
+        'orientation_write_paths: ["models/tape.py"]\n',
+        encoding="utf-8",
+    )
+    assert not runs_module.pointer_path(REVIEWED_RUN).exists()
+    assert not ledger.run_path("fixture", REVIEWED_RUN).exists()
+
+    refusals = review_module.review_record_refusals(_delivered_record(_emission({})))
+
+    assert owed
+    assert [refusal for refusal in refusals if owed[0] in refusal]
 
 
 def test_a_project_without_declarations_is_unaffected_by_the_contract(

@@ -513,48 +513,6 @@ def domain_review_checks(
     )
 
 
-def project_declares_review_checks(
-    project: str,
-    *,
-    project_path: str | None = None,
-    host_path: str | None = None,
-    shipped_path: str | None = None,
-    checkout_path: str | None = None,
-) -> bool:
-    """Whether a project declares any review check at all, for any node.
-
-    Read from the project's flight layer rather than from a matched node, so a
-    caller can ask the question when the node is unknown. A record whose
-    reviewed run cannot be read is only unable to say which checks it owed when
-    the project declares some: a project declaring none puts every node under
-    the same empty checklist, so "nothing owed" is established without the node
-    and is not a guess. A project with no readable block, and a block that
-    declares no checks, both answer ``False``.
-    """
-    if not project:
-        return False
-    from pydantic import ValidationError
-
-    from reckon._flight_schema import DomainConfig
-    from reckon.flight import resolve
-
-    resolved = resolve(
-        project=project,
-        project_path=project_path,
-        host_path=host_path,
-        shipped_path=shipped_path,
-        checkout_path=checkout_path,
-    )
-    block = resolved.config.get("domain")
-    if not isinstance(block, Mapping):
-        return False
-    try:
-        config = DomainConfig.model_validate(dict(block))
-    except ValidationError:
-        return False
-    return bool(config.review_checks)
-
-
 def _declared_check_block(
     project: str,
     node: Any,

@@ -493,15 +493,14 @@ def _manifest_write_paths(text: str) -> tuple[str, ...]:
     paths survive there after the pointer and the ledger row are gone. The
     declared set is read first and the changed set second: the declared set is
     what the node's checks were matched against when it ran, while a node that
-    changed nothing still owed every check its declaration selected.
+    changed nothing still owed every check its declaration selected. Both fields
+    are read through the module's manifest-field reader, so a field this function
+    reads is a field the rest of the contract reads the same way.
     """
     for key in ("orientation_write_paths", "changed_paths"):
-        for line in text.splitlines():
-            if not line.startswith(key + ":"):
-                continue
-            raw = line.partition(":")[2].strip()
+        for part in _manifest_field_lines(text, key):
             try:
-                value = json.loads(raw)
+                value = json.loads(part)
             except ValueError:
                 continue
             if isinstance(value, list):
@@ -601,17 +600,15 @@ def declared_review_checks(record: Mapping[str, Any]) -> tuple[str, ...] | None:
         node = pointer["node"]
     if node is None:
         node = _stored_reviewed_node(record, reviewed_run_id)
-    from reckon.crew.recovery_review_subject import (
-        domain_review_checks,
-        project_declares_review_checks,
-    )
+    from reckon.crew.domain_rules import declares_review_checks
+    from reckon.crew.recovery_review_subject import domain_review_checks
 
     if node is None:
         # A project declaring no checks under any node puts every node the same
         # empty checklist, so "nothing owed" is established here rather than
         # guessed; a project that declares checks cannot say which of them this
         # node touched, and that is the state the caller refuses on.
-        return None if project_declares_review_checks(project) else ()
+        return None if declares_review_checks(project) else ()
     return tuple(str(check.id) for check in domain_review_checks(project, node))
 
 
