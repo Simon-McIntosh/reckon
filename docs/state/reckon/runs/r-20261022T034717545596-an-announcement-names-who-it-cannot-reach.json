@@ -1,0 +1,590 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 230144,
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 230144
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "f990f80631361c8f10b4b184fe7374fe1515adf5",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 17508914,
+      "input_tokens_cumulative": 17508914,
+      "output_tokens": 64758,
+      "output_tokens_cumulative": 64758,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 257,
+    "files": 3,
+    "removed": 2
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 3368,
+        "name": "crew_budget",
+        "path": "reckon/crew_run_commands.py"
+      },
+      "run_function": {
+        "line": 2948,
+        "name": "_budget_lift_payload",
+        "path": "reckon/crew_run_commands.py"
+      },
+      "window_line": 2953
+    },
+    {
+      "existing_function": {
+        "line": 2948,
+        "name": "_budget_lift_payload",
+        "path": "reckon/crew_run_commands.py"
+      },
+      "run_function": {
+        "line": 3368,
+        "name": "crew_budget",
+        "path": "reckon/crew_run_commands.py"
+      },
+      "window_line": 3378
+    },
+    {
+      "existing_function": {
+        "line": 761,
+        "name": "_released_registration",
+        "path": "tests/test_crew_session_delivery.py"
+      },
+      "run_function": {
+        "line": 47,
+        "name": "_write_registration",
+        "path": "tests/test_an_announcement_names_who_it_cannot_reach.py"
+      },
+      "window_line": 55
+    },
+    {
+      "existing_function": {
+        "line": 327,
+        "name": "_released_registration",
+        "path": "tests/test_follower_freshness.py"
+      },
+      "run_function": {
+        "line": 47,
+        "name": "_write_registration",
+        "path": "tests/test_an_announcement_names_who_it_cannot_reach.py"
+      },
+      "window_line": 55
+    }
+  ],
+  "commit_resolution": null,
+  "commits": [
+    "f76fbd7a7f4f506457e866e9345c0f87c90d00b7",
+    "c61cb3da3d6c51faaae74e35b2c4ed2d103e905f"
+  ],
+  "completed_at": "2026-10-22T05:06:01.134Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-22T04:12:18Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest -n",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "tests/test_a_lane_change_keeps_its_waivers.py",
+    "test_ledger.py",
+    "test_picker.py",
+    "test_run_store.py",
+    "test_capabilities.py",
+    "test_browser_population_is_its_own_row.py"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "env -C /tmp/reckon-crew-scratch/r-20261022T034717545596-an-announcement-names-who-it-cannot-reach/arm-head -u RECKON_SESSION_HOST_SETTLE -u RECKON_FOLLOWER_OWNER -u RECKON_FOLLOWER_IMAGE_COMMIT -u RECKON_FOLLOWER_SOURCE_ROOT PYTHONPATH=/tmp/reckon-crew-scratch/r-20261022T034717545596-an-announcement-names-who-it-cannot-reach/arm-head TMPDIR=/tmp/reckon-crew-scratch/r-20261022T034717545596-an-announcement-names-who-it-cannot-reach /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -n 8 -p no:cacheprovider -q $(cat /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T034717545596-an-announcement-names-who-it-cannot-reach/logs/gate2-head-paths.txt)",
+    "exit_status": 1,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T034717545596-an-announcement-names-who-it-cannot-reach/logs/base.suite.log"
+  },
+  "impl_move": {
+    "at_complete": 0.5945945945945946,
+    "at_dispatch": 0.2702702702702703,
+    "plan": "a-limit-reset-reaches-every-session",
+    "verdict": "moved"
+  },
+  "lane": "clive",
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-22T04:54:58.922189+00:00",
+    "horizon_seconds": 2700,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": "clive",
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-22T04:09:58Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 30,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 4,
+    "headroom": 8,
+    "mean_context": 160000,
+    "observed_at": "2026-10-22T04:10:09Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": 30,
+      "aggregate_tokens_per_second": 327.068,
+      "detail": "",
+      "mean_tokens_per_second": 77.873,
+      "observed_at": "2026-10-22T04:10:09Z",
+      "runs": 4.2,
+      "state": "measured"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-22T05:06:01.134Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T034717545596-an-announcement-names-who-it-cannot-reach/manifest.md",
+  "member": "disposable-r-20261022T034717545596-an-announcement-names-who-it-cannot-reach",
+  "model_key": "flash",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_an_announcement_names_who_it_cannot_reach.py::test_a_live_registration_is_reached_and_a_stale_one_is_not",
+      "tests/test_an_announcement_names_who_it_cannot_reach.py::test_the_reach_is_folded_across_every_mounted_project",
+      "tests/test_an_announcement_names_who_it_cannot_reach.py::test_the_reach_report_writes_nothing"
+    ],
+    "baseline_failure_ids": [
+      "tests/test_a_lane_change_keeps_its_waivers.py::test_a_lane_change_keeps_the_waivers_its_dispatch_recorded",
+      "tests/test_a_lane_change_keeps_its_waivers.py::test_a_node_dispatched_without_the_waiver_is_still_refused_on_redispatch",
+      "tests/test_crew_families_fold.py::test_each_budget_flag_gives_the_answer_the_old_verb_gave",
+      "tests/test_crew_lane_change.py::test_a_held_destination_lane_is_named_and_changes_nothing",
+      "tests/test_crew_lane_change.py::test_both_commands_call_the_shared_lane_change_operation",
+      "tests/test_crew_lane_change.py::test_redispatch_continues_a_stream_resolved_session_and_records_its_source",
+      "tests/test_crew_lane_change.py::test_redispatch_keeps_the_run_node_and_worktree",
+      "tests/test_preflight_pace.py::test_a_foreign_pointer_does_not_enter_this_projects_group",
+      "tests/test_preflight_pace.py::test_a_groups_clock_is_read_from_the_stream_a_run_reported",
+      "tests/test_preflight_pace.py::test_a_live_pointer_is_read_beside_the_ledger_rows",
+      "tests/test_preflight_pace.py::test_a_receipt_carrying_only_the_week_reports_one_clock_observed",
+      "tests/test_preflight_pace.py::test_a_receipt_newer_than_the_stream_is_the_reading_the_group_paces_to",
+      "tests/test_preflight_pace.py::test_a_stream_newer_than_the_receipt_is_the_reading_the_group_paces_to",
+      "tests/test_preflight_pace.py::test_the_command_reads_a_groups_clocks_from_a_runs_receipt",
+      "tests/test_preflight_pace.py::test_the_preflight_command_emits_one_group_block_per_declared_wallet"
+    ],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_an_announcement_names_who_it_cannot_reach.py::test_a_live_registration_is_reached_and_a_stale_one_is_not",
+      "tests/test_an_announcement_names_who_it_cannot_reach.py::test_the_reach_is_folded_across_every_mounted_project",
+      "tests/test_an_announcement_names_who_it_cannot_reach.py::test_the_reach_report_writes_nothing"
+    ],
+    "declaration": "treat every registration as live; the stale session must then be listed as reached and the test fail",
+    "head_failure_ids": [
+      "tests/test_a_lane_change_keeps_its_waivers.py::test_a_lane_change_keeps_the_waivers_its_dispatch_recorded",
+      "tests/test_a_lane_change_keeps_its_waivers.py::test_a_node_dispatched_without_the_waiver_is_still_refused_on_redispatch",
+      "tests/test_crew_families_fold.py::test_each_budget_flag_gives_the_answer_the_old_verb_gave",
+      "tests/test_crew_lane_change.py::test_a_held_destination_lane_is_named_and_changes_nothing",
+      "tests/test_crew_lane_change.py::test_both_commands_call_the_shared_lane_change_operation",
+      "tests/test_crew_lane_change.py::test_redispatch_continues_a_stream_resolved_session_and_records_its_source",
+      "tests/test_crew_lane_change.py::test_redispatch_keeps_the_run_node_and_worktree",
+      "tests/test_preflight_pace.py::test_a_foreign_pointer_does_not_enter_this_projects_group",
+      "tests/test_preflight_pace.py::test_a_groups_clock_is_read_from_the_stream_a_run_reported",
+      "tests/test_preflight_pace.py::test_a_live_pointer_is_read_beside_the_ledger_rows",
+      "tests/test_preflight_pace.py::test_a_receipt_carrying_only_the_week_reports_one_clock_observed",
+      "tests/test_preflight_pace.py::test_a_receipt_newer_than_the_stream_is_the_reading_the_group_paces_to",
+      "tests/test_preflight_pace.py::test_a_stream_newer_than_the_receipt_is_the_reading_the_group_paces_to",
+      "tests/test_preflight_pace.py::test_the_command_reads_a_groups_clocks_from_a_runs_receipt",
+      "tests/test_preflight_pace.py::test_the_preflight_command_emits_one_group_block_per_declared_wallet"
+    ],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T034717545596-an-announcement-names-who-it-cannot-reach/logs/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T034717545596-an-announcement-names-who-it-cannot-reach/logs/negative-control.log",
+    "test_paths": [
+      "tests/test_an_announcement_names_who_it_cannot_reach.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "an-announcement-names-who-it-cannot-reach",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "capability": {
+      "class": "general",
+      "requirements": {
+        "reasoning": "standard",
+        "risk": "low",
+        "verification": "strict"
+      },
+      "version": "1.0"
+    },
+    "coordinator": {
+      "authoring_turn": {
+        "detail": "the dispatching harness exposed no authoring-turn token usage",
+        "status": "unknown",
+        "tokens": null
+      },
+      "harness": null,
+      "runtime_session_id": null,
+      "session_id": "f653840f-3ca8-4792-819c-9ee9708bdbac"
+    },
+    "done_when": "Per §5 of the plan: crew budget --reset --used reports its reach, reading follower_registration.list_followers for every mounted project and deriving no liveness of its own: the sessions holding a live registration, whose panes will draw the row, and the sessions holding only registrations that are not live, listed in the command's output and its JSON document; the report writes nothing. A test in a temporary home with one session holding a live follower registration and one holding a stale one finds the first reached and the second not. Every test file importing the changed modules or exercising crew budget, rebuilt from the head tree, adds no failure against a base arm, both arms from git checkouts under the run's own scratch directory with RECKON_SESSION_HOST_SETTLE, RECKON_FOLLOWER_OWNER, RECKON_FOLLOWER_IMAGE_COMMIT and RECKON_FOLLOWER_SOURCE_ROOT unset, run in place on the fleet node with pytest -n 8; any id failing in one arm only is run five times alone in each arm; thirteen tests driving retired budget verbs fail at base and are expected in both arms. Every log is under the run directory, starts with its revision and the literal command, and ends in EXIT=. ruff check and ruff format --check add no findings on the changed files, judged against the base blobs.",
+    "estimated_hours": null,
+    "goal": "Make crew budget --reset --used report which sessions its broadcast reaches and which it does not",
+    "id": "an-announcement-names-who-it-cannot-reach",
+    "images": [],
+    "lane_declaration": {
+      "backend": "clive",
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-22T04:09:58Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 30,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 4,
+      "headroom": 8,
+      "mean_context": 160000,
+      "observed_at": "2026-10-22T04:10:09Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": 30,
+        "aggregate_tokens_per_second": 327.068,
+        "detail": "",
+        "mean_tokens_per_second": 77.873,
+        "observed_at": "2026-10-22T04:10:09Z",
+        "runs": 4.2,
+        "state": "measured"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T034717545596-an-announcement-names-who-it-cannot-reach/manifest.md",
+    "negative_control": "treat every registration as live; the stale session must then be listed as reached and the test fail",
+    "plan": "a-limit-reset-reaches-every-session",
+    "regenerate_paths": [],
+    "requested_backend": "clive",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§5",
+    "spec_level": "guided",
+    "time_budget": "45m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew_run_commands.py",
+      "tests/test_an_announcement_names_who_it_cannot_reach.py",
+      "docs/evidence/fragments/a-limit-reset-reaches-every-session/an-announcement-names-who-it-cannot-reach.html",
+      "docs/figures/a-limit-reset-reaches-every-session/an-announcement-names-who-it-cannot-reach"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": 3199456.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "lift_id": null,
+    "member": null,
+    "node": "an-announcement-names-who-it-cannot-reach",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-22T04:11:26.331652+00:00",
+    "score": 0.7375,
+    "session": null,
+    "source": null,
+    "state": "unknown"
+  },
+  "picker_selection": {
+    "action": "fallback",
+    "backend": null,
+    "comment": "",
+    "confidence": null,
+    "effort": null,
+    "excluded": [],
+    "fallback_reason": "timeout in pick:capability",
+    "family": null,
+    "jev_model": "typesafe/jev-1.13",
+    "latency_ms": 5000.401,
+    "model": null,
+    "offered": [],
+    "probabilities": {},
+    "stage_ms": {
+      "budget-snapshot": 2214.692,
+      "context-estimate": 5.565,
+      "records": 2458.106,
+      "verdict-inputs": 3192.669
+    }
+  },
+  "plan": "a-limit-reset-reaches-every-session",
+  "plan_impl_at_dispatch": 0.2702702702702703,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "c61cb3da3d6c51faaae74e35b2c4ed2d103e905f",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "f990f80631361c8f10b4b184fe7374fe1515adf5",
+    "reviewed_head_sha": "c61cb3da3d6c51faaae74e35b2c4ed2d103e905f",
+    "scores": {
+      "durability": 18,
+      "evidence": 19,
+      "fit": 18,
+      "goal_fidelity": 19,
+      "reuse": 17,
+      "scope_discipline": 19
+    },
+    "status": "parsed",
+    "total": 110
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "route_mode": "explicit",
+  "run_id": "r-20261022T034717545596-an-announcement-names-who-it-cannot-reach",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§5",
+  "session": "f653840f-3ca8-4792-819c-9ee9708bdbac",
+  "session_harness": "claude",
+  "session_id": "40c807b9-4e02-4d59-861f-1ae9483b8df8",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 17508914,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 230144",
+    "elapsed_seconds": 3173.265,
+    "generated_tokens": 64758,
+    "generation_seconds": 1288.907,
+    "input_budget_tokens": 230144,
+    "input_utilisation_pct": 77.4,
+    "machine_seconds": 1884.358,
+    "peak_input_tokens": 178025,
+    "tokens_per_second": 50.24,
+    "wall_tokens_per_second": 20.41
+  },
+  "time_budget": "45m",
+  "tool_steps": 151.0,
+  "unplanned_reason": null,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": [
+      {
+        "backend": "clive",
+        "budget_overrun": true,
+        "budget_overrun_cause": "unknown",
+        "budget_overrun_rate": null,
+        "budget_overrun_reference_rate": null,
+        "budget_overrun_reference_runs": 0,
+        "budget_overrun_reference_source": "recent committed runs, same backend and model",
+        "budget_overrun_seconds": 1184,
+        "budget_seconds": 2700,
+        "classification": "scoring",
+        "commits_beyond_base": 0,
+        "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+        "effective_phase": "complete",
+        "elapsed_seconds": 3884,
+        "exit_record": {
+          "attempt": 1,
+          "ended_during": "working",
+          "ended_pids": [],
+          "exit_code": 0,
+          "exited_at": "2026-10-22T03:50:36Z",
+          "last_record_type": "result",
+          "launched_at": "2026-10-22T03:07:49Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20261022T030213912208-a-deferred-run-leaves-the-needs-you-line",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 7867,
+          "worker_pid": 2194771
+        },
+        "external_wait": null,
+        "fleet_verdict": {
+          "detail": "",
+          "lifting_condition": null,
+          "recovery": "review",
+          "recovery_classification": "scoring",
+          "stall_base_detail": null,
+          "stall_base_state": null,
+          "stall_pause_reason": null,
+          "stall_process_state": null,
+          "stall_quiet_seconds": null,
+          "stall_window_seconds": 900,
+          "state": "completed_unpromoted"
+        },
+        "interruption": null,
+        "lane": "clive",
+        "lane_cause": null,
+        "lane_ended_at": "2026-10-22T03:50:36Z",
+        "lane_event": null,
+        "lifting_condition": null,
+        "liveness_proven": true,
+        "log_age_seconds": 1242,
+        "log_fresh": false,
+        "manifest_commits": [
+          "f20ec8a6c4d270cb65ff23bb32445b2fc90ae1e7",
+          "72c5e780d37b5209fe364c89f58f73dd586c5629",
+          "9554f98060ea8596578c2ba17a0ada2b62e985dd"
+        ],
+        "manifest_derived": false,
+        "manifest_digest": "55312cda11e5bb6442198f359bc0b12575f602c2e218fe3d4a08707d2ca4090e",
+        "manifest_error": null,
+        "manifest_file_present": true,
+        "manifest_fresh": true,
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T030213912208-a-deferred-run-leaves-the-needs-you-line/manifest.md",
+        "manifest_present": true,
+        "manifest_reported_status": "complete",
+        "manifest_status": "complete",
+        "marker": null,
+        "model_key": "flash",
+        "needs_help_complete": null,
+        "next_action": "reckon crew dispatch --project reckon --brief /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T030213912208-a-deferred-run-leaves-the-needs-you-line/review-brief.md --plan the-monitor-shows-the-work-it-watches --section '§79' --role review --spec-level exact --node review-of-a-deferred-run-leaves-the-needs-you-line-9554f98060ea --goal 'attach an independent review to run r-20261022T030213912208-a-deferred-run-leaves-the-needs-you-line' --done-when 'the review for r-20261022T030213912208-a-deferred-run-leaves-the-needs-you-line stores a parsed record scoring all 6 dimensions in the range 0..20, recording the revision it read as reviewed_base_sha and reviewed_head_sha, and carrying added_failure_count and added_failure_ids derived from the reviewed run'\"'\"'s own baseline_suite and after_suite gate logs; the record is written at one of this run'\"'\"'s declared write paths, under review-records/ inside the directory of run r-20261022T030213912208-a-deferred-run-leaves-the-needs-you-line, and never in the worktree; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T030213912208-a-deferred-run-leaves-the-needs-you-line/review-records/r-20261022T030213912208-a-deferred-run-leaves-the-needs-you-line.json --write-path /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T030213912208-a-deferred-run-leaves-the-needs-you-line/review-records/r-20261022T030213912208-a-deferred-run-leaves-the-needs-you-line.at-9554f98060ea8596578c2ba17a0ada2b62e985dd.json --time-budget 45m --session f653840f-3ca8-4792-819c-9ee9708bdbac --allow-unreconciled-runs --local",
+        "node": "a-deferred-run-leaves-the-needs-you-line",
+        "phase": "complete",
+        "plan": "the-monitor-shows-the-work-it-watches",
+        "process_alive": false,
+        "process_descendant_alive": null,
+        "project": "reckon",
+        "recovery": "review",
+        "recovery_classification": "scoring",
+        "resets_at": null,
+        "review_error": null,
+        "review_present": false,
+        "review_status": null,
+        "run_id": "r-20261022T030213912208-a-deferred-run-leaves-the-needs-you-line",
+        "session": "f653840f-3ca8-4792-819c-9ee9708bdbac",
+        "stored_phase": "complete",
+        "terminal_age_seconds": 1281,
+        "terminal_at": "2026-10-22T03:49:55Z",
+        "wait_age_seconds": null,
+        "wait_condition_state": null,
+        "wait_key_defect": null,
+        "wait_observed": null,
+        "wait_overdue": null,
+        "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/f653840f-3ca8-4792-819c-9ee9708bdbac/a-deferred-run-leaves-the-needs-you-line"
+      }
+    ]
+  },
+  "wall_seconds": 3223,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "ended_pids": [],
+    "exit_code": 0,
+    "exited_at": "2026-10-22T05:06:07Z",
+    "last_record_type": "result",
+    "launched_at": "2026-10-22T04:12:59Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261022T034717545596-an-announcement-names-who-it-cannot-reach",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 11479,
+    "worker_pid": 2823953
+  },
+  "worker_seconds": 3123,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
