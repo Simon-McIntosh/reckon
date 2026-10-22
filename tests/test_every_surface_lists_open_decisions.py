@@ -16,10 +16,10 @@ import threading
 from pathlib import Path
 
 import pytest
-import reckon.mcp as mcp_module
-from reckon._plan_html import write_state
 
+import reckon.mcp as mcp_module
 import reckon.serve as serve_module
+from reckon._plan_html import write_state
 from reckon.mcp_views import roadmap_view
 from reckon.roadmap import build_roadmap, waiting_decision_rows
 from tests.mcp_family_reload import reload_mcp_family
