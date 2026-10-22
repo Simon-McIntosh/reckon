@@ -14,7 +14,7 @@ manifest's own blocker line rather than a string handed to the analyser.
 
 from __future__ import annotations
 
-from reckon.roadmap import _mentioned_section_refs, build_roadmap
+import reckon.roadmap as roadmap
 
 PROJECT = "sample"
 
@@ -111,14 +111,14 @@ def test_the_extraction_returns_the_refs_a_literal_text_names():
     the round trip.
     """
 
-    assert _mentioned_section_refs("wait beta#s4 must land first") == ["beta#s4"]
-    assert _mentioned_section_refs("wait beta#s4, then gamma#s2.") == [
+    assert roadmap._mentioned_section_refs("wait beta#s4 must land first") == ["beta#s4"]
+    assert roadmap._mentioned_section_refs("wait beta#s4, then gamma#s2.") == [
         "beta#s4",
         "gamma#s2",
     ]
-    assert _mentioned_section_refs("also other:delta#s3 does") == ["other:delta#s3"]
-    assert _mentioned_section_refs("beta#s4 beta#s4") == ["beta#s4"]
-    assert _mentioned_section_refs("no reference here") == []
+    assert roadmap._mentioned_section_refs("also other:delta#s3 does") == ["other:delta#s3"]
+    assert roadmap._mentioned_section_refs("beta#s4 beta#s4") == ["beta#s4"]
+    assert roadmap._mentioned_section_refs("no reference here") == []
 
 
 def test_a_blocked_run_naming_an_undeclared_section_is_reported(monkeypatch, tmp_path):
@@ -134,7 +134,7 @@ def test_a_blocked_run_naming_an_undeclared_section_is_reported(monkeypatch, tmp
     monkeypatch.setattr("reckon.crew.list_live", lambda: [pointer])
     _write_claims(monkeypatch, [])
 
-    report = build_roadmap(
+    report = roadmap.build_roadmap(
         PROJECT,
         [_plan("alpha"), _plan("beta", sections={"s4": "implementable"})],
         [_sprint("alpha", "beta")],
@@ -164,7 +164,7 @@ def test_the_same_fixture_with_the_edge_declared_emits_nothing(monkeypatch, tmp_
     monkeypatch.setattr("reckon.crew.list_live", lambda: [pointer])
     _write_claims(monkeypatch, [])
 
-    report = build_roadmap(
+    report = roadmap.build_roadmap(
         PROJECT,
         [
             _plan("alpha", section_depends_on={"s1": ["beta#s4"]}),
@@ -182,7 +182,7 @@ def test_a_gate_measure_naming_an_undeclared_section_is_reported(monkeypatch, tm
     monkeypatch.setattr("reckon.crew.list_live", list)
     _write_claims(monkeypatch, [])
 
-    report = build_roadmap(
+    report = roadmap.build_roadmap(
         PROJECT,
         [
             _plan(
@@ -226,7 +226,7 @@ def test_two_plans_open_sections_claiming_one_path_are_reported(monkeypatch):
         ],
     )
 
-    report = build_roadmap(
+    report = roadmap.build_roadmap(
         PROJECT,
         [_plan("alpha"), _plan("beta", sections={"s4": "implementable"})],
         [_sprint("alpha", "beta")],
@@ -262,7 +262,7 @@ def test_two_plans_open_sections_claiming_disjoint_paths_emit_nothing(monkeypatc
         ],
     )
 
-    report = build_roadmap(
+    report = roadmap.build_roadmap(
         PROJECT,
         [_plan("alpha"), _plan("beta", sections={"s4": "implementable"})],
         [_sprint("alpha", "beta")],
@@ -296,7 +296,7 @@ def test_a_section_declared_done_is_not_reviewed_for_overlapping_scope(monkeypat
         ],
     )
 
-    landed = build_roadmap(
+    landed = roadmap.build_roadmap(
         PROJECT,
         [
             _plan("alpha", sections={"s1": "done"}),
@@ -306,7 +306,7 @@ def test_a_section_declared_done_is_not_reviewed_for_overlapping_scope(monkeypat
     )
     assert _wiring(landed, "overlapping-scope") == []
 
-    still_open = build_roadmap(
+    still_open = roadmap.build_roadmap(
         PROJECT,
         [_plan("alpha"), _plan("beta", sections={"s4": "implementable"})],
         [_sprint("alpha", "beta")],
@@ -332,7 +332,7 @@ def test_two_sections_of_one_plan_claiming_one_path_emit_nothing(monkeypatch):
         ],
     )
 
-    report = build_roadmap(
+    report = roadmap.build_roadmap(
         PROJECT,
         [_plan("alpha", sections={"s1": "implementable", "s2": "implementable"})],
         [_sprint("alpha")],
