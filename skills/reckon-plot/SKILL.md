@@ -38,6 +38,16 @@ In a crew-managed repository, investigation and review fan-out is `reckon crew d
 | What is drawn and how: topology, labels, spacing, colour roles, annotations, captions | A restyle sweep across many figures: brief it precisely and tell the lead which went out |
 | A `--only` flag or a layout check the figure needs | |
 
+## Canvas
+
+Draw on the slide canvas unless the figure needs more height: 14 × 7.2 in, an
+aspect of 1.94:1, with the file declaring a 16 cm height (31.1 × 16 cm) so it
+inserts on a slide at that size. An SVG declares it through its `width` and
+`height`, and a PNG drawn at 200 dpi through its resolution. Every image of one
+build sequence shares the canvas. A figure with many stacked panels may take
+more height, keeping the 14 in width. The repository's save function holds the
+canvas and the declaration (`~/.agents/AGENTS.md`, "Plot style").
+
 ## The loop
 
 1. **Resolve the figure.** A `/<project>/figures/<slug>` URL or a
