@@ -54,6 +54,72 @@ from reckon.crew.runs import (
 REVIEW_DISPATCH_FIELD = "review_dispatch"
 FIGURE_REVIEW_DISPATCH_FIELD = "figure_review_dispatch"
 
+# The pointer field recording the revision a run's own resume left behind. A
+# resume carries a stopped run forward from the head it delivered, so the review
+# and the promotion that read that revision speak for work the run has moved
+# past. The field carries the head the run was resumed from and the instant it
+# was resumed, so a duty reading against a review of that head is withdrawn
+# while the run still carries it and returns, naming the head the run delivers
+# next, once the run moves past it. It is distinct from ``auto_resume``, which
+# records only the sweep's own automatic lifts and whose absence says nothing
+# about a resume a person typed.
+RESUME_SUPERSEDED_HEAD = "resume_superseded_head"
+
+
+def resume_superseded_head(record: Mapping[str, Any]) -> str:
+    """The revision a resume of this run replaced, or empty.
+
+    Emptiness means no resume has left a head behind for this run, which is the
+    answer for a run nobody has resumed and for one resumed before a head could
+    be read from its tree.
+    """
+    stamped = record.get(RESUME_SUPERSEDED_HEAD)
+    if not isinstance(stamped, Mapping):
+        return ""
+    return str(stamped.get("head") or "")
+
+
+def resume_superseded_at(record: Mapping[str, Any]) -> datetime | None:
+    """The instant this run was resumed from the head it left behind, or None."""
+    stamped = record.get(RESUME_SUPERSEDED_HEAD)
+    if not isinstance(stamped, Mapping):
+        return None
+    return parse_utc(stamped.get("at"))
+
+
+def supersedes_head(record: Mapping[str, Any], head: str) -> bool:
+    """Whether a resume of this run has left ``head`` behind and it still stands.
+
+    True while the run carries the revision the resume superseded, which is the
+    window in which a review or a promotion of that revision is owed nothing:
+    the resume replaced them with a head only the run's own resumption can
+    settle. A run whose worktree has moved on has delivered the head that
+    settles it, so the comparison fails and the duties for the new head stand.
+    """
+    superseded = resume_superseded_head(record)
+    if not superseded or not head:
+        return False
+    return same_revision(superseded, head)
+
+
+def _latest_resume_at(record: Mapping[str, Any]) -> datetime | None:
+    """The newest instant this run is known to have been resumed, or None.
+
+    Two records carry one and a reader needs whichever is newest: the sweep's
+    own ``auto_resume`` stamp, and the superseded head a resume of any kind
+    leaves. Reading one alone would misdate a resume the other recorded.
+    """
+    stamps: list[datetime] = []
+    automatic = record.get("auto_resume")
+    if isinstance(automatic, Mapping):
+        automatic_at = parse_utc(automatic.get("at"))
+        if automatic_at is not None:
+            stamps.append(automatic_at)
+    explicit = resume_superseded_at(record)
+    if explicit is not None:
+        stamps.append(explicit)
+    return max(stamps, default=None)
+
 
 def _review_dispatch_field(rubric: str | None = None) -> str:
     """The pointer field that records one review rubric's dispatches."""
@@ -1049,18 +1115,23 @@ def withdraw_superseded_review(record: Mapping[str, Any]) -> dict[str, Any] | No
     """Withdraw a queued review the run's own resume has moved past.
 
     A review dispatch is queued against the head it composed for. Once the run
-    is resumed its head moves, and the queued review speaks for a revision the
-    run no longer carries. The reflex records the attempt withdrawn rather than
-    letting it stand, so the superseded attempt is visible and the run is free
-    to be re-reviewed — or carried — at its new head. A dispatch that already
-    covers the current head, or a run not resumed since the attempt was
-    recorded, is left standing.
+    is resumed, that head is the revision the resume replaced: the run continues
+    from it toward a head only its own resumption settles, so the queued review
+    speaks for a revision the run has finished with. The reflex records the
+    attempt withdrawn rather than letting it stand, so the superseded attempt is
+    visible and the run is free to be re-reviewed — or carried — at its new
+    head. A dispatch that already covers the current head, or a run not resumed
+    since the attempt was recorded, is left standing.
 
     Only an attempt that never started is withdrawn. A review whose worker has
     launched is running, and a running review finishes: its verdict reaches the
     run's new head through the carry-forward rule rather than being discarded
     here, so the review run's own launch record decides and the age of the
-    dispatch record does not.
+    dispatch record does not. A queued attempt that never started is withdrawn
+    where it stands as well as recorded: its own pointer is discarded, carrying
+    the reason, so the lane has nothing left to launch for a head the run has
+    moved past — a withdrawal only recorded on the reviewed run would still be
+    launched by the first admission pass to reach it.
     """
     run_id = str(record.get("run_id") or "")
     recorded = record.get(REVIEW_DISPATCH_FIELD)
@@ -1068,34 +1139,43 @@ def withdraw_superseded_review(record: Mapping[str, Any]) -> dict[str, Any] | No
         return None
     if str(recorded.get("status") or "") == "withdrawn":
         return None
-    resume = record.get("auto_resume")
-    resumed_at = parse_utc(resume.get("at")) if isinstance(resume, Mapping) else None
+    resumed_at = _latest_resume_at(record)
     if resumed_at is None:
         return None
     at = parse_utc(recorded.get("at"))
     if at is not None and resumed_at <= at:
         return None
-    if _review_worker_launched(str(recorded.get("run_id") or "")):
+    review_run_id = str(recorded.get("run_id") or "")
+    if _review_worker_launched(review_run_id):
         # The review's own worker already launched, so the review is running:
         # it finishes and its verdict reaches the run's new head through the
         # carry-forward rule rather than being withdrawn here.
         return None
     head = _run_head_for_review(record)
-    if _review_head_covers(str(recorded.get("head") or ""), head):
+    if _review_head_covers(
+        str(recorded.get("head") or ""), head
+    ) and not supersedes_head(record, head):
+        # The attempt still speaks for the head the run carries, and no resume
+        # has replaced that head, so it stands. A resume does replace it: the
+        # head it leaves behind is one the run's own continuation settles, so a
+        # review composed for it before the resume is withdrawn even while the
+        # tree still shows that revision.
         return None
-    _record_review_dispatch(
-        run_id,
-        status="withdrawn",
-        reason=(
-            "the run was resumed after this review was queued, so the review "
-            "speaks for a head the run no longer carries"
-        ),
+    reason = (
+        "the run was resumed after this review was queued, so the review "
+        "speaks for a head the run no longer carries; it is superseded by "
+        "that resume"
     )
+    discarded = ""
+    if _recorded_review_is_live(recorded):
+        discarded = _discard_stranded_review(review_run_id, reason=reason)
+    _record_review_dispatch(run_id, status="withdrawn", reason=reason)
     return {
         "run_id": run_id,
         "withdrawn": True,
-        "review_run_id": str(recorded.get("run_id") or ""),
+        "review_run_id": review_run_id,
         "head": head,
+        "discarded": discarded,
     }
 
 
@@ -2172,6 +2252,45 @@ def _open_review_refusal(
     return None
 
 
+def _resume_superseded_refusal(
+    record: Mapping[str, Any], *, dry_run: bool
+) -> dict[str, Any] | None:
+    """Refuse to compose a review for a head the run's own resume superseded.
+
+    A run that was resumed can still read as delivered at the revision it was
+    resumed from — its manifest was written before the resume and the worker
+    carrying it on has not written the next one yet. A review composed against
+    that head reads a revision the run is finished with, and the sweep would
+    spend a member and a lane on work whose answer the resume has already
+    invalidated. The reflex therefore withholds the composition while the run
+    still carries the head its resume replaced, and composes again for the head
+    the run delivers next. A plan review and a review of a review are not run
+    deliveries and are left alone.
+    """
+    if record.get("subject") == "plan" or _is_review_run(record):
+        return None
+    run_id = str(record.get("run_id") or "")
+    if not run_id:
+        return None
+    head = _run_head_for_review(record)
+    if not supersedes_head(record, head):
+        return None
+    reason = (
+        f"run {run_id!r} was resumed and still carries {head}, the head its "
+        "resume superseded; no review is composed for it until it delivers a "
+        "new head"
+    )
+    if not dry_run:
+        _record_review_dispatch(run_id, status="withdrawn", reason=reason)
+    return {
+        "run_id": run_id,
+        "dispatched": False,
+        "refused": True,
+        "reason": reason,
+        "superseded_head": head,
+    }
+
+
 def dispatch_review_for_run(
     record: Mapping[str, Any],
     *,
@@ -2182,6 +2301,9 @@ def dispatch_review_for_run(
     dry_run: bool = False,
 ) -> dict[str, Any]:
     """Dispatch the text review and, when needed, its separate figure review."""
+    refusal = _resume_superseded_refusal(record, dry_run=dry_run)
+    if refusal is not None:
+        return refusal
     refusal = _open_review_refusal(record, dry_run=dry_run)
     if refusal is not None:
         return refusal

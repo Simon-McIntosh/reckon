@@ -1256,6 +1256,59 @@ def _write_resume_prompt(advice_path: Path, *, plan: Any, advice: str) -> None:
     advice_path.write_text(prompt_text.rstrip("\n") + "\n", encoding="utf-8")
 
 
+def _record_resume_supersedes_head(run_id: str) -> str:
+    """Record the head a resume leaves behind, with the instant it was resumed.
+
+    A resumed run keeps the head it had delivered until its worker delivers the
+    head that settles the resume, and the review, the promotion and the
+    coordinator's duties that read that revision all speak for work the run has
+    moved past. The head and the instant travel on the pointer under one slot,
+    so a reader that owes a duty against a head can see which revision a resume
+    replaced and a queued review can be told from one the resume superseded.
+
+    A run whose tree yields no head records nothing: a slot keyed on an empty
+    head would withdraw every duty that reads against a head rather than only
+    the superseded one. Returns the head recorded, or empty.
+    """
+    from reckon.crew.recovery import _run_head_for_review
+    from reckon.crew.recovery_review_dispatch import RESUME_SUPERSEDED_HEAD
+
+    with _pointer_lock(run_id):
+        try:
+            current = read_pointer(run_id)
+        except CrewError:
+            return ""
+        try:
+            head = _run_head_for_review(current)
+        except Exception:  # noqa: BLE001 - an unreadable tree records nothing
+            return ""
+        if not head:
+            return ""
+        current[RESUME_SUPERSEDED_HEAD] = {"head": head, "at": _utc_now()}
+        _write_json(pointer_path(run_id), current)
+    return head
+
+
+def _withdraw_review_superseded_by_resume(run_id: str) -> None:
+    """Withdraw the queued review this resume supersedes, as the sweep would.
+
+    The reflex's sweep withdraws a review its source run's resume has left
+    behind, but a sweep runs on a cadence: between the resume and the next pass
+    a queued review is launchable by any admission that reaches it, and it would
+    read the revision the resume just replaced. Running the reflex's own reader
+    here, at the resume that supersedes it, closes that window without a second
+    rule — only the moment the withdrawal is noticed differs.
+    """
+    from reckon.crew.recovery_review_dispatch import withdraw_superseded_review
+
+    try:
+        record = read_pointer(run_id)
+    except CrewError:
+        return
+    with suppress(Exception):
+        withdraw_superseded_review(record)
+
+
 def _reset_delivered_manifest_status(
     run_id: str, record: Mapping[str, Any] | None = None
 ) -> Path | None:
@@ -1418,6 +1471,8 @@ def _resume(
             attempt_started_at=attempt_started_at,
             manifest_baseline_mtime_ns=manifest_baseline_mtime_ns,
         )
+        _record_resume_supersedes_head(run_id)
+        _withdraw_review_superseded_by_resume(run_id)
     finally:
         _LAUNCHES_IN_THIS_PROCESS.discard(run_id)
     return {"pid": pid, "turn": turn, "log_path": str(log_path), "plan": plan}

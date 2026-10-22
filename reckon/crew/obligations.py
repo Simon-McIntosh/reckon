@@ -37,6 +37,7 @@ from reckon.crew import (
 )
 from reckon.crew import review as review_module
 from reckon.crew.node import INTERRUPTED_RUN_PHASE, CrewError, parse_duration
+from reckon.crew.recovery_review_dispatch import supersedes_head
 from reckon.crew.routing import (
     WorktreeRecordIndex,
     _registered_worktrees,
@@ -653,7 +654,7 @@ def _review_duty_item(
     *,
     now: datetime,
     grace: int,
-) -> dict[str, Any]:
+) -> dict[str, Any] | None:
     """One review duty, keyed to the review of the run's current worktree head.
 
     The kind is decided by the selection promotion uses
@@ -685,6 +686,15 @@ def _review_duty_item(
     review-queued while the refusal is inside its bound, naming when the lane
     refused it and the session's published worker slots, so the coordinator
     sees a wait the reflex owns rather than a dispatch nobody ran.
+
+    A run that was resumed owes nothing against the head the resume replaced.
+    Whatever this run's delivered revision earned — a missing review, a stale one,
+    a tier the merged-head gate checks instead — the evidence speaks for work the
+    run has moved past, and a coordinator acting on it spends a member, a lane or
+    a promotion on a revision that is no longer the run's. So the duty is
+    withdrawn while the run still carries the revision its resume superseded, and
+    it returns naming the run's new head as soon as the run delivers one. Returns
+    None for a withdrawn duty, which its caller lists as no duty at all.
     """
     age = _row_age(row, now=now)
     classification = str(row.get("classification") or "")
@@ -700,6 +710,10 @@ def _review_duty_item(
         # No live tree to ask, or a reviewer whose own record is its
         # deliverable: the classifier's own reading stands.
         return _live_item(row, kind=_classification_kind(), now=now)
+
+    resumed_head, _tree = recovery._review_head_and_tree(pointer)
+    if supersedes_head(pointer, resumed_head):
+        return None
 
     if _review_tier_for_duty(row, pointer) == review_tiers.NONE:
         item = _live_item(
@@ -718,7 +732,7 @@ def _review_duty_item(
             "review is owed and the merged-head gate checks it instead"
         )
         return item
-    head, tree = recovery._review_head_and_tree(pointer)
+    head, tree = resumed_head, _tree
     try:
         review, reviewed_head = recovery.select_review_for_head(
             project, str(row.get("run_id") or ""), head, tree=tree
@@ -1302,15 +1316,15 @@ def obligations(project: str, session: str) -> dict[str, Any]:
                 )
             ):
                 continue
-            items.append(
-                _review_duty_item(
-                    project,
-                    row,
-                    pointers.get(str(row.get("run_id") or "")),
-                    now=now,
-                    grace=grace,
-                )
+            item = _review_duty_item(
+                project,
+                row,
+                pointers.get(str(row.get("run_id") or "")),
+                now=now,
+                grace=grace,
             )
+            if item is not None:
+                items.append(item)
             continue
         if recovery_classification in RECOVERY_CLASSIFICATION_DUTY_KINDS:
             kind = RECOVERY_CLASSIFICATION_DUTY_KINDS[recovery_classification]

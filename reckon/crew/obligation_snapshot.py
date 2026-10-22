@@ -1020,15 +1020,19 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
         if classification in module.REVIEW_CLASSIFICATION_KINDS:
             if classification == "scoring" and run_id in in_flight:
                 continue
-            items.append(
-                module._review_duty_item(
-                    state.project,
-                    row,
-                    state.pointers.get(run_id),
-                    now=state.now,
-                    grace=state.grace,
-                )
+            duty = module._review_duty_item(
+                state.project,
+                row,
+                state.pointers.get(run_id),
+                now=state.now,
+                grace=state.grace,
             )
+            # A run carrying the head its own resume superseded owes nothing
+            # for that head, and the derivation returns no duty rather than a
+            # stale one; the slice has to drop it too, since the payload is
+            # what the reader is handed.
+            if duty is not None:
+                items.append(duty)
             continue
         if classification == "queued":
             # A queued request is listed as waiting by the derivation, so the
