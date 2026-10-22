@@ -1,0 +1,58 @@
+<section class="r-section" id="a-slow-launch-retries-a-vanished-bind">
+  <h3 id="a-slow-launch-retries-a-vanished-bind-title">A slow launch's vanished-bind refusal is retried</h3>
+  <p id="a-slow-launch-retries-a-vanished-bind-what">
+    The retry that recovers a launch refused over a read-only bind source a
+    rename left missing for an instant keyed on the child exiting inside a
+    half-second startup window. On a placed launch the child is the local
+    scheduler client, which outlives the step's own start, so the sandbox's
+    refusal reaches the launch's own stderr seconds after the launch and the
+    client is still running when it does. A refusal that landed four seconds in
+    was therefore recorded as a launch failure although the same launch a moment
+    later would have begun normally.
+  </p>
+  <p id="a-slow-launch-retries-a-vanished-bind-fix">
+    The startup watch now reads the refusal from the launch's own stderr inside a
+    window of <code>30</code> seconds, sized for a placed step, and ends early on
+    the first of three facts: a refusal naming a read-only bind source this
+    launch would mount (retried), the launch's stream beginning, or the child
+    exiting — whose stderr is read once more before answering. The window no
+    longer keys on the child's exit alone, so the healthy path is not held to it.
+    The stream path is threaded through both spawn sites.
+  </p>
+  <ul id="a-slow-launch-retries-a-vanished-bind-measures">
+    <li>
+      Gate (<code>tests/test_a_slow_launch_retries_a_vanished_bind.py</code>,
+      <code>tests/test_spawn_retries_a_vanished_bind.py</code>,
+      <code>tests/test_an_early_exit_keeps_its_status.py</code>,
+      <code>tests/test_a_failed_launch_does_not_block_its_node.py</code>):
+      <strong>19 passed, EXIT=0</strong>, at revision
+      <code>935bd7f183b684a1ff69a8346dee54214763fcd1</code>. The existing
+      early-exit control is green unchanged.
+    </li>
+    <li>
+      Base arm (the new test file at <code>6d3c43bbd</code> in a scratch
+      extraction, so the arm imports the base module): <strong>3 failed,
+      2 passed, EXIT=1</strong>. The delayed-refusal fixture the measure names
+      fails there, recorded as a launch failure.
+    </li>
+    <li>
+      Negative control — the declared mutation, keying the retry on the startup
+      window again instead of the refusal text (window back to <code>0.5</code>
+      and the in-window refusal read removed): <strong>2 failed, 3 passed,
+      EXIT=1</strong>. Both failing ids are
+      <code>test_a_launch_refused_after_the_step_starts_is_retried</code> under
+      each refusal phrase, neither of which the head arm fails.
+    </li>
+  </ul>
+  <p id="a-slow-launch-retries-a-vanished-bind-delay">
+    The four-second delay alone reproduces the recorded failure: the
+    same-delay case whose refusal names no bind source passes at the base commit
+    and again at head, recording the launch failure both times. Only the
+    refusal's text separates the retried case from the recorded one.
+  </p>
+  <p id="a-slow-launch-retries-a-vanished-bind-paths">
+    Changed: <code>reckon/crew/dispatch_launch.py</code> (the startup watch, the
+    stream check, and the <code>log_path</code> argument at both spawn sites) and
+    the new test file. Commits <code>046863d4</code>, <code>935bd7f1</code>.
+  </p>
+</section>
