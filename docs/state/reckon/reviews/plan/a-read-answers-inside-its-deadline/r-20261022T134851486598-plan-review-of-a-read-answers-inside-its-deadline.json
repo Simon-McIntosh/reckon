@@ -1,0 +1,150 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T14:02:20.867Z",
+  "dispatched_at": "2026-10-22T13:52:33Z",
+  "findings": [
+    {
+      "anchor": "plan.html#s31",
+      "id": "wiring-1",
+      "reason": "the map is what the coordinator dispatches from, and an unordered pair of writers on `reckon/serve.py` and `reckon/metadata_index.py` produces the merge collision this plan's earlier wiring finding on `s49`/`s31` was raised and fixed for.",
+      "text": "the dependency map lists `s31: [s46, s50]` and nothing else, but \u00a731's write paths are `reckon/metadata_index.py` and `reckon/serve.py`, which \u00a751 (serve.py) and \u00a752 (serve.py, metadata_index.py) also write and which have no ordering against \u00a731; \u00a752's own text orders it \"after \u00a750 and \u00a751, which write the same modules\" and never mentions \u00a731, so a coordinator obeying the map can dispatch \u00a731 and \u00a752 into the same two files at once",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html#s52",
+      "id": "done_when-1",
+      "reason": "a node implementing the stated control would log a negative control that runs red for no reason or is quietly abandoned, leaving the first half of the deliverable with no guard at all; the second half (the file-open count) is the only half this node's gate would really prove.",
+      "text": "the first done-when item (\"the index's figure row and `figure_rows`' row for the same path agree on every shared key\") is satisfied by construction once the index reads through `figure_rows`, and the declared control (\"rename one output key of `figure_rows`, and the agreement case fails\") cannot break it: the same rename reaches both rows, and the key comparison is over the intersection of keys, which simply shrinks; the control the change actually needs is one that restores the duplicate derivation (keep `metadata_index._figure_row`), where the index row then carries the old key set and the case fails",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html#s50",
+      "id": "reasoning-1",
+      "reason": "this is the mechanism the section was written for (replacing \u00a749's per-process watch), and if the counter is not shared the fix works in a one-process test and fails in the served deployment the plan exists to fix; the plan must say the counter is persisted on the same node-local storage and read on every call, and the done-when must add an arm where process A writes and a fresh process B's next call recomputes.",
+      "text": "\"A write counter that the store's single plan writer, `reckon/_store.py`'s `write_plan`, advances after every write \u2026 so an uncommitted plan write is seen at once by every process\": the snapshot is persisted on node-local storage shared by every process on the node, but the counter is described as owned in an existing module with no statement that it is persisted and re-read per call, and a module-level counter is process-local; the whole point of the persisted snapshot is that a second process \u2014 the current-code child, a restarted MCP server, the HTTP server \u2014 answers its first call from the file, so a write made by one process leaves the others' keys unmoved and they serve a stale composed roadmap for up to the 120 s window; the done-when does not close this either: \"a fresh process with nothing changed answers its first call from the persisted snapshot\" exercises no cross-process write at all",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f8923eaec2097f3b93fd6e592f797276df2cfa86e14814a47278bbd70076ddd0",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 388,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-22T14:10:26.680505+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-22T14:11:00.898619+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-22T14:11:33.474631+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-22T14:11:00.898619+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-22T14:11:33.474631+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-22T14:10:26.680505+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-read-answers-inside-its-deadline.v388.json",
+  "review_run_id": "r-20261022T134851486598-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "3b7a690dfe00f87a2a3616b1344856d2a6fd515e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every code anchor in the changed units resolves: `_store.write_plan` (`reckon/_store.py:1537`), `metadata_index._figure_row` (`reckon/metadata_index.py:1130`, still re-deriving through `figures._DIMS_BY_SUFFIX`, `_capture_metadata`, `_titleize`), `figures.figure_rows` (`reckon/figures.py:135`), `serve._read_crew_plan_details` (`reckon/serve.py:698`), `_plan_html.read_state_and_text_file` (`reckon/_plan_html.py:1547`), `serve._derive_lifecycle` (`reckon/serve.py:1870`), `roadmap.py`'s `held_blockers` (line 3694) and `plan_holding_decisions` (line 3710) into `is_blocked`, `tests/roadmap_fixtures.py::plan_row`, the three hand-rolling test files (`_plan` at `tests/test_roadmap_endpoints.py:17`, `tests/test_roadmap_names_interrupted_runs.py:25`, `tests/test_roadmap_sprint_derivation.py:11`), and the cited health review `~/.config/reckon/crew/reports/reckon/code-review/c0f25ce7789d/report.md`.",
+    "done_when": "a finding \u2014 \u00a752's negative control cannot make its agreement case fail, because after the change both rows come from `figures.figure_rows`.",
+    "evidence_paths": "pass \u2014 every arm writes under the run directory or into `docs/evidence/fragments/a-read-answers-inside-its-deadline/*.html`; the persisted snapshot \u00a750 adds is a node-local runtime cache and is named as such, not as a place a reader opens evidence.",
+    "naming": "pass \u2014 the new names in the changed units are mechanistic (write generation, write counter, revalidation window); the \"\u00a750\" pointers that remain are plan-internal cross-references, not symbols or comments in code.",
+    "reasoning": "a finding \u2014 \u00a750 keys a node-wide persisted snapshot on a write counter that its own text does not say is persisted, so the cross-process staleness the section exists to prevent is not produced by the mechanism as written, and no arm of its done-when tests it.",
+    "single_goal": "pass \u2014 \u00a750 (one keyed snapshot, with the deletions that follow from it), \u00a751 (one assembly for blockers) and \u00a753 (one row builder) each carry one deliverable; \u00a752's two deletions are two deletes of re-implementations under one goal and are measured separately.",
+    "wiring": "a finding \u2014 the section dependency map gives `s31` only `[s46, s50]`, while `s51` and `s52` also write `reckon/serve.py` (and `s52` `reckon/metadata_index.py`), so two ready nodes collide in the same files."
+  },
+  "section_digests": {
+    "_document": "7665c82a38f516466cb2af2ec44f5dc0d01095f825b4b284a06bc13a21705ff9",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "d3590301de308bed778201f244069e2c946fb1524000fca6c2c21eb1d1e32c43",
+    "s16": "faeb73699035587893b0ae1563a46b0d61c35dde8373141647c50f58c69963f2",
+    "s17": "f649ccf93ef083c2d57c5ede67cab122341f047a11766a076640e84b74d90f16",
+    "s18": "4e73e33e2ec0959879778a588e5dc669255a6790901271f2352c9d6ce92a1443",
+    "s19": "f6e2a8c3d1c90f4194ec9891635cef181cf62c62a5dbb39efd4c9832ac5d1e9b",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s20": "81e1ff125ddfc6955aa9bfbaae255b04b8bd03b75e9a4bbaec4a6e2de4790a39",
+    "s21": "12ee0e1852da5baa065bbe019bd803267f1817e4aa5fa5fcd12ec142ffba5f0f",
+    "s22": "6266f82976abf2a572694b2f91bf0143ff9a02ea484166e79b8197bde4e1a5e6",
+    "s23": "0c162cc0de7beec03e05834230443e4e755382e4c7b1cde4be476a6a17d232ec",
+    "s24": "c08bde5fe4a48fc01b81a4cf328439fde17d29607f5771497a07ae74c8f83498",
+    "s25": "218e76e29eb13021f7d92088d935b4d098aa0929c73ec1f5f4ee4fc8967328e1",
+    "s26": "25e5304fe5780aa9410db57be3ff538d9960379c8f31845f209abd225091913f",
+    "s27": "04e4a0f145492c1a1dcbcf8f220b8763fdd72fbbd2c5427deb9710071ac0aef7",
+    "s28": "1fc6c5bf6e9e33762ef98caf30043fbf50b550f14d9cd8ee7ffccfef1f87d788",
+    "s29": "c7daac1687ec68b3aca76f6a759088af2970e8407f09323f1863751a3e3f742c",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s30": "14d7046dd05d2fbc6e10d2973ae13a14f0de51e4f89a0043ba18dc8ea580a78c",
+    "s31": "f024ee9fae5586904388ab26af5c52e149d3fc1f6a2e1fa26deef66da3342a01",
+    "s32": "2ed1e8f3800b7b3cca94facebaee24b564589e1cc39cb70b5d7dd0bc442acfbd",
+    "s33": "dd8616bb906c189bff978509b84e4ff9d9859288d67a5b278f250297610a5e45",
+    "s34": "82ac81d2c333301a0d2b732ee3c2ea47ae1caad1871dc21a4bb4e414e9e2132a",
+    "s35": "e2eddc28bd105b77de69e0a1057d6e9c0e5d327ab9dfa86369a1ddf2748ba822",
+    "s36": "8316aeeca4ed3e2dd546bcdd830c2d56e6341602d206f1dc2dad036571e74ee0",
+    "s37": "3a8ec34741c39fe5a544b73ff1df299235678d20e7a9f5b7f83798b93b8e18a2",
+    "s38": "2897b3cfdcb3efba9e3770053ca56a86f80850af59215cf46087eed8e6c932e7",
+    "s39": "648430c7255e99dcbc17d608a00851a467da38d5f7a507a7cf8d9bc9d3bdb2b5",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s40": "3953543f0553a542e95031e2665f14e157e954fabe989d920000e51ea1d62910",
+    "s41": "25f9e4792f91c3ee0a8a50920d369ef1b32b66939244372cafe3597db90b6ba9",
+    "s42": "4f2a1b6cfd6ebd5a76b5a485edcc21a5b03f79edc0b6bc320fd1f8741f7cfc16",
+    "s43": "20488876f6fee281483b103736526b1ed884896959898015942c2b0c5f3a5807",
+    "s44": "fd45e6dda26f7661fdd05339cbf90e6cc27121e07ca066bd8ccf33c2978c3566",
+    "s45": "2d725b9f769ce58f93d2ac83120cf78d1cae45a0b024cc46e2206e1053421de7",
+    "s46": "c0eb5c1abb5629416d6958dd82219a9366a9fa65a1ac7e0e79234dcc3cca7a82",
+    "s47": "b9673bc3595a0781959ee9d7120eab676b69101328fbb3fe059b8a15331948d3",
+    "s48": "3dc6b1cf84a68a0fc706cf2bd753c957f5ce9c0b66cd1e7bd68a300054788133",
+    "s49": "42fd40c04663c5495da852faa688bf0592bce1ec20f1b1978ad58dffed822dfa",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s50": "20b8c933489689d871d9fbe67c332e8ac68ab3a18a2c1f59d4b1f41af42c5c24",
+    "s51": "7784b2c8cc7bcc4d4d85e9ebaf48e4d3035746044a830848835c4b5c87b9caf4",
+    "s52": "131cefa51e0dbed44a836a2468fab95fffac76b73400def804571b231ad2f06e",
+    "s53": "faf064fc62a3fa9af47cd7dd632b41e44f2361010fb87b10a08ee965b1890da0",
+    "s6": "63f2d766e38f196e33466c5a1f516b8a14f321ba0512be8e473824c797411ac9",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T14:09:53.822851+00:00"
+}
