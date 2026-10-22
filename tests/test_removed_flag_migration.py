@@ -387,7 +387,22 @@ def _wait_for(predicate, *, timeout: float = WATCHER_LOAD_BOUND_SECONDS) -> None
     pytest.fail("the follower did not receive the expected transition in time")
 
 
-def test_the_delivery_path_itself_carries_no_state_filter(home) -> None:
+def _wait_for_the_first_attach(attached: threading.Event) -> None:
+    """Wait, bounded, for the reader to derive its baseline before news moves.
+
+    A follower's first attach derives its baseline from the fleet as it stands
+    and captures the stream offset it will read from. A pointer that moves
+    before that capture is therefore shown as inventory — one row carrying the
+    state the run is now in, with no left half — rather than as the transition
+    the run made, and a reader armed this way reports the run's arrival and
+    never its departure. That orders the reader behind the fixture instead of
+    racing it, which is what this waits on.
+    """
+    if not attached.wait(WATCHER_LOAD_BOUND_SECONDS):
+        pytest.fail("the reader never attached to the fleet")
+
+
+def test_the_delivery_path_itself_carries_no_state_filter(home, monkeypatch) -> None:
     """A real follower delivers every state of the feed it reads.
 
     The no-op above is only honest if the generator it feeds is unfiltered by
@@ -405,6 +420,11 @@ def test_the_delivery_path_itself_carries_no_state_filter(home) -> None:
     run whose review is already attached, so a fixture that reaches it would
     need a stored review — the point here is the delivery path, so the
     vocabulary the reducer produces is what the assertion names.
+
+    The baseline has to be derived before the fleet moves: this attaches the
+    reader first and only then delivers. A fleet that moved before the reader
+    attached is inventory to it rather than news, and the assertion below is
+    about news.
     """
     _write_pointer(home, "r-one", "one-node", session="mine", phase="starting")
     _write_pointer(home, "r-two", "two-node", session="mine", phase="working")
@@ -419,10 +439,22 @@ def test_the_delivery_path_itself_carries_no_state_filter(home) -> None:
                 continue
             received.append(event)
 
+    attached = threading.Event()
+    real_cursor = runs.watch_stream_cursor
+
+    def cursor_recording_the_attach(project, **kwargs):
+        """Derive the baseline, then say so: the offset is captured here."""
+        cursor = real_cursor(project, **kwargs)
+        attached.set()
+        return cursor
+
+    monkeypatch.setattr(runs, "watch_stream_cursor", cursor_recording_the_attach)
+
     thread = threading.Thread(target=reader, daemon=True)
     thread.start()
     try:
         with runs._project_watch_claim("proj", "1h"):
+            _wait_for_the_first_attach(attached)
             crew.list_live(project="proj")
             _deliver(home, "r-one", "complete")
             crew.list_live(project="proj")
@@ -443,7 +475,7 @@ def test_the_delivery_path_itself_carries_no_state_filter(home) -> None:
     delivered = {event["to_state"] for event in received} | {
         event["from_state"] for event in received if event.get("from_state")
     }
-    assert delivered == {"completed_unpromoted", "dispatched"}
+    assert delivered == {"completed_unpromoted", "dispatched"}, received
     last_of_one = [event for event in received if event.get("run_id") == "r-one"][-1]
     assert (last_of_one["from_state"], last_of_one["to_state"]) == (
         "dispatched",
