@@ -1,0 +1,61 @@
+<!-- Evidence anchor: every-default-read-fits -->
+
+<section data-reckon="evidence" id="every-default-read-fits-evidence">
+  <h3>§2 — A default read fits by construction</h3>
+
+  <p id="every-default-read-fits-contract">
+    <strong>The contract is a table the code reads.</strong>
+    <code>VIEW_BUDGETS</code> in <code>reckon/mcp_budget.py</code> maps every
+    <code>(tool, view)</code> of every reckon MCP read tool to the most
+    characters a call using only that view's required arguments may return.
+    <code>view_budget(tool, arguments)</code> resolves the row for a call —
+    falling back to the tool's default view when the call names none — and an
+    over-ceiling receipt now carries <code>view_budget_characters</code>, so a
+    refusal names the row it broke rather than only the transport ceiling.
+    <code>bound_response</code>'s ceiling is unchanged and stays the guard; a
+    default call that reaches it is a defect in that view.
+  </p>
+
+  <p id="every-default-read-fits-compaction">
+    <strong>The views that serialised whole records were paged instead of
+    refused.</strong> All three changes route existing collections through the
+    existing <code>paginate()</code>; no parameter, view or refusal was added.
+    <code>roadmap</code> <code>view=detail</code> answered <code>dict(raw)</code>
+    — every per-plan row, every dependency object, the whole report — and now
+    answers the summary facts plus compact pending rows and one page of
+    findings. <code>read_plan</code> <code>view=raw</code> keeps every fact of
+    the plan state and pages its section records, the part that grows without
+    bound. <code>crew</code> <code>view=findings</code> returned every row twice
+    — once inside its path groups and once flattened beside them — and now pages
+    the groups and rebuilds <code>rows</code> from that page, so the two cannot
+    disagree about which rows the page carries. Recurrence is still counted from
+    the records, not from a page.
+  </p>
+
+  <p id="every-default-read-fits-measure">
+    <strong>The measure is a pinned fixture, and the control is the size failure
+    itself.</strong> <code>tests/test_every_default_read_fits.py</code> mounts a
+    synthetic project of 60 plans and 400 sections and calls every view of every
+    reckon MCP read tool with only that view's required arguments, asserting
+    each answer is within its row and that no view returns
+    <code>response_over_budget</code>. On the base revision the same fixture
+    answered <code>roadmap</code> <code>view=detail</code> with
+    <code>response_over_budget</code> — the answer it built there was 177,661
+    characters against the 80,000 ceiling, measured with the ceiling lifted so
+    that the size is visible rather than only the refusal — and after the
+    change it answers in 14,704 characters against its 30,000 row. The gate log
+    records an arm for each.
+  </p>
+
+  <p id="every-default-read-fits-caveat">
+    <strong>One gap is recorded rather than closed.</strong> The two
+    <code>raw</code> views are explicit lossless opt-ins rather than defaults,
+    so the test names them as a declared exception instead of holding them to a
+    compact row: <code>audit</code> <code>raw</code> answers in 23,507
+    characters on the fixture and fits, while <code>roadmap</code>
+    <code>raw</code> still reaches the 80,000 ceiling on a 60-plan project and
+    returns <code>response_over_budget</code>. Paging it would change what the
+    lossless view means, and §2 does not list it, so it is left as it is and
+    raised under <code>follow_ons</code>.
+  </p>
+</section>
