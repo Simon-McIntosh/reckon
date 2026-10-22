@@ -38,11 +38,23 @@ UPSTREAM = "plan-a"
 WAITS_ON_A = "plan-b"
 WAITS_ON_B = "plan-c"
 INDEPENDENT = "plan-d"
+RELEASING = "plan-e"
 
 UPSTREAM_HOURS = 3.0
 WAITS_ON_A_HOURS = 5.0
 WAITS_ON_B_HOURS = 2.0
 INDEPENDENT_HOURS = 1.0
+
+# The three ready sections releasing the most work, in the order the payload's
+# reach field forces: the chain's head releases the middle plan's section, the
+# releasing plan's first section releases its own second, and the independent
+# plan releases nothing. Written out here so the brief's reach list is
+# compared against the fixture rather than against a repeat of its own sort.
+EXPECTED_REACH = [
+    (f"{UPSTREAM}#s2", 1),
+    (f"{RELEASING}#s1", 1),
+    (f"{INDEPENDENT}#s1", 0),
+]
 
 # The chain the fixture's edges force, deepest prerequisite first. Written out
 # here so a brief naming something else is compared against the fixture rather
@@ -150,6 +162,12 @@ def _write_chain(docs: Path) -> None:
 def three_plan_project(mounted_project):
     _write_chain(mounted_project)
     _write_plan(mounted_project, INDEPENDENT, sections={"s1": INDEPENDENT_HOURS})
+    _write_plan(
+        mounted_project,
+        RELEASING,
+        sections={"s1": INDEPENDENT_HOURS, "s2": INDEPENDENT_HOURS},
+        section_depends_on={"s2": [f"{RELEASING}#s1"]},
+    )
     return mounted_project
 
 
@@ -383,15 +401,13 @@ def test_every_figure_in_the_brief_equals_its_roadmap_field(
         for row in ranked
     ]
 
-    # Three is the fixture's own fact — its ranked list holds at least three
-    # entries — so this is compared against the fixture, not against the constant.
+    # Three is the fixture's own fact, and it is compared against the fixture's
+    # own expectation rather than against a repeat of the brief's own sort.
     assert len(ranked) >= 3
-    by_reach = sorted(
-        brief.row("ready_sections")["sections"],
-        key=lambda entry: (-entry["unlocks"], entry["ref"]),
-    )[:3]
-    assert brief.row("ready_sections")["largest_reach"] == by_reach
-    assert len(brief.row("ready_sections")["largest_reach"]) == 3
+    assert [
+        (entry["ref"], entry["unlocks"])
+        for entry in brief.row("ready_sections")["largest_reach"]
+    ] == EXPECTED_REACH
 
     assert brief.row("wiring")["total"] == len(payload["wiring_findings"])
     assert brief.row("wiring")["top"] == [
