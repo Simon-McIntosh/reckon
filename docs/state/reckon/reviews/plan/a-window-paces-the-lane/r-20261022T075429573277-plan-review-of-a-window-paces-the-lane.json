@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T08:00:53.001Z",
+  "dispatched_at": "2026-10-22T07:55:29Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-window-paces-the-lane.html:2012",
+      "id": "reasoning-1",
+      "reason": "the plan names one caller where the dispatch path has two, and its done-when exercises only the primary call, so nothing in the plan would catch or fix the unthreaded fallback call.",
+      "text": "the Why says \"`_budget_verdict` is called in `reckon/crew/dispatch.py` (near line 1453) without the `session`\" and the Change says \"`dispatch()` passes its session to `_budget_verdict`\", but `dispatch()` calls `_budget_verdict` twice \u2014 at `reckon/crew/dispatch.py:1453` and again at `:1536`, the fallback re-judgement taken when the requested backend is held and a declared substitute is re-resolved \u2014 and the second call also omits `session`, so a worker following the plan literally fixes one site and leaves the same masking on the fallback path (a fallback backend in the masked group is judged without the session lift and held)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b4ab8e63608d0cdcce895eaf5f57fd4d4e278fc73cfc13af9c4b75eb046e3c21",
+  "plan_slug": "a-window-paces-the-lane",
+  "plan_version": 242,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T075429573277-plan-review-of-a-window-paces-the-lane",
+  "reviewed_blob_sha": "9860dabfd6e188681cb9146863dc5256bd5b8457",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_governing_lift` (budget_lift.py:1000), `_budget_verdict` near `reckon/crew/dispatch.py:1453`, `budget_group.effective_block` (budget_group.py:220), `_applies` (budget_lift.py:1033) and \u00a713 all resolve; the \"near line 1453\" anchor matches the call expression it names.",
+    "done_when": "pass \u2014 \u00a720's done-when is measurable (a fixture with a spent global credit lift and a live session credit lift under its cap) and names its negative control (\"On the base commit the first dispatch is refused naming the global lift, so the test fails there\"), which is only reachable through the credit-cap path and so confirms the fixture is built correctly.",
+    "evidence_paths": "pass \u2014 \u00a720 sends no evidence to a scratchpad or node-local temporary path; its gate logs and control fall under the run directory the frame supplies, as the sibling sections state explicitly.",
+    "naming": "pass \u2014 \u00a720 introduces no symbol or comment carrying a plan label, stage name or ticket number; the lift ids quoted are evidence data, not names baked into code.",
+    "reasoning": "a finding \u2014 the plan localizes the dropped session to one `_budget_verdict` call site, but the same function is called a second time inside `dispatch()` on the budget-fallback path without the session, so the stated mechanism is not applied to the whole path it claims.",
+    "single_goal": "pass \u2014 \u00a720 carries one deliverable: thread the dispatching session into the credit-cap judgement so a spent global lift does not mask a live session lift.",
+    "wiring": "pass \u2014 \u00a720 is declared `implementable` and the open followup `f-20261022-session-lift` (docs/plans/a-window-paces-the-lane.html:2140) recommends `/reckon-build a-window-paces-the-lane \u00a720`; the earlier wiring finding is answered, and \u00a720 needs no new depends-on since \u00a713 is done."
+  },
+  "section_digests": {
+    "_document": "dbdc9ab2d72875425db22b43518b4c25d51043f393877d15e568c0e5f6b05bdb",
+    "s1": "fd232b0e9e301983eea254fa355a00f9cfdad5e4ba397415c196946997e8b78a",
+    "s10": "cff30d466dd7580b4623ab4ba85a967692183d1c1fbf0a887b817140c3fe2bf9",
+    "s11": "4f344761a1c7f9eeda684c28b5399f6cc6c50a6961808244c50f4f385a8dfb83",
+    "s12": "d332f915a715e0ce7c1efdd5027285714154977800a9ec70d7b055bf5762609f",
+    "s13": "627916281462553dd6f077d4f3ad0d176f2e5177a66b12b43e0c6d7b6788b3d7",
+    "s14": "5c54d28fac7106fc49f1eb45cc396fb761556bbd5ae16f469c6cf14cdd342fc8",
+    "s15": "5acca22c78776d5b829195bb01b2c5d660f4787c61cd3b04e511e66046bc7cf0",
+    "s16": "3dcf3315f6ba2812e050e78dff00ef7816e3e4ecc36a672d2a94915c9b63b57e",
+    "s17": "389b1f5c6e5ccd170eda4e87d4a50ed8785e7e0ef0485ef2c7e8597176c84370",
+    "s18": "3acd44306ea9cc8f5c0a20e3aeb4221a43ab0edf6ddcb9f12448519ae3b2e7bb",
+    "s19": "4a84b14941d424d93f96d9c90164a3c964ba50a4257edf6ec9082fa198fe2314",
+    "s2": "0c4f642bff7cb6b87908ea9e036cb3161c15e31cb3285273e06bb2ac1f5c368c",
+    "s20": "4e6b03d37e877c22df7e2a6a034792acb89e7b86231b4f8184af4860b51ae7b0",
+    "s3": "ae3d7625321a46e7fa6a9ee3bac0272ee77d236811612140ef03b79670883261",
+    "s4": "8f3ac850d09e4745435c5274237c26be090ce2db03ac422e941c3329841d8563",
+    "s5": "3bc104a16d90fb6279e9ab8c70555e1041253ad31f6376c64b455da33489c6b0",
+    "s5b": "1be686d2a1165f13c4f4e81a29ca56c362c3b069dfc80759cf370cca59440d41",
+    "s6": "8e4ab80a317b73fb60010fe92858cbe3b073511ce10c4547c6eb8952a89829f0",
+    "s6-the-probe-reader-and-the-undeclared-dialect": "c463be6993bc79b07591a01d9e1a1d92d699a48d4c322b2cc395a0e78a2d097d",
+    "s7": "39b7111a3bfa256531f953bd33de123967e24fa4ffc75e6d1cbeca26a45c565d",
+    "s8": "9d68431496117798ca30bbebd6828adc5853e02df969ac62de3bb2dcd41512a4",
+    "s9": "5f72c27f2288b837b6513304ec92d0bf2e8950d169b0389c4c3ffeba27c23b6b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T08:02:52.617743+00:00"
+}
