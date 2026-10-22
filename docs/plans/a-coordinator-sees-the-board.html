@@ -25,7 +25,7 @@
   <title>A Coordinator Sees the Board | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 <meta name="plan-modified" content="2026-10-23">
 </head>
 <body>
@@ -80,8 +80,7 @@
       accountable. It is read as it stands and never overwritten.</li>
       <li><strong>The session.</strong> Every ledger run row carries <code>session</code>, the crew session
       that dispatched it, beside <code>session_id</code>, the worker's own harness session
-      (<code>reckon/ledger.py:162-165</code>, <code>reckon/run_record.py:538-539</code>), and <code>reckon/crew/obligations.py:429</code>
-      (<code>_live_review_runs</code>) already filters runs by the dispatching session.</li>
+      (<code>reckon/ledger.py:162-165</code>, <code>reckon/run_record.py:538-539</code>). <code>_live_review_runs</code> (<code>reckon/crew/obligations.py:467</code>) already filters live pointers by that session, but only those with a review in flight, so it is a precedent for the field, not a function to reuse.</li>
     </ul>
     <p>A plan's coordinator is the dispatching <code>session</code> of its most recent dispatched run, live or in the
     ledger, within a configured staleness window. A run is matched to its plan by the row's <code>plan</code> field, and, where that is null because the run was dispatched from a brief (<code>reckon/run_record.py:489</code>), by its <code>plan_link</code>. A run carrying neither is matched by the plan its node id names: a plan review's node <code>plan-review-of-&lt;slug&gt;</code> names <code>&lt;slug&gt;</code>, and a run review resolves through the run it reviews. A run matched by none of these belongs to no plan. The window is a configuration value, never a literal in
@@ -89,8 +88,9 @@
     facts: the <code>plan-owner</code> person and the coordinator session with its peer name where
     <code>reckon/crew/directory.py</code> resolves one. It also says whether that session is live, and an
     ended session reads as ended. A later dispatch by another session takes the plan over, and the ledger
-    already holds the earlier sessions as history. No claim store is added. The resolver is one function
-    beside <code>obligations.py</code>'s session filter, which it reuses.</p>
+    already holds the earlier sessions as history. No claim store is added. The resolver is one new function that reads the committed ledger rows and the live pointers, takes each run's
+    dispatching <code>session</code>, and keeps the most recent match per plan; it does not reuse
+    <code>_live_review_runs</code>, which sees only live pointers with a review in flight.</p>
     <p>Done when, on a fixture built from power_convertor's run ledger as committed at 2026-10-22T08:50Z,
     each named plan resolves to the coordinator its most recent matching row names:</p>
     <ul>
