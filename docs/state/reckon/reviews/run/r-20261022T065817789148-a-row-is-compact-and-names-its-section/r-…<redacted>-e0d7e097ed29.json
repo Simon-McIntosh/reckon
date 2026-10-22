@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-10-22T07:00:14Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-a-row-is-compact-and-names-its-section-e0d7e097ed29",
+      "recorded_at": "2026-10-22T16:57:27.471549+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "repair-of-a-row-is-compact-and-names-its-section-e0d7e097ed29",
+      "recorded_at": "2026-10-22T16:57:27.498179+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "repair-of-a-row-is-compact-and-names-its-section-e0d7e097ed29",
+      "recorded_at": "2026-10-22T16:57:38.285946+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/query.py",
+      "line": "133",
+      "severity": "blocking",
+      "text": "blocking: _selected_fields (reckon/crew/query.py:133) returns COMMON_RUN_FIELDS + requested when fields is passed, and that tuple is handed to _compact_row as selected_fields (query.py:710,713 -> 785,815), whose row is {field: complete[field] for field in selected_fields} at query.py:547. So a run row built for fields=['section'] carries only run_id, node, plan, section (plus member) \u2014 it does not carry classification, session_id or resumable. The view's own filters read exactly those keys: _matches (query.py:622-639) compares row.get('classification')/row.get('session_id') as strings and row.get('resumable') by identity, and row.get on an absent key returns None, so str(None or '') != 'blocked' and None is not False both drop the row. Reproduced by reading the commit at the reviewed head: crew(view='runs', fields=['section'], classification='blocked') now answers count:0 where the base commit answered the matching rows, because on the base _selected_fields always returned DEFAULT_RUN_FIELDS (query.py:20-41), which carries all three keys. Same for the session= and resumable= filters. Narrowing belongs in the final projection at query.py:872, after the filters have run, not in the row build."
+    },
+    {
+      "file": "reckon/crew/directory.py",
+      "line": "217",
+      "severity": "blocking",
+      "text": "blocking: directory() projects coordinator['runs'] (reckon/crew/directory.py:214) and unowned_runs (directory.py:217) with two separate project_run_rows calls, and project_run_rows builds its accepted vocabulary from the rows it is handed for that call (query.py:255-259: carried = COMMON_RUN_FIELDS, then update(row) for each row in that one list). When either list is empty the vocabulary collapses to COMMON_RUN_FIELDS, so a field the view does have is refused. A project whose runs all carry a session has an empty unowned_runs, so crew(view='directory', fields=['phase']) raises RunQueryError('unknown directory fields 'phase'; directory fields are node, plan, run_id, section'), which serve_crew_view converts to ok:false at mcp_views.py:3815. Before this change directory() took no fields argument at all (serve_crew_view called crew_directory(project, run_id=run_id, node_id=node)), so the field was accepted and ignored; it now fails the whole view. The accepted vocabulary must be the view's, not the list's."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "1386",
+      "severity": "blocking",
+      "text": "blocking: obligations() projects 'obligations' (reckon/crew/obligations.py:1383-1385) and 'acknowledged' (obligations.py:1386-1388) through two separate project_run_rows calls, and each call recomputes the accepted vocabulary from its own list (query.py:255-259). acknowledged is empty in the ordinary case \u2014 a coordinator with nothing acknowledged \u2014 so crew(view='obligations', fields=['kind','age_seconds']) raises RunQueryError('unknown obligations fields 'kind''), the duty rows are lost, and serve_crew_view answers ok:false. The base commit had no fields parameter on obligations() (the call was obligations_module.obligations(project, session)), so this is a regression of the newly wired parameter rather than a pre-existing one. Same root cause as the directory finding: the vocabulary must be the view's field set, not what one list happens to carry."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is 'Route every crew list view's rows through one projection that names each run's section'; project_run_rows (reckon/crew/query.py:221) is that one projection and all four views reach it \u2014 query.py:336 (live, via project_live_rows), query.py:872 (runs), obligations.py:1383/1386, directory.py:214/217 \u2014 and it fills the section from the run's pointer and canonicalises it (query.py:246-259).\nVERDICT done_when: read in prompt.txt:101-102; it names a five-file gate plus a before/after roadmap size reading. gate.log carries '# revision: 81aa5716c', the tree, the literal command and '64 passed in 992.57s' with a bare EXIT=0; gate-base-section-state.log carries '12 failed, 3 passed' EXIT=1 with all four four-view clauses and both section-state cases among the ids; roadmap-size.log carries both arms and an EXIT=0. The reviewed head e0d7e097ed is one commit past the gated 81aa5716c and touches only the evidence fragment, so the code at the head is the code the gate ran.\nVERDICT write_paths: the dispatch prompt's FENCE \u2014 SCOPE (prompt.txt:69-75) grants six paths; the manifest's orientation_write_paths declares eight, and resume-1-advice.txt / resume-2-advice.txt record the coordinator's extensions of reckon/crew/directory.py, reckon/crew/obligations.py and reckon/roadmap.py. git diff --stat 8c7e865d7 e0d7e097e lists exactly those eight paths and no ninth.\nVERDICT manifest: read; status in-progress with a checkpoint saying no work remains, both suite JSON records carry literal placeholder-free commands and readable log paths, negative_control_log names a bare path whose log ends EXIT=1 with 8 failing ids, and the three declared mutations plus the base arm are each in their own log whose figures I opened and matched.\nVERDICT diff: read commit by commit against the base (eight commits, 781 insertions across eight files) \u2014 9a7c6b83d and eb07961b3 route the directory/obligations/live rows through project_run_rows, 00ff2a685/59c57322a/81aa5716c/b84305f7a fix the section-state and empty-field rules, e0d7e097e and ac3b69b77 are the evidence fragment only.\nCALL_SITES: reckon/mcp.py:2264 (the crew MCP tool -> serve_crew_view), reckon/crew_run_commands.py:335 (CLI -> serve_crew_view), reckon/mcp_views.py:3815 (directory arm), reckon/mcp_views.py:3919 (obligations arm), reckon/mcp_views.py:4100 (live arm -> project_live_rows), reckon/mcp_views.py:2584 (_section_blocking reads the row verdict), reckon/mcp.py:1722 (_resolve_plan_ref -> dependency_row_state), reckon/roadmap.py:1368 (_section_scoped_edges -> dependency_row_state)\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/query.py:872 does route the runs rows through project_run_rows last so all four views share one projection and name the section, but the routing regresses the runs view's own filters (query.py:133) and the projection refuses fields the obligations and directory views do carry (obligations.py:1386, directory.py:217).\nSCORE evidence: 18\nJUSTIFICATION evidence: gate.log:1-5 records revision, tree, literal command, '64 passed' and a bare EXIT=0 at 81aa5716c, and gate-base-section-state.log ends '12 failed, 3 passed' EXIT=1; the done-when's size clause is recorded in roadmap-size.log rather than the gate log and rests on a 1,432-character paired reading the manifest itself flags as live-state sensitive.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff --stat 8c7e865d7 e0d7e097e is inside the eight paths the manifest declares and the coordinator extended (resume-1-advice.txt, resume-2-advice.txt), and each change serves the one projection or the section-state derivation.\nSCORE durability: 12\nJUSTIFICATION durability: the added assertions are independent of the values under test (tests/test_a_row_is_compact_and_names_its_section.py:193 and :237 compare against the literal '\u00a74' while the fixture dispatches 's4'; :369 compares against the literal 'done' while the containing plan reads active), but no committed assertion covers any of the three blocking defects below.\nSCORE fit: 18\nJUSTIFICATION fit: the added names (project_run_rows, run_section_index, dependency_row_state, COMMON_RUN_FIELDS, _canonical_section) are mechanism names in the surrounding docstring idiom of reckon/crew/query.py:183-195, and no plan, sprint, ticket or version identifier appears in the changed source, symbols, comments or the test file.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/query.py:333 delegates project_live_rows' whole-row projection to the new projection instead of keeping a second one, and reckon/roadmap.py:621 gathers the section-state rule that roadmap.py:1368 and mcp.py:1722 each held inline; a capability search over reckon/ for another row projection or dependency-state owner found none \u2014 reckon/_schema.py:717 resolve_plan_ref builds the same row shape but answers plan-level refs where the plan status is the correct answer, so it is not a fork of this capability.\nFINDING reckon/crew/query.py:133 blocking: _selected_fields now narrows the field set handed to _compact_row (query.py:710,713 -> 785,815), and _compact_row emits only the selected keys (query.py:547), so a row built for fields=['section'] carries no classification, session_id or resumable; the view's own filters read those three (query.py:622-639) with row.get, so crew(view='runs', fields=['section'], classification='blocked') and the session= and resumable= equivalents return an empty row list where the base commit returned the matching rows.\nFINDING reckon/crew/directory.py:217 blocking: directory() projects coordinator runs and unowned_runs in two separate project_run_rows calls, and project_run_rows computes the accepted vocabulary from the rows of one call (query.py:255-259), so an empty unowned_runs collapses it to COMMON_RUN_FIELDS and refuses a directory field the view does have \u2014 crew(view='directory', fields=['phase']) fails rather than narrowing the rows, where before this change the parameter was accepted and ignored.\nFINDING reckon/crew/obligations.py:1386 blocking: same defect on obligations() \u2014 'obligations' and 'acknowledged' are projected separately, so the ordinary case of nothing acknowledged makes crew(view='obligations', fields=['kind','age_seconds']) raise RunQueryError and lose the duty rows, a regression of the newly wired fields parameter.\n",
+  "review_run_id": "r-\u2026<redacted>-e0d7e097ed29",
+  "reviewed_base_sha": "8c7e865d7c686446437a65195c8db5970bfb3567",
+  "reviewed_head_sha": "e0d7e097ed2918200db11d5c187bb2f16e3ea90a",
+  "reviewed_run_id": "r-20261022T065817789148-a-row-is-compact-and-names-its-section",
+  "scores": {
+    "durability": 12,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T16:43:17.744699+00:00",
+  "total": 101
+}
