@@ -3078,6 +3078,11 @@ reckon/crew/dispatch.py:4535: TypeError
     <p><code>tests/test_a_watcher_carries_no_session_identity.py::test_crew_watch_sheds_identity_before_its_first_sweep</code> now passes the watch command's <code>stop</code> option at the default the click command declares, read through a helper that refuses a missing option. Test-only, 14 lines. The negative control removes the argument, and the test fails again with <code>TypeError: crew_watch() missing 1 required positional argument: 'stop'</code>. Merged at <code>4c659c40a</code> (head <code>74e38d7cb</code>). Reviewed 112/120. At the merge candidate <code>26576a2fa</code> the file passes 5 of 5 (log <code>~/.cache/reckon-suite-green/sg36-candidate-26576a2fa.log</code>).</p>
   </section>
 
+  <section id="s35">
+    <h2>§35 — the budget-check hold test drives the successor, landed</h2>
+    <p><code>tests/test_a_crew_verb_ok_reads_its_outcome.py::test_preflight_hold_and_clear_result_have_matching_exit_codes</code> drove <code>crew preflight</code>, a retired verb whose tombstone exits 10, so it failed comparing 10 with the budget-hold code 3. It now drives the successor, <code>crew budget --check</code>: a held check exits 3 with <code>ok</code> false, and a clear one exits 0. A separate assertion finds <code>crew preflight</code> exiting <code>TOMBSTONE_EXIT_CODE</code> and naming its successor. Test-only. The negative control makes the successor's held branch exit 0 in a scratch copy, and the held assertion fails with <code>assert 0 == 3</code>. Merged at <code>fd13a686c</code> (head <code>e306121ca</code>). Reviewed 112/120. At the merge candidate <code>b8f80c2fa</code> the file passes 25 of 25 (log <code>~/.cache/reckon-suite-green/sg35-candidate-b8f80c2fa.log</code>).</p>
+  </section>
+
 </main>
 </body>
 </html>
