@@ -1,0 +1,80 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/serve.py:3142",
+    "reckon/serve.py:1710",
+    "reckon/serve.py:1771",
+    "reckon/serve.py:1824",
+    "reckon/mcp_views.py:3519",
+    "reckon/roadmap.py:3783",
+    "reckon/roadmap.py:4457"
+  ],
+  "completed_at": "2026-10-22T20:45:39.661Z",
+  "dispatched_at": "2026-10-22T20:20:14Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/every-plan-write-goes-through-edit-plan/every-surface-lists-open-decisions.html",
+      "line": 32,
+      "severity": "follow-on",
+      "summary": "the crew paragraph's splice leaves an unreadable sentence",
+      "text": "the crew paragraph landed a botched edit: the sentence reads 'shared with the crew row's own sprint/effort read than the crew row's own read under the existing crew-plan-details memo entry', two drafts spliced into one clause with no grammatical reading, in a doc the docs server serves as the canonical evidence for this node."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T162012603305-every-surface-lists-open-decisions/manifest.md",
+      "line": 16,
+      "severity": "follow-on",
+      "summary": "the head revision is recorded as an unresolvable 33-character sha",
+      "text": "the commits list names 1a384136498caf0cc38a431b2e89c653a5, a 33-character string that resolves to no object (`git rev-parse --verify` refuses it), the same string heads logs/head-gate.log:1 where the done_when requires the log to open with its revision, and the list omits the increment's own evidence commit a7e8b89a9, so a reader cannot verify from the record which revision the head arm ran at."
+    },
+    {
+      "file": "docs/evidence/fragments/every-plan-write-goes-through-edit-plan/every-surface-lists-open-decisions.html",
+      "line": 93,
+      "severity": "follow-on",
+      "summary": "the ruff half of the done_when has no recorded receipt",
+      "text": "the done_when's ruff half ('ruff check and ruff format --check findings on every changed path do not exceed base') is asserted in prose here and has no receipt: the manifest's tests and test_logs carry only base-gate.log, head-gate.log and negative-control.log, and no ruff command line or EXIT= line for it exists anywhere in the run directory, so the claim cannot be re-run or checked."
+    },
+    {
+      "file": "reckon/serve.py",
+      "line": 1824,
+      "severity": "follow-on",
+      "summary": "the discovery payload's waiting_decisions list is untested",
+      "text": "the increment's added production behaviour, result['waiting_decisions'] = waiting_decision_rows(roadmap) on the discovery payload, is asserted by no case: the increment's tests read the summary view and the /crew route only, so deleting this line reddens nothing and the payload a caller is told to read the report's own list from could go missing unnoticed."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/serve.py:3142 the /crew route's open_decisions, reckon/serve.py:1710 and reckon/serve.py:1771 the discovery payloads calling _attach_ready_set, reckon/mcp_views.py:3519 the summary view, reckon/roadmap.py:3783 _build_roadmap populating waiting_decisions and reckon/roadmap.py:4457 the report key.",
+    "diff": "read both increment commits against base df765f99a0c92098c4886ed42bfa1ca054b6f400; 1a3841364 adds the scope fields at reckon/roadmap.py:1055 and the _waiting_plan_state helper plus the report's list on the discovery payload at reckon/serve.py:1824 and rebuilds the cases for two projects and three plans, and a7e8b89a9 is the evidence fragment alone.",
+    "done_when": "the done_when names the eighteen-file gate with zero added failures plus a ruff comparison against base; the reviewed manifest records base 9a9492e0a at 10 failed/197 passed and head 1a3841364 at 6 failed/202 passed, every head failure present in the base arm, so the delta of four fixed and none added is verified from the logs, while the ruff half is claimed with no receipt.",
+    "goal": "the node's goal is to serve one derivation of the open decisions through the roadmap summary and the /crew payload; the increment holds that shape and repairs the scope statement the earlier review found missing, reckon/roadmap.py:1055 now emitting sections and holds_whole_plan on every waiting row.",
+    "manifest": "read the reviewed run's manifest.md; it records status complete, the head arm reran at 1a3841364 with 6 failures, the negative-control log, and a commits list whose third entry is a 33-character sha that resolves to no object and which omits the evidence commit a7e8b89a9.",
+    "write_paths": "read the reviewed prompt's FENCE \u2014 SCOPE and the manifest's changed_paths; the increment's four paths (reckon/roadmap.py, reckon/serve.py, tests/test_every_surface_lists_open_decisions.py, the evidence fragment) lie inside them, and the declared reckon/mcp_views.py is untouched by the increment."
+  },
+  "justifications": {
+    "durability": "tests/test_every_surface_lists_open_decisions.py:264 asserts holds_whole_plan is True on the unscoped row and :268, :271 assert False on the scoped one, which reddens if the field is dropped or computed from anything but the derived sections list, and :204 compares the summary's rows against the crew route's own rows in order; the added discovery-payload line at reckon/serve.py:1824 is covered by neither.",
+    "evidence": "the head arm is recorded at reckon/roadmap.py's revision 1a3841364 with 6 failures all present in the base arm's 10, giving an added count of zero without running anything, but the arm's revision string in logs/head-gate.log:1 does not resolve and the done_when's ruff comparison has no log at all.",
+    "fit": "the added names (holds_whole_plan, _waiting_plan_state, waiting_decisions) follow the surrounding mechanism-naming idiom at reckon/serve.py:836 and carry no plan label, though the landed evidence fragment at line 32 contains a sentence a reader cannot parse.",
+    "goal_fidelity": "reckon/roadmap.py:1055 makes every waiting row state its scope, which is what the earlier review found missing, and the two surfaces the goal names (reckon/mcp_views.py:3519 and reckon/serve.py:3142) both still carry the rows from the one _decision_rows derivation.",
+    "reuse": "the increment extends the owner of the derivation, feeding the scope keys from reckon/roadmap.py:_decision_rows rather than forking it, and reckon/serve.py:1824 reads the report that build_roadmap already built in the same function instead of deriving a second list; the search for an existing scope-carrying helper over reckon/ found none.",
+    "scope_discipline": "git diff df765f99a..a7e8b89a9 --stat shows only reckon/roadmap.py, reckon/serve.py, tests/test_every_surface_lists_open_decisions.py and the evidence fragment, every one inside the reviewed node's declared write paths, and the fragment's edit splices its paragraphs rather than replacing the cumulative record."
+  },
+  "notes": "Reviewed the increment only: base df765f99a0c92098c4886ed42bfa1ca054b6f400 (the previous review's head, recorded at review-records/r-20261022T162012603305-every-surface-lists-open-decisions.at-df765f99a0c92098c4886ed42bfa1ca054b6f400.json) to head a7e8b89a9a4e8fb9cf40eed233c5e8124da48b07. The reviewed run's worktree has been removed, so the diff, the tests and the evidence fragment were read with git show at those revisions from the shared object store. No test was re-run; the verdict rests on the artefacts and on the reviewed run's own gate logs. Both prior follow-on findings were read against this increment: the scope one is repaired, and the second was refused by a documented reasoning chain that names two contracts on the route.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to serve one derivation of the open decisions through the roadmap summary and the /crew payload; the increment holds that shape and repairs the scope statement the earlier review found missing, reckon/roadmap.py:1055 now emitting sections and holds_whole_plan on every waiting row.\nVERDICT done_when: the done_when names the eighteen-file gate with zero added failures plus a ruff comparison against base; the reviewed manifest records base 9a9492e0a at 10 failed/197 passed and head 1a3841364 at 6 failed/202 passed, every head failure present in the base arm, so the delta of four fixed and none added is verified from the logs, while the ruff half is claimed with no receipt.\nVERDICT write_paths: read the reviewed prompt's FENCE \u2014 SCOPE and the manifest's changed_paths; the increment's four paths (reckon/roadmap.py, reckon/serve.py, tests/test_every_surface_lists_open_decisions.py, the evidence fragment) lie inside them, and the declared reckon/mcp_views.py is untouched by the increment.\nVERDICT manifest: read the reviewed run's manifest.md; it records status complete, the head arm reran at 1a3841364 with 6 failures, the negative-control log, and a commits list whose third entry is a 33-character sha that resolves to no object and which omits the evidence commit a7e8b89a9.\nVERDICT diff: read both increment commits against base df765f99a0c92098c4886ed42bfa1ca054b6f400; 1a3841364 adds the scope fields at reckon/roadmap.py:1055 and the _waiting_plan_state helper plus the report's list on the discovery payload at reckon/serve.py:1824 and rebuilds the cases for two projects and three plans, and a7e8b89a9 is the evidence fragment alone.\nCALL_SITES: reckon/serve.py:3142, reckon/serve.py:1710, reckon/serve.py:1771, reckon/serve.py:1824, reckon/mcp_views.py:3519, reckon/roadmap.py:3783, reckon/roadmap.py:4457\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/roadmap.py:1055 makes every waiting row state its scope, which is what the earlier review found missing, and the two surfaces the goal names (reckon/mcp_views.py:3519 and reckon/serve.py:3142) both still carry the rows from the one _decision_rows derivation.\nSCORE evidence: 13\nJUSTIFICATION evidence: the head arm is recorded at revision 1a3841364 with 6 failures all present in the base arm's 10, giving an added count of zero without running anything, but the arm's revision string in logs/head-gate.log:1 does not resolve and the done_when's ruff comparison has no log at all.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff df765f99a..a7e8b89a9 --stat shows only reckon/roadmap.py, reckon/serve.py, tests/test_every_surface_lists_open_decisions.py and the evidence fragment, every one inside the reviewed node's declared write paths, and the fragment's edit splices its paragraphs rather than replacing the cumulative record.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_every_surface_lists_open_decisions.py:264 asserts holds_whole_plan is True on the unscoped row and :268, :271 assert False on the scoped one, which reddens if the field is dropped or computed from anything but the derived sections list, and :204 compares the summary's rows against the scope of the crew route's own rows; the added discovery-payload line at reckon/serve.py:1824 is covered by no case.\nSCORE fit: 14\nJUSTIFICATION fit: the added names (holds_whole_plan, _waiting_plan_state, waiting_decisions) follow the surrounding mechanism-naming idiom at reckon/serve.py:836 and carry no plan label, though the landed evidence fragment at line 32 contains a sentence a reader cannot parse.\nSCORE reuse: 18\nJUSTIFICATION reuse: the increment extends the owner of the derivation, feeding the scope keys from reckon/roadmap.py:_decision_rows rather than forking it, and reckon/serve.py:1824 reads the report build_roadmap already built in the same function instead of deriving a second list; the search for an existing scope-carrying helper over reckon/ found none.\nFINDING docs/evidence/fragments/every-plan-write-goes-through-edit-plan/every-surface-lists-open-decisions.html:32 follow-on: the crew paragraph landed a botched edit \u2014 'shared with the crew row's own sprint/effort read than the crew row's own read under the existing crew-plan-details memo entry' is two drafts spliced into one clause with no grammatical reading, in the doc served as this node's canonical evidence.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T162012603305-every-surface-lists-open-decisions/manifest.md:16 follow-on: the commits list names 1a384136498caf0cc38a431b2e89c653a5, a 33-character string that resolves to no object, the same string heads logs/head-gate.log:1 where the done_when requires the log to open with its revision, and the list omits the increment's evidence commit a7e8b89a9.\nFINDING docs/evidence/fragments/every-plan-write-goes-through-edit-plan/every-surface-lists-open-decisions.html:93 follow-on: the ruff half of the done_when is asserted in prose with no receipt \u2014 the manifest's tests and test_logs carry only the three gate logs and no ruff command line or EXIT= line exists in the run directory.\nFINDING reckon/serve.py:1824 follow-on: the added production behaviour result['waiting_decisions'] = waiting_decision_rows(roadmap) is asserted by no case, so deleting it reddens nothing and the payload a caller is told to read the report's own list from could go missing unnoticed.\n",
+  "review_run_id": "r-20261022T194638130706-review-of-every-surface-lists-open-decisions-a7e8b89a9a4e",
+  "reviewed_base_sha": "df765f99a0c92098c4886ed42bfa1ca054b6f400",
+  "reviewed_head_sha": "a7e8b89a9a4e8fb9cf40eed233c5e8124da48b07",
+  "reviewed_run_id": "r-20261022T162012603305-every-surface-lists-open-decisions",
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 14,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T22:31:58.424884+00:00",
+  "total": 97
+}
