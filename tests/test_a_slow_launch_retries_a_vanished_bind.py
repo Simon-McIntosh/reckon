@@ -201,6 +201,18 @@ def _forget(*pids: int) -> None:
             dispatch_module._LAUNCHED_WORKER_RUNS.pop(pid, None)
 
 
+def _cleanup(*processes: subprocess.Popen) -> None:
+    """Detach this test's pids from the registry, then end them.
+
+    The registry is emptied first so the launch's own reaper cannot write the
+    run's pointer while pytest removes this case's temporary tree: only a pid
+    still registered is ever written about.
+    """
+    _forget(*(process.pid for process in processes))
+    for process in processes:
+        _stop(process)
+
+
 def _eventually(predicate: Callable[[], bool], timeout: float = 15.0) -> bool:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
@@ -260,9 +272,7 @@ def test_a_launch_refused_after_the_step_starts_is_retried(
             "the retry waited the window out instead of ending on the refusal"
         )
     finally:
-        for process in spawn.processes:
-            _stop(process)
-        _forget(*(process.pid for process in spawn.processes))
+        _cleanup(*spawn.processes)
 
 
 def test_a_launch_refused_over_something_else_after_the_same_delay_is_not_retried(
@@ -295,9 +305,7 @@ def test_a_launch_refused_over_something_else_after_the_same_delay_is_not_retrie
             )
         ), "the delayed non-bind launch failure was not recorded"
     finally:
-        for process in spawn.processes:
-            _stop(process)
-        _forget(*(process.pid for process in spawn.processes))
+        _cleanup(*spawn.processes)
 
 
 def test_a_healthy_launch_returns_when_its_window_passes(
@@ -334,9 +342,7 @@ def test_a_healthy_launch_returns_when_its_window_passes(
         assert record.get("launch_failures") in (None, [])
         assert record.get("phase") == "working"
     finally:
-        for process in spawn.processes:
-            _stop(process)
-        _forget(*(process.pid for process in spawn.processes))
+        _cleanup(*spawn.processes)
 
 
 def test_a_stream_record_ends_the_watch_on_the_healthy_path(
@@ -365,6 +371,4 @@ def test_a_stream_record_ends_the_watch_on_the_healthy_path(
             "the launch waited the window out although its stream had begun"
         )
     finally:
-        for process in spawn.processes:
-            _stop(process)
-        _forget(*(process.pid for process in spawn.processes))
+        _cleanup(*spawn.processes)
