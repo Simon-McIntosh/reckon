@@ -1,0 +1,62 @@
+<!doctype html>
+<title>A manual admission pass reports its verdicts</title>
+<section id="a-manual-admission-pass-reports-its-verdicts-landing">
+  <h2>A manual admission pass reports its verdicts</h2>
+
+  <p><strong>What changed.</strong> The bare <code>reckon crew admit</code> verb is
+  the fleet's admit service: it repeated its pass on a cadence and discarded each
+  pass's result after recording it, so a coordinator running it by hand saw
+  nothing and could not tell a working loop from a waiting one. The loop now
+  publishes every pass as one JSON line on stdout — the same record
+  <code>admission-verdicts.jsonl</code> holds for that pass.</p>
+
+  <ul>
+    <li><code>reckon/crew/queue_admission.py</code> — <code>_pass_verdict_record</code>
+    builds the pass's record once, so the published line and the logged line are
+    the same object and cannot drift; <code>_record_pass_verdicts</code> writes it
+    through the crew-home log as before and returns it;
+    <code>_publish_pass_verdicts</code> prints it as one JSON line from
+    <code>admit_until_stopped</code>. A pass that examined no queued pointer still
+    prints nothing, which is the silence it also records. <code>--once</code> is
+    untouched: it returns its pass to the verb, which reports it as before.</li>
+    <li><code>reckon/crew_run_commands.py</code> — the <code>crew admit</code> help
+    now names the loop (the bare form repeats the pass until stopped and prints
+    each pass's verdicts), the single manual pass (<code>--once</code>), and how
+    long one pass may take: it is bounded by the lane and fleet gate reads it
+    makes, each under a five-second deadline. The incident behind this section was
+    a manual run that emitted nothing for five minutes and died on
+    <code>timeout 300</code>, so the help now says plainly which form returns and
+    that a caller wanting one uses <code>--once</code> rather than a timeout around
+    the service loop.</li>
+  </ul>
+
+  <p><strong>Measure.</strong> <code>tests/test_a_manual_admission_pass_reports_its_verdicts.py</code>,
+  three cases over a temporary crew home and a real checkout the shared dispatch
+  path launches into. The bare verb is driven for two passes over two queued
+  requests: the first pass has no room, so both are held for their session's
+  allowance; the second has room for both, and the shared dispatch path launches
+  one and refuses the other on scope against a live run that already holds the
+  path it claims. Each pass prints one line naming both requests, the printed
+  lines are asserted equal to the log's own rows for the same passes, and the
+  refused row carries the refusal's detail — the class, the holder's run id and
+  the contested path. The second case shows <code>--once</code> still answers with
+  its single pass's result and no loop line; the third reads
+  <code>crew admit --help</code> for the loop, the single pass and the pass bound.</p>
+
+  <p><strong>Gate.</strong> The four suites this node names — its own test file plus
+  the queued-run admission, queued-run-identity and crew-help suites — run in place
+  on the fleet allocation at this tree's revision: <strong>33 passed, 0 failed,
+  EXIT=0</strong>. Log <code>gate-head.log</code> in this run's directory under
+  <code>~/.config/reckon/crew/runs/</code>, whose header names the revision, the
+  tree, the module as imported and the literal command, and whose last line is the
+  exit status.</p>
+
+  <p><strong>Negative control.</strong> The declared mutation — stop the loop
+  writing each pass's result so it prints nothing again — makes the two-pass case
+  fail with <code>EXIT=1</code>: <code>test_each_pass_prints_its_verdicts_as_one_json_line</code>
+  reports zero printed passes against the two it requires, which is exactly the
+  state the base commit is in. Log: <code>negative-control.log</code>, recorded
+  against the same revision with that one edit applied and nothing else; the tree
+  was restored to the committed content afterwards, and <code>git diff HEAD</code>
+  is empty.</p>
+</section>
