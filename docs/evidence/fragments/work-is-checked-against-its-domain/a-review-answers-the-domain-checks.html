@@ -191,4 +191,59 @@
     <code>ruff format --check</code> are clean on all three changed paths, recorded in
     the manifest's test logs.</li>
   </ul>
+
+  <h3>Each fact is read by the reader that owns it</h3>
+
+  <p>Both repairs above had grown their own reader of a fact this repository already
+  answers, so a change to the owner would have left them reading the old shape. The
+  declared write paths of a delivered manifest were scanned for a line prefix rather
+  than taken from the manifest-field reader this module already uses for every other
+  field it reads from a manifest; and whether a project declares any review check was
+  answered by re-resolving the flight domain block rather than by asking the module
+  that matches domain rules to nodes.</p>
+
+  <p>The declared paths now come from <code>_manifest_field_lines</code>, so a field
+  this contract reads is a field it reads the way the rest of the contract does — the
+  behaviour on a manifest the reader cannot parse is unchanged, since an unparsable
+  field still yields nothing and the caller still refuses. The project-level question is
+  answered by <code>declares_review_checks</code> in
+  <code>reckon/crew/domain_rules.py</code>, which is where the block is read and
+  validated through the generated model, and whose <code>rules_for</code> now shares one
+  private read so the project-level question and the node-level match cannot disagree
+  about which fields exist. The duplicate reader in
+  <code>recovery_review_subject.py</code> is deleted and its caller asks the owner. One
+  behaviour moved with it: a block the schema rejects now raises as it does in
+  <code>rules_for</code> instead of answering "declares nothing", which is the loud
+  failure that module exists to give and the direction a guard should fail.</p>
+
+  <h3>Measured after the third repair</h3>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>baseline (the revision the review read, with the head test file)</td>
+        <td><code>a9934a9b3</code></td><td>1 failed, 60 passed, exit 1</td></tr>
+      <tr><td>after (refactored tree)</td><td><code>e4fe36e0f</code></td>
+        <td><strong>61 passed</strong>, exit 0 — no failure id the baseline does not carry</td></tr>
+    </tbody>
+  </table>
+
+  <ul>
+    <li><strong>The baseline failure is the one test the owner answers</strong>, and only
+    that: <code>test_the_owner_answers_whether_a_project_declares_any_check</code> fails
+    at <code>a9934a9b3</code> with <code>AttributeError: module 'reckon.crew.domain_rules'
+    has no attribute 'declares_review_checks'</code>, since the owner the refactor adds
+    is not there yet.</li>
+    <li><strong>The manifest fallback is newly covered, and holds on both arms.</strong>
+    <code>test_a_promoted_subject_reads_its_delivered_manifest</code> drives the run
+    directory's delivered manifest end to end — no live pointer, no committed row — and
+    passes at both revisions, because the unindented field it writes parsed under the old
+    reader too. It is a control: it covers a path nothing tested before, and it carries no
+    evidence that the routing changed. The refactor's own discriminator is the owner
+    test above.</li>
+    <li><strong>Lint delta.</strong> <code>ruff check</code> and
+    <code>ruff format --check</code> are clean on all four changed paths
+    (<code>reckon/crew/domain_rules.py</code> now among them), recorded in
+    <code>r4-lint.log</code>.</li>
+  </ul>
 </section>
