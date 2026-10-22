@@ -66,7 +66,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from collections.abc import Iterable, Iterator, Mapping
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -111,6 +111,39 @@ REVIEW_ITEMS: tuple[str, ...] = (
     "diff",
     "call_sites",
 )
+
+# ── The declared review checks a repository adds to the checklist ───────────
+# A repository may declare questions a reviewer must answer about any node they
+# apply to, matched against the node's write paths by
+# ``reckon/crew/domain_rules.py``. They join the checklist above rather than a
+# seventh scored dimension, so the dimension vocabulary, the acceptance floor
+# and the lifecycle derivation are all untouched: a review of a matching node
+# carries one verdict line per declared check, keyed by the check's own id, and
+# a record that omits one is incomplete rather than a pass.
+#
+# A declared check's verdict opens with its outcome, so the parser can tell a
+# question that was answered from one that was not. Only the two outcomes are
+# declared: a check the reviewer could not answer is a question left open, and
+# inventing a third word for it would let a record read as complete on an answer
+# nobody gave.
+CHECK_VERDICT_OUTCOMES: tuple[str, ...] = ("pass", "fail")
+FAILED_CHECK_OUTCOME = "fail"
+
+
+def check_verdict_outcome(verdict: str) -> str | None:
+    """Return the outcome a declared check's verdict opens with, or ``None``.
+
+    The outcome is the verdict's first word, in its declared spelling and
+    case-insensitively, before the reviewer's one line of reading. Any other
+    opening states no outcome this parser can act on, so the check reads as
+    unanswered rather than as a pass — an unreadable answer is not an answer.
+    """
+    words = str(verdict or "").strip().split(None, 1)
+    if not words:
+        return None
+    word = words[0].strip(".,;:").lower()
+    return word if word in CHECK_VERDICT_OUTCOMES else None
+
 
 # ── The severity a finding can state ────────────────────────────────────────
 # A finding may say whether it blocks the node's landing, which is the
@@ -523,8 +556,12 @@ _SCORE_RE = re.compile(
 _JUST_RE = re.compile(
     r"^JUSTIFICATION\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$", re.IGNORECASE
 )
+# The item group carries the characters a declared review check's id may use,
+# because those checks are named by the project that declared them rather than
+# by a constant here. The captured item is still matched against a known set, so
+# a line naming nothing declared is ignored exactly as before.
 _VERDICT_RE = re.compile(
-    r"^VERDICT\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$", re.IGNORECASE
+    r"^VERDICT\s+([A-Za-z_][A-Za-z0-9_.-]*)\s*:\s*(.*)$", re.IGNORECASE
 )
 _CALL_SITES_RE = re.compile(r"^CALL_SITES\s*:\s*(.*)$", re.IGNORECASE)
 # The claims rubric emits one line per re-run claim and one for the report's
@@ -737,7 +774,10 @@ def _has_integer_total(record: Mapping[str, Any]) -> bool:
 
 
 def parse_review(
-    text: str, *, record: Mapping[str, Any] | None = None
+    text: str,
+    *,
+    record: Mapping[str, Any] | None = None,
+    review_checks: Sequence[str] = (),
 ) -> dict[str, Any]:
     """Parse emitted review text into the complete dimension schema.
 
@@ -750,9 +790,13 @@ def parse_review(
     - ``absent`` — schema dimensions with no recognised SCORE line.
     - ``justifications`` — dimension to its one-sentence justification.
     - ``item_verdicts`` — checklist item to the verdict sentence it carried,
-      for the items that were emitted with text.
+      for the items that were emitted with text. A declared review check joins
+      the same mapping under its own id, once its verdict states one of
+      :data:`CHECK_VERDICT_OUTCOMES`.
     - ``absent_items`` — checklist items with no recognised VERDICT line, or
       with one carrying no text: a line that says nothing is not a verdict.
+      Every declared check in ``review_checks`` that carried no answered verdict
+      is named here after the fixed items, in the order it was declared.
     - ``item_aggregate`` — how many checklist items carried a verdict, when
       every item did, otherwise ``None``. Withheld on the same rule as the
       total: a count over the items that happen to be present reads as a
@@ -769,6 +813,10 @@ def parse_review(
     - ``findings`` — a list of ``{"file", "line", "text"}``, each carrying a
       ``severity`` key only when the finding stated one of the declared values;
       a finding that states none is recorded without the key, never defaulted.
+      A declared check answered ``fail`` contributes a finding of its own,
+      carrying :data:`BLOCKING_FINDING_SEVERITY` and the check's id with the
+      verdict as its text, so the review reports the check's question as
+      unanswered-and-defective rather than as a topic it merely discussed.
     - ``total`` — the arithmetic sum of the parsed scores when every dimension
       is present, otherwise ``None``. The total is never computed over a
       subset: a total taken over fewer dimensions is a lower score
@@ -784,6 +832,12 @@ def parse_review(
     ``record`` is the merged record a call site already holds — the stored
     metadata carrying legacy spellings of the pair. Supplying it lets an
     existing stored record be parsed and canonicalised in one call.
+
+    ``review_checks`` names the declared review checks the review was composed
+    for, taken from the same matcher that composed them into its brief
+    (:func:`reckon.crew.domain_rules.rules_for`). They are the required set: one
+    answered verdict is owed for each, and a record owing one is ``"incomplete"``
+    whether the omission is the line or its outcome.
 
     A score outside ``0..REVIEW_MAX_SCORE`` raises :class:`ReviewScoreError`
     naming the dimension and the value; it is never clamped into range.
@@ -802,6 +856,8 @@ def parse_review(
     base_sha: str | None = None
     head_carried = False
     head_sha: str | None = None
+    declared_checks = tuple(str(check) for check in review_checks if str(check).strip())
+    declared_by_folded = {check.lower(): check for check in declared_checks}
     for line in _review_text_lines(text):
         match = _SCORE_RE.match(line)
         if match:
@@ -826,6 +882,19 @@ def parse_review(
             verdict = match.group(2).strip()
             if item in REVIEW_ITEMS and verdict:
                 item_verdicts[item] = verdict
+                continue
+            check = declared_by_folded.get(item)
+            if check is not None and verdict:
+                outcome = check_verdict_outcome(verdict)
+                if outcome is not None:
+                    item_verdicts[check] = verdict
+                    if outcome == FAILED_CHECK_OUTCOME:
+                        findings.append(
+                            {
+                                "text": f"{check}: {verdict}",
+                                "severity": BLOCKING_FINDING_SEVERITY,
+                            }
+                        )
             continue
         match = _CALL_SITES_RE.match(line)
         if match:
@@ -893,6 +962,8 @@ def parse_review(
             continue
     absent = [dim for dim in REVIEW_DIMENSIONS if dim not in scores]
     absent_items = [item for item in REVIEW_ITEMS if item not in item_verdicts]
+    absent_checks = [check for check in declared_checks if check not in item_verdicts]
+    absent_items.extend(absent_checks)
     claims_bearing = bool(claims) or claim_summary is not None
     if not scores and not claims_bearing:
         status = "unparsed"
@@ -939,6 +1010,12 @@ def parse_review(
     if head_carried:
         record[REVIEWED_HEAD_KEY] = head_sha
     if source_record is not None and (not base_sha or not head_sha):
+        record["status"] = "incomplete"
+    # A declared check the review owes an answer for and did not give leaves the
+    # record incomplete, so a review that skipped the question it was composed
+    # for is not stored as one that answered it. An unparsed record stays
+    # unparsed: it answered nothing, which its own status already says.
+    if absent_checks and record["status"] == "parsed":
         record["status"] = "incomplete"
     return record
 
