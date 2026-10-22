@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-coordinator-sees-the-board">
+  <meta name="plan-title" content="A Coordinator Sees the Board">
+  <meta name="plan-summary" content="A lane sat at 1 of 12 while three ready sections had no run and no tool said so; one bounded read joins idle work, owners, runs, held paths and the lane.">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="16.5">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S26">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-north-star" content="legible-to-human-and-agent">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-project-reads-as-one-picture#s4&quot;,&quot;a-coordinator-sees-the-board#s2&quot;],&quot;s4&quot;:[&quot;a-project-reads-as-one-picture#s2&quot;,&quot;a-coordinator-sees-the-board#s3&quot;],&quot;s5&quot;:[&quot;the-mcp-answers-the-question-asked#s3&quot;,&quot;a-coordinator-sees-the-board#s2&quot;],&quot;s6&quot;:[&quot;a-coordinator-sees-the-board#s5&quot;],&quot;s7&quot;:[&quot;a-coordinator-sees-the-board#s3&quot;,&quot;a-coordinator-sees-the-board#s5&quot;],&quot;s8&quot;:[&quot;a-coordinator-sees-the-board#s3&quot;,&quot;a-coordinator-sees-the-board#s4&quot;,&quot;a-coordinator-sees-the-board#s5&quot;,&quot;a-coordinator-sees-the-board#s6&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <title>A Coordinator Sees the Board | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: the lane sat empty and no read said so</h2>
+    <p>On 2026-10-22 at about 08:50Z the lead found power_convertor's local lane at one request in flight of
+    twelve, with 38 worker slots free, headroom 10 and an empty router queue. The derived flow drew seven
+    lanes with one in flight. Nothing was queued or held. Coordinators were not dispatching. Three sections
+    were implementable, dependency-ready and gate-clear with no run:</p>
+    <ul>
+      <li><code>iter-switched-terminal-transients#s13</code>, never dispatched;</li>
+      <li><code>iter-dummy-load-validation#s4</code>, held for a lead decision that the plan's own rule already answered;</li>
+      <li><code>shared-coil-supply-model#s9</code>, a peer coordinator's, first on the project's 27-hour critical path
+      (<code>s9 → iter-switched-terminal-transients#s6 → coil-supply-report-rebuild#s4 → #s8</code>).</li>
+    </ul>
+    <p>No read surfaced any of it.</p>
+    <ul>
+      <li><code>roadmap(view="summary")</code> carries no section readiness. <code>view="detail"</code> with
+      <code>limit=3</code> was refused at 110,833 characters, and <code>view="raw"</code> at 124,408, against an
+      80,000-character ceiling.</li>
+      <li><code>crew(view="directory")</code> lists coordinators that have live runs, so a coordinator that is
+      idle on a ready section does not appear at all.</li>
+      <li>The derived flow draws a ready plan with no run as a grey "predicted" bar, identical to a plan
+      waiting on a prerequisite.</li>
+    </ul>
+    <p>The coordinator found the set only through <code>reckon roadmap --json-output</code> and a hand-written
+    join of <code>pending_work[].ready_sections</code> and <code>implementable_sections</code>, minus live
+    runs. Owners were found by messaging peers. Within ten minutes of the join, four more runs were in
+    flight, the critical-path head among them.</p>
+    <p>The pieces exist. <a href="/reckon/plans/a-project-reads-as-one-picture">a-project-reads-as-one-picture</a>
+    §2 puts sections on the critical path, and its §4 puts runs and blocker kinds on each section row.
+    <code>crew</code>'s <code>directory</code>, <code>scopes</code> and <code>live</code> views hold sessions,
+    runs and claims, and
+    <a href="/reckon/plans/the-mcp-answers-the-question-asked">the-mcp-answers-the-question-asked</a> §3 is
+    adding the section to every run row. What is missing:</p>
+    <ul>
+      <li>the owner of a section that has no run, because nothing records plan ownership;</li>
+      <li>the "ready, no run" set as its own bounded answer;</li>
+      <li>the critical path read link by link;</li>
+      <li>one bounded join of every coordinator's runs, sections, held paths and queued runs;</li>
+      <li>the lane's admission share on the same answer.</li>
+    </ul>
+    <p>That last list is this plan. Two neighbours are covered elsewhere and are not repeated here:
+    <code>why(ref)</code> is the-mcp-answers-the-question-asked §4, and the ranked brief is
+    a-project-reads-as-one-picture §7.</p>
+
+    <h2 id="s2">§2 — A plan has one owner, and the owner is a recorded fact</h2>
+    <p>An idle section has no run, so no session can be read off it. Ownership is defined at the plan, in
+    three tiers, with the tier recorded beside the answer.</p>
+    <ul>
+      <li><strong>Declared.</strong> A coordinator session claims a plan when it first dispatches a node of
+      it. The claim is written to the project's state store beside the run ledger, not into the plan HTML,
+      because the plan file is the team's and the claim is a session's. The claim holds until the session
+      releases it, a later dispatch on the plan by another session takes it over, or the plan closes.
+      A takeover keeps the earlier claim in its history.</li>
+      <li><strong>Derived.</strong> With no claim, the owner is the session that dispatched the plan's most
+      recent ledger run within a stated staleness window. The window is a configuration value, never a
+      literal in code.</li>
+      <li><strong>Unowned.</strong> Neither exists. That is reported as itself, never guessed.</li>
+    </ul>
+    <p>The owner is reported as the session id, plus the session's peer name where the directory can
+    resolve one. The answer never claims a liveness it has not checked: an owner whose session ended
+    reads as ended.</p>
+    <p>Done when every pending plan in a project resolves to declared, derived or unowned, with its tier.
+    Tests: a plan dispatched by session A and then by session B resolves to B, declared, with A in its
+    history. A released claim falls back to derived. A plan with no ledger rows reads as unowned.
+    Negative control: dropping the takeover rule leaves A as owner, and the first test must fail.</p>
+
+    <h2 id="s3">§3 — The ready-idle set is one bounded answer</h2>
+    <p>A read returns every section that is implementable, dependency-ready and gate-clear with no live
+    run, plus every plan whose dependency readiness reads <code>closable</code>. One derivation per fact:
+    readiness and runs are read from the roadmap payload's section rows (a-project-reads-as-one-picture
+    §4), never recomputed here.</p>
+    <p>Each row carries:</p>
+    <ul>
+      <li>the <code>plan#section</code> ref;</li>
+      <li>the owner and its tier from §2;</li>
+      <li>the section's effort;</li>
+      <li>what it unlocks downstream;</li>
+      <li>whether it is a critical-path link.</li>
+    </ul>
+    <p>Rows sort critical-path first. The answer is bounded by construction: one compact row per idle
+    section, paged by <code>limit</code> and <code>cursor</code> like every other read, never refused for
+    size. A closable plan row names its open closure blockers, such as deferred sections or open gates, so
+    its owner knows whether a close or a descope decision is owed.</p>
+    <p>Done when, on a fixture reconstructed from power_convertor's state at 2026-10-22T08:50Z, the answer
+    names the three sections of §1 with their owners, and names <code>jt60sa-coil-circuit-model</code>
+    and <code>tf-co-wound-tape-validation</code> as closable, in one call under the MCP ceiling.
+    Negative control: a section given a live run in the fixture must leave the set, and the test must fail
+    if it stays.</p>
+
+    <h2 id="s4">§4 — The critical path reads link by link</h2>
+    <p>Each link of the critical path carries one state:</p>
+    <ul>
+      <li>in flight, with its run id;</li>
+      <li>ready-idle, with its owner;</li>
+      <li>gated, with its gate id;</li>
+      <li>waiting, with the ref it waits on.</li>
+    </ul>
+    <p>The head link is reported first. An idle head is the most expensive idle work in a project, and the
+    answer says so in words. This is the per-link state reckon-a1 named as a small extension. It lives
+    here, not in a-project-reads-as-one-picture §7's rows, so each fact has one reader. §7's brief may
+    quote it.</p>
+    <p>Done when the 08:50Z fixture reads <code>shared-coil-supply-model#s9</code> as ready-idle, owner
+    named, and <code>iter-switched-terminal-transients#s6</code> as gated on <code>g-istt-6</code> and
+    waiting on that s9. Negative control: giving s9 a live run must turn its state to in flight, and the
+    test must fail if it does not.</p>
+
+    <h2 id="s5">§5 — The board: what every coordinator is doing, with ids</h2>
+    <p>One bounded read, at project or workstation scope, returns a row per coordinator session. Each row
+    carries:</p>
+    <ul>
+      <li>its runs: run id, node, <code>plan#section</code>, phase and age;</li>
+      <li>the write paths it holds, with each claim's binding verdict as <code>crew(view="scopes")</code>
+      states it;</li>
+      <li>its queued runs, with their queue positions;</li>
+      <li>the plans it owns under §2, with their ready-idle sections from §3.</li>
+    </ul>
+    <p>A coordinator that is idle on owned ready work is on the board even with no run, which is the case
+    the directory misses today. The section on each run row comes from the-mcp-answers-the-question-asked
+    §3, and the claims from the scope check's own data. Nothing is re-derived. Agents read the board to
+    coordinate without messaging: which files a peer holds, which section a peer is on, and which owned
+    sections a peer has left idle.</p>
+    <p>Done when the board for power_convertor lists every live run of every coordinator with its section
+    and held paths, and lists a coordinator that owns ready-idle work but has no run. The answer stays
+    bounded at workstation scope through paging. Negative control: a coordinator whose only plan has no
+    ready section and no run must not appear, and the test must fail if it does.</p>
+
+    <h2 id="s6">§6 — The lane on the same answer</h2>
+    <p>The board and the ready-idle answer carry the local lane's admission figures, as the lane document
+    publishes them: worker slots, headroom, waiting and the oldest wait, plus the calling session's share
+    and how many runs it holds. The answer states facts and computes nothing new from them. A full lane
+    queues a dispatch centrally, so the figures inform the order of dispatch, never whether to dispatch.</p>
+    <p>Done when both answers carry the figures with the document's <code>observed_at</code>, and a stale
+    document reads as stale rather than as current. Negative control: a lane document older than its own
+    publication period must be marked stale, and the test must fail if it is read as fresh.</p>
+
+    <h2 id="s7">§7 — The build skill and the roadmap skill read the board</h2>
+    <p><code>reckon-build</code>'s per-beat rule (references/sprint-orchestration.md §12, "An idle lane with
+    ready work is a defect") and <code>reckon-roadmap</code>'s "Ready-idle sections, owners and the critical
+    path" both carry a lossless-report recipe as a stopgap. Replace it with the §3 and §5 reads. The
+    derived-flow chart draws "ready, no run" from the same section rows, and the monitor plan owns that
+    drawing.</p>
+    <p>Done when both skills name the bounded reads instead of the CLI recipe, and a skill contract test
+    asserts the build skill names them. Negative control: restoring the recipe line must fail that test.</p>
+
+    <h2 id="s8">§8 — Measured on the incident and on a second mount</h2>
+    <p>Replay power_convertor's 08:50Z state, and one other mounted project's current state, through the
+    three reads. Record what each returns, its size against the MCP ceiling and its wall clock. On the
+    replay, the idle sections and owners of §1 must come out of the first call, with no hand join.</p>
+    <p>Done when the measurement is recorded as evidence for this plan with both projects' answers, sizes
+    and times. Negative control: the replay run through today's <code>roadmap(view="summary")</code> must
+    show that the idle sections are absent there. That absence is the defect this plan exists to remove.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+      <div class="r-dec" data-key="board-surface" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">Which tool serves the board and the ready-idle set?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="crew-view">crew views: board and idle</button>
+          <button class="r-opt" data-value="roadmap-view">roadmap views: board and idle</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-acsb-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-22" data-recommends-skill="/reckon-build a-coordinator-sees-the-board §2">
+        <h4 class="r-fu-title">Record plan ownership first</h4>
+        <div class="r-fu-body"><p>§2 is the prerequisite for every owner field in §3–§5. Settle the decision on which surface serves the board before §3 is dispatched.</p></div>
+        <pre class="r-fu-prompt">/reckon-build a-coordinator-sees-the-board §2</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
