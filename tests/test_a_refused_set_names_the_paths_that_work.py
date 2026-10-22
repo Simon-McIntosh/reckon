@@ -12,6 +12,8 @@ case fails again.
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from reckon import _store
@@ -72,6 +74,39 @@ def test_a_typo_names_the_settable_path_it_is_closest_to():
     message = _refusal_message("capabilty")
 
     assert "nearest settable path 'capability'" in message
+
+
+def test_a_keyed_head_is_not_offered_as_a_bare_settable_path():
+    """A keyed head is settable through its dotted form, never bare.
+
+    Suggesting ``gates`` or ``sections`` as a nearest settable path sends a
+    caller that follows the suggestion straight back into this refusal, which
+    is the dead end the message exists to remove. An input that reaches a keyed
+    head is answered by the forms line alone.
+    """
+    for path in ("gate", "section", "gates", "sections"):
+        message = _refusal_message(path)
+        assert "nearest settable path" not in message
+        assert "gates.ID.FIELD" in message
+
+
+def test_every_suggested_path_is_one_the_writer_accepts_bare():
+    """A suggestion must not send the caller into a second refusal.
+
+    The suggested name is held against the store's own table of settable
+    top-level fields, so a keyed head — settable only through its dotted form —
+    can never be offered as a whole path.
+    """
+    for typo in ("effort-hours", "capabilty", "effort_hurs", "northstars"):
+        message = _refusal_message(typo)
+        match = re.search(r"nearest settable path '([^']+)'", message)
+        assert match is not None, typo
+        assert match.group(1) in _store._PLAN_SET_TOP, typo
+
+    # An input near a keyed head gets no suggestion rather than a name the
+    # writer would refuse again.
+    for typo in ("sectons", "gats"):
+        assert "nearest settable path" not in _refusal_message(typo), typo
 
 
 def test_a_supported_path_still_sets():

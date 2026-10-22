@@ -2443,7 +2443,11 @@ def _nearest_settable_path(path: str, candidates: Sequence[str]) -> str | None:
     by_folded: dict[str, str] = {}
     for candidate in candidates:
         by_folded.setdefault(folded(candidate), candidate)
-    match = difflib.get_close_matches(folded(path), list(by_folded), n=1, cutoff=0.6)
+    # A suggestion is a claim that the caller meant this path, so the bar is
+    # high: at difflib's 0.6 default a short input matches on three shared
+    # letters alone, and "gate" would be answered with "after". A real
+    # misspelling of a stored path scores far above this bound.
+    match = difflib.get_close_matches(folded(path), list(by_folded), n=1, cutoff=0.8)
     return by_folded[match[0]] if match else None
 
 
@@ -2458,10 +2462,11 @@ def _unsupported_plan_set_path_detail(path: str) -> str:
         f"settable paths: {settable}. "
         f"keyed forms: {keyed}"
     )
-    nearest = _nearest_settable_path(
-        path,
-        sorted(_PLAN_SET_TOP) + sorted(_PLAN_SET_KEYED_FORMS),
-    )
+    # Only a whole top-level field can be suggested: a keyed head is settable
+    # through its dotted form and refused bare, so offering it as a bare path
+    # would send the caller to a second refusal. An input that does reach a
+    # keyed head is already answered by the forms listed above.
+    nearest = _nearest_settable_path(path, sorted(_PLAN_SET_TOP))
     if nearest is not None:
         detail += f" — nearest settable path {nearest!r}"
     return detail
