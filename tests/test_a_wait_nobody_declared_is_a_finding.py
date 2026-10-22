@@ -62,9 +62,7 @@ def _blocked_pointer(
     """A live pointer whose manifest reports blocked, naming ``blocker_text``."""
 
     manifest = tmp_path / f"{run_id}.md"
-    manifest.write_text(
-        f"node: {run_id}\nstatus: blocked\nblockers: {blocker_text}\n"
-    )
+    manifest.write_text(f"node: {run_id}\nstatus: blocked\nblockers: {blocker_text}\n")
     return {
         "run_id": run_id,
         "project": PROJECT,
@@ -93,9 +91,7 @@ def _running_pointer(*, plan: str, section: str, run_id: str) -> dict:
 
 def _wiring(report: dict, code: str) -> list[dict]:
     return [
-        finding
-        for finding in report["wiring_findings"]
-        if finding.get("code") == code
+        finding for finding in report["wiring_findings"] if finding.get("code") == code
     ]
 
 
@@ -163,7 +159,7 @@ def test_the_same_fixture_with_the_edge_declared_emits_nothing(monkeypatch, tmp_
 def test_a_gate_measure_naming_an_undeclared_section_is_reported(monkeypatch, tmp_path):
     """A gate is the second source: its measure names the section it waits on."""
 
-    monkeypatch.setattr("reckon.crew.list_live", lambda: [])
+    monkeypatch.setattr("reckon.crew.list_live", list)
     _write_claims(monkeypatch, [])
 
     report = build_roadmap(

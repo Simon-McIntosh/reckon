@@ -1541,6 +1541,7 @@ def _overlapping_scope_findings(
             )
     return findings
 
+
 def _standalone_reason(docs_dir: Path | None, project: str, slug: str) -> str | None:
     """Read a plan's standalone declaration from its own file, if it has one."""
 
@@ -3874,9 +3875,9 @@ def _build_roadmap(
         for edge in mapped_edges:
             waiting_section = str(edge.get("source_section") or "")
             if waiting_section:
-                declared_section_refs.setdefault(
-                    (slug, waiting_section), set()
-                ).add(_normalized_section_ref(project, str(edge.get("ref") or "")))
+                declared_section_refs.setdefault((slug, waiting_section), set()).add(
+                    _normalized_section_ref(project, str(edge.get("ref") or ""))
+                )
         open_sections_by_plan[slug] = set(plan_implementable) | {
             section for ref_plan, section in section_runs if ref_plan == slug
         }
