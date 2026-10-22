@@ -1433,7 +1433,6 @@ def _follow_watch_lines(
     the follower a reader must act on.
     """
     from reckon.crew import follow_checkpoint, runs
-    from reckon.crew import needs_you as needs_you_module
     from reckon.flight import FlightConfigError
 
     selected_runs = tuple(run_ids)

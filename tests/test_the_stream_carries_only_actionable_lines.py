@@ -131,7 +131,7 @@ def test_a_limit_reset_reaches_the_stream_once():
 
 def test_the_rule_names_the_words_the_stream_carries():
     """The policy and the summaries read one rule, stated in ``ticker``."""
-    assert ticker.CARRIED_PANE_WORDS == frozenset({"delivered", "halted"})
+    assert frozenset({"delivered", "halted"}) == ticker.CARRIED_PANE_WORDS
     assert ticker.stream_carries({"to_state": "completed_unpromoted"})
     assert ticker.stream_carries({"to_state": "blocked"})
     assert ticker.stream_carries({"to_state": ticker.LIMIT_RESET})
@@ -141,10 +141,9 @@ def test_the_rule_names_the_words_the_stream_carries():
 
 def test_the_follower_carries_no_rule_of_its_own():
     """The follower states no second rule, so the two cannot disagree."""
-    from reckon.crew import needs_you
-
     # The standing summary line is gone from the follower entirely.
     import reckon.crew_follow_commands as follow
+    from reckon.crew import needs_you
 
     assert not hasattr(follow, "_needs_you_events")
     # The composer is not reached by the follower; it survives only for the

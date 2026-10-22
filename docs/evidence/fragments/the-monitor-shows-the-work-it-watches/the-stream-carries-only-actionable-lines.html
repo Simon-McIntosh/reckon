@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s83">
+  <meta name="plan-recorded-at" content="2026-10-22">
+  <meta name="plan-verdict" content="blocked">
+  <title>The Monitor stream carries only lines that ask the coordinator to act | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="the-stream-carries-only-actionable-lines-landing" data-node="the-stream-carries-only-actionable-lines" data-reckon="landed" data-when="2026-10-22">
+  <h2>The stream's rule is stated once, and the standing summary line is gone</h2>
+  <p>The rule now lives in <code>reckon/crew/ticker.py</code> as <code>CARRIED_PANE_WORDS</code> and <code>stream_carries(event)</code>: the stream carries a row only when it lands a run in the <code>delivered</code> or <code>halted</code> pane word, or is a limit reset. <code>RowPolicy.feed</code> and <code>RowPolicy.flush</code> filter every row they release through it, so a launch, a <code>working</code>/<code>waiting</code> transition, a <code>landed</code> or <code>dropped</code> row the coordinator's own merge caused, and a re-arm baseline print nothing while <code>crew view</code> still draws them. <code>reckon/crew_follow_commands.py</code> loses the standing needs-you emitter, its four call sites, the <code>FOLLOWER_NEEDS_YOU_EVENT</code> constant and its CLI branch, so no <code>needs you:</code> line and no reminder cadence remain. Commit <code>06467f9da</code>.</p>
+  <p><strong>Gate.</strong> <code>tests/test_the_stream_carries_only_actionable_lines.py</code> drives the follower's own row path over a stream holding one event of every kind: 6 passed. Its cases assert a line for exactly the actionable words, a delivered run printing its own row once and never a <code>needs you:</code> line, a halted run printing while its recovery does not, a limit reset drawn once, and the single rule naming the words the stream carries. The in-scope files <code>tests/test_follow_needs_you_line.py</code>, <code>tests/test_follow_drain_line.py</code>, <code>tests/test_a_pane_settles_when_no_work_is_live.py</code> and <code>tests/test_a_pane_does_not_settle_during_admission.py</code> are being rewritten to the removed rows.</p>
+  <p id="the-stream-carries-only-actionable-lines-blocked"><strong>Blocked.</strong> Removing the own-start row and the transient-recovery row changes rows this section removes, and tests outside this node's write fence assert those rows. They are reported rather than edited, per the node's fence: <code>tests/test_a_pane_shows_its_own_starts.py</code> (3 ids), <code>tests/test_the_live_pane_delivers_its_own_starts.py</code> (1), <code>tests/test_row_policy_holds_observer_context.py</code> (4), <code>tests/test_the_pane_draws_no_round_trip.py</code> (3). Three in-scope files also need their superseded assertions rewritten: <code>tests/test_follow_needs_you_line.py</code>, <code>tests/test_follow_drain_line.py</code>, <code>tests/test_a_pane_does_not_settle_during_admission.py</code>. The coordinator should widen the scope to those paths.</p>
+  <p><strong>Not yet run.</strong> The base/head arms over every file importing the changed modules, and <code>ruff check</code>/<code>ruff format --check</code>, are unmet.</p>
+</article>
+</body>
+</html>

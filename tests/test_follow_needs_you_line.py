@@ -528,10 +528,11 @@ def test_the_follower_and_the_derivation_name_the_same_runs(home):
     derived_nodes = {str(row["node"]) for row in derived_rows}
     assert derived_nodes == {"own-unpromoted"}, derived_rows
 
-    # Read the node names back off the pane's own text. Comparing the follower's
-    # wrapper with the module's helper compares one function with itself, since
-    # the wrapper delegates; the emitted line is what a reader actually sees.
-    emitted_nodes: set[str] = set()
-    for line in lines:
-        emitted_nodes |= _nodes_in_line(line)
-    assert emitted_nodes == derived_nodes, (emitted_nodes, derived_nodes, lines)
+    # The stream carries no summary line at all, so the node names are read off
+    # the derivation's own composition, which is what a reader who composes a
+    # line sees. Comparing it with the emitted lines is vacuous now: the stream
+    # names no set.
+    assert lines == [], lines
+    composed = need_module.needs_you_line({"working": 0, "runs": derived_rows})
+    emitted_nodes = _nodes_in_line(composed)
+    assert emitted_nodes == derived_nodes, (emitted_nodes, derived_nodes, composed)
