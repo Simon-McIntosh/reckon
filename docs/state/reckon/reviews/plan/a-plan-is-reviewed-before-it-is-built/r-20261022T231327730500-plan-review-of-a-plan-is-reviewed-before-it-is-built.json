@@ -1,0 +1,118 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T23:27:45.423Z",
+  "dispatched_at": "2026-10-22T23:15:23Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html:323",
+      "id": "reasoning-1",
+      "reason": "the node is told the three files are already complete while its write paths list all three and its Why says they must change, so a worker trusting the sentence re-narrows the rule exactly as \u00a740 did, while one trusting the Why edits three files with no stated target.",
+      "text": "s42's Deliverable says \"Each of the three cases above delivers a complete design report\", but all three named cases deliver a partial design-rubric report and expect it to count: `tests/test_a_section_reviewed_as_authored_stays_reviewed.py` `_review` writes `RUBRIC wiring: pass` under `rubric: \"design\"` (and `wiring` is not in `PLAN_DESIGN_REVIEW_ITEMS`, so all five design items parse absent), `tests/test_review_plan_command.py:211` writes `RUBRIC reuse_search: pass` alone, and `tests/test_the_surfaces_pass_the_plan.py:42` `_REPORT_LINE` is a lone `FINDING reuse_search` line with no `RUBRIC` line at all \u2014 three partial reports, each of which \u00a740's deliverable narrowing let count. The section's own Why paragraph says each of these cases \"deliver[s] a partial design report and expect[s] it to count\"",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html:323",
+      "id": "reasoning-2",
+      "reason": "the mechanism as sited changes a caller the plan relies on for its answer loop, so the filter belongs at `require_plan_reviewed` or the answer path needs its own rule.",
+      "text": "s42 places the incomplete-skip inside `newest_design_review`, which has a second production caller the section does not name: `crew review --answer` at `reckon/crew_dispatch_commands.py:2567` calls `newest_design_review` to locate the design review that raised a finding so the answer is recorded on that review, so filtering incomplete records there makes a partial design review's findings unanswerable through the advisory answer path",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "bc03d1babbe8505c22d62d83286b1cf7c14b9443971588a7612d4ea0d510d05c",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 287,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-22T23:31:48.005117+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-22T23:32:28.104110+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-22T23:31:48.005117+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-22T23:32:28.104110+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-plan-is-reviewed-before-it-is-built.v287.json",
+  "review_run_id": "r-20261022T231327730500-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "66bac61555c09bde87507beacd74add2c6a1674f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited anchors resolve: `parse_health_review` at `reckon/crew/review.py:1589`, `_delivered_status` at `reckon/crew/plan_review.py:2118`, `delivered_report_record` at :2141, `_report_line_reader` at :2080, `parse_plan_review_report` at `review.py:1342`, `require_plan_reviewed` in `reckon/crew/routing.py`, and the commit `fd989af87` resolves (`git cat-file -t` \u2192 commit); the extensionless `<a href=\"s4\">` resolves as `s4.html`.",
+    "done_when": "pass \u2014 s41's four cases and s42's three cases each assert a named outcome in a named test file, and each section declares a negative control that reddens its first case (restore the anchored pattern; restore the rubric test in `_delivered_status`), so neither measure holds on the unfixed code.",
+    "evidence_paths": "pass \u2014 both gates run every test file that stores or reads a plan review at base and head, each arm's log named by revision and ending in `EXIT=`, on the run directory and recorded through `baseline_suite`/`after_suite` `failure_ids`.",
+    "naming": "pass \u2014 the new test names (`test_a_code_report_is_read_by_its_own_grammar.py`, `test_a_partial_design_review_is_incomplete.py`) and the symbols the sections touch (`_delivered_status`, `newest_design_review`, `INCOMPLETE_STATUS`) carry no plan label, stage name, ticket number or version tag.",
+    "reasoning": "a finding \u2014 s42's deliverable contradicts its own Why about the three named test cases, and its chosen site for the incomplete-skip (`newest_design_review`) changes a second production caller the plan does not name.",
+    "single_goal": "pass \u2014 s41 carries one verdict (a delivered report is admitted on what its own parser read) and s42 one (a partial design review covers nothing), with the test-file edits consequences of each verdict rather than second deliverables.",
+    "wiring": "pass \u2014 s42's `depends-on` on s41 is declared in `plan-section-depends-on` (`{...,\"s42\":[\"...#s41\"]}`), s41 needs no declared parent because its only prerequisite, \u00a740, is already `done`, and the document's `plan-informs` targets both resolve (`docs/plans/an-orchestrator-is-bound-by-its-inbox.html`, `docs/plans/the-local-lane-is-the-default.html`)."
+  },
+  "section_digests": {
+    "_document": "a47029c9c0371bfae50018c6e6c159c1dcb405862aa99d93187667d562f0408f",
+    "s1": "906b087bcd754848d9ec2aa4c4490b133dbdb4afae9f5c17499132679ea305dd",
+    "s10": "98a91766ca798ebcc3598987231522b39b9ddccc1b7df7872c8581168b36aade",
+    "s11": "02d5638ba0ff8ff5dd2b3c87ccf956cbd9642af42771fd95df9a2b12a65c5aa5",
+    "s12": "32d120b53140ccbc275a965b3f2d903579356680bca3d141eab868656e22f1a9",
+    "s13": "0b983b5335c882d2b5a1e938222637a43c6479acfa2c26796bd1bad6b53fc545",
+    "s14": "e1fc7769c27fba5c11398d91d6a0b95e0bf0b5fbe0348a53ae6bbd11ea67e01e",
+    "s15": "8bbe9d4ecb5d7699700d5ec5ec0e2e68e10eb703ce97c016074036e38c46dbb5",
+    "s16": "405268ed497c37284417b4990ae7587b9d5fdd51e429c59ee23c9fc899dcfd45",
+    "s17": "958a38a3a22f23aff755cc6fb7e95f67abf763621ef344dc4b5afdf2fd261899",
+    "s18": "5be55ae998bf9126a6d5854403395bc2d4dc141a96c747850537376c2b1151bf",
+    "s19": "c955b30374fdf31e71803dac9adb18a3149c1710f64f82faecf6a2e5343806bb",
+    "s2": "0eb83bb364e8325f6db277107654d8f99533fa7458d8f00fa07f41aebea11402",
+    "s20": "d7761564296d90fc766d60ab2d545a71e6b98a3f4cf6e09e3a652b61506adbea",
+    "s21": "9392bdfa49fcf52b6856100b3a6d3824e000fd4e4a4af7900f7ec262acd82fa0",
+    "s22": "5a1cf8eab82a83a4877f9f74ee81283174341d70a24da01bbf97695d84564e9f",
+    "s23": "bb0dab79249984e32a78afb123f52b66fc3170670049bbbc6f7d1b55e1c42124",
+    "s24": "b0870b19487b883350a25f7c90d57a62bc3bcd5f015e3c0e42caa08281ccfb11",
+    "s25": "55c54e0c4d76fc729ae8aae0b9a190890292be3f312bc2851a4557138e3967ee",
+    "s26": "376496ed070fca2ba62310cfbad3a64a716c044bc3c48188338105284b33c5c3",
+    "s27": "4ae9e428c0ae4b25213b1a6dc27ed1bb4add79f05c0c448533947a803910fb6b",
+    "s28": "00f1427c671fbc8c77c5450745a717805c5f71e02da4642612d0e31bcc34ce8b",
+    "s29": "f07a5c4ea029d4c84a0e2e37f4f85b81fd55ba2b01374dbc6725ec9362cbd106",
+    "s3": "46c9c67ed1b393114ccf029e708e97e998691b1283c54b0fb2932ce76f78e01d",
+    "s30": "524315a924e9ea2ed117ffa3497d7c973424aa0fe2f1747216012baa178fe54b",
+    "s31": "109c4c50496bf95da3ad7009025762e6f6203b7aca9bc27b36f9991372594266",
+    "s32": "6f71c6ddc0f515d53dad1398cfc608198a051af77d62d7ef23de5bee1c66d031",
+    "s33": "388b0ebd2758249fd29293434c224835cd9cedf5ab5e3e591eebaa72cd55fb22",
+    "s34": "a1796b7b522c746a6fffb9d84ce9daaadc480a8c182a10a7b546f050d6703270",
+    "s35": "348b0eb16c0690b2e138f28b1353eb6da6f30b89199885ee053a68b35472dcb9",
+    "s36": "1b9c235b3155cc20d2636997e871d553154bcde7170f42fe9c1788c1a3710769",
+    "s37": "580e8de9879c98487d861190d849fbaa300b4fdbfece9a7a4ba24eed4dd480a0",
+    "s38": "0534508fcd761740fdda339862fc74fa43388997b0df6702e53577242d341e4d",
+    "s39": "2dd33aaa16d0d3166c632ce15eac9837f0604222f84564c651c13ee870bba77d",
+    "s4": "7b91ac81d581cc35d0b52204756f087c9a3f39f6180d7b49c782173db05f104e",
+    "s40": "63bdc043e645ffcefa49faff641dbb303a47a0ee1302434e3b6d3aa390b09ba2",
+    "s41": "2d780d330a74c28eff3d6b9cb6a27b863c5c1f9c3456e09fd0a6a64c8f919887",
+    "s42": "239b848d7fd377fe9f1c9543ac1bf7199286e4500297229d3d87e434a8c98890",
+    "s5": "931379e6e61a93111bd4f5be0f477adfac4df292d7f92a1c85da67ae19802e5b",
+    "s6": "d041173b5de95d0e5488fd6cd14ddeb04b6aeb31b2bedbae65328c3f93f022dc",
+    "s7": "658b997db4138d0ee40eca99702b5501c9bb0b620dea973a745e1c2c50ec9e29",
+    "s8": "60b74d52ea05d83fd0d024035a70976e05bc2e1ff165028ebe4589a8fc10c0b4",
+    "s9": "87545911e9ea78d872d01d72f7039ef1759951b05502ca91c7ca97ed86a90a41"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T23:31:09.430979+00:00"
+}
