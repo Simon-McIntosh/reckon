@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-window-paces-the-lane">
+  <meta name="plan-title" content="A spent global credit lift does not mask a live session lift">
+  <meta name="plan-summary" content="dispatch() passes its session to both of its budget verdicts, so the credit-cap judgement reads the lift governing the dispatching session and a spent global lift stops masking a live session lift.">
+  <meta name="plan-evidence-for" content="reckon:a-window-paces-the-lane">
+  <meta name="plan-node" content="a-spent-global-lift-does-not-mask-a-session-lift">
+  <meta name="plan-recorded-at" content="2026-10-22">
+  <meta name="plan-environment" content="Linux node 98dci4-clu-2068; Python venv at /home/ITER/mcintos/Code/reckon/.venv; pytest with an isolated RECKON_HOME under tmp_path">
+  <title>A spent global credit lift does not mask a live session lift &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header class="plan-header">
+    <h1 id="a-spent-global-lift-does-not-mask-a-session-lift-title">A spent global credit lift does not mask a live session lift</h1>
+    <p class="plan-summary">The dispatch path judged the credit cap without the session it already held.</p>
+  </header>
+
+  <p id="a-spent-global-lift-does-not-mask-a-session-lift-landing"><code>dispatch()</code> now passes its
+  <code>session</code> to both of its <code>_budget_verdict</code> calls &mdash; the first judgement and the fallback
+  re-judgement taken for a held backend's declared substitute &mdash; so on a group carrying an older spent global
+  credit lift and a newer live session credit lift, a dispatch from that session is admitted and a dispatch from
+  another session is still held. The fixture records one spent seven-day window and one observed five-hour clock for
+  the masked group's member, grants a session credit lift (cap 14,604, balance at grant 55,157.31) and then a global
+  credit lift (cap 10,000, balance at grant 60,564.37) against a recorded balance of 50,593.66, and drives the real
+  <code>reckon crew dispatch --backend &hellip; --route deterministic --session &hellip;</code> entry. Head gate: 43
+  passed, 1 pre-existing failure outside this node's scope, across the six named files; the new file is 4 passed. Base
+  arm (dispatch.py's two <code>session=session,</code> lines removed): the session's dispatch is refused
+  <code>budget-hold</code> naming the global lift <code>codex-group-1792659009-fcf422</code> &mdash; &ldquo;credit lift
+  &hellip; has spent 9,971 of its 10,000-credit cap&rdquo; &mdash; failing
+  <code>test_a_live_session_lift_admits_its_own_session</code>, <code>test_a_session_lift_past_its_own_cap_holds_its_session</code>
+  and <code>test_a_session_lift_judges_its_own_spend_on_the_fallback_path</code> (<code>EXIT=1</code>). Negative control
+  &mdash; <code>budget_lift._governing_lift</code> judging the cap against the newest lift on the group regardless of
+  scope (<code>pool = in_force</code>) &mdash; fails the declared session-admit case (<code>EXIT=1</code>, same three
+  ids). Ruff reports no finding added: 5 at base, 5 at head on the two product files.</p>
+</main>
+</body>
+</html>

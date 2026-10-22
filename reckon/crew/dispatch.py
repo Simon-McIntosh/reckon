@@ -1458,6 +1458,7 @@ def dispatch(
             backend=resolution.backend_settings,
             purpose="dispatch",
             budget_state=budget_state,
+            session=session,
         )
         if route == "picker":
             state = verdict.get("state") or {}
@@ -1541,6 +1542,7 @@ def dispatch(
                 backend=resolution.backend_settings,
                 purpose="dispatch",
                 budget_state=budget_state,
+                session=session,
             )
             budget_warnings.extend(fallback_verdict.get("warnings") or ())
             if fallback_verdict["held"]:
