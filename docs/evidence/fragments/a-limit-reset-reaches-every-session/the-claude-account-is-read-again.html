@@ -88,4 +88,24 @@ population is 171 files and does not fit the node's window — a run over all of
 without reaching its cut — so that run is logged and the bounded arm is what is claimed. The
 negative control was re-applied to the repaired head and still fails exactly the one case it was
 declared to fail.</p>
+
+<h3 id="the-claude-account-is-read-again-probe-runner">Two ids the population added, and why neither test is edited</h3>
+<p id="the-claude-account-is-read-again-probe-runner-body">Merging this work onto main added two
+failing ids in <code>tests/test_budget.py</code>. Both name rules this change keeps — a backend
+that reports nothing and a backend under a reset-bearing hold are not probed, and a lane probe
+is once per backend rather than once per record — so neither test was edited and no assertion was
+changed. What failed was the tests' own instrument: in that file's config the second backend is
+the claude dialect, so the pre-flight reads it through the account surface, and that read ran
+even when the test injected a probe runner, reaching the workstation's own logged-in account.
+At the base revision the read answered <code>HTTP Error 403: Forbidden</code> from a host that
+refuses it, so the backend stayed unknown and both tests passed by accident; correcting the
+endpoint made the same read answer — 73.0 % utilisation, observed from this box — and the backend
+turn known. A positive control settles it: with the outbound read refused, both ids pass at the
+head that fails them.</p>
+<p id="the-claude-account-is-read-again-probe-runner-narrow">The repair is in the reader rather
+than in the tests. The account surface is now read only when the caller supplies no probe runner
+or asks for the read with a fetch, so an injected runner is the only instrument a caller gets; no
+production call site passes one, so the operator's path reads exactly as before. At that head the
+same arm is 2 failed / 76 passed against the base arm's 2 failed / 68 passed, with only the two
+pre-existing CLI failures in both and none added.</p>
 </article>
