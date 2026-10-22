@@ -38,9 +38,11 @@
       <code>tests/test_spawn_retries_a_vanished_bind.py</code>,
       <code>tests/test_an_early_exit_keeps_its_status.py</code>,
       <code>tests/test_a_failed_launch_does_not_block_its_node.py</code>):
-      <strong>21 passed, EXIT=0</strong> at the head carrying the repair, against
-      <strong>5 failed, 16 passed, EXIT=1</strong> for the same gate at the base
-      revision. The existing early-exit control is green unchanged.
+      <strong>22 passed, EXIT=0</strong> (<code>after-suite.log</code>) at the
+      head carrying the repair, the pinned bound and this record, against
+      <strong>5 failed, 17 passed, EXIT=1</strong> for the same gate over a
+      scratch extraction of the base revision (<code>baseline-suite.log</code>).
+      The existing early-exit control is green at both heads.
     </li>
     <li>
       The case this fix adds is red before it: at the head that preceded it, a
@@ -50,10 +52,13 @@
     </li>
     <li>
       Base revision: the same gate over a scratch extraction of
-      <code>6d3c43bbd</code> gives <strong>4 failed, 16 passed, EXIT=1</strong>,
-      so every case this node's file adds is red there and green here. It runs
-      as the red arm's bounded sibling: the delayed-refusal fixture the measure
-      names is recorded as a launch failure at the base revision.
+      <code>6d3c43bbd</code>, carrying this node's test file as it stands, gives
+      <strong>5 failed, 17 passed, EXIT=1</strong>
+      (<code>baseline-suite.log</code>) — the two delayed-refusal phrases, the
+      slow step start, the healthy launch that must wait its window out, and the
+      shipped constant's floor. The remaining cases pass there as they must: the
+      non-bind refusal is recorded as a launch failure at the base revision too,
+      and a healthy child that outlives the window is left running there too.
     </li>
     <li>
       Negative control — the declared mutation, keying the retry on the startup
@@ -72,6 +77,16 @@
       red (<strong>1 failed in 17.51s, EXIT=1</strong>, one process spawned),
       which is the retry the narrowed window loses.
     </li>
+    <li>
+      The expected bound is pinned rather than read from the constant under
+      test: four cases compared elapsed time against the shipped window, so a
+      window set to any value at all left them green. They compare against a
+      literal thirty-second floor now, and a case asserts the shipped constant
+      reaches that floor. With the constant set back to half a second in a
+      scratch tree the pinned cases fail (<strong>5 failed, 3 passed in 16.09s,
+      EXIT=1</strong>, <code>pinned-window-control.log</code>), both pinned
+      assertions among the failing ids.
+    </li>
   </ul>
   <p id="a-slow-launch-retries-a-vanished-bind-delay">
     The four-second delay alone reproduces the recorded failure: the
@@ -82,7 +97,10 @@
   <p id="a-slow-launch-retries-a-vanished-bind-paths">
     Changed: <code>reckon/crew/dispatch_launch.py</code> (the startup watch, the
     stream check, the try-wide window, and the <code>log_path</code> argument at
-    both spawn sites) and the new test file. Commits <code>046863d4</code>,
-    <code>935bd7f1</code>, <code>b3712dcd</code>, <code>a91f88cb</code>,
-    <code>99621ce9</code>.
+    both spawn sites), the stream-begun fact given one owner that the launcher's
+    two reads and the watch all call, and the new test file. Commits
+    <code>046863d4</code>, <code>935bd7f1</code>, <code>b3712dcd</code>,
+    <code>a91f88cb</code>, <code>99621ce9</code>, <code>fefcef40</code>,
+    <code>936ff8a2</code>, and this record's own commit.
+  </p>
 </section>
