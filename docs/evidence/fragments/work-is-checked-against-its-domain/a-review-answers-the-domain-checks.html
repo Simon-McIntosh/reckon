@@ -1,0 +1,84 @@
+<section id="a-review-answers-the-domain-checks">
+  <h2>A review answers the domain checks its node touches</h2>
+
+  <p><strong>What changed.</strong> A repository's declared <code>review_checks</code>
+  join the review checklist rather than a seventh scored dimension. The composed
+  run-review brief in <code>reckon/crew/recovery_review_subject.py</code> now carries a
+  <em>Declared review checks this node touches</em> block naming every check the
+  reviewed node's write paths match, taken from the one matcher that answers which
+  rules a node touches (<code>rules_for</code> in
+  <code>reckon/crew/domain_rules.py</code>), with the verdict form stated beside the
+  questions — a reviewer in another project's worktree holds no flight config of its
+  own, so the questions and the grammar reach it only through the brief.</p>
+
+  <p>On the parser side, <code>parse_review</code> takes the declared check ids as its
+  required set. Each answered check joins <code>item_verdicts</code> under its own id;
+  a check that carried no answered verdict is named in <code>absent_items</code> and
+  leaves the record <code>incomplete</code>; and a check answered <code>fail</code> is
+  stored as a finding carrying <code>blocking</code>. Nothing else moved:
+  <code>REVIEW_DIMENSIONS</code>, the acceptance floor in
+  <code>reckon/crew/recovery_review_acceptance.py</code> and
+  <code>reckon/crew/review_lifecycle.py</code> are untouched, so the existing
+  severity derivation reports such a run <code>open</code> with no new lifecycle code.
+  <code>_VERDICT_RE</code> accepts <code>-</code> and <code>.</code> in an item name,
+  because a declared check is named by the project that declared it rather than by a
+  constant in the parser; the captured item is still matched against a known set, so a
+  line naming nothing declared parses exactly as it did before.</p>
+
+  <h3>Measured</h3>
+
+  <p>Gate: the eight test files named in the done-when, run in place on the fleet
+  allocation as one arm per revision. Each arm's log names its revision, tree, working
+  directory, imported <code>module.__file__</code> and command on its header lines and
+  ends with a bare <code>EXIT=&lt;code&gt;</code> line.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base</td><td><code>607718a36</code></td>
+        <td>6 failed, 48 passed, exit 1</td></tr>
+      <tr><td>head</td><td><code>78268a3d6</code></td>
+        <td><strong>54 passed</strong>, exit 0 — no failure id the base does not carry</td></tr>
+      <tr><td>negative control (checklist lines dropped from the composed prompt,
+        head)</td><td>mutated head</td><td>3 failed, exit 1</td></tr>
+    </tbody>
+  </table>
+
+  <ul>
+    <li><strong>The base's six failures are the new file's own</strong>, and only those:
+    at <code>607718a36</code> the new tests fail because the mechanism is absent —
+    <code>DECLARED_CHECK_HEADING</code> does not exist in the composer,
+    <code>parse_review</code> accepts no check set and <code>check_verdict_outcome</code>
+    is undefined. The other seven files are green in both arms, so the change adds no
+    behaviour they were resting on.</li>
+    <li><strong>The four measures, each test driving the mechanism end to end.</strong>
+    A fixture project declaring three checks (two matching a
+    <code>models/**</code> node, one reaching <code>lib/**</code>) composes a brief
+    listing exactly the two matching ids; the same node writing
+    <code>docs/notes.md</code> composes a brief carrying no block at all. A record
+    emitting a verdict for every brief-named check parses <code>parsed</code> with an
+    empty <code>absent_items</code>; the same record with the last check's line removed
+    parses <code>incomplete</code> naming it, with <code>item_aggregate</code> withheld.
+    A check answered <code>fail</code> yields exactly one finding whose severity is the
+    blocking constant, and <code>lifecycle()</code> returns <code>open</code> for the
+    stored record.</li>
+    <li><strong>The control.</strong> A fixture project declaring no <code>domain</code>
+    block composes a brief with no checklist heading, and a record parsed with no
+    declared checks scores the six dimensions with no checklist lines and an unchanged
+    acceptance floor. The expected check ids the incomplete-record test asserts against
+    are read out of the composed brief rather than restated from the fixture, so the
+    brief is the one authority for what a review owes.</li>
+    <li><strong>The negative control.</strong> With the checklist lines dropped from the
+    composed prompt (<code>_declared_check_block</code> returning the empty string), the
+    prompt-lists-the-checks and incomplete-record tests both fail, and the failed-check
+    test with them. The mutation was reverted and
+    <code>reckon/crew/recovery_review_subject.py</code> re-hashed to
+    <code>8b7468cfbb54</code>… — identical to its pre-mutation bytes.</li>
+    <li><strong>Lint delta.</strong> <code>ruff check</code> and
+    <code>ruff format --check</code> are clean on the three changed paths.</li>
+    <li><strong>Not closed here.</strong> A reviewer writes its record as JSON by hand,
+    so the parser's required set bites where emitted text is parsed; carrying the
+    required checks onto the stored record so the delivery contract refuses an omission
+    too is a follow-on recorded in the manifest, not part of this measure.</li>
+  </ul>
+</section>
