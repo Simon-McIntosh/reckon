@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T16:13:58.832Z",
+  "dispatched_at": "2026-10-22T15:59:38Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:314",
+      "id": "anchors_resolve-1",
+      "reason": "a node that reads the wrong key.json resolves every figure's source to a different pair, so the sha256 equality check fails for all ten figures and the report states no pair discriminates, or counts discrimination against the wrong pair.",
+      "text": "the done-when checks \"the input's sha256 equals that of its source figure under docs/figures/figure-review-pairs/, named in key.json\", but \u00a721's Change names two different files both called key.json (the \u00a78 rules file at .../figure-review-pairs/key.json and the new .../clive/key.json), and both key their figures as fig-01..fig-10 with conflicting source mappings (fig-01 is pair-5-a.svg in the former and pair-2-b.png in the latter), so \"key.json\" does not resolve to one file",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:311",
+      "id": "reasoning-1",
+      "reason": "a coordinator reading the Why may try to land \u00a720 before the evaluation \u00a720 is gated on, which the dependency graph then refuses, where the sentence should cite the locked `figure-review-on-metered-lane` decision as the reason the measurement runs on clive as the local image lane.",
+      "text": "\u00a721's Why says \"With \u00a720 making clive the only figure-review lane, the same evaluation has to be run on it\", presenting \u00a720 as a state already in force, but the plan's own depends-on makes s20 depend on s21, so \u00a720 has not landed when \u00a721 is dispatched and clive is not yet the only figure-review lane",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "bf42c21f85b81fb2086b1687b1d12ac82e58e3d1747ee8ec4da034b62f121b2d",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 125,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T155706455806-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "f6abe5d4ad1926c391476afe6075b69bb34628f5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a721's done-when cites \"key.json\" without distinguishing the two files the Change names, and the two files key their figures by the same ids with different sources.",
+    "done_when": "pass \u2014 \u00a721's done-when is measurable (a per-figure verdict word, a one-Read-of-its-own-input stream check, and a per-pair discrimination count) and declares the five image-withheld control runs as its negative control.",
+    "evidence_paths": "pass \u2014 the report and the logs sit under ~/.config/reckon/crew/reports/reckon/figure-review-pairs/clive/ and the run directory, not a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 \u00a721 introduces no plan labels, ticket numbers or version tags; pair-N-a.png, clive/inputs and clive/key.json name the mechanism, not a tracker entry.",
+    "reasoning": "a finding \u2014 \u00a721's Why presents \u00a720 as a precondition, though the plan's own dependency has \u00a720 depend on \u00a721.",
+    "single_goal": "pass \u2014 \u00a721 carries one deliverable, whether the local lane discriminates \u00a78's five known pairs.",
+    "wiring": "pass \u2014 \u00a721 declares depends-on s13, which resolves to a node that exists, and \u00a720 declares its dependency on \u00a721, so the evaluation precedes the routing rule it justifies."
+  },
+  "section_digests": {
+    "_document": "a52ba3a4ba134b225256bf083ac1ac6da063ca3b3e8f92b57c81a7e1651fa924",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s10": "aee314dbe26192cd678dc467a9b229b8cb46873cacefcd4ce369fcbe469a1e37",
+    "s11": "22d519df0a82a0edfb23ceef10d63c14a08f3d8d656ce95a4cd03e5049d4e228",
+    "s12": "234f9999257c9e64bf69518cdf0b98e319850465374deeac091e90b1ed118647",
+    "s13": "d2f0977c2749f5e1d4e28f3962e8b01a182615a0a75edb530e5e4fde18d9a123",
+    "s14": "f06507899a512533562b6d0b348e9b18bec6d1667d6e619d05352d7ce535eb7c",
+    "s15": "18683ff3a4d13534aa9e29ac4a495e86d07a452b032538d3ae4b7a47d2a9966b",
+    "s16": "a1648c89c8b99c37facb6da9eb6deca43ba8418449557c78627654670ea39fa1",
+    "s17": "c856114a206af086b77fc4d7b867a4cf4dbafd15fdce96f7d52c4a2a36c1e544",
+    "s18": "d6fb6505577d6af2a722c58e82e85d9efd01bb5ce9b4d5fa6408d237ab731651",
+    "s19": "43a12c4fa79a496156abb38028fc5f1c3ea4245ebaaea0e2f007f25079c44f2d",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s20": "ab2db294a1f747ecd69c0027b85fc38e86bf9e2aead12af975002255af4af1b5",
+    "s21": "5c6ba9b5bbf9a89c5214303986bd60fe70a50533c643693062c4bc7588581df8",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "ce9705dbaad70ab2b3a9425eead9900cc284deb7f1d5ecacb553d3745679b3d7",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a",
+    "s8": "2c200fdd964f328342811e9362e4cd14da60f3c8352368899ccf87797d9e7f5b",
+    "s9": "b62ffeb55dd71d5f62b49f372e069f227a57c7caec9c6c3b45f81a945d284e11"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T16:20:00.629895+00:00"
+}
