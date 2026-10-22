@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T17:47:51.556Z",
+  "dispatched_at": "2026-10-22T17:34:37Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:356",
+      "id": "wiring-1",
+      "reason": "a reader following this followup is told \u00a73 performs the measurement, but only \u00a721 is dispatchable, so either the body must be repointed to \u00a721 or the invocation retracted; the prompt was fixed and the body it belongs to was not.",
+      "text": "the open followup f-arcstf-007's body still reads \"\u00a73 runs the same pairs, with their image-withheld controls, on the free local lane\" while its invocation at line 357 was repointed to \u00a721, and \u00a73 is deferred precisely because it carries no done-when, control or write paths (comment c-s3-executable-as-s8, line 390) so it is not dispatchable as written",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:356",
+      "id": "wiring-2",
+      "reason": "when the followup resolves on \u00a721 landing the claim silently disappears unverified, so \u00a721 must gain the sequencing check or the claim must move to its own followup.",
+      "text": "the same followup states that in \u00a721's \"same pass\" it also verifies \"whether the figure review waits for the text review, its 'cheap review first' half\", but \u00a721's Change and done-when measure only the five pairs and name no text-review sequencing, so that claimed verification is carried by no section",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "6692265dd39a6f0c359817594d7469f71650066ae0b0b1c7d7924145d8b47db9",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 126,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T173242293964-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "0c05d1b504d82ee147e599dc2d7d9ee290d1348e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 docs/figures/figure-review-pairs/pair-1..5-a/b.png exist; \u00a78's key.json and clive/key.json exist carrying the `rule`, `source` and `sha256` fields the done-when reads; the cited decision `figure-review-on-metered-lane` resolves with choice `hold-for-a-local-image-lane`.",
+    "done_when": "pass \u2014 \u00a721's done-when enumerates the report's per-figure verdict word, the Read and sha256 checks against each copy's `source`, the discrimination rule and the trusted/partly/untrusted verdict, and declares the five image-withheld runs as the negative control; \u00a721 (unlike \u00a73) carries a gate that can fail.",
+    "evidence_paths": "pass \u2014 the report, inputs and key.json sit under ~/.config/reckon/crew/reports/reckon/figure-review-pairs/clive/ and the gate logs under the run directory; none is a session scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 the neutral figure names (fig-01..fig-10, ctl-1..ctl-5) and the report carry no plan labels, stage names, ticket numbers or version tags, and \u00a721 introduces no code symbol.",
+    "reasoning": "pass \u2014 \u00a721's Why now cites the locked decision rather than \u00a720 as a state in force, which the decisions block supports; the mechanism (copy \u00a78's ten PNGs, run fifteen judged runs on clive, match) can produce the done-when, the copies on disk are byte-identical to their sources so the sha256 check can be satisfied, and the Change names the coordinator as the caller.",
+    "single_goal": "pass \u2014 \u00a721 has one deliverable, measuring the local lane's discrimination on \u00a78's five known pairs, and the copy/verify clauses are part of that one measure.",
+    "wiring": "a finding \u2014 the plan's relationships and depends-on edges resolve (\u00a721 depends on \u00a713; \u00a720 on \u00a721, matching \u00a721's Why), but the open followup f-arcstf-007, which now invokes \u00a721, still names \u00a73 in its body and carries a verification no section lands."
+  },
+  "section_digests": {
+    "_document": "a52ba3a4ba134b225256bf083ac1ac6da063ca3b3e8f92b57c81a7e1651fa924",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s10": "aee314dbe26192cd678dc467a9b229b8cb46873cacefcd4ce369fcbe469a1e37",
+    "s11": "22d519df0a82a0edfb23ceef10d63c14a08f3d8d656ce95a4cd03e5049d4e228",
+    "s12": "234f9999257c9e64bf69518cdf0b98e319850465374deeac091e90b1ed118647",
+    "s13": "d2f0977c2749f5e1d4e28f3962e8b01a182615a0a75edb530e5e4fde18d9a123",
+    "s14": "f06507899a512533562b6d0b348e9b18bec6d1667d6e619d05352d7ce535eb7c",
+    "s15": "18683ff3a4d13534aa9e29ac4a495e86d07a452b032538d3ae4b7a47d2a9966b",
+    "s16": "a1648c89c8b99c37facb6da9eb6deca43ba8418449557c78627654670ea39fa1",
+    "s17": "c856114a206af086b77fc4d7b867a4cf4dbafd15fdce96f7d52c4a2a36c1e544",
+    "s18": "d6fb6505577d6af2a722c58e82e85d9efd01bb5ce9b4d5fa6408d237ab731651",
+    "s19": "43a12c4fa79a496156abb38028fc5f1c3ea4245ebaaea0e2f007f25079c44f2d",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s20": "ab2db294a1f747ecd69c0027b85fc38e86bf9e2aead12af975002255af4af1b5",
+    "s21": "c9ed658bd81ee95aca671c4c50b6f524c6200537628625fad8284c60c56925f0",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "ce9705dbaad70ab2b3a9425eead9900cc284deb7f1d5ecacb553d3745679b3d7",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a",
+    "s8": "2c200fdd964f328342811e9362e4cd14da60f3c8352368899ccf87797d9e7f5b",
+    "s9": "b62ffeb55dd71d5f62b49f372e069f227a57c7caec9c6c3b45f81a945d284e11"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T17:52:33.677082+00:00"
+}
