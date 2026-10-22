@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew_run_commands.py:853 crew_check_review runs review_record_refusals on the delivered record",
+    "reckon/crew/review.py:2832 repair_run_review refusals the repaired record through review_record_refusals",
+    "reckon/crew/reports.py:1900 the stored-record audit extends its findings from review_record_refusals",
+    "reckon/crew/review.py:2719 file_delivered_run_review_report files through store_review without the contract",
+    "reckon/crew/repair.py:125 review_findings parses a review's raw_text through parse_review with no required set",
+    "reckon/crew/reports.py:1921 _unmarked_findings_in_record parses raw_text through parse_review with no required set"
+  ],
+  "completed_at": "2026-10-22T02:14:25.378Z",
+  "dispatched_at": "2026-10-22T01:59:57Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_subject.py",
+      "line": "548",
+      "severity": "follow-on",
+      "text": "follow-on: _declared_check_block renders f'  {check.id}: {check.question}' for the review brief, duplicating the identical per-check line that render_domain_rules already renders at reckon/crew/prompts.py:407; the two spellings can drift, which is the defect plan section 9 exists to remove, and the round-1 review raised it as a follow-on that this repair round left unaddressed."
+    },
+    {
+      "file": "docs/evidence/fragments/work-is-checked-against-its-domain/a-review-answers-the-domain-checks.html",
+      "line": "119",
+      "severity": "follow-on",
+      "text": "follow-on: the after-repair arm's table row names the revision 'e6c35bde9 + working tree', but the log the manifest cites for that arm (gate-repair-after.log, recorded in after_suite) names revision b4132f14c on its own header line; the fragment's evidence fragment for the arm does not match the log it is the record of, so a reader reconciling the two finds a revision that is not the one run."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": "489",
+      "severity": "follow-on",
+      "text": "follow-on: declared_review_checks resolves the checklist only from the reviewed run's live pointer and returns () when it is unreadable, so a review whose subject was promoted before the record is checked owes no check at all; the fail-open is documented in the docstring but leaves the guard off for exactly the re-review-after-promotion case, with nothing recording that it was skipped."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T003334326604-a-review-answers-the-domain-checks/manifest.md",
+      "line": "12",
+      "severity": "follow-on",
+      "text": "follow-on: the done-when requires 'ruff check and ruff format --check clean on the changed paths' but the manifest's tests and test_logs lines (12-13) record only the pytest gate, so half the stated measure is claimed rather than evidenced; both are in fact clean when run (ruff check exit 0, ruff format --check '3 files already formatted')."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against 607718a36a20d1f988de4314bf2c3cfd8f72a7fc: 78268a3d6 adds the declared-check block and the parser's required set, e6c35bde9 adds the evidence fragment, and b4132f14c adds unanswered_review_checks and declared_review_checks and wires them into review_record_refusals, all inside the declared write paths.",
+    "done_when": "The done-when is the eight-file pytest gate plus ruff clean on the changed paths; the manifest records baseline_suite at e6c35bde9 (1 failed, 56 passed, exit 1) and after_suite at b4132f14c (57 passed, exit 0), both logs naming revision, tree, cwd, module.__file__ and command and ending in a bare EXIT= line, but it records no ruff log; I ran ruff check (exit 0) and ruff format --check ('3 files already formatted') on the three changed source/test paths.",
+    "goal": "The node goal is to hold a review to a verdict on every declared domain check its node touches, recording a failed check as a blocking finding; the landed change composes the matching checks into the review brief (reckon/crew/recovery_review_subject.py:462,516) and now enforces them at the delivery contract (reckon/crew/review.py:774, refusals.extend(unanswered_review_checks(record))), whose production callers are reckon/crew_run_commands.py:853 (crew check --review), reckon/crew/review.py:2832 (the review repair) and reckon/crew/reports.py:1900 (the audit over stored records), so the guard the round-1 review found unrun now fires in production.",
+    "manifest": "a-review-answers-the-domain-checks/manifest.md is complete: status complete, commits 78268a3d6, e6c35bde9 and b4132f14c, changed_paths inside the declared scope, baseline_suite and after_suite carrying the gate command and revision, a negative_control_log whose base arm reddens exactly the discriminating test, and follow_ons naming the filing path left unguarded.",
+    "write_paths": "The brief grants reckon/crew/review.py, reckon/crew/recovery_review_subject.py, tests/test_a_review_answers_the_domain_checks.py, the evidence fragment and a figures directory; git diff 607718a36a..b4132f14c changes exactly the first four (4 files, 690 insertions, 5 deletions) and nothing else; no figure was written, which the done-when permits because it names no artifact."
+  },
+  "justifications": {
+    "durability": "tests/test_a_review_answers_the_domain_checks.py:227 fails on the base arm at e6c35bde9 with an empty refusal list (the recorded negative control), so reverting the contract change reddens it; the two sibling repair tests assert an absence and hold on both arms, which the node's own fragment (line 128) discloses.",
+    "evidence": "gate-repair-base.log (EXIT=1, '1 failed, 56 passed') and gate-repair-after.log (EXIT=0, '57 passed') name their revision, tree, cwd, module.__file__ and command, and are recorded in baseline_suite/after_suite; the done-when's ruff half has no log in the manifest (line 12-13), so that half is claimed, not evidenced.",
+    "fit": "reckon/crew/review.py:113-152 declares CHECK_VERDICT_OUTCOMES beside the module's existing FINDING_SEVERITIES vocabulary, and no added symbol carries a plan, sprint, ticket or version name.",
+    "goal_fidelity:": "reckon/crew/review.py:774 wires unanswered_review_checks into review_record_refusals, whose three production callers all now refuse a delivered record that omits a declared check; the residue is that reckon/crew/review.py:2719 file_delivered_run_review_report still files through store_review without the contract, and parse_review's own callers (repair.py:125, reports.py:1921) still pass no required set.",
+    "reuse": "reckon/crew/recovery_review_subject.py:548 re-spells the per-check line f'  {check.id}: {check.question}' that render_domain_rules already owns at reckon/crew/prompts.py:407, and domain_review_checks calls rules_for directly beside domain_rules_block (reckon/crew/prompts.py:363) which was written as the one matcher for 'the brief, the review and the promotion checks'.",
+    "scope_discipline": "git diff --stat 607718a36a20d1f988de4314bf2c3cfd8f72a7fc b4132f14c7d656778274b5dd5508b9b4c9b4d8e3 lists only the four declared paths, and no hunk reaches outside the granted scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to hold a review to a verdict on every declared domain check its node touches, recording a failed check as a blocking finding; the landed change composes the matching checks into the review brief (reckon/crew/recovery_review_subject.py:462,516) and now enforces them at the delivery contract (reckon/crew/review.py:774, refusals.extend(unanswered_review_checks(record))), whose production callers are reckon/crew_run_commands.py:853 (crew check --review), reckon/crew/review.py:2832 (the review repair) and reckon/crew/reports.py:1900 (the audit over stored records), so the guard the round-1 review found unrun now fires in production.\nVERDICT done_when: The done-when is the eight-file pytest gate plus ruff clean on the changed paths; the manifest records baseline_suite at e6c35bde9 (1 failed, 56 passed, exit 1) and after_suite at b4132f14c (57 passed, exit 0), both logs naming revision, tree, cwd, module.__file__ and command and ending in a bare EXIT= line, but it records no ruff log; I ran ruff check (exit 0) and ruff format --check ('3 files already formatted') on the three changed source/test paths.\nVERDICT write_paths: The brief grants reckon/crew/review.py, reckon/crew/recovery_review_subject.py, tests/test_a_review_answers_the_domain_checks.py, the evidence fragment and a figures directory; git diff 607718a36a..b4132f14c changes exactly the first four (4 files, 690 insertions, 5 deletions) and nothing else; no figure was written, which the done-when permits because it names no artifact.\nVERDICT manifest: a-review-answers-the-domain-checks/manifest.md is complete: status complete, commits 78268a3d6, e6c35bde9 and b4132f14c, changed_paths inside the declared scope, baseline_suite and after_suite carrying the gate command and revision, a negative_control_log whose base arm reddens exactly the discriminating test, and follow_ons naming the filing path left unguarded.\nVERDICT diff: Read commit by commit against 607718a36a20d1f988de4314bf2c3cfd8f72a7fc: 78268a3d6 adds the declared-check block and the parser's required set, e6c35bde9 adds the evidence fragment, and b4132f14c adds unanswered_review_checks and declared_review_checks and wires them into review_record_refusals, all inside the declared write paths.\nCALL_SITES: reckon/crew_run_commands.py:853 crew_check_review, reckon/crew/review.py:2832 repair_run_review, reckon/crew/reports.py:1900 the audit over stored review records, reckon/crew/review.py:2719 file_delivered_run_review_report (files without the contract), reckon/crew/repair.py:125 and reckon/crew/reports.py:1921 (parse_review callers that pass no required set)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:774 wires unanswered_review_checks into review_record_refusals, whose three production callers all now refuse a delivered record that omits a declared check; the residue is that reckon/crew/review.py:2719 file_delivered_run_review_report still files through store_review without the contract, and parse_review's own callers (repair.py:125, reports.py:1921) still pass no required set.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-repair-base.log (EXIT=1, '1 failed, 56 passed') and gate-repair-after.log (EXIT=0, '57 passed') name their revision, tree, cwd, module.__file__ and command, and are recorded in baseline_suite/after_suite; the done-when's ruff half has no log in the manifest (line 12-13), so that half is claimed, not evidenced.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 607718a36a20d1f988de4314bf2c3cfd8f72a7fc b4132f14c7d656778274b5dd5508b9b4c9b4d8e3 lists only the four declared paths, and no hunk reaches outside the granted scope.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_review_answers_the_domain_checks.py:227 fails on the base arm at e6c35bde9 with an empty refusal list (the recorded negative control), so reverting the contract change reddens it; the two sibling repair tests assert an absence and hold on both arms, which the node's own fragment (line 128) discloses.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/review.py:113-152 declares CHECK_VERDICT_OUTCOMES beside the module's existing FINDING_SEVERITIES vocabulary, and no added symbol carries a plan, sprint, ticket or version name.\nSCORE reuse: 10\nJUSTIFICATION reuse: reckon/crew/recovery_review_subject.py:548 re-spells the per-check line f'  {check.id}: {check.question}' that render_domain_rules already owns at reckon/crew/prompts.py:407, and domain_review_checks calls rules_for directly beside domain_rules_block (reckon/crew/prompts.py:363) which was written as the one matcher for 'the brief, the review and the promotion checks'.\nFINDING reckon/crew/recovery_review_subject.py:548 follow-on: _declared_check_block renders f'  {check.id}: {check.question}' for the review brief, duplicating the identical per-check line that render_domain_rules already renders at reckon/crew/prompts.py:407; the two spellings can drift, which is the defect plan section 9 exists to remove, and the round-1 review raised it as a follow-on that this repair round left unaddressed.\nFINDING docs/evidence/fragments/work-is-checked-against-its-domain/a-review-answers-the-domain-checks.html:119 follow-on: the after-repair arm's table row names the revision 'e6c35bde9 + working tree', but the log the manifest cites for that arm (gate-repair-after.log, recorded in after_suite) names revision b4132f14c on its own header line; the fragment's evidence fragment for the arm does not match the log it is the record of, so a reader reconciling the two finds a revision that is not the one run.\nFINDING reckon/crew/review.py:489 follow-on: declared_review_checks resolves the checklist only from the reviewed run's live pointer and returns () when it is unreadable, so a review whose subject was promoted before the record is checked owes no check at all; the fail-open is documented in the docstring but leaves the guard off for exactly the re-review-after-promotion case, with nothing recording that it was skipped.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T003334326604-a-review-answers-the-domain-checks/manifest.md:12 follow-on: the done-when requires 'ruff check and ruff format --check clean on the changed paths' but the manifest's tests and test_logs lines (12-13) record only the pytest gate, so half the stated measure is claimed rather than evidenced; both are in fact clean when run (ruff check exit 0, ruff format --check '3 files already formatted').\n",
+  "review_run_id": "r-20261022T015801432842-review-of-a-review-answers-the-domain-checks-b4132f14c7d6",
+  "reviewed_base_sha": "607718a36a20d1f988de4314bf2c3cfd8f72a7fc",
+  "reviewed_head_sha": "b4132f14c7d656778274b5dd5508b9b4c9b4d8e3",
+  "reviewed_run_id": "r-20261022T003334326604-a-review-answers-the-domain-checks",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 10,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T02:20:00.000000+00:00",
+  "total": 98
+}
