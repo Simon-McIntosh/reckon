@@ -23,9 +23,9 @@
   <title>A Brief Should Not Cost What It Names | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="12">
 <meta name="plan-modified" content="2026-10-22">
-<meta name="plan-section-declarations" content="{&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -209,7 +209,7 @@
     anyway, because the first illustrated node is exactly the one that would otherwise be refused.</p>
 
     <h2 id="s8">§8 — Report the per-file term breakdown beside the total</h2>
-<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
 Section 2 comes first and is nearly free: the per-file breakdown is already computed and already present in the dry-run payload, and only the total is reported. It converts a guessing game into a decision without changing what the estimator charges. Section 3 is the behaviour change and needs its decision settled on what a mention costs. Section 4 follows section 3, since an opt-out is only meaningful once a mention is cheap enough that the opt-out is about certainty rather than about cost. Section 5 is independent of all three and could run in the same wave as section 2. Note that the estimator lives in <code>reckon/crew/routing.py</code>, which was unclaimed when this plan was written, while <code>reckon/crew/dispatch.py</code> was held — check both before scoping.<p><strong>Done when</strong> the dry-run payload reports the per-file contribution beside the call and the section.</p><p>Moved from followup f-bcn-001 on a-brief-should-not-cost-what-it-names by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>draft</code>, live; the per-file term breakdown is not in the estimator — grep for <code>per_file</code>/<code>per-file</code> in <code>reckon/crew/routing.py</code> found none</p>
 
     <h2 id="s9">§9 — A regenerated path is charged as written, not read</h2>
@@ -271,7 +271,19 @@ Section 2 comes first and is nearly free: the per-file breakdown is already comp
     <div class="r-comment-body"><p>Landed: the regenerated-path tests prove the fold and the ledger row, each with a mutation arm; review 117/120. Evidence: <a href="/reckon/evidence/archive/a-brief-should-not-cost-what-it-names-landed.html#s10">§10 landing record</a>.</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261021T225901318162-a-regenerated-path-is-proved-on-the-ledger" data-who="reckon-build" data-when="2026-10-21T23:17:25.208Z">
-    <div class="r-comment-body"><p>tests/test_a_regenerated_path_is_charged_as_written.py now declares the path only through --regenerate-path and proves the fold reaches the built node&#x27;s write_paths and the live claim, plus a promotion fixture that reads regenerate_paths off the promoted ledger row; gate 18 passed exit 0, and the two declared mutations each turn their case red (4 failed and 2 failed).</p></div>
+    <div class="r-comment-body"><p>tests/test_a_regenerated_path_is_charged_as_written.py now declares the path only through --regenerate-path and proves the fold reaches the built node's write_paths and the live claim, plus a promotion fixture that reads regenerate_paths off the promoted ledger row; gate 18 passed exit 0, and the two declared mutations each turn their case red (4 failed and 2 failed).</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-reopen-s3" data-who="reckon-build" data-when="2026-10-22T07:40:00Z">
+    <div class="r-comment-body"><p>Reopened: this section was declared done in error. Its measure charges a mention at a reference cost, but <code>_declared_input_files</code> in <code>reckon/crew/routing.py</code> charges a mention nothing, and the <code>reference-cost</code> decision that selects the behaviour is still open. The code's current answer is <code>zero</code>; choosing among flat, capped-head and zero is the lead's decision.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-reopen-s4" data-who="reckon-build" data-when="2026-10-22T07:40:00Z">
+    <div class="r-comment-body"><p>Reopened: declared done in error. No anchor opt-out exists in <code>reckon/crew/</code> and <code>TaskNode</code> carries no such field, so neither half of the measure (the opt-out recorded on the run, and a path both opted out and declared as a write path refused) is met. It follows §3.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-10-22T07:40:00Z">
+    <div class="r-comment-body"><p>Met by the existing payload: the dry-run's <code>repository_files.named_files</code> and <code>write_paths</code> records carry <code>estimated_tokens</code> per file beside the total, and <code>_context_refusal_detail</code> in <code>reckon/crew/routing.py</code> renders the largest contributors with their token figures. The grep this section was filed on looked for <code>per_file</code> and missed both.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-scope-s2" data-who="reckon-build" data-when="2026-10-22T07:40:00Z">
+    <div class="r-comment-body"><p>Already present at the base: the refusal names the largest contributing files with their token figures, and says no file dominates when none does. What remains is the origin of the dominant term, a declared write path or a mention, since the remedy differs between them.</p></div>
 </div>
 </section>
 </main>
