@@ -1,0 +1,88 @@
+<section data-reckon="fragment" id="a-row-is-compact-and-names-its-section" data-node="a-row-is-compact-and-names-its-section">
+
+<h2 id="a-row-is-compact-and-names-its-section-h">A row is compact and names its section</h2>
+
+<p id="a-row-is-compact-and-names-its-section-summary">
+  Every crew list view that lists runs — <code>live</code>, <code>runs</code>,
+  <code>obligations</code> and <code>directory</code> — now builds its rows and
+  routes them through one projection,
+  <code>project_run_rows</code> in <code>reckon/crew/query.py</code>. That one
+  function owns the field vocabulary the views share, fills each row's
+  <code>section</code> from the run's own pointer, refuses a requested field the
+  view does not carry while naming the fields it does have, and leaves a field
+  whose value is empty off the row.
+</p>
+
+<table id="a-row-is-compact-and-names-its-section-measure">
+  <caption>Measured on the node's gate, at the base commit and after it.</caption>
+  <thead>
+    <tr><th>clause</th><th>base commit <code>8c7e865d7</code></th><th>after <code>eb07961b3</code></th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>gate (<code>test_a_row_is_compact_and_names_its_section.py</code> plus the four named suites)</td>
+      <td>9 failed, 52 passed — <code>EXIT=1</code></td>
+      <td>61 passed — <code>EXIT=0</code></td>
+    </tr>
+    <tr>
+      <td>a dispatched run's <code>section</code> read in all four views</td>
+      <td>live: no such field; obligations and directory: no field to read</td>
+      <td>all four read <code>§4</code> (the canonical spelling of the
+        dispatched <code>s4</code>)</td>
+    </tr>
+    <tr>
+      <td><code>fields=["section"]</code> accepted by all four views</td>
+      <td>refused by <code>live</code>, ignored by <code>obligations</code> and
+        <code>directory</code>, not narrowed by <code>runs</code></td>
+      <td>accepted by all four; a narrowed row carries only the identity fields
+        and what was asked for</td>
+    </tr>
+    <tr>
+      <td>a field a view lacks is refused naming the fields it has</td>
+      <td><code>live</code> refuses; <code>obligations</code> and
+        <code>directory</code> answer anyway</td>
+      <td>all four refuse, naming the view's own field list</td>
+    </tr>
+    <tr>
+      <td>serialised <code>power_convertor</code> roadmap, characters</td>
+      <td>142,482</td>
+      <td>142,482 — unchanged</td>
+    </tr>
+  </tbody>
+</table>
+
+<p id="a-row-is-compact-and-names-its-section-negative-control">
+  The declared mutation — returning <code>section</code> to the run row's
+  omitted set — turns the measure red: <code>EXIT=1</code> with six failing ids,
+  including three of the four views of the <code>names_the_section</code> case.
+</p>
+
+<p id="a-row-is-compact-and-names-its-section-unmet">
+  Two clauses of the section's done-when are <strong>not</strong> met, and both
+  need a file outside this node's write scope:
+</p>
+<ul id="a-row-is-compact-and-names-its-section-unmet-list">
+  <li>
+    A section reference whose target section is done while its plan is in
+    progress must read <em>satisfied</em>, with the section's declaration as its
+    state. The per-section verdict already exists
+    (<code>_section_satisfied</code> in <code>reckon/roadmap.py</code>), but the
+    dependency row a plan summary reads carries the <em>plan's</em> status and no
+    declaration, so <code>_section_blocking</code> can report a satisfied section
+    as blocking. Closing this needs <code>reckon/roadmap.py</code>.
+  </li>
+  <li>
+    The serialised <code>power_convertor</code> roadmap does not shrink, because
+    the roadmap's own rows are compacted in <code>reckon/roadmap.py</code>, which
+    this node may not write. Measured both sides: 142,482 characters.
+  </li>
+</ul>
+
+<p id="a-row-is-compact-and-names-its-section-refs">
+  References the rows and the projection travel in remain strings of the one
+  grammar, <code>[project:]plan[#section][@run|@f-id]</code>: the rows carry
+  <code>plan</code> and <code>section</code> as plain strings, never as expanded
+  objects, and the projection adds none.
+</p>
+
+</section>
