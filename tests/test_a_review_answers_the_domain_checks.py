@@ -18,8 +18,12 @@ import pytest
 
 from reckon.crew import recovery_review_subject as subject_module
 from reckon.crew import review as review_module
+from reckon.crew import runs as runs_module
 from reckon.crew.recovery_review_acceptance import REVIEW_ACCEPTANCE_FLOOR
 from reckon.crew.review_lifecycle import OPEN, lifecycle
+
+REVIEWED_RUN = "r-fixture-reviewed"
+REVIEW_RUN = "r-fixture-review"
 
 FLIGHT = """\
 domain:
@@ -182,6 +186,94 @@ def test_a_failed_check_is_stored_blocking_and_the_run_reads_open(
     assert len(failures) == 1
     assert owed[0] in failures[0]["text"]
     assert lifecycle(stored) == OPEN
+
+
+def _delivered_record(raw_text: str) -> dict[str, object]:
+    """A review record as a reviewer writes it: flat JSON, keyed to its run."""
+    return {
+        "project": "fixture",
+        "reviewed_run_id": REVIEWED_RUN,
+        "review_run_id": REVIEW_RUN,
+        "reviewed_base_sha": "a" * 40,
+        "reviewed_head_sha": "b" * 40,
+        "status": "parsed",
+        "scores": dict.fromkeys(review_module.REVIEW_DIMENSIONS, 18),
+        "findings": [],
+        "added_failure_count": 0,
+        "added_failure_ids": [],
+        "raw_text": raw_text,
+    }
+
+
+@pytest.fixture()
+def reviewed_run_pointer() -> str:
+    """The reviewed run's live pointer, carrying the node whose writes were declared.
+
+    The delivery contract resolves a record's declared checks from the reviewed
+    run the record names, so the pointer has to be readable for a checklist to
+    exist at all. The path is the code's own, never a restatement of it.
+    """
+    live = runs_module.live_dir()
+    live.mkdir(parents=True, exist_ok=True)
+    (live / f"{REVIEWED_RUN}.json").write_text(
+        json.dumps(
+            {
+                "run_id": REVIEWED_RUN,
+                "project": "fixture",
+                "node": _run_record(["models/tape.py"])["node"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    return REVIEWED_RUN
+
+
+def test_a_delivered_record_that_skips_a_declared_check_is_refused(
+    fixture_project, reviewed_run_pointer
+) -> None:
+    """The guard runs on the delivered record, not only where a test parses one.
+
+    The parser is called with the text a reviewer emitted, so it holds no record
+    and cannot know which checks the review owed. The delivery contract does
+    hold the record, and the reviewer runs it against every written record
+    before ending, so a skipped check is caught there.
+    """
+    fixture_project()
+    owed = _owed_checks(
+        subject_module._review_brief_text(_run_record(["models/tape.py"]), "a" * 40)
+    )
+    refusals = review_module.review_record_refusals(_delivered_record(_emission({})))
+
+    assert owed == ["same-operator", "perturbation-grows"]
+    assert [refusal for refusal in refusals if owed[0] in refusal]
+
+
+def test_a_delivered_record_answering_every_declared_check_is_not_refused_for_them(
+    fixture_project, reviewed_run_pointer
+) -> None:
+    """An answered check is read from the emission, where the answer survives."""
+    fixture_project()
+    owed = _owed_checks(
+        subject_module._review_brief_text(_run_record(["models/tape.py"]), "a" * 40)
+    )
+    text = _emission(dict.fromkeys(owed, "pass — read the diff"))
+
+    refusals = review_module.review_record_refusals(_delivered_record(text))
+
+    assert [refusal for refusal in refusals if "declared check" in refusal] == []
+
+
+def test_a_record_with_no_readable_reviewed_run_owes_nothing(
+    fixture_project, reviewed_run_pointer
+) -> None:
+    """A record whose checklist cannot be resolved is held to no checks."""
+    fixture_project()
+    record = _delivered_record(_emission({}))
+    record["reviewed_run_id"] = "r-fixture-promoted-and-reclaimed"
+
+    refusals = review_module.review_record_refusals(record)
+
+    assert [refusal for refusal in refusals if "declared check" in refusal] == []
 
 
 def test_a_project_without_declarations_is_unchanged(fixture_project) -> None:

@@ -486,6 +486,89 @@ def unresolved_reviewed_revision(record: Mapping[str, Any]) -> str | None:
     return None
 
 
+def declared_review_checks(record: Mapping[str, Any]) -> tuple[str, ...]:
+    """The declared check ids the reviewed node's write paths require.
+
+    The checklist a composed brief carried, the verdicts a parser requires and
+    the answers the delivery contract holds a record to are one list, matched by
+    the one module that answers which rules a node touches: the reviewed run's
+    own live pointer carries the node, its write paths select the checks, and
+    the project's flight layer declares them.
+
+    A record naming no reviewed run, a run whose pointer is no longer readable
+    — the reviewed run promoted and its pointer reclaimed — and a project
+    declaring nothing for the node all yield nothing, so a record with no
+    checklist to answer is held to none. The import is local because the brief
+    composer reads this module, so a module-level edge back to it would be a
+    cycle.
+    """
+    pointer = _reviewed_run_pointer(str(record.get("reviewed_run_id") or "").strip())
+    project = str(record.get("project") or "").strip()
+    if pointer is None or not project:
+        return ()
+    from reckon.crew.recovery_review_subject import domain_review_checks
+
+    return tuple(
+        str(check.id)
+        for check in domain_review_checks(project, pointer.get("node") or {})
+    )
+
+
+def _answered_check_ids(record: Mapping[str, Any]) -> set[str]:
+    """The declared check ids a record carries an answered verdict for.
+
+    Folded to lower case, because a check's id is matched the way the parser
+    matches it. Both spellings are read: the ``item_verdicts`` a parse that was
+    handed the declared set writes, and the reviewer's own ``VERDICT`` lines in
+    the emitted text it stored — the only place an answer survives when the
+    parse was not handed the set. A line stating no recognised outcome answers
+    nothing, which is the rule the parser applies.
+    """
+    answered: set[str] = set()
+
+    def _record(name: str, sentence: str) -> None:
+        if sentence.strip() and check_verdict_outcome(sentence) is not None:
+            answered.add(name.strip().lower())
+
+    verdicts = record.get("item_verdicts")
+    if isinstance(verdicts, Mapping):
+        for item, sentence in verdicts.items():
+            _record(str(item), str(sentence))
+    for line in _review_text_lines(str(record.get("raw_text") or "")):
+        match = _VERDICT_RE.match(line)
+        if match:
+            _record(match.group(1), match.group(2))
+    return answered
+
+
+def unanswered_review_checks(record: Mapping[str, Any]) -> list[str]:
+    """The refusals a record earns for each declared check it left unanswered.
+
+    A review is composed to answer the checks its node touches, so a record
+    carrying no verdict for one has not finished the review it was dispatched
+    for: the delivery contract refuses it and names the check, rather than
+    filing it as a review that answered everything. The checks are resolved here
+    rather than handed in, because the parser reads a reviewer's emitted text
+    and the review it belongs to is not passed to it — so the contract, which
+    does hold the record, is where a skipped check is caught. A record with no
+    readable checklist to answer is left alone. Formatting belongs to the
+    caller, so one sentence serves the store's write, the reviewer's own
+    ``crew check --review`` and the audit that reads stored records.
+    """
+    checks = declared_review_checks(record)
+    if not checks:
+        return []
+    answered = _answered_check_ids(record)
+    return [
+        f"review record answers no verdict for the declared check {check!r}: the "
+        "reviewed node's write paths match a check this project declared, so the "
+        f"review owes a `VERDICT {check}: pass|fail — <what you read>` line and "
+        "the record carries none — restate the verdict and store the record again"
+        for check in checks
+        if check.strip().lower() not in answered
+    ]
+
+
 class ReviewScoreError(ValueError):
     """A score fell outside the allowed range and was refused, not clamped.
 
@@ -688,6 +771,7 @@ def review_record_refusals(record: Mapping[str, Any]) -> list[str]:
         refusals.append("added_failure_count differs from added_failure_ids")
     if not isinstance(record.get("findings"), list):
         refusals.append("missing findings")
+    refusals.extend(unanswered_review_checks(record))
     for refusal in store_review_refusals(record):
         if refusal not in refusals:
             refusals.append(refusal)

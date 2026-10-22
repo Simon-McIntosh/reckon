@@ -76,9 +76,64 @@
     <code>8b7468cfbb54</code>… — identical to its pre-mutation bytes.</li>
     <li><strong>Lint delta.</strong> <code>ruff check</code> and
     <code>ruff format --check</code> are clean on the three changed paths.</li>
-    <li><strong>Not closed here.</strong> A reviewer writes its record as JSON by hand,
-    so the parser's required set bites where emitted text is parsed; carrying the
-    required checks onto the stored record so the delivery contract refuses an omission
-    too is a follow-on recorded in the manifest, not part of this measure.</li>
+    <li><strong>Carried onto the delivered record.</strong> A reviewer writes its record as
+    JSON by hand, so the parser's required set bites where emitted text is parsed; the
+    section below records where the delivery contract was made to refuse an omission
+    too, and the arm that carries the evidence for it.</li>
+  </ul>
+
+  <h3>Where the required set is resolved</h3>
+
+  <p>An independent review found that the required set as first written never reached
+  production: <code>parse_review</code> takes <code>review_checks</code>, but its two
+  callers — <code>repair.py</code> and <code>reports.py</code> — both call it with the
+  defaults, so a reviewer that skipped a declared check still delivered a record the
+  delivery contract filed as complete. The parser is handed a reviewer's emitted text
+  and never the review it belongs to, so it cannot resolve the checklist itself.</p>
+
+  <p>The resolution therefore lives in the delivery contract, which does hold the
+  record: <code>review_record_refusals</code> now calls
+  <code>unanswered_review_checks</code>, which resolves the checks from the reviewed
+  run's own live pointer — the node the pointer carries, its write paths, and the
+  project's flight layer, matched through the same <code>domain_review_checks</code>
+  the brief is composed from — and refuses the record naming each check it left
+  unanswered. The answers are read from both spellings: the <code>item_verdicts</code>
+  a parse handed the set writes, and the reviewer's own <code>VERDICT</code> lines in
+  the emitted text it stored, which is where an answer survives when the parse was not
+  handed the set. Every existing caller of the contract gains the guard without a
+  change of its own, and a record whose reviewed run has no readable pointer — one
+  already promoted and reclaimed — owes nothing and is left alone.</p>
+
+  <h3>Measured after the repair</h3>
+
+  <p>The same eight test files, one arm per revision, the new arm adding nine tests
+  rather than six. Each arm's log names its revision, tree, working directory, imported
+  <code>module.__file__</code> and command on its header lines and ends with a bare
+  <code>EXIT=&lt;code&gt;</code> line.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>before (the revision the review read)</td><td><code>e6c35bde9</code></td>
+        <td>1 failed, 56 passed, exit 1</td></tr>
+      <tr><td>after (repaired tree)</td><td><code>e6c35bde9</code> + working tree</td>
+        <td><strong>57 passed</strong>, exit 0</td></tr>
+    </tbody>
+  </table>
+
+  <ul>
+    <li><strong>The negative control is the finding's own check.</strong> Reverted to the
+    revision the review read, without the contract change,
+    <code>test_a_delivered_record_that_skips_a_declared_check_is_refused</code> fails with
+    an empty refusal list against
+    <code>assert [refusal for refusal in refusals if owed[0] in refusal]</code>; it is the
+    only test the base arm fails.</li>
+    <li><strong>The other two tests of the repair are controls, not discriminators.</strong>
+    They assert an absence — a record answering every check is not refused for one, and a
+    record naming a reclaimed run owes nothing — so they hold on both arms by
+    construction and carry no evidence that the guard runs. The first test carries it
+    alone, which is why it is the one reverted.</li>
+    <li><strong>Lint delta.</strong> <code>ruff check</code> and
+    <code>ruff format --check</code> are clean on both changed paths.</li>
   </ul>
 </section>
