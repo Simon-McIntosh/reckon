@@ -1,0 +1,132 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T13:58:10.348Z",
+  "dispatched_at": "2026-10-22T13:48:15Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/obligations.py:1258",
+      "id": "reuse_search-1",
+      "reason": "the author would either fold the board into the module that already owns the join or state why a second one is needed.",
+      "text": "`obligations(project, session)` already derives, per session, the run set it holds and its published lane share, and `reckon/crew/obligations.py:429` (`_live_review_runs`) already filters runs by the dispatching session's pointer; \u00a75's board is a workstation-wide generalisation of exactly this join, and the plan's \u00a71 prior-art list never opens this module",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/mcp_views.py:1128",
+      "id": "reuse_search-2",
+      "reason": "naming the existing projection decides whether \u00a73 extends it or adds a parallel one.",
+      "text": "`ready_set_view` already projects `ready_sections` for composed clients from the canonical roadmap, which is the reuse point \u00a73 needs; \u00a73 cites only the roadmap payload's section rows and does not name this reader, so a second projection of the same rows is the likely landing",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/lane_document.py:447",
+      "id": "reuse_search-3",
+      "reason": "the section should bind to this parser by name so \u00a76 is a projection of an owned read rather than a second reading of the document.",
+      "text": "the admission block (`worker_slots`, `new_session_worker_slots`, `sessions[].live_runs/worker_slots`, `headroom`) is parsed once here, and \u00a76 asks for those figures on two answers without citing this parser",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html#s5",
+      "id": "deep_module-1",
+      "reason": "consolidating the join behind one module (with the four surfaces as thin projections) is a different, smaller design than four independent readers.",
+      "text": "\u00a75's row carries \"the plans it owns under \u00a72, with their ready-idle sections from \u00a73\"; \u00a73 already returns every idle section with its owner, so \u00a75 re-groups \u00a73's output per session rather than reading one shared module, and combined with \u00a74 and \u00a76 four surfaces each re-join sections, runs, owners and lane figures",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html#s6",
+      "id": "deep_module-2",
+      "reason": "the author must either nominate one answer that carries the lane block or justify a second carrier against the rule the rest of the plan follows.",
+      "text": "\u00a76 says \"The board and the ready-idle answer carry the local lane's admission figures\", i.e. one lane fact is written onto two answers owned by two different tools (crew and roadmap), which is the opposite of the plan's own \"one derivation per fact\" rule stated in \u00a73 and the locked decision",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html#s6",
+      "id": "thin_wrapper-1",
+      "reason": "a justification would either retire a carrier or extend the view that already holds the document, shrinking \u00a76.",
+      "text": "\u00a76 adds no computation and states no new fact (\"The answer states facts and computes nothing new from them\"), yet the plan does not say why `crew(view=\"lanes\")`, which already attaches the parsed lane document to each lane row (`reckon/mcp_views.py:724` `_attach_lane_document`), cannot be extended to the calling session's share instead of a new carrier",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html#s2",
+      "id": "duplicate_owner-1",
+      "reason": "naming the existing owner forces the author to say whether the claim extends the ledger/directory attribution or contradicts the recorded `plan-owner`.",
+      "text": "\u00a72 asserts \"nothing records plan ownership\" and defines three tiers plus a new claim written to the project's state store, but a plan owner *is* recorded in the plan itself (`<meta name=\"plan-owner\">`, docs/plans/a-coordinator-sees-the-board.html:20) and session\u2192plan attribution already exists implicitly in `reckon/ledger.py:165` (`session_id` on every run row) and in the run-filtering join at `reckon/crew/obligations.py:429`; the plan adds a second owner concept without naming which of these the new tier extends or how a reader reconciles `plan-owner` with the derived session owner",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html#s5",
+      "id": "duplicate_owner-2",
+      "reason": "the finding names the owner to extend, so the author can convert \u00a75 from a new view into an extension of directory/obligations or justify the split.",
+      "text": "the board's per-session rows duplicate a mechanism with a named owner: `reckon/crew/directory.py` (the coordinator read model, `_run_row`/`_observed_transport`) and `reckon/crew/obligations.py:1258` (session duties and lane share) already own \"what a coordinator session holds\"; \u00a75 adds a third reader over the same live pointers rather than extending either",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html#s6",
+      "id": "duplicate_owner-3",
+      "reason": "\u00a76 collapses to a re-export of an existing function once the owner is named, which changes the section's scope.",
+      "text": "\"the calling session's share and how many runs it holds\" is already implemented at `reckon/crew/obligations.py:553` (`_published_worker_slots`, reading the router's published per-session `worker_slots`), so \u00a76 names a fact that already has a reader and an owner file; the plan does not cite it",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html#s5",
+      "id": "interface_budget-1",
+      "reason": "the section must account for the added surface in its own text, here by naming which of directory/obligations it absorbs.",
+      "text": "mcp_views 19 \u2192 20: \u00a75's own text adds \"one new bounded crew view joining directory, scopes, live and lanes\" and says the four existing views remain, so it adds a view family member without naming anything retired or merged",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html#s3",
+      "id": "interface_budget-2",
+      "reason": "the plan must say whether these ride the existing roadmap views or add one, and name what the added paging surface retires.",
+      "text": "public_definitions 2014, cli_options 400, mcp_views 19, refusal_families 23: \u00a73 and \u00a74 add paged ready-idle and per-link reads to the roadmap payload (\"paged by limit and cursor like every other read\"), which adds read surface and a refusal family (the section names no retirement or merge)",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html#s6",
+      "id": "interface_budget-3",
+      "reason": "\u00a77 does eventually name the lossless-recipe lines two skills retire, which satisfies the rule at plan level though not in \u00a76's own text; the author need only move or repeat that statement.",
+      "text": "\u00a76 carries lane figures onto two answers and adds no retirement of its own; the plan's only retirement statement (\"Replace it with the \u00a73 and \u00a75 reads\") sits in \u00a77, which is not one of the sections adding the surface",
+      "type": "interface_budget",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "c5e95821e01c497b763a4aa985109011fbef172bba2af02a2f18baf8e0d13570",
+  "plan_slug": "a-coordinator-sees-the-board",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T134404727198-plan-review-of-a-coordinator-sees-the-board",
+  "reviewed_blob_sha": "60364ca0ea11c24de726008af7a9bd56ca5d2d72",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a73, \u00a74, \u00a75 and \u00a76 express the same section\u00d7run\u00d7owner\u00d7lane join as four separate surfaces, and \u00a75 re-reads \u00a73's ready-idle set per session row, so the complexity is spread rather than hidden behind one module.",
+    "duplicate_owner": "a finding \u2014 \u00a72 adds a session-plan claim beside the recorded plan owner, and \u00a75/\u00a76 duplicate the session\u2192runs\u2192duties\u2192lane-share join already owned by `reckon/crew/obligations.py`.",
+    "interface_budget": "a finding \u2014 public_definitions 2014, cli_options 400, mcp_views 19, refusal_families 23; \u00a73, \u00a75 and \u00a76 each add MCP read surface (+1 crew view for the board, and new roadmap read fields) without naming what they retire or merge; the plan's only retirement statement is in \u00a77, a different section from the sections that add the surface.",
+    "reuse_search": "a finding \u2014 the plan cites the surface it is about (roadmap views, crew directory/scopes/live, the two neighbour plans) but does not cite the modules already joining sessions to runs and to the lane's per-session share, which \u00a75 and \u00a76 rebuild.",
+    "thin_wrapper": "a finding \u2014 \u00a76 forwards the lane document's figures onto two existing answers without adding behaviour, and does not say why the lane view that already attaches that same document cannot serve."
+  },
+  "section_digests": {
+    "_document": "0d796267381a01f0fe9d9aaeb1cf289906ed817f925a03dc492a6ee545b12912",
+    "s1": "a1bec4bf8a399ae2158a3cdd7643aa10b8420978a60e8c006c1e149a252b6bd4",
+    "s2": "f7d063255a0779b4b424ce6ec0b744f4d468c5a84d62027e8c406786872c4226",
+    "s3": "d7123ee4896bde58896cc8c08f946d3e5fc14b156b8769ad823058ab9f6d6fe6",
+    "s4": "ab7dd3171a8006db9906aa84feb7f6ea8dffe0bf84ac971bc7e637c2447d86f4",
+    "s5": "b82d3aabc0d05453465e9a935332bf51c0efb48e3e236f61521f43e10b389d80",
+    "s6": "3fe693a1acdaec9dd08e1c5c6c099db91e82e79ca21a41bb167ba4014b004c76",
+    "s7": "23644b1f884c6225a0295603991fa3e205f1581885a94e8e7feab573017ba499",
+    "s8": "f9f58e76a5713eb901b1e780fcb93d48ca773a573fded72ec476738a59629b67"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T14:17:56.930470+00:00"
+}
