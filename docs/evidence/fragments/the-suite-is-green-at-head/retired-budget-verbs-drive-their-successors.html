@@ -56,10 +56,21 @@
   <code>--used</code> case requires, since the test pins the flag's round trip rather
   than the absence of that argument.</p>
   <p id="retired-budget-verbs-drive-their-successors-measure"><strong>Measure.</strong>
-  Logs are under the run directory. Base arm at <code>fc81186ed</code>: thirteen ids,
+  Logs are under the run directory. Base arm at <code>fc81186ed</code>: the thirteen ids,
   <code>13 failed</code>, <code>EXIT=1</code>. Head: the same thirteen ids,
-  <code>13 passed</code>, <code>EXIT=0</code>; the five-file gate, <code>__GATE_SUMMARY__</code>,
-  <code>EXIT=0</code>.</p>
+  <code>13 passed in 11.98s</code>, <code>EXIT=0</code>; the five-file gate,
+  <code>138 passed in 916.11s</code>, <code>EXIT=0</code>. Two controls, both red.
+  Pointing one repaired test back at its retired verb:
+  <code>1 failed in 15.34s</code>, <code>assert 10 == 0</code> with
+  <code>SystemExit(10)</code> — the failing id the head arm does not fail. Flipping the
+  <code>available</code> field of the successor's answer by monkeypatch:
+  <code>1 failed in 5.45s</code>, <code>assert True is False</code> at the assertion the
+  repaired round-trip test pins. No repaired test asserts fewer fields than before:
+  the invocation edits change no assertion, and the two recorded-answer updates add
+  fields to the compared payload rather than dropping any. <code>ruff check</code> and
+  <code>ruff format --check</code> report no added finding on the changed files: twelve
+  findings at the base blobs and twelve in the changed tree, and both trees fully
+  formatted.</p>
 </article>
 </body>
 </html>
