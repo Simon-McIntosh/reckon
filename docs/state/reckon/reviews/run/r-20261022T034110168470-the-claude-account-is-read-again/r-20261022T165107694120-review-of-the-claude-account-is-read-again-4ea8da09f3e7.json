@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/_backends.py:2498 (probe_budget -> dialect.read_account_surface, the line the narrowing was removed from)",
+    "reckon/budget.py:1274 (preflight -> probe_budget)",
+    "reckon/mcp_views.py:447 (_run_budget_probe -> probe_budget)",
+    "reckon/crew/paid_lanes.py:885 (publish gate -> probe_budget)",
+    "reckon/crew/picker/snapshot.py:841 (cached-only pre-flight passes probe_runner=lambda _: {} to budget.preflight, the caller whose account read the reverted narrowing would have suppressed)"
+  ],
+  "completed_at": "2026-10-22T17:17:12.971Z",
+  "dispatched_at": "2026-10-22T17:02:27Z",
+  "findings": [
+    {
+      "file": "tests/conftest.py",
+      "line": "440",
+      "severity": "follow-on",
+      "text": "follow-on: ACCOUNT_SURFACE_GUARD_MARKER (tests/conftest.py:422) is set on the wrapper at :440 but read nowhere in reckon/ or tests/ - the guard's own test asserts the behaviour (is None) instead - so the marker and the comment at :419 that says a test asserts it are dead code; the guard is held in force by the behavioural assertion, not by this attribute."
+    },
+    {
+      "file": "docs/evidence/fragments/a-limit-reset-reaches-every-session/the-claude-account-is-read-again.html",
+      "line": "57",
+      "severity": "follow-on",
+      "text": "follow-on: the source node's done-when item 'the manifest records the published document's claude windows reading observed after one timer pass' remains unmet; the fragment honestly re-frames it as the coordinator's because this node is fenced from the publication directory, so one unfenced timer publish after merge is still owed."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified the reverted line is reached in production: probe_budget calls dialect.read_account_surface unconditionally again (reckon/_backends.py:2498), reached from reckon/budget.py:1274, reckon/mcp_views.py:447 and reckon/crew/paid_lanes.py:885, and the cached-only pre-flight at reckon/crew/picker/snapshot.py:841 passes probe_runner=lambda _: {}, which is the caller the narrowing would have stripped of its account read.",
+    "diff": "read the two commits gained since the stored review: f6e4a7c8c (revert the caller-dependent narrowing in probe_budget; add the suite-wide account-surface guard in tests/conftest.py; add the guard test) and 4ea8da09f (the fragment). Four files, 89 insertions and 22 deletions, every path inside the manifest's declared write paths.",
+    "done_when": "the source done-when's gate is recorded and reproducible: log-lr2-arm-base.log (f976a31d, 2 failed / 68 passed, EXIT=1) against log-lr2-arm-head.log (f6e4a7c8c, 2 failed / 77 passed, EXIT=1), the same two pre-existing test_budget.py CLI ids in both and none added; log-negative-control-guard.log reddens exactly the declared all-unknown case on the reverted head (1 failed, 8 passed, EXIT=1); log-ruff-guard.log records the changed paths with the one finding present in the base blob; the published-document-after-a-timer-pass item is unmet and recorded.",
+    "goal": "the source goal is to make the claude account readable again; the gained change removes the caller-dependent narrowing from probe_budget (reckon/_backends.py:2497-2498), so a caller that supplies only a probe runner again reads its account surface, and moves test isolation into the suite guard rather than bending product behaviour.",
+    "manifest": "read; status complete, with the two gained commits listed, both arms' baseline_suite/after_suite JSON at named committed revisions (exit 1 each, identical two-id failure sets), the negative control at the reverted head, and follow_ons naming the out-of-scope migrations and the coordinator's timer-pass item.",
+    "write_paths": "the manifest's orientation_write_paths include reckon/_backends.py, tests/conftest.py, tests/test_the_claude_account_is_read_again.py and the node's fragment; the two gained commits change exactly those four paths and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_the_claude_account_is_read_again.py::test_a_test_cannot_read_the_logins_own_account asserts the guarded read returns None, which is false the moment the conftest replacement is removed because the claude dialect returns a budget block on every path it can take, and log-negative-control-guard.log shows the all-unknown negative control reddening at the reverted head.",
+    "evidence": "log-lr2-arm-base.log and log-lr2-arm-head.log record both arms with EXIT= lines and identical failure ids, log-negative-control-guard.log records the declared red at the reverted head, and log-ruff-guard.log records the changed paths; the arms run a 13-file bounded population rather than all 171 importers and the timer-pass reading is unmet.",
+    "fit": "the guard follows the surrounding autouse fixture's shape in tests/conftest.py and the reverted clause restores reckon/_backends.py:2498 to the module's single-read idiom, though the ACCOUNT_SURFACE_GUARD_MARKER attribute set at tests/conftest.py:440 is never read.",
+    "goal_fidelity": "reckon/_backends.py:2497-2498 reads the account surface unconditionally again, so the cached-only pre-flight at reckon/crew/picker/snapshot.py:841 reads its account as the goal requires, and the read is isolated per suite rather than per caller.",
+    "reuse": "the gained change removes a caller-dependent branch rather than adding a mechanism: no new production definition was introduced and the guard extends the existing autouse no_live_account_probe seam in tests/conftest.py:420 instead of creating a second isolation mechanism.",
+    "scope_discipline": "the two gained commits change exactly reckon/_backends.py, tests/conftest.py, tests/test_the_claude_account_is_read_again.py and the node fragment, all inside the manifest's declared write paths, with no unrelated churn."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source goal is to make the claude account readable again; the gained change removes the caller-dependent narrowing from probe_budget (reckon/_backends.py:2497-2498), so a caller that supplies only a probe runner again reads its account surface, and moves test isolation into the suite guard rather than bending product behaviour.\nVERDICT done_when: the source done-when's gate is recorded and reproducible: log-lr2-arm-base.log (f976a31d, 2 failed / 68 passed, EXIT=1) against log-lr2-arm-head.log (f6e4a7c8c, 2 failed / 77 passed, EXIT=1), the same two pre-existing test_budget.py CLI ids in both and none added; log-negative-control-guard.log reddens exactly the declared all-unknown case on the reverted head (1 failed, 8 passed, EXIT=1); log-ruff-guard.log records the changed paths with the one finding present in the base blob; the published-document-after-a-timer-pass item is unmet and recorded.\nVERDICT write_paths: the manifest's orientation_write_paths include reckon/_backends.py, tests/conftest.py, tests/test_the_claude_account_is_read_again.py and the node's fragment; the two gained commits change exactly those four paths and nothing else.\nVERDICT manifest: read; status complete, with the two gained commits listed, both arms' baseline_suite/after_suite JSON at named committed revisions (exit 1 each, identical two-id failure sets), the negative control at the reverted head, and follow_ons naming the out-of-scope migrations and the coordinator's timer-pass item.\nVERDICT diff: read the two commits gained since the stored review: f6e4a7c8c (revert the caller-dependent narrowing in probe_budget; add the suite-wide account-surface guard in tests/conftest.py; add the guard test) and 4ea8da09f (the fragment). Four files, 89 insertions and 22 deletions, every path inside the manifest's declared write paths.\nCALL_SITES: reckon/_backends.py:2498 (probe_budget -> dialect.read_account_surface, the line the narrowing was removed from), reckon/budget.py:1274 (preflight -> probe_budget), reckon/mcp_views.py:447 (_run_budget_probe -> probe_budget), reckon/crew/paid_lanes.py:885 (publish gate -> probe_budget), reckon/crew/picker/snapshot.py:841 (cached-only pre-flight passes probe_runner=lambda _: {}).\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_backends.py:2497-2498 reads the account surface unconditionally again, so the cached-only pre-flight at reckon/crew/picker/snapshot.py:841 reads its account as the goal requires, and the read is isolated per suite rather than per caller.\nSCORE evidence: 15\nJUSTIFICATION evidence: log-lr2-arm-base.log and log-lr2-arm-head.log record both arms with EXIT= lines and identical failure ids, log-negative-control-guard.log records the declared red at the reverted head, and log-ruff-guard.log records the changed paths; the arms run a 13-file bounded population rather than all 171 importers and the timer-pass reading is unmet.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the two gained commits change exactly reckon/_backends.py, tests/conftest.py, tests/test_the_claude_account_is_read_again.py and the node fragment, all inside the manifest's declared write paths, with no unrelated churn.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_claude_account_is_read_again.py::test_a_test_cannot_read_the_logins_own_account asserts the guarded read returns None, which is false the moment the conftest replacement is removed because the claude dialect returns a budget block on every path it can take, and log-negative-control-guard.log shows the all-unknown negative control reddening at the reverted head.\nSCORE fit: 16\nJUSTIFICATION fit: the guard follows the surrounding autouse fixture's shape in tests/conftest.py and the reverted clause restores reckon/_backends.py:2498 to the module's single-read idiom, though the ACCOUNT_SURFACE_GUARD_MARKER attribute set at tests/conftest.py:440 is never read.\nSCORE reuse: 19\nJUSTIFICATION reuse: the gained change removes a caller-dependent branch rather than adding a mechanism: no new production definition was introduced and the guard extends the existing autouse no_live_account_probe seam in tests/conftest.py:420 instead of creating a second isolation mechanism.\nFINDING tests/conftest.py:440 follow-on: ACCOUNT_SURFACE_GUARD_MARKER is set on the wrapper but read nowhere in reckon/ or tests/, so the marker and the comment saying a test asserts it are dead code; the guard is held by the behavioural assertion, not the attribute.\nFINDING docs/evidence/fragments/a-limit-reset-reaches-every-session/the-claude-account-is-read-again.html:57 follow-on: the done-when item reading the published document's claude windows after one timer pass remains unmet; the fragment honestly re-frames it as the coordinator's, and one unfenced publish after merge is still owed.\n",
+  "review_run_id": "r-20261022T165107694120-review-of-the-claude-account-is-read-again-4ea8da09f3e7",
+  "reviewed_base_sha": "65f15e692d0f717075cbea911e057d04c14bc30f",
+  "reviewed_head_sha": "4ea8da09f3e7d3961052f5920b5017a7d2c3f096",
+  "reviewed_run_id": "r-20261022T034110168470-the-claude-account-is-read-again",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T17:35:00.000000+00:00",
+  "total": 105
+}
