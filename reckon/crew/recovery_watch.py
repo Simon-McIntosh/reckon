@@ -2535,6 +2535,29 @@ def _sweep_lift_rows(
         return seen
 
 
+def _sweep_reset_rows(
+    project: str, seen: set[str] | None
+) -> set[str] | None:
+    """Fold the workstation's recent limit resets into the project's stream.
+
+    A reset is workstation-wide and the stream is per project, so the same reset
+    is announced once for each project's producer. The sweep is skipped by any
+    process that is not this project's registered producer — the follower reads
+    the stream and must not write it — and one unreadable reset store is the
+    un-announced state: the pass is skipped and the memory kept, so an event is
+    not dropped from the memory and re-announced later as new.
+    """
+    from reckon.crew import lift_watch
+
+    if project not in runs._WATCH_STREAM_PRODUCERS:
+        return seen
+    try:
+        return lift_watch.sweep_resets(project, seen=seen)
+    except Exception as exc:  # noqa: BLE001 - one bad read must not end the seat
+        print(f"reset-sweep-failure: {project}: {exc}", flush=True)
+        return seen
+
+
 def watch_ticker(
     project: str,
     *,
@@ -2652,6 +2675,14 @@ def watch_ticker(
         # on a re-arm. A reload replaces this process image in place, so the
         # memory resets with the seat and the baseline is re-emitted.
         lift_seen: dict[str, dict[str, Any]] | None = None
+        # The limit resets this producer has already announced. Unlike a lift,
+        # a reset becomes due on the clock rather than on a document moving, so
+        # this memory is a set of event ids and the sweep that reads it rides
+        # the clock-driven block below rather than the change gate. None on the
+        # first pass after a (re)arm, and empty rather than populated, because
+        # the sweep's own horizon is what keeps a restart from replaying old
+        # news to the fleet.
+        reset_seen: set[str] | None = None
         # The instant of this producer's last orphan sweep, so the pass that
         # walks the whole fleet runs on its own cadence rather than on every
         # tick. Zero rather than the armed instant, so the first pass sweeps:
@@ -2740,6 +2771,13 @@ def watch_ticker(
                     print(
                         f"model-catalogue-refresh-failure: {project}: {exc}", flush=True
                     )
+                # A limit reset becomes due on the clock rather than on a
+                # document moving: an announced instant passes, and a store the
+                # change gate's fingerprint does not cover is written, with every
+                # file the gate reads still. So its sweep rides this cadence
+                # beside the neighbours rather than the gate above, and it is
+                # best-effort on the same terms.
+                reset_seen = _sweep_reset_rows(project, reset_seen)
             moment = _utc_seconds()
             if sweep:
                 current = {
