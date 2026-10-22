@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s79">
+  <title>A deferred run leaves the needs-you line until its deferral ends</title>
+</head>
+<body>
+<article id="a-deferred-run-leaves-the-needs-you-line-landing" data-node="a-deferred-run-leaves-the-needs-you-line" data-reckon="landed"></article>
+
+<section id="a-deferred-run-leaves-the-needs-you-line-record">
+  <h3 id="a-deferred-run-leaves-the-needs-you-line-record-title">What changed</h3>
+  <p>The needs-you derivation now holds out a run whose deferral is still in
+  force, so a run the coordinator has put off is not named on the reminder
+  cadence until its deferral's instant passes. The deferral is read through
+  <code>obligations._acknowledgements_in_force</code> — the reader the
+  obligations view already defers by — rather than a second copy of its expiry
+  rule, so the pane line and that view hold the same run out at the same
+  instant. <code>reckon/crew/obligations.py</code> is unchanged.</p>
+  <p>The filter sits in <code>needs_you_rows</code> in
+  <code>reckon/crew/needs_you.py</code>, the single row derivation the standing
+  pane line, the closing drain row and <code>needs_you_runs</code> all compose
+  from, so no reader can name a run another withholds. Because the deferral
+  expires on its own, the run re-enters the set exactly once, as a change, and
+  the line names it then. <code>needs_you_runs</code> now also accepts the
+  instant it composes for, matching <code>needs_you_rows</code>, so the
+  boundary either side of a deferral's instant is asserted rather than slept
+  through.</p>
+  <h3 id="a-deferred-run-leaves-the-needs-you-line-measure">Measure</h3>
+  <p><code>tests/test_a_deferred_run_leaves_the_needs_you_line.py</code> passes
+  at head (<code>2 passed</code>), and both cases are red under the declared
+  mutation <em>ignore the deferral in <code>needs_you_runs</code></em>
+  (<code>EXIT=1</code>). <code>tests/test_every_module_fits_a_worker_window.py</code>
+  passes at head (<code>4 passed</code>).</p>
+  <p>Two arms, each a git checkout under the run's scratch directory, run in
+  place on the fleet node with the four follower variables unset:
+  <code>pytest -p no:cacheprovider -n 8 -q</code> over the 46 test files that
+  import <code>reckon/crew/needs_you.py</code> or
+  <code>reckon/crew/obligations.py</code> and exist in both arms.
+  Base <code>53c9de9a</code>: <code>2 failed, 262 passed</code>. Head
+  <code>f20ec8a6</code>: <code>1 failed, 265 passed</code> — the two extra
+  passes are this node's own test file. One id fails in neither arm more than
+  the other: <code>test_a_sweep_resolves_review_heads_once.py::test_snapshot_obligations_match_the_derivation</code>
+  fails in both, over an <code>age_seconds</code>/<code>age_since</code> and
+  <code>next_action_form</code> mismatch between the published snapshot and the
+  derivation — outside this node's scope and reported as a follow-on.
+  <code>test_follow_drain_line.py::test_a_drain_names_the_run_that_needs_you</code>
+  is flaky in both arms, run five times alone in each: base fails 2 of 5, head
+  1 of 5, at about 25 s against about 3 s when it passes.</p>
+  <p><code>ruff check</code> and <code>ruff format --check</code> report nothing
+  on the two changed Python files.</p>
+</section>
+</body>
+</html>
