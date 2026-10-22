@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "Each added assertion names a code change that reddens it. test_the_refusal_lists_the_settable_paths_and_the_keyed_forms (:41) hardcodes 'effort_hours', 'status' and the three keyed forms against the message; restoring the bare refusal (raise OpError(f\"unsupported plan set path {path!r}\")) reddens it. test_the_refusal_reads_the_stores_own_settable_table (:53) iterates _store._PLAN_SET_TOP and asserts each path appears in the message; it reddens if the message restates a stale hardcoded list instead of reading the table, which is the divergence it guards. test_a_near_miss_names_the_settable_path (:62) and test_a_typo_names_the_settable_path_it_is_closest_to (:68) redden if the fold-and-match is removed, which is why the negative-control.log run (bare refusal restored) shows all four failing. test_a_keyed_head_is_not_offered_as_a_bare_settable_path (:79) and test_every_suggested_path_is_one_the_writer_accepts_bare (:90) were added with the repair and redden when the keyed heads are returned to the candidate set, as negative-control.log records (2 failed, 5 passed). The independence caveat is test_every_suggested_path_is_one_the_writer_accepts_bare (:104, assert match.group(1) in _store._PLAN_SET_TOP): the production code computes the suggestion from that same set (reckon/_store.py:2469), so any implementation drawing candidates from _PLAN_SET_TOP satisfies it and it does not verify the suggestion is the nearest. It still catches its own regression \u2014 a suggestion of a keyed head such as 'gates' is outside _PLAN_SET_TOP \u2014 so it does not survive the change it was added to guard, and durability rests on it only in combination with the named near-miss cases.",
+      "lines": "tests/test_a_refused_set_names_the_paths_that_work.py:35-100"
+    }
+  ],
+  "call_sites": [
+    "reckon/mcp_edit_plan.py:1452"
+  ],
+  "changed_paths": [
+    "reckon/_store.py",
+    "tests/test_a_refused_set_names_the_paths_that_work.py",
+    "docs/evidence/fragments/a-project-reads-as-one-picture/a-refused-set-names-the-paths-that-work.html"
+  ],
+  "commit_list": [
+    "171cb2b77d4df3f8488d4576aab3bb1ccae0c256",
+    "4b2946bd530efc7a8e9fc65e96e1ea89340bec78",
+    "4ab83c34dc3cfbaa98562d2d6389647d436799e9"
+  ],
+  "completed_at": "2026-10-22T05:46:39.728Z",
+  "dispatched_at": "2026-10-22T05:37:41Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-project-reads-as-one-picture/a-refused-set-names-the-paths-that-work.html",
+      "line": "24",
+      "severity": "follow-on",
+      "text": "follow-on: the fragment's measure paragraph states the head gate reads '104 passed', but the manifest's after_suite and after-suite.log both record '106 passed in 44.68s' EXIT=0 at the promoted head 4ab83c34d. The 104 figure is the head count before the repair commit added two cases (test_a_keyed_head_is_not_offered_as_a_bare_settable_path, test_every_suggested_path_is_one_the_writer_accepts_bare); the fragment was not updated when the suite grew, so a reader who reconciles the artifact against the gate log sees a two-test gap. The manifest's after_suite carries the correct figure, and a separate paragraph records the repair, so the record reconciles even though this artifact does not."
+    },
+    {
+      "file": "docs/evidence/fragments/a-project-reads-as-one-picture/a-refused-set-names-the-paths-that-work.html",
+      "line": "25",
+      "severity": "follow-on",
+      "text": "follow-on: the control paragraph cites negative-control.log for 'the bare refusal restored ... 4 failed, 1 passed', but that file now holds the repair's control instead: its header names '4b2946bd5 with the answering change reverted (keyed heads returned to the nearest-match candidates)' and its tail '2 failed, 5 passed', with ids test_a_keyed_head_is_not_offered_as_a_bare_settable_path and test_every_suggested_path_is_one_the_writer_accepts_bare. Both runs are legitimate red controls, but the artifact describes one and points at the other, so a reader following the reference does not find the run the paragraph quotes."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against base 63e6d9f18. 171cb2b77 adds _PLAN_SET_KEYED_FORMS, _nearest_settable_path and _unsupported_plan_set_path_detail to reckon/_store.py and swaps the bare refusal at :2795; 4b2946bd5 raises the difflib cutoff to 0.8 and narrows the nearest-match candidates to _PLAN_SET_TOP alone; 4ab83c34d adds one repair paragraph to the fragment. Only refusal text changed \u2014 the write path is untouched, and set effort_hours still lands its value.",
+    "done_when": "The done_when names tests/test_a_refused_set_names_the_paths_that_work.py, the literal gate command over five files, and requires the new cases to fail on the base commit and pass at the head. baseline-suite.log records '4 failed, 100 passed' EXIT=1 at base 63e6d9f and after-suite.log records '106 passed in 44.68s' EXIT=0 at head 4ab83c34d, both from the same command; the gate the worker ran asserts the measure.",
+    "goal": "The node goal is to list the settable paths, keyed forms and nearest match in the refusal for an unsupported plan set path. reckon/_store.py:2454 _unsupported_plan_set_path_detail builds exactly that message and is raised at reckon/_store.py:2795; the shipped fragment at docs/evidence/fragments/a-project-reads-as-one-picture/a-refused-set-names-the-paths-that-work.html:22 states the same deliverable. The landed change matches the goal.",
+    "manifest": "Read the run manifest at .config/reckon/crew/runs/r-20261022T050256433700-a-refused-set-names-the-paths-that-work/manifest.md, status complete. baseline_suite and after_suite are flat JSON records whose revisions, commands, exit_status, log_path and failure ids reconcile with baseline-suite.log and after-suite.log; negative_control_log names negative-control.log as a bare path. The headline figures are recorded, not merely claimed.",
+    "write_paths": "The node declared reckon/_store.py, tests/test_a_refused_set_names_the_paths_that_work.py, docs/evidence/fragments/a-project-reads-as-one-picture/a-refused-set-names-the-paths-that-work.html and an unused docs/figures tree. git diff --stat 63e6d9f18 4ab83c34d names exactly three files \u2014 the fragment, reckon/_store.py and the test file \u2014 all inside the declared scope, and no other."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261022T053621075227-review-of-a-refused-set-names-the-paths-that-work-4ab83c34dc3c",
+  "reviewed_base_sha": "63e6d9f1829a5bd321b2313e58c25aa10a573193",
+  "reviewed_head_sha": "4ab83c34dc3cfbaa98562d2d6389647d436799e9",
+  "reviewed_run_id": "r-20261022T050256433700-a-refused-set-names-the-paths-that-work",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T06:07:39.999989+00:00",
+  "total": 111,
+  "verification": [
+    "git diff --stat 63e6d9f1829a5bd321b2313e58c25aa10a573193 4ab83c34dc3cfbaa98562d2d6389647d436799e9 -> 3 files changed, 209 insertions(+), 1 deletion(-); all inside the declared write paths.",
+    "after-suite.log header names revision 4ab83c34d (head, worktree clean), the worktree tree and the literal command; tail '106 passed in 44.68s' then 'EXIT=0'. baseline-suite.log header names base 63e6d9f and the scratch tree; tail '4 failed, 100 passed in 46.33s' then 'EXIT=1'.",
+    "negative-control.log header names '4b2946bd5 with the answering change reverted (keyed heads returned to the nearest-match candidates)'; tail '2 failed, 5 passed in 1.25s' then 'EXIT=1' \u2014 a non-zero exit and failing ids the head arm does not fail.",
+    "Reuse search by capability over reckon/ (grep 'get_close_matches|did you mean|nearest|suggestion'): the only other nearest-name mechanism is reckon/mcp_edit_plan.py:889 _plans_nearest_to_closing, a plan-to-closing ranker, a different domain. _PLAN_SET_TOP (reckon/_store.py:2376) is the pre-existing owner of the settable-path table and the change reads it rather than restating it."
+  ]
+}
