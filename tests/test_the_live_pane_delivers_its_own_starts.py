@@ -1,16 +1,15 @@
-"""The live follower delivers its own session's run start to the pane.
+"""A live follower's own start reaches the view and never the Monitor stream.
 
-The row policy holds a start back as observer context, delivering one only for
-the pane's own session's runs and only when it is told which session that is.
-Two things therefore have to be true on the way through the follower's own row
-path: the path must carry the pane's session, and the transition it reads must
-name the lane and the time budget as well as the run, node and model. Either
-one missing and the start the pane's second reader waits for never arrives.
+The follower reads the producer's own transition as a run leaves ``dispatched``
+and begins working, and the transition names the run, node, lane, model and
+time budget — the fields the view draws the work by. It is not a line the
+stream carries, for the pane's own session and for a peer's alike, because a
+run beginning work asks the coordinator for nothing.
 
 The events here are built by the producer's own transition builder, not by
 hand, so a case exercises the same row a live follower reads rather than a
 second opinion of its shape. The clock is a stub, so a case states the instant
-each row arrives and a hold's window is measured rather than waited out.
+each event arrives and a hold's window is measured rather than waited out.
 """
 
 from __future__ import annotations
@@ -73,24 +72,28 @@ def _baseline(snapshot):
     )
 
 
-def test_the_live_follower_delivers_its_own_start_naming_all_five_fields() -> None:
-    """One dispatched -> working row, naming run, node, lane, model and budget."""
+def test_the_live_follower_keeps_its_own_start_out_of_the_stream() -> None:
+    """The live follower's own start prints nothing, and keeps its fields.
+
+    The producer's transition names run, node, lane, model and budget, and the
+    pane's own row path reads it — but a run beginning work asks the
+    coordinator for nothing, so the row it would compose is not carried. The
+    transition still carries every field the view draws the work by.
+    """
     path = follower_row_path(session=SESSION)
     assert path.feed(_baseline(_snapshot("dispatched")), now=0.0) == []
-    printed = path.feed(
-        _transition(_snapshot("working"), "dispatched", "working"), now=5.0
-    )
-    assert len(printed) == 1, printed
-    row = printed[0]
-    assert (row.get("from_state"), row.get("to_state")) == ("dispatched", "working")
-    for field in ("run_id", "node", "lane", "model", "time_budget"):
-        assert row.get(field), (field, row)
-    assert row["run_id"] == RUN
-    assert row["node"] == "claude-1"
-    assert row["lane"] == "local"
-    assert row["model"] == "deepseek-v4.1-flash"
-    assert row["time_budget"] == "30m"
+    start = _transition(_snapshot("working"), "dispatched", "working")
+    assert path.feed(start, now=5.0) == []
     assert path.flush(now=1e9) == []
+
+    for field in ("run_id", "node", "lane", "model", "time_budget"):
+        assert start.get(field), (field, start)
+    assert start["run_id"] == RUN
+    assert start["node"] == "claude-1"
+    assert start["lane"] == "local"
+    assert start["model"] == "deepseek-v4.1-flash"
+    assert start["time_budget"] == "30m"
+    assert start["to_state"] == "working"
 
 
 def test_a_peer_sessions_start_delivers_nothing_through_the_live_follower() -> None:
