@@ -3382,7 +3382,13 @@ def _context_fit_verdict(
 def _context_contributors(
     context_fit: Mapping[str, Any], limit: int = 3
 ) -> list[dict[str, Any]]:
-    """Return the counted inputs that contribute the most estimated tokens."""
+    """Return the counted inputs that contribute the most estimated tokens.
+
+    Every record carries how its input arrived -- a path the node must write, a
+    path its brief names in prose, or a standing instruction file -- because the
+    remedy differs: a declared write path cannot leave the brief, since the node
+    edits it, while a mention can be cut or replaced by a reference.
+    """
 
     inputs = context_fit.get("inputs") if isinstance(context_fit, Mapping) else None
     inputs = inputs if isinstance(inputs, Mapping) else {}
@@ -3395,17 +3401,23 @@ def _context_contributors(
                 {
                     "path": str(item.get("path") or ""),
                     "estimated_tokens": int(item.get("estimated_tokens") or 0),
+                    "origin": "standing instruction",
                 }
             )
     repository = inputs.get("repository_files")
     repository = repository if isinstance(repository, Mapping) else {}
     for group in ("write_paths", "named_files"):
+        # The two repository groups are the origin: a write path is charged
+        # because the node must edit it, a named file only because the brief
+        # names it.
+        origin = "declared write path" if group == "write_paths" else "mention"
         for item in repository.get(group) or ():
             if isinstance(item, Mapping) and item.get("counted"):
                 records.append(
                     {
                         "path": str(item.get("path") or ""),
                         "estimated_tokens": int(item.get("estimated_tokens") or 0),
+                        "origin": origin,
                     }
                 )
     records = [record for record in records if record["estimated_tokens"] > 0]
@@ -3419,8 +3431,11 @@ def _context_refusal_detail(context_fit: Mapping[str, Any]) -> str:
     The refusal payload carries the informative reason only under a nested
     ``context`` field, so a caller reading the refusal's own top level sees an
     empty detail and a bare reason code. This names the figures a reader needs
-    to act -- the estimate, the window it exceeded and the inputs that
-    dominated the estimate -- at the level the refusal answers on."""
+    to act -- the estimate, the window it exceeded, the inputs that
+    dominated the estimate, and how the largest of them arrived -- at the level
+    the refusal answers on. The origin matters because a declared write path
+    cannot leave the brief while a mention can be cut or made a reference, so
+    the two shapes send the reader to different levers."""
 
     contributors = _context_contributors(context_fit)
     if contributors:
@@ -3429,15 +3444,22 @@ def _context_refusal_detail(context_fit: Mapping[str, Any]) -> str:
             for record in contributors
         )
         dominant = f"largest contributing files: {rendered}"
+        lead = contributors[0]
+        dominant_term = (
+            f"; dominant term: {lead['path']} ({lead['estimated_tokens']} tokens), "
+            f"which arrived as a {lead['origin']}"
+        )
     else:
         dominant = (
             "no repository file dominates the estimate; the standing instruction "
             "context alone exceeds the window"
         )
+        dominant_term = ""
     return (
         f"context-window-exceeded: estimated {context_fit['estimated_tokens']} "
         f"usable input tokens against a {context_fit['window_tokens']} token "
         f"window (shortfall {context_fit['shortfall_tokens']} tokens); {dominant}"
+        f"{dominant_term}"
     )
 
 
