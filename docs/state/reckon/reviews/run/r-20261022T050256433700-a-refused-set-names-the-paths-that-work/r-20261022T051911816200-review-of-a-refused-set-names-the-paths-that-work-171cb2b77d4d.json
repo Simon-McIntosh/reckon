@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-22T05:26:01.953Z",
+  "dispatched_at": "2026-10-22T05:20:08Z",
+  "findings": [
+    {
+      "file": "reckon/_store.py",
+      "line": "2463",
+      "severity": "blocking",
+      "text": "blocking: the nearest-match candidate list is sorted(_PLAN_SET_TOP) + sorted(_PLAN_SET_KEYED_FORMS), which treats the keyed heads as settable on their own, so the refusal closes with \"nearest settable path 'gates'\" for an input of gate and \"nearest settable path 'sections'\" for section (probed on the built module at head 171cb2b77) while the writer accepts neither as a bare path (gates.ID.FIELD at reckon/_store.py:2779, sections.<id>.<field> at reckon/_store.py:2708); a caller who follows the suggestion is refused again, which is the failure this node exists to remove."
+    },
+    {
+      "file": "reckon/_store.py",
+      "line": "2422",
+      "severity": "follow-on",
+      "text": "follow-on: _PLAN_SET_KEYED_FORMS omits the followups.ID.FIELD form the writer handles at reckon/_store.py:2774, so the message's 'keyed forms:' clause is not the set of keyed forms, and because the nearest-match candidates come from the same table a misspelled followups path gets no nearest match at all (the message for 'followup' ends at the keyed-forms clause)."
+    },
+    {
+      "file": "reckon/_store.py",
+      "line": "2438",
+      "severity": "follow-on",
+      "text": "follow-on: difflib is imported inside _nearest_settable_path while reckon/_store.py imports its other stdlib names at module scope (reckon/_store.py:68); the file's function-local imports exist for reckon-internal cycles, which a stdlib import does not risk."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to list the settable paths, keyed forms and nearest match in the refusal for an unsupported plan set path; reckon/_store.py:2790 now raises _unsupported_plan_set_path_detail(path), which lists _PLAN_SET_TOP and the three keyed forms and closes with a nearest match, and a probe of the built module returns 'unsupported plan set path ... settable paths: ...' for every unsupported path tried.\nVERDICT done_when: the done_when names the gate PYTHONPATH=$PWD .venv/bin/python -m pytest -q tests/test_a_refused_set_names_the_paths_that_work.py tests/test_edit_plan.py tests/test_after_is_settable.py tests/test_edit_plan_sets_a_section_field.py tests/test_every_module_fits_a_worker_window.py judged by failure delta; the manifest records base 4 failed/100 passed EXIT=1 and head 104 passed EXIT=0, the logs carry revision, tree, literal command and EXIT lines, and the four baseline failing ids are exactly the message-reading cases in the new file \u2014 the gate asserts the measure, with one clause unmet (ruff format --check is not clean on reckon/_store.py).\nVERDICT write_paths: the manifest declares reckon/_store.py, tests/test_a_refused_set_names_the_paths_that_work.py, the evidence fragment and the docs/figures directory; the diff 63e6d9f18..171cb2b77 changes only the first three, all inside the declared set, and the worktree is clean.\nVERDICT manifest: read; status complete, one commit 171cb2b77, baseline_suite and after_suite both completed with failure_ids recorded, negative_control_log present and red with four ids the head arm does not fail, and evidence_inputs disclosing the ruff caveat \u2014 the fields match the artefact state I read.\nVERDICT diff: read commit by commit against 63e6d9f18 \u2014 one commit, three files, +168/-1: reckon/_store.py adds _PLAN_SET_KEYED_FORMS, _nearest_settable_path, _unsupported_plan_set_path_detail and swaps the bare refusal at line 2790 for the detail builder; the test file adds five cases (four message-reading, one supported-path); the evidence fragment records the measure.\nCALL_SITES: reckon/mcp_edit_plan.py:1452, reckon/_store.py:3473\n\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/_store.py:2450 lists the settable paths and the keyed forms and names a nearest match, but the nearest match can name a path that is itself refused (probe: 'gate' -> \"nearest settable path 'gates'\") and the keyed list omits followups.ID.FIELD, which the writer handles at reckon/_store.py:2774.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate named in the done_when ran at both arms with the revision, tree and literal command on each log header and a bare EXIT line last, and the negative control is recorded red at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T050256433700-a-refused-set-names-the-paths-that-work/negative-control.log; the done_when's 'ruff format --check clean on the changed paths' clause is not met for reckon/_store.py, disclosed in evidence_inputs with a zero delta against the base copy.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 63e6d9f18..171cb2b77 touches only the three declared paths (bytes accounted for in my verdict on the diff), and the fourth declared path is unused.\nSCORE durability: 17\nJUSTIFICATION durability: the four message-reading cases in tests/test_a_refused_set_names_the_paths_that_work.py:34-62 fail on the base commit and again under the declared mutation that restores the bare refusal at reckon/_store.py:2790, so removing the detail builder reddens them; the table-reading case at tests/test_a_refused_set_names_the_paths_that_work.py:46 iterates _store._PLAN_SET_TOP, so a member dropped from that table moves both sides together and it cannot see that regression.\nSCORE fit: 16\nJUSTIFICATION fit: the additions sit beside the existing _PLAN_SET_TOP table at reckon/_store.py:2415 and raise through OpError as the surrounding refusals do, but \"import difflib\" is placed inside _nearest_settable_path at reckon/_store.py:2438 while the module's stdlib imports sit at module scope (reckon/_store.py:68), and the new evidence fragment ends without a trailing newline.\nSCORE reuse: 18\nJUSTIFICATION reuse: a capability search over reckon/ for nearest-name suggestion found no owner (difflib.get_close_matches appears nowhere else; reckon/mcp_budget.py:143 _suggestion narrows arguments and reckon/crew/review_need.py:98 uses difflib.unified_diff for text diffs), and _PLAN_SET_KEYED_FORMS extends the existing _PLAN_SET_TOP table idiom rather than restating it.\n\nFINDING reckon/_store.py:2463 blocking: the nearest-match candidate list is sorted(_PLAN_SET_TOP) + sorted(_PLAN_SET_KEYED_FORMS), which treats the keyed heads as settable on their own, so the refusal closes with \"nearest settable path 'gates'\" for an input of gate and \"nearest settable path 'sections'\" for section \u2014 probed on the built module at head 171cb2b77 \u2014 while the writer accepts neither as a bare path (it requires gates.ID.FIELD at reckon/_store.py:2779 and sections.<id>.<field> at reckon/_store.py:2708); a caller who follows the suggestion is refused a second time, which is the failure this node exists to remove.\nFINDING reckon/_store.py:2422 follow-on: _PLAN_SET_KEYED_FORMS omits the followups.ID.FIELD form the writer handles at reckon/_store.py:2774, so the message's 'keyed forms:' clause is not the set of keyed forms, and because the nearest-match candidates are built from the same incomplete table a misspelled followups path gets no nearest match at all (probe: the message for 'followup' ends at the keyed-forms clause with no nearest).\nFINDING reckon/_store.py:2438 follow-on: difflib is imported inside _nearest_settable_path while reckon/_store.py imports its other stdlib names at module scope (reckon/_store.py:68); the file's function-local imports are for reckon-internal cycles, which a stdlib import does not risk.\n",
+  "review_run_id": "r-20261022T051911816200-review-of-a-refused-set-names-the-paths-that-work-171cb2b77d4d",
+  "reviewed_base_sha": "63e6d9f1829a5bd321b2313e58c25aa10a573193",
+  "reviewed_head_sha": "171cb2b77d4df3f8488d4576aab3bb1ccae0c256",
+  "reviewed_run_id": "r-20261022T050256433700-a-refused-set-names-the-paths-that-work",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 14,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T05:26:44.399501+00:00",
+  "total": 100
+}
