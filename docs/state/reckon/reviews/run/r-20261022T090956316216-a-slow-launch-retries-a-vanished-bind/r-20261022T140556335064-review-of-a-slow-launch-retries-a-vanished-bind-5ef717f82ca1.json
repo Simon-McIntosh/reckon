@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:1663 (_spawn_worker_retrying_a_vanished_bind, called from _spawn_detached_worker, itself reached from _spawn at dispatch_launch.py:1420)",
+    "reckon/crew/dispatch_launch.py:2499 (_supervisor_spawn_worker)",
+    "reckon/crew/dispatch.py:3010 (re-export of _spawn_worker_retrying_a_vanished_bind)",
+    "reckon/crew/dispatch.py:2971 (re-export of _died_over_a_vanished_bind_source)"
+  ],
+  "completed_at": "2026-10-22T14:55:27.591Z",
+  "dispatched_at": "2026-10-22T14:08:31Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": 1488,
+      "severity": "blocking",
+      "summary": "the startup window is lowered from 30.0 to 15.0 seconds, below the plan \u00a719 requirement of 'at least 30'",
+      "text": "blocking: SANDBOX_STARTUP_WINDOW_SECONDS is set to 15.0 where the plan section \u00a719 states the window is 'a stated number of seconds, at least 30, which covers the four seconds that launch took from launch to exit and the step start before it' (docs/plans/a-worker-cannot-write-your-home.html:1592). The recorded rationale for the reduction is the window's upper bound (a child that exits inside the window is recorded as a launch failure), which does not establish 15 s as sufficient for the slow step start the section exists to catch; on a loaded host an srun step start before the child's refusal is exactly the interval the 30 s floor was chosen to cover, so the fix now misses refusals it was written to retry. The measured fixture still passes at 4 s, which is why the gate does not catch it."
+    },
+    {
+      "file": "after-suite.log",
+      "line": 1,
+      "severity": "follow-on",
+      "summary": "the after arm's log header names revision 2b78bd010, which does not carry the change the arm measures",
+      "text": "follow-on: the header of /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T090956316216-a-slow-launch-retries-a-vanished-bind/after-suite.log reads '# revision: 2b78bd010 (head with the review fixes (after_suite))', but the review fixes land at b3712dcd6 and the arm collected 20 tests, which exist only from b3712dcd6; the manifest's after_suite line names b3712dcd6 instead. Promotion reads this header as the revision the gate ran at, so the record's own two statements of the revision disagree and the pass is not attributable from the artefact alone."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read the two gained commits against 2b78bd010 commit by commit - b3712dcd6 (dispatch_launch.py:1488 window 30.0 to 15.0, the exit requirement moved to :1574, the poll-None early return at :1567, the running-child break at :1611, and the new case at tests/test_a_slow_launch_retries_a_vanished_bind.py:348) and 5ef717f82 (the fragment's measured numbers and the ruff receipt reference); every path is inside the declared scope.",
+    "done_when": "the measure is that the four named test files pass at the head, the new fixture is red at the base commit, and ruff adds nothing; the record carries the gate literal with after-suite.log 20 passed EXIT=0, baseline-suite.log 4 failed 16 passed EXIT=1 (all four ids in the new file), red-arm.log 1 failed EXIT=1 at the pre-fix head, negative-control2.log 2 failed EXIT=1 and ruff-receipt.log EXIT=0 with base_findings=head_findings=4.",
+    "goal": "the node's goal is to retry a launch whose sandbox refuses a vanished bind source however long the launch took to start; the gained commit reckon/crew/dispatch_launch.py:1574 now answers True only once the child has exited, which removes the wrong-death path the prior review found, but the same commit lowers the startup window at dispatch_launch.py:1488 from 30.0 to 15.0 seconds, below the plan \u00a719 floor of 'at least 30', so the step-start the retry covers is shortened rather than extended.",
+    "manifest": "read at the reviewed head; status complete, the five commits listed, the gate command literal, after_suite 20 passed EXIT=0 at b3712dcd6 and baseline_suite 4 failed/16 passed EXIT=1 at 6d3c43bbd, the red arm and the ruff receipt cited, and follow_ons naming the reaper's pointer write and the window's upper bound.",
+    "write_paths": "the source node's declared scope is reckon/crew/dispatch_launch.py, tests/test_a_slow_launch_retries_a_vanished_bind.py, docs/evidence/fragments/a-worker-cannot-write-your-home/a-slow-launch-retries-a-vanished-bind.html and an unused figures directory; the two gained commits touch exactly the first three files, 98 insertions and 33 deletions."
+  },
+  "justifications": {
+    "durability": "tests/test_a_slow_launch_retries_a_vanished_bind.py:378-382 assert one spawned process and a live child, which redden when the exit requirement is reverted (red-arm.log, 1 failed EXIT=1 at the pre-fix head); the timing assertions at :385 and :337 read WINDOW from the module the change edits, so they move with it and carry less weight.",
+    "evidence": "the arms are on disk (after-suite.log, baseline-suite.log, red-arm.log, negative-control2.log, ruff-receipt.log) and the ruff log answers the prior review's missing-log finding, but after-suite.log:1 names revision 2b78bd010 for an arm whose 20 tests exist only from b3712dcd6.",
+    "fit": "the added lines at reckon/crew/dispatch_launch.py:1567 and :1611 follow the module's refused-not-clamped idiom and its explanatory comment style, and introduce no plan label, version suffix or ticket reference.",
+    "goal_fidelity": "reckon/crew/dispatch_launch.py:1488 sets SANDBOX_STARTUP_WINDOW_SECONDS = 15.0 where the plan \u00a719 requires 'a stated number of seconds, at least 30', and the 15 s comment justifies only the window's upper bound, so the gained change halves the step-start it covers.",
+    "reuse": "the gained diff adds no function, class or module; it edits two existing definitions inside their owner in reckon/crew/dispatch_launch.py, so nothing is forked and no repository capability is re-implemented.",
+    "scope_discipline": "both gained commits stay inside the three declared write paths, but the window reduction at dispatch_launch.py:1488 is an unrequested change the reviewed finding (a still-running child answered as dead) did not ask for."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to retry a launch whose sandbox refuses a vanished bind source however long the launch took to start; reckon/crew/dispatch_launch.py:1574 now answers True only once the child has exited, removing the wrong-death path the prior review found, but the same commit lowers the startup window at dispatch_launch.py:1488 from 30.0 to 15.0 seconds, below the plan \u00a719 floor of 'at least 30', so the step-start the retry covers is shortened rather than extended.\nVERDICT done_when: the measure is that the four named test files pass at the head, the new fixture is red at the prior-reviewed head and at its base, and ruff adds nothing; the record carries the gate literal with after-suite.log 20 passed EXIT=0, baseline-suite.log 4 failed 16 passed EXIT=1 (all four ids in the new file), red-arm.log 1 failed EXIT=1 at the pre-fix head, negative-control2.log 2 failed EXIT=1 and ruff-receipt.log EXIT=0 with base_findings=head_findings=4.\nVERDICT write_paths: the source node's declared scope is reckon/crew/dispatch_launch.py, tests/test_a_slow_launch_retries_a_vanished_bind.py, docs/evidence/fragments/a-worker-cannot-write-your-home/a-slow-launch-retries-a-vanished-bind.html and an unused figures directory; the two gained commits touch exactly the first three files, 98 insertions and 33 deletions.\nVERDICT manifest: read at the reviewed head; status complete, the five commits listed, the gate command literal, after_suite 20 passed EXIT=0 at b3712dcd6 and baseline_suite 4 failed/16 passed EXIT=1 at 6d3c43bbd, the red arm and the ruff receipt cited, and follow_ons naming the reaper's pointer write and the window's upper bound.\nVERDICT diff: read the two gained commits against 2b78bd010 commit by commit - b3712dcd6 (dispatch_launch.py:1488 window 30.0 to 15.0, the exit requirement moved to :1574, the poll-None early return at :1567, the running-child break at :1611, and the new case at tests/test_a_slow_launch_retries_a_vanished_bind.py:348) and 5ef717f82 (the fragment's measured numbers and the ruff receipt reference); every path is inside the declared scope.\nCALL_SITES: reckon/crew/dispatch_launch.py:1663 (_spawn_worker_retrying_a_vanished_bind, called from _spawn_detached_worker, itself reached from _spawn at dispatch_launch.py:1420), reckon/crew/dispatch_launch.py:2499 (_supervisor_spawn_worker), reckon/crew/dispatch.py:3010 (re-export of _spawn_worker_retrying_a_vanished_bind), reckon/crew/dispatch.py:2971 (re-export of _died_over_a_vanished_bind_source)\nSCORE goal_fidelity: 12\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:1488 sets SANDBOX_STARTUP_WINDOW_SECONDS = 15.0 where the plan \u00a719 requires a window 'at least 30' seconds, and the 15 s comment justifies only the window's upper bound, so the gained change halves the step-start it covers.\nSCORE evidence: 14\nJUSTIFICATION evidence: the arms are on disk (after-suite.log, baseline-suite.log, red-arm.log, negative-control2.log, ruff-receipt.log) and the ruff log answers the prior review's missing-log finding, but after-suite.log:1 names revision 2b78bd010 for an arm whose 20 tests exist only from b3712dcd6.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: both gained commits stay inside the three declared write paths, but the window reduction at dispatch_launch.py:1488 is an unrequested change the reviewed finding (a still-running child answered as dead) did not ask for.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_slow_launch_retries_a_vanished_bind.py:378-382 assert one spawned process and a live child, which redden when the exit requirement is reverted (red-arm.log, 1 failed EXIT=1 at the pre-fix head); the timing assertions at :385 and :337 read WINDOW from the module the change edits, so they move with it and carry less weight.\nSCORE fit: 17\nJUSTIFICATION fit: the added lines at reckon/crew/dispatch_launch.py:1567 and :1611 follow the module's refused-not-clamped idiom and its explanatory comment style, and introduce no plan label, version suffix or ticket reference.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained diff adds no function, class or module; it edits two existing definitions inside their owner in reckon/crew/dispatch_launch.py, so nothing is forked and no repository capability is re-implemented.\nFINDING reckon/crew/dispatch_launch.py:1488 blocking: SANDBOX_STARTUP_WINDOW_SECONDS is set to 15.0 where the plan section \u00a719 states the window is a stated number of seconds, at least 30 (docs/plans/a-worker-cannot-write-your-home.html:1592); the recorded rationale covers only the window's upper bound and does not establish 15 s as sufficient for the slow step start the section exists to catch, and the measured fixture passes at 4 s so the gate does not catch the shortfall.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T090956316216-a-slow-launch-retries-a-vanished-bind/after-suite.log:1 follow-on: the header names revision 2b78bd010, which does not carry the review fixes the arm measures, while the manifest's after_suite line names b3712dcd6 and the arm collected 20 tests that exist only from b3712dcd6; promotion reads this header as the revision the gate ran at.",
+  "review_run_id": "r-20261022T140556335064-review-of-a-slow-launch-retries-a-vanished-bind-5ef717f82ca1",
+  "reviewed_base_sha": "2b78bd01012dacf64b85dc60993732682e0ef3e0",
+  "reviewed_head_sha": "5ef717f82ca10d723a0441f2ae5bbe1e3f308b80",
+  "reviewed_run_id": "r-20261022T090956316216-a-slow-launch-retries-a-vanished-bind",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 12,
+    "reuse": 20,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T14:20:00+00:00",
+  "total": 96
+}
