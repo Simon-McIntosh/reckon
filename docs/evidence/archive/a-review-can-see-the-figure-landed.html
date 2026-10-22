@@ -165,6 +165,13 @@ emits an image flag</code></pre>
 <p>Run <code>r-20261021T172617359802-a-figure-finding-declares-its-severity</code>, head <code>73167c4e8</code>, merged as <code>b0c49c310</code>. The first delivery dropped the two failure fields from the figure contract, so a record built from it failed <code>review_record_refusals</code>; the worker was resumed to keep them, with a test that a record built from exactly the brief's fields passes. Gate: 9 passed. With the severity paragraph removed, the two prompt-text cases fail. Population over 270 test files with both arms run from <code>/tmp</code> archives: base 18 failed, head 14, every head failure also failing at base. Code review scored 110.</p>
   </section>
 
+  <section id="s21-the-local-lane-discriminates-the-five-pairs">
+    <h2>§21 — the local lane on the five known pairs: partly</h2>
+    <p>Fifteen read-only runs on the local lane (<code>deepseek-v4.1-flash</code>) judged §8's ten PNG pair figures, copied to shuffled neutral names, and ran five image-withheld controls. Scoring run <code>r-20261022T175911808146-the-local-lane-discriminates-the-five-pairs</code> wrote <code>/home/ITER/mcintos/.config/reckon/crew/reports/reckon/figure-review-pairs/clive/report.md</code>. Verdict: <strong>partly</strong>. Pairs 3, 4 and 5 discriminate; pairs 1 and 2 do not.</p>
+<p>On the judgement itself the lane matched §8's codex result. All ten verdict words agree with the key: every bad figure drew <code>FAIL</code> and every good one <code>PASS</code>, each naming the rule's subject. The coordinator re-checked all fifteen answers against <code>clive/key.json</code>: 15 of 15. All ten Reads of an input returned an image block, and all ten inputs are byte-identical to their source figures. All five controls answered <code>NO IMAGE RECEIVED</code> and opened no image.</p>
+<p>Pairs 1 and 2 fail only the clause that a figure run shows exactly one Read. In fig-01 (pair 2) and fig-07 (pair 1) the lane emitted a Read whose <code>file_path</code> carried its own tool-call markup (<code>&lt;｜DSML｜ calls&gt;…</code>) or a truncated path. The harness answered <code>File does not exist</code>, and the run went on to read the right image and judge it correctly. fig-07 also read back its own outputs. The defect is in the lane's tool calling, not in its judgement. The report also states the strictest reading, counting a run reading back its own answer file: 0 of 5. The briefs did not say whether reading one's own deliverable counts.</p>
+  </section>
+
 </main>
 </body>
 </html>
