@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2820 (_budget_reset_payload",
+    "reached from `crew budget --reset --used`)",
+    "reckon/crew_run_commands.py:3082 (_budget_lifts_payload",
+    "reached from `crew budget --list`)",
+    "reckon/pace_report.py:209 (budget_reset.observe",
+    "whose event record gained the id field)"
+  ],
+  "completed_at": "2026-10-22T00:58:52.667Z",
+  "dispatched_at": "2026-10-22T00:46:17Z",
+  "findings": [
+    {
+      "file": "reckon/crew/budget_reset.py",
+      "line": "119",
+      "severity": "follow-on",
+      "text": "follow-on: the event id is `reset-<group>-<UTC stamp>` at one-second resolution, so two global events for one group in the same second on different clocks share an id, and \u00a72 keys a pane's claim on that id, so the second would never be drawn; the coalescing rule covers same-clock repeats only."
+    },
+    {
+      "file": "docs/plans/a-limit-reset-reaches-every-session.html",
+      "line": "73",
+      "severity": "follow-on",
+      "text": "follow-on: \u00a71's done-when asserts tests/test_codex_banked_reset.py passes unchanged, but at the reviewed base revision its test_cli_budget_reset_round_trip already fails with exit 10 from the retired `budget-reset` verb, which I read in arms-base.log, so a coordinator reading the done-when would mistake a pre-existing failure for one this node introduced."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit against 5a11af30c \u2014 569ab36e2 (feat) and 5ae4bd657 (docs) \u2014 four files, 653 insertions and 46 deletions, every path inside the declared scope; the source change is the mark_used rewrite with the coalescing twin check, observe's added id, recent_resets, and the crew budget pass-through of --reason/--from/--clock/--session.",
+    "done_when": "the done-when names tests/test_a_limit_reset_is_one_record.py plus a base/head arm with no added failure against a base arm; the manifest's arms-base.log and arms-head.log read 13 failed / 320 passed and 13 failed / 330 passed, and I re-derived the delta myself by comparing the two logs' FAILED id sets, which are identical in both directions, so zero failure ids are added.",
+    "goal": "the goal is to make `crew budget --reset --used` record one reset event in the banked-reset store, read back through `budget_reset.recent_resets`; reckon/crew/budget_reset.py:230 `mark_used` appends a `used` event whether or not a flag is available, and reckon/crew/budget_reset.py:474 `recent_resets` reads both kinds back.",
+    "manifest": "read; status is complete and it records the literal gate command, the three log paths, both arms' baseline_suite/after_suite JSON, the negative control (DUPLICATE_WINDOW set to timedelta(0) makes tests/test_a_limit_reset_is_one_record.py::test_a_repeat_within_ten_minutes_is_one_event_and_later_is_another fail, 1 failed / 9 passed, EXIT=1, an id the head arm does not fail), and five follow_ons including the stale claim about tests/test_codex_banked_reset.py.",
+    "write_paths": "the manifest's orientation_write_paths are reckon/crew/budget_reset.py, reckon/crew_run_commands.py, tests/test_a_limit_reset_is_one_record.py and the node's fragment under docs/evidence/fragments/a-limit-reset-reaches-every-session/; the diff changes exactly those four and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_limit_reset_is_one_record.py:163 asserts len(_events()) == 1 against the store, and the manifest's negative control shows that assertion reddens when the ten-minute coalescing rule is removed.",
+    "evidence": "arms-base.log and arms-head.log are the reviewed run's own gate logs and their FAILED id sets are identical, giving added_failure_count 0, but the done-when's sibling claim that tests/test_codex_banked_reset.py passes unchanged does not hold at the base revision.",
+    "fit": "the new definitions in reckon/crew/budget_reset.py:112 and :474 follow the module's existing helper-and-durable-store idiom, and the added lines carry no plan label, version suffix or ticket reference.",
+    "goal_fidelity": "reckon/crew/budget_reset.py:264 appends the used event before any flag check, and the record is read back through reckon/crew/budget_reset.py:474 recent_resets, which is what the goal names.",
+    "reuse": "budget_reset.py is itself the owner of the reset store, and the nearest other id builder, reckon/crew/budget_lift.py:1371 _new_id, makes a deliberately unique id rather than a deterministic one, so no capability is duplicated.",
+    "scope_discipline": "the diff's four paths are all inside the declared write paths, with no stray file and no change the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make `crew budget --reset --used` record one reset event in the banked-reset store, read back through `budget_reset.recent_resets`; reckon/crew/budget_reset.py:230 `mark_used` appends a `used` event whether or not a flag is available, and reckon/crew/budget_reset.py:474 `recent_resets` reads both kinds back.\nVERDICT done_when: the done-when names tests/test_a_limit_reset_is_one_record.py plus a base/head arm with no added failure against a base arm; the manifest's arms-base.log and arms-head.log read 13 failed / 320 passed and 13 failed / 330 passed, and I re-derived the delta myself by comparing the two logs' FAILED id sets, which are identical in both directions, so zero failure ids are added.\nVERDICT write_paths: the manifest's orientation_write_paths are reckon/crew/budget_reset.py, reckon/crew_run_commands.py, tests/test_a_limit_reset_is_one_record.py and the node's fragment under docs/evidence/fragments/a-limit-reset-reaches-every-session/; the diff changes exactly those four and nothing else.\nVERDICT manifest: read; status is complete and it records the literal gate command, the three log paths, both arms' baseline_suite/after_suite JSON, the negative control (DUPLICATE_WINDOW set to timedelta(0) makes tests/test_a_limit_reset_is_one_record.py::test_a_repeat_within_ten_minutes_is_one_event_and_later_is_another fail, 1 failed / 9 passed, EXIT=1, an id the head arm does not fail), and five follow_ons including the stale claim about tests/test_codex_banked_reset.py.\nVERDICT diff: read commit by commit against 5a11af30c \u2014 569ab36e2 (feat) and 5ae4bd657 (docs) \u2014 four files, 653 insertions and 46 deletions, every path inside the declared scope; the source change is the mark_used rewrite with the coalescing twin check, observe's added id, recent_resets, and the crew budget pass-through of --reason/--from/--clock/--session.\nCALL_SITES: reckon/crew_run_commands.py:2820 (_budget_reset_payload, reached from `crew budget --reset --used`), reckon/crew_run_commands.py:3082 (_budget_lifts_payload, reached from `crew budget --list`), reckon/pace_report.py:209 (budget_reset.observe, whose event record gained the id field)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/budget_reset.py:264 appends the used event before any flag check, and the record is read back through reckon/crew/budget_reset.py:474 recent_resets, which is what the goal names.\nSCORE evidence: 17\nJUSTIFICATION evidence: arms-base.log and arms-head.log are the reviewed run's own gate logs and their FAILED id sets are identical, giving added_failure_count 0, but the done-when's sibling claim that tests/test_codex_banked_reset.py passes unchanged does not hold at the base revision.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's four paths are all inside the declared write paths, with no stray file and no change the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_limit_reset_is_one_record.py:163 asserts len(_events()) == 1 against the store, and the manifest's negative control shows that assertion reddens when the ten-minute coalescing rule is removed.\nSCORE fit: 18\nJUSTIFICATION fit: the new definitions in reckon/crew/budget_reset.py:112 and :474 follow the module's existing helper-and-durable-store idiom, and the added lines carry no plan label, version suffix or ticket reference.\nSCORE reuse: 19\nJUSTIFICATION reuse: budget_reset.py is itself the owner of the reset store, and the nearest other id builder, reckon/crew/budget_lift.py:1371 _new_id, makes a deliberately unique id rather than a deterministic one, so no capability is duplicated.\nFINDING reckon/crew/budget_reset.py:119 follow-on: the event id is `reset-<group>-<UTC stamp>` at one-second resolution, so two global events for one group in the same second on different clocks share an id, and \u00a72 keys a pane's claim on that id, so the second would never be drawn; the coalescing rule covers same-clock repeats only.\nFINDING docs/plans/a-limit-reset-reaches-every-session.html:73 follow-on: \u00a71's done-when asserts tests/test_codex_banked_reset.py passes unchanged, but at the reviewed base revision its test_cli_budget_reset_round_trip already fails with exit 10 from the retired `budget-reset` verb, which I read in arms-base.log, so a coordinator reading the done-when would mistake a pre-existing failure for one this node introduced.",
+  "review_run_id": "r-20261022T004529434937-review-of-a-limit-reset-is-one-record-5ae4bd657f5e",
+  "reviewed_base_sha": "5a11af30c752576180d226a3511cbd03d3a6b0b4",
+  "reviewed_head_sha": "5ae4bd657f5e39c69b0aac41b1b4148dd1000aff",
+  "reviewed_run_id": "r-20261022T000855182556-a-limit-reset-is-one-record",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T01:02:49.696783+00:00",
+  "total": 111
+}
