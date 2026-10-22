@@ -1,0 +1,102 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T20:17:18.825Z",
+  "dispatched_at": "2026-10-22T20:01:16Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/additional-work-is-a-section.html:73",
+      "id": "done_when-1",
+      "reason": "two of the four promised paths would ship with no failing-then-passing test, so the node could land a guard that never fires on them and its gate would still be green.",
+      "text": "\u00a74's done-when has four cases (insert refused, insert-in-`<code>` accepted, text edit adding nothing accepted, audit-doc warns), and neither a create-path refusal nor a text-mode refusal is among them, so the two paths the section adds are never shown to refuse; the text-mode channel in particular converts the predicate's `OpError` into `ValueError`, and a case that only requires an *accept* passes whether that conversion is implemented or not",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/additional-work-is-a-section.html:71",
+      "id": "reasoning-1",
+      "reason": "the section's scope, its write-path list and its test plan are set for two new call sites where one is needed, and a worker told to wire the predicate onto the create path would be looking for an entry point that does not exist outside the section funnel.",
+      "text": "\u00a74 says \"Plan creation through `edit_plan`'s create and the text-mode write do not reach it\", but `append sections` carrying a body is the create route (reckon/_store.py:3062-3065) and queues the body through `_queue_authored_section` (:3371) as a `section_insertions` effect, which the write path applies by calling `_insert_authored_section` (:1418-1419) and so already runs `_refuse_forged_body_structure` (:946) over it; only the text-mode path is genuinely new",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/additional-work-is-a-section.html:71",
+      "id": "reasoning-2",
+      "reason": "the enumeration in the same sentence is complete and correct, so the mechanism (extend the shared predicate rather than write a second check) is unaffected.",
+      "text": "\u00a74 says \"Today two paths reach it\" and then enumerates three (`insert_section`, `append_evidence`, and `_store_section_ops.py`'s section-body import), so the count and its own list disagree",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "749b84f0cf1cb04a86ad860f0e7b478ca61490585f542492af53cf7dc53ab817",
+  "plan_slug": "additional-work-is-a-section",
+  "plan_version": 9,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-22T20:22:43.550438+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-22T20:23:18.004314+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-22T20:24:08.491235+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-22T20:22:43.550438+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-22T20:23:18.004314+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-22T20:24:08.491235+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-additional-work-is-a-section.v9.json",
+  "review_run_id": "r-20261022T191014888173-plan-review-of-additional-work-is-a-section",
+  "reviewed_blob_sha": "9d761ec8dadd5a5f67eb74d2fe337b64c504ccec",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_forged_plan_structure` (reckon/_store.py:899), `_refuse_forged_body_structure` (:924), `reckon/_store_section_ops.py`'s `_refuse_forged_structure` (:124), `reckon/doccheck.py`'s `_prose_text` (:385), `reckon/_plan_html.py`'s `section_prose` (:474), the `f\"{subject} must not contain {forged}\"` composer (:928) and the `text_edit_error` note (:1999) all resolve, and the hrefs name real files.",
+    "done_when": "a finding \u2014 \u00a74's done-when measures the insert refusal and the audit-doc warning, but no case exercises a refusal on the create path or the text-mode path, two of the four authoring paths its own deliverable claims.",
+    "evidence_paths": "pass \u2014 the gate's evidence sits at docs/evidence/fragments/additional-work-is-a-section/a-plan-write-refuses-the-bucket.html, in the repository and durable, not in a scratch or node-local path.",
+    "naming": "pass \u2014 no plan label, stage name or ticket number reaches a symbol, filename or comment; the test module `test_a_plan_write_refuses_the_bucket.py` and the evidence fragment name the mechanism.",
+    "reasoning": "a finding \u2014 \u00a74 states that plan creation through `edit_plan`'s create does not reach the body predicate, but a created plan's authored prose enters through the section-insertion funnel that already calls it.",
+    "single_goal": "pass \u2014 \u00a74 carries one deliverable, refusing a plan write that adds the term to a plan's prose.",
+    "wiring": "pass \u2014 \u00a74 declares no depends-on or gates and needs none it lacks; the plan's declared edges (s3 \u2192 additional-work-is-a-section#s2 and the-suite-is-green-at-head#s32; s5 \u2192 s2, s3, s4) each resolve to an existing node, and docs/plans/the-suite-is-green-at-head.html carries `id=\"s32\"`."
+  },
+  "section_digests": {
+    "_document": "0e1b33dda748890b04794a11496bc9a6a0039acae4b7d3b73b632dfda3e05469",
+    "s1": "53035db610c769f9fabc12038e7a13898064f071d29b27f9e4b9cfe7e6e9cbfb",
+    "s2": "da6965864ffd2ed27a0442cf22caf15936faa1f5ecfe3c8d4be21504a5d51387",
+    "s3": "5e0b4c0b11d5a7d4c468bf9e723c12d087c1219af2cb13c3a1e723138f47b73a",
+    "s4": "687748332407e9cfa19d9e6489cc00cec4331f98f0bb14bc2691f5a082455212",
+    "s5": "a6fa784958eef11b006d0cb4912714d98031c18adf47e32ecc1f84a23d578e4d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T20:22:22.435711+00:00"
+}
