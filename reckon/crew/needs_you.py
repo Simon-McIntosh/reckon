@@ -25,6 +25,13 @@ unpromoted run whose review is already stored is marked ``reviewed``: promotion
 unlinks the pointer and the session it captured, so a review read after the fact
 can no longer be answered by resuming its author, and the mark is the live
 window's only warning that the chance to resume has gone.
+
+Every line composed here names something the coordinator can act on: a run they
+still owe. A set with no such run is not a line at all — the composer returns an
+empty string, so an empty set is never announced, however long it stays empty.
+The follower prints each result verbatim, so suppressing the line here is what
+keeps an empty set off the pane and out of every notification a session host
+derives from it.
 """
 
 from __future__ import annotations
@@ -40,9 +47,8 @@ NEEDS_YOU_KINDS = ("unpromoted", "blocked")
 
 # The follower re-emits the line on this cadence while the set is non-empty,
 # because an unpromoted or blocked run is work the coordinator still owes.
-# The empty set is deliberately outside the cadence: the follower is restarted
-# by its session host when it exits, so a quiet pane there already means a quiet
-# fleet, and a beat saying so only wakes a reader for nothing.
+# An empty set is not on the cadence at all: it is not a line, and a beat
+# saying nothing needs doing only wakes a reader for nothing.
 DEFAULT_REMIND_SECONDS = 600.0
 
 
@@ -283,24 +289,19 @@ def needs_you_runs(
     return needs_you(project, session=session, moment=moment)["runs"]
 
 
-# The word the drain line carries when the session's own fleet has nothing left
-# for the coordinator. Nothing outstanding reads as drained rather than as a
-# zero, because a zero is indistinguishable from a count the row failed to take.
-DRAINED_TAIL = "fleet drained"
-
-
 def drain_tail(
     project: str,
     *,
     session: str | None,
     shown: tuple[tuple[str, str, str], ...] | None = None,
 ) -> str:
-    """The tail the follower's settle row gains when the session's work drains.
+    """The tail the follower's settle row gains, when the session still owes work.
 
-    The settle row says the pane has nothing left to watch, which is exactly the
+    The settle row says the pane has nothing left to watch. It is worth a line
+    only when it names a run the coordinator still owes, which is exactly the
     moment a coordinator looks up: the row therefore carries what the session
     still owes it, from the same derivation the standing needs-you line reads,
-    so the closing row and the line it followed cannot disagree about what is
+    so the closing row and the same derivation cannot disagree about what is
     outstanding.
 
     It carries it only as news. ``shown`` is the signature of the set the pane's
@@ -308,10 +309,14 @@ def drain_tail(
     printed again: the row is left with no tail at all, because restating a
     standing fact is what made the pane noise. Runs the pane has not been shown,
     and every run when no line has been shown yet, are named by their node.
+
+    A session whose fleet has drained returns no tail at all: the settle row
+    then names nothing to act on, and the follower leaves it off the pane. The
+    caller tells the two apart by the tail being empty.
     """
     rows = needs_you_runs(project, session=session)
     if not rows:
-        return DRAINED_TAIL
+        return ""
     signature = needs_you_signature({"runs": rows})
     if shown is not None and tuple(shown) == signature:
         return ""
@@ -347,10 +352,13 @@ def _entry(row: Mapping[str, Any]) -> str:
 def needs_you_line(summary: Mapping[str, Any]) -> str:
     """Compose the one plain-text line, reading fully without colour.
 
-    With nothing outstanding it names the session's own working count, which is
-    what the pane says once when a set it had been shown drains. With runs
-    outstanding each group leads with its count and its word. The emitter, not
-    this composer, decides which of the two is news.
+    The line names something the coordinator can act on: the runs outstanding.
+    With runs outstanding each group leads with its count and its word. With
+    nothing outstanding there is nothing to act on, so the composer returns an
+    empty string rather than a line naming the session's own working count — an
+    empty set is not a fact the coordinator must be woken for, and under a
+    session host every printed line is a notification that starts a turn. The
+    emitter, not this composer, decides which non-empty line is news.
     """
     runs: Iterable[Mapping[str, Any]] = summary.get("runs") or ()
     groups: list[str] = []
@@ -361,5 +369,5 @@ def needs_you_line(summary: Mapping[str, Any]) -> str:
         entries = ", ".join(_entry(row) for row in members)
         groups.append(f"{len(members)} {kind} {entries}")
     if not groups:
-        return f"yours: {int(summary.get('working') or 0)} working · nothing needs you"
+        return ""
     return "needs you: " + " · ".join(groups)

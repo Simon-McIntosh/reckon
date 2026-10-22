@@ -1,14 +1,17 @@
 """A session's pane settles when its own work has finished.
 
 A session host runs one follower child per project and session. When the
-session's last live run reaches a terminal phase the child prints one idle
-line, ``no live work since HH:MM``, and leaves; the host stays, and the next
-request for the pair starts a fresh child. The judgement of "no live work" is
-``_population_has_live_work``'s, not one re-derived here.
+session's last live run reaches a terminal phase the child leaves with its
+settle code; the host stays, and the next request for the pair starts a fresh
+child. The judgement of "no live work" is ``_population_has_live_work``'s, not
+one re-derived here.
 
-The line names a session only when this pane carries more than its own: a
-session at a terminal knows its own id, so it is named only when the row would
-otherwise be ambiguous about which fleet drained.
+The child prints a line only when the session still owes the coordinator a run:
+a drained fleet names nothing to act on, so nothing is printed and the child
+leaves with its settle code alone. When it does print, the line names a session
+only when this pane carries more than its own: a session at a terminal knows its
+own id, so it is named only when the row would otherwise be ambiguous about
+which fleet drained.
 
 Two facts decide the whole design, and both are covered below.
 
@@ -145,6 +148,33 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return config_home
 
 
+def _write_unpromoted(run_id: str, *, session: str, home: Path) -> None:
+    """End one run without promoting it: drained work the coordinator still owes.
+
+    A terminal phase drains the pane, and a manifest reading ``complete`` with
+    the pointer still live leaves the run unpromoted, so the settle row's tail
+    names it. That is the state in which a printed settle line is observable.
+    """
+    manifest = home / "manifests" / f"{run_id}.md"
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    manifest.write_text(
+        f"node: {run_id}\nstatus: complete\nblockers: none\n", encoding="utf-8"
+    )
+    crew._write_json(
+        crew.pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": PROJECT,
+            "session": session,
+            "node": {"id": run_id, "plan": "plan-a", "time_budget": "20m"},
+            "phase": "complete",
+            "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "manifest_path": str(manifest),
+            "process_alive": None,
+        },
+    )
+
+
 def _write_pointer(run_id: str, *, session: str, phase: str) -> None:
     crew._write_json(
         crew.pointer_path(run_id),
@@ -174,10 +204,11 @@ def test_a_child_settles_once_its_session_work_drains(home: Path) -> None:
         assert not thread.is_alive(), "the child did not leave after it settled"
         settles = _settle_events(events)
         assert len(settles) == 1, settles
-        assert settles[0]["line"].startswith(SETTLE_LINE), settles[0]["line"]
-        # The pane's own session is not named: the reader is at its terminal.
-        assert SESSION not in settles[0]["line"], settles[0]["line"]
-        assert events[-1] is settles[0], "the idle line is the child's last row"
+        # The fleet drained with nothing outstanding: the row prints no line,
+        # because it names nothing the coordinator can act on. The row is still
+        # emitted, so the child's last row remains the settle its host retires.
+        assert settles[0]["line"] == "", settles[0]["line"]
+        assert events[-1] is settles[0], "the settle row is the child's last row"
     finally:
         stop.set()
         thread.join(5.0)
@@ -228,12 +259,14 @@ def test_an_observed_peers_live_run_keeps_the_child_following(home: Path) -> Non
         thread.join(5.0)
 
 
-def test_a_settle_names_an_observed_session(home: Path) -> None:
-    """A pane carrying more than its own work names the session it reports on.
+def test_a_settle_line_names_an_observed_session(home: Path) -> None:
+    """A settle line that prints names the session it reports on.
 
     The bare stamp is unambiguous only while the pane watches its own fleet.
-    Observing a peer puts two fleets in view, so the closing row has to say
-    which one drained.
+    Observing a peer puts two fleets in view, so a line that prints has to say
+    that the pane's own session drained rather than the observed one. The line
+    prints only when its tail names an outstanding run, so the pane's own run
+    ends unpromoted: it drains as work and stays owed the coordinator.
     """
     _write_pointer("r-mine", session=SESSION, phase="working")
     _write_pointer("r-peer", session=PEER, phase="working")
@@ -242,14 +275,15 @@ def test_a_settle_names_an_observed_session(home: Path) -> None:
     thread = _spawn_watch(events, stop, observed=(PEER,))
     try:
         time.sleep(0.5)
-        _write_pointer("r-mine", session=SESSION, phase="complete")
         _write_pointer("r-peer", session=PEER, phase="complete")
+        _write_unpromoted("r-mine", session=SESSION, home=home)
         time.sleep(1.0)
         settles = _settle_events(events)
         assert len(settles) == 1, settles
         line = settles[0]["line"]
         assert line.startswith(f"no live work in {PEER} since"), line
         assert SESSION not in line, line
+        assert "needs you: r-mine" in line, line
     finally:
         stop.set()
         thread.join(5.0)
@@ -575,6 +609,18 @@ def _child_env(home: Path, tmp_path: Path) -> dict[str, str]:
     return env
 
 
+def _follower_registered(home: Path, session: str) -> bool:
+    """Whether the child has published its follower lease under ``home``.
+
+    The lease is written by the child's registration, before it reads the fleet,
+    so its presence proves the pane is up and about to sample the population --
+    unlike a fixed sleep, which races the child's startup against the drain on a
+    loaded node.
+    """
+    watch = home / "crew" / "watch"
+    return any(watch.glob(f"*.followers/{session}-*.lease"))
+
+
 def _start_real_follower(env: dict[str, str]) -> subprocess.Popen:
     argv = [
         sys.executable,
@@ -606,19 +652,27 @@ def _end(process: subprocess.Popen) -> None:
 def test_the_real_follower_settles_when_the_host_advertises_it(
     home: Path, tmp_path: Path
 ) -> None:
-    """A real follower, advertised by its host, prints once and leaves.
+    """A real follower, advertised by its host, prints nothing and leaves.
 
     The whole path end to end: the advertisement is set, the follower sees the
-    session's work drain, writes its idle line and exits with the settle status.
+    session's work drain, prints no line because nothing is outstanding, and
+    still exits with the settle status its host keys on.
     """
     _write_pointer("r-mine", session=SESSION, phase="working")
     env = _child_env(home, tmp_path)
     env[_module().SETTLE_ENV] = "1"
     process = _start_real_follower(env)
     try:
-        # The follower needs its imports before its first settle sample, so the
-        # work stays live until the child is provably up and reading.
-        time.sleep(3.0)
+        # The follower needs its imports before its first settle sample, and a
+        # drain that lands before that sample is a population the pane never saw
+        # hold work, which it must not settle on. So the work stays live until
+        # the child is provably up and reading -- its own registration lease,
+        # not a fixed sleep that races its startup on a loaded node.
+        _wait_for(
+            lambda: _follower_registered(home, SESSION),
+            timeout=START_BOUND,
+            description="the child to register its follower lease",
+        )
         _write_pointer("r-mine", session=SESSION, phase="complete")
         _wait_for(
             lambda: process.poll() is not None,
@@ -626,8 +680,11 @@ def test_the_real_follower_settles_when_the_host_advertises_it(
             description="the follower to settle and leave",
         )
         assert process.poll() == _module().SETTLED_EXIT_CODE, process.poll()
+        # The fleet drained with nothing outstanding, so no idle line is
+        # printed; the child still leaves with the settle status its host keys
+        # on, which is what retires the pair.
         text = process.stdout.read() if process.stdout else ""
-        assert text.count(SETTLE_LINE) == 1, text
+        assert SETTLE_LINE not in text, text
     finally:
         _end(process)
 
