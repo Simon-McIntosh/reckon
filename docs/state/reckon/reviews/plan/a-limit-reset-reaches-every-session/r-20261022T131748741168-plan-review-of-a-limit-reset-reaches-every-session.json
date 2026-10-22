@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T13:39:32.232Z",
+  "dispatched_at": "2026-10-22T13:20:29Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-limit-reset-reaches-every-session.html:145",
+      "id": "reasoning-1",
+      "reason": "the plan names a cause its own subject matter falsifies; the row in `~/.config/reckon/crew/watch/reckon-18dc8a86709b.events` with `lift_id \"reset-claude-sub-20261022T123236Z\"` carries `\"detail\": \"usage limit reset (claude-sub, five_hour) at 12:32 UTC, announced by mcintos: \u2026; sessions stopped at the usage limit can continue their work\"`, and `Painter.render` (`reckon/crew/ticker.py:2282`) reads no `detail` field, so the clause reached the stream and was dropped at render. The deliverable's own first step (\"confirm, from the follower's output path, where the detail clause is dropped\") will contradict the Why as written, sending the node to hunt a producer-side loss that does not exist before it finds the renderer.",
+      "text": "\u00a79 states \"The clause that `_reset_detail` \u2026 composes \u2026 never reached the stream\", but the producer's own stream row carries it, so the loss is at the pane's renderer, not in the stream",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-limit-reset-reaches-every-session.html:145",
+      "id": "reasoning-2",
+      "reason": "\u00a72's done-when (line 98) requires \"a reset row's stage cell reads `limit`\" and \u00a72's deliverable (line 86) fixes that word, while \u00a79's done-when requires the printed line to contain the literal `limits reset` in the stage position and its example row shows no `limit` token at all; the two measures cannot both be read as the current target, so the \u00a79 node must guess whether to rename the stage word (which breaks \u00a72's landed test and leaves a `done` section asserting a rendering that no longer exists) or to correct \u00a79's row. The fix is one line in \u00a79 \u2014 say which cell changes, and update \u00a72's bullet to match.",
+      "text": "\u00a79's stated row `HH:MM  limits reset  claude-orchestrators (five_hour): \u2026` puts `limits reset` where \u00a72 (declared `done`) puts the reset row's stage word `limit`, and \u00a79 never says it supersedes that",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-limit-reset-reaches-every-session.html:24",
+      "id": "wiring-1",
+      "reason": "\u00a76 (line 131, `implementable`) instructs the coordinator to write a dotfiles paragraph reading \"A reckon monitor row reading `usage limit reset` \u2026\" and announcing with `reckon crew budget --reset --group claude-sub --used \u2026`, but \u00a79 records the lead's ruling that a reset must be announced under `claude-orchestrators` and the row now reads `limits reset`; the live dotfiles paragraph \u00a79 cites (`fabae49`, `agents/AGENTS.md:1376`) already carries `--group claude-orchestrators`, so a \u00a76 node would write text that undoes the lead's correction and contradicts the section that follows it. \u00a76 needs either an edge to `s9` with its paragraph rewritten, or a statement that \u00a79 supersedes it.",
+      "text": "`plan-section-depends-on` gives `s6` no edge to `s9`, and \u00a76's quoted paragraph still names the group and row word \u00a79 supersedes",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ad5764542b98efe14a728f822c264c3e2369a64c01f066450645f57531f92ece",
+  "plan_slug": "a-limit-reset-reaches-every-session",
+  "plan_version": 41,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T131748741168-plan-review-of-a-limit-reset-reaches-every-session",
+  "reviewed_blob_sha": "9dfd732f091b1ed6db907eb5f41e2b293f44b284",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_reset_detail` exists (`reckon/crew/lift_watch.py:355`), the commit \u00a79 cites is real (`~/Code/dotfiles` `fabae49`, \"announce a usage-limit reset once, for orchestrators only\"), and the new edge target resolves (`the-monitor-shows-the-work-it-watches.html:667`, `id=\"s83\"`, \"The Monitor stream carries only lines that ask the coordinator to act\").",
+    "done_when": "pass \u2014 \u00a79's done-when names its measure (a printed line containing `limits reset`, `continue`, `worker lanes keep their limits`, and no `new \u2192 working`) and states a negative control (\"restores the transition rendering, and the first case then prints `new \u2192 working` without the instruction\").",
+    "evidence_paths": "pass \u2014 \u00a79's gate logs sit under the run directory (`~/.config/reckon/crew/runs/...`), not a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches a symbol or comment; \u00a79's words (`limit`, `limits reset`) are UI vocabulary the renderer already owns, not tracker references.",
+    "reasoning": "a finding \u2014 \u00a79's stated cause locates the lost clause in the wrong layer, and its stated row cannot be reconciled with \u00a72's declared stage cell.",
+    "single_goal": "pass \u2014 \u00a79 carries one deliverable (the reset row reads as an instruction) with coherent write paths; its regression checks on a lift row and a repeated sweep are measures, not a second goal.",
+    "wiring": "a finding \u2014 `s9`'s new edge resolves, but `s6` still declares no edge to `s9` and its quoted dotfiles paragraph still names the superseded group and row word."
+  },
+  "section_digests": {
+    "_document": "c522e5b13c4b851f322252da39fc5748ef0d53318036908f367886b5d750f38c",
+    "s1": "94def7b6fb41cc276c0577018bcc106bab7eaaa9d39a5df760e2d77ee1a7595d",
+    "s2": "844aada0f6b4aae72bc45795e96c553e16bf3ff92f9e2c27666fc952d0187a40",
+    "s3": "a481ce43e07f6167db0a1f56a9c3a147b001b2973383c03f33151bc407e5cb4a",
+    "s4": "136bf6f43df2d99c1f758324927ab05eabd9aec938251a8d408a96c67841f596",
+    "s5": "7c0dc3556a9d6a54cf58532f9b8aa1054d9bd3725c15c82e0aa9da736a5e9309",
+    "s6": "c8ff3c099e9d217a97c0f6232689f76a21d7c9cc4b1a7d5ced6db85300180b0a",
+    "s7": "b35e0e8820af110a5858364a331330a3a6c886f10fe5701e5471afe28563c83f",
+    "s8": "300e4261969417e426a548a6e07a93240c47b0c26af35e8c15a54b63c7930b86",
+    "s9": "cbc4efd2c48b4679d7162086ffecf7cabaa163f86c4c4623f9ae7991f1f0e0da"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T13:52:41.474925+00:00"
+}
