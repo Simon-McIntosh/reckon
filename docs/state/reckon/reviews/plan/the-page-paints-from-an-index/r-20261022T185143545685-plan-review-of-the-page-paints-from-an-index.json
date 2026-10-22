@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T19:18:09.806Z",
+  "dispatched_at": "2026-10-22T19:04:27Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-page-paints-from-an-index.html:197",
+      "id": "done_when-1",
+      "reason": "a worker implementing the clause literally (probe the socket, or read \"accept\" as connect) reports a control that cannot fail, and the repair is the clause's observable: require an answered request within the bound, as \u00a72's own gate does, and name the mutation by its measured effect.",
+      "text": "\u00a77's port clause is measured as \"the port accepts a connection within 5 s of the restart\" and its control is \"\u00a72's control mutation is applied: `_FleetChangeWatch.start` arms the watch before the port binds, with a 5 s delay per tree, and the port gate fails\", but the landed `main` constructs `ThreadingHTTPServer` \u2014 which binds and calls `listen` before anything is served \u2014 and only then calls `start_fleet_change_watch` (`reckon/serve.py:4134`, `4140`), so a mutated `start` that arms every tree on the calling thread delays `serve_forever` and not acceptance: the socket is already listening, a TCP connect succeeds immediately, and the clause's own control leaves its gate passing. The sentence is also unsupported on its own terms \u2014 \u00a72's evidence describes that mutation as arming \"every tree on the calling thread before the reader thread starts\" and, in \u00a72's done-when, as \"the watch built before `serve_forever`\" (line 76), neither of which arms the watch before the port binds \u2014 and \u00a72's gate escapes the problem only because it requires mounts.json to *answer* 200 within the bound (`tests/test_server_listens_before_it_watches.py:220-235`), which is what the walk-before-serve defect of \u00a71 actually delays.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-page-paints-from-an-index.html:198",
+      "id": "done_when-2",
+      "reason": "the worker would run an arm that reads red whether or not the removal happened and would have no baseline reading to contrast it with, so the control proves nothing about the persisted index; one sentence adding the temporary server's warm read and its unmutated pass fixes it.",
+      "text": "the added paragraph states \"Before each restart pass, the persisted metadata index exists for each of the four projects\" for every pass, while \u00a77's `/_index` clause makes its control a restart \"against a temporary `reckon serve` on another port\" that \"runs under its own configuration home, a scratch directory holding a copy of the mounts file\" with the persisted metadata index removed before that restart: on a brand-new scratch home no index for the four projects exists until the temporary server has served a `/_index` read, and \u00a77 never states that the temporary server is warmed, nor records its unmutated warm pass \u2014 so either the two clauses contradict each other (index present before each pass, removed before this one) or, read as the author intends, the scratch server's only described arm is the mutant one, and its arm is indistinguishable from a fresh home that never had an index to remove, with no passing counterpart for the arm to be a control against.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "001f9d01cfdb3d8d3eab4fba424c9ab6d1ea09de67fc85b5b35f7271d6bf0516",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 75,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T185143545685-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "9f1852c21eead0e5994079f7af4fbbe143bd5ef5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `docs/evidence/archive/the-page-paints-from-an-index-landed.html` exists, `reckon service restart` resolves in `reckon/project_maintenance_commands.py:143`, `code.started_at` resolves in `reckon/served_code.py:657`, and the four measured projects (reckon, nova, imas-codex, imas-efit) are all live mounts.",
+    "done_when": "a finding \u2014 \u00a77's port clause is measured as \"the port accepts a connection within 5 s of the restart\" while the control that must falsify it only delays answers, not acceptance, so the clause's control cannot make its gate fail.",
+    "evidence_paths": "pass \u2014 the report lands under `docs/evidence/archive/the-page-paints-from-an-index-landed.html` at the `s7` anchor and the raw logs under a run directory, both durable, replacing the earlier session-reports path.",
+    "naming": "pass \u2014 the added record element carries no plan label, no ticket or version tag, and \u00a77's prose names mechanisms rather than trackers.",
+    "reasoning": "pass \u2014 the section's root cause is the \u00a71 walk-before-serve measurement, its mechanism runs on the real code path (the served process itself, with the coordinator as the named caller and the fenced worker's inability to reach it stated), and each mechanism produces its done-when except the port clause, reported under done_when above rather than counted twice.",
+    "single_goal": "pass \u2014 \u00a77 carries one deliverable, a cold-and-warm timing report for four projects, measured in two halves (the coordinator's live passes and a worker's controls) and recorded under one anchor.",
+    "wiring": "pass \u2014 \u00a77's `plan-section-depends-on` edge lists `s2`\u2013`s6`, matching \u00a77's prose (\"Once \u00a72 to \u00a76 are merged\"), and the \u00a72 control mutation and \u00a73 persisted index it leans on both sit inside that set; `data-status=\"implementable\"` matches the section declaration."
+  },
+  "section_digests": {
+    "_document": "4cef2d0dcb8155ca1e683b8ec01695c1fba4d5c88e28b6f05a0f380d0e2424c1",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "17515cc4d212280b53e77d7279aa81e37c7d58f877ada031f77705b31e53d437",
+    "s11": "bb32b98b9a0a5070d5ec6b5387862bef5af3ba37b5956ac7c9d734723c2ac9fa",
+    "s12": "071a3e9ff829e6cc2047658d80b57b5d30603318f0fa4a31084d94b5ed308185",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "4c5648629456d7ab1a906fe259ae85da9182f8339768f71392a327a5f8cb801a",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T19:22:20.447690+00:00"
+}
