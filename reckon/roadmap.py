@@ -12,7 +12,6 @@ import re
 from collections import defaultdict
 from collections.abc import Callable, Iterable, Mapping
 from datetime import UTC, datetime, timedelta
-from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
@@ -63,6 +62,12 @@ from reckon.lifecycle import (
     effective_status,
     unpassed_gate_blockers,
 )
+from reckon.live_run_classification import (
+    BLOCKED_RUN_CLASSIFICATION,
+    recorded_live_run_classifications,
+    run_classification,
+    run_classification_record,
+)
 from reckon.mcp_views import (
     compose_review,
     load_composed_review,
@@ -81,11 +86,20 @@ from reckon.resources import (
     resolve_resource,
     resource_scan_scope,
 )
+from reckon.roadmap_ranking import (
+    _EFFORT_UNIT,
+    _lift_section_edges,
+    _section_effort_hours,
+    leading_signal,
+    plan_ranking_key,
+    rank_open_paths,
+    section_is_stuck,
+    section_ranking_key,
+    section_row_floor,
+)
 from reckon.schedule import derive_schedule
 from reckon.sprint_liveness import sprint_liveness
 
-_EFFORT_UNIT = "worker-hours"
-_ROI_ORDER = {"high": 0, "mid": 1, "med": 1, "low": 2}
 # A plan is authorised to run as soon as it exists and describes live work.
 # ``draft`` belongs here: drafting is how a plan gets written, not a permission
 # tier, and withholding readiness until someone re-labels it produces a queue of
@@ -1329,117 +1343,6 @@ def _section_scoped_edges(
             )
             rows.append(row)
     return rows, findings
-
-
-def _path_plan_slugs(path: Iterable[str]) -> list[str]:
-    """The plan slugs one path passes through, in path order and once each.
-
-    A path node is a plan slug or a section node; several of a plan's sections
-    on one path name that plan once, because the field answers "which plans does
-    this path cross", not "how many of its sections does it touch".
-    """
-
-    slugs: list[str] = []
-    seen: set[str] = set()
-    for node in path:
-        slug = node.partition("#")[0]
-        if slug not in seen:
-            seen.add(slug)
-            slugs.append(slug)
-    return slugs
-
-
-def _section_node(plan_slug: str, section: str) -> str:
-    """The graph identity of one section: its plan, then its own id.
-
-    The ``<plan>#<section>`` spelling is the ref grammar the declaration already
-    uses, so a node in the path prints as the anchor a reader may click. No plan
-    slug carries a ``#``, so the two identities never collide.
-    """
-
-    return f"{plan_slug}#{section}"
-
-
-def _section_effort_hours(authored: Mapping[str, Any], section: str) -> float:
-    """The authored effort of one section, or zero when it records none.
-
-    A section's hours live on its own authored record rather than on the plan,
-    because the same plan's sections differ in size and the path is priced by
-    the section the work actually sits in.
-    """
-
-    for record in authored.get("sections") or []:
-        if not isinstance(record, Mapping):
-            continue
-        if str(record.get("id") or "") != section:
-            continue
-        try:
-            return max(0.0, float(record.get("effort_hours") or 0.0))
-        except (TypeError, ValueError):
-            return 0.0
-    return 0.0
-
-
-def _lift_section_edges(
-    rows: Iterable[Mapping[str, Any]],
-    waiting_slug: str,
-    *,
-    plans: Mapping[str, dict[str, Any]],
-    local_graph: dict[str, list[str]],
-    dependents: dict[str, set[str]],
-    section_effort: dict[str, float],
-    edge_meta: dict[tuple[str, str], dict[str, str]],
-    authored: Callable[[str], Mapping[str, Any]],
-    waiting_authored: Mapping[str, Any],
-) -> None:
-    """Give the resolved section waits node identity in the roadmap's graph.
-
-    ``_section_scoped_edges`` resolves these edges; this only names their ends.
-    A resolved, unsatisfied wait becomes an edge between two section nodes, so
-    the critical path and the unlock set run through the sections that carry the
-    work rather than stopping at the plans around them.
-
-    The wait is recorded at plan granularity in ``dependents`` alone. The plan
-    keeps no graph edge of its own, so it stays in the ready set and out of the
-    cycle walk — a plan-level veto is the very behaviour the section-scoped
-    declaration exists to replace.
-    """
-
-    for row in rows:
-        target_section = str(row.get("stage") or "")
-        waiting_section = str(row.get("source_section") or "")
-        target_slug = str(row.get("slug") or "")
-        if (
-            row.get("scope") != "local"
-            or not row.get("found")
-            or row.get("satisfied")
-            or not target_section
-            or not waiting_section
-            or target_slug not in plans
-            or waiting_slug not in plans
-        ):
-            continue
-        target_node = _section_node(target_slug, target_section)
-        waiting_node = _section_node(waiting_slug, waiting_section)
-        section_effort.setdefault(
-            target_node, _section_effort_hours(authored(target_slug), target_section)
-        )
-        section_effort.setdefault(
-            waiting_node, _section_effort_hours(waiting_authored, waiting_section)
-        )
-        local_graph[waiting_node].append(target_node)
-        dependents[target_node].add(waiting_node)
-        if target_slug != waiting_slug:
-            # One plan's own section may wait on another of its sections. That
-            # edge sequences work inside the plan, and it must not report the
-            # plan as an unlock of itself, where the field asks which other
-            # plan's work this one releases.
-            dependents[target_slug].add(waiting_slug)
-        edge_meta[(waiting_node, target_node)] = {
-            "ref": str(row.get("ref") or target_node),
-            "section": target_section,
-            "gate": "",
-        }
 
 
 def _finding(
@@ -2768,6 +2671,45 @@ def _plans_released_by_cleared_blockers(
     return released
 
 
+def _blocked_section_run_seconds(
+    project: str, pointers: Iterable[Mapping[str, Any]]
+) -> dict[tuple[str, str], float]:
+    """The age of each section's oldest run whose manifest reports it blocked.
+
+    A blocked run's age bounds how long the section has been in that state, and
+    the section it was dispatched on is what a ranked row needs. A pointer
+    naming no section contributes nothing, and where a section carries several
+    blocked runs the oldest is the one that bounds it.
+    """
+
+    from reckon.crew.recovery import classify_pointer
+
+    recorded = recorded_live_run_classifications(project)
+    now = datetime.now(UTC)
+    seconds: dict[tuple[str, str], float] = {}
+    for pointer in pointers:
+        if not isinstance(pointer, Mapping) or pointer.get("project") != project:
+            continue
+        node = pointer.get("node")
+        node = node if isinstance(node, Mapping) else {}
+        plan_ref = str(node.get("plan") or "")
+        section_ref = str(node.get("section") or "")
+        if not plan_ref or not section_ref:
+            continue
+        classified = run_classification_record(
+            pointer, classify=classify_pointer, recorded=recorded
+        )
+        if run_classification(classified) != BLOCKED_RUN_CLASSIFICATION:
+            continue
+        started = parse_utc(pointer.get("created_at"))
+        if started is None:
+            continue
+        age = max(0.0, (now - started).total_seconds())
+        key = (plan_ref, section_ref)
+        seconds[key] = max(seconds.get(key, 0.0), age)
+    return seconds
+
+
 def build_roadmap(
     project: str,
     inventory: list[dict[str, Any]],
@@ -2879,6 +2821,12 @@ def _build_roadmap(
     # The section an edge waits on, when the dependency names one. A plan-level
     # edge carries no entry, so a reader sees the plan name as before.
     edge_meta: dict[tuple[str, str], dict[str, str]] = {}
+    # The ready sections each plan holds, enumerated once as the plan row is
+    # derived, and the age of a run on a section that reports itself blocked.
+    # Both feed the ranked section rows below.
+    ready_sections_by_plan: dict[str, list[str]] = {}
+    authored_by_plan: dict[str, Mapping[str, Any]] = {}
+    blocked_run_seconds = _blocked_section_run_seconds(project, pointers)
     north_stars = [
         dict(item)
         for item in (project_manifest or {}).get("north_stars", [])
@@ -3547,6 +3495,11 @@ def _build_roadmap(
                 f"held behind {schedule_boundary}; the schedule window starts at "
                 f"{open_sprints[0]} and spans {schedule_horizon} sprints holding open work"
             )
+        # A plan's implementable sections are enumerated once per read; the row
+        # both reports them and counts their attempts with.
+        plan_implementable = implementable_sections(
+            authored.get("section_declarations")
+        )
         row = {
             "slug": slug,
             "title": plan.get("title") or slug,
@@ -3592,16 +3545,12 @@ def _build_roadmap(
             "unlocks": sorted(dependents.get(slug, set())),
             "ready": is_ready,
             "readiness": readiness,
-            "implementable_sections": implementable_sections(
-                authored.get("section_declarations")
-            ),
+            "implementable_sections": plan_implementable,
             "section_attempts": {
                 section: attempts_by_plan.get(slug, {})
                 .get(section_record_id(section), {})
                 .get("attempts", 0)
-                for section in implementable_sections(
-                    authored.get("section_declarations")
-                )
+                for section in plan_implementable
             },
             "dependency_ready": is_ready,
             "dependency_readiness": readiness,
@@ -3665,6 +3614,27 @@ def _build_roadmap(
                 section for section in sections if section in section_blockers
             ]
             row["section_depends_on"] = mapped_edges
+        # The section rows rank the plan's own ready work, which the row already
+        # states twice: the sections it declares implementable, less the ones a
+        # section-scoped hold names. The hold set is the row's own, so a hold
+        # the row does not report cannot hold a section here.
+        authored_by_plan[slug] = authored
+        plan_ready_sections = [
+            section
+            for section in row["implementable_sections"]
+            if section not in set(row.get("blocked_sections") or [])
+        ]
+        row["stuck"] = any(
+            section_is_stuck(
+                attempts_by_plan.get(slug, {})
+                .get(section_record_id(section), {})
+                .get("attempts", 0),
+                blocked_run_seconds.get((slug, section))
+                or blocked_run_seconds.get((slug, section_record_id(section))),
+            )
+            for section in plan_ready_sections
+        )
+        ready_sections_by_plan[slug] = plan_ready_sections
         if slug in live_runs:
             row["in_flight"] = live_runs[slug]
         if slug in interrupted_runs:
@@ -3699,151 +3669,34 @@ def _build_roadmap(
         open_decisions_report.extend(open_decisions)
         deferred_decisions_report.extend(deferred_decisions)
 
-    def node_hours(node: str) -> float:
-        """Elapsed hours one path node costs: a plan's, or a section's own."""
-
-        if node in plans:
-            return _remaining_wall_hours(plans[node])
-        return section_effort.get(node, 0.0)
-
-    def node_effort(node: str) -> float:
-        if node in plans:
-            return _remaining_effort_hours(plans[node])
-        return section_effort.get(node, 0.0)
-
-    def longest_path(node: str, visiting: frozenset[str] = frozenset()) -> list[str]:
-        if node in visiting or node in cycle_members:
-            return []
-        candidates = [
-            longest_path(dependency, visiting | {node})
-            for dependency in local_graph.get(node, [])
-            if (dependency in plans or dependency in section_effort)
-            and dependency not in closable_slugs
-        ]
-        best = max(
-            candidates,
-            key=lambda path: sum(node_hours(item) for item in path),
-            default=[],
-        )
-        return [*best, node]
-
-    def node_is_live(node: str) -> bool:
-        """Whether a node names work a path may still run through."""
-
-        plan_slug = node.partition("#")[0]
-        plan = plans.get(plan_slug)
-        return plan is not None and _status(plan) not in TERMINAL_STATUSES
-
-    # A sectioned plan's work is its sections. Letting the plan compete as one
-    # node beside them would price that work twice and hide the sections the
-    # path actually runs through.
-    sectioned_plans = {node.partition("#")[0] for node in section_effort}
-
-    path_candidates: dict[tuple[str, ...], float] = {}
-    for slug, plan in plans.items():
-        if _status(plan) in TERMINAL_STATUSES:
-            continue
-        if slug in closable_slugs or slug in sectioned_plans:
-            continue
-        path = longest_path(slug)
-        if path:
-            path_candidates[tuple(path)] = round(
-                sum(node_hours(item) for item in path), 3
-            )
-    for node in sorted(section_effort):
-        if not node_is_live(node) or node.partition("#")[0] in closable_slugs:
-            continue
-        path = longest_path(node)
-        if path:
-            path_candidates[tuple(path)] = round(
-                sum(node_hours(item) for item in path), 3
-            )
-    sorted_paths = sorted(path_candidates.items(), key=lambda item: (-item[1], item[0]))
-    open_paths = []
-    for path, length_hours in sorted_paths[: max(1, max_paths)]:
-        path_plans = _path_plan_slugs(path)
-        path_sections = [node for node in path if "#" in node]
-        uncalibrated = _uncalibrated_plans(plans, path_plans)
-        entry: dict[str, Any] = {
-            "plans": path_plans,
-            # The sections the path runs through, beside the plans it names. The
-            # key is always present, empty when the path crosses no section, so a
-            # reader relies on its shape rather than probing for it.
-            "sections": path_sections,
-            # Elapsed time to walk the path, each plan fanning out as far
-            # as it supports; worker-hours is the labour the same path
-            # costs and is reported beside it, never in place of it.
-            "length_hours": length_hours,
-            "length_unit": "elapsed-hours",
-            "worker_hours": round(sum(node_effort(item) for item in path), 3),
-            "effort_unit": _EFFORT_UNIT,
-            "uncalibrated_plans": uncalibrated,
-            "uncalibrated_count": len(uncalibrated),
-            # Each step of the path beside its edge: an edge that waits on
-            # one section of its target names that section, so a plan held
-            # by a single section shows the section rather than the plan.
-            "edges": [
-                {
-                    "from": dependent.partition("#")[0],
-                    "to": dependency.partition("#")[0],
-                    "ref": meta.get("ref", dependency.partition("#")[0]),
-                    "section": meta.get("section", "") or dependency.partition("#")[2],
-                    "gate": meta.get("gate", ""),
-                }
-                for dependency, dependent in pairwise(path)
-                for meta in [
-                    edge_meta.get((dependent, dependency))
-                    or edge_meta.get(
-                        (
-                            dependent.partition("#")[0],
-                            dependency.partition("#")[0],
-                        ),
-                        {},
-                    )
-                ]
-            ],
-        }
-        open_paths.append(entry)
-    # The critical path carries the shape every reader has always seen plus the
-    # sections the path runs through, so a summary that never leaves the plan
-    # level reads exactly as it did.
-    critical = (
-        {key: value for key, value in open_paths[0].items() if key != "edges"}
-        if open_paths
-        else {
-            "plans": [],
-            "sections": [],
-            "length_hours": 0.0,
-            "length_unit": "elapsed-hours",
-            "worker_hours": 0.0,
-            "effort_unit": _EFFORT_UNIT,
-            "uncalibrated_plans": [],
-            "uncalibrated_count": 0,
-        }
+    open_paths, critical, critical_members = rank_open_paths(
+        plans,
+        section_effort=section_effort,
+        local_graph=local_graph,
+        edge_meta=edge_meta,
+        cycle_members=cycle_members,
+        closable_slugs=closable_slugs,
+        max_paths=max_paths,
+        remaining_wall_hours=_remaining_wall_hours,
+        remaining_effort_hours=_remaining_effort_hours,
+        uncalibrated_plans=_uncalibrated_plans,
+        terminal_statuses=TERMINAL_STATUSES,
+        status_of=_status,
     )
-    critical_members = set(critical["plans"])
+    # The sections the critical path runs through, so a ranked section row
+    # reports the same membership a plan row does.
+    critical_sections = set(critical.get("sections") or [])
 
-    def priority(row: dict[str, Any]) -> tuple[Any, ...]:
-        sprint_position = sprint_order.get(str(row.get("sprint") or ""), 10**6)
-        return (
-            # Soft-sequenced work yields the front of a tie: a plan that has
-            # deliberately deferred to something unshipped should not be the
-            # first thing a reader starts, though it stays ready and ranked
-            # ahead of nothing — the edge never holds it.
-            1 if row.get("after_hold") else 0,
-            0 if row["slug"] in critical_members else 1,
-            sprint_position,
-            _ROI_ORDER.get(str(row.get("roi") or "mid").lower(), 1),
-            -len(row.get("unlocks") or []),
-            row["remaining_effort_hours"],
-            row["slug"],
+    def plan_key(row: dict[str, Any]) -> tuple[Any, ...]:
+        return plan_ranking_key(
+            row, critical_members=critical_members, sprint_order=sprint_order
         )
 
-    ready.sort(key=priority)
-    pending.sort(key=lambda row: (not row["ready"], *priority(row)))
-    blocked.sort(key=priority)
-    deferred.sort(key=priority)
-    schedule_deferred.sort(key=priority)
+    ready.sort(key=plan_key)
+    pending.sort(key=lambda row: (not row["ready"], *plan_key(row)))
+    blocked.sort(key=plan_key)
+    deferred.sort(key=plan_key)
+    schedule_deferred.sort(key=plan_key)
     unauthorised.sort(
         key=lambda row: (
             row["age_days"] is None,
@@ -3851,31 +3704,100 @@ def _build_roadmap(
             row["slug"],
         )
     )
-    immediate = [
-        {
-            "order": position,
-            "slug": row["slug"],
-            "sprint": row["sprint"],
-            "progress_pct": row["progress_pct"],
-            "section_attempts": row["section_attempts"],
-            "unlocks": row["unlocks"],
-            "dependency_ready": row["dependency_ready"],
-            "dependency_readiness": row["dependency_readiness"],
-            "schedule_ready": row["schedule_ready"],
-            "schedule_readiness": row["schedule_readiness"],
-            "schedule_deferred_reason": row["schedule_deferred_reason"],
-            "schedule_behind_sprint": row["schedule_behind_sprint"],
-            "endpoint_closures": endpoint_memberships.get(row["slug"], []),
-            "reason": (
-                f"ready — sequenced after {', '.join(row['came_after'])}"
-                if row.get("came_after")
-                else "critical path"
-                if row["slug"] in critical_members
-                else "ready with all hard prerequisites satisfied"
-            ),
-        }
-        for position, row in enumerate(ready, start=1)
+    plan_rows: list[tuple[tuple[Any, ...], dict[str, Any]]] = [
+        (
+            plan_key(row),
+            {
+                "slug": row["slug"],
+                "sprint": row["sprint"],
+                "progress_pct": row["progress_pct"],
+                "section_attempts": row["section_attempts"],
+                "unlocks": row["unlocks"],
+                "dependency_ready": row["dependency_ready"],
+                "dependency_readiness": row["dependency_readiness"],
+                "schedule_ready": row["schedule_ready"],
+                "schedule_readiness": row["schedule_readiness"],
+                "schedule_deferred_reason": row["schedule_deferred_reason"],
+                "schedule_behind_sprint": row["schedule_behind_sprint"],
+                "endpoint_closures": endpoint_memberships.get(row["slug"], []),
+                "reason": (
+                    f"ready \u2014 sequenced after {', '.join(row['came_after'])}"
+                    if row.get("came_after")
+                    else "critical path"
+                    if row["slug"] in critical_members
+                    else "stuck"
+                    if row["stuck"]
+                    else "ready with all hard prerequisites satisfied"
+                ),
+            },
+        )
+        for row in ready
     ]
+    # One row per ready section, ranked by the same extended key as the plan
+    # rows. The plan stays ranked too: a section-scoped wait holds its section,
+    # not the plan, so both are ready and both are reported. The ref names the
+    # section as a clickable anchor and names its plan beside it.
+    section_rows: list[dict[str, Any]] = []
+    for row in ready:
+        plan_slug = str(row["slug"])
+        authored = authored_by_plan.get(plan_slug, {})
+        for section in ready_sections_by_plan.get(plan_slug, []):
+            node = f"{plan_slug}#{section}"
+            attempts = (
+                attempts_by_plan.get(plan_slug, {})
+                .get(section_record_id(section), {})
+                .get("attempts", 0)
+            )
+            stuck = section_is_stuck(
+                attempts,
+                blocked_run_seconds.get((plan_slug, section))
+                or blocked_run_seconds.get((plan_slug, section_record_id(section))),
+            )
+            section_rows.append(
+                {
+                    "ref": node,
+                    "slug": node,
+                    "plan": plan_slug,
+                    "sprint": row["sprint"],
+                    "roi": row["roi"],
+                    "effort": row["effort"],
+                    "remaining_effort_hours": _section_effort_hours(authored, section),
+                    "unlocks": sorted(dependents.get(node, set())),
+                    "stuck": stuck,
+                    "after_hold": bool(row.get("after_hold")),
+                }
+            )
+    # One ordering over both populations: a plan row and a section row are ranked
+    # by the same key and read in that order, so the row a reader should start
+    # with leads whichever kind of row it is. A term one population cannot carry
+    # is neutral for it, which is what lets one key serve both.
+    ranked: list[tuple[tuple[Any, ...], dict[str, Any]]] = list(plan_rows)
+    ranked.extend(
+        (
+            section_ranking_key(
+                row, critical_sections=critical_sections, sprint_order=sprint_order
+            ),
+            row,
+        )
+        for row in section_rows
+    )
+    ranked.sort(key=lambda entry: entry[0])
+    # A section row reports the term of the shared key on which it leads the
+    # section row below it, so its reason names the signal that did the placing
+    # rather than the one left over once the stronger signals are absent. Plan
+    # rows keep the reason the readiness walk gives them.
+    section_entries = [entry for entry in ranked if "ref" in entry[1]]
+    for index, (key, row) in enumerate(section_entries):
+        rival = (
+            section_entries[index + 1][0]
+            if index + 1 < len(section_entries)
+            else section_row_floor(key)
+        )
+        row["reason"] = leading_signal(key, rival)
+    immediate: list[dict[str, Any]] = []
+    for position, (_key, row) in enumerate(ranked, start=1):
+        row["order"] = position
+        immediate.append(row)
 
     downstream = _downstream_sprints(all_plans, membership)
     sprint_rows: list[dict[str, Any]] = []

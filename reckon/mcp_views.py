@@ -39,6 +39,13 @@ from reckon.lifecycle import (
     is_section_scoped,
     unresolved_dependencies,
 )
+from reckon.live_run_classification import (
+    recorded_live_run_classifications as _recorded_live_run_classifications,
+)
+from reckon.live_run_classification import (
+    run_classification,
+    run_classification_record,
+)
 from reckon.project_state import _natural_identifier_key
 
 VIEW_NAMES = frozenset(
@@ -1845,18 +1852,6 @@ def with_section_attempts(
     return enriched
 
 
-def _recorded_live_run_classifications(project: str) -> dict[str, dict[str, Any]]:
-    """Return the latest watcher event for every run recorded in its stream.
-
-    The stream is read through the shared watch-stream reader, so this and the
-    sprint liveness derivation share one parse of the stream per read.
-    """
-
-    from reckon.crew import runs
-
-    return runs.watch_stream_latest_events(project)
-
-
 def partition_live_runs(
     project: str,
     pointers: list[dict[str, Any]] | None = None,
@@ -1891,14 +1886,10 @@ def partition_live_runs(
         plan = _run_target_plan(pointer)
         if not plan:
             continue
-        event = recorded.get(str(pointer.get("run_id") or ""))
-        classified = event if event is not None else classify_pointer(pointer)
-        classification = str(
-            classified.get("recovery_classification")
-            or classified.get("classification")
-            or classified.get("to_state")
-            or ""
+        classified = run_classification_record(
+            pointer, classify=classify_pointer, recorded=recorded
         )
+        classification = run_classification(classified)
         if classification == INTERRUPTED_RUN_PHASE:
             row = _run_row(pointer)
             row["reason"] = str(classified.get("detail") or "")
