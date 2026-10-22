@@ -1,0 +1,303 @@
+<section id="a-stacked-run-may-write-its-holders-paths-landing">
+  <h2>A run built on a stopped holder's chain tip is admitted onto its paths</h2>
+
+  <p><strong>What changed.</strong> A stopped run that committed past its own
+  dispatch base still fences its declared paths, and that refusal is right for a
+  dispatch cut from the integration branch: a second writer there would bury
+  commits that survive only while the holder's worktree does. It is wrong for a
+  dispatch deliberately cut from the holder's own chain tip, whose worktree
+  already carries every one of those commits — refusing that one strands the
+  repair the holder cannot make for itself.</p>
+
+  <p>The exception is relational: it depends on the base of the dispatch under
+  admission, which the claim walk cannot see because it judges one pointer at a
+  time. So <code>_raise_repository_scope_conflict</code> in
+  <code>reckon/crew/dispatch_claims.py</code> is given the two facts it lacked.
+  It now takes <code>base_revision</code>, and passes over a stopped holder whose
+  claim overlaps the dispatch when the holder's chain tip is that revision or an
+  ancestor of it — reading the holder's head from its worktree with
+  <code>_head_revision</code>, because the pointer records only the base the
+  holder was dispatched from. A holder with no commits past its base still
+  refuses, so the claim keeps its own rule for everything that is not a stacked
+  dispatch.</p>
+
+  <p>Both claim build sites carry the same facts, so the exception applies
+  whichever route reaches the check: the dispatch sweep in
+  <code>dispatch_claims.py</code>, and the registry facade in
+  <code>reckon/crew/runs.py</code> that rebuilds claims from
+  <code>_LiveScopeClaim</code>. The admitted stacking is written on both pointers
+  by <code>record_stacked_dispatch</code> — the holder gains the descendant in
+  its <code>stacked_runs</code>, the descendant records the run it was stacked on
+  — and the registry row the holder's claim already produced lists the stacked
+  runs while still reading <code>binding</code>. Promoting or discarding the
+  holder while a descendant is live is not refused: the promotion and discard
+  results read the stacking and name each descendant still live. No refusal
+  family is added.</p>
+
+  <p><strong>Handing the check what it needs.</strong> The base exists only inside
+  <code>dispatch()</code>, so <code>reckon/crew/dispatch.py</code> resolves the
+  revision the dispatch builds on once, before the first claim check, and passes
+  it to both <code>_raise_repository_scope_conflict</code> call sites together
+  with the sink the admitted holders land in. Once both checks have passed the
+  stacking is written on both pointers, before the pointer the descendant is
+  published under. That is the whole of the dispatch-side change: one value
+  threaded, plus the write that records an admission the check has granted.</p>
+
+  <h3>Measured</h3>
+
+  <p>Gate: <code>tests/test_a_stacked_run_may_write_its_holders_paths.py</code>,
+  run in the foreground on the fleet allocation with the repository venv. Each
+  log's first line names its revision, its tree and the literal command, and its
+  last line reads <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>before the base is threaded</td>
+        <td><code>2539356</code></td>
+        <td><strong>1 failed</strong>, 4 passed, exit 1</td></tr>
+      <tr><td>head</td>
+        <td><code>33be2a080</code></td>
+        <td><strong>5 passed</strong>, exit 0</td></tr>
+      <tr><td>declared mutation (both sites pass no base)</td>
+        <td><code>33be2a</code> mutated, then restored</td>
+        <td><strong>1 failed</strong>, 4 passed, exit 1</td></tr>
+    </tbody>
+  </table>
+
+  <p>The five arms are the dispatch admit arm, its refusal control, the registry
+  row, the promotion naming, and the check-level tip/branch pair. Before the
+  wiring only the admit arm fails, and it fails on the very refusal the change
+  removes, quoted from the log on the fixture's holder:</p>
+
+  <pre><code>reckon.crew.ScopeConflict: write scope 'nova/equilibrium/contour_tree.py'
+  conflicts with live claim 'nova/equilibrium/contour_tree.py' held by run
+  'r-20261021T005136987306-read-correction-path' (node 'read-correction-path');
+  run 'r-20261021T005136987306-read-correction-path' has stopped but its
+  worktree still holds 1 commit(s) beyond its base that main cannot reach —
+  promote or recover it before dispatching over its paths</code></pre>
+
+  <p>The pytest traceback named the cause on the rule itself — <code>base_revision
+  = None, stacked = None</code> at the call — which is what makes the fixture the
+  right one: the check's own rule is intact and only its input was missing.</p>
+
+  <p>The declared mutation is that state: both call sites passing
+  <code>base_revision=None</code>. Applied to the committed source with a single
+  <code>sed</code> over the two sites (two sites mutated), the admit arm fails
+  again with <code>ScopeConflict</code> while the refusal control, the registry
+  row, the promotion naming and the check-level pair all still pass. The file was
+  then restored from its commit; its <code>sha256</code> is identical before and
+  after, and the worktree is clean. This is the direction that matters: the
+  mutation fails the arm the change exists to make pass, and nothing else.</p>
+
+  <h3>The suite around it</h3>
+
+  <p>The gate is this node's own file. The wider recording is the existing
+  modules that import the changed scope-fence, claim-registry and promotion
+  functions — sixteen of them, counted from those imports rather than from a
+  list — run under one method (<code>pytest -n 8</code>, eight workers on the
+  shared allocation, each with its own basetemp):</p>
+
+  <table>
+    <thead><tr><th>run</th><th>tree it imported</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td><code>run 1</code> (recorded as
+        <code>baseline_suite</code>)</td>
+        <td><strong>the head tree</strong>, not the base — see below</td>
+        <td>2 failed, 76 passed, exit 1</td></tr>
+      <tr><td><code>run 2</code> (recorded as <code>after_suite</code>)</td>
+        <td>the head tree at <code>33be2a080</code></td>
+        <td>2 failed, 76 passed, exit 1</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>The pair as first recorded was confounded, and the run that was
+  meant to be the baseline is not one.</strong> Run 1 was launched with
+  <code>PYTHONPATH</code> pointed at a base-revision worktree under the run's
+  scratch path, and that worktree was never created — <code>git worktree add</code>
+  failed and nothing checked its result before the suite started. With
+  <code>PYTHONPATH</code> naming a directory that does not exist and the command
+  run from this node's own checkout, <code>python -m pytest</code> put the
+  working directory first on <code>sys.path</code> and the run imported the head
+  tree. So run 1 measures the head, and the two rows above are two runs of one
+  revision, which is why they agree to the test id.</p>
+
+  <p><strong>What that pair was read as saying is withdrawn.</strong> The same two
+  ids fail on both runs —
+  <code>tests/test_concurrent_dispatch_of_one_node.py::test_a_fresh_empty_claim_refuses</code>
+  and
+  <code>tests/test_crew_dispatch_guard.py::test_the_exclusive_claim_walk_reads_every_live_claim_at_refusal</code>,
+  with 76 passing on both — and this record first read that as repeatability and
+  as evidence that neither id bore on the change, arguing both were an artefact
+  of eight-way parallel execution. Both halves of that reading were wrong, and an
+  independent review caught it. The two ids have different causes, and only one
+  of them is independent of the change. Neither cause is parallelism.</p>
+
+  <p><strong>The second id is this change's, and the module it anchors was turned
+  red by it.</strong> The dispatch guard instruments the claim walk by wrapping
+  <code>_raise_repository_scope_conflict</code>, and the wrapper restated the
+  module's keyword list — <code>disregarded</code>, <code>own_run_id</code>,
+  <code>own_registered_at</code> — instead of forwarding the call. The check then
+  gained <code>base_revision</code> and <code>stacked</code> for the revision a
+  dispatch builds on, and every dispatch through this node's own checkout began
+  raising <code>TypeError: wrapped() got an unexpected keyword argument
+  'base_revision'</code> at the call. The wrapper's signature is static, so the
+  red is not a scheduling artefact: the same test fails serially, which is how it
+  was reproduced here (<code>repair-repro.log</code>, <code>EXIT=1</code>, the
+  two named ids, no workers), and it is why the first reading of parallelism was
+  wrong.</p>
+
+  <table>
+    <thead><tr><th>the guard instrument</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the wrapper pinning the keyword list</td>
+        <td><code>1660bb5ea</code></td>
+        <td><strong>1 failed</strong> (<code>TypeError</code>), exit 1</td></tr>
+      <tr><td>the wrapper forwarding the seam</td>
+        <td><code>191f191d4</code></td>
+        <td><strong>14 passed</strong>, exit 0</td></tr>
+      <tr><td>that repair reverted out of the tree</td>
+        <td><code>191f191d4</code> minus its own patch</td>
+        <td><strong>1 failed</strong> (<code>TypeError</code>), exit 1</td></tr>
+    </tbody>
+  </table>
+
+  <p>The repair repeats the seam's positional head and forwards the rest as it
+  arrives, which is how the ledger module already stubs the same check. The
+  instrument counts the claims the walk reads; it is not a statement about the
+  check's argument list, and it should not fail when that list grows. Reverting
+  the repair out of the working tree restores the failure exactly — the third row
+  above, <code>negative-control-repair.log</code> — so the module is green
+  because of the repair and not despite the change.</p>
+
+  <p><strong>The first id is not this change's, and it is finally measured rather
+  than argued.</strong> The corrected arm was attempted under the same fence with
+  a tree from <code>git archive</code>, and at the whole-suite scale it exhausted
+  its bound twice with no summary. Run as a single test, where a bound suffices,
+  the same verified recipe settles it, and this is the matched base/head pair the
+  earlier attempts never produced:</p>
+
+  <table>
+    <thead><tr><th>arm (one test)</th><th>revision and tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td><code>test_a_fresh_empty_claim_refuses</code></td>
+        <td><code>2539356</code>, base copy, module proven under it</td>
+        <td><strong>1 failed</strong>, exit 1, 24.55 s</td></tr>
+      <tr><td><code>test_a_fresh_empty_claim_refuses</code></td>
+        <td><code>1660bb5ea</code>, head</td>
+        <td><strong>1 failed</strong>, exit 1, 24.55 s</td></tr>
+    </tbody>
+  </table>
+
+  <p>It fails identically on a revision whose <code>dispatch.py</code> provably
+  does not carry this change, so it is pre-existing and outside this node's
+  reach. Its refusal is a different rule — the empty-claim case, which the
+  dispatch fixtures here do not reach — and no repair is claimed for it.
+  <code>empty_claim_base.log</code> and <code>empty_claim_head.log</code> carry
+  each arm's revision, tree and command, and its <code>EXIT</code>.</p>
+
+  <p><strong>What remains unmeasured is the whole-suite delta.</strong> A base
+  worktree is not available inside this run's fence:
+  <code>git worktree add</code> is refused outright — <code>fatal: could not
+  create directory of '&hellip;/reckon/.git/worktrees/&hellip;': Read-only file
+  system</code>, exit 125, reproduced this attempt — which is the true root cause
+  of the confound above rather than an oversight. The method that does work is a
+  plain revised tree from <code>git archive 2539356 | tar -x -C &lt;dir&gt;</code>,
+  and the identity check the first attempt lacked was run on both sides before
+  anything else: the module resolved under the base copy and its source carried
+  neither <code>record_stacked_dispatch</code> nor the
+  <code>base_revision=dispatch_base</code> kwarg, while the head tree's source
+  carried both. With the trees verified the arm still did not complete — it was
+  run twice and both runs were killed by their own time bound before
+  <code>pytest</code> printed a summary (<code>EXIT=124</code>): the sixteen-module
+  run reached 58% at 900 s, and the two-module base/head pair reached 13 and 14
+  items of 20 at 300 s. Partial progress marks are not attributable to test ids,
+  so those logs yield no result and <strong>neither may be read as an arm</strong>.
+  The delta against the base revision therefore remains unmeasured, and the
+  manifest says so in the same words. A successor with a larger bound and a
+  quiet node can complete it from the verified-tree recipe above.</p>
+
+  <p>The wider recording is not a fixed set, and that is part of why the first
+  pair misled. Run 1 and run 2 were launched over a set the log itself records
+  only as a placeholder, and the set was later rebuilt from the modules that
+  actually import the changed symbols, which is sixteen of them. The count in
+  this section was first written as eleven for that reason and is corrected here.
+  A recalled serial figure for the older, narrower set was quoted in this
+  section previously; it is withdrawn, because it is not a checkable log and it
+  was quoted in support of the parallelism explanation now disproven above.</p>
+
+  <p><code>ruff check --no-cache</code> reports two findings on
+  <code>reckon/crew/dispatch.py</code> both before and after this change
+  (<code>SIM102</code> at the roster-member branch and <code>SIM105</code> in the
+  launch unwind), so the change adds none; <code>ruff format --check</code> is
+  clean on it. The same delta holds for the four in-scope modules, which were
+  staged clean at <code>2539356</code>.</p>
+<h3>The two paths that still judged without a base</h3>
+
+  <p>The exception reached the launching dispatch and nothing else. Two further
+  paths judge the same claims, and each reached the opposite verdict from the
+  launch on a stacked dispatch because neither was given the revision the run
+  builds on.</p>
+
+  <p><strong>The dry run.</strong> <code>plan_dispatch</code> is what a caller
+  reads to decide whether to dispatch, and its scope check carried no
+  <code>base_revision</code>, so a stacked dispatch was reported
+  <code>refused</code> there and admitted by the launch. It now resolves the base
+  it was handed and passes it. The case asserts agreement rather than the fix:
+  on the holder's chain tip the dry run reports <code>admitted</code> and the
+  launch admits, and on the integration branch both refuse.</p>
+
+  <p><strong>The widening check.</strong>
+  <code>refuse_widen_scope_conflicts</code> judges the paths a run adds to its own
+  fence. A run stacked on a stopped holder widens onto the holder's other claimed
+  paths; judged without its own base, that widening was refused by the very claim
+  it was cut from. It now reads the base recorded on the widening run's own
+  pointer — the resolved value first, the ref it was resolved from second — which
+  is the revision that decides whether an overlapping claim is one the run
+  already carries.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the node's gate and the guard module</td>
+        <td><code>7adecfbdc</code></td>
+        <td><strong>21 passed</strong>, exit 0</td>
+      </tr>
+      <tr><td>the same test module at the base</td>
+        <td><code>2539356</code>, base-revision copy</td>
+        <td><strong>1 failed</strong>, 4 passed, exit 1</td></tr>
+      <tr><td>the dry run with its base removed</td>
+        <td><code>7adecfbdc</code> minus that line</td>
+        <td><strong>1 failed</strong>, exit 1</td></tr>
+      <tr><td>the widening check with its base removed</td>
+        <td><code>7adecfbdc</code> minus that kwarg</td>
+        <td><strong>1 failed</strong>, exit 1</td></tr>
+    </tbody>
+  </table>
+
+  <p>Each control fails on the case the fix exists to make pass, and on nothing
+  else: with the dry run's base removed the case stops at
+  <code>assert 'refused' == 'admitted'</code>, and with the widening base removed
+  it stops at the <code>ScopeConflict</code> naming the fixture's holder. Both
+  sources were restored from copies whose <code>sha256</code> is unchanged and
+  the tree is clean at the commit.</p>
+
+  <p>The base arm also supplies the reading this record previously carried
+  without a log. The base-revision copy's own test module, run at
+  <code>2539356</code>, reads <strong>1 failed, 4 passed</strong>, exit 1 —
+  <code>round3-base-arm.log</code>, whose header names the revision, the tree and
+  the command. The failure is the admit arm on the refusal the wiring removes.
+  An earlier note attributed the figure to a pristine tree and gave a duration no
+  log carries; both are corrected here.</p>
+
+  <p><strong>Why the guard module's instrument was edited.</strong> That edit is
+  kept rather than avoided. The instrument wrapped the scope check and restated
+  its keyword list, so the check gaining an argument for the dispatch base made
+  the wrapper raise <code>TypeError</code> and reddened a module whose subject is
+  the claim walk, not the check's signature — serially, as the controls above
+  show. Removing the argument instead would have removed the behaviour the module
+  is not about, and leaving the wrapper pinned would redden the module again the
+  next time the check grows. The wrapper now repeats the seam's positional head
+  and forwards the rest as it arrives.</p>
+
+</section>

@@ -71,7 +71,6 @@ from reckon.crew.runs import (
 )
 
 
-
 class DirectoryClaimConflict(ScopeConflict):
     """A directory write claim overlaps a live run's exact path.
 
@@ -148,6 +147,15 @@ class _RepositoryScopeClaim:
     # carries neither, and is what the ordering rule below arbitrates.
     registered_at: str = ""
     launched: bool = False
+    # What the holder's claim reads for the stacked-dispatch exception, taken
+    # from the same per-pointer disposition the claim's binding comes from: the
+    # work it still holds, the worktree whose head is read for the chain tip,
+    # and the base its own dispatch was cut from. A claim whose holder holds no
+    # unintegrated work is never a stacking candidate, so these are carried
+    # together rather than derived again at the check.
+    unintegrated: tuple[str, ...] = ()
+    worktree: str = ""
+    base_sha: str = ""
 
 
 def _scope_derivation_project(
@@ -310,6 +318,9 @@ def _repository_scope_claims(
                     binding=disposition.binding,
                     disposition_reason=disposition.reason,
                     registered_at=str(pointer.get("created_at") or ""),
+                    unintegrated=disposition.unintegrated,
+                    worktree=str(pointer.get("worktree") or ""),
+                    base_sha=str(pointer.get("base_sha") or ""),
                     # A run that has written the record it launches its worker
                     # from, whose process has started, or whose phase has moved
                     # past the pre-spawn set has already passed its own
@@ -1576,6 +1587,8 @@ def _raise_repository_scope_conflict(
     accepted: list[dict[str, Any]] | None = None,
     own_run_id: str | None = None,
     own_registered_at: str | None = None,
+    base_revision: str | None = None,
+    stacked: list[dict[str, Any]] | None = None,
 ) -> None:
     candidates = _candidate_scope_entries(
         node, project=project, repo=repo, authority=authority
@@ -1616,6 +1629,18 @@ def _raise_repository_scope_conflict(
                     and claim.disposition_reason not in disregarded
                 ):
                     disregarded.append(claim.disposition_reason)
+                continue
+            if _claim_holds_the_dispatch_base(claim, base_revision=base_revision):
+                # A stopped holder whose chain tip this dispatch is built on
+                # holds nothing the newcomer does not carry: the worktree the
+                # newcomer works in was cut at or above that tip, so the
+                # holder's commits are in it already. The admission is written
+                # down rather than passed over quietly, because the stacking is
+                # what later names the holder's live descendants.
+                if stacked is not None and claim.run_id not in {
+                    str(row.get("run_id") or "") for row in stacked
+                }:
+                    stacked.append({"run_id": claim.run_id, "node_id": claim.node_id})
                 continue
             if _peer_claim_is_a_later_racing_arrival(
                 claim,
@@ -1687,9 +1712,7 @@ def _raise_repository_scope_conflict(
                 if racing_winner_refusal:
                     message = f"{message}; {racing_winner_refusal}"
                 if claim.project != project:
-                    refusal.args = (
-                        f"{message} in project {claim.project!r}",
-                    )
+                    refusal.args = (f"{message} in project {claim.project!r}",)
                 else:
                     refusal.args = (message,)
                 raise refusal
@@ -1709,6 +1732,38 @@ def _raise_repository_scope_conflict(
                 message = f"{message}; {claim.disposition_reason}"
             refusal.args = (message,)
             raise refusal
+
+
+def _claim_holds_the_dispatch_base(
+    claim: _RepositoryScopeClaim, *, base_revision: str | None
+) -> bool:
+    """Whether a stopped holder's chain tip is contained in the dispatch's base.
+
+    A holder that has committed past its own dispatch base still fences its
+    paths, and it stays fenced for every dispatch cut from the integration
+    branch — that is the refusal the claim exists to give. A dispatch that names
+    a revision at or above the holder's head is a different case: the worktree
+    it is about to build carries the holder's commits, so the second writer
+    adds to that dispatch's work rather than burying it, and refusing would
+    strand the holder's own repair. The holder's head is read from its worktree
+    because the pointer records only the base it was dispatched from. A holder
+    with no commits past that base has no chain tip for anyone to build on, so
+    only a base or an ancestor of it admits — a dispatch cut from the tip
+    itself, or from a commit above it.
+    """
+    if not base_revision or not claim.unintegrated or not claim.worktree:
+        return False
+    worktree = Path(claim.worktree).expanduser()
+    if not worktree.is_dir():
+        return False
+    from reckon.crew.promotion_scope import _head_revision, _revision_is_ancestor
+
+    holder_head = _head_revision(worktree)
+    if not holder_head or holder_head == claim.base_sha:
+        return False
+    if holder_head == base_revision:
+        return True
+    return _revision_is_ancestor(worktree, holder_head, base_revision)
 
 
 def refuse_widen_scope_conflicts(
@@ -1735,12 +1790,20 @@ def refuse_widen_scope_conflicts(
     claims = _repository_scope_claims(
         exclude_run_ids=(str(pointer.get("run_id") or ""),)
     )
+    # The run doing the widening is the one whose base decides whether a claim it
+    # overlaps is one it already carries. A run stacked on a stopped holder has
+    # that holder's chain tip as its base, so reading its own base is what keeps a
+    # widening dispatch from being refused by the very claim it was cut from. The
+    # pointer records the base it was dispatched from, and the resolved value is
+    # preferred over the ref it was resolved from.
+    widening_base = str(pointer.get("base_sha") or pointer.get("base") or "").strip()
     _raise_repository_scope_conflict(
         candidate,
         project=project,
         repo=repo,
         authority=authority,
         claims=claims,
+        base_revision=widening_base,
         own_run_id=str(pointer.get("run_id") or ""),
         own_registered_at=_utc_now(),
     )

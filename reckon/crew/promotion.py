@@ -141,6 +141,7 @@ from reckon.crew.runs import (
     read_pointer,
     record_process_alive,
     run_dir,
+    stacked_descendants_still_live,
 )
 from reckon.evidence import (
     EXECUTABLE_SECTION_ROLES,
@@ -365,7 +366,10 @@ def complete(
         resolved: dict[str, Any] = {}
 
         def _repository_root() -> str | Path | None:
-            if landing_project and project_mount_repository(landing_project) is not None:
+            if (
+                landing_project
+                and project_mount_repository(landing_project) is not None
+            ):
                 resolved["root"] = resolve_project_repository(
                     landing_project, root, flag="--checkout-path"
                 )
@@ -427,7 +431,9 @@ def complete(
             classification_name = str(resolved.get("classification") or "")
             candidate_remedy = classified.get("resume_remedy")
             resume_remedy = (
-                dict(candidate_remedy) if isinstance(candidate_remedy, Mapping) else None
+                dict(candidate_remedy)
+                if isinstance(candidate_remedy, Mapping)
+                else None
             )
             candidate_resolution = classified.get("session_resolution")
             if classification_name == "blocked" and isinstance(
@@ -1134,6 +1140,7 @@ def _complete_locked(
                 "pointer_removed": not path.exists(),
                 "record": dict(existing),
                 "already_promoted": True,
+                "stacked_descendants": stacked_descendants_still_live(record),
                 "session_capture": capture,
                 "plan_comment": comment,
                 "release": release,
@@ -1558,7 +1565,9 @@ def _complete_locked(
         lane_value = record.get(lane_key)
         if lane_value is None:
             continue
-        run[lane_key] = dict(lane_value) if isinstance(lane_value, Mapping) else lane_value
+        run[lane_key] = (
+            dict(lane_value) if isinstance(lane_value, Mapping) else lane_value
+        )
     # A shadow whose stream read its primary's landed answer is void as
     # calibration evidence; the stream is still on disk at this point (the run
     # directory survives until crew gc) so promotion scans it rather than
@@ -1755,6 +1764,7 @@ def _complete_locked(
             "lane_receipt": dict(written["run"]["lane_receipt"]),
             "fleet_state": _fleet_state_reading(project),
             "already_promoted": already_promoted,
+            "stacked_descendants": stacked_descendants_still_live(record),
             "session_capture": capture,
             "plan_comment": comment,
             "release": release,
@@ -1845,7 +1855,10 @@ def discard(run_id: str) -> dict[str, Any]:
     commit the integration branch lacks holds nothing to preserve, and leaving
     it on disk refuses a redispatch of the same node because the worktree path
     already exists. A dirty or unintegrated tree is withheld with the audit's
-    own reason.
+    own reason. Runs that were admitted onto this one's chain tip are named in
+    the result rather than refused: their worktrees carry this run's commits, so
+    the departure leaves them holding the work, and the coordinator reading the
+    result is told which runs those are.
     """
     with _pointer_lock(run_id):
         record = read_pointer(run_id)
@@ -1866,6 +1879,7 @@ def discard(run_id: str) -> dict[str, Any]:
             "pointer_removed": not path.exists(),
             "removed": record,
             "discard_record": written,
+            "stacked_descendants": stacked_descendants_still_live(record),
             **_remove_discarded_worktree(record),
         }
 
@@ -2144,7 +2158,6 @@ def _file_delivered_run_reviews(record: Mapping[str, Any]) -> list[str]:
     except (OSError, ValueError, TypeError):
         return []
     return [str(path) for path in written]
-
 
 
 from reckon.crew.promotion_checks import (
