@@ -20,7 +20,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
-  <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-project-reads-as-one-picture#s4&quot;,&quot;a-coordinator-sees-the-board#s2&quot;],&quot;s4&quot;:[&quot;a-project-reads-as-one-picture#s2&quot;,&quot;a-coordinator-sees-the-board#s3&quot;],&quot;s5&quot;:[&quot;the-mcp-answers-the-question-asked#s3&quot;,&quot;a-coordinator-sees-the-board#s2&quot;],&quot;s6&quot;:[&quot;a-coordinator-sees-the-board#s5&quot;],&quot;s7&quot;:[&quot;a-coordinator-sees-the-board#s3&quot;,&quot;a-coordinator-sees-the-board#s5&quot;],&quot;s8&quot;:[&quot;a-coordinator-sees-the-board#s3&quot;,&quot;a-coordinator-sees-the-board#s4&quot;,&quot;a-coordinator-sees-the-board#s5&quot;,&quot;a-coordinator-sees-the-board#s6&quot;]}">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-project-reads-as-one-picture#s4&quot;,&quot;a-coordinator-sees-the-board#s2&quot;],&quot;s4&quot;:[&quot;a-project-reads-as-one-picture#s2&quot;,&quot;a-coordinator-sees-the-board#s3&quot;],&quot;s5&quot;:[&quot;the-mcp-answers-the-question-asked#s3&quot;,&quot;a-coordinator-sees-the-board#s2&quot;,&quot;a-coordinator-sees-the-board#s3&quot;],&quot;s6&quot;:[&quot;a-coordinator-sees-the-board#s3&quot;,&quot;a-coordinator-sees-the-board#s5&quot;],&quot;s7&quot;:[&quot;a-coordinator-sees-the-board#s3&quot;,&quot;a-coordinator-sees-the-board#s5&quot;],&quot;s8&quot;:[&quot;a-coordinator-sees-the-board#s3&quot;,&quot;a-coordinator-sees-the-board#s4&quot;,&quot;a-coordinator-sees-the-board#s5&quot;,&quot;a-coordinator-sees-the-board#s6&quot;]}">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>A Coordinator Sees the Board | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -87,10 +87,24 @@
     <p>The owner is reported as the session id, plus the session's peer name where the directory can
     resolve one. The answer never claims a liveness it has not checked: an owner whose session ended
     reads as ended.</p>
-    <p>Done when every pending plan in a project resolves to declared, derived or unowned, with its tier.
-    Tests: a plan dispatched by session A and then by session B resolves to B, declared, with A in its
-    history. A released claim falls back to derived. A plan with no ledger rows reads as unowned.
-    Negative control: dropping the takeover rule leaves A as owner, and the first test must fail.</p>
+    <p>Done when, on a fixture built from power_convertor's run ledger as committed at
+    2026-10-22T08:50Z, each named plan resolves to the stated owner and tier:</p>
+    <ul>
+      <li><code>shared-coil-supply-model</code> to session <code>cdb769a4</code>, derived from its latest dispatch;</li>
+      <li><code>iter-switched-terminal-transients</code> to <code>83d14db1</code>, derived;</li>
+      <li><code>tf-co-wound-tape-validation</code> to <code>e1b445e1</code>, derived;</li>
+      <li>a plan given no ledger rows in the fixture to unowned.</li>
+    </ul>
+    <p>Unit tests:</p>
+    <ul>
+      <li>a plan dispatched by session A and then by session B resolves to B, declared, with A in its history;</li>
+      <li>a released claim falls back to derived.</li>
+    </ul>
+    <p>Negative controls:</p>
+    <ul>
+      <li>a resolver that returns unowned for every plan must fail the fixture test;</li>
+      <li>dropping the takeover rule leaves A as owner, and the A-then-B test must fail.</li>
+    </ul>
 
     <h2 id="s3">§3 — The ready-idle set is one bounded answer</h2>
     <p>A read returns every section that is implementable, dependency-ready and gate-clear with no live
@@ -116,21 +130,24 @@
     if it stays.</p>
 
     <h2 id="s4">§4 — The critical path reads link by link</h2>
-    <p>Each link of the critical path carries one state:</p>
-    <ul>
+    <p>Each link of the critical path carries one primary state and the full list of what holds it. The
+    primary state is the first that applies, in this order:</p>
+    <ol>
       <li>in flight, with its run id;</li>
       <li>ready-idle, with its owner;</li>
       <li>gated, with its gate id;</li>
       <li>waiting, with the ref it waits on.</li>
-    </ul>
-    <p>The head link is reported first. An idle head is the most expensive idle work in a project, and the
-    answer says so in words. This is the per-link state reckon-a1 named as a small extension. It lives
-    here, not in a-project-reads-as-one-picture §7's rows, so each fact has one reader. §7's brief may
-    quote it.</p>
-    <p>Done when the 08:50Z fixture reads <code>shared-coil-supply-model#s9</code> as ready-idle, owner
-    named, and <code>iter-switched-terminal-transients#s6</code> as gated on <code>g-istt-6</code> and
-    waiting on that s9. Negative control: giving s9 a live run must turn its state to in flight, and the
-    test must fail if it does not.</p>
+    </ol>
+    <p>The holds list carries every open gate and every unmet wait, so a link both gated and waiting reads
+    as gated with both in its holds. The head link is reported first. An idle head is the most expensive
+    idle work in a project, and the answer says so in words. The per-link state is an extension of the
+    section rows a-project-reads-as-one-picture §4 carries. It lives here, not in that plan's §7 brief
+    rows, so each fact has one reader; §7's brief may quote it.</p>
+    <p>Done when the 08:50Z fixture reads <code>shared-coil-supply-model#s9</code> as ready-idle with its
+    owner named, and <code>iter-switched-terminal-transients#s6</code> as gated, with holds
+    <code>g-istt-6</code> and <code>shared-coil-supply-model#s9</code>. Negative controls: giving s9 a live
+    run must turn its primary state to in flight, and a holds list that drops either of s6's two holds must
+    fail the test.</p>
 
     <h2 id="s5">§5 — The board: what every coordinator is doing, with ids</h2>
     <p>One bounded read, at project or workstation scope, returns a row per coordinator session. Each row
@@ -165,8 +182,9 @@
     <p><code>reckon-build</code>'s per-beat rule (references/sprint-orchestration.md §12, "An idle lane with
     ready work is a defect") and <code>reckon-roadmap</code>'s "Ready-idle sections, owners and the critical
     path" both carry a lossless-report recipe as a stopgap. Replace it with the §3 and §5 reads. The
-    derived-flow chart draws "ready, no run" from the same section rows, and the monitor plan owns that
-    drawing.</p>
+    derived-flow chart draws "ready, no run" from the same section rows, and
+    <a href="/reckon/plans/the-monitor-shows-the-work-it-watches">the-monitor-shows-the-work-it-watches</a>
+    owns that drawing.</p>
     <p>Done when both skills name the bounded reads instead of the CLI recipe, and a skill contract test
     asserts the build skill names them. Negative control: restoring the recipe line must fail that test.</p>
 
@@ -180,13 +198,14 @@
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
       <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="board-surface" data-choice="" data-by="" data-when="">
+      <div class="r-dec" data-key="board-surface" data-choice="split" data-by="reckon-build" data-when="2026-10-22">
         <p class="r-dec-q">Which tool serves the board and the ready-idle set?</p>
         <p class="r-dec-opts">
           <button class="r-opt" data-value="crew-view">crew views: board and idle</button>
           <button class="r-opt" data-value="roadmap-view">roadmap views: board and idle</button>
+          <button class="r-opt" data-value="split">split by what each fact describes</button>
         </p>
-        <p class="r-dec-rat"></p>
+        <p class="r-dec-rat">Split by what each fact describes, as the coordinator of the-mcp-answers-the-question-asked proposed on 2026-10-22. The board (§5) and the lane share (§6) are facts about coordinators, runs, claims and the lane, so they are one new bounded crew view joining directory, scopes, live and lanes. The ready-idle set (§3) and the link-by-link critical path (§4) are facts about sections, so they go on the roadmap's section rows and payload, where a-project-reads-as-one-picture §4 already put runs and blocker kinds, and that plan's §7 brief quotes them. The roadmap serves plans and sections, and crew serves runs and coordinators: one derivation per fact.</p>
       </div>
     </section>
 
