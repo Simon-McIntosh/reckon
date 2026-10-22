@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T22:58:33.610Z",
+  "dispatched_at": "2026-10-22T22:47:24Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-checked-against-its-domain.html:115",
+      "id": "wiring-1",
+      "reason": "a coordinator dispatching from the chain re-runs a section the plan marks done, and \u00a77 \u2014 the section the followup's own body names as the remaining work \u2014 is never offered as an invocation.",
+      "text": "the open followup `f-wicd-002` recommends and prompts `\u00a76`, but the document now declares \u00a76 `done` (plan-section-declarations, and the `c-close-s6` landing comment at line 233), so the plan's only driving followup sends the next node to a completed section instead of \u00a77, the remaining replay work; this is the same defect an earlier review raised against `f-wicd-001` and the fix commit for it (\"a followup must not point at a landed section\")",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-checked-against-its-domain.html:105",
+      "id": "reasoning-1",
+      "reason": "the \u00a711 change and its done-when are unaffected by the overstated claim; the correct action is the same whether the reason reached no row or no outcome, so only the rationale sentence would be tightened.",
+      "text": "\u00a711 says \"its landing measured that the stated reason reaches the promotion guard and the promotion's own outcome\", but the guard's returned waiver record is bound to `_domain_checks` and discarded at `reckon/crew/promotion.py:535`, it is persisted nowhere else in the tree, and \u00a710's own tests (`tests/test_the_domain_waiver_reaches_every_surface.py:181-187`) assert only that the reason reaches the guard spy and that the promotion succeeds \u2014 so nothing carries the reason into any promotion outcome or row",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "7926c46eb27d88398a81dda0a775805d32fc4cc5ba438c32ef57476e01090aa6",
+  "plan_slug": "work-is-checked-against-its-domain",
+  "plan_version": 49,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T224441423507-plan-review-of-work-is-checked-against-its-domain",
+  "reviewed_blob_sha": "fef4214eac99b75c55e9a2fc5df3262bd23d9da3",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/promotion.py`, `reckon/run_record.py`, `_complete_locked`, `boundary_waiver`, `--waive-domain-check` and the `crew(view=\"records\")` view all resolve in the tree.",
+    "done_when": "pass \u2014 \u00a711's done-when is measurable and names its negative control: the same promotion with no waiver carries the field empty, and the test fails at the base commit where the field does not exist.",
+    "evidence_paths": "pass \u2014 \u00a711's evidence is the promoted ledger row read back through `crew(view=\"records\")`, a durable committed store, not a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 \u00a711 introduces no code symbol and carries no plan label, stage name, ticket number or version tag into code; its \u00a7-references are section references in prose.",
+    "reasoning": "a finding \u2014 \u00a711's rationale overstates what \u00a710's landing established, claiming the stated reason reaches \"the promotion guard and the promotion's own outcome\" when the guard's returned waiver record is discarded before any outcome is written.",
+    "single_goal": "pass \u2014 \u00a711 carries one deliverable, the domain waiver on the promoted ledger row.",
+    "wiring": "a finding \u2014 the one open followup `f-wicd-002` still names `/reckon-build work-is-checked-against-its-domain \u00a76` in both its `data-recommends-skill` and its prompt while the document now declares \u00a76 `done`."
+  },
+  "section_digests": {
+    "_document": "90658cf9e7a95118f22750c16e684984bd5e8f5fbc3ce7f19e52a32cbf5e8e7a",
+    "s1": "096b2231b1cf1ab1c4476bbab2ea39d0ee87ea2bbfae045a542369206b4fbbf2",
+    "s10": "b56ed0d1f986fb9b41deb555b006f3ce22e9344bb04ac0efa3d87658a7061eb6",
+    "s11": "81b9b52cd0d654e4fd868461f8dbd31289738887724a909f28f835c526cbb1de",
+    "s2": "f58c33e1d5efdd77473d24dbd96aa04b4eafedff3df86cbb94db6ca520d1f639",
+    "s3": "eca25029a7c8cca2e22a3d4d879135d32aa739c860c67cbd0f563910c524a0b7",
+    "s4": "4e977ee3102a5bb6e0f0ddeadeead92dd3753ffcbdb411d4d5d57d9266a43a35",
+    "s5": "43dd5f8401bfb239df6459a7313dc79f279335e3a6fd514e3cd36907fa3bedb4",
+    "s6": "18f0e2163a6488f09429208429eec18345f675af939a88c13637006a5639037c",
+    "s7": "ca3f9f129fae7eeff42ece50be5f648250554ce1998644ad4d07e46b7c6fb742",
+    "s8": "3e81a90c6c14d49fab5a52690b64e2f1ab769994c4c3be458a42db18af91e666",
+    "s9": "935dc7353f3dac93b40a3ff757e12028572d0a1726e114369c0ee80114c5ffbc"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T23:09:21.587422+00:00"
+}
