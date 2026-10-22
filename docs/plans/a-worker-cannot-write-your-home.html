@@ -23,10 +23,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5,6dcb6cc1d,31e84061f">
 <meta name="plan-impl" content="0.99">
-<meta name="plan-version" content="226">
+<meta name="plan-version" content="227">
 <meta name="plan-modified" content="2026-10-22">
 <meta name="plan-section-depends-on" content="{&quot;s17&quot;:[&quot;a-worker-cannot-write-your-home#s15&quot;],&quot;s16&quot;:[&quot;a-worker-cannot-write-your-home#s15&quot;],&quot;s18&quot;:[&quot;a-worker-cannot-write-your-home#s15&quot;,&quot;a-worker-cannot-write-your-home#s16&quot;]}">
 </head>
@@ -1588,7 +1588,7 @@
 <p><strong>Negative control.</strong> Revert the fix, and the composed-argv listing, the live launch and the new test must all fail. Run the test under pytest with the default short summary.</p>
 
     <h2 id="s19">§19 — The vanished-bind retry covers a launch that starts slowly</h2>
-<section data-reckon="section" data-id="s19" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s19" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p>Run <code>r-20261021T073526532476-jt60sa-2023-shot-census</code> (power_convertor) died at launch: its record reads <code>ended_during: launch</code>, launched 07:35:53Z and exited 07:35:57Z (09:35:57 CEST), with no stream records, and its stderr carries <code>bwrap: Can't bind mount /oldroot/home/ITER/mcintos/.claude.json on /newroot/home/ITER/mcintos/.claude.json: No such file or directory</code> followed by <code>srun: error: … Exited with exit code 1</code>. <code>~/.claude.json</code> is rewritten by atomic rename, and this refusal is the signature of a launch meeting the instant the path is absent. The same signature failed a launch on 2026-10-14.</p><p>A retry for exactly this refusal exists: <code>_spawn_worker_retrying_a_vanished_bind</code> in <code>reckon/crew/dispatch_launch.py</code>, deciding through <code>_died_over_a_vanished_bind_source</code>. It keys on a child that dies inside <code>SANDBOX_STARTUP_WINDOW_SECONDS</code>, which is 0.5 s. On a placed launch the child is the local <code>srun</code> client, which lives as long as the worker's step (<code>_spawn_detached_worker</code>, <code>_supervisor_spawn_worker</code>), so bwrap's refusal arrives after the window and the launch is recorded as failed. That is the likely reason the retry did not fire; this section confirms it first. The retry then keys on the refusal text appearing in the run's stderr within a bounded startup window sized for a placed step: a stated number of seconds, at least 30, which covers the four seconds that launch took from launch to exit and the step start before it; the window ends early at the first stream record, which that launch never wrote, within the same bounded number of tries. It never waits on the child's exit: a launch whose stream begins, or whose window passes with no refusal, is left running.</p><p><code>--ro-bind-try</code> is not the fix. A read-only bind skipped because the file was absent at mount time leaves the path reachable through the root <code>--dev-bind</code> once the rename completes, so the worker could write the file the fence protects.</p><p><strong>Done when:</strong> a placed launch whose fake bwrap writes the missing-source refusal four seconds after launch, with no stream record, and whose child then exits, is retried and the second attempt starts. A fake launch that writes any other refusal after the same delay is not retried. A healthy fake launch whose child stays alive past the window returns from the launch within the window rather than waiting for the child to exit; that arm fails for an implementation that keys on exit. On the base commit the first fixture is recorded as a launch failure, so the test fails there.</p><p><strong>Write paths:</strong> <code>reckon/crew/dispatch_launch.py</code>, <code>tests/test_a_slow_launch_retries_a_vanished_bind.py</code>, and the node's evidence fragment; the gate log records whether the four-second delay alone reproduces the recorded failure.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
@@ -1779,10 +1779,11 @@
     <pre class="r-fu-prompt">/reckon-build a-worker-cannot-write-your-home §18</pre>
     <p class="r-fu-outcome"><p>§18 landed at merge <code>802713815</code>; codex read-only reviews run inside the fence again. §6 remains the plan's one implementable section.</p></p>
     </article>
-<article class="r-fu" data-id="f-awcwyh-020" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-22" data-recommends-skill="/reckon-build a-worker-cannot-write-your-home §19" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-awcwyh-020" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-22" data-recommends-skill="/reckon-build a-worker-cannot-write-your-home §19" data-resolved-at="2026-10-22T19:20:06+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Build §19</h4>
     <div class="r-fu-body">§19 is the plan's open section: the vanished-bind retry keys on the refusal in stderr within a startup window sized for a placed launch, so a launch that met the rename four seconds in is retried rather than recorded as failed.</div>
     <pre class="r-fu-prompt">/reckon-build a-worker-cannot-write-your-home §19</pre>
+    <p class="r-fu-outcome">§19 landed: the vanished-bind retry keys on the refusal in stderr within a window sized for a placed launch. No open section remains on this plan.</p>
     </article>
 </section>
 
@@ -2284,6 +2285,9 @@
 </div>
 <div class="r-comment" data-section="s19" data-id="c-run-r-20261022T181626444961-review-of-a-slow-launch-retries-a-vanished-bind-e596a4335209" data-who="reckon-build" data-when="2026-10-22T19:01:11.740Z">
     <div class="r-comment-body"><p>reviewed r-20261022T090956316216-a-slow-launch-retries-a-vanished-bind over base e0edff7baf3c1a0e036951362283f3a8463114a1..head e596a4335209b034e61200be1630713ac0df2cde (three commits, three files, +69/-31); stored a parsed record scoring goal_fidelity 19, evidence 16, scope_discipline 19, durability 19, fit 18, reuse 20, added_failure_count 0, one follow_on finding</p></div>
+</div>
+<div class="r-comment" data-section="s19" data-id="c-close-s19" data-who="reckon-build" data-when="2026-10-22T19:20:00Z">
+    <div class="r-comment-body"><p>Landed: a placed launch that meets the vanished bind after its step starts is retried; review 111/120. Evidence: <a href="/reckon/evidence/archive/a-worker-cannot-write-your-home-landed.html#s19">§19 landing record</a>.</p></div>
 </div>
 </section>
 </main>
