@@ -1,0 +1,75 @@
+<section id="the-refusal-names-its-dominant-term-landing">
+  <h2>A context refusal names how its dominant term arrived</h2>
+
+  <p><strong>What changed.</strong> The context-fit refusal already answers with the
+  estimate, the window it exceeded and the largest contributing files with their token
+  figures. It now also names the <em>single largest</em> contributing input and whether it
+  arrived as a declared write path or as a mention, in
+  <code>_context_refusal_detail</code> and <code>_context_contributors</code> in
+  <code>reckon/crew/routing.py</code>. The origin is the group each charged input was read
+  from: a path the node must write is charged because it must edit it, and no brief change
+  can remove it, while a path the brief names in prose can be cut or replaced by a
+  reference. The two shapes send a coordinator to different levers, and only one of them is
+  under the coordinator's control.</p>
+
+  <p>The refusal gains one clause and keeps everything it said before. In the fixture whose
+  dominant term is a write path the sentence reads, in full:</p>
+
+  <pre id="the-refusal-names-its-dominant-term-example">context-window-exceeded: estimated 306715 usable input tokens against a 230144 token
+window (shortfall 76571 tokens); largest contributing files: …/large_module.py (285715
+tokens), …/small_module.py (1000 tokens); dominant term: …/large_module.py (285715
+tokens), which arrived as a declared write path</pre>
+
+  <p>With the same two files but the large one named in prose and the small one declared as
+  the write path, the same clause reads <code>which arrived as a mention</code>. When no
+  repository file is charged at all the refusal keeps its existing sentence &mdash;
+  <em>no repository file dominates the estimate</em> &mdash; and adds no dominant-term
+  clause, so it never invents a term from nothing.</p>
+
+  <h3 id="the-refusal-names-its-dominant-term-measured">Measured</h3>
+
+  <table id="the-refusal-names-its-dominant-term-arms">
+    <caption>Every arm is a log whose first line names its revision, tree and command and
+    whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>gate (this change, working tree)</td>
+        <td><code>1c734f41</code> + change</td>
+        <td><strong>23 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr><td>base (new test copied in)</td>
+        <td><code>1c734f41</code></td>
+        <td><strong>3 failed</strong>, <code>EXIT=1</code> &mdash; both fixture cases fail on
+        the absent dominant-term clause</td></tr>
+      <tr><td>negative control (origin dropped from the clause)</td>
+        <td>mutated head</td>
+        <td><strong>3 failed</strong>, <code>EXIT=1</code> &mdash; both fixture cases fail</td></tr>
+    </tbody>
+  </table>
+
+  <ul>
+    <li><strong>The dominant term is the largest input, not the write path.</strong> In the
+    write-path fixture <code>large_module.py</code> (285&nbsp;715 tokens) is a declared write
+    path and dominates; in the mention fixture the same file is named only in prose and
+    dominates its own 1&nbsp;000-token write path, so the clause reports
+    <code>mention</code>. An implementation that answered "write path" for any refusal would
+    pass the first case and fail the second.</li>
+    <li><strong>The token figure is the payload's own.</strong> Each case reads the figure
+    back from <code>context.inputs.repository_files</code> and asserts the clause carries it,
+    so the sentence and the census the reader can already inspect agree.</li>
+    <li><strong>The evidence a reader already relies on is unchanged.</strong> Both fixture
+    cases assert the sentence's existing prefix verbatim &mdash; estimate, window, shortfall
+    &mdash; and the full <code>largest contributing files</code> list beside the new clause.</li>
+    <li><strong>A small brief still gets an answer.</strong> A fixture whose every charged
+    file is 100 tokens against a 20&nbsp;150-token window still names a dominant term rather
+    than leaving the coordinator with no line to act on.</li>
+    <li><strong>Nothing dominates when nothing is charged.</strong> A node with no write
+    paths and no named inputs keeps the existing <em>no repository file dominates</em>
+    sentence and carries no dominant-term clause.</li>
+    <li><strong>What is not measured here.</strong> The remedy a coordinator takes once the
+    origin is named &mdash; charging a mention at a reference cost (§3) and the anchor
+    opt-out (§4) &mdash; is not touched by this change. Nor is the <code>CompetenceLimit</code>
+    message, which renders the estimate, window and shortfall from the verdict and does not
+    carry the detail clause; the clause reaches the reader on the
+    <code>competence-refusal</code> payload's <code>competence.detail</code>.</li>
+  </ul>
+</section>
