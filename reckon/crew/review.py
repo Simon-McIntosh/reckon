@@ -66,7 +66,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from collections.abc import Iterable, Iterator, Mapping
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -111,6 +111,39 @@ REVIEW_ITEMS: tuple[str, ...] = (
     "diff",
     "call_sites",
 )
+
+# ── The declared review checks a repository adds to the checklist ───────────
+# A repository may declare questions a reviewer must answer about any node they
+# apply to, matched against the node's write paths by
+# ``reckon/crew/domain_rules.py``. They join the checklist above rather than a
+# seventh scored dimension, so the dimension vocabulary, the acceptance floor
+# and the lifecycle derivation are all untouched: a review of a matching node
+# carries one verdict line per declared check, keyed by the check's own id, and
+# a record that omits one is incomplete rather than a pass.
+#
+# A declared check's verdict opens with its outcome, so the parser can tell a
+# question that was answered from one that was not. Only the two outcomes are
+# declared: a check the reviewer could not answer is a question left open, and
+# inventing a third word for it would let a record read as complete on an answer
+# nobody gave.
+CHECK_VERDICT_OUTCOMES: tuple[str, ...] = ("pass", "fail")
+FAILED_CHECK_OUTCOME = "fail"
+
+
+def check_verdict_outcome(verdict: str) -> str | None:
+    """Return the outcome a declared check's verdict opens with, or ``None``.
+
+    The outcome is the verdict's first word, in its declared spelling and
+    case-insensitively, before the reviewer's one line of reading. Any other
+    opening states no outcome this parser can act on, so the check reads as
+    unanswered rather than as a pass — an unreadable answer is not an answer.
+    """
+    words = str(verdict or "").strip().split(None, 1)
+    if not words:
+        return None
+    word = words[0].strip(".,;:").lower()
+    return word if word in CHECK_VERDICT_OUTCOMES else None
+
 
 # ── The severity a finding can state ────────────────────────────────────────
 # A finding may say whether it blocks the node's landing, which is the
@@ -453,6 +486,202 @@ def unresolved_reviewed_revision(record: Mapping[str, Any]) -> str | None:
     return None
 
 
+def _manifest_write_paths(text: str) -> tuple[str, ...]:
+    """The declared write paths a delivered manifest names, or nothing.
+
+    A run's own directory holds the manifest it delivered, whose declared write
+    paths survive there after the pointer and the ledger row are gone. The
+    declared set is read first and the changed set second: the declared set is
+    what the node's checks were matched against when it ran, while a node that
+    changed nothing still owed every check its declaration selected. Both fields
+    are read through the module's manifest-field reader, so a field this function
+    reads is a field the rest of the contract reads the same way.
+    """
+    for key in ("orientation_write_paths", "changed_paths"):
+        for part in _manifest_field_lines(text, key):
+            try:
+                value = json.loads(part)
+            except ValueError:
+                continue
+            if isinstance(value, list):
+                paths = tuple(str(item) for item in value if str(item).strip())
+                if paths:
+                    return paths
+    return ()
+
+
+def _stored_run_row(project: str, reviewed_run_id: str) -> Mapping[str, Any] | None:
+    """The committed per-run row beside a project's ledger, or ``None``.
+
+    The row is written when a run is promoted, which is also when its live
+    pointer is reclaimed, so it is the source that outlives the pointer. A
+    project that names no readable ledger, and a row that is absent, unreadable
+    or not an object, all yield ``None``: a run whose row cannot be read is a
+    run whose node the caller must find elsewhere or refuse on.
+    """
+    from reckon import ledger
+
+    try:
+        row = json.loads(
+            ledger.run_path(project, reviewed_run_id).read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError, ledger.LedgerError):
+        return None
+    return row if isinstance(row, Mapping) else None
+
+
+def _stored_reviewed_node(
+    record: Mapping[str, Any], reviewed_run_id: str
+) -> Mapping[str, Any] | None:
+    """The node a reviewed run ran as, read from the records it left behind.
+
+    A live pointer is reclaimed when its run is promoted, so a review checked
+    after its subject was promoted would otherwise resolve no checks at all and
+    the guard would switch itself off exactly when the review is filed. Two
+    sources outlive the pointer. The committed per-run row beside the project's
+    ledger carries the node definition the run was dispatched from, write paths
+    included; failing that, the run's own directory holds the manifest it
+    delivered, which names the paths it declared. Both are read here before the
+    caller is told the checklist cannot be established.
+    """
+    project = str(record.get("project") or "").strip()
+    if project:
+        row = _stored_run_row(project, reviewed_run_id)
+        if isinstance(row, Mapping):
+            node = row.get("node_definition")
+            if isinstance(node, Mapping) and node.get("write_paths"):
+                return node
+    directory = _run_directory(reviewed_run_id)
+    if directory is None:
+        return None
+    try:
+        text = (directory / _MANIFEST_FILE_NAME).read_text(
+            encoding="utf-8", errors="replace"
+        )
+    except OSError:
+        return None
+    paths = _manifest_write_paths(text)
+    return {"write_paths": list(paths)} if paths else None
+
+
+def declared_review_checks(record: Mapping[str, Any]) -> tuple[str, ...] | None:
+    """The declared check ids the reviewed node's write paths require.
+
+    The checklist a composed brief carried, the verdicts a parser requires and
+    the answers the delivery contract holds a record to are one list, matched by
+    the one module that answers which rules a node touches: the reviewed run
+    carries the node, its write paths select the checks, and the project's
+    flight layer declares them.
+
+    The return distinguishes three states, because collapsing them is how the
+    guard switches itself off. ``()`` is a resolved checklist that owes nothing
+    — the project declared no checks, or declared none for this node — and is
+    held to none. ``None`` is a checklist that could not be established: the
+    reviewed run's node is readable from the live pointer, from the committed
+    per-run row or from the run's own delivered manifest, and when none of the
+    three can be read the contract refuses the record rather than reading an
+    unreadable subject as owing nothing. A project that declares no review
+    check at all is not in that state — every node under it owes the same empty
+    checklist — so it resolves to ``()`` without the node.
+
+    A record naming no reviewed run is the one case that returns ``()`` without
+    resolving anything: the missing-key refusals already name it, and refusing
+    it twice would report one defect as two. The import is local because the
+    brief composer reads this module, so a module-level edge back to it would be
+    a cycle.
+    """
+    project = str(record.get("project") or "").strip()
+    reviewed_run_id = str(record.get("reviewed_run_id") or "").strip()
+    if not project or not reviewed_run_id:
+        return ()
+    pointer = _reviewed_run_pointer(reviewed_run_id)
+    node: Mapping[str, Any] | None = None
+    if pointer is not None and isinstance(pointer.get("node"), Mapping):
+        node = pointer["node"]
+    if node is None:
+        node = _stored_reviewed_node(record, reviewed_run_id)
+    from reckon.crew.domain_rules import declares_review_checks
+    from reckon.crew.recovery_review_subject import domain_review_checks
+
+    if node is None:
+        # A project declaring no checks under any node puts every node the same
+        # empty checklist, so "nothing owed" is established here rather than
+        # guessed; a project that declares checks cannot say which of them this
+        # node touched, and that is the state the caller refuses on.
+        return None if declares_review_checks(project) else ()
+    return tuple(str(check.id) for check in domain_review_checks(project, node))
+
+
+def _answered_check_ids(record: Mapping[str, Any]) -> set[str]:
+    """The declared check ids a record carries an answered verdict for.
+
+    Folded to lower case, because a check's id is matched the way the parser
+    matches it. Both spellings are read: the ``item_verdicts`` a parse that was
+    handed the declared set writes, and the reviewer's own ``VERDICT`` lines in
+    the emitted text it stored — the only place an answer survives when the
+    parse was not handed the set. A line stating no recognised outcome answers
+    nothing, which is the rule the parser applies.
+    """
+    answered: set[str] = set()
+
+    def _record(name: str, sentence: str) -> None:
+        if sentence.strip() and check_verdict_outcome(sentence) is not None:
+            answered.add(name.strip().lower())
+
+    verdicts = record.get("item_verdicts")
+    if isinstance(verdicts, Mapping):
+        for item, sentence in verdicts.items():
+            _record(str(item), str(sentence))
+    for line in _review_text_lines(str(record.get("raw_text") or "")):
+        match = _VERDICT_RE.match(line)
+        if match:
+            _record(match.group(1), match.group(2))
+    return answered
+
+
+def unanswered_review_checks(record: Mapping[str, Any]) -> list[str]:
+    """The refusals a record earns for each declared check it left unanswered.
+
+    A review is composed to answer the checks its node touches, so a record
+    carrying no verdict for one has not finished the review it was dispatched
+    for: the delivery contract refuses it and names the check, rather than
+    filing it as a review that answered everything. The checks are resolved here
+    rather than handed in, because the parser reads a reviewer's emitted text
+    and the review it belongs to is not passed to it — so the contract, which
+    does hold the record, is where a skipped check is caught.
+
+    A record whose owed checks cannot be established is refused for that reason
+    instead of passing as one that owed none: the two states read identically
+    from the outside, and only one of them is a review that answered its
+    checklist. Formatting belongs to the caller, so one sentence serves the
+    store's write, the reviewer's own ``crew check --review`` and the audit that
+    reads stored records.
+    """
+    reviewed_run_id = str(record.get("reviewed_run_id") or "").strip()
+    checks = declared_review_checks(record)
+    if checks is None:
+        return [
+            (
+                f"review record names reviewed run {reviewed_run_id!r}, whose "
+                "declared checks cannot be established: neither its live pointer, "
+                "its committed run record nor its run directory could be read, so "
+                "the review cannot be shown to have answered the checks it owed — "
+                "restore the run's record and check the review again"
+            )
+        ]
+    if not checks:
+        return []
+    answered = _answered_check_ids(record)
+    return [
+        f"review record answers no verdict for the declared check {check!r}: the "
+        "reviewed node's write paths match a check this project declared, so the "
+        f"review owes a `VERDICT {check}: pass|fail — <what you read>` line and "
+        "the record carries none — restate the verdict and store the record again"
+        for check in checks
+        if check.strip().lower() not in answered
+    ]
+
+
 class ReviewScoreError(ValueError):
     """A score fell outside the allowed range and was refused, not clamped.
 
@@ -523,8 +752,12 @@ _SCORE_RE = re.compile(
 _JUST_RE = re.compile(
     r"^JUSTIFICATION\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$", re.IGNORECASE
 )
+# The item group carries the characters a declared review check's id may use,
+# because those checks are named by the project that declared them rather than
+# by a constant here. The captured item is still matched against a known set, so
+# a line naming nothing declared is ignored exactly as before.
 _VERDICT_RE = re.compile(
-    r"^VERDICT\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$", re.IGNORECASE
+    r"^VERDICT\s+([A-Za-z_][A-Za-z0-9_.-]*)\s*:\s*(.*)$", re.IGNORECASE
 )
 _CALL_SITES_RE = re.compile(r"^CALL_SITES\s*:\s*(.*)$", re.IGNORECASE)
 # The claims rubric emits one line per re-run claim and one for the report's
@@ -651,6 +884,7 @@ def review_record_refusals(record: Mapping[str, Any]) -> list[str]:
         refusals.append("added_failure_count differs from added_failure_ids")
     if not isinstance(record.get("findings"), list):
         refusals.append("missing findings")
+    refusals.extend(unanswered_review_checks(record))
     for refusal in store_review_refusals(record):
         if refusal not in refusals:
             refusals.append(refusal)
@@ -737,7 +971,10 @@ def _has_integer_total(record: Mapping[str, Any]) -> bool:
 
 
 def parse_review(
-    text: str, *, record: Mapping[str, Any] | None = None
+    text: str,
+    *,
+    record: Mapping[str, Any] | None = None,
+    review_checks: Sequence[str] = (),
 ) -> dict[str, Any]:
     """Parse emitted review text into the complete dimension schema.
 
@@ -750,9 +987,13 @@ def parse_review(
     - ``absent`` — schema dimensions with no recognised SCORE line.
     - ``justifications`` — dimension to its one-sentence justification.
     - ``item_verdicts`` — checklist item to the verdict sentence it carried,
-      for the items that were emitted with text.
+      for the items that were emitted with text. A declared review check joins
+      the same mapping under its own id, once its verdict states one of
+      :data:`CHECK_VERDICT_OUTCOMES`.
     - ``absent_items`` — checklist items with no recognised VERDICT line, or
       with one carrying no text: a line that says nothing is not a verdict.
+      Every declared check in ``review_checks`` that carried no answered verdict
+      is named here after the fixed items, in the order it was declared.
     - ``item_aggregate`` — how many checklist items carried a verdict, when
       every item did, otherwise ``None``. Withheld on the same rule as the
       total: a count over the items that happen to be present reads as a
@@ -769,6 +1010,10 @@ def parse_review(
     - ``findings`` — a list of ``{"file", "line", "text"}``, each carrying a
       ``severity`` key only when the finding stated one of the declared values;
       a finding that states none is recorded without the key, never defaulted.
+      A declared check answered ``fail`` contributes a finding of its own,
+      carrying :data:`BLOCKING_FINDING_SEVERITY` and the check's id with the
+      verdict as its text, so the review reports the check's question as
+      unanswered-and-defective rather than as a topic it merely discussed.
     - ``total`` — the arithmetic sum of the parsed scores when every dimension
       is present, otherwise ``None``. The total is never computed over a
       subset: a total taken over fewer dimensions is a lower score
@@ -784,6 +1029,12 @@ def parse_review(
     ``record`` is the merged record a call site already holds — the stored
     metadata carrying legacy spellings of the pair. Supplying it lets an
     existing stored record be parsed and canonicalised in one call.
+
+    ``review_checks`` names the declared review checks the review was composed
+    for, taken from the same matcher that composed them into its brief
+    (:func:`reckon.crew.domain_rules.rules_for`). They are the required set: one
+    answered verdict is owed for each, and a record owing one is ``"incomplete"``
+    whether the omission is the line or its outcome.
 
     A score outside ``0..REVIEW_MAX_SCORE`` raises :class:`ReviewScoreError`
     naming the dimension and the value; it is never clamped into range.
@@ -802,6 +1053,8 @@ def parse_review(
     base_sha: str | None = None
     head_carried = False
     head_sha: str | None = None
+    declared_checks = tuple(str(check) for check in review_checks if str(check).strip())
+    declared_by_folded = {check.lower(): check for check in declared_checks}
     for line in _review_text_lines(text):
         match = _SCORE_RE.match(line)
         if match:
@@ -826,6 +1079,19 @@ def parse_review(
             verdict = match.group(2).strip()
             if item in REVIEW_ITEMS and verdict:
                 item_verdicts[item] = verdict
+                continue
+            check = declared_by_folded.get(item)
+            if check is not None and verdict:
+                outcome = check_verdict_outcome(verdict)
+                if outcome is not None:
+                    item_verdicts[check] = verdict
+                    if outcome == FAILED_CHECK_OUTCOME:
+                        findings.append(
+                            {
+                                "text": f"{check}: {verdict}",
+                                "severity": BLOCKING_FINDING_SEVERITY,
+                            }
+                        )
             continue
         match = _CALL_SITES_RE.match(line)
         if match:
@@ -893,6 +1159,8 @@ def parse_review(
             continue
     absent = [dim for dim in REVIEW_DIMENSIONS if dim not in scores]
     absent_items = [item for item in REVIEW_ITEMS if item not in item_verdicts]
+    absent_checks = [check for check in declared_checks if check not in item_verdicts]
+    absent_items.extend(absent_checks)
     claims_bearing = bool(claims) or claim_summary is not None
     if not scores and not claims_bearing:
         status = "unparsed"
@@ -939,6 +1207,12 @@ def parse_review(
     if head_carried:
         record[REVIEWED_HEAD_KEY] = head_sha
     if source_record is not None and (not base_sha or not head_sha):
+        record["status"] = "incomplete"
+    # A declared check the review owes an answer for and did not give leaves the
+    # record incomplete, so a review that skipped the question it was composed
+    # for is not stored as one that answered it. An unparsed record stays
+    # unparsed: it answered nothing, which its own status already says.
+    if absent_checks and record["status"] == "parsed":
         record["status"] = "incomplete"
     return record
 

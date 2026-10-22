@@ -1,0 +1,249 @@
+<section id="a-review-answers-the-domain-checks">
+  <h2>A review answers the domain checks its node touches</h2>
+
+  <p><strong>What changed.</strong> A repository's declared <code>review_checks</code>
+  join the review checklist rather than a seventh scored dimension. The composed
+  run-review brief in <code>reckon/crew/recovery_review_subject.py</code> now carries a
+  <em>Declared review checks this node touches</em> block naming every check the
+  reviewed node's write paths match, taken from the one matcher that answers which
+  rules a node touches (<code>rules_for</code> in
+  <code>reckon/crew/domain_rules.py</code>), with the verdict form stated beside the
+  questions — a reviewer in another project's worktree holds no flight config of its
+  own, so the questions and the grammar reach it only through the brief.</p>
+
+  <p>On the parser side, <code>parse_review</code> takes the declared check ids as its
+  required set. Each answered check joins <code>item_verdicts</code> under its own id;
+  a check that carried no answered verdict is named in <code>absent_items</code> and
+  leaves the record <code>incomplete</code>; and a check answered <code>fail</code> is
+  stored as a finding carrying <code>blocking</code>. Nothing else moved:
+  <code>REVIEW_DIMENSIONS</code>, the acceptance floor in
+  <code>reckon/crew/recovery_review_acceptance.py</code> and
+  <code>reckon/crew/review_lifecycle.py</code> are untouched, so the existing
+  severity derivation reports such a run <code>open</code> with no new lifecycle code.
+  <code>_VERDICT_RE</code> accepts <code>-</code> and <code>.</code> in an item name,
+  because a declared check is named by the project that declared it rather than by a
+  constant in the parser; the captured item is still matched against a known set, so a
+  line naming nothing declared parses exactly as it did before.</p>
+
+  <h3>Measured</h3>
+
+  <p>Gate: the eight test files named in the done-when, run in place on the fleet
+  allocation as one arm per revision. Each arm's log names its revision, tree, working
+  directory, imported <code>module.__file__</code> and command on its header lines and
+  ends with a bare <code>EXIT=&lt;code&gt;</code> line.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base</td><td><code>607718a36</code></td>
+        <td>6 failed, 48 passed, exit 1</td></tr>
+      <tr><td>head</td><td><code>78268a3d6</code></td>
+        <td><strong>54 passed</strong>, exit 0 — no failure id the base does not carry</td></tr>
+      <tr><td>negative control (checklist lines dropped from the composed prompt,
+        head)</td><td>mutated head</td><td>3 failed, exit 1</td></tr>
+    </tbody>
+  </table>
+
+  <ul>
+    <li><strong>The base's six failures are the new file's own</strong>, and only those:
+    at <code>607718a36</code> the new tests fail because the mechanism is absent —
+    <code>DECLARED_CHECK_HEADING</code> does not exist in the composer,
+    <code>parse_review</code> accepts no check set and <code>check_verdict_outcome</code>
+    is undefined. The other seven files are green in both arms, so the change adds no
+    behaviour they were resting on.</li>
+    <li><strong>The four measures, each test driving the mechanism end to end.</strong>
+    A fixture project declaring three checks (two matching a
+    <code>models/**</code> node, one reaching <code>lib/**</code>) composes a brief
+    listing exactly the two matching ids; the same node writing
+    <code>docs/notes.md</code> composes a brief carrying no block at all. A record
+    emitting a verdict for every brief-named check parses <code>parsed</code> with an
+    empty <code>absent_items</code>; the same record with the last check's line removed
+    parses <code>incomplete</code> naming it, with <code>item_aggregate</code> withheld.
+    A check answered <code>fail</code> yields exactly one finding whose severity is the
+    blocking constant, and <code>lifecycle()</code> returns <code>open</code> for the
+    stored record.</li>
+    <li><strong>The control.</strong> A fixture project declaring no <code>domain</code>
+    block composes a brief with no checklist heading, and a record parsed with no
+    declared checks scores the six dimensions with no checklist lines and an unchanged
+    acceptance floor. The expected check ids the incomplete-record test asserts against
+    are read out of the composed brief rather than restated from the fixture, so the
+    brief is the one authority for what a review owes.</li>
+    <li><strong>The negative control.</strong> With the checklist lines dropped from the
+    composed prompt (<code>_declared_check_block</code> returning the empty string), the
+    prompt-lists-the-checks and incomplete-record tests both fail, and the failed-check
+    test with them. The mutation was reverted and
+    <code>reckon/crew/recovery_review_subject.py</code> re-hashed to
+    <code>8b7468cfbb54</code>… — identical to its pre-mutation bytes.</li>
+    <li><strong>Lint delta.</strong> <code>ruff check</code> and
+    <code>ruff format --check</code> are clean on the three changed paths.</li>
+    <li><strong>Carried onto the delivered record.</strong> A reviewer writes its record as
+    JSON by hand, so the parser's required set bites where emitted text is parsed; the
+    section below records where the delivery contract was made to refuse an omission
+    too, and the arm that carries the evidence for it.</li>
+  </ul>
+
+  <h3>Where the required set is resolved</h3>
+
+  <p>An independent review found that the required set as first written never reached
+  production: <code>parse_review</code> takes <code>review_checks</code>, but its two
+  callers — <code>repair.py</code> and <code>reports.py</code> — both call it with the
+  defaults, so a reviewer that skipped a declared check still delivered a record the
+  delivery contract filed as complete. The parser is handed a reviewer's emitted text
+  and never the review it belongs to, so it cannot resolve the checklist itself.</p>
+
+  <p>The resolution therefore lives in the delivery contract, which does hold the
+  record: <code>review_record_refusals</code> now calls
+  <code>unanswered_review_checks</code>, which resolves the checks from the reviewed
+  run's own live pointer — the node the pointer carries, its write paths, and the
+  project's flight layer, matched through the same <code>domain_review_checks</code>
+  the brief is composed from — and refuses the record naming each check it left
+  unanswered. The answers are read from both spellings: the <code>item_verdicts</code>
+  a parse handed the set writes, and the reviewer's own <code>VERDICT</code> lines in
+  the emitted text it stored, which is where an answer survives when the parse was not
+  handed the set. Every existing caller of the contract gains the guard without a
+  change of its own, and a record whose reviewed run has no readable pointer — one
+  already promoted and reclaimed — owes nothing and is left alone.</p>
+
+  <h3>Measured after the repair</h3>
+
+  <p>The same eight test files, one arm per revision, the new arm adding nine tests
+  rather than six. Each arm's log names its revision, tree, working directory, imported
+  <code>module.__file__</code> and command on its header lines and ends with a bare
+  <code>EXIT=&lt;code&gt;</code> line.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>before (the revision the review read)</td><td><code>e6c35bde9</code></td>
+        <td>1 failed, 56 passed, exit 1</td></tr>
+      <tr><td>after (repaired tree)</td><td><code>e6c35bde9</code> + working tree</td>
+        <td><strong>57 passed</strong>, exit 0</td></tr>
+    </tbody>
+  </table>
+
+  <ul>
+    <li><strong>The negative control is the finding's own check.</strong> Reverted to the
+    revision the review read, without the contract change,
+    <code>test_a_delivered_record_that_skips_a_declared_check_is_refused</code> fails with
+    an empty refusal list against
+    <code>assert [refusal for refusal in refusals if owed[0] in refusal]</code>; it is the
+    only test the base arm fails.</li>
+    <li><strong>The other two tests of the repair are controls, not discriminators.</strong>
+    They assert an absence — a record answering every check is not refused for one, and a
+    record naming a reclaimed run owes nothing — so they hold on both arms by
+    construction and carry no evidence that the guard runs. The first test carries it
+    alone, which is why it is the one reverted.</li>
+    <li><strong>Lint delta.</strong> <code>ruff check</code> and
+    <code>ruff format --check</code> are clean on both changed paths.</li>
+  </ul>
+
+  <h3>The guard does not switch itself off when its subject is promoted</h3>
+
+  <p>A second review, of the repaired head, found the resolution above still had one
+  way to fail quietly: it read the reviewed node from the run's live pointer alone and
+  returned no checks when that pointer was unreadable. A run's pointer is reclaimed the
+  moment it is promoted — which is when its review is filed — so the guard switched
+  itself off at exactly the point it was needed, and a review of a promoted subject
+  could skip every declared check and still file as complete.</p>
+
+  <p>The resolution now distinguishes three states rather than two. The node comes from
+  the live pointer, or failing that from the committed per-run row beside the project's
+  ledger, which carries the node definition the run was dispatched from, or failing that
+  from the run's own delivered manifest, whose declared write paths are read before its
+  changed ones. When none of the three can be read the contract refuses the record and
+  says the checks cannot be established, instead of reading an unreadable subject as
+  owing nothing. A project that declares no check under any node is not in that state:
+  every node beneath it owes the same empty checklist, so it resolves to nothing owed
+  without the node, and no record is refused merely because its subject cannot be read.
+  Only a project that declares checks can be unable to say which of them the node
+  touched, and only that case is refused.</p>
+
+  <h3>Measured after the second repair</h3>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>baseline (the revision the review read, with the repaired test file)</td>
+        <td><code>b4132f14c</code></td><td>2 failed, 57 passed, exit 1</td></tr>
+      <tr><td>after (repaired tree)</td><td><code>b6510e1bb</code></td>
+        <td><strong>59 passed</strong>, exit 0 — no failure id the baseline does not carry</td></tr>
+    </tbody>
+  </table>
+
+  <ul>
+    <li><strong>The two failures are the two tests the repair adds</strong>, and only
+    those: <code>test_a_promoted_subject_whose_review_skips_a_check_is_still_refused</code>
+    and <code>test_a_subject_with_no_readable_record_is_refused_for_that</code>. The
+    third test the repair adds is the control — a project declaring nothing is unaffected
+    by the contract — and holds on both arms, as a control should.</li>
+    <li><strong>A broad sweep bounded the blast radius.</strong> The first cut of this
+    repair refused every record whose subject was unreadable, and a sweep over the
+    review-shaped tests measured eleven failures: three that fail at the base revision
+    too, and eight caused by the cut, across
+    <code>test_a_figure_review_promotes_without_text_scores.py</code> and
+    <code>test_review_record_contract.py</code>, which seed records naming runs they
+    never create. Narrowing the refusal to projects that declare checks leaves those
+    files untouched — no project declares a check today — and re-running them together
+    with this node's own file gives 29 passed. The verdict drawn from the sweep is
+    therefore a two-population comparison rather than a full green: measured before and
+    after on the same selection.</li>
+    <li><strong>Lint delta.</strong> <code>ruff check</code> and
+    <code>ruff format --check</code> are clean on all three changed paths, recorded in
+    the manifest's test logs.</li>
+  </ul>
+
+  <h3>Each fact is read by the reader that owns it</h3>
+
+  <p>Both repairs above had grown their own reader of a fact this repository already
+  answers, so a change to the owner would have left them reading the old shape. The
+  declared write paths of a delivered manifest were scanned for a line prefix rather
+  than taken from the manifest-field reader this module already uses for every other
+  field it reads from a manifest; and whether a project declares any review check was
+  answered by re-resolving the flight domain block rather than by asking the module
+  that matches domain rules to nodes.</p>
+
+  <p>The declared paths now come from <code>_manifest_field_lines</code>, so a field
+  this contract reads is a field it reads the way the rest of the contract does — the
+  behaviour on a manifest the reader cannot parse is unchanged, since an unparsable
+  field still yields nothing and the caller still refuses. The project-level question is
+  answered by <code>declares_review_checks</code> in
+  <code>reckon/crew/domain_rules.py</code>, which is where the block is read and
+  validated through the generated model, and whose <code>rules_for</code> now shares one
+  private read so the project-level question and the node-level match cannot disagree
+  about which fields exist. The duplicate reader in
+  <code>recovery_review_subject.py</code> is deleted and its caller asks the owner. One
+  behaviour moved with it: a block the schema rejects now raises as it does in
+  <code>rules_for</code> instead of answering "declares nothing", which is the loud
+  failure that module exists to give and the direction a guard should fail.</p>
+
+  <h3>Measured after the third repair</h3>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>baseline (the revision the review read, with the head test file)</td>
+        <td><code>a9934a9b3</code></td><td>1 failed, 60 passed, exit 1</td></tr>
+      <tr><td>after (refactored tree)</td><td><code>e4fe36e0f</code></td>
+        <td><strong>61 passed</strong>, exit 0 — no failure id the baseline does not carry</td></tr>
+    </tbody>
+  </table>
+
+  <ul>
+    <li><strong>The baseline failure is the one test the owner answers</strong>, and only
+    that: <code>test_the_owner_answers_whether_a_project_declares_any_check</code> fails
+    at <code>a9934a9b3</code> with <code>AttributeError: module 'reckon.crew.domain_rules'
+    has no attribute 'declares_review_checks'</code>, since the owner the refactor adds
+    is not there yet.</li>
+    <li><strong>The manifest fallback is newly covered, and holds on both arms.</strong>
+    <code>test_a_promoted_subject_reads_its_delivered_manifest</code> drives the run
+    directory's delivered manifest end to end — no live pointer, no committed row — and
+    passes at both revisions, because the unindented field it writes parsed under the old
+    reader too. It is a control: it covers a path nothing tested before, and it carries no
+    evidence that the routing changed. The refactor's own discriminator is the owner
+    test above.</li>
+    <li><strong>Lint delta.</strong> <code>ruff check</code> and
+    <code>ruff format --check</code> are clean on all four changed paths
+    (<code>reckon/crew/domain_rules.py</code> now among them), recorded in
+    <code>r4-lint.log</code>.</li>
+  </ul>
+</section>

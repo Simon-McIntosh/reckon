@@ -393,7 +393,11 @@ _DELTA_UNSET: Any = object()
 
 
 def _review_brief_text(
-    record: Mapping[str, Any], head: str, *, rubric: str | None = None
+    record: Mapping[str, Any],
+    head: str,
+    *,
+    rubric: str | None = None,
+    project_path: str | None = None,
 ) -> str:
     """The rubric text and run identity a run review's brief carries.
 
@@ -407,6 +411,11 @@ def _review_brief_text(
     of the run under review: its id, the head it read, and, where the reviewed
     run was dispatched with a stored brief, that brief's path, which is the
     authority its own worker read.
+
+    ``project_path`` selects the flight layer the node's declared review checks
+    are read from, so a caller holding a fixture config does not have to install
+    one; without it the project's own layer is resolved as the dispatch resolves
+    it.
     """
     rubric_name = str(rubric or "").strip().lower()
     if rubric_name == review_module.FIGURE_REVIEW_RUBRIC:
@@ -450,6 +459,11 @@ def _review_brief_text(
             "incomplete when the review has not finished and no verdict can be acted on.",
         ]
     )
+    declared_block = _declared_check_block(
+        str(record.get("project") or ""), node, project_path=project_path
+    )
+    if declared_block:
+        lines.extend(["", declared_block])
     if rubric_name:
         lines.insert(0, f"Review rubric: {rubric_name}")
     text = rubric_text.rstrip("\n") + "\n\n" + "\n".join(lines) + "\n"
@@ -458,6 +472,87 @@ def _review_brief_text(
     if _is_shadow(record):
         text += _shadow_review_block(record)
     return text
+
+
+# The heading the review checks a repository declared for a node are carried
+# under in a composed review brief. One heading for one block, so a reader
+# handed two briefs sees the same marker whether or not their nodes matched.
+DECLARED_CHECK_HEADING = "Declared review checks this node touches"
+
+
+def domain_review_checks(
+    project: str,
+    node: Any,
+    *,
+    project_path: str | None = None,
+    host_path: str | None = None,
+    shipped_path: str | None = None,
+    checkout_path: str | None = None,
+) -> tuple[Any, ...]:
+    """The declared review checks a node must answer, in declaration order.
+
+    The match is taken from the one module that answers which rules a node
+    touches, so the checklist a review brief carries, the verdicts the parser
+    requires and the rules the node's own brief named cannot disagree. A project
+    that declares no ``domain`` block, and a node matching none of its globs,
+    both yield nothing.
+    """
+    from reckon.crew.domain_rules import rules_for
+
+    if not project:
+        return ()
+    return tuple(
+        rules_for(
+            project,
+            node,
+            project_path=project_path,
+            host_path=host_path,
+            shipped_path=shipped_path,
+            checkout_path=checkout_path,
+        ).review_checks
+    )
+
+
+def _declared_check_block(
+    project: str,
+    node: Any,
+    *,
+    project_path: str | None = None,
+    host_path: str | None = None,
+    shipped_path: str | None = None,
+    checkout_path: str | None = None,
+) -> str:
+    """Render the review checks a node must answer, or the empty string.
+
+    A reviewer reading a composed brief has no flight config in its own worktree
+    when the project it reviews is not this repository, so the questions and the
+    verdict form reach it only if the brief carries them. The block states the
+    line grammar beside the questions rather than in the rubric, because the
+    rubric is shared by every project and these checks are declared by one.
+    """
+    checks = domain_review_checks(
+        project,
+        node,
+        project_path=project_path,
+        host_path=host_path,
+        shipped_path=shipped_path,
+        checkout_path=checkout_path,
+    )
+    if not checks:
+        return ""
+    outcomes = "|".join(review_module.CHECK_VERDICT_OUTCOMES)
+    lines = [
+        DECLARED_CHECK_HEADING + ":",
+        f"  VERDICT <check id>: {outcomes} — <what you read>",
+    ]
+    lines.extend(f"  {check.id}: {check.question}" for check in checks)
+    lines.append(
+        "A check answered "
+        f"{review_module.FAILED_CHECK_OUTCOME!r} is recorded as a blocking "
+        "finding, and a check with no answered verdict leaves the record "
+        "incomplete."
+    )
+    return "\n".join(lines)
 
 
 def _shadow_review_block(record: Mapping[str, Any]) -> str:
