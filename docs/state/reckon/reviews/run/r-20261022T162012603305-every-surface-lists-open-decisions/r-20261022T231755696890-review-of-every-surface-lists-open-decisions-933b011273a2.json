@@ -1,0 +1,65 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/serve.py:1824",
+    "reckon/roadmap.py:1121",
+    "reckon/route_results.py:260",
+    "reckon/route_results.py:473",
+    "reckon/serve.py:3269",
+    "reckon/mcp_discovery.py:153"
+  ],
+  "completed_at": "2026-10-22T23:40:57.509Z",
+  "dispatched_at": "2026-10-22T23:22:35Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/every-plan-write-goes-through-edit-plan/every-surface-lists-open-decisions.html",
+      "line": 89,
+      "severity": "follow-on",
+      "summary": "gate paragraph cites a superseded head and a stale pass count",
+      "text": "the gate paragraph this increment left stale still cites the superseded head: 'The head arm (1a3841364) reported 6 failed, 202 passed in 620.30s', while the increment moved the landed head to 933b0112 and raised the case count from five to six, so the arm as landed reports 6 failed, 203 passed (logs/head-gate.log:1, tail). The canonical evidence for the node therefore quotes a revision the change has moved past and a pass count one below what it produced, and the paragraph's own 'Six cases' sentence at line 67 contradicts the five-case arm it cites."
+    },
+    {
+      "file": "docs/evidence/fragments/every-plan-write-goes-through-edit-plan/every-surface-lists-open-decisions.html",
+      "line": 96,
+      "severity": "follow-on",
+      "summary": "ruff prose claims equal counts where the receipts show 29 against 22",
+      "text": "the same paragraph asserts 'ruff check and ruff format --check report the same counts on the staged paths as at base' and names only three logs, but the receipts now exist and contradict the wording: logs/ruff-base.log records 29 findings and logs/ruff-head.log records 22, which are not the same counts, and neither log is named in the fragment. The requirement the done_when states (findings do not exceed base) is satisfied, so only the prose is wrong."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/serve.py:1824 the result['waiting_decisions'] assignment in _attach_ready_set the new case exercises through discover_plans, reckon/roadmap.py:1121 waiting_decision_rows, and the production discover_plans callers reckon/route_results.py:260 and reckon/route_results.py:473, reckon/serve.py:3269, reckon/mcp_discovery.py:153.",
+    "diff": "read both commits against base a7e8b89a; de3406632 adds test_discovery_payload_carries_the_roadmap_waiting_decisions plus its import and rewrites the fragment's crew paragraph and 'Five cases' as 'Six cases', and 933b0112 sorts that case's import; nothing else changes.",
+    "done_when": "the done_when names the eighteen-file gate with zero added failures at head plus a ruff comparison against base; the manifest records base 9a9492e0a at 10 failed/197 passed and head 933b0112 at 6 failed/203 passed, both logs under the run directory opening with their revision and closing EXIT=1, and every head failure is present in the base arm, so the delta is zero added, verified from the logs.",
+    "goal": "the node's goal is to serve one derivation of the open decisions through the roadmap summary and the /crew payload as section 15 specifies; the increment is a re-review response and holds that shape, adding the case that pins the discovery payload's waiting_decisions line at reckon/serve.py:1824 to the roadmap's own waiting_decision_rows at reckon/roadmap.py:1121.",
+    "manifest": "read the reviewed run's manifest.md; it records status complete, a checkpoint naming the sixth case and the 933b0112 head arm at 6 failed/203 passed, six full 40-character commits that all resolve, the ruff receipt (base 29, head 22, format 0), both negative controls appended to logs/negative-control.log, and the baseline_suite/after_suite JSON.",
+    "write_paths": "read the reviewed prompt's FENCE \u2014 SCOPE (reckon/roadmap.py, reckon/mcp_views.py, reckon/serve.py, tests/test_every_surface_lists_open_decisions.py, the evidence fragment, docs/figures/...) and the increment's two changed paths; both (the test file and the fragment) lie inside them and no other path is touched."
+  },
+  "justifications": {
+    "durability": "logs/negative-control.log shows removing the discovery payload's waiting_decisions assignment reddens tests/test_every_surface_lists_open_decisions.py:276 with KeyError 'waiting_decisions', so the case fails on the regression it guards; the equality assertion at line 278 compares two calls of the same derivation and its independence rests on the literal WAITING_IDS set at line 38.",
+    "evidence": "the gate the increment ran is recorded rather than claimed: logs/head-gate.log:1 names revision 933b0112 and the module it imported, its last line is EXIT=1, and the six failures are the base arm's own browser cases (base-gate.log) so the delta is zero, but the fragment's own gate paragraph still cites the superseded head 1a3841364 and 202 passed.",
+    "fit": "the new case follows the file's existing idiom (the _arm/mounted_projects fixture and the docstring-first style of tests/test_every_surface_lists_open_decisions.py:210) and carries no plan, sprint or ticket identifier in its name or docstring; the rewritten paragraph wraps unevenly where two source lines were merged at line 76.",
+    "goal_fidelity": "the increment's production effect is nil but its evidence effect is the node's goal served: tests/test_every_surface_lists_open_decisions.py:253 pins the discovery payload's row list to reckon/serve.py:1824, and the fragment's crew paragraph now names the memoised read at reckon/serve.py:717 rather than the spliced clause the earlier review refused.",
+    "reuse": "the case imports build_roadmap and waiting_decision_rows from reckon.roadmap rather than re-deriving the report, extending the owner of that capability; no second derivation of the wait is introduced by the test file or by the fragment.",
+    "scope_discipline": "both changed paths (tests/test_every_surface_lists_open_decisions.py and the evidence fragment) lie inside the reviewed prompt's declared write paths, and the increment carries nothing the goal does not imply, adding only the missing case and the prose repair."
+  },
+  "notes": "the reviewed worktree had been reclaimed by the time the record was written; every diff and code read above was taken against it at revision 933b011273a26d5364f23615022870badadc5566 while it was present, and the logs and manifest read live under the reviewed run's directory.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to serve one derivation of the open decisions through the roadmap summary and the /crew payload as section 15 specifies; the increment is a re-review response and holds that shape, adding the case that pins the discovery payload's waiting_decisions line at reckon/serve.py:1824 to the roadmap's own waiting_decision_rows at reckon/roadmap.py:1121.\nVERDICT done_when: the done_when names the eighteen-file gate with zero added failures at head plus a ruff comparison against base; the manifest records base 9a9492e0a at 10 failed/197 passed and head 933b0112 at 6 failed/203 passed, both logs under the run directory opening with their revision and closing EXIT=1, and every head failure is present in the base arm, so the delta is zero added.\nVERDICT write_paths: read the reviewed prompt's FENCE \u2014 SCOPE and the increment's two changed paths; both (the test file and the fragment) lie inside them and no other path is touched.\nVERDICT manifest: read the reviewed run's manifest.md; it records status complete, six resolving full-length commits, the 933b0112 head arm at 6 failed/203 passed, the ruff receipt, and both negative controls.\nVERDICT diff: read both commits against base a7e8b89a; de3406632 adds test_discovery_payload_carries_the_roadmap_waiting_decisions and rewrites the fragment's crew paragraph and case count, and 933b0112 sorts that case's import.\nCALL_SITES: reckon/serve.py:1824, reckon/roadmap.py:1121, reckon/route_results.py:260, reckon/route_results.py:473, reckon/serve.py:3269, reckon/mcp_discovery.py:153\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the increment pins the discovery payload's row list at reckon/serve.py:1824 to the roadmap's derivation in tests/test_every_surface_lists_open_decisions.py:253.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/head-gate.log:1 names revision 933b0112 and closes EXIT=1 at 6 failed/203 passed, but the fragment's gate paragraph at line 89 still cites the superseded head 1a3841364 and 202 passed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the increment's changed paths (tests/test_every_surface_lists_open_decisions.py and the evidence fragment) are both inside the declared write paths in the reviewed run's prompt.\nSCORE durability: 19\nJUSTIFICATION durability: logs/negative-control.log shows removing the waiting_decisions assignment reddens tests/test_every_surface_lists_open_decisions.py:276 with KeyError, so the added case fails on the regression it guards.\nSCORE fit: 17\nJUSTIFICATION fit: the new case follows the fixture and docstring idiom of tests/test_every_surface_lists_open_decisions.py:210 and carries no forbidden name, though the rewritten paragraph wraps unevenly at line 76.\nSCORE reuse: 19\nJUSTIFICATION reuse: the case imports the owner's reckon.roadmap waiting_decision_rows and build_roadmap rather than re-deriving the report, introducing no second derivation.\nFINDING docs/evidence/fragments/every-plan-write-goes-through-edit-plan/every-surface-lists-open-decisions.html:89 follow-on: the gate paragraph still cites head 1a3841364 at 202 passed while the landed head 933b0112 reports 203 passed, so the canonical evidence quotes a superseded revision and an arm that predates the sixth case.\nFINDING docs/evidence/fragments/every-plan-write-goes-through-edit-plan/every-surface-lists-open-decisions.html:96 follow-on: the paragraph claims ruff reports the same counts as at base and names three logs, but the receipts show 29 against 22 and name neither ruff log.\n",
+  "review_run_id": "r-20261022T231755696890-review-of-every-surface-lists-open-decisions-933b011273a2",
+  "reviewed_base_sha": "a7e8b89a9a4e8fb9cf40eed233c5e8124da48b07",
+  "reviewed_head_sha": "933b011273a26d5364f23615022870badadc5566",
+  "reviewed_run_id": "r-20261022T162012603305-every-surface-lists-open-decisions",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T23:46:19.001200+00:00",
+  "total": 108
+}
