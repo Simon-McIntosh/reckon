@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T06:50:34.192Z",
+  "dispatched_at": "2026-10-22T06:41:47Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-mcp-answers-the-question-asked.html:130",
+      "id": "reasoning-1",
+      "reason": "the full answer is only reached by a caller passing a `since` older than the stream, and a caller self-corrects by re-reading with a later `since`, so naming a bound here would not change what a node builds.",
+      "text": "the `full: true` bound is defined only against the run-transition stream's oldest row (\"A `since` older than the oldest retained transition is answered in full\"), while the change set has a second source (plan git history) with no equivalent too-old detection, and the full answer has no size row and no cursor (\"no cursor ... is added\") even though \u00a72 declares an over-budget answer a defect in that view",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "150a3b2089206546346b91641ba5f107dfb80782c4b9396a8d59cd091cd97310",
+  "plan_slug": "the-mcp-answers-the-question-asked",
+  "plan_version": 21,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T064050188205-plan-review-of-the-mcp-answers-the-question-asked",
+  "reviewed_blob_sha": "7992746de63ae01dfe5dd7b6f713f4dec81cb59d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/mcp.py:2259-2267` passes `since`/`until` into `serve_crew_view`; the velocity view takes `since`/`until` (`reckon/mcp_views.py:3728-3729`, dispatch `:3917-3924`); `_plan_history` exists at `reckon/velocity.py:361` and is used at `:504`; `~/.config/reckon/crew/watch/<project>-<key>.events` exists (e.g. `RabbitPy-f9d957c9373a.events`, one stream per project) with `observed_at` on each row; and \u00a71's \"588 pointer-file reads\" resolves to the \u00a71 table row.",
+    "done_when": "pass \u2014 \u00a77's done-when names a declared negative control (\"On the base commit the three reads refuse or ignore `since`, and the test fails there\"), plus a second control (an unchanged project returns an empty change set) and a `full: true` arm, all of which can fail on the unfixed code.",
+    "evidence_paths": "pass \u2014 \u00a77 names no evidence path, and the durable gate logs and the census record it feeds belong to \u00a78 (`docs/evidence/archive/the-mcp-answers-the-question-asked-landed.html`); no session-scratch or node-local path is named.",
+    "naming": "pass \u2014 \u00a77 introduces no symbol, no plan label, no stage or ticket number, and its prose states the mechanism rather than referencing an incident by ticket.",
+    "reasoning": "pass \u2014 the root cause (a coordinator polling re-reads the whole of the state) is the one \u00a71's census supports; each source named exists and carries time (`_plan_history` yields per-commit `epoch`, the transition stream's rows carry `observed_at`); and the readiness arm runs on the real path, since `_section_satisfied` (`reckon/roadmap.py:621`) takes the declarations mapping explicitly, so readiness at a changed commit is re-derivable from the plan state that commit holds rather than being a second, invented derivation.",
+    "single_goal": "pass \u2014 \u00a77 carries one deliverable: make `since` a change-set read over three existing reads.",
+    "wiring": "pass \u2014 \u00a77 declares `depends-on a-project-reads-as-one-picture#s7`, the section that composes the brief \u00a77's mechanism extends with `since` (a-project-reads-as-one-picture.html:109-111), and \u00a77 also appears in the `s8` depends-on entry, so the edge \u00a78's sequencing needs is present."
+  },
+  "section_digests": {
+    "_document": "49cac46eaf00468e960aa9edda2615e18d1f192403817a2c9be7b18ebc861a8f",
+    "s1": "daef4b527685c5d986aa210cce10bb0f4cd5772ef762521051f5920fcb02c98b",
+    "s10": "817583319a1fadf8a657b5c2981faadfdd56d0da60ee50bc471c63ca5c29b8cb",
+    "s2": "a0440f416fa80f8451c518eb60d4c1a08c9c1c3370f691c7d170cd70e7ba5758",
+    "s3": "647001e0a60af5feceb57b19761d4ce65f0a71625325a5006e4cb99c4a10aefb",
+    "s4": "3ca97d7774b26b36ca14a01534224ffd077491ba49080047a5b94a7b0e2271fe",
+    "s5": "bdc42e40b84e0fa988f8b3f38a8a495bab1729904d9546f4b6d61792a65b1099",
+    "s6": "72d443bc7a7499a314bb8fb3b01da359881bffc36e31bdbe2f88986736c43444",
+    "s7": "a053ed4c541d8d5123269c5f548899613fe4acb2da257ecc23542f2df20fca79",
+    "s8": "27fe0be42478903a55544ca3b72d0fc75b3b096044a368408d31c52ce87bb548",
+    "s9": "ff6dcb1200f273dcfd647c7fa404014d43f233766c8fc65de5824d9a3e86d8db"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T06:55:49.402312+00:00"
+}
