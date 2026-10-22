@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T18:52:31.934Z",
+  "dispatched_at": "2026-10-22T18:33:12Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-coordinator-sees-the-board.html:23",
+      "id": "wiring-1",
+      "reason": "this is the same shape the author already accepted for s5 and s6 (adding #s3 to each), and a skill landed before \u00a74/\u00a76 would name fields no view yet serves.",
+      "text": "\u00a77's prose (\"The skills name \u00a73's filtered ready-set view, \u00a74's critical-path fields, \u00a75's directory and \u00a76's lanes view instead\") makes s7 read \u00a74 and \u00a76, but `plan-section-depends-on[\"s7\"]` is `[\"a-coordinator-sees-the-board#s3\",\"a-coordinator-sees-the-board#s5\"]`, so those two are outside its closure",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-coordinator-sees-the-board.html:86",
+      "id": "reasoning-1",
+      "reason": "a builder that reads `plan` returns unowned for every plan and fails the fixture, and s2 declares no dependency on the node that supplies the naming.",
+      "text": "\u00a72 resolves a plan's coordinator from its ledger runs, but `reckon/run_record.py:489` writes `\"plan\": None if brief is not None`, and every fixture row for the three named plans under `/home/ITER/mcintos/Code/power_convertor/docs/state/power_convertor/runs/` carries `plan: null` (the plan attribution sits in `plan_link`/`node`), while \u00a75 states the run row's `plan#section` naming is being added by `the-mcp-answers-the-question-asked` \u00a73 \u2014 the join \u00a72 needs is named by neither section",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c75b69003b2947aa689e07823cb749e30083039ded656456c0cc74ea055d4b0d",
+  "plan_slug": "a-coordinator-sees-the-board",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T181347668221-plan-review-of-a-coordinator-sees-the-board",
+  "reviewed_blob_sha": "a7d08398ae2300b30b21d075c1680cb192609e06",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 verified against the tree: `reckon/ledger.py:162-165` is the `session`/`session_id` comment pair, `reckon/run_record.py:538-539` the same at promote time, `reckon/mcp_views.py:1128` is `ready_set_view`, `reckon/mcp_views.py:3805-3813` is the early directory return, `reckon/mcp_views.py:724` is `_attach_lane_document`, `reckon/crew/lane_document.py:303` is `read_lane_document`, `reckon/crew/obligations.py:553` is `_published_worker_slots`, `reckon/crew/directory.py` holds `_run_row`/`_observed_transport`, and `sprint-orchestration.md` \u00a712 carries \"An idle lane with ready work is a defect\"; the extensionless hrefs to `a-project-reads-as-one-picture` and `the-mcp-answers-the-question-asked` resolve as `<path>.html`.",
+    "done_when": "pass \u2014 each of \u00a72\u2013\u00a78 names a declared negative control, and \u00a72's two controls (all-unowned resolver, order-ignoring resolver) are specific enough to fail.",
+    "evidence_paths": "pass \u2014 gates use fixtures of committed project state and \u00a78 records the measurement as evidence for the plan; no scratchpad or node-local path is named.",
+    "naming": "pass \u2014 the sections name mechanisms (`ready_set_view`, `_published_worker_slots`) and carry no plan labels, stage names, ticket numbers or changelog prose.",
+    "reasoning": "a finding \u2014 \u00a72 resolves a plan's coordinator from its ledger runs but names no field for the run\u2192plan join, and the fixture's rows carry `plan: null`.",
+    "single_goal": "pass \u2014 each section names one deliverable (s2 ownership, s3 ready-idle filter, s4 link-by-link state, s5 board fields, s6 lane share, s7 skill wiring, s8 measurement).",
+    "wiring": "a finding \u2014 \u00a77's prose makes both skills name \u00a74's critical-path fields and \u00a76's lanes view, but the document's `plan-section-depends-on[\"s7\"]` lists only `a-coordinator-sees-the-board#s3` and `#s5`, so \u00a74 and \u00a76 sit outside s7's declared dependency closure."
+  },
+  "section_digests": {
+    "_document": "179fd781683b8de3429431d31d2da583319fc0fdb80b1db1734a86c481d7f66c",
+    "s1": "4f48bcfe2c71d1397f0eeb277ff928920d1ed0ae7cfb0da777c94e4943eadf87",
+    "s2": "c9ba36434def7718a5b43cf04b7a190410a4338d78b9d249b72fe0200c10bfb7",
+    "s3": "e4cd7ce8696d0d9fb511a9be2379e2561a08418a1d1f759c42a926231bad6e36",
+    "s4": "ba6bafca3a7e3ae7fb186980afd26dd26e183bf99b72272ea15f06fbaeb19e5f",
+    "s5": "c7676f30d627a592319ab4f34cbd8352167ba0b9b92a20d5cbafea4a685b90ae",
+    "s6": "b5875d403856eb185e06155d0c62410ab30a447353779fe729a12b57c2607cf0",
+    "s7": "4428c6858fc7f10400173c2e619ad379aa49779cef060ae4b50d866fde4a59a7",
+    "s8": "f9f58e76a5713eb901b1e780fcb93d48ca773a573fded72ec476738a59629b67"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T18:56:22.306571+00:00"
+}
