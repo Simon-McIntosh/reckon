@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery_review_subject.py:422 _review_brief_text calls review_module.load_figure_review_prompt for the figure rubric",
+    "reckon/crew/recovery_review_subject.py:862 _review_dispatch_fields calls _review_brief_text to compose the dispatched review brief",
+    "reckon/crew/obligations.py:367 reads _review_dispatch_fields(pointer)[\"write_paths\"]",
+    "reckon/crew_dispatch_commands.py:2708 reads _review_dispatch_fields(subject, write=False)[\"brief_text\"]"
+  ],
+  "completed_at": "2026-10-22T20:49:14.467Z",
+  "dispatched_at": "2026-10-22T20:29:57Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-review-can-see-the-figure/a-figure-review-judges-the-rendered-png.html",
+      "line": "5",
+      "severity": "follow-on",
+      "text": "follow-on: the gate paragraph states a baseline copy of the two changed Python files yields 'the same single pre-existing finding', while logs/ruff.txt records 'All checks passed!' and '2 files already formatted' at EXIT=0, so the fragment's ruff account is not reconciled with the log it cites; the load-bearing claim (no new findings) still holds, but the baseline sentence should be dropped or shown against a base run."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read both commits against base c09daa432; f8495d302 adds the PNG-only paragraph and re-points the finding-shape bullets in figure_review.md, adds four contract lines to _review_brief_text, and adds six test cases; f724637dc adds the evidence fragment; four files, all inside the declared write paths",
+    "done_when": "the done_when names tests/test_the_figure_prompt_names_the_finding_shape.py with new cases plus a ruff delta and a declared negative control; the manifest records the run and logs/head.txt ends '15 passed in 2.56s' then EXIT=0, while logs/negative_control.txt ends '3 failed, 12 passed in 4.55s' then EXIT=1",
+    "goal": "the node goal is to make the figure review's prompt and brief judge only the named PNG renders with no access to the SVG source; reckon/crew/prompts/figure_review.md:11-21 carries a 'Judge the rendered PNG, never the SVG source' paragraph and reckon/crew/recovery_review_subject.py:442-445 carries the same rule inside the figure rubric's record contract, so both the prompt and the composed brief state it",
+    "manifest": "read; it states 15 passed at EXIT=0 for the head arm, names logs/head.txt, logs/negative_control.txt and logs/ruff.txt, records commits f8495d302 and f724637dc, and leaves baseline_suite and after_suite empty because the source done_when ordered 'do not run a base arm'",
+    "write_paths": "the source brief declares five paths; git diff c09daa432..f724637dc changes exactly four of them (prompt, brief module, test file, evidence fragment) and the declared figures directory was not written because no figure was drawn, so nothing falls outside the fence"
+  },
+  "justifications": {
+    "durability": "tests/test_the_figure_prompt_names_the_finding_shape.py:151-224 adds six independent cases reading the prompt text and the composed contract against hardcoded sentences, three of which the negative control reddens when the PNG-only paragraph is removed, and test_the_text_brief_states_no_png_only_rule at :216 reddens if the four contract lines land outside the figure branch.",
+    "evidence": "logs/head.txt records tests/test_the_figure_prompt_names_the_finding_shape.py at 15 passed with EXIT=0 and logs/negative_control.txt records the declared mutation at 3 failed with EXIT=1, but logs/head.txt's header revision is the base sha c09daa432 rather than the change commit, and docs/evidence/fragments/a-review-can-see-the-figure/a-figure-review-judges-the-rendered-png.html:5 claims a baseline copy yields 'the same single pre-existing finding' while logs/ruff.txt records 'All checks passed!' at EXIT=0.",
+    "fit": "reckon/crew/recovery_review_subject.py:442-445 appends four lines in the same lower-case, plain-sentence style as the surrounding required_fields entries at :438-440, and reckon/crew/prompts/figure_review.md:11-21 uses the file's existing heading-and-paragraph idiom.",
+    "goal_fidelity": "reckon/crew/prompts/figure_review.md:11-21 forbids opening, reading, listing, searching, rendering or git show of an SVG and anchors a finding to the figure's repository path or to the drawing script, and reckon/crew/recovery_review_subject.py:443-445 repeats that rule in the figure rubric's record contract.",
+    "reuse": "the change adds no definition; it extends the existing owner _review_brief_text at reckon/crew/recovery_review_subject.py:395 and reuses reckon/crew/review.py:730 load_figure_review_prompt, so no capability is forked.",
+    "scope_discipline": "git diff c09daa432..f724637dc touches only reckon/crew/prompts/figure_review.md, reckon/crew/recovery_review_subject.py, tests/test_the_figure_prompt_names_the_finding_shape.py and the declared evidence fragment, all inside the five declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the figure review's prompt and brief judge only the named PNG renders with no access to the SVG source; reckon/crew/prompts/figure_review.md:11-21 carries a 'Judge the rendered PNG, never the SVG source' paragraph and reckon/crew/recovery_review_subject.py:442-445 carries the same rule inside the figure rubric's record contract, so both the prompt and the composed brief state it\nVERDICT done_when: the done_when names tests/test_the_figure_prompt_names_the_finding_shape.py with new cases plus a ruff delta and a declared negative control; the manifest records the run and logs/head.txt ends '15 passed in 2.56s' then EXIT=0, while logs/negative_control.txt ends '3 failed, 12 passed in 4.55s' then EXIT=1\nVERDICT write_paths: the source brief declares five paths; git diff c09daa432..f724637dc changes exactly four of them (prompt, brief module, test file, evidence fragment) and the declared figures directory was not written because no figure was drawn, so nothing falls outside the fence\nVERDICT manifest: read; it states 15 passed at EXIT=0 for the head arm, names logs/head.txt, logs/negative_control.txt and logs/ruff.txt, records commits f8495d302 and f724637dc, and leaves baseline_suite and after_suite empty because the source done_when ordered 'do not run a base arm'\nVERDICT diff: read both commits against base c09daa432; f8495d302 adds the PNG-only paragraph and re-points the finding-shape bullets in figure_review.md, adds four contract lines to _review_brief_text, and adds six test cases; f724637dc adds the evidence fragment; four files, all inside the declared write paths\nCALL_SITES: reckon/crew/recovery_review_subject.py:422 _review_brief_text calls review_module.load_figure_review_prompt for the figure rubric, reckon/crew/recovery_review_subject.py:862 _review_dispatch_fields calls _review_brief_text to compose the dispatched review brief, reckon/crew/obligations.py:367 reads _review_dispatch_fields(pointer)[\"write_paths\"], reckon/crew_dispatch_commands.py:2708 reads _review_dispatch_fields(subject, write=False)[\"brief_text\"]\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/prompts/figure_review.md:11-21 forbids opening, reading, listing, searching, rendering or git show of an SVG and anchors a finding to the figure's repository path or to the drawing script, and reckon/crew/recovery_review_subject.py:443-445 repeats that rule in the figure rubric's record contract.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/head.txt records tests/test_the_figure_prompt_names_the_finding_shape.py at 15 passed with EXIT=0 and logs/negative_control.txt records the declared mutation at 3 failed with EXIT=1, but logs/head.txt's header revision is the base sha c09daa432 rather than the change commit, and docs/evidence/fragments/a-review-can-see-the-figure/a-figure-review-judges-the-rendered-png.html:5 claims a baseline copy yields 'the same single pre-existing finding' while logs/ruff.txt records 'All checks passed!' at EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff c09daa432..f724637dc touches only reckon/crew/prompts/figure_review.md, reckon/crew/recovery_review_subject.py, tests/test_the_figure_prompt_names_the_finding_shape.py and the declared evidence fragment, all inside the five declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_figure_prompt_names_the_finding_shape.py:151-224 adds six independent cases reading the prompt text and the composed contract against hardcoded sentences, three of which the negative control reddens when the PNG-only paragraph is removed, and test_the_text_brief_states_no_png_only_rule at :216 reddens if the four contract lines land outside the figure branch.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/recovery_review_subject.py:442-445 appends four lines in the same lower-case, plain-sentence style as the surrounding required_fields entries at :438-440, and reckon/crew/prompts/figure_review.md:11-21 uses the file's existing heading-and-paragraph idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition; it extends the existing owner _review_brief_text at reckon/crew/recovery_review_subject.py:395 and reuses reckon/crew/review.py:730 load_figure_review_prompt, so no capability is forked.\nFINDING docs/evidence/fragments/a-review-can-see-the-figure/a-figure-review-judges-the-rendered-png.html:5 follow-on: the gate paragraph states a baseline copy of the two changed Python files yields 'the same single pre-existing finding', while logs/ruff.txt records 'All checks passed!' and '2 files already formatted' at EXIT=0, so the fragment's ruff account is not reconciled with the log it cites; the load-bearing claim (no new findings) still holds, but the baseline sentence should be dropped or shown against a base run.\n",
+  "review_run_id": "r-20261022T202747463347-review-of-a-figure-review-judges-the-rendered-png-f724637dce46",
+  "reviewed_base_sha": "c09daa4328c3f1725ed92120aaed3d4337e0619b",
+  "reviewed_head_sha": "f724637dce4627cd4c844cd65537f992207a453b",
+  "reviewed_run_id": "r-20261022T200451906364-a-figure-review-judges-the-rendered-png",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T20:43:39.041323+00:00",
+  "total": 111
+}
