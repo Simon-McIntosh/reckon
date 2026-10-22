@@ -2305,6 +2305,8 @@ def dispatch_review_for_run(
     if refusal is not None:
         return refusal
     refusal = _open_review_refusal(record, dry_run=dry_run)
+    if refusal is not None:
+        return refusal
     text_report = _dispatch_text_review_for_run(
         record,
         config=config,
