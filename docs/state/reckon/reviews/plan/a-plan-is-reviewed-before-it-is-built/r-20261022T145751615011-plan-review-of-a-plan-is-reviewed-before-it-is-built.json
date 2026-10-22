@@ -1,0 +1,116 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T15:30:55.552Z",
+  "dispatched_at": "2026-10-22T15:14:18Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-plan-is-reviewed-before-it-is-built/r-20261022T145751615011-plan-review-of-a-plan-is-reviewed-before-it-is-built/plan.html:315",
+      "id": "wiring-1",
+      "reason": "as written a node must either build outside its granted write paths or duplicate \u00a737's field, so the dependency has to be declared or the write paths extended before dispatch.",
+      "text": "\u00a740's second done-when requires the receipt to name the absent item, but the only plan-review receipt is the promotion receipt whose field \u00a737 introduces, and \u00a737 is `implementable`, is not in \u00a740's write paths, and is not declared as a dependency of \u00a740",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-plan-is-reviewed-before-it-is-built/r-20261022T145751615011-plan-review-of-a-plan-is-reviewed-before-it-is-built/plan.html:315",
+      "id": "done_when-1",
+      "reason": "the status assertion alone still reddens under the declared control, so the node fails the same case; the plan would gain a sharper check but a node is not sent down the wrong path.",
+      "text": "the clause \"the receipt names the missing item\" cannot fail as written: the delivered record already carries `absent_items` at base (`reckon/crew/plan_review.py:2113`), so read as the record the clause holds on the unfixed code, and read as any other receipt no module emits it, leaving the second half measured only by its status assertion",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "b5f8226f444d512174d1fe43f272b9f01f786ac6ea57b149850e30a2c24a023f",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 271,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-22T15:32:02.682996+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-22T15:32:41.399204+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-22T15:32:41.399204+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-22T15:32:02.682996+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-plan-is-reviewed-before-it-is-built.v271.json",
+  "review_run_id": "r-20261022T145751615011-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "3b579aa00cc9e3f702d1f46de32bce2e396a4545",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_PLAN_RUBRIC_LINE_RE` and `_PLAN_FINDING_LINE_RE` are the anchored patterns at `reckon/crew/review.py:1249` and `:1252` as stated, `DEFAULT_STATUS = \"ready\"` is at `reckon/crew/plan_review.py:211` with the record built at `:2110`, and the cited evidence fragment directory exists with sibling records.",
+    "done_when": "a finding \u2014 the absent-item clause rests on \"the receipt names the missing item\", and no receipt the section can reach emits one: the stored record already carries `absent_items` at base, so the clause either cannot fail or has no writer.",
+    "evidence_paths": "pass \u2014 each arm's log lives under the run directory and the new evidence fragment under `docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/`, both durable paths, with `baseline_suite`/`after_suite` recording `failure_ids` in the `tests/<file>::<name>` form.",
+    "naming": "pass \u2014 the new symbols are the two existing patterns, `DEFAULT_STATUS` and `tests/test_a_bulleted_finding_is_read.py`, with no plan label, stage name or ticket number in any of them.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited evidence (the anchored `^FINDING`/`^RUBRIC` patterns at `reckon/crew/review.py:1249-1252` drop the `- FINDING anchors_resolve \u2026` line, and `DEFAULT_STATUS` at `reckon/crew/plan_review.py:211` stores the review `ready` whatever `absent_items` holds), and the parse half names its mechanism and its caller in `parse_review_report`.",
+    "single_goal": "pass \u2014 the author's resolution stands: both halves serve the one verdict that a delivered review is read whole, and each half now carries its own assertion and its own negative control, so the verdict names which half landed.",
+    "wiring": "a finding \u2014 \u00a740 declares no `depends-on` and its write paths (`reckon/crew/review.py`, `reckon/crew/plan_review.py`, the new test, the evidence fragment) exclude the promotion receipt its own second done-when requires."
+  },
+  "section_digests": {
+    "_document": "c1226d09f2b3555f4319ecaaa13d382c2d3d4adffe8ba9fc11dc312a10a8164a",
+    "s1": "906b087bcd754848d9ec2aa4c4490b133dbdb4afae9f5c17499132679ea305dd",
+    "s10": "98a91766ca798ebcc3598987231522b39b9ddccc1b7df7872c8581168b36aade",
+    "s11": "02d5638ba0ff8ff5dd2b3c87ccf956cbd9642af42771fd95df9a2b12a65c5aa5",
+    "s12": "32d120b53140ccbc275a965b3f2d903579356680bca3d141eab868656e22f1a9",
+    "s13": "0b983b5335c882d2b5a1e938222637a43c6479acfa2c26796bd1bad6b53fc545",
+    "s14": "e1fc7769c27fba5c11398d91d6a0b95e0bf0b5fbe0348a53ae6bbd11ea67e01e",
+    "s15": "8bbe9d4ecb5d7699700d5ec5ec0e2e68e10eb703ce97c016074036e38c46dbb5",
+    "s16": "405268ed497c37284417b4990ae7587b9d5fdd51e429c59ee23c9fc899dcfd45",
+    "s17": "958a38a3a22f23aff755cc6fb7e95f67abf763621ef344dc4b5afdf2fd261899",
+    "s18": "5be55ae998bf9126a6d5854403395bc2d4dc141a96c747850537376c2b1151bf",
+    "s19": "c955b30374fdf31e71803dac9adb18a3149c1710f64f82faecf6a2e5343806bb",
+    "s2": "0eb83bb364e8325f6db277107654d8f99533fa7458d8f00fa07f41aebea11402",
+    "s20": "d7761564296d90fc766d60ab2d545a71e6b98a3f4cf6e09e3a652b61506adbea",
+    "s21": "9392bdfa49fcf52b6856100b3a6d3824e000fd4e4a4af7900f7ec262acd82fa0",
+    "s22": "5a1cf8eab82a83a4877f9f74ee81283174341d70a24da01bbf97695d84564e9f",
+    "s23": "bb0dab79249984e32a78afb123f52b66fc3170670049bbbc6f7d1b55e1c42124",
+    "s24": "b0870b19487b883350a25f7c90d57a62bc3bcd5f015e3c0e42caa08281ccfb11",
+    "s25": "55c54e0c4d76fc729ae8aae0b9a190890292be3f312bc2851a4557138e3967ee",
+    "s26": "376496ed070fca2ba62310cfbad3a64a716c044bc3c48188338105284b33c5c3",
+    "s27": "4ae9e428c0ae4b25213b1a6dc27ed1bb4add79f05c0c448533947a803910fb6b",
+    "s28": "00f1427c671fbc8c77c5450745a717805c5f71e02da4642612d0e31bcc34ce8b",
+    "s29": "f07a5c4ea029d4c84a0e2e37f4f85b81fd55ba2b01374dbc6725ec9362cbd106",
+    "s3": "46c9c67ed1b393114ccf029e708e97e998691b1283c54b0fb2932ce76f78e01d",
+    "s30": "524315a924e9ea2ed117ffa3497d7c973424aa0fe2f1747216012baa178fe54b",
+    "s31": "109c4c50496bf95da3ad7009025762e6f6203b7aca9bc27b36f9991372594266",
+    "s32": "6f71c6ddc0f515d53dad1398cfc608198a051af77d62d7ef23de5bee1c66d031",
+    "s33": "388b0ebd2758249fd29293434c224835cd9cedf5ab5e3e591eebaa72cd55fb22",
+    "s34": "a1796b7b522c746a6fffb9d84ce9daaadc480a8c182a10a7b546f050d6703270",
+    "s35": "348b0eb16c0690b2e138f28b1353eb6da6f30b89199885ee053a68b35472dcb9",
+    "s36": "1b9c235b3155cc20d2636997e871d553154bcde7170f42fe9c1788c1a3710769",
+    "s37": "580e8de9879c98487d861190d849fbaa300b4fdbfece9a7a4ba24eed4dd480a0",
+    "s38": "0534508fcd761740fdda339862fc74fa43388997b0df6702e53577242d341e4d",
+    "s39": "2dd33aaa16d0d3166c632ce15eac9837f0604222f84564c651c13ee870bba77d",
+    "s4": "7b91ac81d581cc35d0b52204756f087c9a3f39f6180d7b49c782173db05f104e",
+    "s40": "08b53e3ae10b44e5e7be2e4eacecd5cd6bfff37d9a82012098d013f4231b4f6e",
+    "s5": "931379e6e61a93111bd4f5be0f477adfac4df292d7f92a1c85da67ae19802e5b",
+    "s6": "d041173b5de95d0e5488fd6cd14ddeb04b6aeb31b2bedbae65328c3f93f022dc",
+    "s7": "658b997db4138d0ee40eca99702b5501c9bb0b620dea973a745e1c2c50ec9e29",
+    "s8": "60b74d52ea05d83fd0d024035a70976e05bc2e1ff165028ebe4589a8fc10c0b4",
+    "s9": "87545911e9ea78d872d01d72f7039ef1759951b05502ca91c7ca97ed86a90a41"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T15:31:40.788609+00:00"
+}
