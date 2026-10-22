@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T20:19:22.754Z",
+  "dispatched_at": "2026-10-22T20:00:45Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-page-paints-from-an-index.html:194",
+      "id": "reasoning-1",
+      "reason": "the section as written dispatches a worker to a gate its own mechanism cannot meet, and the honest outcome is a recorded failure whose \"repair becomes a new section\" for a cause \u00a77 attributes to work that already landed.",
+      "text": "\u00a77's gate (\"every `/_index` request answers 200 in under 1 s in both passes\") cannot be produced by the persisted-index mechanism it rests on, because the reuse path reads and sha256-hashes every covered file before it can decide to reuse a row: `_content_digest(path)` runs once per covered file ahead of the reuse branch in `metadata_index.build_index` (`reckon/metadata_index.py:506`), and its memo (`reckon/metadata_index.py:593-622`) is in-process only, so a restart clears it and the first `/_index` per project re-reads the whole tree \u2014 the persisted index saves the *parse*, not the *read*. \u00a73's landed evidence measures this path by counting parses through `_parse_meta_uncached` (plan comment at line 358: \"a post-restart rebuild of a 200-document project parses 0 files\"), which is true and does not bear on the read cost \u00a77's wall-clock gate measures. Measured 2026-10-22 on the review node: a serial read+sha256 sweep of just the HTML files (figures excluded) takes 5.5 s for reckon's 1,655 files and 10.7 s for all four projects' 4,286 files, against a per-request bound of 1 s \u2014 so the cheapest named project already exceeds the gate by 5\u00d7 before any parse of a changed file.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-page-paints-from-an-index.html:196",
+      "id": "done_when-1",
+      "reason": "a control whose two arms both fail shows nothing about the removal, so the node's negative control would report a guard firing that is not firing, which is the one thing a negative control exists to prevent.",
+      "text": "\u00a77's `/_index` control says the unmutated restart \"is measured as the baseline arm\" and that removing the persisted index makes the baseline's gate fail, but the baseline arm faces the same digest sweep, so it fails the same 1 s gate for a reason unrelated to the removal \u2014 the red is not attributable; \u00a712 (line 261) shows the house convention of naming exactly this case (\"a base arm that reads zero is recorded as uninformative rather than as a failed control\"), and \u00a77 states no equivalent rule for a baseline arm that is red.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "baa061ffe49797af2769e76a14cb314a405479413fcbadb1e14e3122665067db",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 81,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261022T195836753325-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "16ab4437371a9954be7f17ee3453a546b32a60ed",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon service restart` resolves (`reckon/served_code.py:52`, `reckon/project_maintenance_commands.py:143`), `code.started_at` resolves in `/_server` (`reckon/serve.py:2978` \u2192 `reckon/served_code.py:657`), `/_projects/mounts.json` and `/_index/<project>` are served routes (`reckon/serve.py:2989`, `:3264`), `_FleetChangeWatch` exists in `reckon/serve.py`, `py-spy` is installed, and the four named projects (reckon, nova, imas-codex, imas-efit) are all present in the live `mounts.json`.",
+    "done_when": "a finding \u2014 \u00a77's `/_index` clause sets a 1 s gate and its own control asserts the *removal* arm fails, but never states the paired baseline arm (index present) must pass, and on the landed mechanism that baseline arm cannot pass either, so the control's red is unattributable.",
+    "evidence_paths": "pass \u2014 the report lands under an `s7` anchor in `docs/evidence/archive/the-page-paints-from-an-index-landed.html` (exists, 14,241 B, already carries `server-listens-before-it-watches`, `s10`, `s11`, `s12`) and the raw logs sit on the run directory, not a node-local temp path.",
+    "naming": "pass \u2014 \u00a77 introduces no code symbols, filenames or comments, and its `s7` anchor is emitted artifact data rather than a source name.",
+    "reasoning": "a finding \u2014 \u00a77 infers that a restart with the index on disk answers `/_index` within 1 s, and cites \u00a73's landed record for it, but that record counted *parses*, not reads; the landed reuse path reads and re-hashes every covered file on the first post-restart request, so the mechanism \u00a77 relies on cannot produce its done-when.",
+    "single_goal": "pass \u2014 \u00a77 carries one deliverable (a cold/warm timing report with the two clause controls), and both clauses serve the one verdict.",
+    "wiring": "pass \u2014 \u00a77's scheduling edge exists (`plan-section-depends-on` gives `s7` depends on `s2`\u2026`s6`) and its prose carries the matching sentence (\"Once \u00a72 to \u00a76 are merged and the operator restarts the service\"), and no other section declares a dependency on `s7` that its text contradicts."
+  },
+  "section_digests": {
+    "_document": "4cef2d0dcb8155ca1e683b8ec01695c1fba4d5c88e28b6f05a0f380d0e2424c1",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "17515cc4d212280b53e77d7279aa81e37c7d58f877ada031f77705b31e53d437",
+    "s11": "bb32b98b9a0a5070d5ec6b5387862bef5af3ba37b5956ac7c9d734723c2ac9fa",
+    "s12": "071a3e9ff829e6cc2047658d80b57b5d30603318f0fa4a31084d94b5ed308185",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "048a1031945a098f9a63b70d985d91dd2d9ee2f67f1ac1a2132e4c7d21b89e7e",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T20:24:31.654926+00:00"
+}
