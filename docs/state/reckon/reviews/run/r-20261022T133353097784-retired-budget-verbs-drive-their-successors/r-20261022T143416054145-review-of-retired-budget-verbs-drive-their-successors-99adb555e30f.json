@@ -1,0 +1,59 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-22T14:59:48.457Z",
+  "dispatched_at": "2026-10-22T14:36:55Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_families_fold.py",
+      "line": "86",
+      "severity": "follow-on",
+      "text": "follow-on: the fixture's provenance comment claims the answers were captured at this node's base revision, but the node's own edit adds two fields that were present in the product at that revision (reckon/crew_run_commands.py:3143 and reckon/crew/pace.py:134), so the comment now describes a capture the fixture never held; update it to state the fields and their introducing commits."
+    },
+    {
+      "file": "tests/test_crew_families_fold.py",
+      "line": "157",
+      "severity": "follow-on",
+      "text": "follow-on: advisory is pinned as false and reset_count/resets as 0/[] from the code under test's current output rather than an independently captured expectation, so these three added values are snapshot assertions that would follow a regression in the fields they name; a reader cannot tell from the fixture whether the landed values are intended."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read both commits against fc81186ed; 110 insertions and 10 deletions across six files, changing only invocation argv and two fields of the recorded-answer fixture, with no product source touched.",
+    "done_when": "the done_when names the base arm, the head ids, the five-file gate and two controls; logs/base-arm.log ends 13 failed EXIT=1 (twelve ids failing on assert 10 == with the thirteenth on its recorded answer), logs/head-ids.log ends 13 passed EXIT=0, logs/gate-head.log ends 138 passed in 916.11s EXIT=0, and logs/negative-control-1.log and logs/negative-control-2.log each end 1 failed EXIT=1.",
+    "goal": "the node's goal is to point the thirteen tests that drive retired budget verbs at their successor flags, and the landed diff does exactly that in tests/test_a_new_lift_replaces_the_standing_one.py:197, tests/test_budget.py:1473 and :1494, tests/test_codex_banked_reset.py:235, tests/test_preflight_pace.py:631 and :741, with the thirteenth's recorded answer updated at tests/test_crew_families_fold.py:157 and :368.",
+    "manifest": "read; status complete, commits d5bbfbe2d and 99adb555e named, the five-file gate recorded at 138 passed EXIT=0, both controls recorded red, and the recorded-answer drift is reported against crew budget --list rather than --reset with the product lines that carry the fields.",
+    "write_paths": "the declared scope is five test files plus the fragment and a figure directory; git diff fc81186ed..99adb555e changes only the five test files and docs/evidence/fragments/the-suite-is-green-at-head/retired-budget-verbs-drive-their-successors.html, the figure directory unused."
+  },
+  "justifications": {
+    "durability": "reverting the argv edits reddens twelve ids at the base arm in logs/base-arm.log:6-484 and flipping the successor's available field reddens the repaired round trip at tests/test_codex_banked_reset.py:241, but the two added fixture fields at tests/test_crew_families_fold.py:157 and :368 were set from the code under test rather than an independent capture.",
+    "evidence": "the base arm, head ids, five-file gate, both controls and the ruff delta are each on disk with a bare EXIT= line, though logs/gate-head.log:1 names the base revision beside a repaired working tree rather than the promoted head sha.",
+    "fit": "the argv edits follow the CliRunner idiom already used at tests/test_budget.py:1470, the commits are conventional with bodies and no trailer, and no plan or ticket identifier enters source.",
+    "goal_fidelity": "every one of the thirteen ids in logs/base-arm-ids.txt now reaches its tombstone's successor flag, the twelve by argv edits such as tests/test_preflight_pace.py:741 and the thirteenth by the recorded answer at tests/test_crew_families_fold.py:368.",
+    "reuse": "the change is test-only and adds no definition; a search over tests/ and reckon/ found the recorded-answer fixture at tests/test_crew_families_fold.py:88 already owns this capability and it was extended in place rather than duplicated.",
+    "scope_discipline": "git diff fc81186ed..99adb555e touches only the five declared test files and the node's own fragment, with no product code changed anywhere."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to point the thirteen tests that drive retired budget verbs at their successor flags, and the landed diff does exactly that in tests/test_a_new_lift_replaces_the_standing_one.py:197, tests/test_budget.py:1473 and :1494, tests/test_codex_banked_reset.py:235, tests/test_preflight_pace.py:631 and :741, with the thirteenth's recorded answer updated at tests/test_crew_families_fold.py:157 and :368.\nVERDICT done_when: the done_when names the base arm, the head ids, the five-file gate and two controls; logs/base-arm.log ends 13 failed EXIT=1 (twelve ids failing on assert 10 == with the thirteenth on its recorded answer), logs/head-ids.log ends 13 passed EXIT=0, logs/gate-head.log ends 138 passed in 916.11s EXIT=0, and logs/negative-control-1.log and logs/negative-control-2.log each end 1 failed EXIT=1.\nVERDICT write_paths: the declared scope is five test files plus the fragment and a figure directory; git diff fc81186ed..99adb555e changes only the five test files and docs/evidence/fragments/the-suite-is-green-at-head/retired-budget-verbs-drive-their-successors.html, the figure directory unused.\nVERDICT manifest: read; status complete, commits d5bbfbe2d and 99adb555e named, the five-file gate recorded at 138 passed EXIT=0, both controls recorded red, and the recorded-answer drift is reported against crew budget --list rather than --reset with the product lines that carry the fields.\nVERDICT diff: read both commits against fc81186ed; 110 insertions and 10 deletions across six files, changing only invocation argv and two fields of the recorded-answer fixture, with no product source touched.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: every one of the thirteen ids in logs/base-arm-ids.txt now reaches its tombstone's successor flag, the twelve by argv edits such as tests/test_preflight_pace.py:741 and the thirteenth by the recorded answer at tests/test_crew_families_fold.py:368.\nSCORE evidence: 18\nJUSTIFICATION evidence: the base arm, head ids, five-file gate, both controls and the ruff delta are each on disk with a bare EXIT= line, though logs/gate-head.log:1 names the base revision beside a repaired working tree rather than the promoted head sha.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff fc81186ed..99adb555e touches only the five declared test files and the node's own fragment, with no product code changed anywhere.\nSCORE durability: 17\nJUSTIFICATION durability: reverting the argv edits reddens twelve ids at the base arm in logs/base-arm.log:6-484 and flipping the successor's available field reddens the repaired round trip at tests/test_codex_banked_reset.py:241, but the two added fixture fields at tests/test_crew_families_fold.py:157 and :368 were set from the code under test rather than an independent capture.\nSCORE fit: 19\nJUSTIFICATION fit: the argv edits follow the CliRunner idiom already used at tests/test_budget.py:1470, the commits are conventional with bodies and no trailer, and no plan or ticket identifier enters source.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change is test-only and adds no definition; a search over tests/ and reckon/ found the recorded-answer fixture at tests/test_crew_families_fold.py:88 already owns this capability and it was extended in place rather than duplicated.\nFINDING tests/test_crew_families_fold.py:86 follow-on: the fixture's provenance comment claims the answers were captured at this node's base revision, but the node's own edit adds two fields that were present in the product at that revision (reckon/crew_run_commands.py:3143 and reckon/crew/pace.py:134), so the comment now describes a capture the fixture never held; update it to state the fields and their introducing commits.\nFINDING tests/test_crew_families_fold.py:157 follow-on: advisory is pinned as false and reset_count/resets as 0/[] from the code under test's current output rather than an independently captured expectation, so these three added values are snapshot assertions that would follow a regression in the fields they name; a reader cannot tell from the fixture whether the landed values are intended.",
+  "review_run_id": "r-20261022T143416054145-review-of-retired-budget-verbs-drive-their-successors-99adb555e30f",
+  "reviewed_base_sha": "fc81186eda204b2e1da9566ff96630c59f05e694",
+  "reviewed_head_sha": "99adb555e30f39aafdf45c5f1a811418efcb065d",
+  "reviewed_run_id": "r-20261022T133353097784-retired-budget-verbs-drive-their-successors",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T14:52:50.501547+00:00",
+  "total": 112
+}
