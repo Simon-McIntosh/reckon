@@ -32,6 +32,12 @@
       the base revision. The existing early-exit control is green unchanged.
     </li>
     <li>
+      The case this fix adds is red before it: at the head that preceded it, a
+      live worker quoting the phrase after its first stream record times the
+      launch out instead of returning, because the launch waits on the child it
+      has wrongly called dead (<strong>1 failed in 29.55s, EXIT=1</strong>).
+    </li>
+    <li>
       Base revision: the same gate over a scratch extraction of
       <code>6d3c43bbd</code> gives <strong>4 failed, 16 passed, EXIT=1</strong>,
       so every case this node's file adds is red there and green here. It runs
@@ -41,7 +47,7 @@
     <li>
       Negative control — the declared mutation, keying the retry on the startup
       window again instead of the refusal text (window back to <code>0.5</code>
-      and the in-window refusal read removed): <strong>2 failed, 3 passed,
+      and the in-window refusal read removed): <strong>2 failed, 4 passed,
       EXIT=1</strong>. Both failing ids are
       <code>test_a_launch_refused_after_the_step_starts_is_retried</code> under
       each refusal phrase, neither of which the head arm fails.
