@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-22T21:11:27.360Z",
+  "dispatched_at": "2026-10-22T20:50:36Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-a-bulleted-finding-is-read-55431f34a695",
+      "recorded_at": "2026-10-22T21:43:25.787964+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "repair-of-a-bulleted-finding-is-read-55431f34a695",
+      "recorded_at": "2026-10-22T21:43:25.825366+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "2094",
+      "severity": "blocking",
+      "text": "blocking: report_carries_review_lines is not a plan-report-only reader \u2014 it is the shared admission guard called by both delivered_report_record (plan_review.py:2145) and _code_review_record (plan_review.py:2192). Switching its loop to _plan_report_lines strips a list marker for the health/code grammar too, but parse_health_review and _health_records still read _review_text_lines (review.py:1506), so guard and parser now disagree on a code report. A code review whose RUBRIC and FINDING lines are bulleted and whose TREATMENT line is bare passes the guard on a stripped bullet, then yields only the TREATMENT record, so parse_health_review returns zero items and zero findings and _code_review_record stores a review with every item absent \u2014 the composed-but-undelivered false-pass the guard exists to prevent, and previously the same report was refused as 'carries no RUBRIC or FINDING line'. The plan (\u00a740) fixed the reader for the plan report and left the health grammar alone; the fragment at docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-bulleted-finding-is-read.html:33 asserts 'the run-review and health-review grammars do not move', which this contradicts. The plan-report half needs a plan-report-scoped admission guard (or _health_records must use the same reader) so the two paths cannot diverge."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T192836923875-a-bulleted-finding-is-read/manifest.md",
+      "line": "22",
+      "severity": "blocking",
+      "text": "blocking: baseline_suite is not valid JSON \u2014 the key is written '\"failure_count: 2, \"failure_ids\"' with the opening quote unterminated, so json.loads fails at char 1134 ('Expecting : delimiter'), and after_suite on line 23 is truncated to {\"revision\", \"command\"} only, carrying no exit_status, completed, failure_count or failure_ids at all. The done-when requires both baseline_suite and after_suite to record failure_ids in the form tests/<file>::<name>, and promotion reads its gate receipt from these fields. The gate logs themselves are complete and readable (base-gate.log '2 failed, 116 passed ... EXIT=1'; head-gate.log '118 passed ... EXIT=0'), so the delta is recoverable, but the record the node landed states it in an unparseable field and omits it in the other."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "2115",
+      "severity": "follow-on",
+      "text": "follow-on: _delivered_status marks a partial report incomplete only when plan_report_rubric_name(rubric) == 'plan_review' (the content rubric), so a design review delivered after this section with one of its brief's items missing stores as DEFAULT_STATUS 'ready' and still covers its units. \u00a740 states the mark for 'a review delivered after this section lands whose report leaves out an item its own brief listed', narrowed to no rubric. The worker narrowed it deliberately and disclosed the deviation in the manifest evidence_inputs, the follow_ons field and the fragment (line 35), because taking the design rubric with it reddens five deliveries outside this node's write paths; the done-when exercises a content review throughout. The section's un-narrowed wording is therefore not met, and the remainder is a separate node that updates those five deliveries."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make a delivered plan review read bulleted RUBRIC and FINDING lines and cover nothing when marked incomplete; review.py:1259 adds _PLAN_REPORT_LIST_MARKER_RE and review.py:1360 reads the report through _plan_report_lines, while plan_review.py:2098-2118 marks a partial content review and plan_review.py:861 skips it in review_coverage, so both halves land.\nVERDICT done_when: the done-when names tests/test_a_bulleted_finding_is_read.py with four cases and a base/head delta; the manifest records base-gate.log '2 failed, 116 passed ... EXIT=1' and head-gate.log '118 passed ... EXIT=0', and tests/test_a_bulleted_finding_is_read.py:107, :140, :181 and :210 assert the bulleted-finding, missing-item, unmarked-older and complete-report cases respectively.\nVERDICT write_paths: the manifest declares reckon/crew/review.py, reckon/crew/plan_review.py, tests/test_a_bulleted_finding_is_read.py and the evidence fragment (plus an unused figures dir); git diff d85e543c..55431f34 touches exactly those four paths and nothing else, all inside the declared set.\nVERDICT manifest: read at head 55431f34; status complete, three commits named, five logs recorded, landing line present; but baseline_suite (line 22) is malformed JSON (unterminated key '\"failure_count') and after_suite (line 23) is truncated to revision and command with no failure_ids, against the done-when's explicit requirement for both.\nVERDICT diff: read commit by commit against d85e543c; three commits \u2014 8c08715b reads the bulleted line, e6938200 marks the incomplete review on the content rubric, 55431f34 adds the fragment \u2014 372 insertions across two source files, one new test and one fragment, all inside scope.\nCALL_SITES: reckon/crew/plan_review.py:2145 (delivered_report_record), reckon/crew/plan_review.py:2192 (_code_review_record), reckon/crew/routing.py:2572 (require_plan_reviewed), reckon/crew/promotion_checks.py:1497 (store_delivered_reviews on promotion), reckon/crew/crew_dispatch_commands.py:2553 (store_delivered_reviews on dispatch), reckon/mcp_deadlines.py:605 (review_coverage caller)\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: both halves land \u2014 review.py:1360 reads the report through _plan_report_lines and plan_review.py:861 skips an incomplete record \u2014 but plan_review.py:2115 narrows the incomplete mark to the content rubric so \u00a740's un-narrowed wording is not met.\nSCORE evidence: 12\nJUSTIFICATION evidence: the gate is measured and its logs reconcile (base-gate.log '2 failed, 116 passed ... EXIT=1'; head-gate.log '118 passed ... EXIT=0'), but manifest.md:22 baseline_suite is unparseable JSON and manifest.md:23 after_suite omits failure_ids, which the done-when requires.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: git diff d85e543c..55431f34 touches only the four declared paths, but plan_review.py:2094 changes behaviour on the code-review path (plan_review.py:2192) that the goal and \u00a740 do not name.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_a_bulleted_finding_is_read.py:140 and :107 redden under the declared mutations (negative-control.log: 2 failed, 2 passed, EXIT=1), but reverting the guard at plan_review.py:2094 to _review_text_lines reddens nothing, because no test delivers a bulleted report to report_carries_review_lines.\nSCORE fit: 19\nJUSTIFICATION fit: _PLAN_REPORT_LIST_MARKER_RE and _plan_report_lines at review.py:1259,1268 follow the surrounding grammar-of-lined-reports idiom and introduce no name the repository naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: _plan_report_lines at review.py:1280 wraps the existing owner _review_text_lines rather than replacing it, and a search over reckon/ for a list-marker stripper found only reports.py:583 _joined_body_text, a different capability (joining a manifest body into prose, not yielding grammar lines).\nFINDING reckon/crew/plan_review.py:2094 blocking: report_carries_review_lines is shared with the code-review path (_code_review_record at plan_review.py:2192) but parse_health_review still reads _review_text_lines (review.py:1506), so switching the shared guard to _plan_report_lines lets a bulleted code report with a bare TREATMENT line pass admission and store with every item absent \u2014 a false-pass the guard exists to prevent, untested, and contradicting the fragment's claim that the health grammar does not move.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T192836923875-a-bulleted-finding-is-read/manifest.md:22 blocking: baseline_suite is not valid JSON (the key '\"failure_count' is unterminated, json.loads fails at char 1134) and after_suite on line 23 is truncated to revision and command with no failure_count or failure_ids, so the record the done-when requires is unreadable where promotion reads its gate receipt.\nFINDING reckon/crew/plan_review.py:2115 follow-on: _delivered_status marks a partial report incomplete only for the content rubric, so a design review delivered after this section with a missing brief item still stores ready and covers its units, which \u00a740's un-narrowed wording forbids; disclosed in the manifest but not met by this node.\n",
+  "review_run_id": "r-20261022T204529809545-review-of-a-bulleted-finding-is-read-55431f34a695",
+  "reviewed_base_sha": "d85e543c8b2ca823bc1c10457b62bbf3cb15856f",
+  "reviewed_head_sha": "55431f34a6959a51e51f15a0b0904f3eb30bd2ee",
+  "reviewed_run_id": "r-20261022T192836923875-a-bulleted-finding-is-read",
+  "scores": {
+    "durability": 13,
+    "evidence": 12,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T21:11:30.885644+00:00",
+  "total": 95
+}
