@@ -1,0 +1,92 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T15:11:47.745Z",
+  "dispatched_at": "2026-10-22T14:57:14Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-plan-write-goes-through-edit-plan.html:339",
+      "id": "reasoning-1",
+      "reason": "the node cannot make the one edit the section is built on without a scope change, and a worker that obeys its fence lands a `/crew` and summary list with no recommendation fields while its gate still passes.",
+      "text": "\u00a715's deliverable says \"`_decision_rows` \u2026 carries them through, and `reckon/roadmap.py` joins this section's write paths\", but the same paragraph's closing declaration reads \"Write paths: `reckon/mcp_views.py`, `reckon/serve.py`, `tests/test_every_surface_lists_open_decisions.py`, `docs/evidence/fragments/\u2026`\" \u2014 `reckon/roadmap.py` is absent, and `_decision_rows` lives there (reckon/roadmap.py:985-1054), so the required change to the single derivation is outside the fence the coordinator reads",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/every-plan-write-goes-through-edit-plan.html:339",
+      "id": "done_when-1",
+      "reason": "the assertion target is ambiguous between two fields, so the node must either assert the plan's `modified` date under a name the plan reserves for something else or spend a turn hunting a decision-authored date that does not exist.",
+      "text": "the done-when's first bullet asserts the roadmap summary lists the decisions \"with their sections, recommendation and authored date\", while the deliverable states the row carries \"the plan's last-modified date \u2026 an open decision records no date of its own\"; the chosen decision markup in this very plan carries `data-when` only on locked decisions, so \"authored date\" names a value an open row cannot hold",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "6e1d4f00c1e05e6c4908bb8526955b0ecfec0c57ba4f051992527a280980893a",
+  "plan_slug": "every-plan-write-goes-through-edit-plan",
+  "plan_version": 73,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-22T15:17:31.188129+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-22T15:18:08.972837+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-22T15:18:08.972837+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-22T15:17:31.188129+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-every-plan-write-goes-through-edit-plan.v73.json",
+  "review_run_id": "r-20261022T145413425023-plan-review-of-every-plan-write-goes-through-edit-plan",
+  "reviewed_blob_sha": "077b1aa7b86c30b72a1a46e320a202af32a84044",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_decision_rows` (reckon/roadmap.py:985), `build_roadmap` (reckon/roadmap.py:2985), `decision_blockers`/`decision_readiness` (reckon/roadmap.py:4387, 4394), `_roadmap_project_summary` (reckon/mcp_views.py:3472), the `/crew` route (reckon/serve.py:3023) and `recommended`/`recommended_by` (reckon/_plan_html.py:1426) all resolve as cited.",
+    "done_when": "a finding \u2014 \u00a715's done-when asserts an \"authored date\" that the section's own deliverable says no open decision carries, so the assertion has no defined source.",
+    "evidence_paths": "pass \u2014 the gate logs sit under the run directory, the fragment is a durable `docs/evidence/fragments/\u2026` file, and the test is a committed path.",
+    "naming": "pass \u2014 the new test and fragment names state the behaviour, and no plan label, stage or ticket number reaches a source symbol.",
+    "reasoning": "a finding \u2014 \u00a715 requires editing `reckon/roadmap.py` but omits it from the section's declared write paths, so the node's own mechanism is fenced out of a file it must write.",
+    "single_goal": "pass \u2014 \u00a715 has one goal (one derivation of the open decisions read by both surfaces); the roadmap-summary list and the `/crew` list are the two reads of that one derivation, closed by one parity verdict.",
+    "wiring": "pass \u2014 \u00a716 declares `depends-on` \u00a715, \u00a715 needs no other edge (its write paths `reckon/roadmap.py`, `reckon/mcp_views.py` are held by no other node; `reckon/serve.py` is also \u00a73's path and s3 is `done`), and the plan-level `informs` target resolves."
+  },
+  "section_digests": {
+    "_document": "4b13223a0c20d4194be2cbe7208d41a005cfd46a1bf1867972acdabf771b9560",
+    "s1": "7f96df198aae5b46c87f2d18f8eff17398ead36155ee67ba73607e91aa1d2fe3",
+    "s10": "fd786ebf0d880e15085a2e0ca5423504f73ce4c013e483f5e3cae145e3ad4079",
+    "s11": "19cc30d79534a21675c806c6d7006ea1e8e052fdccf4583b30258f699ee38e45",
+    "s12": "a518fb035478c3d0ebd8f3e07d9c13babbda5a8ab8f5353e60e41564c96ed1b6",
+    "s13": "dd25d451c1972813ffd34279a0d6aeaf5069e4888f6cf1259e3fbbe382da3f44",
+    "s14": "c4467966a573cbea5d7de23da696d1233123f57fbbaa14df1fd73aae6d8bd99b",
+    "s15": "5a563619959b1629cda630f414de69e48b4d8175f5ba38a0aef548f35dc9d1fc",
+    "s16": "7e9c4cb9ed664d8653fd6cb709c2d7eee42fe9e93711b6c5dde453329848ef25",
+    "s2": "737250903251177035b357be3d656b549480337bc454f97615634dada495e251",
+    "s3": "4150e9281b9c0fe1173e9c23f5582efb0662d22f1d36944861d3033f988d479c",
+    "s4": "e0390ff35ac5e425fa3060cede9882af598c54dc89e0a6069101b3971f8e8367",
+    "s5": "699b049fe374b1219d8b917168575594a5bcb9255bbe13efdbf1d0c928562a86",
+    "s6": "27f4d6436a652181a180df37fa1a640ebff9cb62418e856c86bc907ecda9778f",
+    "s7": "80062db679255aff5087534386e7372545e1cd3414916db8329aec79a1a8388d",
+    "s8": "f9dd6299834b4d039fd1f45b37141d5e265075b4cfd7f341357bea21196f5b35",
+    "s9": "bd2c3090ecc9a89ad8c0b2f7312aae077382dd2709954d9e27f449e984d622a8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T15:16:58.807763+00:00"
+}
