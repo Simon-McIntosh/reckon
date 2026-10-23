@@ -3863,12 +3863,12 @@ def serve_crew_view(
         }
     try:
         view = crew_view_name(view)
-    except ViewRequestError:
-        return {
-            "ok": False,
-            "error": "invalid_view",
-            "detail": crew_view_refusal_detail(),
-        }
+    except ViewRequestError as error:
+        # The contract the MCP pre-flight answers through as well, so one
+        # malformed view reads the same whichever surface refused it.
+        return error_response(
+            error.code, error.message, operation="read", hint=error.hint
+        )
     if view == "models":
         from reckon.crew.model_catalogue import model_notices
 

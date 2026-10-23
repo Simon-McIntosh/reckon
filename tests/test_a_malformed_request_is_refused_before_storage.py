@@ -9,8 +9,9 @@ storage imposes becomes the caller's timeout, and any deadline the tool sets
 expires while the request is still being judged.
 
 The stub below blocks on any open, so the request reaching storage is the
-failure. On the revision before the argument checks moved ahead of the first
-read, the crew live field call reached the stub and the test failed here.
+failure. Every refusal path is exercised under it, so a pre-flight that
+resolved a project's storage before judging its arguments fails here rather
+than passing quietly.
 """
 
 from __future__ import annotations
@@ -18,7 +19,7 @@ from __future__ import annotations
 import builtins
 import io
 
-from reckon import mcp, mcp_edit_plan
+from reckon import mcp, mcp_edit_plan, mcp_views
 from reckon.crew import query
 from reckon.crew.recovery_classification import classify_pointer
 
@@ -181,6 +182,31 @@ def test_a_crew_read_naming_an_unknown_view_is_refused(monkeypatch) -> None:
     # The accepted views are named.
     assert "live" in result["message"]
     assert "ledger" in result["message"]
+
+
+def test_the_cli_and_the_tool_refuse_one_view_the_same_way(monkeypatch) -> None:
+    """Both crew surfaces reach one refusal, so both read the same keys.
+
+    The crew MCP tool and the ``crew view`` CLI both answer through
+    :func:`reckon.mcp_views.serve_crew_view`, so a view outside the served set
+    is one request refused in one place. The tool's pre-flight refuses it before
+    the server is called and the server refuses it when the CLI calls it, and
+    both go through ``error_response``: the same four keys, naming the accepted
+    set in the message and the refused view's own code, rather than one surface answering a ``detail`` shape the
+    other does not.
+    """
+    stub = _stubbed(monkeypatch)
+    from_the_tool = mcp._crew(project="fixture", view="no_such_view")
+    from_the_cli = mcp_views.serve_crew_view("no_such_view", project="fixture")
+    assert not stub.reached, f"a refusal reached storage: {stub.paths}"
+    assert from_the_tool.keys() == from_the_cli.keys()
+    for answer in (from_the_tool, from_the_cli):
+        assert answer["error"] == "invalid_view"
+        assert answer["operation"] == "read"
+        assert set(answer) == {"ok", "error", "message", "operation"}
+        # The accepted views are named, composed from the registry.
+        assert "live" in answer["message"]
+        assert "ledger" in answer["message"]
 
 
 def test_an_edit_naming_an_unknown_op_is_refused(monkeypatch) -> None:
