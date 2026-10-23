@@ -1,0 +1,146 @@
+<section id="a-queued-request-waits-on-its-dependencies-landing">
+  <h2>A queued request whose section waits are unmet is held until they land</h2>
+
+  <p><strong>What changed.</strong> A dispatcher may now queue a batch whose
+  later nodes depend on sections an earlier one builds, and the queue holds
+  them. <code>queue_requests</code> in <code>reckon/crew/queue_admission.py</code>
+  reads each node's section waits off its plan (<code>plan-section-depends-on</code>,
+  via <code>section_wait_refs</code>) and stores the request in a new
+  <code>awaiting-upstream</code> phase beside <code>QUEUED_PHASE</code> when it
+  declares any. A request in that phase is not eligible for launch, so a
+  batch of three chained sections launches its head alone.
+
+  <p>Each admission pass calls <code>advance_waiting_requests</code> before it
+  builds its launch list, and that pass re-reads readiness and moves each
+  waiting request to the phase its refs now justify: <code>queued</code> once
+  its last wait is satisfied, <code>blocked-upstream</code> once a wait can no
+  longer be satisfied. No coordinator call sits between the two, which is the
+  point of the state: the queue releases itself as upstream promotes.
+
+  <p><strong>Readiness is imported, not re-derived.</strong> The pass builds
+  the roadmap's own report (<code>reckon.roadmap.build_roadmap</code>, through
+  the same discovery the plan-review path uses) and reads each ref's outcome
+  from the blocker rows of that plan's <code>section_readiness</code>. A second
+  derivation is how a request comes to be held for a reason the roadmap would
+  not report, and the roadmap's row is also what tells a wait that is still
+  <em>pending</em> from one that was closed unfinished — the latter reading
+  <code>abandoned</code> wherever a terminal non-completed status reaches it.
+  Blocking is transitive: a request blocked by a ref the same pass has just
+  blocked becomes blocked too, which the fixpoint in
+  <code>advance_waiting_requests</code> guarantees whatever order the pointers
+  are held in.
+
+  <p><strong>Refusals move to queue time; scope does not.</strong> A node the
+  batch carries that cannot be dispatched at all — a declared input the
+  repository does not hold, a malformed goal, a missing time budget — is
+  refused when the batch is queued, so it never takes a place in the queue or
+  hides behind a chain that has not moved. A node's <em>write scope</em> is
+  still checked at launch and not at queue time: what a node may write is a
+  property of the tree it lands in, which has not been resolved when the
+  request is only stored.
+
+  <p><strong>The two states.</strong> <code>AWAITING_UPSTREAM_PHASE</code>
+  (<code>"awaiting-upstream"</code>) and <code>BLOCKED_UPSTREAM_PHASE</code>
+  (<code>"blocked-upstream"</code>) are defined in
+  <code>reckon/crew/queue_admission.py</code>, beside <code>QUEUED_PHASE</code>
+  and <code>LAUNCH_FAILED_PHASE</code>, with
+  <code>WAITING_UPSTREAM_PHASES</code> naming the pair. The name is not
+  <code>waiting</code>: <code>dispatch_admission.py</code> already uses that
+  word for a lane's queue count, and a phase reusing it would make one word
+  mean two things in the same document.</p>
+
+  <h3>Measured</h3>
+
+  <p>Gate: the new test module, the three queued-request modules and the
+  obligations module named by the node, every existing test module importing
+  <code>reckon/crew/queue_admission.py</code>,
+  <code>reckon/crew/dispatch_admission.py</code> or
+  <code>reckon/crew/dispatch.py</code> (112 modules, named in the
+  manifest), and the worker-window module. Run in the foreground in place on
+  the fleet allocation with the repository virtualenv, every arm logged to a
+  file whose first line names the revision, tree and command and whose last
+  line is a bare <code>EXIT=&lt;code&gt;</code>. The gate itself ran under
+  <code>pytest-xdist</code> at eight workers; a first serial attempt was
+  abandoned for wall clock, not for a result.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>head (this change, committed)</td>
+        <td><code>cce801f3</code></td>
+        <td><strong>1100 passed</strong>, 13 failed, 1 skipped, exit 1 — every failure pre-existing</td></tr>
+      <tr><td>base (this node's source change reverted, its test module kept)</td>
+        <td><code>cce801f3</code> tree + <code>43677d0d</code> <code>queue_admission.py</code></td>
+        <td><strong>3 failed</strong>, exit 1</td></tr>
+      <tr><td>negative control (a waiting request released without re-reading readiness)</td>
+        <td><code>cce801f3</code> + mutation</td>
+        <td><strong>2 failed</strong>, 1 passed, exit 1</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>The delta is zero.</strong> Thirteen of the gate's modules fail
+  (one <code>conftest</code> fixture test errors among them), and running exactly
+  those thirteen test ids on the head tree and on the base tree gives the same
+  thirteen, byte for byte — they are the checkout's pre-existing failures, not
+  this change's. They are failures of the environment the tests run in
+  (<code>/tmp</code> and configuration-home writes on this allocation), which is
+  also why the node's brief calls the worker-window module's
+  <code>reckon/roadmap.py</code> failure pre-existing. The gate is logged with
+  <code>EXIT=1</code> for that reason, and the number that matters is the
+  <em>zero</em> added against that base.</p>
+
+  <h3>The three arms the new module measures</h3>
+
+  <ul>
+    <li><strong>Ordering.</strong> One call queues a three-section chain. The
+    head is stored <code>queued</code>; the middle and the tail are stored
+    <code>awaiting-upstream</code>, each carrying its own ref
+    (<code>plan-a#s1</code>, <code>plan-a#s2</code>). An admission pass
+    launches exactly one of the three. Declaring <code>s1</code> done and
+    passing again launches the middle and leaves the tail waiting; only after
+    <code>s2</code> lands does the tail launch, and no call other than the
+    admission pass sits between them.</li>
+
+    <li><strong>The blocked arm.</strong> A second chain queues identically,
+    then the head's request is closed as failed — nothing will ever deliver
+    <code>s1</code>. The pass then launches nothing, and both the middle and
+    the tail read <code>blocked-upstream</code>: the middle because its ref is
+    dead, the tail because the fixpoint carries the middle's blockage
+    through.</li>
+
+    <li><strong>The refusal arm.</strong> A batch of two whose second node
+    declares an input file the repository does not hold is refused by the
+    queueing call itself, and the section that node names is absent from the
+    live requests afterwards — the refusal wrote nothing.</li>
+  </ul>
+
+  <h3>The negative control</h3>
+
+  <p>The declared mutation is the one line that matters:
+  <code>advance_waiting_requests</code> computed a target from
+  <code>resolve_waits</code>, and the control replaces that target with
+  <code>QUEUED_PHASE</code> outright. Readiness is then never re-read, every
+  waiting request is released the moment the pass looks at it, and the chain
+  launches out of order. Both the ordering test and the blocked-arm test go
+  red on that mutation — the ordering test on the assertion that only the head
+  has no unmet wait, the blocked arm on <code>assert launched == []</code>
+  where two prompts were launched — against a head arm in which the same
+  module fails nothing. That is the defect this node exists to close, and the
+  control confirms the test detects it rather than merely passing.</p>
+
+  <h3>What is not measured here</h3>
+
+  <ul>
+    <li><strong>The obligations view does not yet read the two phases.</strong>
+    The phase filters that decide whether a request is surfaced on its owning
+    session's obligations live in <code>reckon/crew/obligation_snapshot.py</code>
+    and <code>reckon/crew/obligations.py</code>, and the watch stream's
+    classification lives in <code>reckon/crew/recovery_classification.py</code>.
+    All three are outside this node's write fence. A request held
+    <code>awaiting-upstream</code> is therefore real, listed in the live
+    pointers, and released on time, but it is not yet drawn on the session's
+    duties view. This is a requirement of the section's prose rather than part
+    of this node's declared done-when measure, and it is recorded in the
+    manifest's <code>follow_ons</code> for a node with the scope to take it.</li>
+  </ul>
+</section>
