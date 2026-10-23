@@ -1,0 +1,97 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T00:28:07.640Z",
+  "dispatched_at": "2026-10-23T00:14:33Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-plan-is-reviewed-before-it-is-built.html:323",
+      "id": "reasoning-1",
+      "reason": "the claim is offered as the reason `newest_design_review` is left unchanged, and it is false on the very case the section's first done-when builds, so the node must either extend its write paths to `reckon/crew_dispatch_commands.py` so the answer verb falls back to the design review when `record is None`, or narrow the claim and qualify the done-when sentence to the two-review case.",
+      "text": "\u00a742's Deliverable and its closing done-when sentence both claim \"A partial design review's findings therefore stay answerable\", citing `crew review --answer` then `newest_design_review` (`reckon/crew_dispatch_commands.py:2567`) as the mechanism; but the verb reads its covering record first \u2014 `record = plan_review.read_plan_review(project, plan_slug, plan=plan_path \u2026)` at `:2555-2557` \u2014 and `read_plan_review` with a plan resolves through `review_coverage` (`reckon/crew/plan_review.py:1045`), whose record list excludes every `INCOMPLETE_STATUS` record (`:863-865`), and the verb returns the \"no stored review for \u2026\" error at `:2558-2566` when that record is `None`; `newest_design_review` is only consulted at `:2567`, after that guard, so a plan whose only review is the partial design review \u00a742 creates \u2014 exactly \u00a742's first done-when case \u2014 cannot answer that review's finding at all",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "a647c5ea89ec33e13517215064496b985e074a9c5ae7d417cdd9bb41f92b8449",
+  "plan_slug": "a-plan-is-reviewed-before-it-is-built",
+  "plan_version": 290,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-23T00:34:35.873063+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-23T00:34:35.873063+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-plan-is-reviewed-before-it-is-built.v290.json",
+  "review_run_id": "r-20261023T001255363536-plan-review-of-a-plan-is-reviewed-before-it-is-built",
+  "reviewed_blob_sha": "e01088c288fd971ee8ac2bbc9483124d28097152",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_delivered_status` (`reckon/crew/plan_review.py:2118`, rubric test at `:2135`), `_review_is_incomplete` (`:810`), `newest_design_review` (`:1206`), `require_plan_reviewed` (`reckon/crew/routing.py:2489`, design read at `:2554`), the answer caller (`reckon/crew_dispatch_commands.py:2567`) and `PLAN_DESIGN_REVIEW_ITEMS` (`reckon/crew/review.py:254`) all resolve, and each of the three named tests exists in the file named (`test_a_section_reviewed_as_authored_stays_reviewed.py:205`, `test_review_plan_command.py:179`, `test_the_surfaces_pass_the_plan.py:174`).",
+    "done_when": "pass \u2014 the gate declares one negative control (\"restore the rubric test in `_delivered_status`, and the first case stores `ready` and the dispatch is admitted\") and it reddens the first case, which is the assertion the change exists to make; cases 2 and 3 are regression arms over a rule that does fail on the unscoped code.",
+    "evidence_paths": "pass \u2014 gate logs are \"under the run directory\" and both arms come \"from git checkouts under the run's own scratch directory\", with `baseline_suite`/`after_suite` recording `failure_ids`; no node-local or session-scratchpad path is named.",
+    "naming": "pass \u2014 the new test file and the symbols the section names (`_delivered_status`, `_review_is_incomplete`, `newest_design_review`, `PLAN_DESIGN_REVIEW_ITEMS`) state what they measure; no plan label, stage name, ticket number or version tag reaches a symbol, filename or comment, and the rule is stated as the mechanism (\"marked `incomplete` when its report leaves out any item of the rubric it was delivered under\"), not as a changelog.",
+    "reasoning": "a finding \u2014 the section's answerability claim rests on `newest_design_review` being reached by `crew review --answer`, but that call sits *after* an earlier guard (`if record is None`) which is itself coverage-filtered, so a plan whose only review is a partial design review fails the guard before the fallback runs.",
+    "single_goal": "pass \u2014 the `incomplete` mark, the gate refusal it drives and the three test rewrites all serve one verdict (a partial design review covers nothing), and the rewrites are the rewrites of that verdict's fallout rather than a second deliverable.",
+    "wiring": "pass \u2014 \u00a742's single `depends-on` (`a-plan-is-reviewed-before-it-is-built#s41`) resolves to a section that exists and is `implementable`, and it matches the real write conflict: \u00a741 and \u00a742 both write `reckon/crew/plan_review.py`, while `reckon/crew/routing.py` and the three rewritten test files are \u00a742's alone."
+  },
+  "section_digests": {
+    "_document": "a47029c9c0371bfae50018c6e6c159c1dcb405862aa99d93187667d562f0408f",
+    "s1": "906b087bcd754848d9ec2aa4c4490b133dbdb4afae9f5c17499132679ea305dd",
+    "s10": "98a91766ca798ebcc3598987231522b39b9ddccc1b7df7872c8581168b36aade",
+    "s11": "02d5638ba0ff8ff5dd2b3c87ccf956cbd9642af42771fd95df9a2b12a65c5aa5",
+    "s12": "32d120b53140ccbc275a965b3f2d903579356680bca3d141eab868656e22f1a9",
+    "s13": "0b983b5335c882d2b5a1e938222637a43c6479acfa2c26796bd1bad6b53fc545",
+    "s14": "e1fc7769c27fba5c11398d91d6a0b95e0bf0b5fbe0348a53ae6bbd11ea67e01e",
+    "s15": "8bbe9d4ecb5d7699700d5ec5ec0e2e68e10eb703ce97c016074036e38c46dbb5",
+    "s16": "405268ed497c37284417b4990ae7587b9d5fdd51e429c59ee23c9fc899dcfd45",
+    "s17": "958a38a3a22f23aff755cc6fb7e95f67abf763621ef344dc4b5afdf2fd261899",
+    "s18": "5be55ae998bf9126a6d5854403395bc2d4dc141a96c747850537376c2b1151bf",
+    "s19": "c955b30374fdf31e71803dac9adb18a3149c1710f64f82faecf6a2e5343806bb",
+    "s2": "0eb83bb364e8325f6db277107654d8f99533fa7458d8f00fa07f41aebea11402",
+    "s20": "d7761564296d90fc766d60ab2d545a71e6b98a3f4cf6e09e3a652b61506adbea",
+    "s21": "9392bdfa49fcf52b6856100b3a6d3824e000fd4e4a4af7900f7ec262acd82fa0",
+    "s22": "5a1cf8eab82a83a4877f9f74ee81283174341d70a24da01bbf97695d84564e9f",
+    "s23": "bb0dab79249984e32a78afb123f52b66fc3170670049bbbc6f7d1b55e1c42124",
+    "s24": "b0870b19487b883350a25f7c90d57a62bc3bcd5f015e3c0e42caa08281ccfb11",
+    "s25": "55c54e0c4d76fc729ae8aae0b9a190890292be3f312bc2851a4557138e3967ee",
+    "s26": "376496ed070fca2ba62310cfbad3a64a716c044bc3c48188338105284b33c5c3",
+    "s27": "4ae9e428c0ae4b25213b1a6dc27ed1bb4add79f05c0c448533947a803910fb6b",
+    "s28": "00f1427c671fbc8c77c5450745a717805c5f71e02da4642612d0e31bcc34ce8b",
+    "s29": "f07a5c4ea029d4c84a0e2e37f4f85b81fd55ba2b01374dbc6725ec9362cbd106",
+    "s3": "46c9c67ed1b393114ccf029e708e97e998691b1283c54b0fb2932ce76f78e01d",
+    "s30": "524315a924e9ea2ed117ffa3497d7c973424aa0fe2f1747216012baa178fe54b",
+    "s31": "109c4c50496bf95da3ad7009025762e6f6203b7aca9bc27b36f9991372594266",
+    "s32": "6f71c6ddc0f515d53dad1398cfc608198a051af77d62d7ef23de5bee1c66d031",
+    "s33": "388b0ebd2758249fd29293434c224835cd9cedf5ab5e3e591eebaa72cd55fb22",
+    "s34": "a1796b7b522c746a6fffb9d84ce9daaadc480a8c182a10a7b546f050d6703270",
+    "s35": "348b0eb16c0690b2e138f28b1353eb6da6f30b89199885ee053a68b35472dcb9",
+    "s36": "1b9c235b3155cc20d2636997e871d553154bcde7170f42fe9c1788c1a3710769",
+    "s37": "580e8de9879c98487d861190d849fbaa300b4fdbfece9a7a4ba24eed4dd480a0",
+    "s38": "0534508fcd761740fdda339862fc74fa43388997b0df6702e53577242d341e4d",
+    "s39": "2dd33aaa16d0d3166c632ce15eac9837f0604222f84564c651c13ee870bba77d",
+    "s4": "7b91ac81d581cc35d0b52204756f087c9a3f39f6180d7b49c782173db05f104e",
+    "s40": "63bdc043e645ffcefa49faff641dbb303a47a0ee1302434e3b6d3aa390b09ba2",
+    "s41": "2d780d330a74c28eff3d6b9cb6a27b863c5c1f9c3456e09fd0a6a64c8f919887",
+    "s42": "d7fde4c0990a3cd1e85d4975b28d4faa8d54f4de896e81e1f011687bf452081f",
+    "s5": "931379e6e61a93111bd4f5be0f477adfac4df292d7f92a1c85da67ae19802e5b",
+    "s6": "d041173b5de95d0e5488fd6cd14ddeb04b6aeb31b2bedbae65328c3f93f022dc",
+    "s7": "658b997db4138d0ee40eca99702b5501c9bb0b620dea973a745e1c2c50ec9e29",
+    "s8": "60b74d52ea05d83fd0d024035a70976e05bc2e1ff165028ebe4589a8fc10c0b4",
+    "s9": "87545911e9ea78d872d01d72f7039ef1759951b05502ca91c7ca97ed86a90a41"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T00:34:23.232399+00:00"
+}
