@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-23T23:03:30.195Z",
+  "dispatched_at": "2026-10-23T22:55:06Z",
+  "findings": [
+    {
+      "file": "reckon/roadmap_snapshot.py",
+      "line": 72,
+      "severity": "non-blocking",
+      "text": "The move replaces serve.py's single atomic global rebind of the (stamp, mounts) tuple with a two-attribute update, `memo.stamp, memo.mounts = stamp, resolved`, which CPython compiles as two separate STORE_ATTRs. Under the ThreadingHTTPServer at reckon/serve.py:4238 a reader that has already stat'd the mounts file can observe the newly stored stamp beside the previous mounts dict and return the stale set, because the guard at roadmap_snapshot.py:70 requires only that both fields be non-stale-or-equal individually. The original tuple rebind could not present that pair, and the docstring at roadmap_snapshot.py:66-69 claims as the memo's whole purpose that a repointed mount is seen. The window is one bytecode and the next call self-heals, so this is recorded rather than held."
+    },
+    {
+      "file": "reckon/roadmap_snapshot.py",
+      "line": 57,
+      "severity": "non-blocking",
+      "text": "No test in the repository calls remembered_mounts or reckon/serve.py's mounts_for_snapshot, so the increment's only behavioural surface is unasserted: the head gate passes whether the memo caches by stamp, resolves on every call, or returns a stale set. A search of tests/ for both names returns nothing, and the only production caller is reckon/mcp.py:1799 via _roadmap_snapshot_scope, which no test names either."
+    },
+    {
+      "file": "reckon/roadmap_snapshot.py",
+      "line": 47,
+      "severity": "non-blocking",
+      "text": "The increment's substantive change lands in reckon/roadmap_snapshot.py, which is still outside the node's declared write paths (prompt.txt:69-75 fences reckon/serve.py, reckon/mcp.py, reckon/_store.py, the test module, the evidence fragment and the figure), and no widen appears on the run. The move is the prescribed remedy for the PLW0603 delta the previous review recorded, so the scope is understood rather than disputed; recorded because the fence as written would not have permitted the write."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a warm roadmap read answered from a snapshot keyed on the project write generation, and the three commits gained since the last review (e5ca59486..c981fcae3) move the mounts memo behind remembered_mounts at reckon/roadmap_snapshot.py:57 so reckon/serve.py:1163 delegates to it and keeps the three global statements it had at base, as split5-ruff-head.log shows three PLW0603 findings at reckon/serve.py:200 against three at base.\nVERDICT done_when: the source done-when names tests/test_a_roadmap_read_answers_from_its_snapshot.py plus the section-50 gate files, zero failures at head against the base arm, logs opening with revision and literal command and closing with EXIT=, baseline_suite and after_suite failure ids in node-id form, and ruff findings on every changed path not exceeding base; manifest.md:28-29 records 39 passed in the head parallel arm and 14 in the serial arm against 29 and 14 at base, all EXIT=0 with zero failure ids, split5-ruff-head.log reports 17 on serve.py against 17 at base with 0 on the new module and 0 on the test, format check passes on all three, and split5-width.log records serve.py at 48,238 estimated tokens and roadmap_snapshot.py at 4,052 under the 50,000 bound with EXIT=0.\nVERDICT write_paths: prompt.txt:69-75 fences reckon/serve.py, reckon/mcp.py, reckon/_store.py, tests/test_a_roadmap_read_answers_from_its_snapshot.py, the evidence fragment and the figure; the gained diff touches reckon/serve.py inside the fence and reckon/roadmap_snapshot.py outside it.\nVERDICT manifest: read manifest.md; status complete, commits through c981fcae3, baseline_suite and after_suite both exit 0 with empty failure_ids, the suite command fields are now literal commands with no $PY or angle-bracket placeholder, negative_control_log points at split5-negative-control.log which ends EXIT=1 with arm 1 failing test_an_advanced_clock_recomputes_a_run_whose_files_did_not_move on 'waiting' != 'wait-aged' and arm 2 failing test_a_runs_own_record_moves_the_key_with_its_state_unchanged on 'stable' != 'stable', and measurement_module and measurement_cwd are recorded.\nVERDICT diff: read e5ca59486 against c981fcae3 commit by commit; three commits over two files, +38/-21, with bd4545c0d moving the mounts memo from reckon/serve.py into a _MountsMemo holder and remembered_mounts in reckon/roadmap_snapshot.py, 1d359d4f5 removing the blank line the move left, and c981fcae3 importing Callable for the resolver's annotation; the store comment that cited 'this section' is rewritten to the mechanism at reckon/roadmap_snapshot.py:340-342, and the diff adds no assertion anywhere.\nCALL_SITES: reckon/mcp.py:1799, reckon/mcp.py:1837, reckon/mcp.py:1860, reckon/serve.py:1163\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/serve.py:1163 now returns remembered_mounts(stamp, load_mounts) and reckon/mcp.py:1799 still reaches it through serve_module, so the mounts a snapshot key is built over are unchanged while serve.py keeps three global statements at reckon/serve.py:200 as at base.\nSCORE evidence: 16\nJUSTIFICATION evidence: split5-head-gate.log:17 and :37 record 39 and 14 passed with EXIT=0 against split5-base-gate.log:18 and :35 at 29 and 14, and split5-ruff-head.log records 17 findings against 17 at base, so the done-when's clauses are measured, though no gate case reaches the memo the increment moves.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: the increment writes reckon/roadmap_snapshot.py:47-73, which prompt.txt:69-75 does not fence and no widen covers, while reckon/serve.py is inside it.\nSCORE durability: 11\nJUSTIFICATION durability: the diff adds no assertion, no test calls remembered_mounts or mounts_for_snapshot, so neither the stamp comparison at reckon/roadmap_snapshot.py:70 nor the mount cache would redden any gate case if reverted.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/roadmap_snapshot.py:47 follows the module's plain-function idiom with annotations and a docstring, but the module docstring at reckon/roadmap_snapshot.py:1-17 never names the mounts resolution it now also owns, so a reader of the file's stated purpose does not expect it.\nSCORE reuse: 19\nJUSTIFICATION reuse: the memo is relocated rather than duplicated, and a search over reckon/ for a stamp-keyed memo owner found reckon/file_memo.py:1 (per-file parse memo keyed on stat identity), reckon/crew/recovery_memo.py:531 and reckon/crew/obligation_snapshot.py:438, each a different capability, so no owner is forked.\nFINDING reckon/roadmap_snapshot.py:72 non-blocking: the two-attribute update replaces serve.py's atomic tuple rebind, so a concurrent reader under the ThreadingHTTPServer can pair the new stamp with the previous mounts and serve a stale mounts set under a current stamp, contradicting the invariant stated at roadmap_snapshot.py:66-69.\nFINDING reckon/roadmap_snapshot.py:57 non-blocking: no test calls remembered_mounts or serve.mounts_for_snapshot, so the increment's only behavioural surface is unasserted and the gate passes whatever the memo does.\nFINDING reckon/roadmap_snapshot.py:47 non-blocking: the increment lands in a file the dispatch does not fence and no widen records, though the move is the known remedy for the width and PLW0603 findings.\n",
+  "review_run_id": "r-20261023T225344297326-review-of-a-roadmap-read-answers-from-its-snapshot-c981fcae3100",
+  "reviewed_base_sha": "e5ca5948653de875ebd36ab035b722120c9068a1",
+  "reviewed_head_sha": "c981fcae3100bd02bebecd0b65f9d3d9f94eb79b",
+  "reviewed_run_id": "r-20261023T145257555333-a-roadmap-read-answers-from-its-snapshot",
+  "scores": {
+    "durability": 11,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T23:05:11.228239+00:00",
+  "total": 94
+}
