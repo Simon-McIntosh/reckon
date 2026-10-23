@@ -1,0 +1,83 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_source": {
+    "base_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T140921050545-an-ended-lift-stays-ended/logs/base-arm.log",
+    "head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T140921050545-an-ended-lift-stays-ended/logs/head-test.log"
+  },
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/lift_watch.py:120",
+    "reckon/crew/recovery_watch.py:2532",
+    "reckon/pace_report.py:833",
+    "reckon/pace_report.py:1202",
+    "reckon/crew/budget_group.py:246",
+    "reckon/crew/picker/snapshot.py:1165",
+    "reckon/crew/recovery_review_dispatch.py:1429"
+  ],
+  "completed_at": "2026-10-23T17:54:42.035Z",
+  "dispatched_at": "2026-10-23T17:33:08Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-live-worker-is-never-drawn-halted/an-ended-lift-stays-ended.html",
+      "line": "52",
+      "severity": "non-blocking",
+      "text": "non-blocking: the landed fragment asserts \"Eleven granted/ended pairs for one id inside twenty-one minutes\" and the manifest repeats it, but the densest twenty-one-minute span for codex-sub-1792696262-181762 in ~/.config/reckon/crew/watch/nova-19e05df6b2e5.events holds twelve transitions and at most six lift-granted rows, so the headline overstates the reproduction roughly twofold."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T140921050545-an-ended-lift-stays-ended/logs/base-arm-importers2.log",
+      "line": "4",
+      "severity": "non-blocking",
+      "text": "non-blocking: the log is labelled a base arm over the base tree but its recorded module.__file__ resolves to the head worktree's reckon/crew/budget_lift.py, so it is a run of the head library presented as a base arm; the first importers arm at logs/base-arm-importers.log:4 resolves correctly to the base tree and carries the comparison."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T140921050545-an-ended-lift-stays-ended/manifest.md",
+      "line": "9",
+      "severity": "non-blocking",
+      "text": "non-blocking: the manifest's test_logs names logs/wcopy-base.log and logs/wcopy-head.log, which do not exist under the run directory; they sit at the scratch root, so the evidence for the cwd-artifact claim is not at the path the record names."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read all three commits against base 03de30ff9cee4e059b733ab13fb4234a813a0a06 (0a222bb43 latch plus tests, 8540b14c7 latch restricted to the reset cause, 1eb916cfc evidence fragment); 476 insertions, 3 deletions, all inside the declared scope.",
+    "done_when": "the done_when asks for the flipping reading named with recorded rows, an alternating-reading test yielding one lift-ended and one lift-granted with a stamped end, a steady-reading test leaving the lift in force, a base arm red with more than one lift-granted, no added failures in the importing tests, and clean ruff; the nova rows reproduce (83 rows for codex-sub-1792696262-181762, 38 lift-granted / 39 lift-ended) and every arm is recorded, though the fragment's magnitude phrase does not reproduce.",
+    "goal": "the node goal is to make a budget lift's observed end final so a flipping reading cannot revive it under the same id; reckon/crew/budget_lift.py:570 record_observed_end stamps ended_at/ended_cause on the first read that observes the reset cause and reckon/crew/budget_lift.py:1195 end_cause returns that stamp ahead of every reading.",
+    "manifest": "read; it reports the head gate at 3 passed EXIT=0, the base arm at 2 failed EXIT=1, a red negative control, and two known neighbour failures, but two of its named test_logs paths do not exist at the run directory.",
+    "write_paths": "the manifest declares reckon/crew/budget_lift.py, reckon/crew/lift_watch.py, tests/test_an_ended_lift_stays_ended.py, the evidence fragment html and a figures directory; the diff's four changed paths all sit inside that set."
+  },
+  "justifications": {
+    "durability": "the negative control in logs/negative-control.log reinstates the regression (record_observed_end returning False) and reddens tests/test_an_ended_lift_stays_ended.py:194 (assert 3 == 1) and tests/test_an_ended_lift_stays_ended.py:259 (KeyError ended_at), so the assertions fail under the very defect they guard.",
+    "evidence": "the base arm at logs/base-arm.log (2 failed, EXIT=1) and the negative control at logs/negative-control.log (mutant 2 failed, EXIT=1) are recorded and reproduce, but the fragment's headline count is not supported by the stream and two named test_logs paths are absent.",
+    "fit": "the additions follow the module idiom of reckon/crew/budget_lift.py:860 _stamp_end and the sweep docstring at reckon/crew/lift_watch.py:104, with no plan label or version in the added names.",
+    "goal_fidelity": "reckon/crew/budget_lift.py:570 record_observed_end stamps the observed reset end and both readers latch through it, reckon/crew/lift_watch.py:120 for the producer and reckon/crew/budget_lift.py:692 for the pace path.",
+    "reuse": "record_observed_end extends the repository's existing end machinery in reckon/crew/budget_lift.py and feeds the single end_cause ladder rather than forking it, though it records a new ended_at/ended_cause pair beside the existing t_end rather than through _stamp_end.",
+    "scope_discipline": "all four changed paths are inside the manifest's declared write paths, and no figure or extra artifact was written."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make a budget lift's observed end final so a flipping reading cannot revive it under the same id; reckon/crew/budget_lift.py:570 record_observed_end stamps ended_at/ended_cause on the first read that observes the reset cause and reckon/crew/budget_lift.py:1195 end_cause returns that stamp ahead of every reading.\nVERDICT done_when: the done_when asks for the flipping reading named with recorded rows, an alternating-reading test yielding one lift-ended and one lift-granted with a stamped end, a steady-reading test leaving the lift in force, a base arm red with more than one lift-granted, no added failures in the importing tests, and clean ruff; the nova rows reproduce (83 rows for codex-sub-1792696262-181762, 38 lift-granted / 39 lift-ended) and every arm is recorded, though the fragment's magnitude phrase does not reproduce.\nVERDICT write_paths: the manifest declares reckon/crew/budget_lift.py, reckon/crew/lift_watch.py, tests/test_an_ended_lift_stays_ended.py, the evidence fragment html and a figures directory; the diff's four changed paths all sit inside that set.\nVERDICT manifest: read; it reports the head gate at 3 passed EXIT=0, the base arm at 2 failed EXIT=1, a red negative control, and two known neighbour failures, but two of its named test_logs paths do not exist at the run directory.\nVERDICT diff: read all three commits against base 03de30ff9cee4e059b733ab13fb4234a813a0a06 (0a222bb43 latch plus tests, 8540b14c7 latch restricted to the reset cause, 1eb916cfc evidence fragment); 476 insertions, 3 deletions, all inside the declared scope.\nCALL_SITES: reckon/crew/lift_watch.py:120, reckon/crew/recovery_watch.py:2532, reckon/pace_report.py:833, reckon/pace_report.py:1202, reckon/crew/budget_group.py:246, reckon/crew/picker/snapshot.py:1165, reckon/crew/recovery_review_dispatch.py:1429\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/budget_lift.py:570 record_observed_end stamps the observed reset end and both readers latch through it, reckon/crew/lift_watch.py:120 for the producer and reckon/crew/budget_lift.py:692 for the pace path.\nSCORE evidence: 16\nJUSTIFICATION evidence: the base arm at logs/base-arm.log (2 failed, EXIT=1) and the negative control at logs/negative-control.log (mutant 2 failed, EXIT=1) are recorded and reproduce, but the fragment's headline count is not supported by the stream and two named test_logs paths are absent.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all four changed paths are inside the manifest's declared write paths, and no figure or extra artifact was written.\nSCORE durability: 19\nJUSTIFICATION durability: the negative control in logs/negative-control.log reinstates the regression (record_observed_end returning False) and reddens tests/test_an_ended_lift_stays_ended.py:194 (assert 3 == 1) and tests/test_an_ended_lift_stays_ended.py:259 (KeyError ended_at), so the assertions fail under the very defect they guard.\nSCORE fit: 18\nJUSTIFICATION fit: the additions follow the module idiom of reckon/crew/budget_lift.py:860 _stamp_end and the sweep docstring at reckon/crew/lift_watch.py:104, with no plan label or version in the added names.\nSCORE reuse: 17\nJUSTIFICATION reuse: record_observed_end extends the repository's existing end machinery in reckon/crew/budget_lift.py and feeds the single end_cause ladder rather than forking it, though it records a new ended_at/ended_cause pair beside the existing t_end rather than through _stamp_end.\nFINDING docs/evidence/fragments/a-live-worker-is-never-drawn-halted/an-ended-lift-stays-ended.html:52 non-blocking: the landed fragment asserts \"Eleven granted/ended pairs for one id inside twenty-one minutes\" and the manifest repeats it, but the densest twenty-one-minute span for codex-sub-1792696262-181762 in ~/.config/reckon/crew/watch/nova-19e05df6b2e5.events holds twelve transitions and at most six lift-granted rows, so the headline overstates the reproduction roughly twofold.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T140921050545-an-ended-lift-stays-ended/logs/base-arm-importers2.log:4 non-blocking: the log is labelled a base arm over the base tree but its recorded module.__file__ resolves to the head worktree's reckon/crew/budget_lift.py, so it is a run of the head library presented as a base arm; the first importers arm at logs/base-arm-importers.log:4 resolves correctly to the base tree and carries the comparison.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T140921050545-an-ended-lift-stays-ended/manifest.md:9 non-blocking: the manifest's test_logs names logs/wcopy-base.log and logs/wcopy-head.log, which do not exist under the run directory; they sit at the scratch root, so the evidence for the cwd-artifact claim is not at the path the record names.\n",
+  "review_run_id": "r-20261023T172150946013-review-of-an-ended-lift-stays-ended-1eb916cfcdc7",
+  "reviewed_base_sha": "03de30ff9cee4e059b733ab13fb4234a813a0a06",
+  "reviewed_head_sha": "1eb916cfcdc780ef3c60713b3e2ad1b26fcff2a4",
+  "reviewed_run_id": "r-20261023T140921050545-an-ended-lift-stays-ended",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "node": "review-of-an-ended-lift-stays-ended-1eb916cfcdc7"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T18:04:36.042434+00:00",
+  "total": 109
+}

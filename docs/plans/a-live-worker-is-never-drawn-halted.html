@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="a-seat-held-elsewhere-is-not-restarted">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
   <title>A Live Worker Is Never Drawn Halted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="16">
+<meta name="plan-version" content="18">
 <meta name="plan-modified" content="2026-10-23">
 </head>
 <body>
@@ -228,7 +228,7 @@
     <code>ticker.py</code>.</p>
 
     <h2 id="s6">§6 — An ended lift stays ended</h2>
-<section data-reckon="section" data-id="s6" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s6" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p>A lift ends when its clock's reset is observed. The end is read at the moment of use, so a reading
     that flips between two figures (two backends or two streams reporting different
     <code>resets_at</code>, or a utilisation read on either side of the grant figure) ends the lift and then
@@ -353,6 +353,12 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261023T165016085496-review-of-a-resumed-attempt-is-read-through-its-own-records-0231ca112322" data-who="reckon-build" data-when="2026-10-23T17:17:16.786Z">
     <div class="r-comment-body"><p>the review of r-20261023T154506367282 is stored at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T154506367282-a-resumed-attempt-is-read-through-its-own-records/review-records/r-20261023T154506367282-a-resumed-attempt-is-read-through-its-own-records.at-0231ca112322d2f02e565eca140525b503a819cc.json, scoring 18/15/16/16/16/5 for goal, evidence, scope, durability, fit and reuse with four non-blocking findings</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-close-s6" data-who="reckon-build" data-when="2026-10-23T18:10:00Z">
+    <div class="r-comment-body"><p>§6 closed: an observed lift end is stamped and no later reading revives the id. Commits <code>0a222bb43</code>, <code>8540b14c7</code> and <code>1eb916cfc</code>; population delta zero over 33 files; review 109. <a href="/reckon/evidence/archive/a-live-worker-is-never-drawn-halted-landed.html#s6">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261023T172150946013-review-of-an-ended-lift-stays-ended-1eb916cfcdc7" data-who="reckon-build" data-when="2026-10-23T17:54:42.035Z">
+    <div class="r-comment-body"><p>Reviewed r-20261023T140921050545-an-ended-lift-stays-ended at head 1eb916cfc against base 03de30ff9; a parsed record scores all six dimensions (goal_fidelity 19, evidence 16, scope_discipline 20, durability 19, fit 18, reuse 17) with added_failure_count 0 and three non-blocking findings, and is stored at the reviewed run&#x27;s review-records path.</p></div>
 </div>
 </section>
 </main>
