@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:413",
+    "reckon/crew/recovery_classification.py:211",
+    "reckon/crew/recovery_liveness.py:696",
+    "reckon/crew/recovery_liveness.py:1165",
+    "reckon/crew/recovery.py:95",
+    "reckon/crew/placement.py:1224",
+    "reckon/crew/recovery_watch.py:1199"
+  ],
+  "completed_at": "2026-10-23T17:17:16.786Z",
+  "dispatched_at": "2026-10-23T16:54:16Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_liveness.py",
+      "line": "626",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_attempt_end_recorded` duplicates `_exit_record_names_attempt` at reckon/crew/recovery_liveness.py:661 \u2014 it re-reads the canonical exit record's `attempt` field under a new name instead of extending the owner \u2014 and its one added branch, the `attempt-{N}-exit.json` name at line 635, is unreachable while the current attempt is N, because the archiving at reckon/crew/dispatch_launch.py:1851-1868 writes that file only under the predecessor's number, so the predicate reduces to a copy of the helper it sits beside."
+    },
+    {
+      "file": "tests/test_a_resumed_attempt_is_read_through_its_own_records.py",
+      "line": "288",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_assert_not_halted` asserts only that the state is a member of recovery_watch.FLEET_WORKING_STATES, which contains both `starting` and `working`, so the plan's arm i (`starting`) and arm ii (`working`) are not distinguished and the gate passes whatever the two classify as."
+    },
+    {
+      "file": "docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-resumed-attempt-is-read-through-its-own-records.html",
+      "line": "29",
+      "severity": "non-blocking",
+      "text": "non-blocking: the lint paragraph states that one pre-existing UP017 in recovery_classification.py at line 730 is present in both arms, but the head file carries no `timezone` reference at all, so the change removes that finding; the delta stated is not the one the change produced and the claim has no log behind it."
+    },
+    {
+      "file": "reckon/crew/recovery_liveness.py",
+      "line": "460",
+      "severity": "non-blocking",
+      "text": "non-blocking: the claim-file spelling is re-declared as ATTEMPT_CLAIM_PREFIX and ATTEMPT_CLAIM_SUFFIX rather than taken from the owner at reckon/crew/resumption.py:297 and :305, so the file name a resume writes and the name this reader globs for are two statements that can drift apart."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read commit by commit against 857172971597f91cc29618745a515bb67ca6350d; 718b6fba4 carries the two source modules and the new test, 0231ca112 carries the evidence fragment, and the production change is confined to the attempt-number resolver, the attempt-start clock and one new end predicate.",
+    "done_when": "the done_when names four fixture arms plus a base arm and a negative control on tests/test_a_resumed_attempt_is_read_through_its_own_records.py; head-gate.log records 6 passed EXIT=0, base-gate.log records 5 failed EXIT=1 and negative-control.log records 4 failed EXIT=1, so the gate is a command a shell was handed with a result that could have gone the other way.",
+    "goal": "the node's goal is to read a resumed attempt through its own claim, worker and exit records rather than its predecessor's; reckon/crew/recovery_liveness.py:506 resolves the current attempt from the resume's claim as well as its attempt record, and reckon/crew/recovery_liveness.py:626 stands the guard down when that attempt recorded its own end, which is the deliverable the goal names.",
+    "manifest": "read; it records status complete, its two commits, the gate command on its `tests:` line, four gate logs, baseline_suite at exit 1 with five failure ids and after_suite at exit 0 with none, and a follow_ons entry stating the suite-wide gate did not complete inside the node window.",
+    "write_paths": "the manifest declares five paths \u2014 the two source modules, the manifest's test, the evidence fragment under docs/evidence/fragments/ and the docs/figures/ directory \u2014 and `git diff --stat 857172971597f91cc29618745a515bb67ca6350d 0231ca112322d2f02e565eca140525b503a819cc` shows exactly the four files those paths name and nothing outside them."
+  },
+  "justifications": {
+    "durability": "the four arms fail at the base revision (base-gate.log, 5 failed) and under the declared mutation (negative-control.log, 4 failed), so they redden if the claim branch of reckon/crew/recovery_liveness.py:506 is reverted, and the end-governs arm reddens if reckon/crew/recovery_liveness.py:626 is removed.",
+    "evidence": "the recorded gate could have failed and did \u2014 base-gate.log 5 failed against head-gate.log 6 passed \u2014 but tests/test_a_resumed_attempt_is_read_through_its_own_records.py:288 accepts any member of recovery.FLEET_WORKING_STATES, the ruff check the done_when names carries no receipt in test_logs, and the recorded case could not be reproduced at base.",
+    "fit": "the additions follow the module's convention of private helpers with mechanism-stating docstrings beside their owner, as at reckon/crew/recovery_liveness.py:661, and no plan label, version or ticket reference appears in an added name or comment.",
+    "goal_fidelity": "reckon/crew/recovery_liveness.py:506 extends the resolver the plan named rather than adding a parallel one, and its claim branch is what makes an attempt that has written nothing but its claim legible to the guard.",
+    "reuse": "reckon/crew/recovery_liveness.py:626 re-implements the exit-record attempt match that reckon/crew/recovery_liveness.py:661 already owns without extending it, and reckon/crew/recovery_liveness.py:460 re-declares the claim-file spelling that reckon/crew/resumption.py:297 and :305 own.",
+    "scope_discipline": "every changed path is one the manifest declares, though reckon/crew/recovery_liveness.py:771 and :991 carry line-joining reformatting unrelated to the goal, and the `timezone.utc` to `UTC` change at recovery_classification.py:730 is a lint fix the done_when's ruff clause does not require."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to read a resumed attempt through its own claim, worker and exit records rather than its predecessor's; reckon/crew/recovery_liveness.py:506 resolves the current attempt from the resume's claim as well as its attempt record, and reckon/crew/recovery_liveness.py:626 stands the guard down when that attempt recorded its own end, which is the deliverable the goal names.\nVERDICT done_when: the done_when names four fixture arms plus a base arm and a negative control on tests/test_a_resumed_attempt_is_read_through_its_own_records.py; head-gate.log records 6 passed EXIT=0, base-gate.log records 5 failed EXIT=1 and negative-control.log records 4 failed EXIT=1, so the gate is a command a shell was handed with a result that could have gone the other way.\nVERDICT write_paths: the manifest declares five paths \u2014 the two source modules, the manifest's test, the evidence fragment under docs/evidence/fragments/ and the docs/figures/ directory \u2014 and `git diff --stat 857172971597f91cc29618745a515bb67ca6350d 0231ca112322d2f02e565eca140525b503a819cc` shows exactly the four files those paths name and nothing outside them.\nVERDICT manifest: read; it records status complete, its two commits, the gate command on its `tests:` line, four gate logs, baseline_suite at exit 1 with five failure ids and after_suite at exit 0 with none, and a follow_ons entry stating the suite-wide gate did not complete inside the node window.\nVERDICT diff: read commit by commit against 857172971597f91cc29618745a515bb67ca6350d; 718b6fba4 carries the two source modules and the new test, 0231ca112 carries the evidence fragment, and the production change is confined to the attempt-number resolver, the attempt-start clock and one new end predicate.\nCALL_SITES: reckon/crew/recovery_classification.py:413, reckon/crew/recovery_classification.py:211, reckon/crew/recovery_liveness.py:696, reckon/crew/recovery_liveness.py:1165, reckon/crew/recovery.py:95, reckon/crew/placement.py:1224, reckon/crew/recovery_watch.py:1199\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_liveness.py:506 extends the resolver the plan named rather than adding a parallel one, and its claim branch is what makes an attempt that has written nothing but its claim legible to the guard.\nSCORE evidence: 15\nJUSTIFICATION evidence: the recorded gate could have failed and did \u2014 base-gate.log 5 failed against head-gate.log 6 passed \u2014 but tests/test_a_resumed_attempt_is_read_through_its_own_records.py:288 accepts any member of recovery.FLEET_WORKING_STATES, the ruff check the done_when names carries no receipt in test_logs, and the recorded case could not be reproduced at base.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every changed path is one the manifest declares, though reckon/crew/recovery_liveness.py:771 and :991 carry line-joining reformatting unrelated to the goal, and the `timezone.utc` to `UTC` change at recovery_classification.py:730 is a lint fix the done_when's ruff clause does not require.\nSCORE durability: 16\nJUSTIFICATION durability: the four arms fail at the base revision (base-gate.log, 5 failed) and under the declared mutation (negative-control.log, 4 failed), so they redden if the claim branch of reckon/crew/recovery_liveness.py:506 is reverted, and the end-governs arm reddens if reckon/crew/recovery_liveness.py:626 is removed.\nSCORE fit: 16\nJUSTIFICATION fit: the additions follow the module's convention of private helpers with mechanism-stating docstrings beside their owner, as at reckon/crew/recovery_liveness.py:661, and no plan label, version or ticket reference appears in an added name or comment.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/recovery_liveness.py:626 re-implements the exit-record attempt match that reckon/crew/recovery_liveness.py:661 already owns without extending it, and reckon/crew/recovery_liveness.py:460 re-declares the claim-file spelling that reckon/crew/resumption.py:297 and :305 own.\nFINDING reckon/crew/recovery_liveness.py:626 non-blocking: `_attempt_end_recorded` duplicates `_exit_record_names_attempt` at reckon/crew/recovery_liveness.py:661 \u2014 it re-reads the canonical exit record's `attempt` field under a new name instead of extending the owner \u2014 and its one added branch, the `attempt-{N}-exit.json` name at line 635, is unreachable while the current attempt is N, because the archiving at reckon/crew/dispatch_launch.py:1851-1868 writes that file only under the predecessor's number, so the predicate reduces to a copy of the helper it sits beside.\nFINDING tests/test_a_resumed_attempt_is_read_through_its_own_records.py:288 non-blocking: `_assert_not_halted` asserts only that the state is a member of recovery_watch.FLEET_WORKING_STATES, which contains both `starting` and `working`, so the plan's arm i (`starting`) and arm ii (`working`) are not distinguished and the gate passes whatever the two classify as.\nFINDING docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-resumed-attempt-is-read-through-its-own-records.html:29 non-blocking: the lint paragraph states that one pre-existing UP017 in recovery_classification.py at line 730 is present in both arms, but the head file carries no `timezone` reference at all, so the change removes that finding; the delta stated is not the one the change produced and the claim has no log behind it.\nFINDING reckon/crew/recovery_liveness.py:460 non-blocking: the claim-file spelling is re-declared as ATTEMPT_CLAIM_PREFIX and ATTEMPT_CLAIM_SUFFIX rather than taken from the owner at reckon/crew/resumption.py:297 and :305, so the file name a resume writes and the name this reader globs for are two statements that can drift apart.",
+  "review_run_id": "r-20261023T165016085496-review-of-a-resumed-attempt-is-read-through-its-own-records-0231ca112322",
+  "reviewed_base_sha": "857172971597f91cc29618745a515bb67ca6350d",
+  "reviewed_head_sha": "0231ca112322d2f02e565eca140525b503a819cc",
+  "reviewed_run_id": "r-20261023T154506367282-a-resumed-attempt-is-read-through-its-own-records",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T17:20:15.336043+00:00",
+  "total": 86
+}
