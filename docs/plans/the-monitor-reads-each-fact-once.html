@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="6">
 <meta name="plan-modified" content="2026-10-23">
 </head>
 <body>
@@ -132,21 +132,26 @@
     </ul>
     <p>Events are written to one file per UTC day, attached for reads, and a file older than the retention
     window (seven days, a configuration value) is unlinked. A missing database is rebuilt from the crew home.
-    The module refuses a path that <code>reckon/host.py</code>'s <code>_is_node_local</code> does not report as
-    node-local. That check reads the mount type through <code>_filesystem_type</code> against
-    <code>_SHARED_FILESYSTEMS</code>, so all eight shared types are refused, because WAL needs shared memory that
-    a network filesystem cannot provide across nodes. That refusal and the <code>TMPDIR</code> one are one
-    refusal family, <code>station-store-not-node-local</code>, registered with its remedy in
-    <code>reckon/crew/refusals.py</code>. This section adds the module and that family and retires nothing yet,
-    because nothing reads the station until §7 and §8. The surfaces the station replaces are retired where they
-    are named, in §7 and §12.</p>
+    The module reads the root's own mount type through <code>reckon/host.py</code>'s
+    <code>_filesystem_type</code> and refuses any type in <code>_SHARED_FILESYSTEMS</code>, because WAL needs shared
+    memory that a network filesystem cannot provide across nodes. It does not call <code>host._is_node_local</code>:
+    that function accepts <code>$XDG_RUNTIME_DIR</code> and <code>/run/user/&lt;uid&gt;</code> by path prefix before it
+    reads the mount type (<code>reckon/host.py:190</code>–<code>192</code>), and those are exactly the roots the store
+    uses. Both refusals, a shared mount and a root reached only through <code>TMPDIR</code>, raise one error class
+    defined in the module, naming the path and the reason. That error is the station's own, not a dispatch refusal,
+    so it joins no entry of <code>reckon/crew/refusals.py</code>'s D-coded registry. This section adds the module and
+    retires nothing yet, because nothing reads the station until §7 and §8. The surfaces the station replaces are
+    retired where they are named, in §7 and §12.</p>
     <p>Done when unit tests show: a rebuild from a fixture crew home (three pointers, two streams) produces
     the same pointer and observation rows as an incremental build; a day partition older than the window is
-    unlinked and its rows are gone; a path on each type in <code>host._SHARED_FILESYSTEMS</code> is refused
-    naming its type, with <code>_filesystem_type</code> patched per case; a root that resolves only through
+    unlinked and its rows are gone; a root under a temporary <code>$XDG_RUNTIME_DIR</code> is refused once per type
+    in <code>host._SHARED_FILESYSTEMS</code>, naming its type, with <code>_filesystem_type</code> patched to report
+    that type, and accepted when it reports <code>tmpfs</code>; a root that resolves only through
     <code>TMPDIR</code> is refused; and a pointer whose <code>file_memo.file_signature</code> is unchanged is not
-    re-parsed. Negative control: a store that writes events into one undated file must fail
-    the retention test.</p>
+    re-parsed. The test files importing <code>reckon/crew/refusals.py</code> show no added failure against base. Negative
+    controls: a store that writes events into one undated file must fail the retention test, and a store that
+    checks the root through <code>host._is_node_local</code> must fail the shared-type case under
+    <code>$XDG_RUNTIME_DIR</code>.</p>
 
     <h2 id="s6">§6 — Ingest reads only bytes it has not read</h2>
 <section data-reckon="section" data-id="s6" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
