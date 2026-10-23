@@ -1,0 +1,83 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: gate.log records the after arm at revision ad415ded6 (dirty tree carrying the change) with 1 failure, tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window, EXIT=1; that failure is in reckon/roadmap.py, a file the diff does not touch (git diff --name-only ad415ded6..cee4634d6 | grep roadmap is empty), and the done_when declares it pre-existing on main, so the added set is empty. The reviewed manifest names no baseline_suite/after_suite keys, so no base-arm log exists for this run; the baseline is taken as the same single pre-existing width failure.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1655 (reckon crew gc handler calling crew_module.garbage_collect)",
+    "reckon/crew.py:85 (re-export)",
+    "reckon/crew/routing.py:3806 (re-export)"
+  ],
+  "completed_at": "2026-10-23T11:00:38.141Z",
+  "dispatched_at": "2026-10-23T10:40:57Z",
+  "findings": [
+    {
+      "file": "reckon/crew/gc.py",
+      "line": "288",
+      "severity": "non-blocking",
+      "text": "_run_directory_grace_seconds re-implements the \"integer plus s/m/h unit to seconds\" capability the repository already owns \u2014 reckon/crew/node.py:826 parse_duration (public, re-exported at reckon/crew.py:72) and reckon/flight.py:154-181 (_BUDGET_UNITS, budget_seconds) \u2014 declaring a third identical units table at gc.py:228 and hand-rolling the validity check at gc.py:311-315 instead of extending either owner."
+    },
+    {
+      "file": "reckon/crew/gc.py",
+      "line": "257",
+      "severity": "non-blocking",
+      "text": "_committed_review_exists duplicates the committed-review walk of reckon/crew/promotion_checks.py:_committed_review_rounds (promotion_checks.py:2641-2678), which walks the same committed_review_root/COMMITTED_RUN_DIRNAME/<run_id>/*.json and reads carried_revision_pair for a carried head; gc could call that owner and test its heads set rather than re-implementing the loop."
+    },
+    {
+      "file": "reckon/crew/gc.py",
+      "line": "288",
+      "severity": "non-blocking",
+      "text": "the grace parser has no test \u2014 tests/test_only_a_run_something_can_still_need_keeps_its_directory.py never sets gc.directory_grace and no other test names _run_directory_grace_seconds \u2014 so the 3h to 10800 s conversion and the malformed-value fallback the manifest's evidence_inputs claims (manifest.md:16) are unverified by any recorded log or assertion."
+    },
+    {
+      "file": "docs/evidence/fragments/crew-state-stays-bounded/only-a-run-something-can-still-need-keeps-its-directory.html",
+      "line": "23",
+      "severity": "non-blocking",
+      "text": "the fragment asserts the unpromoted fixture is held by \"the retention predicate\" and that this \"is what makes the declared mutation decisive\", but the mutation that ran (gate-negative-control.log:26-31) prunes only live-run, queued-run and review-owed-run; the unpromoted fixture is excluded earlier by the unledgered-directory guard at gc.py:690, which the mutation does not remove, so the plan's named negative control is not demonstrated and the fragment's account of it is wrong."
+    },
+    {
+      "file": "reckon/crew/gc.py",
+      "line": "670",
+      "severity": "non-blocking",
+      "text": "_run_directory_grace_seconds(project) resolves the flight config without checkout_path while the sibling accessor run_file_limit_bytes in the same pass passes checkout_path=repo_root (reckon/crew/fleet_supervisor.py:1110-1113), so a project-layer gc.directory_grace can be read from a different checkout than the repo being swept, silently ignoring the override."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified the production call sites that reach the change: reckon/crew_run_commands.py:1655 plus the two re-exports.",
+    "diff": "read commit by commit against ad415ded6; cee4634d6 touches gc.py, the three schema artifacts, the test file and the fragment, nothing outside the declared scope.",
+    "done_when": "the done_when's seven-state dry and real passes, the single pruned run and the printed path and size are asserted at tests/test_only_a_run_something_can_still_need_keeps_its_directory.py:196-275 and their result is recorded in gate.log:4-5 and delivered-revision.log.",
+    "goal": "the reviewed goal is to retire a finished run's directory in gc's retention pass once nothing can still need the run; the diff delivers it at reckon/crew/gc.py:683-790.",
+    "manifest": "read at manifest.md:5-17; it records the gate command and two logs but carries no baseline_suite/after_suite, so the added-failure read-path is dark.",
+    "write_paths": "the declared scope is six repository paths plus the node's fragment and figures directory; git show --stat over cee4634d6 touches exactly six, all inside the scope."
+  },
+  "justifications": {
+    "durability": "tests/test_only_a_run_something_can_still_need_keeps_its_directory.py:206-230 and :263-275 fail on any extra pruned run or lost withheld row, but reckon/crew/gc.py:288-317 has no test.",
+    "evidence": "the seven-state assertions at tests/test_only_a_run_something_can_still_need_keeps_its_directory.py:196-275 are recorded in gate.log:4-5, but gate-negative-control.log:26-31 never exercises the plan-named unpromoted fixture and the manifest carries no suite-arm keys.",
+    "fit": "the idioms at reckon/crew/gc.py:681-683 and :789 match the module, but the constants at gc.py:226-228 sit apart from their siblings at reckon/flight.py:148-150.",
+    "goal_fidelity": "reckon/crew/gc.py:683-790 keeps a finished run's directory on need (gc.py:692, :699, :705, :733) and removes it after the grace window at gc.py:668-670.",
+    "reuse": "reckon/crew/gc.py:228 and :257 duplicate reckon/crew/node.py:245/:826 and reckon/crew/promotion_checks.py:2641.",
+    "scope_discipline": "git show --stat over cee4634d6 lists the six declared paths and no figure."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed goal is \"Retire a finished run's directory in gc's retention pass once nothing can still need the run\"; the diff delivers it at reckon/crew/gc.py:683-790, where a directory is kept while a live pointer or queued entry (gc.py:692), an in-flight review (gc.py:699), a review owed (gc.py:705) or a stream-derived figure (gc.py:733) can still need it, then removed once past the configurable grace window.\nVERDICT done_when: the done_when asks for a dry and a real pass over seven fixture states listing only the reviewed-old run, with each removal's path and size printed; tests/test_only_a_run_something_can_still_need_keeps_its_directory.py:196-275 carries every one of those assertions and the result is recorded, not merely claimed, in gate.log (139 passed, 1 pre-existing failure) and delivered-revision.log (3 passed).\nVERDICT write_paths: the declared scope is reckon/crew/gc.py, reckon/schema/flight.yaml, reckon/_flight_schema.py, docs/_shared/flight.schema.json, the node's own test file, its evidence fragment and its figures directory; git show --stat over cee4634d6 touches exactly the first six paths and creates no figure, every path inside the scope and the declared figures path left unused deliberately.\nVERDICT manifest: read at manifest.md:5-17; it states status complete, commits [\"cee4634d6\"], the gate command and two gate logs, and a negative-control log by absolute path, but it carries no baseline_suite or after_suite keys, so the added-failure accounting a promotion reads derives nothing for this run and the reviewer must fall back to the raw gate logs.\nVERDICT diff: read commit by commit against ad415ded6; cee4634d6 adds the retention predicate and grace reader to reckon/crew/gc.py (167 lines), the directory_grace slot regenerated into the three schema artifacts, a 275-line test file and a 60-line evidence fragment, nothing outside the declared scope.\nCALL_SITES: reckon/crew_run_commands.py:1655 (the `reckon crew gc` handler, calling crew_module.garbage_collect with apply and retention_days), reckon/crew.py:85 and reckon/crew/routing.py:3806 (re-exports of garbage_collect)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/gc.py:683-790 keeps a finished run's directory on need (gc.py:692, :699, :705, :733) and removes it after the grace window at gc.py:668-670, exactly the behaviour \u00a73 fixes.\nSCORE evidence: 14\nJUSTIFICATION evidence: the seven-state dry/real assertions at tests/test_only_a_run_something_can_still_need_keeps_its_directory.py:196-275 are recorded in gate.log:4-5 and delivered-revision.log, but the negative control that ran (gate-negative-control.log:26-31) reddens only on live/queued/review-owed and never the plan-named unpromoted fixture, and the manifest carries no baseline_suite/after_suite keys, so the added-failure read-path is dark.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --stat over cee4634d6 lists the six files of the declared scope and no figure, with the unused docs/figures path a deliberate non-write the manifest names.\nSCORE durability: 14\nJUSTIFICATION durability: the independent assertions at tests/test_only_a_run_something_can_still_need_keeps_its_directory.py:206-208, :218-230 and :263-275 fail on any extra pruned run or lost withheld row, as gate-negative-control.log:26-31 shows, but reckon/crew/gc.py:288-317 (_run_directory_grace_seconds) has no test at all, so its unit conversion and malformed-value fallback are unguarded.\nSCORE fit: 16\nJUSTIFICATION fit: the late imports and printable-action idiom at reckon/crew/gc.py:681-683 and :789 follow the module, but the gc-namespace constants at gc.py:226-228 are placed here while their siblings GC_RUN_FILE_MAX_MB_KEY and DEFAULT_RUN_FILE_MAX_MB live in reckon/flight.py:148-150, so the same slot family is declared in two modules.\nSCORE reuse: 4\nJUSTIFICATION reuse: reckon/crew/gc.py:228 declares _DIRECTORY_GRACE_UNITS = {\"s\": 1, \"m\": 60, \"h\": 3600}, a third copy of reckon/crew/node.py:245 and reckon/flight.py:154, and gc.py:257 re-writes the committed-review walk of reckon/crew/promotion_checks.py:_committed_review_rounds.\nFINDING reckon/crew/gc.py:288 non-blocking: _run_directory_grace_seconds re-implements the \"integer plus s/m/h unit to seconds\" capability the repository already owns \u2014 reckon/crew/node.py:826 parse_duration (public, re-exported at reckon/crew.py:72) and reckon/flight.py:154-181 (_BUDGET_UNITS, budget_seconds) \u2014 declaring a third identical units table at gc.py:228 and hand-rolling the validity check at gc.py:311-315 instead of extending either owner.\nFINDING reckon/crew/gc.py:257 non-blocking: _committed_review_exists duplicates the committed-review walk of reckon/crew/promotion_checks.py:_committed_review_rounds (promotion_checks.py:2641-2678), which walks the same committed_review_root/COMMITTED_RUN_DIRNAME/<run_id>/*.json and reads carried_revision_pair for a carried head; gc could call that owner and test its heads set rather than re-implementing the loop.\nFINDING reckon/crew/gc.py:288 non-blocking: the grace parser has no test \u2014 tests/test_only_a_run_something_can_still_need_keeps_its_directory.py never sets gc.directory_grace and no other test names _run_directory_grace_seconds \u2014 so the 3h to 10800 s conversion and the malformed-value fallback the manifest's evidence_inputs claims (manifest.md:16) are unverified by any recorded log or assertion, and a regression in either would go unnoticed.\nFINDING docs/evidence/fragments/crew-state-stays-bounded/only-a-run-something-can-still-need-keeps-its-directory.html:23 non-blocking: the landing fragment asserts the unpromoted fixture is held by \"the retention predicate\" and that this \"is what makes the declared mutation decisive\", but the mutation that ran (gate-negative-control.log:26-31) prunes only live-run, queued-run and review-owed-run; the unpromoted fixture is excluded earlier by the unledgered-directory guard at gc.py:690, which the mutation does not remove, so the plan's named negative control (fail on the unpromoted fixture) is not demonstrated and the fragment's account of it is wrong.\nFINDING reckon/crew/gc.py:670 non-blocking: _run_directory_grace_seconds(project) resolves the flight config without checkout_path while the sibling accessor run_file_limit_bytes in the same pass passes checkout_path=repo_root (reckon/crew/fleet_supervisor.py:1110-1113), so a project-layer gc.directory_grace can be read from a different checkout than the repo being swept, silently ignoring the override.",
+  "review_run_id": "r-20261023T102142975294-review-of-only-a-run-something-can-still-need-keeps-its-directory-cee4634d6dfb",
+  "reviewed_base_sha": "ad415ded61249c82a3302f00f9a579685b9274bd",
+  "reviewed_head_sha": "cee4634d6dfb5b8e7bbd32136e91c66894d311fe",
+  "reviewed_run_id": "r-20261023T090019521065-only-a-run-something-can-still-need-keeps-its-directory",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 14,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 4,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T10:55:27.753700+00:00",
+  "total": 85
+}
