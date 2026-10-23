@@ -51,20 +51,18 @@ _bootstrap_spec = importlib.util.spec_from_file_location(
 )
 _bootstrap = importlib.util.module_from_spec(_bootstrap_spec)
 _bootstrap_spec.loader.exec_module(_bootstrap)
-_bootstrap_error = _bootstrap.ensure_interpreter(__file__)
-if _bootstrap_error:
-    print(
-        json.dumps(
-            {
-                "hookSpecificOutput": {
-                    "hookEventName": "PreToolUse",
-                    "permissionDecision": "deny",
-                    "permissionDecisionReason": _bootstrap_error,
-                }
-            }
-        )
-    )
-    raise SystemExit(0)
+
+
+def _interpreter_error() -> str | None:
+    """Hand off to this checkout's interpreter, or return why that failed.
+
+    Run from :func:`main` rather than at import: another hook in this directory
+    loads this module by file path to reuse its shell splitter, and a module
+    that re-executes the process as a side effect of being imported would
+    replace that hook with this one.
+    """
+    return _bootstrap.ensure_interpreter(__file__)
+
 
 # The guard runs as a bare script under whatever interpreter the harness picks,
 # so this checkout is not on ``sys.path``. Adding it lets the read-form
@@ -595,6 +593,11 @@ def hook_output(allowed: bool, message: str | None) -> dict[str, Any] | None:
 
 
 def main() -> int:
+    interpreter_error = _interpreter_error()
+    if interpreter_error:
+        sys.stdout.write(json.dumps(hook_output(False, interpreter_error)))
+        return 0
+
     raw = sys.stdin.read()
     try:
         payload = json.loads(raw) if raw.strip() else {}
