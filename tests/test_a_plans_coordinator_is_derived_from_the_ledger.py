@@ -235,6 +235,7 @@ def _write_rows(root: Path, rows) -> None:
                 plan_link=link,
                 session=session,
                 dispatched_at=dispatched_at,
+                completed_at=dispatched_at,
                 gate="passed",
             ),
             root=root,
@@ -399,16 +400,19 @@ def test_a_run_review_of_a_paired_arm_resolves_through_its_run_id(
     assert row["run_id"] == review_node
 
 
-def test_a_run_review_names_its_subject_run_where_it_records_one(
+def test_a_run_review_naming_no_row_of_the_run_set_answers_no_plan(
     tmp_path: Path,
 ) -> None:
-    """A review that records its subject is resolved by that id, not its node."""
+    """A review whose node id names no run of this set names no plan.
+
+    The node id is the only name a review row carries, so a review whose source
+    resolves to no row — here a node that was never dispatched — belongs to no
+    plan rather than to whichever plan the listing happened to visit first.
+    """
     root = tmp_path / "repo"
     (root / "docs").mkdir(parents=True)
     _write_plan(root / "docs", "plan-p", "Simon McIntosh")
     _write_plan(root / "docs", "plan-q", "A Peer")
-    # The node id names a node no row carries, so only the recorded subject id
-    # can answer — and that subject belongs to plan-p, not to plan-q.
     review_node = _review_node_of("plan-node-that-was-never-dispatched")
     _write_rows(
         root,
@@ -426,14 +430,12 @@ def test_a_run_review_names_its_subject_run_where_it_records_one(
                 "phase": "launched",
                 "session": "session-b",
                 "node": {"id": review_node},
-                "reviewed_run_id": "r-a1",
                 "dispatched_at": "2026-10-20T12:00:00Z",
             }
         ],
     )
-    assert result["plans"]["plan-p"]["coordinator"] == "session-b"
-    assert result["plans"]["plan-p"]["run_id"] == review_node
-    # plan-q's own row still decides plan-q: the same run answers one plan only.
+    # The review displaces nothing: each plan is still decided by its own row.
+    assert result["plans"]["plan-p"]["run_id"] == "r-a1"
     assert result["plans"]["plan-q"]["coordinator"] == "session-q"
 
 
@@ -478,32 +480,24 @@ def test_a_live_session_reads_as_live_and_an_ended_one_as_ended(
     assert result["plans"]["tf-co-wound-tape-validation"]["live"] is False
 
 
-def test_a_resolver_that_returns_unowned_everywhere_fails_the_fixture(
-    project_root: Path,
+def test_an_all_unowned_resolver_fails_the_fixture(
+    project_root: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The fixture assertions discriminate against an all-unowned answer."""
-    result = _resolve(project_root)
-    blanked = {
-        **result,
-        "plans": {
-            slug: {
-                **row,
-                "coordinator": None,
-                "tier": plan_coordinator.TIER_UNOWNED,
-                "run_id": None,
-                "matched_by": "",
-            }
-            for slug, row in result["plans"].items()
-        },
-    }
+    """The fixture rejects a resolver that matches no run to its plan.
+
+    The broken behaviour replaces the resolver's own matching step, so the rows
+    are read by the real code path and the assertion turns on the match having
+    happened, not on an answer assembled by the case.
+    """
+    monkeypatch.setattr(plan_coordinator, "_plan_of_run", lambda row, *, rows: ("", ""))
     with pytest.raises(AssertionError):
-        _assert_pinned(blanked)
+        _assert_pinned(_resolve(project_root))
 
 
-def test_a_resolver_blind_to_dispatch_order_fails_the_a_then_b_case(
-    tmp_path: Path,
+def test_an_order_blind_resolver_fails_the_a_then_b_case(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A first-match-wins answer is rejected by the A-then-B assertion."""
+    """A first-match-wins resolver is rejected by the A-then-B assertion."""
     root = tmp_path / "repo"
     (root / "docs").mkdir(parents=True)
     _write_plan(root / "docs", "plan-p", "Simon McIntosh")
@@ -514,17 +508,15 @@ def test_a_resolver_blind_to_dispatch_order_fails_the_a_then_b_case(
             ("r-b1", "plan-p", "", "node-b", "session-b", "2026-10-20T12:00:00Z"),
         ),
     )
-    result = _resolve(root)
-    # What an order-blind resolver would answer: the earliest matching row.
-    blind = {
-        **result,
-        "plans": {
-            "plan-p": {
-                **result["plans"]["plan-p"],
-                "coordinator": "session-a",
-                "run_id": "r-a1",
-            }
-        },
-    }
+    # Holding whatever arrived first and never replacing it is the order-blind
+    # resolver; the rows are the fixture's, read by the real code path.
+    monkeypatch.setattr(
+        plan_coordinator, "_supersedes", lambda candidate, held: held is None
+    )
+    blind = _resolve(root)["plans"]["plan-p"]["coordinator"]
+    assert blind == "session-a"
     with pytest.raises(AssertionError):
-        assert blind["plans"]["plan-p"]["coordinator"] == "session-b"
+        assert blind == "session-b"
+    monkeypatch.undo()
+    # The same fixture, with the ordering rule in place, answers B.
+    assert _resolve(root)["plans"]["plan-p"]["coordinator"] == "session-b"
