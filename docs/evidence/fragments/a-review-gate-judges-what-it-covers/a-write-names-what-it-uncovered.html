@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-review-gate-judges-what-it-covers">
+  <meta name="plan-title" content="A plan write's answer names what that write uncovered">
+  <meta name="plan-summary" content="A plan write reports uncovered_by_write beside review_owed: the units it moved from covered to uncovered, so a lifecycle or metadata write carries the plan's inherited debt without being read as its own doing.">
+  <meta name="plan-evidence-for" content="reckon:a-review-gate-judges-what-it-covers">
+  <meta name="plan-verifies" content="reckon:a-review-gate-judges-what-it-covers#s8">
+  <meta name="plan-recorded-at" content="2026-10-23">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,reckon-tooling,review">
+  <title>A write names what it uncovered — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="a-write-names-what-it-uncovered-note" class="r-note" data-node="a-write-names-what-it-uncovered" data-reckon="landed" data-when="2026-10-23">
+  <h2 id="a-write-names-what-it-uncovered-head">A write names what it uncovered</h2>
+  <p id="a-write-names-what-it-uncovered-rule"><code>review_owed</code> on a plan write is the plan's whole review debt: a stored review leaves a unit uncovered until its prose is reviewed again, so <code>set sprint</code>, <code>close</code> or a comment write returned inherited debt that read as though the write had caused it. Every plan write now also answers with <code>uncovered_by_write</code> — the units this write moved from covered to uncovered — beside the unchanged <code>review_owed</code> and <code>review_invocation</code>.</p>
+  <p id="a-write-names-what-it-uncovered-mechanism">Coverage is a function of the plan's content, and <code>_review_owed_fields</code> runs only after the write, so <code>_edit_plan_tool</code> in <code>reckon/mcp_edit_plan.py</code> reads the plan's coverage before the write through a new <code>_uncovered_before_write</code> and passes that set into <code>_review_owed_fields</code> in <code>reckon/mcp_deadlines.py</code>. There the field is <code>sorted(uncovered - uncovered_before)</code>, each entry carrying the measured change the predicate computed. A create has no content before it, so its before-set is empty by definition and it names every unit it wrote; a before-read that cannot resolve or read the plan passes <code>None</code> and the answer carries <code>uncovered_by_write: null</code> with <code>uncovered_by_write_error</code>, because "unknown" and "nothing" are different facts. <code>review_owed</code> is unchanged in meaning and shape, so the dispatch gate and the write still name one set.</p>
+  <p id="a-write-names-what-it-uncovered-skill">Rule&nbsp;10 of <code>skills/reckon-edit/SKILL.md</code> now tells a coordinator to act on <code>uncovered_by_write</code> after its own write and on <code>review_owed</code> before a build, and the null case for both lists is stated beside the empty case.</p>
+  <p id="a-write-names-what-it-uncovered-gate">Head gate: <code>tests/test_a_write_names_what_it_uncovered.py tests/test_an_edit_tells_its_author_a_review_is_owed.py tests/test_a_write_in_flight_is_not_reported_unlanded.py tests/test_mcp_reads_have_deadlines.py tests/test_mcp_deadline_names_its_cause.py tests/test_skill_contracts.py tests/test_every_module_fits_a_worker_window.py</code> at the committed revision: 2 failed, 103 passed in 257.77&nbsp;s, <code>EXIT=1</code>. Both failures are outside this node's scope. <code>test_review_skill_is_discovered_beside_the_other_reckon_skills</code> reports <code>reckon-review</code>'s body at 1506 words against a 1500 bound, and <code>test_every_registered_crew_verb_is_documented_or_exempt()</code> reports <code>reckon crew retention-sweep</code> registered and unnamed in the build skill; both read <code>skills/reckon-review/SKILL.md</code>, <code>skills/reckon-build/SKILL.md</code> and the crew verb registry, and <code>git diff --quiet HEAD</code> over those paths reports them identical to the base revision, so neither is caused here. Every one of this node's five new cases passes, and the pre-existing width failure named in the brief did not fire.</p>
+  <p id="a-write-names-what-it-uncovered-mutation">Negative control, the mutation this node declared — set <code>uncovered_by_write</code> equal to <code>review_owed</code>: the first case fails, <code>assert [{'unit': 's2', 'change': 0.9230769230769231}] == []</code>, 1 failed, <code>EXIT=1</code>. The same test passes at the head arm, so the log separates the two revisions on the field alone. Log: <code>logs/negative-control.log</code> in the run directory.</p>
+</article>
+</body>
+</html>
