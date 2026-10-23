@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/plan_review.py:2220 store_delivered_reviews",
+    "reckon/crew/promotion_checks.py:1497",
+    "reckon/crew/promotion_checks.py:2556",
+    "reckon/crew/routing.py:2553",
+    "reckon/crew_dispatch_commands.py:2553",
+    "scripts/import_host_reviews.py:477"
+  ],
+  "completed_at": "2026-10-23T07:09:36.742Z",
+  "dispatched_at": "2026-10-23T06:50:03Z",
+  "finding_dispositions": {
+    "1": {
+      "kind": "folded",
+      "node": "a-report-is-admitted-on-what-its-parser-read",
+      "recorded_at": "2026-10-23T07:14:45.100916+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "scripts/import_host_reviews.py",
+      "line": "477",
+      "severity": "blocking",
+      "text": "the diff deletes plan_review.report_carries_review_lines but this production caller still calls it, so import_host_reviews raises AttributeError and tests/test_import_host_reviews.py::test_delivered_report_with_no_record_is_imported_once fails at the head; verified at e0e72f5270f476a3275e6a59399fda01fff80ef1."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T052537615485-a-report-is-admitted-on-what-its-parser-read/manifest.md",
+      "line": "18",
+      "severity": "follow-on",
+      "text": "after_suite names revision 588eb0ed3 rather than the reviewed head e0e72f527, so the recorded gate did not run at the delivered revision, though the final commit touches only the evidence fragment."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against ecd22bbd: 77f21d734 rewrites the admission rule into the two record builders and deletes _report_line_reader and report_carries_review_lines, d97f514b3 lands the landing fragment and clears lint, 588eb0ed3 rewrites three fixtures to name a design-rubric item, e0e72f527 updates the fragment's figures.",
+    "done_when": "prompt.txt:102 names the eight-file pytest command; baseline-suite.log opens with rev ecd22bbd and ends \"2 failed, 83 passed\" with EXIT=1, and after-suite.log opens with rev 588eb0ed3 and ends \"85 passed\" with EXIT=0, so the gate ran against stated revisions and both results are recorded rather than claimed.",
+    "goal": "prompt.txt:30 asks that a delivered report be admitted on what its own parser read with the pattern-matching guard deleted; reckon/crew/plan_review.py:2103 reads the sidecar subject in one place and refuses an empty parse as specified, but the guard's deletion leaves scripts/import_host_reviews.py:477 calling the removed report_carries_review_lines, so the delivered change does not stand.",
+    "manifest": "manifest.md:9-20 reports four commits, the two arms, a red negative control, ruff-clean paths and no blockers; its baseline_suite and after_suite figures reconcile with the summary lines of the two logs it cites.",
+    "write_paths": "prompt.txt:69-76 names plan_review.py, three test files, the evidence fragment and the figures directory, and resume-1-advice.txt:1-3 grants tests/test_a_queued_plan_review_is_stored.py and tests/test_a_delivered_review_that_is_not_stored_says_why.py; all seven paths the diff touches (ecd22bbd to e0e72f527) lie inside that set."
+  },
+  "justifications": {
+    "durability": "tests/test_a_code_report_is_read_by_its_own_grammar.py:152 and tests/test_a_bulleted_finding_is_read.py:281 assert against hand-written item lists and redden on the old pattern match, but no test covers the deleted function's other caller, and tests/test_import_host_reviews.py:514 now fails.",
+    "evidence": "the named eight-file gate is recorded honestly at tests/test_a_code_report_is_read_by_its_own_grammar.py, but it omits tests/test_import_host_reviews.py, which the change reddens, so the recorded zero added failures is false of the change's population.",
+    "fit": "reckon/crew/plan_review.py:2103 follows the module's builder idiom and adds no forbidden name, and the four commit messages at 77f21d734 carry conventional subjects with bodies.",
+    "goal_fidelity": "reckon/crew/plan_review.py:2103 implements the rule exactly as section 41 specifies, but the node's own deletion of the guard breaks scripts/import_host_reviews.py:477 and so does not deliver the change whole.",
+    "reuse": "the change removes a duplicated subject-to-grammar mapping and deletes the second pattern-match guard, so no capability the repository owns is forked or re-implemented.",
+    "scope_discipline": "all seven changed paths are inside the scope named at prompt.txt:69-76 as extended by resume-*advice.txt:1-3, and no path outside it."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 asks that a delivered report be admitted on what its own parser read with the pattern-matching guard deleted; reckon/crew/plan_review.py:2103 reads the sidecar subject in one place and refuses an empty parse as specified, but the guard's deletion leaves scripts/import_host_reviews.py:477 calling the removed report_carries_review_lines, so the delivered change does not stand.\nVERDICT done_when: prompt.txt:102 names the eight-file pytest command; baseline-suite.log opens with rev ecd22bbd and ends \"2 failed, 83 passed\" with EXIT=1, and after-suite.log opens with rev 588eb0ed3 and ends \"85 passed\" with EXIT=0, so the gate ran against stated revisions and both results are recorded rather than claimed.\nVERDICT write_paths: prompt.txt:69-76 names plan_review.py, three test files, the evidence fragment and the figures directory, and resume-1-advice.txt:1-3 grants tests/test_a_queued_plan_review_is_stored.py and tests/test_a_delivered_review_that_is_not_stored_says_why.py; all seven paths the diff touches (ecd22bbd to e0e72f527) lie inside that set.\nVERDICT manifest: manifest.md:9-20 reports four commits, the two arms, a red negative control, ruff-clean paths and no blockers; its baseline_suite and after_suite figures reconcile with the summary lines of the two logs it cites.\nVERDICT diff: read commit by commit against ecd22bbd: 77f21d734 rewrites the admission rule into the two record builders and deletes _report_line_reader and report_carries_review_lines, d97f514b3 lands the landing fragment and clears lint, 588eb0ed3 rewrites three fixtures to name a design-rubric item, e0e72f527 updates the fragment's figures.\nCALL_SITES: reckon/crew/plan_review.py:2220 store_delivered_reviews, reckon/crew/promotion_checks.py:1497, reckon/crew/promotion_checks.py:2556, reckon/crew/routing.py:2553, reckon/crew_dispatch_commands.py:2553, scripts/import_host_reviews.py:477\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:2103 implements the rule exactly as section 41 specifies, but the node's own deletion of the guard breaks scripts/import_host_reviews.py:477 and so does not deliver the change whole.\nSCORE evidence: 11\nJUSTIFICATION evidence: the named eight-file gate is recorded honestly at tests/test_a_code_report_is_read_by_its_own_grammar.py, but it omits tests/test_import_host_reviews.py, which the change reddens, so the recorded zero added failures is false of the change's population.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: all seven changed paths are inside the scope named at prompt.txt:69-76 as extended by resume-*advice.txt:1-3, and no path outside it.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_code_report_is_read_by_its_own_grammar.py:152 and tests/test_a_bulleted_finding_is_read.py:281 assert against hand-written item lists and redden on the old pattern match, but no test covers the deleted function's other caller, and tests/test_import_host_reviews.py:514 now fails.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/plan_review.py:2103 follows the module's builder idiom and adds no forbidden name, and the four commit messages at 77f21d734 carry conventional subjects with bodies.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change removes a duplicated subject-to-grammar mapping and deletes the second pattern-match guard, so no capability the repository owns is forked or re-implemented.\nFINDING scripts/import_host_reviews.py:477 blocking: the diff deletes plan_review.report_carries_review_lines but this production caller still calls it, so import_host_reviews raises AttributeError and tests/test_import_host_reviews.py::test_delivered_report_with_no_record_is_imported_once fails at the head; verified at e0e72f5270f476a3275e6a59399fda01fff80ef1.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T052537615485-a-report-is-admitted-on-what-its-parser-read/manifest.md:18 follow-on: after_suite names revision 588eb0ed3 rather than the reviewed head e0e72f527, so the recorded gate did not run at the delivered revision, though the final commit touches only the evidence fragment.\n",
+  "review_run_id": "r-20261023T064150512208-review-of-a-report-is-admitted-on-what-its-parser-read-e0e72f5270f4",
+  "reviewed_base_sha": "ecd22bbd7c4f6e99004da32c07d4d4f0237027b6",
+  "reviewed_head_sha": "e0e72f5270f476a3275e6a59399fda01fff80ef1",
+  "reviewed_run_id": "r-20261023T052537615485-a-report-is-admitted-on-what-its-parser-read",
+  "scores": {
+    "durability": 14,
+    "evidence": 11,
+    "fit": 18,
+    "goal_fidelity": 14,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T07:15:02.675211+00:00",
+  "total": 96
+}
