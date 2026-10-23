@@ -102,18 +102,27 @@ decided tf-cold-test-validation: run=r-20261021T190726061562-cold-test-reproduct
   <code>live: true</code> against a live pointer while every other plan reads
   <code>false</code>.</p>
 
-  <p><strong>Gate.</strong> The declared four-file gate —
+<p><strong>Gate.</strong> The declared four-file gate —
   <code>tests/test_a_plans_coordinator_is_derived_from_the_ledger.py</code>,
   <code>tests/test_crew_obligations.py</code>, <code>tests/test_ledger.py</code> and
-  <code>tests/test_every_module_fits_a_worker_window.py</code> — run to completion at the
-  repaired head <code>52669c20c</code>: <strong>119 passed, 2 failed in 1,552 s,
-  <code>EXIT=1</code></strong>. That arm ran under storage contention and had the ledger
-  case killed at its per-test bound; the paragraph below carries the measurement that
-  settles what the case does, and the arm re-run after it is the one this record closes on.
-  The log's header names the revision, the tree, the literal command and the module path as
-  imported, and its last line is the exit status. This node's eleven cases pass in it, as do the nine
-  obligation cases, against the fixture whose evidence is tabulated above. The two failures
-  are named below and neither is this change's; the gate has no third.</p>
+  <code>tests/test_every_module_fits_a_worker_window.py</code> — run to completion at the head
+  <code>83100df0f</code>: <strong>1 failed, 120 passed in 1,275 s, <code>EXIT=1</code></strong>,
+  and the single failure is the pre-existing <code>reckon/roadmap.py</code> window bound named
+  below. Log <code>gate-four-file-final3.log</code> in this run's directory under
+  <code>~/.config/reckon/crew/runs/</code>, whose first line names the revision,
+  whose header also names the tree, the temp root and the module path as imported, and whose
+  last line reads <code>EXIT=1</code>. This node's eleven cases pass in it, as do the nine
+  obligation cases, against the fixture whose evidence is tabulated above.</p>
+
+  <p>The arm before this one was cut short, and it is worth stating because the instrument was
+  the defect: <code>gate-four-file-final2.log</code> ended <code>EXIT=124</code>, 84 of about
+  121 cases in, with the ledger file's cases killed at their per-test bound — the same symptom
+  the paragraph below settles. That arm put its basetemp on the shared filesystem, and this
+  suite's churn of many small files is what that bound punishes there; the run above points
+  <code>TMPDIR</code> and the basetemp at a node-local temp root and finishes in 21 minutes.
+  The first attempt's fused arm — 119 passed, 2 failed in 1,552 s, <code>EXIT=1</code>, log
+  <code>gate-four-file-final.log</code> — stays on the record as the contended measurement it
+  was, not as a result.</p>
 
   <p><strong>The ledger case my earlier round called environmental, and it was not.</strong>
   <code>tests/test_ledger.py::test_every_read_view_returns_and_large_defaults_are_compact</code>
