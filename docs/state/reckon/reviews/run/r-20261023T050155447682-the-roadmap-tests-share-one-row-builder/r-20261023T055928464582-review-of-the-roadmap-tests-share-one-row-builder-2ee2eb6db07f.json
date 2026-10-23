@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured: the reviewed manifest's baseline_suite and after_suite both record completed true, exit_status 0 and failure_count 0 (logs/base_gate.log and logs/head_gate.log, each closing EXIT=0 over the same 74 collected ids), so the head arm adds no failure against the base arm.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-23T06:20:50.920Z",
+  "dispatched_at": "2026-10-23T06:06:43Z",
+  "findings": [
+    {
+      "file": "tests/test_roadmap_names_interrupted_runs.py",
+      "line": "101",
+      "text": "follow-on: the deleted private _plan defaulted impl=0.3, effort='S', gates=[], followups=[] and title=slug, while plan_row defaults impl=0.0, effort='M', a passing gate, an open followup and title=slug.title(), so the rows these five tests feed build_roadmap are not the rows they fed at base, while the landing text and the fragment claim 'no assertion changes - only where the row comes from'."
+    },
+    {
+      "file": "tests/test_roadmap_sprint_derivation.py",
+      "line": "45",
+      "text": "follow-on: plan_row('partial', impl=0.1) replaces _plan('partial', impl=0.1), whose status default was 'pending' where plan_row's is 'active', so the 'begun' scenario now satisfies reckon/roadmap.py:2709 through the status branch as well as the impl>0 branch and the test no longer isolates the pending-plan-with-progress case it was written for."
+    },
+    {
+      "file": "tests/roadmap_fixtures.py",
+      "line": "14",
+      "text": "follow-on: no committed test fails if one of the three files reintroduces a private row builder; the dedup invariant the node establishes is demonstrable only by the one-off mutation recorded in logs/negative_control.log, so the silent drift the node removed can return unobserved."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T050155447682-the-roadmap-tests-share-one-row-builder/manifest.md",
+      "line": "12",
+      "text": "follow-on: the done-when's ruff clause was measured (the worker stream shows ruff check base 5 / head 1 concise lines and ruff format --check clean on both sides) but no ruff log was written; test_logs names only base_gate.log and head_gate.log, so a later reader cannot read that clause from the record."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none: the landed change touches only tests/ and an evidence fragment, and tests/roadmap_fixtures.py is imported only by test modules (tests/test_roadmap.py, tests/test_gates_on_finished_work_release.py, tests/ test_finished_plan_reads_closable.py and the three files changed here), so no runtime path reaches it.",
+    "diff": "read commit 2ee2eb6db against 29102c59 commit by commit: five files, +60/-78, three private row builders deleted, tests/roadmap_fixtures.py gaining only the decisions field, and no assertion line altered.",
+    "done_when": "the done-when's pytest arm is recorded and reproducible (logs/base_gate.log and logs/head_gate.log each open with their revision and close EXIT=0; base_ids.txt and head_ids.txt are identical 74-id sets); its 'none of the three files defines a row-building helper' clause holds by the diff; its ruff clause was measured but written to no log.",
+    "goal": "the node goal is to make the three roadmap test files build plan rows through the shared fixture; tests/test_roadmap_endpoints.py, tests/test_roadmap_names_interrupted_runs.py and tests/test_roadmap_sprint_derivation.py each delete their private _plan and import plan_row (tests/roadmap_fixtures.py:14), and the negative control fails all six consumer files together.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T050155447682-the-roadmap-tests-share-one-row-builder/manifest.md; status complete, one commit 2ee2eb6db, tests the six-file pytest command, baseline_suite and after_suite both completed with failure_count 0, and a negative_control_log path whose log ends EXIT=1 after 54 failures.",
+    "write_paths": "read the manifest's declared paths (three roadmap test files, tests/roadmap_fixtures.py, the evidence fragment, a figures dir); the diff changes five paths, every one of them declared, and the figures dir is unused."
+  },
+  "justifications": {
+    "durability": "the diff adds no assertion, and nothing committed fails if one of the three files reintroduces a private row builder: the dedup invariant rests on a one-off mutation (logs/negative_control.log, renaming plan_row's slug key) rather than a test that reddens on the drift the node removed.",
+    "evidence": "logs/base_ids.txt and logs/head_ids.txt are byte-identical 74-id lists (diff clean) and both gate logs close with EXIT=0, but the done-when's ruff clause has no recorded log on disk (manifest.md:12 names only the two pytest logs) even though the stream shows ruff check base 5 / head 1 concise lines and format --check clean both sides.",
+    "fit": "the added decisions parameter at tests/roadmap_fixtures.py:29 follows the fixture's existing optional-field pattern (north_star, effort_hours, section_declarations) and the deleted helpers' call sites keep the file's typed-no-arg-test idiom; no plan, sprint or version label is introduced.",
+    "goal_fidelity": "the three files' private _plan helpers are gone and every call site builds through tests/roadmap_fixtures.plan_row (tests/test_roadmap_endpoints.py:12-32, tests/test_roadmap_names_interrupted_runs.py:101, tests/test_roadmap_sprint_derivation.py:31-60), which is what the node's goal states, though the rows they build are not the rows they built before.",
+    "reuse": "the change extends the capability's existing owner rather than forking it: tests/roadmap_fixtures.plan_row already existed and was already imported by tests/test_roadmap.py, tests/test_gates_on_finished_work_release.py and tests/test_finished_plan_reads_closable.py, and the diff adds one field to it.",
+    "scope_discipline": "git diff --stat 29102c5..2ee2eb6 lists exactly five paths (tests/roadmap_fixtures.py, the three roadmap test files, docs/evidence/fragments/a-read-answers-inside-its-deadline/the-roadmap-tests-share-one-row-builder.html), all inside the declared write paths, and no product source is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the three roadmap test files build plan rows through the shared fixture; tests/test_roadmap_endpoints.py:20-32, tests/test_roadmap_names_interrupted_runs.py:101 and tests/test_roadmap_sprint_derivation.py:31-60 each delete their private _plan and call tests/roadmap_fixtures.plan_row, and the negative control reddens all six consumer files together.\nVERDICT done_when: the pytest arm is recorded and reproducible (logs/base_gate.log and logs/head_gate.log each open with their revision and close EXIT=0; logs/base_ids.txt and logs/head_ids.txt are identical 74-id lists), the 'none of the three files defines a row-building helper' clause holds by the diff, and the ruff clause was measured in the worker stream but written to no log named in manifest.md:12.\nVERDICT write_paths: read the manifest's six declared paths; git diff --stat 29102c5..2ee2eb6 changes five of them (tests/roadmap_fixtures.py, the three roadmap test files, the evidence fragment) and nothing outside them, and the declared figures dir carries no file.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T050155447682-the-roadmap-tests-share-one-row-builder/manifest.md; status complete, one commit 2ee2eb6db, tests the literal six-file pytest command, both suite arms completed with failure_count 0, and negative_control_log pointing at a log closing EXIT=1 after 54 failures.\nVERDICT diff: read commit 2ee2eb6db against base 29102c59 commit by commit: five files, +60/-78, three private row builders deleted, tests/roadmap_fixtures.py gaining only an optional decisions field at line 29, and not one assertion line altered.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the three files' private _plan helpers are gone and every call site builds through tests/roadmap_fixtures.plan_row, which is what the goal states, though the rows so built are not the rows built at base (tests/test_roadmap_names_interrupted_runs.py:101).\nSCORE evidence: 17\nJUSTIFICATION evidence: the two gate logs close EXIT=0 over identical 74-id sets, but the done-when's ruff clause has no log on disk, manifest.md:12 naming only the two pytest logs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 29102c5..2ee2eb6 lists five paths, every one of them a declared write path, and no product source is touched.\nSCORE durability: 8\nJUSTIFICATION durability: the diff adds no assertion, and the dedup invariant rests on the one-off mutation in logs/negative_control.log rather than on a test at tests/roadmap_fixtures.py:14 that reddens when a caller reintroduces a private row builder.\nSCORE fit: 19\nJUSTIFICATION fit: the added decisions parameter at tests/roadmap_fixtures.py:29 follows the fixture's existing optional-field pattern (north_star, effort_hours, section_declarations) and introduces no plan, sprint or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: tests/roadmap_fixtures.plan_row already owned this capability, already imported by tests/test_roadmap.py, tests/test_gates_on_finished_work_release.py and tests/test_finished_plan_reads_closable.py, and the change extends it by one field rather than forking it.\nFINDING tests/test_roadmap_names_interrupted_runs.py:101 follow-on: the deleted private _plan defaulted impl=0.3, effort='S', gates=[], followups=[] and title=slug, while plan_row defaults impl=0.0, effort='M', a passing gate, an open followup and title=slug.title(), so the rows these five tests feed build_roadmap are not the rows they fed at base while the landing text and fragment claim only 'no assertion changes - only where the row comes from'.\nFINDING tests/test_roadmap_sprint_derivation.py:45 follow-on: plan_row('partial', impl=0.1) replaces _plan('partial', impl=0.1), whose status default was 'pending' where plan_row's is 'active', so the 'begun' scenario satisfies reckon/roadmap.py:2709 through the status branch as well as the impl>0 branch and no longer isolates the pending-plan-with-progress case it was written for.\nFINDING tests/roadmap_fixtures.py:14 follow-on: no committed test fails if one of the three files reintroduces a private row builder; the dedup invariant is demonstrable only by the one-off mutation in logs/negative_control.log, so the silent drift the node removed can return unobserved.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T050155447682-the-roadmap-tests-share-one-row-builder/manifest.md:12 follow-on: the done-when's ruff clause was measured (worker stream: ruff check base 5 / head 1 concise lines, ruff format --check clean both sides) but no ruff log was written, test_logs naming only the two pytest logs, so the clause is unreadable from the record.",
+  "review_run_id": "r-20261023T055928464582-review-of-the-roadmap-tests-share-one-row-builder-2ee2eb6db07f",
+  "reviewed_base_sha": "29102c59219513720b0b0158e6195dc59eab3bc6",
+  "reviewed_head_sha": "2ee2eb6db07f4d3dc2d864e78f20a0e52608910b",
+  "reviewed_run_id": "r-20261023T050155447682-the-roadmap-tests-share-one-row-builder",
+  "scores": {
+    "durability": 8,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T06:25:00+00:00",
+  "total": 102
+}
