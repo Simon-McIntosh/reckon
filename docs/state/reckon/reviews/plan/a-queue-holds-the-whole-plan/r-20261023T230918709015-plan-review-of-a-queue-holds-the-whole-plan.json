@@ -1,0 +1,112 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T23:18:35.525Z",
+  "dispatched_at": "2026-10-23T23:10:10Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261023T230918709015-plan-review-of-a-queue-holds-the-whole-plan/plan.html:80",
+      "id": "wiring-1",
+      "reason": "a \u00a72 node built from \u00a72's own text will not create the constant \u00a78 depends on, so either \u00a72's brief or \u00a78's mechanism must be changed before either is dispatched.",
+      "text": "\u00a78 says `RUN_DELIVERED_STATUSES` is the constant \"which \u00a72's implementation adds\", but \u00a72's authored text names no such constant and the \u00a72 implementation in the tree adds none (it adds `AWAITING_UPSTREAM_PHASE`, `BLOCKED_UPSTREAM_PHASE` and `_readiness_rows`), so the predecessor node in the build order creates nothing for \u00a78 to narrow",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261023T230918709015-plan-review-of-a-queue-holds-the-whole-plan/plan.html:80",
+      "id": "reasoning-1",
+      "reason": "an implementer following the named call gets plan-level data and cannot gate on sections, or silently reverts to the assembly \u00a78 explicitly tells it to avoid, so the section must name the section-level reader it actually needs.",
+      "text": "\"Each admission pass re-reads readiness ... It calls `_readiness_by_slug`\" names a reader that returns one verdict per plan, `{str(row.get(\"slug\")): str(row.get(\"readiness\") or \"unknown\")}` (`reckon/crew/plan_review.py:3094-3124`), discarding the per-section data the same roadmap rows carry as `section_readiness` (`reckon/roadmap.py:3598`) and that \u00a72's `_readiness_rows` reads; it therefore cannot answer whether an upstream *section* is declared done",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261023T230918709015-plan-review-of-a-queue-holds-the-whole-plan/plan.html:80",
+      "id": "reasoning-2",
+      "reason": "recording the upstream's project when the wait is stored remains correct and still avoids depending on a deleted pointer, so the mechanism stands even though this justification overstates why.",
+      "text": "\u00a78 states \"A run's live pointer, the one record naming its project, is deleted when the run is promoted\", but a promoted run's project is reconstructed from its surviving run directory (`_rebuild_record_from_run_directory`, `reckon/crew/promotion_records.py:77-105`, which derives `project` from the supervisor record), so the pointer is not the only record naming it",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "bf9ab6266d03b1d0648c20c976b075a4fec1bc9d567d6af38e1166a2bada72d4",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 33,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "wiring-1",
+      "reason": "the review read section 2 at cce801f3c; section 2's current head d14a8111f defines RUN_DELIVERED_STATUSES in reckon/crew/queue_admission.py (two occurrences), and that head is the one being landed",
+      "when": "2026-10-23T23:19:28.420116+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-23T23:19:41.238246+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-23T23:19:52.444438+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-23T23:19:41.238246+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-23T23:19:52.444438+00:00"
+    },
+    "wiring-1": {
+      "action": "declined",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "the review read section 2 at cce801f3c; section 2's current head d14a8111f defines RUN_DELIVERED_STATUSES in reckon/crew/queue_admission.py (two occurrences), and that head is the one being landed",
+      "when": "2026-10-23T23:19:28.420116+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-queue-holds-the-whole-plan.v33.json",
+  "review_run_id": "r-20261023T230918709015-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "2d7e283d561c0ce0e22bbfb3c322a2519ebbf6f3",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass, apart from the constant the wiring finding reports \u2014 `_readiness_by_slug` resolves at `reckon/crew/plan_review.py:3094`, `parse_manifest` at `reckon/crew/reports.py:317`, `MANIFEST_STATUSES` at `reckon/crew/reports.py:138`, `TERMINAL_MANIFEST_STATUSES` at `reckon/crew/reports.py:126`, `run_ids` at `reckon/ledger.py:1019`, `_promoted_run_ids` at `reckon/crew/recovery_repair_dispatch.py:550`, `parse_plan_ref` at `reckon/_schema.py:276`, `TaskNode` at `reckon/crew/node.py:724`; `RUN_DELIVERED_STATUSES` names no symbol in any tree and is reported under wiring.",
+    "done_when": "pass \u2014 the changed arms each assert a distinct refusal or transition with a declared negative arm: cross-project launch only after `B:plan#s2` is done; mutual-section cycle refused with both refs named and nothing stored; mixed section/`--after` cycle refused naming X and `A#s1`; `blocked`/`failed` closures move the waiter to `blocked-upstream` and never launch; a `complete`-but-unlanded upstream leaves its waiter `awaiting-upstream` and releases it on the pass after the ledger row appears. The \"declare B's \u00a72 done before queuing\" arm is the control that shows the hold is not unconditional.",
+    "evidence_paths": "pass \u2014 \u00a78 names repository test paths and no temporary or node-local location; its artefacts are durable files in the tree.",
+    "naming": "pass \u2014 \u00a78 introduces no plan label, stage name, ticket number or version tag; `RUN_DELIVERED_STATUSES`, `--after` and `_readiness_rows` name mechanisms, and the prose carries no changelog reference.",
+    "reasoning": "a finding \u2014 \u00a78 names `_readiness_by_slug` as the readiness reader the admission pass should call, but that function answers only a plan-level question, while \u00a78's launch rule asks a section-level one.",
+    "single_goal": "pass \u2014 \u00a78's one deliverable is cross-plan and cross-project DAG waits; `--after <request-id>` is the syntax by which a request-wait is expressed, not a second deliverable.",
+    "wiring": "a finding \u2014 \u00a78 rests on `RUN_DELIVERED_STATUSES` \"which \u00a72's implementation adds\", and \u00a72 declares no such constant: the only \u00a72 implementation in the tree (`cce801f3c:reckon/crew/queue_admission.py`) adds `AWAITING_UPSTREAM_PHASE`, `BLOCKED_UPSTREAM_PHASE` and `_readiness_rows`, and reads section statuses through `reckon.lifecycle.COMPLETED_STATUSES`/`TERMINAL_STATUSES`, so the declared \u00a72 edge carries nothing \u00a78 can narrow. Every other declared edge touching \u00a78 resolves (\u00a78 depends on \u00a72; \u00a79 and \u00a715 depend on \u00a78)."
+  },
+  "section_digests": {
+    "_document": "3687b78879f4254bc12755beb7d845e4cb94fe5d4fe55ae3e033ddf86e0d5cb5",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "c5b9ec6971c99d11598fc75b9daab4490f64dd91b5df2e4b7178aa79ddb83a6d",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "7bb3dd3b3d1e28b5d5ed470cd96cfee891a8886a6f5317f7e1d5d5bb21ba5a7f",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s3": "c8987dddf45ef27369fcce604285a552d5745bc1002c6947159125bd1216caa7",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s5": "53bd9fc1d3f0dbbd181feb41c011dcd67a67461e888be626dbaf20cfabf33e82",
+    "s6": "888a359c62d83eaa231df69d5107745fb5a7f0b30320d77ca0a8586aff7965b6",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "75b83e31fd78530164075ca0ab1bb37b3e501301138b396c42a8df04e5d56c03",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T23:19:21.050804+00:00"
+}
