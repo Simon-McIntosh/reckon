@@ -60,6 +60,7 @@ from reckon._timestamps import (
 )
 from reckon.crew import (
     plan_review,
+    promotion_waivers,
     rollout,
 )
 from reckon.crew import (
@@ -653,6 +654,7 @@ def complete(
             require_gate_check=require_gate_check,
             suite_delta=suite_delta,
             boundary_waiver=boundary_waiver,
+            domain_waiver_record=_domain_checks,
             resume_remedy=resolved.get("resume_remedy"),
             resume_waived=resume_waived,
             reviewed=resolved.get("reviewed"),
@@ -999,6 +1001,7 @@ def _complete_locked(
     require_gate_check: bool = False,
     suite_delta: Mapping[str, Any] | None = None,
     boundary_waiver: str = "",
+    domain_waiver_record: Mapping[str, Any] | None = None,
     resume_remedy: Mapping[str, str] | None = None,
     resume_waived: Mapping[str, str] | None = None,
     reviewed: Mapping[str, Any] | None = None,
@@ -1503,6 +1506,8 @@ def _complete_locked(
         run["commit_list_shortfall"] = dict(commit_list_shortfall)
     if boundary_waived is not None:
         run["boundary_waiver"] = boundary_waived
+    # A waived declared invariant rides the row the way the other waivers do.
+    promotion_waivers.record_domain_waiver(run, domain_waiver_record)
     if scope_acceptances:
         run["scope_acceptances"] = scope_acceptances
     # A discarded resume path survives on the row with the session it discarded

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>a-domain-waiver-is-written-to-the-promoted-row — landed record</title>
+</head>
+<body>
+<main>
+<h2 id="a-domain-waiver-is-written-to-the-promoted-row-heading">A waived domain check and its reason ride the promoted ledger row</h2>
+<p id="a-domain-waiver-is-written-to-the-promoted-row-what">The promotion guard
+<code>_require_domain_invariant_checks</code> returns the waiver it applied — the ids of the declared
+invariants that failed and the reason the operator stated. That record was bound to
+<code>_domain_checks</code> in <code>reckon/crew/promotion.py</code> and used for nothing else, so it
+survived only until the live pointer was deleted: the waived check left no trace on the promoted
+ledger row, and a reviewer auditing a landed run could not see that a declared invariant failed or
+why. Every other waiver a promotion accepts already rides the row; this one was dropped.</p>
+<p id="a-domain-waiver-is-written-to-the-promoted-row-change">The guard's product is now passed to
+<code>_complete_locked</code> and written as <code>domain_waiver</code> beside <code>boundary_waiver</code>.
+<code>reckon/run_record.py</code> seeds the key to null in <code>build_record</code> and
+<code>reckon/ledger.py</code> declares it in <code>RECORD_FIELDS</code>, so a waiver-carrying row and a
+row whose checks held are told apart by one field on every surface that reads a committed row. No new
+waiver option is added.</p>
+<p id="a-domain-waiver-is-written-to-the-promoted-row-measure">Measure: the fixture repository declares
+two invariants — one matching a node's <code>models/**</code> write path with a check that exits 3, one
+matching a second node's <code>tools/**</code> path with a check that exits 0. The first promotion is
+refused until a reason is stated, its check leaves a replay log whose terminal line is
+<code>EXIT=3</code>, and the landed row read back through <code>crew(view="records")</code> carries
+<code>domain_waiver: {"waived_invariants": ["convergence"], "reason": "the record predates the convergence
+fix", "checks": [...]}</code> — the guard's own returned mapping, compared against the value the guard
+was observed returning in the same run. The second promotion, whose declared check ran and held, carries
+<code>domain_waiver: null</code>. On the base revision the row carries no such key at all, so all three
+cases fail there.</p>
+<p id="a-domain-waiver-is-written-to-the-promoted-row-gate">Gate:
+<code>tests/test_a_domain_waiver_is_written_to_the_promoted_row.py</code> plus
+<code>tests/test_the_domain_waiver_reaches_every_surface.py</code>,
+<code>tests/test_crew_boundary_waiver.py</code>, <code>tests/test_crew_promotion.py</code>,
+<code>tests/test_record_fields_declare_every_key.py</code> and
+<code>tests/test_every_module_fits_a_worker_window.py</code> — the node's own tests are green at the committed head
+<code>9d0b33afe</code>: <code>3 passed in 175.10s</code> (<code>EXIT=0</code>). The only red test in the
+window suite is <code>reckon/roadmap.py: 50280 estimated tokens exceeds the 50000 bound</code>, and that
+is pre-existing rather than this node's: the same <code>50280</code> against the unchanged
+<code>50000</code> bound is measured at the base revision <code>3906d386</code>, and
+<code>git diff 3906d386 9d0b33afe -- reckon/roadmap.py</code> is empty, so no commit of this node's
+touches the file. The concurrent node <code>every-surface-lists-open-decisions</code> owns that path, so
+turning the test green would mean allowlisting or splitting another node's module. A reviewer attributed
+the window failure to
+<code>reckon/crew/promotion.py</code>; that does not reproduce — the module measures
+<code>29038</code> estimated tokens after the waiver recording moved to
+<code>reckon/crew/promotion_waivers.py</code>, against a bound of <code>50000</code>.</p>
+</main>
+</body>
+</html>

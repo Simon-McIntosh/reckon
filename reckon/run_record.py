@@ -636,6 +636,7 @@ def build_record(
     record.setdefault("commit_resolution", None)
     record.setdefault("worktree_retention", None)
     record.setdefault("boundary_waiver", None)
+    record.setdefault("domain_waiver", None)
     record.setdefault("resume_waiver", None)
     record.setdefault("watch_override", None)
     return record
