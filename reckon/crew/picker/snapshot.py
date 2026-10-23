@@ -1140,8 +1140,8 @@ def _budget_exclusion_reasons(
     utilisation: float | None,
     now: datetime,
     session: str | None,
-) -> tuple[list[str], bool]:
-    """The reasons a lane's budget withholds it, and whether a credits lift rides.
+) -> list[str]:
+    """The reasons a lane's budget withholds it.
 
     The budget gate reads the verdict of :func:`reckon.budget.decide` through
     the group's effective block -- the same verdict and the same block a
@@ -1154,14 +1154,14 @@ def _budget_exclusion_reasons(
     A reading past its shelf life is offered for Jev to weigh, never turned into
     a hard refusal, so the gate runs on a fresh reading alone. Where a credits
     lift rides, its pool governs and the window ceiling no longer does: the
-    verdict admits or withholds on the credits drawn, and the second reason
+    verdict admits or withholds on the credits drawn, and the ceiling comparison
     below is skipped for it. Elsewhere the effective ceiling -- the configured
     ceiling less the reserves dispatch withholds -- is applied even where the
     verdict reads the lane open on an availability observation, so the picker
     refuses a lane a dispatch would refuse.
     """
     if not fresh:
-        return [], False
+        return []
     block = _effective_budget_block(config, group, now=now, session=session)
     judged = budget.policy({**config, "budget": block})
     credit_lift = "credit_lift" in judged
@@ -1170,7 +1170,7 @@ def _budget_exclusion_reasons(
     )
     if verdict.get("held"):
         reason = str(verdict.get("reason") or "the lane's budget withholds it")
-        return [f"budget-ceiling: {reason}"], credit_lift
+        return [f"budget-ceiling: {reason}"]
     if not credit_lift and utilisation is not None:
         limit = budget.effective_ceiling(judged, "dispatch")
         if utilisation >= limit:
@@ -1179,8 +1179,8 @@ def _budget_exclusion_reasons(
                     f"budget-ceiling: {utilisation:g}% is at or above the "
                     f"{limit:g}% ceiling for a dispatch"
                 )
-            ], credit_lift
-    return [], credit_lift
+            ]
+    return []
 
 
 def _reserved_lane_exclusion(
@@ -1190,7 +1190,7 @@ def _reserved_lane_exclusion(
     declared: Mapping[str, Any],
     attempts: int,
     utilisation: float | None,
-    credit_lift: bool = False,
+    lift_in_force: bool = False,
 ) -> str | None:
     """The reason a lane's policy withholds it from this node, or None.
 
@@ -1204,15 +1204,15 @@ def _reserved_lane_exclusion(
     which term withheld it and the figures it was judged on, so a reader sees
     the policy that removed the candidate rather than a bare absence.
 
-    A credits lift changes what the window term asks. The provider keeps serving
-    past a spent window while the account holds credits, so under one the lane
-    is judged by its credit pool rather than by the window: the window term asks
-    only whether credits remain under the lift's dispatch stop, which the
-    budget verdict already answers. A lane whose credits are spent is withheld by
-    the budget verdict's own reason, and one whose credits remain is offered on
-    its tier alone -- the presence of the lift is the open-but-scarce signal,
-    and the tier term is what keeps an ordinary node local. The tier and
-    attempts terms are unchanged.
+    A lift in force releases the window term, whatever its form. The window it
+    measures is the account the orchestrators share, and a lift is the
+    operator's decision to spend that account past the pace they reserved it to:
+    judging the lane by the window under one would withhold exactly the work the
+    lift was granted for. The budget verdict through the same lift-aware block
+    governs instead, so a spent credit pool, a drain-by hold or a window spent
+    under an uncapped lift still withholds the lane, with the verdict's own
+    reason. What remains of the policy is the tier and attempts terms, which are
+    what keep an ordinary node on the local lane.
     """
     floor = policy.get(flight.PICKER_RESERVED_LANE_FLOOR_KEY) or {}
     threshold = policy.get(flight.PICKER_RESERVED_LANE_ATTEMPTS_KEY)
@@ -1224,9 +1224,10 @@ def _reserved_lane_exclusion(
             f"{sorted(floor)} or after {threshold} attempts; this node declares "
             f"neither (attempts {attempts})"
         )
-    if credit_lift:
-        # The credit pool governs: a spent pool is already withheld by the
-        # budget verdict, so the window term lets the tier term alone decide.
+    if lift_in_force:
+        # The lift-aware block governs: a spent credit pool, a pace hold or a
+        # window spent past a zeroed reserve is already withheld by the budget
+        # verdict, so the window term lets the tier term alone decide.
         return None
     if utilisation is None:
         return (
@@ -1241,16 +1242,27 @@ def _reserved_lane_exclusion(
     return None
 
 
-def _reserved_five_hour_utilisation(
+def _reserved_fill_window_utilisation(
     group: Mapping[str, Any] | None,
     view: Mapping[str, Any],
     config: Mapping[str, Any],
     *,
     now: datetime,
 ) -> float | None:
-    """The group's own fresh five-hour percentage, never its account overage."""
-    clocks = group.get("clocks") if isinstance(group, Mapping) else None
-    clock = clocks.get("five_hour") if isinstance(clocks, Mapping) else None
+    """The group's own fresh fill-window percentage, never its account overage.
+
+    The fill window is read through :func:`reckon.pace_report.fill_window_clock`,
+    so an account that publishes one operative window and neither named clock
+    is judged on the window it does report rather than treated as absent: the
+    same figure the pace row fills its five-hour clock with. The freshness rules
+    stay the picker's own -- the shelf life, taken from the published document
+    for a document-sourced group, and a reset that has not already passed.
+    """
+    from reckon import pace_report
+
+    if not isinstance(group, Mapping):
+        return None
+    clock = pace_report.fill_window_clock(group, now=now)
     if not isinstance(clock, Mapping) or clock.get("state") != budget.OBSERVED:
         return None
     used = clock.get("utilisation")
@@ -1366,7 +1378,7 @@ def candidates(
                     (item for item in view["groups"] if name in item["members"]),
                     None,
                 )
-                if _reserved_five_hour_utilisation(
+                if _reserved_fill_window_utilisation(
                     group, view, config, now=now
                 ) is None and paid_lanes.refresh_reserved_window(
                     config, name, backend, root=repo, moment=now
@@ -1544,9 +1556,10 @@ def candidates(
         # credits lift opens past a spent window is offered here exactly as
         # dispatch admits a dispatch on it, and one the lift's credits have
         # spent is withheld with the credit-cap reason the verdict names. The
-        # same reading tells the reserved-lane term below whether a credits lift
-        # rides, which decides what the reserved window term asks.
-        budget_reasons, credit_lift = _budget_exclusion_reasons(
+        # reserved-lane term below resolves for itself whether any lift governs,
+        # since a reading this gate declines to judge is the case where that
+        # release matters most.
+        budget_reasons = _budget_exclusion_reasons(
             name,
             config,
             group.get("group") if isinstance(group, Mapping) else None,
@@ -1590,8 +1603,17 @@ def candidates(
         # not a pressure signal, and a candidate carrying it is never offered as
         # a fallback either. The reading is the window percentage this candidate
         # already carries, so a reserved lane and the lane's own block are
-        # judged on one figure.
+        # judged on one figure. Whether any lift governs the lane's group is
+        # resolved here, for the pick's session, whatever the freshness of the
+        # reading: the no-window case is exactly where the release matters, and
+        # a stale reading is the one the budget gate declines to judge.
         if family in reserved and request.node.role != "review":
+            lift_in_force = "lift_id" in _effective_budget_block(
+                config,
+                group.get("group") if isinstance(group, Mapping) else None,
+                now=now,
+                session=request.session,
+            )
             withheld = _reserved_lane_exclusion(
                 family,
                 reserved[family],
@@ -1600,9 +1622,9 @@ def candidates(
                 utilisation=(
                     utilisation
                     if not live_snapshot
-                    else _reserved_five_hour_utilisation(group, view, config, now=now)
+                    else _reserved_fill_window_utilisation(group, view, config, now=now)
                 ),
-                credit_lift=credit_lift,
+                lift_in_force=lift_in_force,
             )
             if withheld:
                 reasons.append(withheld)

@@ -319,6 +319,63 @@ def _operative_window(
     return None if fallback is None else replace(fallback, window_minutes=300)
 
 
+def fill_window_clock(
+    group: Mapping[str, Any],
+    *,
+    now: datetime | None = None,
+) -> dict[str, Any] | None:
+    """The clock that fills a group's window, or ``None`` where none is read.
+
+    A group's fill window is its observed five-hour clock. An account surface
+    publishes one operative window and names it ``primary`` whatever its length,
+    and neither named clock is then observed, so the group's own allowance
+    stands in for the window it reports -- the same operative window
+    :func:`_operative_window` derives it from. A group whose five-hour clock is
+    unobserved while its seven-day clock is observed reports no fill window
+    rather than the operative one, so a reader sees the clock the pace row
+    always did.
+
+    The operative fallback is written in the clock shape, so a caller holds the
+    utilisation, the observation stamp, the reset and the window length however
+    the figure arrived. A group carrying neither an observed clock nor an
+    observed allowance reports nothing, which is the absence of a window rather
+    than an empty one.
+    """
+    from reckon.budget import (
+        CLOCK_FIVE_HOUR,
+        CLOCK_SEVEN_DAY,
+        OBSERVED,
+        _now,
+        _parse_stamp,
+    )
+
+    if not isinstance(group, Mapping):
+        return None
+    clocks = group.get("clocks")
+    five = clocks.get(CLOCK_FIVE_HOUR) if isinstance(clocks, Mapping) else None
+    if isinstance(five, Mapping) and five.get("state") == OBSERVED:
+        return dict(five)
+    seven = clocks.get(CLOCK_SEVEN_DAY) if isinstance(clocks, Mapping) else None
+    if isinstance(seven, Mapping) and seven.get("state") == OBSERVED:
+        return None
+    allowance = group.get("allowance")
+    if not isinstance(allowance, Mapping) or allowance.get("state") != OBSERVED:
+        return None
+    observed = _parse_stamp(allowance.get("observed_at"))
+    moment = _now(now)
+    return {
+        "period": "primary",
+        "state": OBSERVED,
+        "utilisation": allowance.get("utilisation"),
+        "age_seconds": (
+            None if observed is None else max(0.0, (moment - observed).total_seconds())
+        ),
+        "observed_at": allowance.get("observed_at"),
+        "resets_at": allowance.get("resets_at"),
+        "window_minutes": allowance.get("window_minutes"),
+    }
+
+
 def _priced_receipt(row: Mapping[str, Any]) -> tuple[float, Any] | None:
     """A run's weekly receipt as ``(used_percent, resets_at)``, or ``None``.
 
@@ -1625,12 +1682,10 @@ def pace_row(
     from reckon.budget import (
         CLOCK_FIVE_HOUR,
         CLOCK_SEVEN_DAY,
-        OBSERVED,
         UNKNOWN,
         WINDOW_SOURCE_RECORDED,
         _clock,
         _now,
-        _parse_stamp,
         recorded_windows,
     )
     from reckon.crew import budget_group, window_reading
@@ -1712,26 +1767,9 @@ def pace_row(
         if item["group"] == group
     )
     clocks = dict(entry["clocks"])
-    if (
-        clocks[CLOCK_FIVE_HOUR]["state"] != OBSERVED
-        and clocks[CLOCK_SEVEN_DAY]["state"] != OBSERVED
-    ):
-        allowance = entry["allowance"]
-        if allowance.get("state") == OBSERVED:
-            observed = _parse_stamp(allowance.get("observed_at"))
-            clocks[CLOCK_FIVE_HOUR] = {
-                "period": "primary",
-                "state": OBSERVED,
-                "utilisation": allowance["utilisation"],
-                "age_seconds": (
-                    None
-                    if observed is None
-                    else max(0.0, (moment - observed).total_seconds())
-                ),
-                "observed_at": allowance.get("observed_at"),
-                "resets_at": allowance.get("resets_at"),
-                "window_minutes": allowance.get("window_minutes"),
-            }
+    fill = fill_window_clock(entry, now=moment)
+    if fill is not None:
+        clocks[CLOCK_FIVE_HOUR] = fill
     row.update(
         {
             "group": group,
