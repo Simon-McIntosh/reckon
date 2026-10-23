@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T12:04:18.630Z",
+  "dispatched_at": "2026-10-23T11:55:13Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-page-paints-from-an-index/r-20261023T115409741093-plan-review-of-the-page-paints-from-an-index/plan.html:273",
+      "id": "reasoning-1",
+      "reason": "the exemption was added to answer exactly this path, and as written it covers only the detector's own invalidation, so an implementer follows the plan to a guard that never holds on the streamed read the sentence names; the plan must either name the change-stream handler's invalidation as exempt too or key the guard to the detector's recorded pass rather than to a per-tree invalidation timestamp, and the difference is invisible to the node's gate because its test calls `index_rows` directly.",
+      "text": "\u00a715's trust guard exempts \"the invalidation the pass itself fires, which the change stream's own read follows at once\", but the change-stream handler fires an invalidation of its own before it reads: `reckon/serve.py:2805` calls `_invalidate_tree_views(docs_dir, changed_at=changed_at)` and `:2806` then reads `rows = _served_index_rows(docs_dir, project)` in the same loop iteration, with its own `changed_at` taken at `:2782` after the detector's pass already fired `_invalidate_tree_views(tree, changed_at=time.monotonic())` at `reckon/change_streams.py:453`; that read is a process-cache miss (`metadata_index.invalidate_tree`, reckon/metadata_index.py:338-344) and reaches `_reuse_covered` (:379, :429-434), so under \u00a715's stated rule \u2014 \"no invalidation from any other source \u2026 has reached the tree since that pass completed\" \u2014 the record written by the pass is discarded for every streamed change and the ~2,500-stat sweep \u00a715 exists to remove is paid on each one, while the section's own done-when (a direct `index_rows` read) and its live acceptance (a plain `/_index/reckon` GET) both pass and hide it",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b4a4cf2f628aeec12aa44b7a547334a310ea6a86410fed8970db8d8dd77756dc",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 100,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T115409741093-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "500ccaffd5337e811dfe3bb56dba53447782c73b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol \u00a715 cites resolves at head: `_reuse_covered` (reckon/metadata_index.py:395) calls `covered_dir_identity` (:168) \u2192 `_dir_identity` (:879), `_fast_tree` (reckon/change_streams.py:414) calls `_invalidate_tree_views` at :453, and the arming branch at :427-434 does load the persisted stamps and return without stat-ing, exactly as \u00a715 states; the cited 6.5 s first read and 11.3 s second read match \u00a77's close comment in the same snapshot (line 273 and the \u00a77 record naming \"11.3 s on its second read\", \"The repair is \u00a715\").",
+    "done_when": "pass \u2014 \u00a715's four proof cases each carry their own control, and each control mutates a distinct piece of the guard (ignore the record; drop the moved directory from it; trust a disarmed or arming-pass record; trust the record regardless of its pass time), so each case can fail; the live acceptance is delimited to the second pass with the first reported as-is.",
+    "evidence_paths": "pass \u2014 \u00a715's node logs sit under the run directory with a revision header and an `EXIT=` last line, and the open first-read cost is recorded with \u00a77's evidence under `docs/evidence/archive/the-page-paints-from-an-index-landed.html`, not in a node-local temporary path.",
+    "naming": "pass \u2014 `_reuse_covered`, `_fast_tree`, `_dir_identity` and `tests/test_a_read_trusts_the_detector_pass.py` name the mechanism, with no plan label, stage name, ticket number or changelog prose.",
+    "reasoning": "a finding \u2014 the new exemption names only the invalidation the pass itself fires, while the change stream's own read is preceded by a second invalidation the change-stream handler fires at `reckon/serve.py:2805`, from a source the same sentence classes as \"any other source\"; by the plan's own rule that read is untrusted and stats every recorded directory, so \u00a715's benefit is absent on the read the exemption's parenthetical names.",
+    "single_goal": "pass \u2014 \u00a715 carries one deliverable: reuse the change detector's recorded directory identities on the covered-set read instead of stat-ing every recorded directory.",
+    "wiring": "pass \u2014 \u00a715's only declared dependency is `the-page-paints-from-an-index#s14` (`plan-section-depends-on`, snapshot line 29), which shares `reckon/metadata_index.py`, and its second write path `reckon/change_streams.py` needs no upstream section, so no declared relationship points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "710047969c8fa31eaa19b4c4144082b23d3459d38d0eae29b874bca73dd7c892",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "17515cc4d212280b53e77d7279aa81e37c7d58f877ada031f77705b31e53d437",
+    "s11": "bb32b98b9a0a5070d5ec6b5387862bef5af3ba37b5956ac7c9d734723c2ac9fa",
+    "s12": "071a3e9ff829e6cc2047658d80b57b5d30603318f0fa4a31084d94b5ed308185",
+    "s13": "c1b191dea15e7b03a3c847c3a5729ac7a4ca2d0492920bd5b273d04a79593d48",
+    "s14": "81d5ac4cc3ec42e5b1f7e8ee9da1f92e89073fdda2bd21fda06046a2d2e15b68",
+    "s15": "89b9d20b61b5bd03cd7abae3e755ef20fe65e01da78ad6fc3967636119095dee",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "048a1031945a098f9a63b70d985d91dd2d9ee2f67f1ac1a2132e4c7d21b89e7e",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T12:08:51.318529+00:00"
+}
