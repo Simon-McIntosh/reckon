@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T23:34:16.462Z",
+  "dispatched_at": "2026-10-23T23:23:05Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html:80",
+      "id": "reasoning-1",
+      "reason": "the mechanism already handles the absent entry correctly, so the plan's wording is loose but does not send a node at the wrong mechanism.",
+      "text": "\u00a78's factored readiness function is described as returning roadmap rows \"with their per-section `section_readiness`\", but `build_roadmap` attaches that split only inside `reckon/roadmap.py:3578`'s guard (`if section_dependency_blockers or mapped_edges or decision_section_blockers`), so a plan with no section-scoped condition at all carries no per-section entry, and an implementer reading the promise literally may return an empty/unknown per-section verdict where the roadmap means \"no blocker, so landed\"; \u00a72's existing derivation already absorbs this by treating a missing entry as satisfied (`_section_state`, `reckon/crew/queue_admission.py` at d14a8111f)",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "b277c073a1ede7022a3557c1b2d161c58cddf2f159bf463ceb4f09e75a615edb",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 34,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-23T23:34:36.560978+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-23T23:34:36.560978+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-queue-holds-the-whole-plan.v34.json",
+  "review_run_id": "r-20261023T232211852321-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "0ee64f4197638cc6e9b94ef05e0b6c18c70fd2c8",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor \u00a78 names resolves at the tree: `_readiness_by_slug` (`reckon/crew/plan_review.py:3094`, one verdict per plan), `_readiness_rows` (`reckon/crew/queue_admission.py:1056` at \u00a72's head d14a8111f), `TERMINAL_MANIFEST_STATUSES` (`reckon/crew/reports.py:126`), `RUN_DELIVERED_STATUSES` at that head (line 1023, exactly the tuple quoted), `run_ids` (`reckon/ledger.py:1019`) wrapped by `_promoted_run_ids` (`reckon/crew/recovery_repair_dispatch.py:550`), `parse_plan_ref` (`reckon/_schema.py:276`), `TaskNode` (`reckon/crew/node.py:724`) and `reckon/crew_dispatch_commands.py`; the four extensionless plan hrefs resolve as `<path>.html`.",
+    "done_when": "pass \u2014 \u00a78 names a declared negative control (\"The negative arm declares B's \u00a72 done before queuing, and the request goes straight to `queued`\") beside positive arms for the cross-project wait, both cycle shapes, the nonexistent-ref refusal, `blocked`/`failed` closure, and `complete`-but-unlanded.",
+    "evidence_paths": "pass \u2014 no gate output is assigned to a scratchpad or node-local path, and the crew contract puts run logs under the run directory; the declared write paths are repository modules plus a new test file.",
+    "naming": "pass \u2014 \u00a78 introduces no plan label, stage name or ticket number into a symbol; `--after`, `_readiness_rows` and `section_readiness` name the mechanism.",
+    "reasoning": "a finding \u2014 the factored function is said to return \"the roadmap rows with their per-section `section_readiness`\", but the roadmap emits that split only on a row that already has a section-scoped blocker, edge or decision, so most rows carry none.",
+    "single_goal": "pass \u2014 \u00a78 carries one deliverable, the DAG wait derivation across plans and projects; the cycle check and the readiness factoring are the guards that make that one deliverable correct, not separate goals.",
+    "wiring": "pass \u2014 \u00a78 declares `depends-on` s2 only, and every mechanism it adds (the awaiting-upstream states, the phase vocabulary) is \u00a72's; s9, s12 and s15 each carry the edge to s8 that they need, and the new write path `reckon/crew/plan_review.py` is declared in the section body."
+  },
+  "section_digests": {
+    "_document": "3687b78879f4254bc12755beb7d845e4cb94fe5d4fe55ae3e033ddf86e0d5cb5",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "c5b9ec6971c99d11598fc75b9daab4490f64dd91b5df2e4b7178aa79ddb83a6d",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "7bb3dd3b3d1e28b5d5ed470cd96cfee891a8886a6f5317f7e1d5d5bb21ba5a7f",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s3": "c8987dddf45ef27369fcce604285a552d5745bc1002c6947159125bd1216caa7",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s5": "53bd9fc1d3f0dbbd181feb41c011dcd67a67461e888be626dbaf20cfabf33e82",
+    "s6": "888a359c62d83eaa231df69d5107745fb5a7f0b30320d77ca0a8586aff7965b6",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "eff456e19b9260c6af97a5d61349c3e9cb78b38200eab39029caa21af54eef23",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T23:34:26.774303+00:00"
+}
