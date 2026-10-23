@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-crew-does-its-own-bookkeeping-landed">
+  <meta name="plan-title" content="The Crew Does Its Own Bookkeeping — landed record">
+  <meta name="plan-summary" content="Closure synthesis for The Crew Does Its Own Bookkeeping: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="the-crew-does-its-own-bookkeeping">
+  <meta name="plan-verdict" content="qualified">
+  <title>The Crew Does Its Own Bookkeeping — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>The Crew Does Its Own Bookkeeping — landed record</h1>
+  <p>Closure synthesis for The Crew Does Its Own Bookkeeping: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s22">
+    <h2>§22 — An exited review run with a filed record reads complete</h2>
+    <p><code>classify_pointer</code> in <code>reckon/crew/recovery_classification.py</code> now reads a review run's filed-review record for its latest attempt. A review run whose process has exited, and whose latest attempt filed a record that <code>_review_is_complete</code> accepts, reads delivered whatever its manifest's status word says, and the row names the record it read. A record filed by an earlier attempt does not count while a later attempt runs, and an exited review with no filed record keeps its old classification.</p><p>Run <code>r-20261023T084704256476-an-exited-review-with-a-filed-record-reads-complete</code>, head <code>a9888a47</code>, landed by merge <code>f4f978e5a</code> after three repair rounds. The coordinator re-ran the manifest's 63-file gate from <code>git archive</code> extractions: each of the head's 13 failures also fails at the base <code>b809b3ac</code>, so none is added, and the base also fails the new tests. Six tests were added, among them a negative control that drops the attempt match while keeping the liveness gate. The final review scored 112/120 with no findings. This is the measured power_convertor case: run <code>r-20261023T020153063813</code> read as running for two hours after it had filed its review.</p>
+  </section>
+
+</main>
+</body>
+</html>
