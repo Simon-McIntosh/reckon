@@ -112,7 +112,7 @@ def docs(tmp_path) -> Path:
             {
                 "captures": [
                     {
-                        "capture": "captured",
+                        "capture": "control-layout",
                         "image": "captured.png",
                         "description": _CAPTION,
                     }
@@ -177,8 +177,11 @@ def test_the_captured_figure_is_titled_from_its_capture(docs: Path) -> None:
     index_row = _index_figure_rows(docs)["work/captured.png"]
     inventory_row = _inventory_rows(docs)["work/captured.png"]
 
-    assert index_row["title"] == "captured"
-    assert inventory_row["title"] == "captured"
+    # The capture name differs from the file stem, so a title derived from the
+    # filename instead of the capture would show here.
+    assert index_row["title"] == "control layout"
+    assert inventory_row["title"] == "control layout"
+    assert inventory_row["title"] != "captured"
     assert inventory_row["caption"] == _CAPTION
 
 
