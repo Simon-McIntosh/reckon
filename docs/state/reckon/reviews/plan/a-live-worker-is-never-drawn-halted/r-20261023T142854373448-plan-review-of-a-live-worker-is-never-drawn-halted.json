@@ -1,0 +1,40 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T14:46:19.823Z",
+  "dispatched_at": "2026-10-23T14:31:13Z",
+  "findings": [],
+  "plan_fingerprint": "4c594d78ae5de756b126e1941ac86a3ae4cc9d26954d7554a7019c9faad9c4da",
+  "plan_slug": "a-live-worker-is-never-drawn-halted",
+  "plan_version": 5,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T142854373448-plan-review-of-a-live-worker-is-never-drawn-halted",
+  "reviewed_blob_sha": "af4a9e47e299127461cd6f1c3c2e19666fc62b5c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor \u00a75 names resolves at HEAD: `RowPolicy._shown` (`reckon/crew/ticker.py:1268`), `_departures` (`:1272`), `_hold_departure` (`:1429`, whose `shown in (None, word)` at `:1452` is exactly the aging pair's reason for never entering the departure memory), `same_word_row_is_news` (`:2140`) with its two call sites (`:1728` in `RowPolicy._feed`, `:2429` in `Ticker.render`), `_actionable_recovery` (`:2126`) and `declares_a_wait` (`:2085`).",
+    "done_when": "pass \u2014 \u00a75's done-when is a three-row `RowPolicy` sequence with a declared negative control, and I reproduced the base arm at HEAD (`453c33a64`): feeding `working\u2192waiting`, `waiting\u2192wait-aged` (overdue true), `wait-aged\u2192waiting` (overdue false) through `RowPolicy.feed` printed `[('waiting','wait-aged'), ('wait-aged','waiting')]`, i.e. the pair prints two rows at the base, so the control can fail and the head arm's \"drops the return\" is a real assertion.",
+    "evidence_paths": "pass \u2014 \u00a75's gate log and its negative control are recorded in the node's own gate log on the run's durable evidence path, not a scratchpad, and its write paths (`reckon/crew/ticker.py`, the new test) are declared in the section.",
+    "naming": "pass \u2014 \u00a75 introduces no symbol or comment carrying a plan label, stage name or ticket number; `same_word_row_is_news`, `_shown`, `_departures` are all named for the mechanism, and the plan identifiers stay in the plan.",
+    "reasoning": "pass \u2014 all three checks hold. (a) The stated root cause matches the cited evidence: `wait-aged` and `waiting` share one pane word (`PANE_STATES[\"waiting\"]` includes both at `ticker.py:291`), and the recorded pair in `~/.config/reckon/crew/watch/reckon-18dc8a86709b.events` for `a-plans-coordinator-is-derived-from-the-ledger` is exactly as \u00a75 states \u2014 `10:47:05Z waiting\u2192wait-aged` with `wait_overdue: true` and `10:52:33Z wait-aged\u2192waiting` with `wait_overdue: false`, `wait_condition_state: \"met\"` and `wait_observed: \"present\"` unchanged, horizon 900 s both \u2014 so the rule \"newly sets `wait_overdue`, or the other wait facts differ\" drops the return and nothing else in that pair. (b) The mechanism produces the done-when: the same-word release at `ticker.py:1727` is the sole gate, and the base reproduction above shows the third row reaches it and is currently released because `declares_a_wait` is true for both halves. (c) The mechanism runs on the real path with the caller named: the predicate \u00a75 names is the one the pane uses, reached through `PaneRowPath.feed` \u2192 `RowPolicy.feed` (`reckon/crew_follow_commands.py:1052`), and \u00a75 names both of its call sites, so the render-side re-derivation (`crew view`) is covered as well as the stream.",
+    "single_goal": "pass \u2014 \u00a75 carries one deliverable: narrow `same_word_row_is_news` and its two call sites by giving the row policy memory of the shown wait facts; the wording change it disclaims (\"the aging row's wording is unchanged\") is explicitly out of scope.",
+    "wiring": "pass \u2014 \u00a75's only cross-node dependency is the shared file `reckon/crew/ticker.py`, and the ordering is stated where the plan owns it (`f-alwh-001`: \"\u00a75 then \u00a77 follow \u00a74\"; \u00a75 itself: \"It runs after \u00a74, which writes `ticker.py`\"), so no node can start on the file \u00a74 is still writing."
+  },
+  "section_digests": {
+    "_document": "1941c1c8ebd31bdf681794161c167a371b9f346fa53844c7ff32c0863799c095",
+    "s1": "fdb0ee3dedcf73cd7c31af5f79b1d6f1be8507f3719e92fd34a61e01cdd35b78",
+    "s10": "70c7adc788727af45a8714a697d6346247fe2103ec92cc0aabe31175592510f3",
+    "s11": "75b4df0e4c67134607272550aaa2236e7b1d3066609a6473041e0749aeed2ed8",
+    "s2": "c70702959e42962a53184387993123e6b33693a435a06e946ca449754b33ea68",
+    "s3": "be700141126a9f237bac20562b4dcfad23aac331578ae9436e34181230a8be67",
+    "s4": "789bd707090d33eccd7a114acae9de24ed9233fbe5d4912aa2f82e553ca1c10d",
+    "s5": "1fbaee6774bb925bffb02f59d8d4442ab2ecbdce493922561ca3818683ca89fe",
+    "s6": "7bacac917ceea413da790f88aade389dde79677d9d8952459a1700a2c2bb3707",
+    "s7": "e0d2472a318e1a27f08abcca88ffe574165e01b272d6138ba68c315ecbfc6f68",
+    "s8": "6b624c6cbe92fe711fc3a9dafd75574d3ef03e725cd3e30db12854627b923470",
+    "s9": "5c3001670a292c0e3c97fd032cdc06a5d469d910086004b3df0f4540767159d0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T14:49:06.614981+00:00"
+}
