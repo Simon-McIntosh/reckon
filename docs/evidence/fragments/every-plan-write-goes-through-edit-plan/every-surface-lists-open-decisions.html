@@ -1,0 +1,105 @@
+<!-- Evidence anchor: every-surface-lists-open-decisions -->
+
+<section id="every-surface-lists-open-decisions-evidence">
+  <h2>Every read surface lists the open decisions holding work</h2>
+
+  <p id="every-surface-lists-open-decisions-derivation">
+    A plan waiting on the lead carries no followup, so its open decision is the only record that it
+    waits and on whom. Both surfaces that a reader consults now list that record from one
+    derivation. <code>_decision_rows</code> in <code>reckon/roadmap.py</code> gained a
+    <code>waiting_context</code> option which carries the owning project, the plan's last-modified
+    date and the recorded <code>recommended</code>/<code>recommended_by</code> onto each decision
+    row. The option is opt-in, because a caller that consumes rows for readiness compares them
+    whole: a row that gained a field would read as a different decision rather than the same one
+    with more to say. <code>build_roadmap</code> therefore emits both lists — the readiness rows it
+    always did, unchanged, and a new top-level <code>waiting_decisions</code> list carrying the
+    context — from the one <code>_decision_rows</code> call, so no surface re-derives a wait.
+  </p>
+
+  <p id="every-surface-lists-open-decisions-summary">
+    <code>waiting_decision_rows(report)</code> is the single reader of that list. The roadmap's
+    default summary view, <code>mcp_views._roadmap_project_summary</code>, attaches it as
+    <code>open_decisions</code> with its <code>open_decision_count</code>, so the view a coordinator
+    reads by default no longer drops the decisions the raw report already derived.
+  </p>
+
+  <p id="every-surface-lists-open-decisions-crew">
+    The served <code>/crew</code> route carries the same rows for every mounted
+    project under <code>open_decisions</code>. It reaches them through
+    <code>unsettled_decisions(..., waiting_context=True)</code>, the roadmap's
+    own derivation, applied to plan state this poll has already parsed. The crew
+    row's sprint and effort read and the page's decision list both come from
+    <code>serve._crew_plan_state</code>, which reads one plan document once per
+    file identity and memoises it under the existing
+    <code>crew-plan-details</code> entry. Serving the report's own list from this
+    route was built
+    and then refused by two contracts the route already carries: a report build
+    reads every plan a second time through <code>_plan_html.read_state</code>,
+    so a poll that reads one plan twice reported two reads where the pinned
+    case requires one, and the first poll pays the whole build, which the
+    route's one-second budget over forty live pointers does not allow. The
+    report's own list is published instead on the discovery payload
+    (<code>serve._attach_ready_set</code> sets <code>waiting_decisions</code>),
+    where a caller that wants the report itself reads it; the parity case is
+    what keeps the two surfaces from drifting apart.
+  </p>
+
+  <p id="every-surface-lists-open-decisions-scope">
+    A wait that names no section holds the whole plan, and a reader of a row
+    whose scope key was simply missing could not tell that from a decision that
+    named nothing. Every waiting row therefore states its scope:
+    <code>sections</code> is a list, empty when the wait is the whole plan, and
+    <code>holds_whole_plan</code> carries the answer in a field of its own. The
+    scope keys are added under <code>waiting_context</code> only, because a row
+    consumed for readiness is compared whole and the readiness rows must not
+    move. Both surfaces carry the field, and a case asserts it on each.
+  </p>
+
+  <p id="every-surface-lists-open-decisions-cases">
+    <code>tests/test_every_surface_lists_open_decisions.py</code> mounts two
+    projects holding three plans, with every environment-resolved directory
+    pointed at temporary paths. The first project's first plan carries an open
+    decision scoped to a section, a gated decision held by a pending
+    decision-lockable transition gate, and a locked decision; its second plan
+    carries an open decision that names no section, so the whole-plan scope has
+    a plan of its own to be read from; the second project's plan carries its own
+    open and locked decisions, so a row from one project cannot pass for the
+    other's. Six cases: the summary view lists exactly the open and gated
+    decisions, with their sections, their recommendation and who made it, and
+    the plan's last-modified date, and excludes the locked one and the other
+    project's rows; the <code>/crew</code> payload lists the same rows for every
+    mounted project; the two surfaces agree on both projects, compared in order,
+    so a difference in membership or ordering fails; the project's discovery
+    payload carries <code>waiting_decisions</code> equal to
+    <code>waiting_decision_rows</code> over the same roadmap, and non-empty on
+    the fixture's plans; the whole-plan wait states its scope on both surfaces;
+    and locking the open decision removes it from both. The plans' date is written into them rather than taken from today, so
+    the cases cannot pass on the day they are written and expire.
+  </p>
+
+  <p id="every-surface-lists-open-decisions-gate">
+    Both arms ran the same eighteen test files — the new one, every file
+    importing <code>reckon.mcp_views</code>'s roadmap views, and the
+    crew-route, crew-page and roadmap files — each arm's log naming the
+    revision it ran at and the module it imported, so the arm that names a tree
+    is the arm that read its code. The base arm
+    (<code>9a9492e0a</code>) reported 10 failed, 197 passed in 329.79s,
+    <code>EXIT=1</code>: four failures are this file's cases as the file then
+    stood — the file now holds six — which is what the change is judged to
+    fix. The head arm
+    (<code>933b011273a26d5364f23615022870badadc5566</code>) reported 6 failed,
+    203 passed in 477.86s, <code>EXIT=1</code>, and all six are the
+    pre-existing browser-layout cases
+    (<code>test_spa_composition</code>, <code>test_spa_project_visibility</code>
+    ×4, <code>test_spa_topbar_snapshot</code>) that fail identically at base.
+    Nothing the change touches is red at head. The negative control uses the
+    parity case: removing the open-decision list from the summary view fails it
+    with <code>KeyError: 'open_decisions'</code>, 1 failed, <code>EXIT=1</code>.
+    <code>ruff check</code> reports 29 findings on the base blobs of the changed
+    paths and 22 at head, so head does not exceed base, and
+    <code>ruff format --check</code> reports every file formatted in both arms.
+    Logs live under the run directory as <code>logs/base-gate.log</code>,
+    <code>logs/head-gate.log</code>, <code>logs/negative-control.log</code>,
+    <code>logs/ruff-base.log</code> and <code>logs/ruff-head.log</code>.
+  </p>
+</section>

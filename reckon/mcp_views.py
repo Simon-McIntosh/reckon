@@ -3477,6 +3477,8 @@ def _pending_plan_row(row: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _roadmap_project_summary(raw: dict[str, Any]) -> dict[str, Any]:
+    from reckon.roadmap import waiting_decision_rows
+
     findings = [
         item for item in raw.get("wiring_findings") or [] if isinstance(item, dict)
     ]
@@ -3521,6 +3523,9 @@ def _roadmap_project_summary(raw: dict[str, Any]) -> dict[str, Any]:
         },
         "finding_counts": _roadmap_finding_counts(findings),
     }
+    waiting_decisions = waiting_decision_rows(raw)
+    summary["open_decisions"] = waiting_decisions
+    summary["open_decision_count"] = len(waiting_decisions)
     sprint_rows = list(raw.get("summary_sprints") or [])
     if sprint_rows:
         summary["summary_sprints"] = sprint_rows
