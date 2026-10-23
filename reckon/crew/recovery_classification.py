@@ -52,10 +52,15 @@ def _manifest_is_the_predecessor_attempts_report(
 
     The first is that the run has published the attempt the manifest would have
     to belong to. The resume window is what makes a manifest ambiguous, and the
-    record that opens it lives in the run directory: a run whose attempt record
-    names no current attempt has nothing newer for its manifest to predate, and
-    is read from its pointer alone exactly as before. Outside that window the
-    manifest stands untouched, whatever a liveness reading says about it.
+    record that opens it lives in the run directory: a run whose own records
+    name no current attempt has nothing newer for its manifest to predate, and
+    is read from its pointer alone exactly as before. The current attempt is
+    resolved from the claim a resume takes as well as from the attempt record,
+    because the claim is the first thing a resume writes and the only thing
+    naming the new attempt while the attempt record is still to come. An attempt
+    that has recorded an end of its own is read from that end and not from the
+    manifest, so a real halt inside the window still governs. Outside the window
+    the manifest stands untouched, whatever a liveness reading says about it.
 
     The second is that the manifest offers no progress word. A run that reports
     itself working has already said it has no verdict, so there is nothing to
@@ -73,7 +78,10 @@ def _manifest_is_the_predecessor_attempts_report(
     consulted: inside the resume window it is its predecessor's, so its death is
     not this attempt's.
     """
-    if _current_attempt_number(record) is None:
+    attempt = _current_attempt_number(record)
+    if attempt is None:
+        return False
+    if _exit_record_names_attempt(record, attempt):
         return False
     if manifest_status in NON_TERMINAL_MANIFEST_STATUSES:
         return False
@@ -669,10 +677,25 @@ def classify_pointer(
     # promotion, where it would carry a blocked run with a live session past the
     # resume-path refusal it must still meet while deleting the pointer a resume
     # needs. Only a proven-alive process, not a moving stream, defers those.
+    # The word the attempt itself wrote is the exception, and it is narrow. A
+    # worker that wrote an interim ``blocked`` and went on writing has not
+    # stopped, so a reader sent to that word is sent to a blocker the worker is
+    # still working through. The term needs the manifest to postdate the
+    # attempt's own start, so a word carried over from the attempt a resume
+    # replaced, or written by the coordinator's repair beside it, is not deferred
+    # by it; and it needs the stream to be moving, so a stop nobody is writing
+    # any more is still the stop it is.
+    own_terminal_word_provisional = (
+        alive is None
+        and not process_gone
+        and _current_attempt_number(record) is not None
+        and not _manifest_predates_the_current_attempt(record, manifest)
+    )
     deferred_outcome = manifest_status in TERMINAL_MANIFEST_STATUSES and (
         alive is True
         or superseded_manifest
         or (manifest_status == "complete" and not process_gone)
+        or own_terminal_word_provisional
     )
     interruption = None
     interruption_commits = 0
@@ -1803,6 +1826,7 @@ from .recovery_liveness import (  # noqa: E402
     _carries_orientation_write,
     _exit_record_end_phrase,
     _exit_record_is_launch_failure,
+    _exit_record_names_attempt,
     _int_or_none,
     _interruption_evidence,
     _live_descendant,
