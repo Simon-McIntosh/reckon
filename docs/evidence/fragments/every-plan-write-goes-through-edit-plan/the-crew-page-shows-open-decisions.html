@@ -14,6 +14,16 @@
     no count, no age is computed beyond rendering the stamp it was given.
   </p>
 
+  <p id="the-crew-page-shows-open-decisions-one-poll">
+    One poll answers for the page. <code>docs/ui/shell.jsx</code> owns the single <code>/crew</code>
+    poll, and its own comment states that it hands what it receives to every surface that needs it;
+    <code>tests/test_a_poll_waits_for_its_previous_answer.py</code> pins that as exactly one poller of
+    the route, in the shell. The shell already receives the whole payload, so it now keeps the
+    decision list beside the run list and hands both to the crew view, which renders them and polls
+    nothing. Reading the route a second time from the view would have doubled the derivation per
+    cycle — <code>_waiting_decision_rows</code> reads every mounted plan on each request.
+  </p>
+
   <p id="the-crew-page-shows-open-decisions-unread">
     The list starts unread rather than empty. An empty list is a claim that nothing waits, and a page
     that has not yet been answered cannot make it. <code>CrewOpenDecisions</code> therefore draws
@@ -42,22 +52,35 @@
   </p>
 
   <p id="the-crew-page-shows-open-decisions-gate">
-    Both arms ran the new case and the crew page's existing browser cases —
+    Both arms ran the new case, the crew page's existing browser cases —
     <code>tests/test_spa_crew_cards.py</code>, <code>tests/test_spa_crew_geometry.py</code>,
     <code>tests/test_spa_crew_stylesheet.py</code>, <code>tests/test_spa_crew_burn.py</code> and
-    <code>tests/test_crew_view_serves_every_view.py</code>. At base
-    (<code>3d80d654</code>) 32 passed and at head (<code>b7d94967</code>) 34 passed, both
+    <code>tests/test_crew_view_serves_every_view.py</code> — and the poll contract,
+    <code>tests/test_a_poll_waits_for_its_previous_answer.py</code>. At base
+    (<code>3d80d654</code>) 35 passed and at head (<code>12f8524e</code>) 37 passed, both
     <code>EXIT=0</code>, so the change adds the two new cases and no failure. No case reported
-    <code>SKIPPED</code> in either arm. Each arm's log opens with its revision and closes with its own
-    <code>EXIT=</code> line.
+    <code>SKIPPED</code> in either arm. Each arm's log opens with the revision it ran at and the
+    literal command it was handed, and closes with its own <code>EXIT=</code> line. The base arm ran
+    over a tree exported with <code>git archive</code> from the base revision, because the shared
+    <code>.git</code> is read-only for this run and <code>git worktree add</code> is refused.
   </p>
 
   <p id="the-crew-page-shows-open-decisions-control">
-    The declared control — render the crew page from a <code>/crew</code> payload with
+    Two controls. The declared one — render the crew page from a <code>/crew</code> payload with
     <code>waiting_decisions</code> removed, and the new test fails on the missing decision key — was
     run by making <code>_waiting_decision_rows</code> answer no rows in an exported copy of the head
-    tree, so the page was served an empty list. The case failed on
-    <code>assert '' == 'transport'</code>, the missing key, at <code>EXIT=1</code>, against the same
-    case passing at head. The check is therefore measuring the row rather than the page's shape.
+    tree: the case failed on <code>assert '' == 'transport'</code>, the missing key, at
+    <code>EXIT=1</code>. The repair's own control answers the poll finding: restoring the crew view's
+    <code>/crew</code> poll in an exported tree fails the contract's crew count on
+    <code>assert (1 + 1) == 1</code> at <code>EXIT=1</code>, against the same check passing at head.
+  </p>
+
+  <p id="the-crew-page-shows-open-decisions-excursion">
+    The repair for the poll finding needed <code>docs/ui/shell.jsx</code>, which the repair round's
+    write scope did not list. The shell is the only surface allowed to poll the route and the only
+    one holding the payload, so no change confined to the crew view could both keep one poll and
+    render the decision list; the excursion is three additive lines — one state, one assignment from
+    the payload already received, one prop — and it is recorded as a changed path in the manifest
+    rather than left off it.
   </p>
 </section>
