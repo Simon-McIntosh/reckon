@@ -737,7 +737,7 @@ class _InterleavingMemo:
 
 
 def test_a_second_call_with_the_same_stamp_resolves_nothing_again(
-    monkeypatch,
+    monkeypatch, tmp_path: Path
 ) -> None:
     """A mounts file that has not moved is not resolved a second time.
 
@@ -752,16 +752,16 @@ def test_a_second_call_with_the_same_stamp_resolves_nothing_again(
 
     def resolve() -> dict[str, Path]:
         resolutions.append(1)
-        return {"p1": Path("/tmp/p1/docs")}
+        return {"p1": tmp_path / "p1" / "docs"}
 
     first = roadmap_snapshot.remembered_mounts(7, resolve)
     second = roadmap_snapshot.remembered_mounts(7, resolve)
 
-    assert first == second == {"p1": Path("/tmp/p1/docs")}
+    assert first == second == {"p1": tmp_path / "p1" / "docs"}
     assert len(resolutions) == 1, resolutions
 
 
-def test_a_moved_mounts_file_is_resolved_again(monkeypatch) -> None:
+def test_a_moved_mounts_file_is_resolved_again(monkeypatch, tmp_path: Path) -> None:
     """A mounts file that moved is resolved afresh, and its answer replaces the old."""
     from reckon import roadmap_snapshot
 
@@ -770,20 +770,21 @@ def test_a_moved_mounts_file_is_resolved_again(monkeypatch) -> None:
 
     def resolve() -> dict[str, Path]:
         resolutions.append(1)
-        return {"p%d" % len(resolutions): Path("/tmp/p%d/docs" % len(resolutions))}
+        name = f"p{len(resolutions)}"
+        return {name: tmp_path / name / "docs"}
 
     first = roadmap_snapshot.remembered_mounts(7, resolve)
     second = roadmap_snapshot.remembered_mounts(8, resolve)
     third = roadmap_snapshot.remembered_mounts(7, resolve)
 
-    assert first == {"p1": Path("/tmp/p1/docs")}, first
-    assert second == {"p2": Path("/tmp/p2/docs")}, second
-    assert third == {"p3": Path("/tmp/p3/docs")}, third
+    assert first == {"p1": tmp_path / "p1" / "docs"}, first
+    assert second == {"p2": tmp_path / "p2" / "docs"}, second
+    assert third == {"p3": tmp_path / "p3" / "docs"}, third
     assert len(resolutions) == 3, resolutions
 
 
 def test_a_reader_never_sees_a_stamp_beside_mounts_from_another_store(
-    monkeypatch,
+    monkeypatch, tmp_path: Path
 ) -> None:
     """The stamp and the mounts a reader returns come from one store.
 
@@ -806,7 +807,7 @@ def test_a_reader_never_sees_a_stamp_beside_mounts_from_another_store(
 
     def resolver_for(stamp: int):
         def resolve() -> dict[str, Path]:
-            mounts = {"p": Path("/tmp/p%s/docs" % stamp)}
+            mounts = {"p": tmp_path / f"p{stamp}" / "docs"}
             resolved_for[stamp] = mounts
             return mounts
 
