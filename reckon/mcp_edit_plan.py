@@ -1248,7 +1248,7 @@ def _edit_plan(
             "detail": "state mode requires an ops list",
         }
 
-    is_index = slug in ("index", "project") and doc_type is None
+    is_index = _is_project_slug(slug, doc_type)
     root = checkout_path  # alias: the tool-surface name vs the store-layer name
     canonical_doc_type = canonical_type(doc_type) if doc_type else None
     if canonical_doc_type in PROJECT_RESOURCE_TYPES:
@@ -1668,6 +1668,18 @@ def _accepted_op_verbs(resource_type: str) -> frozenset[str]:
     return accepted_op_verbs(resource_type)
 
 
+def _is_project_slug(slug: str | None, doc_type: str | None) -> bool:
+    """Whether a request names the project's own resource rather than a plan.
+
+    The rule the write path resolves its target by, held in one place: the
+    pre-flight asks it which document type a batch is judged against, and the
+    write asks it whether the slug names the index, so the two cannot disagree
+    about which resource a request is for.
+    """
+
+    return slug in ("index", "project") and doc_type is None
+
+
 def _document_type(slug: str | None, doc_type: str | None) -> str:
     """The document type the request's own arguments name, without a read.
 
@@ -1675,7 +1687,7 @@ def _document_type(slug: str | None, doc_type: str | None) -> str:
     default, and every other type is named by ``doc_type``.
     """
 
-    if slug in ("index", "project") and doc_type is None:
+    if _is_project_slug(slug, doc_type):
         return "project"
     return canonical_type(doc_type)
 

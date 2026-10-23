@@ -772,6 +772,39 @@ def _live_records_for_run(
     return [record]
 
 
+def normalize_runs_source(source: str | None) -> str:
+    """Return the runs view's own source, or raise on one it does not serve.
+
+    Does no I/O, so a caller judging a request's arguments can ask what
+    :func:`runs_view` accepts before the fleet is walked: the view calls this
+    function, so the accepted set and the normalisation that decides it are one
+    fact. A caller comparing the raw argument against :data:`RUN_SOURCES`
+    instead would refuse ``'ALL'``, which the view serves.
+    """
+
+    selected = str(source or "all").strip().lower()
+    if selected not in RUN_SOURCES:
+        raise RunQueryError(
+            f"runs source must be one of {', '.join(sorted(RUN_SOURCES))}"
+        )
+    return selected
+
+
+def normalize_runs_scope(scope: str | None) -> str:
+    """Return the runs view's own scope, or raise on one it does not serve.
+
+    The counterpart of :func:`normalize_runs_source` for the scope argument, and
+    read by the view and its pre-flight for the same reason.
+    """
+
+    selected = str(scope or "project").strip().lower()
+    if selected not in RUN_SCOPES:
+        raise RunQueryError(
+            f"runs scope must be one of {', '.join(sorted(RUN_SCOPES))}"
+        )
+    return selected
+
+
 def runs_view(
     project: str,
     *,
@@ -799,16 +832,8 @@ def runs_view(
     before any compact row is built. The answer is the same rows the identity
     filter would have kept, without paying for the fleet to read one run.
     """
-    selected_source = str(source or "all").strip().lower()
-    if selected_source not in RUN_SOURCES:
-        raise RunQueryError(
-            f"runs source must be one of {', '.join(sorted(RUN_SOURCES))}"
-        )
-    selected_scope = str(scope or "project").strip().lower()
-    if selected_scope not in RUN_SCOPES:
-        raise RunQueryError(
-            f"runs scope must be one of {', '.join(sorted(RUN_SCOPES))}"
-        )
+    selected_source = normalize_runs_source(source)
+    selected_scope = normalize_runs_scope(scope)
     selected_run_id = str(run_id or "").strip()
     if run_id is not None and not selected_run_id:
         raise RunQueryError("runs run_id must be a non-empty run identifier")

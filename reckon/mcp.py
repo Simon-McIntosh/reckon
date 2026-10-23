@@ -85,12 +85,12 @@ from reckon.capability import (
 )
 from reckon.doccheck import SEVERITIES, audit_file, audit_lifecycle, audit_links
 from reckon.crew.query import (
-    RUN_SCOPES,
-    RUN_SOURCES,
     RunQueryError,
     _refuse_unknown_fields,
     _refuse_unknown_live_fields,
     _requested_field_names,
+    normalize_runs_scope,
+    normalize_runs_source,
 )
 from reckon.mcp_views import (
     ResourceSelector,
@@ -317,20 +317,17 @@ def _crew_argument_refusal(
         except RunQueryError as error:
             return {"ok": False, "error": "crew_error", "detail": str(error)}
     if view == "runs":
-        if source not in RUN_SOURCES:
-            return {
-                "ok": False,
-                "error": "crew_error",
-                "detail": "runs source must be one of "
-                + ", ".join(sorted(RUN_SOURCES)),
-            }
-        if scope not in RUN_SCOPES:
-            return {
-                "ok": False,
-                "error": "crew_error",
-                "detail": f"unknown runs scope {scope!r}; scope must be one of "
-                + ", ".join(sorted(RUN_SCOPES)),
-            }
+        # Judged by the view's own validators, which normalise before they
+        # compare: a raw membership test here would refuse 'ALL' or 'Project',
+        # both of which the view serves.
+        for normalize, value in (
+            (normalize_runs_source, source),
+            (normalize_runs_scope, scope),
+        ):
+            try:
+                normalize(value)
+            except RunQueryError as error:
+                return {"ok": False, "error": "crew_error", "detail": str(error)}
     return None
 
 

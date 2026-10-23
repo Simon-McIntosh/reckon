@@ -144,6 +144,128 @@ def test_a_view_named_in_another_case_reaches_the_read(monkeypatch) -> None:
             assert result.get("error") != "invalid_view", result
 
 
+def test_the_runs_checks_serve_a_spelling_the_view_normalises() -> None:
+    """The runs view's own source and scope normalisation is what judges them.
+
+    ``runs_view`` strips and lowercases both before it compares, so ``'ALL'``
+    and ``' Project '`` are served. A pre-flight testing the raw argument
+    against the accepted set refuses them, and the refusal is one the caller
+    cannot act on: the view would have answered the request it just turned back.
+
+    The view echoes the source and scope it selected, so an answer carrying the
+    normalised pair is what shows the request was judged by the view's own rule
+    rather than turned back at the argument.
+    """
+    result = mcp._crew(
+        project="fixture",
+        view="runs",
+        source="ALL",
+        scope=" Project ",
+    )
+    assert result.get("ok") is True, result
+    assert result["source"] == "all"
+    assert result["scope"] == "project"
+
+
+def test_every_pre_flight_check_is_judged_by_its_owner() -> None:
+    """Every check the pre-flights make is judged by the owner that decides it.
+
+    The table names each check, the value the pre-flight passes it, and what the
+    owner makes of a differently cased or spaced spelling. A check written as
+    its own membership test against the accepted set, or as its owner's
+    normalisation restated, passes every refusal case and fails on a row here.
+
+    The two checks whose owner compares the value as written carry no
+    normalisation to miss, and are asserted as agreement instead: the crew view
+    name, whose owner compares it raw against its registry, and the edit mode,
+    whose owner is the write path this tool branches on. For each, the
+    pre-flight refusing exactly what the owner refuses is the whole
+    requirement, so the row asserts the two agree — on a name outside the
+    registry and on a mode outside the two.
+    """
+    served = (
+        # check -> the pre-flight's verdict, and what the owner makes of it
+        (
+            "runs source",
+            mcp._crew_argument_refusal(
+                "runs", fields=None, session=None, source="ALL", scope="project"
+            ),
+            query.normalize_runs_source("ALL"),
+            "all",
+        ),
+        (
+            "runs scope",
+            mcp._crew_argument_refusal(
+                "runs",
+                fields=None,
+                session=None,
+                source="all",
+                scope=" Project ",
+            ),
+            query.normalize_runs_scope(" Project "),
+            "project",
+        ),
+        (
+            "live fields",
+            mcp._crew_argument_refusal(
+                "live", fields=[" run_id "], session=None, source="all", scope="project"
+            ),
+            query._requested_field_names([" run_id "])[0],
+            "run_id",
+        ),
+        (
+            "plan view",
+            None,
+            mcp_views.normalize_view(" RAW "),
+            "raw",
+        ),
+        (
+            "roadmap view",
+            None,
+            mcp_views.normalize_roadmap_view(" SuMMaRy "),
+            "summary",
+        ),
+        (
+            "edit op verb",
+            mcp_edit_plan._refuse_unknown_op_verbs(
+                [{"op": "push"}], mcp_edit_plan._document_type(None, "SPRINT")
+            ),
+            mcp_edit_plan._document_type(None, "SPRINT"),
+            "sprint",
+        ),
+    )
+    for name, refusal, owner_value, expected in served:
+        assert refusal is None, f"{name}: a served spelling was refused"
+        assert owner_value == expected, f"{name}: {owner_value!r} != {expected!r}"
+
+    # The crew view name is the check with no normalisation to miss: its owner
+    # compares it as written, so the pre-flight's requirement is to refuse
+    # exactly what the owner refuses. Asserted as agreement, so a pre-flight
+    # that accepted a spelling the owner turns away fails here too.
+    assert (
+        mcp._crew_argument_refusal(
+            "  LIVE  ", fields=None, session=None, source="all", scope="project"
+        )
+        is not None
+    )
+    try:
+        mcp_views.crew_view_name("  LIVE  ")
+    except mcp_views.ViewRequestError:
+        pass
+    else:
+        raise AssertionError("the owner served a view the pre-flight refused")
+
+    # The edit mode is the other: the tool's own write path compares it raw
+    # against the two modes it implements, so an uppercased mode reaches that
+    # comparison unchanged and is refused there.
+    assert (
+        mcp_edit_plan._edit_plan_tool(
+            project="fixture", slug="a-plan", expected_version=1, mode="STATE"
+        )["error"]
+        == "invalid_edit_mode"
+    )
+
+
 def test_a_crew_live_read_naming_an_unknown_field_is_refused(monkeypatch) -> None:
     stub = _stubbed(monkeypatch)
     result = _refuse(
@@ -157,12 +279,19 @@ def test_a_crew_live_read_naming_an_unknown_field_is_refused(monkeypatch) -> Non
 
 
 def test_a_crew_read_naming_an_unknown_scope_is_refused(monkeypatch) -> None:
+    """The runs view's own scope validator refuses it, and names what it serves.
+
+    The refusal is the owner's message, so it names the accepted scopes rather
+    than the value that was turned away — the wording a caller reads is the
+    validator's, not a sentence the pre-flight composed.
+    """
     stub = _stubbed(monkeypatch)
     result = _refuse(
         stub,
         lambda: mcp._crew(project="fixture", view="runs", scope="no_such_scope"),
     )
-    assert "no_such_scope" in result["detail"]
+    assert "project" in result["detail"]
+    assert "workstation" in result["detail"]
 
 
 def test_a_crew_read_naming_an_unknown_runs_field_is_refused(monkeypatch) -> None:
