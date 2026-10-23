@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import json
 import subprocess
 from copy import deepcopy
@@ -17,19 +18,61 @@ GRAPH = ROOT / "docs" / "ui" / "graph.jsx"
 
 def _endpoint_fixture() -> list[dict]:
     return [
-        plan_row("foundation", status="shipped", impl=1.0),
+        plan_row(
+            "foundation",
+            title="Foundation",
+            status="shipped",
+            impl=1.0,
+            gates=[],
+            followups=[],
+        ),
         plan_row(
             "middle",
+            title="Middle",
             depends_on=["foundation"],
             status="blocked",
             decisions=[{"key": "scope", "choice": ""}],
+            gates=[],
+            followups=[],
         ),
-        plan_row("named-deep", depends_on=["middle"], graph_handle="deep"),
-        plan_row("named-shallow", depends_on=["foundation"], graph_handle="shallow"),
-        plan_row("unnamed-deep", depends_on=["middle"]),
-        plan_row("unnamed-left", depends_on=["foundation"]),
-        plan_row("unnamed-right", depends_on=["foundation"]),
-        plan_row("standalone"),
+        plan_row(
+            "named-deep",
+            title="Named Deep",
+            depends_on=["middle"],
+            graph_handle="deep",
+            gates=[],
+            followups=[],
+        ),
+        plan_row(
+            "named-shallow",
+            title="Named Shallow",
+            depends_on=["foundation"],
+            graph_handle="shallow",
+            gates=[],
+            followups=[],
+        ),
+        plan_row(
+            "unnamed-deep",
+            title="Unnamed Deep",
+            depends_on=["middle"],
+            gates=[],
+            followups=[],
+        ),
+        plan_row(
+            "unnamed-left",
+            title="Unnamed Left",
+            depends_on=["foundation"],
+            gates=[],
+            followups=[],
+        ),
+        plan_row(
+            "unnamed-right",
+            title="Unnamed Right",
+            depends_on=["foundation"],
+            gates=[],
+            followups=[],
+        ),
+        plan_row("standalone", title="Standalone", gates=[], followups=[]),
     ]
 
 
@@ -60,9 +103,15 @@ def test_project_roadmap_enumerates_named_and_unnamed_endpoints() -> None:
 
 def test_unnamed_endpoint_matches_the_authored_handle_read() -> None:
     inventory = [
-        plan_row("source", status="shipped", impl=1.0),
-        plan_row("middle", depends_on=["source"]),
-        plan_row("endpoint", depends_on=["middle"]),
+        plan_row(
+            "source", title="Source", status="shipped", impl=1.0, gates=[], followups=[]
+        ),
+        plan_row(
+            "middle", title="Middle", depends_on=["source"], gates=[], followups=[]
+        ),
+        plan_row(
+            "endpoint", title="Endpoint", depends_on=["middle"], gates=[], followups=[]
+        ),
     ]
     unnamed = build_roadmap("sample", inventory, [], review={})["endpoints"][0]
 
@@ -82,7 +131,10 @@ def test_unnamed_endpoint_matches_the_authored_handle_read() -> None:
 
 
 def test_project_without_prerequisites_has_no_endpoints() -> None:
-    inventory = [plan_row("left"), plan_row("right")]
+    inventory = [
+        plan_row("left", title="Left", gates=[], followups=[]),
+        plan_row("right", title="Right", gates=[], followups=[]),
+    ]
 
     assert build_roadmap("sample", inventory, [], review={})["endpoints"] == []
 
@@ -126,3 +178,63 @@ console.log(JSON.stringify(rows.map(row => ({{
     ]
 
     assert rendered == expected
+
+
+ROADMAP_ROW_BUILDING_TESTS = (
+    "tests/test_roadmap_endpoints.py",
+    "tests/test_roadmap_names_interrupted_runs.py",
+    "tests/test_roadmap_sprint_derivation.py",
+)
+
+
+def _dict_keys(node: ast.Dict) -> set[str]:
+    return {
+        key.value
+        for key in node.keys
+        if isinstance(key, ast.Constant) and isinstance(key.value, str)
+    }
+
+
+def _builds_a_row_by_hand(function: ast.FunctionDef) -> bool:
+    """True when a function returns an inventory row it assembled itself."""
+
+    named_rows: set[str] = set()
+    for node in ast.walk(function):
+        if (
+            isinstance(node, ast.Assign)
+            and isinstance(node.value, ast.Dict)
+            and "slug" in _dict_keys(node.value)
+        ):
+            named_rows.update(
+                target.id for target in node.targets if isinstance(target, ast.Name)
+            )
+
+    for node in ast.walk(function):
+        if not isinstance(node, ast.Return):
+            continue
+        value = node.value
+        if isinstance(value, ast.Dict) and "slug" in _dict_keys(value):
+            return True
+        if isinstance(value, ast.Name) and value.id in named_rows:
+            return True
+    return False
+
+
+def test_the_roadmap_tests_build_rows_through_the_shared_fixture() -> None:
+    """A private row builder is exactly the drift the shared fixture prevents.
+
+    Without this check the deduplication is only demonstrable by a one-off
+    mutation, so a hand-built row can creep back into any of the three files
+    without a committed test noticing.
+    """
+
+    for relative in ROADMAP_ROW_BUILDING_TESTS:
+        source = (ROOT / relative).read_text(encoding="utf-8")
+        assert "from tests.roadmap_fixtures import plan_row" in source, relative
+        for node in ast.walk(ast.parse(source)):
+            if not isinstance(node, ast.FunctionDef):
+                continue
+            assert not _builds_a_row_by_hand(node), (
+                f"{relative}:{node.lineno} defines {node.name}, which assembles a "
+                "plan row by hand; build rows through plan_row instead"
+            )

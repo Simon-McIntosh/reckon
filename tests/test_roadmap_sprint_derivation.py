@@ -28,21 +28,58 @@ def _evaluate_helpers(expression: str, tmp_path: Path):
 def test_roadmap_reports_member_derived_sprint_state_and_stored_drift() -> None:
     shipped = _sprint_row(
         [
-            plan_row("first", status="shipped", impl=1.0),
-            plan_row("second", status="done", impl=1.0),
+            plan_row(
+                "first",
+                title="first",
+                status="shipped",
+                impl=1.0,
+                effort="S",
+                gates=[],
+                followups=[],
+            ),
+            plan_row(
+                "second",
+                title="second",
+                status="done",
+                impl=1.0,
+                effort="S",
+                gates=[],
+                followups=[],
+            ),
         ],
         {"id": "finished", "status": "planned", "items": ["first", "second"]},
     )
     agreeing = _sprint_row(
-        [plan_row("started", status="active", impl=0.25)],
+        [
+            plan_row(
+                "started",
+                title="started",
+                status="active",
+                impl=0.25,
+                effort="S",
+                gates=[],
+                followups=[],
+            )
+        ],
         {"id": "moving", "status": "active", "items": ["started"]},
     )
     empty = _sprint_row(
         [],
         {"id": "unfilled", "status": "planned", "items": []},
     )
+    begun = [
+        plan_row(
+            "partial",
+            title="partial",
+            status="pending",
+            impl=0.1,
+            effort="S",
+            gates=[],
+            followups=[],
+        )
+    ]
     started = _sprint_row(
-        [plan_row("partial", impl=0.1)],
+        begun,
         {"id": "begun", "status": "active", "items": ["partial"]},
     )
 
@@ -51,13 +88,28 @@ def test_roadmap_reports_member_derived_sprint_state_and_stored_drift() -> None:
     assert agreeing["derived_state"] == "in-progress"
     assert "state_drift" not in agreeing
     assert empty["derived_state"] == "empty"
+    # The scenario is a pending plan that has progress, so the progress branch
+    # alone answers it. An active member would satisfy the status branch whatever
+    # the figure, which is why both the status and the figure are pinned here.
+    assert begun[0]["status"] == "pending"
+    assert begun[0]["impl"] == 0.1
     assert started["derived_state"] == "in-progress"
 
 
 def test_sprint_surface_reads_state_and_drift_from_roadmap_payload(
     tmp_path: Path,
 ) -> None:
-    inventory = [plan_row("member", status="shipped", impl=1.0)]
+    inventory = [
+        plan_row(
+            "member",
+            title="member",
+            status="shipped",
+            impl=1.0,
+            effort="S",
+            gates=[],
+            followups=[],
+        )
+    ]
     row = _sprint_row(
         inventory,
         {"id": "delivery", "status": "planned", "items": ["member"]},
