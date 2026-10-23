@@ -171,6 +171,7 @@ RECORD_FIELDS = (
     "shadow_controlled",
     "shadow_patch",
     "boundary_waiver",
+    "domain_waiver",
     "resume_waiver",
     "watch_override",
     "review",
