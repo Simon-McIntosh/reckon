@@ -1,0 +1,25 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-23T12:13:29.612Z",
+  "dispatched_at": "2026-10-23T12:01:32Z",
+  "findings": [],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to classify an exited review run complete when its latest attempt filed a parsed review record; the two gained commits (b197db520, a9888a470) answer finding fb2ad51a866 by reading the filed record through _review_is_complete at reckon/crew/recovery_classification.py:231, which the coordinator's resume advice explicitly ordered.\nVERDICT done_when: the done-when names classify_pointer, three fixtures and a gate bundle of the new module plus every module importing reckon/crew/recovery_classification.py plus the worker-window width test; after-arm.log at head b197db520 records 523 passed / 14 failed and base-arm.log at b809b3ac carries an identical set of 14 failure ids, so zero added failures.\nVERDICT write_paths: the declared scope is reckon/crew/recovery_classification.py, tests/test_an_exited_review_with_a_filed_record_reads_complete.py and docs/evidence/fragments/the-crew-does-its-own-bookkeeping/an-exited-review-with-a-filed-record-reads-complete.html; git diff e9aae6d8..a9888a470 touches exactly those three files.\nVERDICT manifest: read; status complete, commits e0d24b9a5..a9888a470, after_suite recorded at b197db520 with log_path and failure_ids, negative_control_log named, test_logs naming the after, base and negative-control logs.\nVERDICT diff: read commit by commit against e9aae6d8; b197db520 deletes PARSED_REVIEW_STATUS and _parsed_review_record from reckon/crew/recovery_classification.py:175-191 and calls the imported _review_is_complete at :231 and rewords the promotable detail at :754, and rewrites the test fixture to carry all six dimensions plus a missing-measure guard; a9888a470 updates the two evidence paragraphs to match.\nCALL_SITES: reckon/serve.py:884, reckon/crew/recovery_watch.py:311, reckon/crew/directory.py:97, reckon/crew/forgotten_runs.py:94, reckon/crew/promotion_release.py:862, reckon/crew/recovery_review_dispatch.py:1946, reckon/roadmap.py:2963, reckon/mcp_views.py:1899\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the coordinator's resume-3 advice ordered this exact change and reckon/crew/recovery_classification.py:231 now reads the filed record through the predicate the promotion gate uses, though it narrows the goal's literal \"parsed\" to \"complete\".\nSCORE evidence: 17\nJUSTIFICATION evidence: the done-when's gate bundle is recorded in after_suite at head b197db520 (523 passed / 14 failed) and base-arm.log reproduces the same 14 failure ids, giving the recorded zero-delta.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff e9aae6d8..a9888a470 touches only the source, its test module and the evidence fragment, all inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_an_exited_review_with_a_filed_record_reads_complete.py:332 guards the missing-measure case and negative-control.log arm 5, which reverts the source to e9aae6d8e, reddens exactly this guard (EXIT=1).\nSCORE fit: 18\nJUSTIFICATION fit: the deletion of PARSED_REVIEW_STATUS leaves reconcile/crew/recovery_classification.py:1829 importing _review_is_complete as its neighbours do, and grep finds no remaining reference to the removed name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing owner _review_is_complete at reckon/crew/recovery_review_subject.py:1183 rather than restating the status vocabulary, the finding the prior review raised at this same file.\n",
+  "review_run_id": "r-20261023T120024426977-review-of-an-exited-review-with-a-filed-record-reads-complete-a9888a470824",
+  "reviewed_base_sha": "e9aae6d8ed0dc551500f477551846ce5538d4136",
+  "reviewed_head_sha": "a9888a4708246d83bc507a183874251b7ff3805b",
+  "reviewed_run_id": "r-20261023T084704256476-an-exited-review-with-a-filed-record-reads-complete",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T12:18:10.705855+00:00",
+  "total": 112
+}
