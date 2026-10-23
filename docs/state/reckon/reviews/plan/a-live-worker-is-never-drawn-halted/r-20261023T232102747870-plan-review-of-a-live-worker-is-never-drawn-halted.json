@@ -1,0 +1,68 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T23:32:20.323Z",
+  "dispatched_at": "2026-10-23T23:21:51Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-live-worker-is-never-drawn-halted.html:341",
+      "id": "wiring-1",
+      "reason": "the very next dispatch the plan recommends would write `recovery_watch.py` before the node \u00a714 says it must follow, so either \u00a714 lands out of its declared order or the followup's order line must name \u00a714 after \u00a79's wiring node.",
+      "text": "the open followup `f-alwh-002` is titled \"Build \u00a714 next\" and recommends `/reckon-build a-live-worker-is-never-drawn-halted \u00a714`, but \u00a714 (:329) states \"It runs after \u00a74, before \u00a75 and \u00a77, and after \u00a79's wiring node, which also writes `recovery_watch.py`\", and \u00a79's wiring node is not built (\u00a79 is `implementable`; comment `c-s9-node1` says only the first node landed); the followup's own shared-file order names \u00a79's wiring node as a writer of `recovery_watch.py` and `runs.py` with \"\u00a713 runs after it\" and omits \u00a714, the second writer of `recovery_watch.py`",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-live-worker-is-never-drawn-halted.html:307",
+      "id": "reasoning-1",
+      "reason": "as written the instruction cannot be implemented; the node must either add an argument-taking normaliser to `fleet_supervisor` or be told to keep the `split(\".\")[0]` form `_hosts_match` already uses, and the plan currently says neither.",
+      "text": "\u00a79's added done-when directs that \"`_hosts_match` uses `fleet_supervisor._short_hostname`\", but `fleet_supervisor._short_hostname` (fleet_supervisor.py:269-271) takes no argument and returns only the current host's short name, while `_hosts_match(host, node)` must normalise two arbitrary names \u2014 the foreign run's `launcher_host` and the fleet record's node \u2014 and `producer_start_decision` accepts an injected `host`",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-live-worker-is-never-drawn-halted.html:329",
+      "id": "reasoning-2",
+      "reason": "without the word's mapping the central new row of the section has no defined rendering, and mapping it into `delivered` would make it a same-word row the noise rules are meant to suppress, which changes the section's own expected output.",
+      "text": "\u00a714 requires the review's start to be \"drawn on the reviewed run as `delivered \u2192 in review`\" and the done-when asserts \"its `in review` row naming the review run\", but `in review` is not a member of any `PANE_STATES` set (ticker.py:278-330) and `_display_state` returns \"\" for an unknown word, so `_pane_word` gives the row no pane word; the plan never says whether `in review` becomes its own pane state or maps into the existing `delivered` word, and that choice decides whether the row survives the same-word rule and the departure hold",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f683bfebd927634e7e1b2f2de424f03abe13dbc7f10885a6d257e0005fc4bb38",
+  "plan_slug": "a-live-worker-is-never-drawn-halted",
+  "plan_version": 43,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T232102747870-plan-review-of-a-live-worker-is-never-drawn-halted",
+  "reviewed_blob_sha": "a974c0ff8c13281707b89994f62181db8bde4b5c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `watch_unit.live_foreign_seat` (:148), `live_foreign_seat_host` (:143), `_record_producer_running` (:91), `runs.watch_host_lease` (re-exported at runs.py:3691), `runs._seat_host_is_local` (:2794), `fleet_supervisor.RECORD_NAME` (:108), `ticker._observer_exception` (:1514), `_is_own_start` (:1381) and `recovery_watch._watch_transition` (:1885) all resolve at HEAD.",
+    "done_when": "pass \u2014 \u00a79's second node now carries a measurable done-when and a negative control (\"with the call removed from the producer loop, the foreign-host arm keeps the seat and keeps running\"), and \u00a714's arms each name a base-revision control that can fail.",
+    "evidence_paths": "pass \u2014 both changed sections write their gate logs through the run's own test log and evidence fragment, not a session scratchpad, and \u00a711's committed instrument owns the durable report.",
+    "naming": "pass \u2014 the added text introduces no plan labels, stage names, ticket numbers or version tags, and names mechanisms (`producer_start_decision`, `_watch_transition`, `CARRIED_PANE_WORDS`).",
+    "reasoning": "a finding \u2014 the \u00a714 census reproduces (last 30 MB from 2026-10-16T19:01:26Z: 1,577 `\u2192 recorded` rows over 1,556 runs, 1,449 `complete \u2192 recorded`, max 6 for one run), but two mechanism claims do not hold against HEAD: \u00a79's host normalisation directive names a zero-argument helper, and \u00a714's new `in review` row has no pane word to be drawn under.",
+    "single_goal": "pass \u2014 \u00a79's two nodes are the decision and its one call site, and \u00a714 names one deliverable (which state changes the pane carries).",
+    "wiring": "a finding \u2014 the open followup `f-alwh-002` recommends building \u00a714 next, while \u00a714 itself declares it \"runs ... after \u00a79's wiring node\" (`docs/plans/a-live-worker-is-never-drawn-halted.html:329`), and that node is not built; the followup's shared-file order at :341 names \u00a79's wiring node's `recovery_watch.py` with only \u00a713 after it, never the fix to `recovery_watch.py` \u00a714 needs."
+  },
+  "section_digests": {
+    "_document": "06b6bffb1430e5d0b3aaec84c099dc6755869214442e32f0b25b108c69b81029",
+    "s1": "fdb0ee3dedcf73cd7c31af5f79b1d6f1be8507f3719e92fd34a61e01cdd35b78",
+    "s10": "70c7adc788727af45a8714a697d6346247fe2103ec92cc0aabe31175592510f3",
+    "s11": "75b4df0e4c67134607272550aaa2236e7b1d3066609a6473041e0749aeed2ed8",
+    "s12": "a46913a985a58a6d0611fc0648d5e4045d01bfd1e4eb3048257bc574bb1ec912",
+    "s13": "e7c1f4273eb7c1f1e6f812c00a231a7305e1650425ff00af6b9ddc7393bc5c48",
+    "s14": "f2e0224026949bd5907d8b836967e66021d489a4d56bf929f1c11451bdd32bae",
+    "s2": "c70702959e42962a53184387993123e6b33693a435a06e946ca449754b33ea68",
+    "s3": "be700141126a9f237bac20562b4dcfad23aac331578ae9436e34181230a8be67",
+    "s4": "789bd707090d33eccd7a114acae9de24ed9233fbe5d4912aa2f82e553ca1c10d",
+    "s5": "729232b3d3df5d38992053380aac95417e0f31e94a46e0fc40b123e1d5d4122e",
+    "s6": "7bacac917ceea413da790f88aade389dde79677d9d8952459a1700a2c2bb3707",
+    "s7": "e0d2472a318e1a27f08abcca88ffe574165e01b272d6138ba68c315ecbfc6f68",
+    "s8": "6b624c6cbe92fe711fc3a9dafd75574d3ef03e725cd3e30db12854627b923470",
+    "s9": "8fd3979eaef77aa4cc0434f11ce90278bba3a71c8699385378b17ec47ceb579b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T23:34:58.039906+00:00"
+}
