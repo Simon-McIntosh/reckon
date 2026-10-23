@@ -14,6 +14,7 @@ from typing import Any
 def plan_row(
     slug: str,
     *,
+    title: str | None = None,
     status: str = "active",
     impl: float = 0.0,
     depends_on: list[str] | None = None,
@@ -26,17 +27,22 @@ def plan_row(
     section_declarations: dict[str, str] | None = None,
     gates: list[dict[str, Any]] | None = None,
     followups: list[dict[str, Any]] | None = None,
+    decisions: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Build one inventory row with the fields a roadmap read consumes.
 
     ``section_declarations`` is omitted unless the caller passes it, because a
     row without persisted declarations is the legacy population the readiness
     ladder answers for rather than an error.
+
+    A caller whose rows must keep a shape the defaults do not give them passes
+    ``title``, ``effort``, ``gates`` or ``followups`` explicitly rather than
+    letting a shared default settle the field.
     """
 
     plan: dict[str, Any] = {
         "slug": slug,
-        "title": slug.title(),
+        "title": title if title is not None else slug.title(),
         "type": "plan",
         "status": status,
         "impl": impl,
@@ -64,4 +70,6 @@ def plan_row(
         plan["effort_calibrated"] = effort_calibrated
     if section_declarations is not None:
         plan["section_declarations"] = section_declarations
+    if decisions is not None:
+        plan["decisions"] = decisions
     return plan

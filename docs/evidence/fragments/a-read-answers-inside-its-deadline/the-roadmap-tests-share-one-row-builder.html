@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s53">
+  <meta name="plan-recorded-at" content="2026-10-23">
+  <meta name="plan-verdict" content="passed">
+  <title>The roadmap tests build plan rows through the shared fixture | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="the-roadmap-tests-share-one-row-builder-landing" data-node="the-roadmap-tests-share-one-row-builder" data-reckon="landed" data-when="2026-10-23">
+  <h2>The three hand-built roadmap rows now come from the one shared builder</h2>
+  <p><code>tests/roadmap_fixtures.py</code> is the single plan-row builder the roadmap readers share. Three test files still rebuilt the same inventory row by hand, each carrying its own copy of the row's field set: <code>tests/test_roadmap_endpoints.py</code>, <code>tests/test_roadmap_names_interrupted_runs.py</code> and <code>tests/test_roadmap_sprint_derivation.py</code>. A renamed field in the inventory row meant one edit to the fixture and three silent drifts.</p>
+  <p>Each file's private <code>_plan</code> helper is deleted and every call site now calls <code>plan_row</code>. A row is not the same as a field set: the shared builder's defaults are not the deleted builders' values, so each call site passes the values its own builder set — <code>impl</code>, <code>effort</code>, <code>gates</code>, <code>followups</code> and <code>title</code> — rather than letting a shared default settle them. The builder gained an optional <code>title</code> and an optional <code>decisions</code> field for exactly that. The only field a row takes from the shared builder that the deleted ones did not carry is <code>sprint</code>, which every row now names as <code>None</code>; the roadmap readers ignore it.</p>
+  <p>One shared default silently changed a scenario's meaning rather than only its shape. The sprint derivation's "begun" case is a plan with progress but no active status, chosen so the progress branch alone answers it; <code>plan_row</code> defaults to <code>active</code>, which satisfies the status branch of <code>_derived_sprint_state</code> whatever the figure. That case now sets <code>status="pending"</code> and asserts both the member's status and its figure, so the branch under test is the one the case was written for.</p>
+  <p>A committed check, <code>test_the_roadmap_tests_build_rows_through_the_shared_fixture</code>, parses the three files and fails if any function in them returns a hand-assembled row or if one stops importing <code>plan_row</code>. It is the only source-reading invariant that lives outside <code>tests/test_structural_invariants.py</code>, so it belongs there: the module declares itself the one place in the suite where reading source is the point, and the check constrains three other files rather than the one it sat in. It reads each module's parsed tree rather than its text, so the import is found by module and name and a parenthesised or multi-name import — which <code>ruff format</code> emits once a second name is imported — still counts instead of reddening the guard on a mechanical reformat. The deduplication is therefore demonstrable by a test rather than only by a one-off mutation.</p>
+  <p>Measured over the six consumer files plus <code>tests/test_structural_invariants.py</code>. Both arms run the same 81 test ids: <code>80 passed, 1 failed, EXIT=1</code> at the base revision and at head, the single failure being <code>test_only_the_shared_parser_calls_fromisoformat</code>, which fails on <code>reckon/project_brief.py:_parse_utc</code> at base as well and is not this change's. The id set is otherwise unchanged: the guard's id moves from the consumer file to <code>tests/test_structural_invariants.py</code>.</p>
+  <table>
+    <thead><tr><th>Arm</th><th>Files</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>base (<code>29102c5</code>)</td><td>six consumer files</td><td>74 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>head (<code>5f8ca45</code>)</td><td>six consumer files</td><td>75 passed (the guard included), <code>EXIT=0</code></td></tr>
+      <tr><td>negative control: one builder key renamed</td><td>six consumer files</td><td>54 failed, <code>EXIT=1</code> — all six fail together</td></tr>
+      <tr><td>negative control: a private builder reintroduced</td><td>the committed guard</td><td>1 failed, <code>EXIT=1</code></td></tr>
+      <tr><td>negative control: the "begun" status reverted to the default</td><td>the pinned scenario</td><td>1 failed (pending vs active), <code>EXIT=1</code></td></tr>
+      <tr><td>base (<code>f87553c</code>)</td><td>seven files (guard included)</td><td>80 passed, 1 pre-existing failure, <code>EXIT=1</code></td></tr>
+      <tr><td>head (<code>1cb00ba</code>)</td><td>seven files (guard included)</td><td>80 passed, the same single failure, <code>EXIT=1</code></td></tr>
+      <tr><td>negative control: a hand-built row reintroduced</td><td>the moved guard</td><td>1 failed naming <code>test_roadmap_sprint_derivation.py:12</code>, <code>EXIT=1</code></td></tr>
+      <tr><td>negative control: the import parenthesised</td><td>the moved guard</td><td>1 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+  <p>Changed: <code>tests/roadmap_fixtures.py</code> (optional <code>title</code> and <code>decisions</code> fields), the three test files (private row builders deleted, call sites onto <code>plan_row</code>, the sprint scenario pinned, the guard added). <code>ruff check</code> and <code>ruff format --check</code> report no findings on the changed paths at base or at head.</p>
+</article>
+</body>
+</html>
