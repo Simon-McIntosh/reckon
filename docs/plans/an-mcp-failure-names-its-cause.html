@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.75">
-<meta name="plan-version" content="108">
+<meta name="plan-version" content="109">
 <meta name="plan-modified" content="2026-10-23">
 <meta name="plan-commits" content="cff2bbed,e52b056f,abb84ca7,7057e247">
 </head>
@@ -404,7 +404,10 @@
     <div class="r-comment-body"><p>review of a-malformed-request-is-refused-before-storage at caea9e8cc: parsed, 97/120 (goal_fidelity 17, evidence 18, scope_discipline 18, durability 16, fit 16, reuse 12); one blocking finding — reckon/mcp.py:320 refuses runs source/scope spellings (source="ALL", scope="Project") that the view it guards serves and served before this change — and one non-blocking reuse finding at the same site; added_failure_count 1 (the pre-existing reckon/roadmap.py width failure, adjudicated zero).</p></div>
 </div>
 <div class="r-comment" data-section="s17" data-id="c-run-r-20261023T165036277912-review-of-a-malformed-request-is-refused-before-storage-0f995b9129af" data-who="reckon-build" data-when="2026-10-23T17:35:15.492Z">
-    <div class="r-comment-body"><p>review of r-20261023T081540567684 (head 0f995b9129aff53c72cedc6ef6948c3db17a2e3c, base 3a985827baf90836c57d16ab069ec38c3cb80e24) stored parsed at 107/120 (goal 19, evidence 17, scope 19, durability 17, fit 17, reuse 18); the sixth review&#x27;s blocking runs source/scope defect is repaired at reckon/crew/query.py:775-804 and every pre-flight check now delegates to the owner that decides it; two non-blocking findings recorded (a vacuous owner-table row at tests/test_a_malformed_request_is_refused_before_storage.py:217, and the LIVE_CLASSIFICATION_FIELDS restatement at reckon/crew/query.py:98)</p></div>
+    <div class="r-comment-body"><p>review of r-20261023T081540567684 (head 0f995b9129aff53c72cedc6ef6948c3db17a2e3c, base 3a985827baf90836c57d16ab069ec38c3cb80e24) stored parsed at 107/120 (goal 19, evidence 17, scope 19, durability 17, fit 17, reuse 18); the sixth review's blocking runs source/scope defect is repaired at reckon/crew/query.py:775-804 and every pre-flight check now delegates to the owner that decides it; two non-blocking findings recorded (a vacuous owner-table row at tests/test_a_malformed_request_is_refused_before_storage.py:217, and the LIVE_CLASSIFICATION_FIELDS restatement at reckon/crew/query.py:98)</p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261023T081540567684-a-malformed-request-is-refused-before-storage" data-who="reckon-build" data-when="2026-10-23T16:52:45Z">
+    <div class="r-comment-body"><p>§17 — the four reckon MCP tools now check their arguments before any file is opened: a crew view, a crew live field, a runs scope/source, a read_plan or roadmap view and an edit op verb are each refused with the accepted values named, and every check calls the validator its own read uses rather than a set declared beside it — including the runs view&#x27;s source and scope validators, so a spelling the view normalises (&#x27;ALL&#x27;, &#x27; Project &#x27;) is served rather than refused. Under a stub whose every open raises the six gated refusal cases never reach it, the served-direction cases prove the reads do, and the same test file reports 10 failed/5 passed at the base revision against 15 passed at the head. An edit op verb is judged by what the store dispatches for the request&#x27;s document type rather than by the published grammar, so a push against a plan is refused before storage while the same verb is still accepted for a sprint; and a pre-flight view refusal answers through the same error_response contract the reads use, from both the tool and the CLI.</p></div>
 </div>
 </section>
 </main>
