@@ -25,7 +25,7 @@
   <title>Additional Work Is A Section | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="40">
+<meta name="plan-version" content="41">
 <meta name="plan-modified" content="2026-10-23">
 </head>
 <body>
@@ -125,7 +125,10 @@
     <div class="r-comment-body"><p>independent review of run r-20261023T012524464845-a-plan-write-refuses-the-bucket at head c24debed32c8d07aa46ce0e6a9533e57f37b57ce; the review record scores all six dimensions (goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 18, reuse 20) with zero added failures against the base 4d75245b49697dedd282331b0ceeb0d61884e9c9, and records two non-blocking findings.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261023T121244623846-review-of-the-ledger-key-names-outside-scope-work-209ae39322fc" data-who="reckon-build" data-when="2026-10-23T12:34:04.393Z">
-    <div class="r-comment-body"><p>A parsed review record for run r-20261023T114024698370-the-ledger-key-names-outside-scope-work is stored under that run&#x27;s review-records/ directory (plain and .at-209ae3932 siblings, byte-identical), scoring all six dimensions (goal_fidelity 17, evidence 18, scope_discipline 18, durability 19, fit 16, reuse 19; total 107), carrying reviewed_base_sha 305145f7d96e63eddda65521c3f8efcea9625220 and reviewed_head_sha 209ae39322fcf23cf0e009f7c6b35793de085815, added_failure_count 0 with empty added_failure_ids, six checklist verdicts, a CALL_SITES line naming six production call sites, and two non-blocking findings (reckon/ledger.py:650 left unrenamed, reckon/run_record.py:36 with no production caller); promote this node to land the record as a comment on the plan section.</p></div>
+    <div class="r-comment-body"><p>A parsed review record for run r-20261023T114024698370-the-ledger-key-names-outside-scope-work is stored under that run's review-records/ directory (plain and .at-209ae3932 siblings, byte-identical), scoring all six dimensions (goal_fidelity 17, evidence 18, scope_discipline 18, durability 19, fit 16, reuse 19; total 107), carrying reviewed_base_sha 305145f7d96e63eddda65521c3f8efcea9625220 and reviewed_head_sha 209ae39322fcf23cf0e009f7c6b35793de085815, added_failure_count 0 with empty added_failure_ids, six checklist verdicts, a CALL_SITES line naming six production call sites, and two non-blocking findings (reckon/ledger.py:650 left unrenamed, reckon/run_record.py:36 with no production caller); promote this node to land the record as a comment on the plan section.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261023T114024698370-the-ledger-key-names-outside-scope-work" data-who="reckon-build" data-when="2026-10-23T12:11:03.964Z">
+    <div class="r-comment-body"><p>Renamed the committed row&#x27;s key to outside_scope_paths (build_record and promotion write only the new key) and mapped the retired follow_on_paths on the way in from run_record, ledger and run_store so a pre-rename row reads identically and the old key is never written back; gate delta zero added failures (base 305145f7d 49 passed/1 skipped EXIT=0, head b77779666 53 passed/1 skipped EXIT=0) and the negative control drops the mapping to a red EXIT=1.</p></div>
 </div>
 </section>
 </main>
