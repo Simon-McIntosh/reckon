@@ -1,0 +1,43 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp.py:1873",
+    "reckon/roadmap.py:3303",
+    "reckon/roadmap.py:832"
+  ],
+  "completed_at": "2026-10-23T09:28:55.526Z",
+  "dispatched_at": "2026-10-23T08:51:37Z",
+  "findings": [
+    {
+      "file": "tests/test_every_module_fits_a_worker_window.py",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "the guard's bound is 50000 while the split exists to leave reckon/roadmap.py at or under 47000 for the next writer of that file, so the 3000-token headroom the section reserves is enforced by no test and a later node can consume it with every gate still green."
+    }
+  ],
+  "item_aggregate": 6,
+  "node": "review-of-roadmap-fits-a-worker-window-57928575750f",
+  "node:reviewed": "roadmap-fits-a-worker-window",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to move the graph-target family out of reckon/roadmap.py into its own module as \u00a739 specifies; the landed change creates reckon/graph_target.py:22-320 holding _qualified_plan, _claims_graph_handle, resolve_ship_target, resolve_graph_target and _dependency_endpoints, and an ast comparison of each moved body against 77213b275 shows all five byte-identical apart from the added deferred imports.\nVERDICT done_when: the measure is the nine-file gate at -n 8 plus the width test and both modules' token figures; logs/gate-base.log records 1 failed / 94 passed with the width test naming reckon/roadmap.py at 51232 tokens and logs/gate-head.log records 95 passed / 0 failed, both under the run directory with the literal command and a closing EXIT= line.\nVERDICT write_paths: the manifest declares reckon/roadmap.py, reckon/graph_target.py, reckon/mcp.py, the evidence fragment and an unused figures directory; git show --stat over both commits lists exactly the first four and nothing else.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T080256135157-roadmap-fits-a-worker-window/manifest.md; status complete, commits 4a54f633b and 579285757, base and after suites both recorded complete, and the negative control red on the reverted content.\nVERDICT diff: read commit by commit against base 77213b275: 4a54f633b moves the family (+450 reckon/graph_target.py, -421 reckon/roadmap.py, +1/-1 reckon/mcp.py) and 579285757 adds the 107-line evidence fragment; the two commits together touch no test file, which matches the head arm reporting no failure id needing a patch re-point.\nCALL_SITES: reckon/mcp.py:1873, reckon/roadmap.py:3303, reckon/roadmap.py:832\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/graph_target.py:1-9 names the module for the capability and the five functions \u00a739 lists sit in it at reckon/graph_target.py:22-320, with reckon/mcp.py:120 importing the resolver from the new owner.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/gate-base.log and logs/gate-head.log carry the literal command, the revision and a closing EXIT= line for both arms, and I recomputed the two token figures independently as 46598 and 5098.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 77213b275..579285757 lists only reckon/graph_target.py, reckon/roadmap.py, reckon/mcp.py and the declared fragment, with no test file and no concurrent node's path.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_every_module_fits_a_worker_window.py:67 fails whenever a module exceeds the 50000 bound and the negative control shows it naming reckon/roadmap.py again at 51232 tokens when the move is reverted, so the regression the change prevents reddens the guard.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/graph_target.py:11-19 and the deferred imports at reckon/graph_target.py:86 follow the repository's call-time-import idiom for a two-way dependency and introduce no plan or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff relocates an existing family rather than adding a capability \u2014 a search over reckon/ for a second definition of resolve_graph_target, resolve_ship_target, _qualified_plan, _claims_graph_handle or _dependency_endpoints found only the new owner, and reckon/roadmap.py:61-66 imports the family and re-exports the two resolvers as bindings.\nFINDING tests/test_every_module_fits_a_worker_window.py:25 non-blocking: the guard's bound is 50000 while the split exists to leave reckon/roadmap.py at or under 47000 for the next writer of that file, so the 3000-token headroom the section reserves is enforced by no test and a later node can consume it with every gate still green.",
+  "review_run_id": "r-20261023T085030104012-review-of-roadmap-fits-a-worker-window-57928575750f",
+  "reviewed_base_sha": "77213b275d7d5618cc6186a18c036da06972263a",
+  "reviewed_head_sha": "57928575750f3d0fef90e4009dba97d232614c50",
+  "reviewed_run_id": "r-20261023T080256135157-roadmap-fits-a-worker-window",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 16,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T09:07:47+00:00",
+  "total": 113
+}
