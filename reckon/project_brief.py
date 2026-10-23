@@ -23,6 +23,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
+from reckon._timestamps import parse_utc
+
 #: The plain-text budget one brief composes within. A brief that would exceed it
 #: is a defect in the composition rather than a rendering choice, so the guard
 #: below refuses rather than truncating a line a reader needs.
@@ -481,12 +483,12 @@ def _classification(run: Mapping[str, Any]) -> str:
 
 
 def _started_at(run: Mapping[str, Any]) -> datetime:
-    parsed = _parse_utc(run.get("started_at"))
+    parsed = _iso_stamp(run.get("started_at"))
     return parsed or datetime.max.replace(tzinfo=UTC)
 
 
 def _age_seconds(run: Mapping[str, Any], now: datetime) -> float | None:
-    started = _parse_utc(run.get("started_at"))
+    started = _iso_stamp(run.get("started_at"))
     if started is None:
         return None
     return max(0.0, (now - started).total_seconds())
@@ -535,12 +537,12 @@ def _since_line(
 ) -> BriefLine:
     """What the payload records as having moved since a given instant."""
 
-    moment = _parse_utc(since)
+    moment = _iso_stamp(since)
     floor = moment or datetime.min.replace(tzinfo=UTC)
     started = [
         str(run.get("run_id") or "")
         for run in runs
-        if (_parse_utc(run.get("started_at")) or datetime.min.replace(tzinfo=UTC))
+        if (_iso_stamp(run.get("started_at")) or datetime.min.replace(tzinfo=UTC))
         >= floor
     ]
     closed = [
@@ -548,7 +550,7 @@ def _since_line(
         for row in report.get("summary_sprints") or []
         if isinstance(row, Mapping)
         and row.get("closed_at")
-        and (_parse_utc(row.get("closed_at")) or datetime.min.replace(tzinfo=UTC))
+        and (_iso_stamp(row.get("closed_at")) or datetime.min.replace(tzinfo=UTC))
         >= floor
     ]
     text = (
@@ -565,18 +567,16 @@ def _since_line(
     )
 
 
-def _parse_utc(value: Any) -> datetime | None:
-    """Parse an ISO timestamp as UTC, or return ``None`` when it is not one."""
+def _iso_stamp(value: Any) -> datetime | None:
+    """Read one of the brief's timestamps: an ISO string, or an absent one.
 
-    if not value:
+    The brief's callers pass ISO strings or nothing at all, so a value that is
+    not a string is treated as absent rather than handed to the shared parser,
+    which reads a number as an epoch and would accept a domain the brief never
+    meets. The parsing rule itself lives once, in
+    :func:`reckon._timestamps.parse_utc`.
+    """
+
+    if not isinstance(value, str):
         return None
-    text = str(value).strip()
-    if text.endswith("Z"):
-        text = text[:-1] + "+00:00"
-    try:
-        parsed = datetime.fromisoformat(text)
-    except ValueError:
-        return None
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=UTC)
-    return parsed.astimezone(UTC)
+    return parse_utc(value)
