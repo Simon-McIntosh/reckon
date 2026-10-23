@@ -406,19 +406,42 @@
   read two findings, both pre-existing at <code>reckon/crew/dispatch.py</code>,
   so this change adds none.</p>
 
-  <p><strong>Measured.</strong> The gate ran at <code>18f05d0da</code>:
-  <strong>1320 passed, 27 failed, 1 skipped, 1 error, <code>EXIT=1</code></strong>
-  over the same targets the base gate runs. The base at
-  <code>43677d0d26</code> reads 1303 passed, 28 failed, 1 skipped, 1 error.
-  Twenty-five of the twenty-eight ids failing at the head are in the base list.
-  The other three are
-  <code>test_session_host.py</code>'s two child-survival arms and
-  <code>test_test_watchers_are_reaped.py</code>'s child-session arm, each a
-  ten-second watchdog waiting for a spawned child to appear. Both modules pass
-  serially at this same revision — 20 passed, 1 skipped, <code>EXIT=0</code>, in
-  <code>gate-round6-sessionhost-serial.log</code> — so those three are the load
-  of eight concurrent workers on this allocation rather than this change. The
-  node's own module is 14 passed, the JSON-manifest arm among them. Four base
-  ids pass at the head, the same flakiness in the other direction; with the
-  serial re-run read beside the gate, the added count is <strong>zero</strong>.</p>
+  <p><strong>The pane had no word for a held request.</strong> A state the
+  classifier can return must sit in exactly one pane column, and the two phases
+  this section added sat in none: <code>reckon/crew/ticker.py</code> carried
+  neither. The held request now waits beside <code>blocked</code>'s waiting
+  neighbours and the one whose wait can no longer land sits in the halted pane,
+  and the classifier's own word set carries both so the grid keeps one row per
+  state. Neither module was in this node's declared paths; both additions are
+  listed under <code>changed_paths</code> with that stated.</p>
+
+  <p><strong>Two collisions with the main line, not one.</strong> Besides the
+  timestamp import, the queued arm of <code>classify_pointer</code> had been
+  rewritten in place, and the main line lands a new delivered-review branch
+  immediately after that arm, so the two could not merge. The waiting phases
+  are now a branch of their own <em>ahead</em> of the queued arm, whose body is
+  byte-identical to the base, so the new branch has somewhere to land beside
+  it. <code>git merge-tree --write-tree</code> against the main checkout's
+  <code>main</code> exits 0 at this head.</p>
+
+  <p><strong>Measured.</strong> The gate ran at <code>f1e56544b</code>:
+  <strong>840 passed, 17 failed, <code>EXIT=1</code></strong> over the node's own
+  module plus every <code>tests/*.py</code> that imports
+  <code>queue_admission</code>, <code>recovery_classification</code> or
+  <code>recovery_vocabulary</code> — 88 files, found by grep rather than listed
+  by hand. The base arm runs the same command from a
+  <code>git archive</code> extraction of <code>43677d0d26</code> and reads 823
+  passed, 16 failed. Every one of the base's 16 ids fails at the head too, so
+  the delta is <strong>one</strong>:
+  <code>test_a_producer_sweeps_only_on_change::test_quiet_cycles_list_nothing_and_spawn_no_git</code>,
+  which asserts that a quiet cycle spawns no process and passes serially at the
+  same head (25 passed, <code>EXIT=0</code>,
+  <code>gate-round7-headonly-serial3.log</code>) — it sees a peer test's process
+  under eight workers. The two session-host modules that the previous round
+  flagged were rerun serially at this head and read 20 passed, 1 skipped,
+  <code>EXIT=0</code> (<code>gate-round7-sessionhost-serial.log</code>). The node's
+  own module is 16 passed, the JSON-manifest arm among them
+  (<code>node-module-round7.log</code>). Lint is unchanged from the quoted base:
+  three findings over the changed paths at the head and the same three at the
+  base.</p>
 </section>
