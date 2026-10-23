@@ -1,0 +1,47 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T23:16:11.517Z",
+  "dispatched_at": "2026-10-23T23:08:36Z",
+  "findings": [
+    {
+      "anchor": "plan.html:172",
+      "id": "done_when-1",
+      "reason": "a node can satisfy its gate with a retry that writes every pending plan and still tells the caller the move is partial, so the section would land the same class of misreport one layer up unless the plan fixes the induction to fail across the first retry and states what a retry that clears the pending set returns.",
+      "text": "the done-when's first case and its stated failure induction contradict each other: the case needs a first retry that reports the partial write instead of success, but \"making the plan's own write raise once the index has been written\" means that retry finds the plan writable, so \u00a79's own mechanism (\"for each pending plan that is now writable it applies only that plan's sprint write \u2026 once none is pending the receipt records success\") either clears the pending entry in that same call \u2014 returning `ok: false, error: partial_write` for a move that is now fully written, the misreport \u00a79 exists to remove \u2014 or the case cannot be produced at all; the two readings differ in what the retry returns and nothing in the section selects between them",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ceef11a896c39605f02674e9e6adbeba5e21a20ea73e5da8fc0d7556d071fbe1",
+  "plan_slug": "the-portfolio-reads-true",
+  "plan_version": 63,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T230739132383-plan-review-of-the-portfolio-reads-true",
+  "reviewed_blob_sha": "106f04b083f392375ab841641b825e11f3c2f717",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `record_write_receipt` is at `reckon/mcp_edit_plan.py:1744`, the replay return is the `_replayed_response` call at `:1324` (definition `:1207`), the partial-write path begins at the `_carry_plan_sprints` call at `:1728`, `_apply_move` in `reckon/_store.py:3492` raises `\"{slug!r} not found in sprint {frm}\"`, and \u00a78's landing merge `ebbc3070d` resolves.",
+    "done_when": "a finding \u2014 \u00a79's first case (`plan.html:172`) requires a first retry that reports the partial write instead of success, but the same paragraph induces the failure by \"making the plan's own write raise once\", so that retry already finds the plan writable and either returns the misreport the section exists to remove or cannot produce the case.",
+    "evidence_paths": "pass \u2014 the write paths are repository files and the section states every log is recorded under the run directory, the same durable form \u00a78 landed with.",
+    "naming": "pass \u2014 the new test file name states the mechanism, and \u00a79 introduces no plan label, stage name, ticket number or version tag into code.",
+    "reasoning": "pass \u2014 the stated root cause reproduces at head (`_partial_plan_write` sets `ok: false, error: \"partial_write\"` at `reckon/mcp_edit_plan.py:698-699`, the unconditional `record_write_receipt` still runs at `:1744`, and the retry at `:1324` returns `_edit_success_response` untouched), and the mechanism is placed on the path the `:1324` replay check already occupies.",
+    "single_goal": "pass \u2014 \u00a79 carries one deliverable (a retried partial sprint move is reported as partial rather than replayed as success), one write path pair and one test file.",
+    "wiring": "pass \u2014 \u00a79 repairs \u00a78's forward path, \u00a78 is declared `done` (landing merge `ebbc3070d` resolves), and the open followup `f-tprt-009` recommends `/reckon-build the-portfolio-reads-true \u00a79`, so no dependency \u00a79 needs is missing or pointed elsewhere."
+  },
+  "section_digests": {
+    "_document": "99c9e3cf9942e999d5740a5fbefff3d49790d2568cd12c6bc07b4892fcca6913",
+    "s1": "56204248c9050844c40ac7e00bff909830602caaa4b95be87bacea51b1495a03",
+    "s2": "69b86246adb4ea89719f367ac57f43940ed14fb88c5c89408cf18a6b59911f57",
+    "s3": "5902125b920ccad233230b403ba1e4cb62c75743d8265014bc35f38e0c9915c3",
+    "s4": "9280ec81cafc36b7de1295b0f22745c6162986e93d9731a8e8b99c51d658a217",
+    "s5": "e5d24ffe43f8fdfcdb88130b1632bc368dc94fd8641f628befb77b4c1f95b435",
+    "s6": "3b386242a01bc207ce0810ef1ee5ccbd8a9d5ea78f77a5dd6fc61b2f207c53d0",
+    "s7": "b5d0f90a4e8a113321b55e0ed0aeaa0624369e3b41b03dde61dc10c9a6f8e5ef",
+    "s8": "4aa77c0b14a2d21a80398b3aaf025a91b1d30ea4d3a1d3682146ddd1571aa233",
+    "s9": "881894db4b6303aff92bb0405c1d76b93d3adeec0ddc20239b57f2f3ed1ea6c7"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T23:21:33.436936+00:00"
+}
