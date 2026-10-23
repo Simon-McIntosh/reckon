@@ -114,21 +114,27 @@ def _armed_controls(monkeypatch):
         base = metadata_index._reuse_covered
 
         def keep_removed(docs_dir, project):
-            result = base(docs_dir, project)
-            if result is None:
-                return None
-            covered, dirs, scanned = result
+            # Take the vanished directories before the reuse records the shape
+            # it observed, which is what drops them from the recorded set.
             by_dir: dict[str, list[str]] = {}
             for relative in metadata_index._load_persisted(docs_dir, project):
                 by_dir.setdefault(PurePosixPath(relative).parent.as_posix(), []).append(
                     relative
                 )
+            vanished = [
+                relative
+                for relative in metadata_index._load_dir_stamps(docs_dir, project)
+                if not (docs_dir / relative).is_dir()
+            ]
+            result = base(docs_dir, project)
+            if result is None:
+                return None
+            covered, dirs = result
             kept = dict(covered)
-            for relative in metadata_index._load_dir_stamps(docs_dir, project):
-                if not (docs_dir / relative).is_dir():
-                    for file_relative in by_dir.get(relative, ()):
-                        kept[file_relative] = docs_dir / file_relative
-            return sorted(kept.items()), dirs, scanned
+            for relative in vanished:
+                for file_relative in by_dir.get(relative, ()):
+                    kept[file_relative] = docs_dir / file_relative
+            return sorted(kept.items()), dirs
 
         monkeypatch.setattr(metadata_index, "_reuse_covered", keep_removed)
 
@@ -143,10 +149,16 @@ def _armed_controls(monkeypatch):
         base = metadata_index._reuse_covered
 
         def all_or_nothing(docs_dir, project):
-            result = base(docs_dir, project)
-            if result is None:
+            # Take the directory identities before the reuse records the shape
+            # it observed, so a moved directory still reads as moved here.
+            stamps = metadata_index._load_dir_stamps(docs_dir, project)
+            moved = any(
+                metadata_index.covered_dir_identity(docs_dir / relative) != identity
+                for relative, identity in stamps.items()
+            )
+            if moved:
                 return None
-            return None if result[2] else result
+            return base(docs_dir, project)
 
         monkeypatch.setattr(metadata_index, "_reuse_covered", all_or_nothing)
 
