@@ -1,0 +1,69 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T10:56:21.020Z",
+  "dispatched_at": "2026-10-23T10:45:05Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261023T104359988855-plan-review-of-a-queue-holds-the-whole-plan/plan.html:70",
+      "id": "anchors_resolve-1",
+      "reason": "a node dispatched on \u00a76 must name the mechanism it serialises on, and the plan names one that does not exist; the plan's own v5 review comment (c-20261023-s6-lock) records the same defect as unresolved, and v6 did not correct the sentence.",
+      "text": "\u00a76 rests its serialisation design on \"the landing lock\" (`runs the same crew land path a coordinator calls, serialised per repository under the landing lock`) and no object of that name exists in the tree; landings serialise on the checkout's `.git/index.lock` retry path (`reckon/crew/merge.py:481` `_index_lock_held`, `:485` `_run_waiting_out_a_held_index_lock`) and on the per-run promotion lease in `reckon/crew/promotion.py`, so the driver node would either invent a lock or duplicate an existing one",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261023T104359988855-plan-review-of-a-queue-holds-the-whole-plan/plan.html:54",
+      "id": "done_when-1",
+      "reason": "the finding is not the number but the instrument; the gate must name the MCP read it times, or state a shell-level bound, or it cannot be scored by whoever runs it (and the unresolved v5 comment c-20261023-s3-deadline asks exactly this).",
+      "text": "\u00a73's done-when measures \"`crew view live` and the obligations view each answer within that 30 s deadline, cold and warm\", but the 30 s figure is `READ_DEADLINE_SECONDS` applied by the MCP read wrapper (`reckon/mcp_deadlines.py:45,444`), which bounds MCP tool calls and not a shell invocation of the crew CLI, so the node cannot tell which instrument the gate means and the measure can pass or fail for reasons outside the code under test",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261023T104359988855-plan-review-of-a-queue-holds-the-whole-plan/plan.html:59",
+      "id": "reasoning-1",
+      "reason": "a node dispatched on \u00a74 would be sent to edit another project's router, and would find its two instructions incompatible; the router has one reader to satisfy, and \u00a74's own done-when (a request not held on `admission.sessions[<session>].worker_slots`) is fully satisfied by the second sentence alone.",
+      "text": "\u00a74 states in one sentence that \"the lane router in imas-ambix then publishes one figure ... and stops dividing it by session (`admission.sessions`, `fair_share`)\" and in the next that \"the router's per-session figures go unused but stay published until imas-ambix drops them\", so the section declares both a change and a non-change to the same publisher, and the change it declares is in imas-ambix, a different repository than the one the section's write paths sit in",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261023T104359988855-plan-review-of-a-queue-holds-the-whole-plan/plan.html:82",
+      "id": "wiring-1",
+      "reason": "the followup is the sentence a coordinator schedules the wave from, and it names as parallel the two sections whose declared edges forbid that; either the sentence or the edges is wrong, and only the author knows which.",
+      "text": "followup `f-aqhwp-001` tells the coordinator \"\u00a75 and \u00a77 can run beside it\", while the plan's own `plan-section-depends-on` declares s5 depends on s2 and s7 depends on s4, which depends on s5, so both transitively wait on \u00a72 and neither may launch before it lands",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "519dd0d4d95f94fc1b484558922d0602816c87188633d632779665a501d8ed48",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 6,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T104359988855-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "55d05c33ed43bf444e4e5a1401688631bf5db698",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a76 names \"the landing lock\" as the object that serialises landings, and no such object exists in the repository.",
+    "done_when": "a finding \u2014 \u00a73's done-when times `crew view live` against the 30 s deadline that only the MCP read wrapper applies.",
+    "evidence_paths": "pass \u2014 \u00a72 places every log under the run directory, which is the durable crew run store, and no section writes evidence to a node-local or session path.",
+    "naming": "pass \u2014 the proposed states (`awaiting-upstream`, `blocked-upstream`), the configuration key and the new verbs are named by mechanism, and no plan label, stage name or ticket number reaches a symbol, filename or comment.",
+    "reasoning": "a finding \u2014 \u00a74's mechanism is self-contradictory: one sentence moves the per-session slot split out of the lane router and the next keeps the router's per-session figures, and the first sentence requires a change in imas-ambix, another repository.",
+    "single_goal": "pass \u2014 each of \u00a72\u2013\u00a77 names one deliverable with one gate; \u00a75's three queue verbs serve the single deliverable of an editable queued request.",
+    "wiring": "a finding \u2014 every `plan-section-depends-on` ref resolves to a section that exists (s3\u2192s2,s4; s4\u2192s5; s5\u2192s2; s6\u2192s2; s7\u2192s4), but the followup's scheduling sentence contradicts those edges."
+  },
+  "section_digests": {
+    "_document": "0cb36e918ae81611b55c39082f399d0a22a17170330e8fb9cb422e420948b3d0",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s3": "b7a0762d64ced05735726d2d41427e5e937e91a65c0aa74d141274059060bb7d",
+    "s4": "a646be5c8e42a7c62f722b3f76ee0fac357337c185788483b5e2c8c2f7c359ac",
+    "s5": "c623294fceb1a1488259cec58a98620810a38685cc2f7e945488da75bcda1424",
+    "s6": "9ae70f6311e98644a2302b95d57a8d155d24f82f04018d48389de58589bc5662",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T10:58:52.017646+00:00"
+}
