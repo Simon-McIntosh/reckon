@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T23:31:18.352Z",
+  "dispatched_at": "2026-10-22T23:18:15Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/additional-work-is-a-section.html:72",
+      "id": "done_when-1",
+      "reason": "without a case for those two routes the section cannot show the shared predicate fires on them, so a worker that wired the check only into the insert/create/text paths bound to the message format would still pass every listed case while `set sections.<id>.body` and `append_evidence` carried the term unchecked.",
+      "text": "\u00a74's deliverable claims the refusal \"covers ... a section body\", and because the term check is added to the one shared predicate `_forged_plan_structure` it also reaches `append_evidence`, yet the done-when tests only the insert_section (case 1), create (case 2) and text-mode (case 3) routes and never exercises `set sections.<id>.body` or `append_evidence` \u2014 the two other routes the predicate change silently re-scopes",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ce55eea5ff134dfea2e93262bfb6578a416e5bf5001e7d7511b1fc5d086f8b3b",
+  "plan_slug": "additional-work-is-a-section",
+  "plan_version": 11,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-22T23:38:55.941403+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-22T23:38:55.941403+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-additional-work-is-a-section.v11.json",
+  "review_run_id": "r-20261022T231550862276-plan-review-of-additional-work-is-a-section",
+  "reviewed_blob_sha": "e43a49e688693a8919665a2603da87032b6893f0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_forged_plan_structure` (`reckon/_store.py:899`), `_refuse_forged_body_structure` (`:924`), the message format (`:928`), `_queue_authored_section` (`:3371`), `_prose_text` (`reckon/doccheck.py:385`), `section_prose` (`reckon/_plan_html.py:474`) and `_store_section_ops._refuse_forged_structure` (`:124`) all resolve, and the \"near line 1979\" text-mode pointer lands inside `replace_plan_text_batch`.",
+    "done_when": "a finding \u2014 \u00a74's deliverable states the refusal \"covers ... a section body\", and by construction the shared predicate also reaches `append_evidence`, but no done-when case exercises either route.",
+    "evidence_paths": "pass \u2014 the section's only evidence path is `docs/evidence/fragments/additional-work-is-a-section/a-plan-write-refuses-the-bucket.html`, a durable repository path alongside the existing `docs/evidence/fragments/<slug>/` convention; nothing lands in a session scratchpad or node-local temp.",
+    "naming": "pass \u2014 \u00a74 introduces no plan label, stage name, ticket number or version tag; `_forged_plan_structure`, `_queue_authored_section` and `_insert_authored_section` are existing mechanism names, and the new test file is named by what it measures.",
+    "reasoning": "pass \u2014 \u00a74's three mechanism claims hold on the real code path. \"Only the text-mode write does not reach it\" is true: `insert_section` (`:946`), `append_evidence` (`:1074`), `set sections.<id>.body` (`_store_section_ops.py:132-134`) and plan creation (append-sections-with-body -> `_queue_authored_section` :3065/:3371 -> `_insert_authored_section` :1419 -> predicate) all reach the predicate today, and every caller the section relies on is named.",
+    "single_goal": "pass \u2014 one goal, \"a plan write carrying the bucket's language is refused\"; the `audit-doc` warning is the same rule read on one other surface through the same prose reader, and \u00a74 accounts for keeping it here.",
+    "wiring": "pass \u2014 \u00a74 declares no `depends-on`, which is correct (it writes `reckon/_store.py`, `_store_section_ops.py` and `doccheck.py`, none of which \u00a72, \u00a73 or the-suite-is-green-at-head \u00a732 touch), and `s5` depends on `s4`, so the relationship it needs is present and points the right way."
+  },
+  "section_digests": {
+    "_document": "0e1b33dda748890b04794a11496bc9a6a0039acae4b7d3b73b632dfda3e05469",
+    "s1": "53035db610c769f9fabc12038e7a13898064f071d29b27f9e4b9cfe7e6e9cbfb",
+    "s2": "da6965864ffd2ed27a0442cf22caf15936faa1f5ecfe3c8d4be21504a5d51387",
+    "s3": "5e0b4c0b11d5a7d4c468bf9e723c12d087c1219af2cb13c3a1e723138f47b73a",
+    "s4": "4edb3bb3921816f72d8c08ef5c92bc46584983aef66ed0c8193ee473feeaba56",
+    "s5": "a6fa784958eef11b006d0cb4912714d98031c18adf47e32ecc1f84a23d578e4d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T23:38:32.607465+00:00"
+}
