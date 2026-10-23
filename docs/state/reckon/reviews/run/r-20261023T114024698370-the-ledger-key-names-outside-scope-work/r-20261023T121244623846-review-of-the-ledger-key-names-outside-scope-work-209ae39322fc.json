@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/promotion.py:1269 _complete_locked",
+    "reckon/run_record.py:655 build_record",
+    "reckon/ledger.py:1277 _read_run",
+    "reckon/ledger.py:992 _load_aggregate",
+    "reckon/ledger.py:1310 _index_payload",
+    "reckon/run_store.py:139 _decoded_record behind RunStore.get_run and RunStore.records"
+  ],
+  "completed_at": "2026-10-23T12:34:04.393Z",
+  "dispatched_at": "2026-10-23T12:14:08Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "every-derived-manifest-carries-the-outside-scope-field",
+      "recorded_at": "2026-10-23T12:36:43.403691+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "every-derived-manifest-carries-the-outside-scope-field",
+      "recorded_at": "2026-10-23T12:37:00.543450+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": "650",
+      "severity": "non-blocking",
+      "text": "non-blocking: \u00a76's census names the `follow_on_paths` occurrence at reckon/ledger.py:650 and its deliverable says the key becomes `outside_scope_paths` in every file it lists, but the manifest-field parser `ledger.follow_on_paths` there was left unrenamed, so reckon/ledger.py carries it beside the re-exported `outside_scope_paths` at reckon/ledger.py:3712, two similarly named entries a reader must keep apart; this does not hold the node because \u00a76 also states the manifest field keeps its name here and reckon/crew/promotion.py:1270 still calls it as the follow_ons bridge, but nothing in the manifest or fragment records the choice, and \u00a73's write paths exclude reckon/ledger.py too, so any follow-on node needs it granted."
+    },
+    {
+      "file": "reckon/run_record.py",
+      "line": "36",
+      "severity": "non-blocking",
+      "text": "non-blocking: the read-with-fallback helper `outside_scope_paths` has no production caller - every production reader calls normalize_outside_scope_paths (reckon/ledger.py:992, :1277, :1310 and reckon/run_store.py:139) - so its retired-key fallback duplicates the mapping in reckon/run_record.py:51-70 and its only callers are the new test and the evidence fragment; it does not hold the node because the helper is small and the plan's requirement that every reader map the key is met by the normaliser."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit against 305145f7d; b77779666 changes four production files and four test files and 209ae3932 adds the evidence fragment, with reckon/run_record.py:32-70 adding the current and retired key constants plus a read-through reader and a row normaliser, and reckon/crew/promotion.py:1269 passing the extracted paths under the new key.",
+    "done_when": "\u00a76's done-when names tests/test_the_ledger_key_names_outside_scope_work.py for a promotion that writes the new key and no retired key and a row carrying only the retired key reading through run_record, run_store and ledger; the gate arms in logs/baseline.log at 305145f7d and logs/head.log at b77779666 assert that measure.",
+    "goal": "the node's goal is to rename the committed ledger key `follow_on_paths` to `outside_scope_paths` with a pre-rename row mapped on the way in, as \u00a76 specifies; reckon/run_record.py:655 writes only the current key and reckon/ledger.py:1277, :992 and :1310 plus reckon/run_store.py:139 map the retired spelling on the way in, so the row's key is renamed and an old row still reads.",
+    "manifest": "read; it states status complete, commits b77779666 and 209ae3932, both gate arms with zero added failures, the declared negative control with its red log, the ruff no-added-findings comparison and the scope grant for the three base test files.",
+    "write_paths": "read the manifest's declared paths (reckon/ledger.py, reckon/run_record.py, reckon/run_store.py, reckon/crew/promotion.py, the new test, the evidence fragment, the figures directory); every path in the diff is inside them or is one of the three base test files \u00a76 grants from the reported failure ids."
+  },
+  "justifications": {
+    "durability": "tests/test_the_ledger_key_names_outside_scope_work.py:161, :192 and :205 each redden if a writer keeps the retired key or a reader stops mapping it, and the manifest's logs/negative-control.log shows exactly one test failing, EXIT=1, from dropping the mapping.",
+    "evidence": "logs/baseline.log at 305145f7d (49 passed, 1 skipped, EXIT=0) and logs/head.log at b77779666 (53 passed, 1 skipped, EXIT=0) are the done-when's two arms judged by delta, each opening with its revision and literal command, while the ruff no-added-findings claim is recorded in the manifest only.",
+    "fit": "the constants and helpers at reckon/run_record.py:32-70 follow the retired-spelling idiom of reckon/crew/review.py:163, but reckon/ledger.py:650 now carries `follow_on_paths` beside the re-exported `outside_scope_paths` at reckon/ledger.py:3712 and build_record's parameter at reckon/run_record.py:440 shadows the module reader of the same name.",
+    "goal_fidelity": "reckon/run_record.py:655 writes only OUTSIDE_SCOPE_PATHS and reckon/ledger.py:1277, :992 and :1310 map a retired key in, but \u00a76's census also names the `follow_on_paths` occurrence at reckon/ledger.py:650 and that occurrence was left unrenamed.",
+    "reuse": "a capability search over reckon/ for a retired-record-key mapping found only review.py:163's value-word map, a different capability, and reckon/ledger.py:992, :1277 and :1310, reckon/run_store.py:139 and reckon/crew/promotion.py:1269 all call run_record's one normaliser rather than a second implementation.",
+    "scope_discipline": "every path in b77779666 and 209ae3932 is a declared write path or one of the three base test files \u00a76 grants from the reported failure ids, and tests/test_run_store.py:133 changes only the key's name."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to rename the committed ledger key `follow_on_paths` to `outside_scope_paths` with a pre-rename row mapped on the way in, as \u00a76 specifies; reckon/run_record.py:655 writes only the current key and reckon/ledger.py:1277, :992 and :1310 plus reckon/run_store.py:139 map the retired spelling on the way in, so the row's key is renamed and an old row still reads.\nVERDICT done_when: \u00a76's done-when names tests/test_the_ledger_key_names_outside_scope_work.py for a promotion that writes the new key and no retired key and a row carrying only the retired key reading through run_record, run_store and ledger; the gate arms in logs/baseline.log at 305145f7d and logs/head.log at b77779666 assert that measure.\nVERDICT write_paths: read the manifest's declared paths (reckon/ledger.py, reckon/run_record.py, reckon/run_store.py, reckon/crew/promotion.py, the new test, the evidence fragment, the figures directory); every path in the diff is inside them or is one of the three base test files \u00a76 grants from the reported failure ids.\nVERDICT manifest: read; it states status complete, commits b77779666 and 209ae3932, both gate arms with zero added failures, the declared negative control with its red log, the ruff no-added-findings comparison and the scope grant for the three base test files.\nVERDICT diff: read commit by commit against 305145f7d; b77779666 changes four production files and four test files and 209ae3932 adds the evidence fragment, with reckon/run_record.py:32-70 adding the current and retired key constants plus a read-through reader and a row normaliser, and reckon/crew/promotion.py:1269 passing the extracted paths under the new key.\nCALL_SITES: reckon/crew/promotion.py:1269 _complete_locked, reckon/run_record.py:655 build_record, reckon/ledger.py:1277 _read_run, reckon/ledger.py:992 _load_aggregate, reckon/ledger.py:1310 _index_payload, reckon/run_store.py:139 _decoded_record behind RunStore.get_run and RunStore.records\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/run_record.py:655 writes only OUTSIDE_SCOPE_PATHS and reckon/ledger.py:1277, :992 and :1310 map a retired key in, but \u00a76's census also names the `follow_on_paths` occurrence at reckon/ledger.py:650 and that occurrence was left unrenamed.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/baseline.log at 305145f7d (49 passed, 1 skipped, EXIT=0) and logs/head.log at b77779666 (53 passed, 1 skipped, EXIT=0) are the done-when's two arms judged by delta, each opening with its revision and literal command, while the ruff no-added-findings claim is recorded in the manifest only.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in b77779666 and 209ae3932 is a declared write path or one of the three base test files \u00a76 grants from the reported failure ids, and tests/test_run_store.py:133 changes only the key's name.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_ledger_key_names_outside_scope_work.py:161, :192 and :205 each redden if a writer keeps the retired key or a reader stops mapping it, and the manifest's logs/negative-control.log shows exactly one test failing, EXIT=1, from dropping the mapping.\nSCORE fit: 16\nJUSTIFICATION fit: the constants and helpers at reckon/run_record.py:32-70 follow the retired-spelling idiom of reckon/crew/review.py:163, but reckon/ledger.py:650 now carries `follow_on_paths` beside the re-exported `outside_scope_paths` at reckon/ledger.py:3712 and build_record's parameter at reckon/run_record.py:440 shadows the module reader of the same name.\nSCORE reuse: 19\nJUSTIFICATION reuse: a capability search over reckon/ for a retired-record-key mapping found only review.py:163's value-word map, a different capability, and reckon/ledger.py:992, :1277 and :1310, reckon/run_store.py:139 and reckon/crew/promotion.py:1269 all call run_record's one normaliser rather than a second implementation.\nFINDING reckon/ledger.py:650 non-blocking: \u00a76's census names the `follow_on_paths` occurrence at reckon/ledger.py:650 and its deliverable says the key becomes `outside_scope_paths` in every file it lists, but the manifest-field parser `ledger.follow_on_paths` there was left unrenamed, so reckon/ledger.py carries it beside the re-exported `outside_scope_paths` at reckon/ledger.py:3712, two similarly named entries a reader must keep apart; this does not hold the node because \u00a76 also states the manifest field keeps its name here and reckon/crew/promotion.py:1270 still calls it as the follow_ons bridge, but nothing in the manifest or fragment records the choice, and \u00a73's write paths exclude reckon/ledger.py too, so any follow-on node needs it granted.\nFINDING reckon/run_record.py:36 non-blocking: the read-with-fallback helper `outside_scope_paths` has no production caller - every production reader calls normalize_outside_scope_paths (reckon/ledger.py:992, :1277, :1310 and reckon/run_store.py:139) - so its retired-key fallback duplicates the mapping in reckon/run_record.py:51-70 and its only callers are the new test and the evidence fragment; it does not hold the node because the helper is small and the plan's requirement that every reader map the key is met by the normaliser.",
+  "review_run_id": "r-20261023T121244623846-review-of-the-ledger-key-names-outside-scope-work-209ae39322fc",
+  "reviewed_base_sha": "305145f7d96e63eddda65521c3f8efcea9625220",
+  "reviewed_head_sha": "209ae39322fcf23cf0e009f7c6b35793de085815",
+  "reviewed_run_id": "r-20261023T114024698370-the-ledger-key-names-outside-scope-work",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T12:38:02.412177+00:00",
+  "total": 107
+}
