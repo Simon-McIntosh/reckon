@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="10">
 <meta name="plan-modified" content="2026-10-23">
 </head>
 <body>
@@ -291,6 +291,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-23T13:20:00Z">
     <div class="r-comment-body"><p>§4 landed: merge <code>57e274889</code>; one population failure was added and then repaired in <code>99e614314</code>, and it passes at main. A follower read 0.10 MB of pointers in 15 s, against the 1 MB bound (34.4 MB before). <a href="/reckon/evidence/archive/the-monitor-reads-each-fact-once-landed.html#s4">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261023T170707287094-the-station-store-is-node-local" data-who="reckon-build" data-when="2026-10-23T18:59:58Z">
+    <div class="r-comment-body"><p>station_store adds the node-local SQLite store at the node-local runtime root: pointer and stream identity is file_memo.file_signature&#x27;s, day files hold the events and an out-of-window day file is unlinked with its rows, and a root reached only through TMPDIR or on a shared mount is refused; tests/test_the_station_store_is_node_local.py is 15 passed EXIT=0, and both declared mutations turn their case red (1 failed and 8 failed).</p></div>
 </div>
 </section>
 </main>
