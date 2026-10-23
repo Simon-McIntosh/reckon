@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 import shlex
 from collections.abc import Iterable, Mapping, Sequence
+from contextvars import ContextVar
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -362,6 +363,26 @@ def _row_age(row: Mapping[str, Any], *, now: datetime) -> int:
     return 0
 
 
+_VIEW_LIVE_POINTERS: ContextVar[tuple[dict[str, Any], ...] | None] = ContextVar(
+    "reckon_obligations_view_live_pointers", default=None
+)
+
+
+def _live_pointers(project: str) -> list[dict[str, Any]]:
+    """The live pointers this view derives from, read once for the whole view.
+
+    Every duty kind here reads the same live pointers, so a view holding three
+    of them would otherwise read the directory three times and could report
+    three duties from three different snapshots of it. The view publishes its
+    own read for the length of one derivation, and a reader called outside a
+    view reads for itself.
+    """
+    held = _VIEW_LIVE_POINTERS.get()
+    if held is not None:
+        return list(held)
+    return runs.list_live(project=project)
+
+
 def _reflex_review_in_flight(pointer: Mapping[str, Any]) -> bool:
     """Whether the reflex's own recorded review dispatch still holds a live run.
 
@@ -401,7 +422,9 @@ def _current_review_in_flight(pointer: Mapping[str, Any]) -> bool:
     """
     if _reflex_review_in_flight(pointer):
         return True
-    review_run_id = recovery._review_in_flight(pointer)
+    review_run_id = recovery._review_in_flight(
+        pointer, pointers=_live_pointers(str(pointer.get("project") or ""))
+    )
     if not review_run_id:
         return False
     review_pointer = runs.read_pointer(review_run_id)
@@ -424,7 +447,9 @@ def _current_review_in_flight(pointer: Mapping[str, Any]) -> bool:
 def _refused_delivered_review(pointer: Mapping[str, Any]) -> dict[str, str] | None:
     """Read a live review's refused delivery before asking for another review."""
     reviewed_run_id = str(pointer.get("run_id") or "")
-    review_run_id = recovery._review_in_flight(pointer)
+    review_run_id = recovery._review_in_flight(
+        pointer, pointers=_live_pointers(str(pointer.get("project") or ""))
+    )
     if not review_run_id:
         return None
     try:
@@ -477,7 +502,7 @@ def _refused_delivered_review(pointer: Mapping[str, Any]) -> dict[str, str] | No
 def _live_review_runs(project: str, session: str) -> set[str]:
     """Snapshot session runs whose current revision has a review in any session."""
     in_flight: set[str] = set()
-    for pointer in runs.list_live(project=project):
+    for pointer in _live_pointers(project):
         if str(pointer.get("session") or "") != session:
             continue
         run_id = str(pointer.get("run_id") or "")
@@ -488,10 +513,7 @@ def _live_review_runs(project: str, session: str) -> set[str]:
 
 def _classified_rows(project: str) -> list[dict[str, Any]]:
     """Classify current project pointers without observing or launching work."""
-    return [
-        recovery.classify_pointer(pointer)
-        for pointer in runs.list_live(project=project)
-    ]
+    return [recovery.classify_pointer(pointer) for pointer in _live_pointers(project)]
 
 
 def _acknowledgements_in_force(
@@ -513,7 +535,7 @@ def _acknowledgements_in_force(
     obligation.
     """
     in_force: dict[str, dict[str, Any]] = {}
-    for pointer in runs.list_live(project=project):
+    for pointer in _live_pointers(project):
         run_id = str(pointer.get("run_id") or "")
         record = runs.run_acknowledgement(pointer)
         if not run_id or not record:
@@ -637,25 +659,29 @@ def _published_worker_slots(session: str) -> Any:
 def _queued_review_fields(
     pointer: Mapping[str, Any],
     *,
-    project: str,
-    run_id: str,
     head: str,
     now: datetime,
+    live_pointers: Sequence[Mapping[str, Any]],
+    placements: Mapping[str, Mapping[str, int]],
 ) -> dict[str, Any] | None:
     """The queued reading of this run's review, or None.
 
     Two things mean the review is waiting rather than missing, and both are
-    read here so the duty carries one kind: an attempt the lane refused as
-    paused, which the reflex still owns and retries inside its bound, and a
-    review run the lane accepted into its queue and has not launched yet. The
-    second has no live pointer of its own to read as a review record and no
-    stored record either, so it is the wait the absence of a review would
-    otherwise misreport as work the coordinator skipped.
+    read here so the two carry one kind: an attempt the lane refused as paused,
+    which the reflex still owns and retries inside its bound, and a review run
+    the lane accepted into its queue and has not launched yet. The second has
+    no stored record, so it is the wait the absence of a review would otherwise
+    misreport as work the coordinator skipped.
     """
     refused = _refused_review_fields(pointer, head=head, now=now)
     if refused is not None:
         return refused
-    return _queued_review_run_fields(project, run_id, head=head, now=now)
+    return _queued_review_run_fields(
+        pointer,
+        head=head,
+        live_pointers=live_pointers,
+        placements=placements,
+    )
 
 
 def _refused_review_fields(
@@ -699,7 +725,11 @@ def _refused_review_fields(
 
 
 def _queued_review_run_fields(
-    project: str, run_id: str, *, head: str, now: datetime
+    pointer: Mapping[str, Any],
+    *,
+    head: str,
+    live_pointers: Sequence[Mapping[str, Any]],
+    placements: Mapping[str, Mapping[str, int]],
 ) -> dict[str, Any] | None:
     """The queued review run waiting to launch for this run, or None.
 
@@ -709,42 +739,42 @@ def _queued_review_run_fields(
     a refused attempt describes, so it reads as the same kind rather than as a
     queued request of its own: the coordinator sees one duty, not two.
 
-    The reviewed run and head are read through the helper the review subject
-    itself uses, so a review of an earlier revision does not speak for the head
-    the run carries now. The place travels from the admission pass's own
-    ordering, for the same reason a queued request's does — this view must not
-    be able to disagree with the lane about which request goes first. The
-    earliest queued review is the one named when more than one is waiting.
+    Which review stands for this run's head is read from
+    :func:`reckon.crew.recovery._review_in_flight`, the one recognition the
+    reflex itself uses, so a review's subject and head are decided in one place
+    and this view cannot recognise a review the reflex does not. That reader is
+    handed the view's own pointer snapshot rather than reading the directory
+    again. A review it recognises that has not launched is this wait; one that
+    has launched is in flight, which suppresses the duty upstream.
 
-    A pointer whose ``queued_at`` is unreadable publishes no ``queued_at`` of
-    its own, and no place either: the ordering cannot place it, so the reading
-    withholds both rather than substituting the read time, which would report a
-    dispatch instant that never happened.
+    The place travels from the admission pass's own ordering, for the same
+    reason a queued request's does — this view must not be able to disagree
+    with the lane about which request goes first. A pointer whose ``queued_at``
+    is unreadable publishes no ``queued_at`` of its own, and no place either:
+    the ordering cannot place it, so the reading withholds both rather than
+    substituting the read time, which would report a dispatch instant that
+    never happened.
     """
-    live_pointers = runs.list_live(project=project)
-    waiting: list[tuple[datetime, datetime | None, Mapping[str, Any]]] = []
-    for candidate in live_pointers:
-        if str(candidate.get("phase") or "") != queue_admission.QUEUED_PHASE:
-            continue
-        if not recovery._is_review_run(candidate):
-            continue
-        reviewed, reviewed_head = recovery._review_subject(candidate, project)
-        if not reviewed or reviewed != run_id:
-            continue
-        if not recovery._review_head_covers(reviewed_head, head):
-            continue
-        queued_at = parse_utc(candidate.get("queued_at"))
-        waiting.append((queued_at or now, queued_at, candidate))
-    if not waiting:
+    review_run_id = recovery._review_in_flight(pointer, pointers=live_pointers)
+    if not review_run_id:
         return None
-    waiting.sort(key=lambda entry: entry[0])
-    _, queued_at, review_pointer = waiting[0]
+    review_pointer = next(
+        (
+            candidate
+            for candidate in live_pointers
+            if str(candidate.get("run_id") or "") == review_run_id
+        ),
+        None,
+    )
+    if review_pointer is None:
+        return None
+    if str(review_pointer.get("phase") or "") != queue_admission.QUEUED_PHASE:
+        return None
     fields: dict[str, Any] = {}
+    queued_at = parse_utc(review_pointer.get("queued_at"))
     if queued_at is not None:
         fields["queued_at"] = queued_at.isoformat()
-    placement = queue_admission.queued_placements(live_pointers, now=now).get(
-        str(review_pointer.get("run_id") or "")
-    )
+    placement = placements.get(review_run_id)
     if placement is not None:
         fields.update(placement)
         fields["next_command"] = (
@@ -786,6 +816,8 @@ def _review_duty_item(
     *,
     now: datetime,
     grace: int,
+    live_pointers: Sequence[Mapping[str, Any]],
+    placements: Mapping[str, Mapping[str, int]],
 ) -> dict[str, Any] | None:
     """One review duty, keyed to the review of the run's current worktree head.
 
@@ -902,10 +934,10 @@ def _review_duty_item(
         # already made.
         queued = _queued_review_fields(
             pointer,
-            project=project,
-            run_id=str(row.get("run_id") or ""),
             head=head,
             now=now,
+            live_pointers=live_pointers,
+            placements=placements,
         )
         if queued is not None:
             item["kind"] = REVIEW_QUEUED_DUTY_KIND
@@ -924,7 +956,7 @@ def _live_worktrees(project: str) -> set[Path]:
     cannot be done and a run that no longer owns the tree.
     """
     trees: set[Path] = set()
-    for pointer in runs.list_live(project=project):
+    for pointer in _live_pointers(project):
         value = str(pointer.get("worktree") or "").strip()
         if value:
             trees.add(Path(value).expanduser().resolve())
@@ -1339,7 +1371,7 @@ def _sub_floor_items_by_session(
         return {}
     closed = recovery._promoted_run_ids(project)
     by_session: dict[str, list[dict[str, Any]]] = {}
-    for pointer in runs.list_live(project=project):
+    for pointer in _live_pointers(project):
         session = str(pointer.get("session") or "")
         run_id = str(pointer.get("run_id") or "")
         if not run_id:
@@ -1413,7 +1445,23 @@ def obligations(
     Every duty row is built here and projected here, through the one projection
     :func:`reckon.crew.query.project_run_rows`, so this view carries the section
     the run was dispatched for and refuses a field it does not have.
+
+    The live pointers are read once and published for the length of the
+    derivation, so every duty kind answers from one snapshot of the directory
+    and a run in flight cannot appear in one duty and be absent from another
+    read in the same view.
     """
+    token = _VIEW_LIVE_POINTERS.set(tuple(runs.list_live(project=project)))
+    try:
+        return _obligations_view(project, session, fields=fields)
+    finally:
+        _VIEW_LIVE_POINTERS.reset(token)
+
+
+def _obligations_view(
+    project: str, session: str, *, fields: Iterable[str] | None = None
+) -> dict[str, Any]:
+    """The duties of one session, read from the view's published pointers."""
     now = _utc_now()
     resolved = flight.resolve(project)
     config = resolved.config
@@ -1423,14 +1471,14 @@ def obligations(
     reviews_in_flight = _live_review_runs(project, session)
     items: list[dict[str, Any]] = []
     pointers = {
-        str(pointer.get("run_id") or ""): pointer
-        for pointer in runs.list_live(project=project)
+        str(pointer.get("run_id") or ""): pointer for pointer in _live_pointers(project)
     }
     live_pointers = list(pointers.values())
-    # Read once, for the first queued row the loop meets, from the ordering
-    # the admission pass admits by; a project with nothing queued never
-    # orders anything.
-    placements: dict[str, dict[str, int]] | None = None
+    # Read once for the whole view, from the ordering the admission pass admits
+    # by: a queued row and a queued review duty both report their place from
+    # it, so every pointer is read once and no two duties can disagree about
+    # which request goes first. A project with nothing queued orders nothing.
+    placements = queue_admission.queued_placements(live_pointers, now=now)
     for row in _classified_rows(project):
         if str(row.get("session") or "") != session:
             continue
@@ -1451,8 +1499,6 @@ def obligations(
                     _live_item(row, kind=QUEUED_AWAITING_SESSION_DUTY_KIND, now=now)
                 )
                 continue
-            if placements is None:
-                placements = queue_admission.queued_placements(live_pointers, now=now)
             items.append(_queued_item(row, placements=placements, now=now))
             continue
         kind = ""
@@ -1474,6 +1520,8 @@ def obligations(
                 pointers.get(str(row.get("run_id") or "")),
                 now=now,
                 grace=grace,
+                live_pointers=live_pointers,
+                placements=placements,
             )
             if item is not None:
                 items.append(item)

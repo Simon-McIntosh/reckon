@@ -298,3 +298,36 @@ def test_a_queued_review_without_a_readable_instant_publishes_no_queued_at(
     assert "position" not in duty
     assert "rank" not in duty
     assert "awaiting a lane slot" in duty["next_command"]
+
+
+def test_one_view_reads_the_live_pointers_once(
+    repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Three review duties are derived from one read of the live pointers.
+
+    Every duty kind in the view reads the same live pointers, so a view that
+    read them per duty could report three duties from three different snapshots
+    of the directory — and would pay a directory walk per run. A view with
+    three review duties therefore reaches the live pointers once.
+    """
+    head = _git(repository, "rev-parse", "HEAD")
+    rows = []
+    for index in range(3):
+        run_id = f"run-awaiting-review-{index}"
+        _write_delivered_run(
+            repository, tmp_path, run_id=run_id, node_id=f"src-{index}", head=head
+        )
+        rows.append(_score_row(repository, run_id))
+
+    reads: list[tuple] = []
+    original = runs.list_live
+
+    def counting(*arguments, **keywords):
+        reads.append((arguments, keywords))
+        return original(*arguments, **keywords)
+
+    monkeypatch.setattr(runs, "list_live", counting)
+    result = _obligations_for_review_duty(monkeypatch, rows)
+
+    assert [item["kind"] for item in result["obligations"]] == ["review-missing"] * 3
+    assert len(reads) == 1, reads
