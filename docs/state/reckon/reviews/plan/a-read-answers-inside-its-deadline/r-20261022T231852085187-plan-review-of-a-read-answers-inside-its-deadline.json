@@ -1,0 +1,129 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-22T23:35:44.732Z",
+  "dispatched_at": "2026-10-22T23:21:42Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-read-answers-inside-its-deadline/r-20261022T231852085187-plan-review-of-a-read-answers-inside-its-deadline/plan.html:318",
+      "id": "reasoning-1",
+      "reason": "an implementer building the key exactly as written would ship a snapshot that reports a dead run as in-flight for up to two minutes, which is the failure the paragraph was added to prevent, so the key must carry the classification's inputs (at least the watch stream, `watch_stream_path(project)`, and the runs' manifests) or the plan must state the lag explicitly.",
+      "text": "the deliverable claims \"A run that starts, finishes or changes phase moves the key, and the next read recomputes\", but the instrument it defines \u2014 \"one listing of the crew's live-pointer directory, with each pointer's modification time\" \u2014 cannot see a run's *classification* change, which is the reading the paragraph exists to keep fresh: `partition_live_runs` derives `in_flight`/`interrupted` per read through `run_classification_record(..., classify=classify_pointer)` (`reckon/mcp_views.py:1898-1901`), `classify_pointer` is documented as \"Pure and read-only\" (`reckon/crew/recovery_classification.py:183`), and `list_live`'s own docstring states liveness \"never written into `process_alive`\" (`reckon/crew/runs.py:799`, \"The pointers are returned as they are stored: a liveness probe taken here is never written into ``process_alive``\"), so a worker that dies leaves its pointer file byte-identical and its listing entry unchanged; the tree itself states the classification's real input set in `_snapshot_reuse_key` (\"the pointer, manifest, stream, the run's exit, worker and attempt records, the review store's candidates for this run, and the worktree's git head\" \u2014 `reckon/crew/recovery_watch.py:1022-1033`), of which the plan's key carries only the pointer, so `in_flight`, `interrupted`, `section_runs` and `blocked_run_seconds` (`reckon/roadmap.py:3155`, `:3969`) would be served stale until the 120 s revalidation window expires although the plan asserts they are fresh",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-read-answers-inside-its-deadline/r-20261022T231852085187-plan-review-of-a-read-answers-inside-its-deadline/plan.html:318",
+      "id": "reasoning-2",
+      "reason": "keying on the crew-wide directory makes the snapshot miss on nearly every call under exactly the fleet load \u00a750 exists to fix, so the key must be the set of this project's own live pointers rather than a listing of the whole crew directory.",
+      "text": "the key's live component is \"one listing of the crew's live-pointer directory\", which is `crew_home()/\"live\"` (`reckon/crew/runs.py:74-76`) and holds every project's runs, yet the payload only depends on this project's pointers \u2014 `partition_live_runs` skips any pointer whose `project` differs (`reckon/mcp_views.py:1893`), and `_blocked_section_run_seconds` skips the same way (`reckon/roadmap.py:2893`) and `_read_scope_claims` passes the project through to `runs.scope_claims` (`reckon/roadmap.py:2915`) \u2014 so every run in every other project on the node invalidates this project's snapshot, and the section's own cited neighbour records how often that is: \u00a728's Why states \"on a busy fleet a peer writes a pointer during almost every read\" (same snapshot, plan.html:225)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b30b9ec60629b57b4f68150cd24c934d32d868de70b3e90b096c0120dfe1f371",
+  "plan_slug": "a-read-answers-inside-its-deadline",
+  "plan_version": 401,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-22T23:37:51.202339+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-22T23:38:18.322133+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-22T23:37:51.202339+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-22T23:38:18.322133+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-read-answers-inside-its-deadline.v401.json",
+  "review_run_id": "r-20261022T231852085187-plan-review-of-a-read-answers-inside-its-deadline",
+  "reviewed_blob_sha": "b8ce669800867d103fbee63cfda0a2bce8e3f150",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol the changed paragraph names resolves: `build_roadmap`, `crew.list_live()`, `in_flight`/`interrupted`, `section_runs`, `held_paths_by_section`, `_overlapping_scope_findings` and the run blockers all exist, with the cited line numbers carrying an explicit \"near line\" hedge.",
+    "done_when": "pass \u2014 each of \u00a750's five done-when items is measurable and the section declares a negative control (\"drop the write counter from the key, and the `write_plan` case returns the stale result\"), though the live-state property the changed paragraph adds has no case of its own (filed under `reasoning`).",
+    "evidence_paths": "pass \u2014 gate logs go \"under the run directory\" (`~/.config/reckon/crew/runs/<run_id>/`, a durable shared path) and the evidence fragment under `docs/evidence/fragments/a-read-answers-inside-its-deadline/`, not a session scratchpad or node-local temp.",
+    "naming": "pass \u2014 the changed paragraph adds no code symbol, and the names it does introduce (`test_a_roadmap_read_answers_from_its_snapshot.py`, the evidence fragment path) name the capability, not a plan stage or ticket.",
+    "reasoning": "a finding \u2014 the live-state component of the snapshot key is too weak to detect a run's classification changing, and simultaneously too broad, keyed on the crew-wide pointer directory rather than this project's pointers.",
+    "single_goal": "pass \u2014 \u00a750 carries one deliverable, a roadmap read answered from a generation-keyed snapshot.",
+    "wiring": "pass \u2014 \u00a750 declares no depends-on of its own, and its shared-write-path neighbours resolve: \u00a751 and \u00a752 declare depends-on \u00a750, \u00a731 declares depends-on \u00a746/\u00a750/\u00a751/\u00a752, and \u00a746 (the other writer of `reckon/serve.py`, `reckon/mcp.py`, `reckon/metadata_index.py`) is already declared `done`, so it is not a live conflict."
+  },
+  "section_digests": {
+    "_document": "7665c82a38f516466cb2af2ec44f5dc0d01095f825b4b284a06bc13a21705ff9",
+    "s1": "71942607f4df4eca011a41734257645ef2adce9664dd45b628d96b066c34e813",
+    "s10": "5261ebecb0fa5c4351c00f324d2378797d384ba4246b22b52bc96e9dda5392d1",
+    "s11": "adeaee21e5afe191adbe7c12c1268146f022f6bd4915867dfa01a019158da0ed",
+    "s12": "b749b8ca0485e887d013804ab4d32bbed819eb00ee1b98a4edc2eaa6be508104",
+    "s13": "b4b56e5d24dad69d71c1a6459abafd8804e50d908cacef72d681c0388ea22176",
+    "s14": "6d7741c53c9fa4fc5fa7af5187abfd5f084df8cd6bc89c9c83fe9e4aa1e3bda8",
+    "s15": "d3590301de308bed778201f244069e2c946fb1524000fca6c2c21eb1d1e32c43",
+    "s16": "faeb73699035587893b0ae1563a46b0d61c35dde8373141647c50f58c69963f2",
+    "s17": "f649ccf93ef083c2d57c5ede67cab122341f047a11766a076640e84b74d90f16",
+    "s18": "4e73e33e2ec0959879778a588e5dc669255a6790901271f2352c9d6ce92a1443",
+    "s19": "f6e2a8c3d1c90f4194ec9891635cef181cf62c62a5dbb39efd4c9832ac5d1e9b",
+    "s2": "1275d5c46f4f078d4450c29360caf5c8c212e5f7c58c86d45290fcfa5b85e115",
+    "s20": "81e1ff125ddfc6955aa9bfbaae255b04b8bd03b75e9a4bbaec4a6e2de4790a39",
+    "s21": "12ee0e1852da5baa065bbe019bd803267f1817e4aa5fa5fcd12ec142ffba5f0f",
+    "s22": "6266f82976abf2a572694b2f91bf0143ff9a02ea484166e79b8197bde4e1a5e6",
+    "s23": "0c162cc0de7beec03e05834230443e4e755382e4c7b1cde4be476a6a17d232ec",
+    "s24": "c08bde5fe4a48fc01b81a4cf328439fde17d29607f5771497a07ae74c8f83498",
+    "s25": "218e76e29eb13021f7d92088d935b4d098aa0929c73ec1f5f4ee4fc8967328e1",
+    "s26": "25e5304fe5780aa9410db57be3ff538d9960379c8f31845f209abd225091913f",
+    "s27": "04e4a0f145492c1a1dcbcf8f220b8763fdd72fbbd2c5427deb9710071ac0aef7",
+    "s28": "1fc6c5bf6e9e33762ef98caf30043fbf50b550f14d9cd8ee7ffccfef1f87d788",
+    "s29": "c7daac1687ec68b3aca76f6a759088af2970e8407f09323f1863751a3e3f742c",
+    "s3": "cbe34f619f869b3c3346239e8823a63a8de98dd92b7fb8ed5cfa2b8a4ab26a39",
+    "s30": "14d7046dd05d2fbc6e10d2973ae13a14f0de51e4f89a0043ba18dc8ea580a78c",
+    "s31": "f024ee9fae5586904388ab26af5c52e149d3fc1f6a2e1fa26deef66da3342a01",
+    "s32": "2ed1e8f3800b7b3cca94facebaee24b564589e1cc39cb70b5d7dd0bc442acfbd",
+    "s33": "dd8616bb906c189bff978509b84e4ff9d9859288d67a5b278f250297610a5e45",
+    "s34": "82ac81d2c333301a0d2b732ee3c2ea47ae1caad1871dc21a4bb4e414e9e2132a",
+    "s35": "e2eddc28bd105b77de69e0a1057d6e9c0e5d327ab9dfa86369a1ddf2748ba822",
+    "s36": "8316aeeca4ed3e2dd546bcdd830c2d56e6341602d206f1dc2dad036571e74ee0",
+    "s37": "3a8ec34741c39fe5a544b73ff1df299235678d20e7a9f5b7f83798b93b8e18a2",
+    "s38": "2897b3cfdcb3efba9e3770053ca56a86f80850af59215cf46087eed8e6c932e7",
+    "s39": "648430c7255e99dcbc17d608a00851a467da38d5f7a507a7cf8d9bc9d3bdb2b5",
+    "s4": "d2ec58f5ac4e72c5e8bcde1f156bdd4c85bde3848b4e3b6131e6112bb6395d49",
+    "s40": "3953543f0553a542e95031e2665f14e157e954fabe989d920000e51ea1d62910",
+    "s41": "25f9e4792f91c3ee0a8a50920d369ef1b32b66939244372cafe3597db90b6ba9",
+    "s42": "4f2a1b6cfd6ebd5a76b5a485edcc21a5b03f79edc0b6bc320fd1f8741f7cfc16",
+    "s43": "20488876f6fee281483b103736526b1ed884896959898015942c2b0c5f3a5807",
+    "s44": "fd45e6dda26f7661fdd05339cbf90e6cc27121e07ca066bd8ccf33c2978c3566",
+    "s45": "2d725b9f769ce58f93d2ac83120cf78d1cae45a0b024cc46e2206e1053421de7",
+    "s46": "c0eb5c1abb5629416d6958dd82219a9366a9fa65a1ac7e0e79234dcc3cca7a82",
+    "s47": "b9673bc3595a0781959ee9d7120eab676b69101328fbb3fe059b8a15331948d3",
+    "s48": "3dc6b1cf84a68a0fc706cf2bd753c957f5ce9c0b66cd1e7bd68a300054788133",
+    "s49": "42fd40c04663c5495da852faa688bf0592bce1ec20f1b1978ad58dffed822dfa",
+    "s5": "b14c0e28c2c28544a08d4b3d7ab621f48464471360d202c7a4bd1a1ec776f557",
+    "s50": "6905d6acbcd12f6b5ca02dcb639e0aaebc648035116b64c2390b0403c51ed631",
+    "s51": "7784b2c8cc7bcc4d4d85e9ebaf48e4d3035746044a830848835c4b5c87b9caf4",
+    "s52": "3bbc55c0c091c48e7af4aa253cd0e30b1e792ec3cdf28f646a2cd27eefc57f28",
+    "s53": "faf064fc62a3fa9af47cd7dd632b41e44f2361010fb87b10a08ee965b1890da0",
+    "s6": "63f2d766e38f196e33466c5a1f516b8a14f321ba0512be8e473824c797411ac9",
+    "s7": "503099f7e945f5038a64b142ffa49b88c02dbbd0f0a5ad5882f6da8b22d25883",
+    "s8": "a33e99912e2686cd2f76d6f4162ad7826f4acae7debefa3b83f811b46416fa6b",
+    "s9": "a356ecd44b8ee634f6b45b64ec3785e3af7ffb255d4d3adf46574d3a10afc7b3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-22T23:37:34.778342+00:00"
+}
