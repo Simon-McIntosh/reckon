@@ -13,28 +13,40 @@
   <p id="a-malformed-request-is-refused-before-storage-change">
     Change. <code>reckon/mcp.py</code> gained
     <code>_crew_argument_refusal</code>, called at the head of <code>_crew</code>
-    for a read request (no <code>action</code>). It refuses a view outside
-    <code>CREW_TOOL_VIEWS</code>, a <code>live</code> field outside the
-    vocabulary the live view itself declares — the field checks delegate to the
-    views' own validators, <code>query._refuse_unknown_live_fields</code> and
+    for a read request (no <code>action</code>). It refuses a view the crew read
+    does not serve, a <code>live</code> field outside the vocabulary the live
+    view itself declares — the field checks delegate to the views' own
+    validators, <code>query._refuse_unknown_live_fields</code> and
     <code>query._refuse_unknown_fields</code>, so the accepted set and the
-    wording of its refusal have one owner — and a
-    <code>runs</code> scope or source outside
-    <code>RUN_SCOPES</code>/<code>RUN_SOURCES</code>, each naming the accepted
-    values. <code>_read_plan_tool</code> refuses a view outside
-    <code>mcp_views.VIEW_NAMES</code>, and <code>_roadmap_tool</code> a view
-    outside <code>ROADMAP_TOOL_VIEWS</code>; both judge the name as their own
-    read does, stripped and lowercased, so a spelling the read serves is not
-    refused ahead of it. <code>reckon/mcp_edit_plan.py</code>
-    gained <code>_refuse_unknown_op_verbs</code>, called before the run-scoped
-    checkout resolution, which refuses an op whose verb is outside the grammar
-    <code>reckon.mcp._OP_VOCAB</code> publishes — the one declaration, minus
-    <code>create</code>, which is a parameter rather than an op key — naming the
-    op's position and the accepted verbs.
+    wording of its refusal have one owner — and a <code>runs</code> scope or
+    source outside <code>RUN_SCOPES</code>/<code>RUN_SOURCES</code>, each naming
+    the accepted values. <code>reckon/mcp_edit_plan.py</code> gained
+    <code>_refuse_unknown_op_verbs</code>, called before the edit tool resolves
+    the run-scoped checkout, which refuses an op whose verb is outside the
+    grammar <code>reckon.mcp._OP_VOCAB</code> publishes — the one declaration,
+    minus <code>create</code>, which is a parameter rather than an op key —
+    naming the op's position and the accepted verbs.
+  </p>
+  <p id="a-malformed-request-is-refused-before-storage-one-owner">
+    Judged by the read that serves it. Each view pre-flight first declared a set
+    of its own beside the read it was guarding: the crew tool carried an alias of
+    the dispatcher's registry, and the roadmap view tuple was written out in
+    <code>reckon/mcp.py</code>. A copy is a second place a name can be added or
+    renamed, and nothing fails when the two disagree — the pre-flight then
+    refuses a view the read serves, or admits one it does not. The declarations
+    are gone, and each pre-flight calls the owner:
+    <code>mcp_views.crew_view_name</code> for the crew view,
+    <code>mcp_views.normalize_view</code> for the plan read, and a new
+    <code>mcp_views.normalize_roadmap_view</code>, declared beside the roadmap
+    view set, for the roadmap. Both new validators do no I/O, which is what lets
+    them be reached before the scan that builds the report, and each is the same
+    function its own read calls once it does read — so the accepted set is one
+    fact, and a view added to the owner is admitted by the pre-flight with no
+    second edit.
   </p>
   <p id="a-malformed-request-is-refused-before-storage-measure">
     Measure. The focused gate of this node's seven files reports
-    <strong>148 passed, 1 failed</strong> at the head revision
+    <strong>1 failed, 148 passed</strong> at the head revision
     (<code>EXIT=1</code>); the failure is
     <code>tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window</code>,
     <code>reckon/roadmap.py: 51232 estimated tokens exceeds the 50000 bound</code>
@@ -69,21 +81,37 @@
     rows rather than a refusal — so a check that refused everything cannot read
     as a pass.
   </p>
+  <p id="a-malformed-request-is-refused-before-storage-served-case">
+    The served direction is asserted under the same storage stub the refusal
+    cases use. The plan and roadmap reads match a view after stripping and
+    lowercasing it, so <code>view='RAW'</code> and <code>view='SuMMaRy'</code>
+    are served; the test requires the read to reach storage rather than merely
+    to answer with something other than <code>invalid_view</code>, and the stub
+    now covers the project docs resolution as well as <code>open</code>, since
+    that is the first storage access a read makes here and it stats the mounts
+    file rather than opening one. The earlier version of this case read the
+    host's own project registry, so its verdict depended on the machine.
+  </p>
   <p id="a-malformed-request-is-refused-before-storage-negative">
-    Negative control. Four arms. The first moves the crew argument check after the
-    first read — the classification probe the deep field check performs — and
-    reports <strong>3 failed</strong> (<code>EXIT=1</code>): the three crew
-    cases fail with <code>a malformed request reached storage before it was
-    refused: PosixPath('worker.json')</code>, and all three pass at the head
-    arm. A
-    second arm reverts the vocabulary union with the check kept, and reports
-    <strong>1 failed</strong> (<code>EXIT=1</code>) —
-    <code>Extra items in the left set: 'section'</code>. Arms three and four drop
-    <code>COMMON_RUN_FIELDS</code> from the declaration:
-    <strong>1 failed</strong> before the parts check existed and
-    <strong>2 failed</strong> after it, both against 8 or 9 passed with the
-    declaration intact. Arm three is the reason the parts check is there — the
-    classification-derived comparison alone let that mutation through, because
-    a classification of a pointer carries no <code>section</code> to miss it.
+    Negative control. Four arms at this head, each log line quoted as printed.
+    The first puts a storage read before all three view pre-flights — the defect
+    this node repairs, in each tool at once — and reports
+    <strong>6 failed, 4 passed in 14.11s</strong> (<code>EXIT=1</code>): the six
+    refusal cases fail with <code>storage was reached: the docs dir for
+    'fixture'</code>, while the edit-op case (which routes through neither
+    mutated pre-flight) and the four positive cases still pass. The second
+    removes the vocabulary from the narrowed live projection and reports
+    <strong>1 failed, 9 passed in 11.02s</strong> (<code>EXIT=1</code>) —
+    <code>test_a_live_read_of_a_served_field_is_not_refused</code>, with
+    <code>unknown live fields 'section'</code> raised by the view. The third
+    drops <code>COMMON_RUN_FIELDS</code> from the declaration and reports
+    <strong>2 failed, 8 passed in 15.17s</strong> (<code>EXIT=1</code>) — the
+    parts check and the served-field check, which is why both are there: the
+    classification-derived comparison alone let that mutation through, because a
+    classification of a pointer carries no <code>section</code> to miss it. The
+    fourth makes the plan pre-flight match a view case-sensitively and reports
+    <strong>1 failed in 7.51s</strong> (<code>EXIT=1</code>) —
+    <code>test_a_view_named_in_another_case_reaches_the_read</code>. The head arm reports
+    <strong>10 passed in 7.55s</strong> (<code>EXIT=0</code>).
   </p>
 </section>
