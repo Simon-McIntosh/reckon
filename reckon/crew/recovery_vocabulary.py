@@ -2,12 +2,7 @@
 from __future__ import annotations
 
 
-from reckon.crew.node import (
-    AWAITING_UPSTREAM_PHASE,
-    BLOCKED_UPSTREAM_PHASE,
-    INTERRUPTED_RUN_PHASE,
-)
-
+from reckon.crew.node import INTERRUPTED_RUN_PHASE
 
 
 # ── Recovery: what an interrupted orchestrator left behind ───────────────────
@@ -77,8 +72,8 @@ RECOVERY_VERBS = {
     # exactly as long as the upstream takes. One whose wait can no longer land is
     # not waiting at all -- nothing will release it -- so it asks for the
     # decision a blocked run asks for.
-    AWAITING_UPSTREAM_PHASE: "wait",
-    BLOCKED_UPSTREAM_PHASE: "decide",
+    "awaiting-upstream": "wait",
+    "blocked-upstream": "decide",
     "waiting": "wait",
     "paused": "wait",
     "completed_unpromoted": "promote",
@@ -123,7 +118,7 @@ ACTIONABLE_RECOVERY_CLASSIFICATIONS = frozenset(
         # person has to decide whether the blocked work is dropped or its
         # upstream is recovered. The awaiting phase is not listed: that request
         # needs only the time its upstream takes.
-        BLOCKED_UPSTREAM_PHASE,
+        "blocked-upstream",
         "refused-at-admission",
         "wait-aged",
         INTERRUPTED_RUN_PHASE,

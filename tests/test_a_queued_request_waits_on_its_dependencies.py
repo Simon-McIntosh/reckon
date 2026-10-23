@@ -20,9 +20,13 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import queue_admission, runs
+from reckon.crew import (
+    queue_admission,
+    recovery_classification,
+    recovery_vocabulary,
+    runs,
+)
 from reckon.crew.node import CrewError, TaskNode
-from reckon.crew import recovery_classification, recovery_vocabulary
 from tests import test_a_jev_hold_queues_for_the_local_lane as hold_tests
 from tests import test_dispatch_names_its_backend as backend_tests
 
@@ -353,6 +357,25 @@ def test_a_wait_on_another_request_reads_that_requests_own_record(
     )
 
 
+def test_a_json_manifest_upstream_releases_the_wait(chain_repo: Path) -> None:
+    """A delivered run is read by the reader that owns the manifest format.
+
+    A worker may write its manifest as a JSON document. A reader that looks only
+    for a ``status:`` line answers empty for that body, so the request waiting on
+    a run that delivered would wait forever with nothing left to release it.
+    """
+    _declare_wait_refs(chain_repo, section="s2", refs=["run:r-n3"])
+    assert _unmet(chain_repo, section="s2") == ["run:r-n3"]
+
+    manifest = runs.run_dir("r-n3") / runs.DEFAULT_MANIFEST_NAME
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    manifest.write_text('{"status": "complete", "node": "n3"}', encoding="utf-8")
+
+    assert _unmet(chain_repo, section="s2") == [], (
+        "a delivered request written as JSON releases the wait"
+    )
+
+
 def test_a_malformed_node_is_refused_at_queue_time(chain_repo: Path) -> None:
     malformed = _node("n2", "s2", inputs=["a-file-the-repository-does-not-hold.csv"])
     with pytest.raises(CrewError) as refusal:
@@ -582,6 +605,23 @@ def test_the_watch_line_reads_both_waiting_phases(
     assert recovery_vocabulary.RECOVERY_VERBS.get(classification) == verb
     assert remedy in str(reading.get("next_action") or "")
     assert recovery_vocabulary.RECOVERY_VERBS[phase] == verb
+
+
+def test_the_vocabulary_names_the_phases_the_admission_module_declares() -> None:
+    """The phase words the readers draw are the ones the owner declares.
+
+    The phase-to-verb map and the duty set are module-level data other modules
+    import by name, so they cannot be filled from the admission module at
+    import: that module imports these readers, and closing the loop fails. The
+    words are therefore spelled in the map, and pinned here to the owner's own
+    declarations so the two cannot drift apart unobserved.
+    """
+    verbs = recovery_vocabulary.RECOVERY_VERBS
+    assert verbs.get(queue_admission.AWAITING_UPSTREAM_PHASE) == "wait"
+    assert verbs.get(queue_admission.BLOCKED_UPSTREAM_PHASE) == "decide"
+    actionable = recovery_vocabulary.ACTIONABLE_RECOVERY_CLASSIFICATIONS
+    assert queue_admission.AWAITING_UPSTREAM_PHASE not in actionable
+    assert queue_admission.BLOCKED_UPSTREAM_PHASE in actionable
 
 
 def test_only_the_unreleasable_waiting_phase_is_a_duty() -> None:

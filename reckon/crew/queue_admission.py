@@ -36,31 +36,25 @@ from reckon.crew.dispatch_admission import (
     _dispatch_lane_gate,
 )
 from reckon.crew.dispatch_plan import _dispatch_lane_allowance
-from reckon.crew.node import (
-    AWAITING_UPSTREAM_PHASE,
-    BLOCKED_UPSTREAM_PHASE,
-    QUEUED_PHASE,
-    WAITING_UPSTREAM_PHASES,
-    CrewError,
-    TaskNode,
-)
+from reckon.crew.node import CrewError, TaskNode
 
 ADMIT_LOCK_NAME = "admit.lock"
 DEFAULT_ADMIT_INTERVAL_SECONDS = 5.0
 #: The phase a request carries while it waits for a lane slot. The admission
 #: pass admits from this phase, and every reader that reports where a request
-#: stands reads its place through :func:`queued_placements`. It is declared in
-#: ``reckon.crew.node`` beside the wait phases and re-exported here with them.
+#: stands reads its place through :func:`queued_placements`.
+QUEUED_PHASE = "queued"
 LAUNCH_FAILED_PHASE = "launch-failed"
 #: The request-phase vocabulary, one place every reader of a request's phase
 #: takes its words from. ``awaiting-upstream`` is a request whose section
 #: declares refs that have not landed; ``blocked-upstream`` is the same request
 #: once one of those refs is closed as abandoned or failed, which no admission
 #: pass will launch: the wait is not a slot hold and no lane will clear it.
-#: The two names are declared in ``reckon.crew.node``, which the recovery
-#: readers also import, so this module and those readers name the same words
-#: without either importing the other. They are re-exported here because this
-#: is where the request phase vocabulary is written and read.
+AWAITING_UPSTREAM_PHASE = "awaiting-upstream"
+BLOCKED_UPSTREAM_PHASE = "blocked-upstream"
+#: The two phases a request carries while it waits on refs rather than on a
+#: lane slot. Both are read here rather than spelled out at each filter.
+WAITING_UPSTREAM_PHASES = (AWAITING_UPSTREAM_PHASE, BLOCKED_UPSTREAM_PHASE)
 #: A run whose phase is one of these will not deliver the section it names, so
 #: a ref waiting on that section is blocked rather than pending.
 DEAD_RUN_PHASES = frozenset({"failed"})
@@ -1161,20 +1155,6 @@ def wait_ref_kind(ref: str) -> str:
     return "section"
 
 
-def _manifest_status(text: str) -> str:
-    """A manifest's top-level ``status:`` value, or an empty string.
-
-    Only a line starting at column zero counts, so an indented or quoted
-    mention of the word in the worker's own prose is not read as its status.
-    """
-    for line in text.splitlines():
-        if line.startswith("---"):
-            break
-        if line.startswith("status:"):
-            return line.split(":", 1)[1].strip()
-    return ""
-
-
 def _gate_state(
     ref: str,
     *,
@@ -1251,7 +1231,18 @@ def _request_state(ref: str, *, live: Sequence[Mapping[str, Any]]) -> str:
         text = manifest.read_text(encoding="utf-8", errors="replace")
     except OSError:
         return PENDING
-    status = _manifest_status(text)
+    # The manifest's status is read by the reader that owns that format, which
+    # reads a JSON body as a JSON document. A status read here as a ``status:``
+    # line alone answers empty for a manifest written as JSON -- a run that
+    # delivered reads as never having delivered, and the request waiting on it
+    # is never released. A body no reader can parse is not evidence of delivery,
+    # so it stays pending.
+    from reckon.crew.reports import ManifestParseError, parse_manifest
+
+    try:
+        status = str(parse_manifest(text, path=str(manifest)).get("status") or "")
+    except ManifestParseError:
+        return PENDING
     if status in RUN_DELIVERED_STATUSES:
         return SATISFIED
     if status in RUN_FAILED_STATUSES:

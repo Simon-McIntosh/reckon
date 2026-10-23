@@ -5,18 +5,15 @@ import contextlib
 import hashlib
 import re
 import shlex
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
 from reckon import ledger
 from reckon._timestamps import parse_utc
 from reckon.crew.node import (
-    BLOCKED_UPSTREAM_PHASE,
     INTERRUPTED_RUN_PHASE,
     LOG_STALE_AFTER_SECONDS,
-    QUEUED_PHASE,
-    WAITING_UPSTREAM_PHASES,
     CrewError,
 )
 from reckon.crew.reports import (
@@ -652,7 +649,7 @@ def classify_pointer(
     if manifest_status in TERMINAL_MANIFEST_STATUSES and not deferred_outcome:
         terminal_seconds = manifest.stat().st_mtime
         terminal_at = (
-            datetime.fromtimestamp(terminal_seconds, tz=timezone.utc)
+            datetime.fromtimestamp(terminal_seconds, tz=UTC)
             .isoformat(timespec="seconds")
             .replace("+00:00", "Z")
         )
@@ -666,6 +663,14 @@ def classify_pointer(
     marker = None
     needs_help_complete_value = None
     session_refusal: dict[str, str] | None = None
+    # The request phase vocabulary is owned by the admission module, which
+    # imports the recovery readers at module level; naming it here at import
+    # time would close that loop, so it is named where it is read.
+    from reckon.crew.queue_admission import (
+        BLOCKED_UPSTREAM_PHASE,
+        QUEUED_PHASE,
+        WAITING_UPSTREAM_PHASES,
+    )
 
     if phase in (QUEUED_PHASE, *WAITING_UPSTREAM_PHASES):
         classification = phase
