@@ -799,6 +799,41 @@ The beat:
    decision quoted, or a spend hold. An idle section with no stated reason is the
    defect this rule exists to catch.
 
+### Coordinators waiting on each other is a deadlock, not a schedule
+
+Measured on 23 October 2026 on power_convertor. Five coordinators had run for
+two days. They held two live runs between them while the lane offered 30 slots.
+Each was waiting for a peer to land something, then dispatching its own next
+section, and their last turns were messages about who frees which file first.
+Four rules follow.
+
+1. **One coordinator owns a dependency chain end to end.** When your next
+   section waits only on a peer's landing, hand the section to that peer. Do
+   not stay open to dispatch it on a trigger. If you hold nothing in flight and
+   your pending work is peer-triggered, record that work as followups and end
+   the session. A session past about 85 % of its context hands its chain to a
+   fresh session in the same way. It does not run on into compaction.
+2. **Before you wait on a review, check it is still running.** If the live
+   view says `working` but `process_alive` is false, read the run directory.
+   An `attempt-N-exit.json` with exit 0, beside an `attempt-N-review-filed.json`
+   naming a parsed record, means the review is done. Only its manifest word is
+   wrong. Repair it with
+   `reckon crew repair --run <id> --status complete --reason "…"` and proceed.
+   That day, a review sat like this for two hours, holding three sessions.
+3. **A lift does not route.** A budget lift removes a lane's pace hold. The
+   picker still keeps ordinary work local while the local lane has room. To
+   spend a lifted lane, name it with `--backend` and give the reason in
+   `--comment`. Every power_convertor session held a codex lift from 22 October
+   19:11Z, and the project ran one codex run in four days.
+4. **Review once per delivered head.** A second code review of an unchanged
+   head, or a plan review owed only because sprint or status metadata changed,
+   buys no decision. From 19 to 23 October the project ran 345 reviews against
+   143 implementation runs.
+
+Rules 1 and 3 stand until reckon's `a-queue-holds-the-whole-plan` lands. That
+plan lets a request wait on its dependencies in the queue, lands passing runs
+without a coordinator turn, and prefers a lifted lane with room.
+
 ## 13. Continuity — who receives the next piece of work
 
 A node's worker holds context no fresh worker can rebuild cheaply. **A session

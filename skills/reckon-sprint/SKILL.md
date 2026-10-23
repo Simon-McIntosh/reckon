@@ -180,6 +180,12 @@ edit_plan(
 )
 ```
 
+`move` changes the sprints' item lists only; the plan's own `plan-sprint` field
+keeps the old sprint, so the two disagree until you also write
+`{"op": "set", "path": "sprint", "value": "S5"}` on the plan. Do both in the
+same pass (measured 2026-10-23: six moved power_convertor plans all kept their
+old `plan-sprint`).
+
 ## Close sprint
 
 ```python
