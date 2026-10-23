@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T08:22:17.234Z",
+  "dispatched_at": "2026-10-23T08:12:15Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html:212",
+      "id": "reasoning-1",
+      "reason": "a node building \u00a75's control test and then \u00a79's listing rule is stopped by a contradiction between two stated measures, and resolving it decides whether \u00a73's ready-idle filter joins s9's closure); land the resolution before dispatch.",
+      "text": "\u00a79 says the board \"lists each session that census names, with no runs in flight where it has none\", which puts every live host's session on the board whatever its sections, while \u00a75's done-when at line 170 requires \"a coordinator whose only plan has no ready section and no run must not appear, and the test must fail if it does\"; both texts remain in the plan and describe the same directory view",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html:218",
+      "id": "reasoning-2",
+      "reason": "with no named resolution from a board session to its transcript path, the node lands a field that reads `unmeasured` on every row, and the resolution it needs is the ledger's `node_definition.coordinator.runtime_session_id` (`reckon/velocity.py:1846`), which would also pull \u00a72 into s10's declared closure.",
+      "text": "\u00a710 says the board row carries the context a coordinator's session used, \"the transcript a dispatch already reads for the authoring turn's token counts (`coordinator.authoring_turn`, source `claude-code-session-transcript`)\", but that read is `_coordinator_accounting`/`_coordinator_runtime` (`reckon/crew/dispatch_accounting.py:180` and `:125`), which resolves only the *calling* process's own session from `CLAUDE_CODE_SESSION_ID` and its ancestry, so it is not a caller a board serving every coordinator can reach",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "90002b5aa775cb9a29184cb85b24e2dac9bd7d110a58d01f1a9b04cd70f34cc6",
+  "plan_slug": "a-coordinator-sees-the-board",
+  "plan_version": 11,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T075258800139-plan-review-of-a-coordinator-sees-the-board",
+  "reviewed_blob_sha": "6f34ec65b6402593d43094e960f79dba1af152f5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/session_host.py` and `reckon/crew/directory.py` exist, the settled-child claim checks out (`session_host.py:340` filters `if child.pid is not None`; `session_host.py:477-480` sets `child.pid = None` on settle), and \u00a710's `authoring_turn` / `claude-code-session-transcript` pair resolves to `reckon/crew/dispatch_accounting.py:196`.",
+    "done_when": "pass \u2014 \u00a79 and \u00a710 each state a falsifiable measure with a stated negative control (a census that drops settled children must fail \u00a79's second case; a reader returning zero for a missing transcript must fail \u00a710's second case).",
+    "evidence_paths": "pass \u2014 both sections name their logs as sitting under the run directory (shared home under `~/.config/reckon/crew/runs/\u2026`), not a node-local temp path or a session scratchpad.",
+    "naming": "pass \u2014 no plan label, stage name or ticket number reaches a symbol or a comment in \u00a79 or \u00a710; \"power-convertor-fe\" is a live session name, not a tracker id.",
+    "reasoning": "a finding \u2014 \u00a79's listing rule (\"It lists each session that census names\") and \u00a75's done-when negative control (\"a coordinator whose only plan has no ready section and no run must not appear\") cannot both hold, and \u00a710's mechanism names the transcript artifact but no caller that resolves another coordinator's session to its transcript file.",
+    "single_goal": "pass \u2014 the census/listing work is \u00a79 alone, and the context-use figure was split out to \u00a710, so each section now carries one deliverable.",
+    "wiring": "pass \u2014 `plan-section-depends-on` now carries `s9: [s2, s5]` and `s10: [s9]`, and each target resolves: \u00a79's board work names \u00a75's `reckon/crew/directory.py` and \u00a72's ledger resolution, \u00a710 extends \u00a79's row."
+  },
+  "section_digests": {
+    "_document": "08c1e5078043af803bf58df522c06df0439c8a31f8502c64d209d0b5c7f8805a",
+    "s1": "4f48bcfe2c71d1397f0eeb277ff928920d1ed0ae7cfb0da777c94e4943eadf87",
+    "s10": "80dd3bc62e983a2d2a47ca25840ac1947582d34d211d614a5c8429c5b6156137",
+    "s2": "e8a77da3ee95b252c49524e82dbed4c7af59fd2cf8813eca867555771e9c15d5",
+    "s3": "e4cd7ce8696d0d9fb511a9be2379e2561a08418a1d1f759c42a926231bad6e36",
+    "s4": "ba6bafca3a7e3ae7fb186980afd26dd26e183bf99b72272ea15f06fbaeb19e5f",
+    "s5": "c7676f30d627a592319ab4f34cbd8352167ba0b9b92a20d5cbafea4a685b90ae",
+    "s6": "b5875d403856eb185e06155d0c62410ab30a447353779fe729a12b57c2607cf0",
+    "s7": "4428c6858fc7f10400173c2e619ad379aa49779cef060ae4b50d866fde4a59a7",
+    "s8": "f9f58e76a5713eb901b1e780fcb93d48ca773a573fded72ec476738a59629b67",
+    "s9": "d2506b05e05f7611a8794a66b56c70ad072e38b6edb29d625161974bb3cc6da4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T08:35:46.946582+00:00"
+}
