@@ -14,17 +14,18 @@
     Change. <code>reckon/mcp.py</code> gained
     <code>_crew_argument_refusal</code>, called at the head of <code>_crew</code>
     for a read request (no <code>action</code>). It refuses a view outside
-    <code>CREW_TOOL_VIEWS</code>, a <code>live</code> field outside the row's
-    declared vocabulary (<code>_LIVE_ROW_FIELDS</code>: the classification's
-    record-independent keys plus the overrun, placement and common run fields —
-    the same union the query's own
-    <code>_live_field_vocabulary</code> derives, held to it by the parity test
-    below), and a
+    <code>CREW_TOOL_VIEWS</code>, a <code>live</code> field outside the
+    vocabulary the live view itself declares — the field checks delegate to the
+    views' own validators, <code>query._refuse_unknown_live_fields</code> and
+    <code>query._refuse_unknown_fields</code>, so the accepted set and the
+    wording of its refusal have one owner — and a
     <code>runs</code> scope or source outside
     <code>RUN_SCOPES</code>/<code>RUN_SOURCES</code>, each naming the accepted
     values. <code>_read_plan_tool</code> refuses a view outside
     <code>mcp_views.VIEW_NAMES</code>, and <code>_roadmap_tool</code> a view
-    outside <code>ROADMAP_TOOL_VIEWS</code>. <code>reckon/mcp_edit_plan.py</code>
+    outside <code>ROADMAP_TOOL_VIEWS</code>; both judge the name as their own
+    read does, stripped and lowercased, so a spelling the read serves is not
+    refused ahead of it. <code>reckon/mcp_edit_plan.py</code>
     gained <code>_refuse_unknown_op_verbs</code>, called before the run-scoped
     checkout resolution, which refuses an op whose verb is outside the grammar
     <code>reckon.mcp._OP_VOCAB</code> publishes — the one declaration, minus
@@ -33,12 +34,12 @@
   </p>
   <p id="a-malformed-request-is-refused-before-storage-measure">
     Measure. The focused gate of this node's seven files reports
-    <strong>145 passed, 1 failed</strong> at the head revision
+    <strong>148 passed, 1 failed</strong> at the head revision
     (<code>EXIT=1</code>); the failure is
     <code>tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window</code>,
     <code>reckon/roadmap.py: 51232 estimated tokens exceeds the 50000 bound</code>
     — a failure the done-when declares pre-existing on main, in a module this
-    node did not write. The new file alone reports <strong>7 passed</strong>.
+    node did not write. The new file alone reports <strong>10 passed</strong>.
   </p>
   <p id="a-malformed-request-is-refused-before-storage-base">
     Base arm. The same test file, run against the base revision extracted with
@@ -48,25 +49,41 @@
     before it read.
   </p>
   <p id="a-malformed-request-is-refused-before-storage-parity">
-    Vocabulary parity. The declared set named one field fewer than the view
-    serves: <code>section</code>, the field a run is dispatched for, is added by
-    <code>project_run_rows</code> from the run's pointer and so is absent from a
-    classification of an empty pointer. A live read naming it was therefore
-    refused while the view would have answered. <code>COMMON_RUN_FIELDS</code>
-    is now unioned into <code>_LIVE_ROW_FIELDS</code>, and
-    <code>test_the_refusal_vocabulary_covers_every_live_field</code> compares
-    the declared set against the set the query derives, so the next omission
-    fails the gate instead of refusing a well-formed request.
+    One owner for the vocabulary. The pre-flight first restated the live vocabulary
+    as a literal of its own, and a literal drifts: it named every field a
+    classification carries but none that the view adds, so a live read naming
+    <code>section</code> — the field a run is dispatched for, added by
+    <code>project_run_rows</code> from the run's pointer — was refused from the
+    argument while the view would have answered it. The set is now declared once
+    in <code>reckon/crew/query.py</code> as
+    <code>LIVE_FIELD_VOCABULARY</code>, composed from the same named parts the
+    derivation uses, and the derivation, the view's projection and the MCP
+    pre-flight all read it. The projection also carried no vocabulary on a
+    narrowed request, so it judged the fleet's current rows as though they were
+    the whole accepted set; it now carries the declaration on both paths.
+    Two checks hold the declaration: one compares it against what a classified
+    pointer produces, and one asserts it contains each named part, because a
+    classification alone cannot see a name dropped from
+    <code>COMMON_RUN_FIELDS</code>. A third asserts the served direction —
+    a live read of <code>section</code> and the other common fields returns
+    rows rather than a refusal — so a check that refused everything cannot read
+    as a pass.
   </p>
   <p id="a-malformed-request-is-refused-before-storage-negative">
-    Negative control. The crew argument check moved after the first read — the
-    classification probe the deep field check performs — reports
-    <strong>3 failed</strong> (<code>EXIT=1</code>): the three crew cases fail
-    with <code>a malformed request reached storage before it was refused:
-    PosixPath('worker.json')</code>, and all three pass at the head arm. A
+    Negative control. Four arms. The first moves the crew argument check after the
+    first read — the classification probe the deep field check performs — and
+    reports <strong>3 failed</strong> (<code>EXIT=1</code>): the three crew
+    cases fail with <code>a malformed request reached storage before it was
+    refused: PosixPath('worker.json')</code>, and all three pass at the head
+    arm. A
     second arm reverts the vocabulary union with the check kept, and reports
     <strong>1 failed</strong> (<code>EXIT=1</code>) —
-    <code>Extra items in the left set: 'section'</code> — against 7 passed with
-    the union in place.
+    <code>Extra items in the left set: 'section'</code>. Arms three and four drop
+    <code>COMMON_RUN_FIELDS</code> from the declaration:
+    <strong>1 failed</strong> before the parts check existed and
+    <strong>2 failed</strong> after it, both against 8 or 9 passed with the
+    declaration intact. Arm three is the reason the parts check is there — the
+    classification-derived comparison alone let that mutation through, because
+    a classification of a pointer carries no <code>section</code> to miss it.
   </p>
 </section>
