@@ -1,0 +1,47 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T23:36:21.440Z",
+  "dispatched_at": "2026-10-23T23:27:05Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:172",
+      "id": "reasoning-1",
+      "reason": "one clause deciding whether the receipt carries each pending plan's pre-read version (conflict leaves it pending) or the retry re-reads (a later move is clobbered) changes what the node must write, and the done-when's batch case discriminates only a re-write of the succeeded plan, not a re-read of a since-changed pending one.",
+      "text": "\u00a79 makes the retry \"apply only that plan's sprint write\" while its receipt stores only \"the plans whose sprint write is still pending and the sprint each should carry\"; with no recorded version the retry must re-read the plan, and a sprint move another call makes between the failed write and the retry is then overwritten, leaving the plan's `plan-sprint` disagreeing with the index \u2014 the exact mismatch \u00a78 and \u00a74 exist to remove",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1076ecf532bf2fc711281dfca073a65ff5322b88545087eff1896d1b1f268ba7",
+  "plan_slug": "the-portfolio-reads-true",
+  "plan_version": 64,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T232614746962-plan-review-of-the-portfolio-reads-true",
+  "reviewed_blob_sha": "dc13f7b252b7f33e85446a4cd19e0da54c4a36ea",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every citation resolves at head: `partial_write` is set by `_partial_plan_write` (reckon/mcp_edit_plan.py:698), called at :1729 (the plan's \"near :1728\"), the receipt is written at :1744, `_replayed_response` is defined at :1207 and called at :1324, `record_write_receipt` is at reckon/_store.py:285, and `_apply_move`'s \"'{slug}' not found in sprint\" is at reckon/_store.py:3520; the named test file is a deliverable and correctly does not exist yet.",
+    "done_when": "pass \u2014 \u00a79 names `tests/test_a_retried_partial_move_is_not_replayed.py` and a declared negative control (\"a receipt recorded as success on a partial write must fail the first case\"), and the induction contradiction the earlier review raised is repaired at line 172: the plan's own write raises on the first call and the first retry, so the retry still finds the plan unwritable and must report the partial write before a second retry clears it.",
+    "evidence_paths": "pass \u2014 the write paths name `reckon/mcp_edit_plan.py`, `reckon/_store.py` and `tests/test_a_retried_partial_move_is_not_replayed.py`, and \"Every log is under the run directory\" names the durable crew run directory, the same phrasing accepted for \u00a78 after its earlier evidence-path finding.",
+    "naming": "pass \u2014 \u00a79 introduces no code symbol and describes the receipt fields by what they carry; no plan label, ticket number or version tag reaches a name.",
+    "reasoning": "a finding \u2014 the stated root cause reproduces at head and the mechanism reaches the real replay path, but the receipt records only each pending plan's slug and destination sprint, so the expected version the retry writes against is neither recorded nor specified.",
+    "single_goal": "pass \u2014 \u00a79 carries one deliverable, that a retried partial sprint move is not replayed as success; the batch case in its done-when is a discrimination case for that same behaviour, not a second goal.",
+    "wiring": "pass \u2014 \u00a79 declares no open dependency and needs none: the \u00a78 behaviour it builds on (the pre-read and the same-call plan write) landed as s8 `done` by merge ebbc3070d, and the plan's only open section wire, s6\u2192s8, is unrelated."
+  },
+  "section_digests": {
+    "_document": "99c9e3cf9942e999d5740a5fbefff3d49790d2568cd12c6bc07b4892fcca6913",
+    "s1": "56204248c9050844c40ac7e00bff909830602caaa4b95be87bacea51b1495a03",
+    "s2": "69b86246adb4ea89719f367ac57f43940ed14fb88c5c89408cf18a6b59911f57",
+    "s3": "5902125b920ccad233230b403ba1e4cb62c75743d8265014bc35f38e0c9915c3",
+    "s4": "9280ec81cafc36b7de1295b0f22745c6162986e93d9731a8e8b99c51d658a217",
+    "s5": "e5d24ffe43f8fdfcdb88130b1632bc368dc94fd8641f628befb77b4c1f95b435",
+    "s6": "3b386242a01bc207ce0810ef1ee5ccbd8a9d5ea78f77a5dd6fc61b2f207c53d0",
+    "s7": "b5d0f90a4e8a113321b55e0ed0aeaa0624369e3b41b03dde61dc10c9a6f8e5ef",
+    "s8": "4aa77c0b14a2d21a80398b3aaf025a91b1d30ea4d3a1d3682146ddd1571aa233",
+    "s9": "0fd13503c870acee3b88daddcd983f0d69639abc62005b615bf2acfbb7b8aa1a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T23:40:08.623593+00:00"
+}
