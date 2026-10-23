@@ -17,7 +17,6 @@ from reckon.crew.node import (
 )
 
 
-
 def _background_wait_signal(record: Mapping[str, Any]) -> str | None:
     """The one sentence proving a vanished process was waiting on background work.
 
@@ -74,6 +73,64 @@ _BOUNDED_WAIT_TOOL_NAMES = frozenset({"TaskOutput", "TaskOutputFull", "ScheduleW
 _PEER_CHANNEL_WAIT_RE = re.compile(r"peer-read[^\n]*--wait\b", re.IGNORECASE)
 _SLEEP_RE = re.compile(r"(?:\btime\.)?\bsleep\s+(\d+)", re.IGNORECASE)
 
+# The stream is read backwards in blocks that double from this size, so a check
+# that runs for every quiet run on every pass reads the end of a megabyte-long
+# stream rather than all of it, and one very long line costs few reads.
+_TAIL_BLOCK_BYTES = 64 * 1024
+_TAIL_BLOCK_CAP = 8 * 1024 * 1024
+
+
+def _tool_call_in_line(line: bytes) -> tuple[str, str] | None:
+    """The last tool call one stream line starts, as (name, command), or None."""
+    try:
+        event = json.loads(line.decode("utf-8", errors="replace"))
+    except (ValueError, TypeError):
+        return None
+    if not isinstance(event, Mapping):
+        return None
+    message = event.get("message")
+    if not isinstance(message, Mapping):
+        return None
+    content = message.get("content")
+    if not isinstance(content, list):
+        return None
+    found: tuple[str, str] | None = None
+    for block in content:
+        if not isinstance(block, Mapping) or block.get("type") != "tool_use":
+            continue
+        command = ""
+        if isinstance(block.get("input"), Mapping):
+            command = str(
+                block["input"].get("command") or block["input"].get("prompt") or ""
+            )
+        found = (str(block.get("name") or ""), command)
+    return found
+
+
+def _last_tool_call(log: Path) -> tuple[str, str] | None:
+    """The tool call a stream most recently started, read from its end.
+
+    Lines are taken newest first, and the first one that starts a tool call
+    answers. A line that begins in an earlier block is carried back until its
+    start is read, so a long tool result is parsed whole, never in pieces.
+    """
+    with log.open("rb") as handle:
+        position = handle.seek(0, os.SEEK_END)
+        carry = b""
+        step = _TAIL_BLOCK_BYTES
+        while position > 0:
+            size = min(step, position)
+            position -= size
+            handle.seek(position)
+            lines = (handle.read(size) + carry).split(b"\n")
+            carry = lines.pop(0) if position > 0 else b""
+            for line in reversed(lines):
+                found = _tool_call_in_line(line)
+                if found is not None:
+                    return found
+            step = min(step * 2, _TAIL_BLOCK_CAP)
+    return None
+
 
 def _last_bounded_wait(record: Mapping[str, Any]) -> str | None:
     """The last tool call's bounded wait, named, or None when there is none.
@@ -88,37 +145,10 @@ def _last_bounded_wait(record: Mapping[str, Any]) -> str | None:
     if not log.is_file():
         return None
     try:
-        with log.open(encoding="utf-8", errors="replace") as handle:
-            last_name = ""
-            last_command = ""
-            for line in handle:
-                try:
-                    event = json.loads(line)
-                except (ValueError, TypeError):
-                    continue
-                message = event.get("message")
-                if not isinstance(message, Mapping):
-                    continue
-                content = message.get("content")
-                if not isinstance(content, list):
-                    continue
-                for block in content:
-                    if (
-                        not isinstance(block, Mapping)
-                        or block.get("type") != "tool_use"
-                    ):
-                        continue
-                    name = str(block.get("name") or "")
-                    command = ""
-                    if isinstance(block.get("input"), Mapping):
-                        command = str(
-                            block["input"].get("command")
-                            or block["input"].get("prompt")
-                            or ""
-                        )
-                    last_name, last_command = name, command
+        found = _last_tool_call(log)
     except OSError:
         return None
+    last_name, last_command = found or ("", "")
     if not last_name and not last_command:
         return None
     if last_name in _BOUNDED_WAIT_TOOL_NAMES:
@@ -869,6 +899,33 @@ def _wait_declaration_signature(
 # happens.
 RUN_STREAM_GLOBS = ("stream.jsonl", "resume-*.jsonl", "lane-change-*.jsonl")
 
+# Which stream files a run directory holds, kept per process by the
+# directory's inode and mtime. Every producer pass lists every live run's
+# directory to find its newest stream; every stream file sits directly in the
+# run directory, so creating, removing or renaming one moves the directory's
+# mtime and the listing is taken again. The store is cleared whole at its bound.
+_RUN_STREAM_NAMES: dict[str, tuple[tuple[int, int], tuple[Path, ...]]] = {}
+_RUN_STREAM_NAMES_LIMIT = 4096
+
+
+def _run_stream_names(directory: Path) -> tuple[Path, ...]:
+    """The run directory's stream files, listed again only when it changed."""
+    try:
+        info = directory.stat()
+    except OSError:
+        return ()
+    identity = (info.st_ino, info.st_mtime_ns)
+    kept = _RUN_STREAM_NAMES.get(str(directory))
+    if kept is not None and kept[0] == identity:
+        return kept[1]
+    found = tuple(
+        path for pattern in RUN_STREAM_GLOBS for path in directory.glob(pattern)
+    )
+    if len(_RUN_STREAM_NAMES) >= _RUN_STREAM_NAMES_LIMIT:
+        _RUN_STREAM_NAMES.clear()
+    _RUN_STREAM_NAMES[str(directory)] = (identity, found)
+    return found
+
 
 def stream_paths_newest_first(
     run_dir: str | Path, *, include: Iterable[str | Path] = ()
@@ -882,9 +939,7 @@ def stream_paths_newest_first(
     record whose current stream sits outside the run directory is still read.
     """
     directory = Path(run_dir)
-    candidates: list[Path] = []
-    for pattern in RUN_STREAM_GLOBS:
-        candidates.extend(directory.glob(pattern))
+    candidates: list[Path] = list(_run_stream_names(directory))
     for extra in include:
         if str(extra or ""):
             candidates.append(Path(str(extra)))

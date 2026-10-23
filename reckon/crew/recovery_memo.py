@@ -513,6 +513,39 @@ def _lane_cause_signature_text(lowered: str) -> str:
     return " ".join(text.split())
 
 
+# The newest terminal result of a stream, kept per process by the stream's
+# path, inode, size and mtime. Every producer pass asks it of every run whose
+# worker has gone, and finding it means parsing the whole stream; a stream that
+# has not changed since the last ask has the same newest result. The store is
+# cleared whole when it reaches its bound.
+_NEWEST_RESULTS: dict[tuple[str, int, int, int], Mapping[str, Any] | None] = {}
+_NEWEST_RESULTS_LIMIT = 4096
+
+
+def _newest_result_event(path: Path) -> Mapping[str, Any] | None:
+    """The stream's last ``result`` record, parsed again only when it changed.
+
+    Raises ``OSError`` when the stream cannot be read, as a direct read would.
+    """
+    info = path.stat()
+    key = (str(path), info.st_ino, info.st_size, info.st_mtime_ns)
+    if key in _NEWEST_RESULTS:
+        return _NEWEST_RESULTS[key]
+    result: Mapping[str, Any] | None = None
+    with path.open(encoding="utf-8", errors="replace") as stream:
+        for line in stream:
+            try:
+                event = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(event, Mapping) and event.get("type") == "result":
+                result = event
+    if len(_NEWEST_RESULTS) >= _NEWEST_RESULTS_LIMIT:
+        _NEWEST_RESULTS.clear()
+    _NEWEST_RESULTS[key] = result
+    return result
+
+
 def _terminal_lane_signal(
     record: Mapping[str, Any],
 ) -> tuple[dict[str, str] | None, str | None]:
@@ -520,16 +553,8 @@ def _terminal_lane_signal(
     found = _record_newest_stream(record)
     if found is None:
         return None, None
-    result: Mapping[str, Any] | None = None
     try:
-        with found[0].open(encoding="utf-8", errors="replace") as stream:
-            for line in stream:
-                try:
-                    event = json.loads(line)
-                except ValueError:
-                    continue
-                if isinstance(event, Mapping) and event.get("type") == "result":
-                    result = event
+        result = _newest_result_event(found[0])
     except OSError:
         return None, None
     if result is None:
