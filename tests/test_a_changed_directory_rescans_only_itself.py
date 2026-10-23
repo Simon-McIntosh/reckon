@@ -14,8 +14,9 @@ test it names must fail against:
 * ``RECKON_TEST_RESCAN_SHALLOW`` stops a rescan at the directories it was
   handed instead of descending into the subdirectories they gained.
 * ``RECKON_TEST_RESCAN_KEEP_REMOVED`` keeps a vanished directory's files.
-* ``RECKON_TEST_RESCAN_STALE_IDENTITY`` records a re-scanned directory's
-  identity as it stood before the change, so the next read re-scans it.
+* ``RECKON_TEST_RESCAN_STALE_IDENTITY`` records nothing after a scan, so a
+  re-scanned directory keeps the identity it had before the change and the
+  next read re-scans it.
 * ``RECKON_TEST_RESCAN_ALL_OR_NOTHING`` leaves the discovery reader on the
   fallback that walks whenever any directory moved.
 """
@@ -132,16 +133,11 @@ def _armed_controls(monkeypatch):
         monkeypatch.setattr(metadata_index, "_reuse_covered", keep_removed)
 
     if _STALE_IDENTITY in armed:
-        base = metadata_index._reuse_covered
 
-        def stale_identity(docs_dir, project):
-            result = base(docs_dir, project)
-            if result is None:
-                return None
-            covered, dirs, _scanned = result
-            return covered, dirs, False
+        def record_nothing(docs_dir, project, files, dirs):
+            return None
 
-        monkeypatch.setattr(metadata_index, "_reuse_covered", stale_identity)
+        monkeypatch.setattr(metadata_index, "_record_covered_shape", record_nothing)
 
     if _ALL_OR_NOTHING in armed:
         base = metadata_index._reuse_covered

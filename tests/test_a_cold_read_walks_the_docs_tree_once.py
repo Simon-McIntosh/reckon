@@ -198,12 +198,14 @@ def test_one_cold_roadmap_lists_each_docs_directory_once(measured: dict) -> None
     )
     assert cold["roadmap"] == unshared["roadmap"]
     assert cold["sprint_reads"] > 0
-    expected_directories = {
-        str(checkout / "docs" / relative)
-        for relative in (".", "plans", "research", "sprints")
+    # The marker moved docs/plans alone, so the cold read re-scans that
+    # directory and takes every other directory's documents from the persisted
+    # index without listing it.
+    assert cold["listings"][str(checkout / "docs" / "plans")] == 1, cold["listings"]
+    unchanged = {
+        str(checkout / "docs" / relative) for relative in (".", "research", "sprints")
     }
-    assert expected_directories <= cold["listings"].keys(), cold["listings"]
-    assert cold["listings"][str(checkout / "docs" / "plans")] == 1
+    assert not unchanged & cold["listings"].keys(), cold["listings"]
     assert max(cold["listings"].values(), default=0) <= 1, cold["listings"]
 
 

@@ -363,10 +363,9 @@ def index_rows(
             return [dict(row) for row in build.rows]
     covered: list[tuple[str, Path]] | None = None
     dirs: dict[str, Path] | None = None
-    rescanned = False
     reused = _reuse_covered(docs_dir, project)
     if reused is not None:
-        covered, dirs, rescanned = reused
+        covered, dirs, _scanned = reused
     build = _build_and_cache(
         key,
         docs_dir,
@@ -376,7 +375,6 @@ def index_rows(
         git_last=git_last,
         covered=covered,
         dirs=dirs,
-        rescanned=rescanned,
     )
     return [dict(row) for row in build.rows]
 
@@ -396,8 +394,11 @@ def _reuse_covered(
     before. A recorded directory that no longer exists drops its files and its
     descendants. An absent index returns ``None``, so the caller walks.
 
-    The third element reports whether any directory was scanned. A shape that
-    moved is persisted by the build even when no row changed, so the next read
+    The third element reports whether any directory was scanned. The observed
+    shape is recorded here, before the caller reaches whatever it does with the
+    file set, because the readers that want only the file set never build an
+    index: a scan left unrecorded is a scan the next reader repeats. A shape
+    that moved is therefore recorded even when no row changed, so the next read
     starts from the whole shape rather than scanning the same directory again.
     """
 
@@ -428,6 +429,13 @@ def _reuse_covered(
         files, scanned = _walk_covered(docs_dir, moved, frozenset(stamps))
         covered.update(dict(files))
         dirs.update(dict(scanned))
+        # Record the scan here rather than leaving it to the build that may
+        # follow: a reader that only wants the file set never reaches one, so a
+        # scan left unrecorded is a scan the next reader in the same read
+        # repeats.
+        _record_covered_shape(
+            docs_dir, project, sorted(covered.items()), sorted(dirs.items())
+        )
     return sorted(covered.items()), dirs, bool(moved)
 
 
@@ -473,7 +481,6 @@ def _build_and_cache(
     git_last: Mapping[str, int] | None = None,
     covered: list[tuple[str, Path]] | None = None,
     dirs: dict[str, Path] | None = None,
-    rescanned: bool = False,
 ) -> IndexBuild:
     build = build_index(
         docs_dir,
@@ -483,7 +490,6 @@ def _build_and_cache(
         git_last=git_last,
         covered=covered,
         dirs=dirs,
-        rescanned=rescanned,
     )
     with _LOCK:
         _CACHE[key] = build
@@ -499,16 +505,13 @@ def build_index(
     git_last: Mapping[str, int] | None = None,
     covered: list[tuple[str, Path]] | None = None,
     dirs: dict[str, Path] | None = None,
-    rescanned: bool = False,
 ) -> IndexBuild:
     """Build one project's rows, re-parsing only what its bytes changed.
 
     ``covered`` and ``dirs`` let a caller that has already established the
     tree's shape — by comparing the recorded directory identities — hand the
     file set in instead of walking the tree to rediscover it. With ``covered``
-    absent the walk runs and both are derived from it. ``rescanned`` says that
-    file set came from rescanning directories whose identity moved, so the
-    observed identities are persisted even when no row changed.
+    absent the walk runs and both are derived from it.
     """
 
     docs_dir = Path(docs_dir)
@@ -585,7 +588,7 @@ def build_index(
         entries.append(entry)
 
     build.removed = len(set(known) - seen)
-    if build.changed or not known or rescanned:
+    if build.changed or not known:
         _store_persisted(docs_dir, project, entries, build.dir_stamps)
     return build
 
