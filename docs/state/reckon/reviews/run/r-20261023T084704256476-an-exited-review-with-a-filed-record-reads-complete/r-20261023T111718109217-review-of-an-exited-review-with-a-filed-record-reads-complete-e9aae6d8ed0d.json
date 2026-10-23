@@ -1,0 +1,33 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-23T11:34:49.070Z",
+  "dispatched_at": "2026-10-23T11:18:53Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "182",
+      "severity": "non-blocking",
+      "severity_note": "",
+      "text": "PARSED_REVIEW_STATUS restates the \"parsed\" literal that the store's vocabulary owner declares at reckon/crew/review.py:840 (RECOGNISED_REVIEW_STATUSES), whose docstring states the set is public so a reader that selects reviews imports it rather than restating the vocabulary and drifting from it; the same selection rule is already encoded at reckon/crew/recovery_review_subject.py:1185. The node meets the earlier blocking finding by selecting on \"parsed\" alone, which is correct; what remains is that the actionable status is declared in three places rather than exported once from the owner. Non-blocking."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to classify an exited review run complete when its latest attempt filed a parsed filed review record; reckon/crew/recovery_classification.py:763 adds that branch and the six tests in tests/test_an_exited_review_with_a_filed_record_reads_complete.py drive it.\nVERDICT done_when: the done_when names classify_pointer, three fixtures and the gate bundle; the manifest's after_suite records the bundle at 063134bda as 13 failed / 523 passed, and base-arm.log reproduces all 13 ids, so zero added failures.\nVERDICT write_paths: the declared scope is reckon/crew/recovery_classification.py, the new test module and the evidence fragment; git diff b809b3ac..e9aae6d8 touches exactly those three files.\nVERDICT manifest: read; status complete, commits e0d24b9a5..e9aae6d8e, after_suite recorded, negative_control_log named, and no baseline_suite key (this node is role implement, not an armed review).\nVERDICT diff: read commit by commit; e0d24b9a5 adds the filed-record read, 39a8321c3 keys it on the attempt, 063134bda narrows the selection to the parsed status and answers the prior blocking finding, e9aae6d8 is the fragment-only docs commit.\nCALL_SITES: reckon/crew/recovery_watch.py:311, reckon/crew/obligations.py:482, reckon/crew/promotion.py:384, reckon/crew/query.py:348, reckon/serve.py:884\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:763 reads promotable when an exited review's own attempt filed a parsed record, which is the goal; the attempt marker is used rather than the newest receipt, a stricter reading than the goal's \"latest\".\nSCORE evidence: 15\nJUSTIFICATION evidence: the after_suite bundle at 063134bda (13 failed / 523 passed) and base-arm.log together give zero added failures, but the base arm ran only the eight failing modules (73 tests) and the gate ran one fragment-only commit before the reviewed head e9aae6d8.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat b809b3aca0f56665bf445a5056d4f88eb453e26d e9aae6d8ed0dc551500f477551846ce5538d4136 lists only recovery_classification.py, the new test module and the fragment, all inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the three arms in negative-control.log each redden a fixture the change protects (arms reddening tests/test_an_exited_review_with_a_filed_record_reads_complete.py:197, :221, :258 and :284), and no added assertion compares a value to the same input the test passed in.\nSCORE fit: 16\nJUSTIFICATION fit: PARSED_REVIEW_STATUS and _parsed_review_record at reckon/crew/recovery_classification.py:182-192 follow the module's underscore-prefixed helper style and carry no plan or ticket label.\nSCORE reuse: 14\nJUSTIFICATION reuse: _parsed_review_record does not fork a capability whole, but it restates the \"parsed\" literal that reckon/crew/review.py:840 owns and that PARSED_REVIEW_STATUS:182 re-declares, and the same selection rule already sits at reckon/crew/recovery_review_subject.py:1185.\nFINDING reckon/crew/recovery_classification.py:182 non-blocking: PARSED_REVIEW_STATUS re-declares the \"parsed\" literal whose owner is reckon/crew/review.py:840 (RECOGNISED_REVIEW_STATUSES), and the same selection rule is encoded at reckon/crew/recovery_review_subject.py:1185, so the actionable status now lives in three places; the owner's docstring states its set is public so a reader that selects reviews imports it rather than restating the vocabulary. The node correctly selects on \"parsed\" alone and answers the earlier blocking finding; what remains is that the constant should be exported once from the owner. Non-blocking.\n",
+  "review_run_id": "r-20261023T111718109217-review-of-an-exited-review-with-a-filed-record-reads-complete-e9aae6d8ed0d",
+  "reviewed_base_sha": "b809b3aca0f56665bf445a5056d4f88eb453e26d",
+  "reviewed_head_sha": "e9aae6d8ed0dc551500f477551846ce5538d4136",
+  "reviewed_run_id": "r-20261023T084704256476-an-exited-review-with-a-filed-record-reads-complete",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T11:38:35.699494+00:00",
+  "total": 101
+}
