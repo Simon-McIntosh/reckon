@@ -677,10 +677,25 @@ def classify_pointer(
     # promotion, where it would carry a blocked run with a live session past the
     # resume-path refusal it must still meet while deleting the pointer a resume
     # needs. Only a proven-alive process, not a moving stream, defers those.
+    # The word the attempt itself wrote is the exception, and it is narrow. A
+    # worker that wrote an interim ``blocked`` and went on writing has not
+    # stopped, so a reader sent to that word is sent to a blocker the worker is
+    # still working through. The term needs the manifest to postdate the
+    # attempt's own start, so a word carried over from the attempt a resume
+    # replaced, or written by the coordinator's repair beside it, is not deferred
+    # by it; and it needs the stream to be moving, so a stop nobody is writing
+    # any more is still the stop it is.
+    own_terminal_word_provisional = (
+        alive is None
+        and not process_gone
+        and _current_attempt_number(record) is not None
+        and not _manifest_predates_the_current_attempt(record, manifest)
+    )
     deferred_outcome = manifest_status in TERMINAL_MANIFEST_STATUSES and (
         alive is True
         or superseded_manifest
         or (manifest_status == "complete" and not process_gone)
+        or own_terminal_word_provisional
     )
     interruption = None
     interruption_commits = 0

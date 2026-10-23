@@ -539,30 +539,40 @@ def _attempt_record_number(record: Mapping[str, Any]) -> int | None:
     return _int_or_none(marker.get("attempt"))
 
 
+def _attempt_claim_path(run_id: str, attempt: int) -> Path:
+    """One attempt's claim, at the path the module that owns its name builds.
+
+    Every reader of a claim takes its path through here, so the claim's name is
+    decided in one place and no reader can drift from the file a launch reserves.
+    """
+    # Imported here rather than at module scope: resumption reads this module, so
+    # a module-scope import would be a cycle.
+    from reckon.crew import resumption
+
+    return resumption.attempt_claim_path(run_id, attempt)
+
+
 def _attempt_claim_numbers(record: Mapping[str, Any]) -> list[int]:
     """Every attempt the run's directory holds a claim for, least number first.
 
-    Each candidate path is built by the module that owns the claim's name, so
-    this reader and the launch that reserves the number cannot drift apart over
-    what the file is called. A launch takes a claim for the attempt it is about
-    to start, so the numbers here are the attempts the run has advanced through.
+    The directory is read for the claims it holds rather than a run of numbers
+    guessed from the records beside them. A resume takes its claim before it
+    writes anything else, so two claims can stand with no attempt record between
+    them — the window this reader exists for — and a count derived from the
+    records beside them finds neither. The name to look for is the owner's own,
+    taken from the path it builds for one attempt, so the file this reads and
+    the file a launch reserves cannot drift apart.
     """
     run_id = str(record.get("run_id") or "")
     if not run_id:
         return []
-    # Imported here rather than at module scope: resumption reads this module,
-    # so a module-scope import would be a cycle.
-    from reckon.crew import resumption
-
-    highest = max(
-        _int_or_none(record.get("attempt")) or 0,
-        _attempt_record_number(record) or 0,
-    )
-    return [
-        candidate
-        for candidate in range(1, highest + 2)
-        if resumption.attempt_claim_path(run_id, candidate).exists()
-    ]
+    prefix, _, suffix = _attempt_claim_path(run_id, 1).name.partition("1")
+    numbers: list[int] = []
+    for path in _run_directory(record).glob(f"{prefix}*{suffix}"):
+        attempt = _int_or_none(path.name[len(prefix) : len(path.name) - len(suffix)])
+        if attempt is not None:
+            numbers.append(attempt)
+    return sorted(set(numbers))
 
 
 def _newest_attempt_claim_number(record: Mapping[str, Any]) -> int | None:
@@ -587,13 +597,9 @@ def _attempt_claim_seconds(record: Mapping[str, Any]) -> float | None:
     attempt = _current_attempt_number(record)
     if not run_id or attempt is None:
         return None
-    # Imported here rather than at module scope: resumption reads this module,
-    # so a module-scope import would be a cycle.
-    from reckon.crew import resumption
-
     try:
         payload = json.loads(
-            resumption.attempt_claim_path(run_id, attempt).read_text(encoding="utf-8")
+            _attempt_claim_path(run_id, attempt).read_text(encoding="utf-8")
         )
     except (OSError, ValueError):
         return None

@@ -128,6 +128,7 @@ def _write_run(
     stream_age_seconds: float = STALE_SECONDS,
     attempt_record: bool = False,
     local_launcher: bool = False,
+    extra_claims: tuple[int, ...] = (),
 ) -> dict:
     """Write one resumed run's own records and return its pointer.
 
@@ -165,6 +166,19 @@ def _write_run(
         ),
         encoding="utf-8",
     )
+
+    for older in extra_claims:
+        (directory / f"attempt-{older}.claim").write_text(
+            json.dumps(
+                {
+                    "attempt": older,
+                    "pid": pid,
+                    "pid_start_time": "1",
+                    "at": _at(now - claim_age_seconds - 60.0),
+                }
+            ),
+            encoding="utf-8",
+        )
 
     if status_repair:
         (directory / "status-repair.json").write_text(
@@ -456,3 +470,76 @@ def test_a_claim_alone_dates_the_attempt() -> None:
         )
         is True
     )
+
+
+def test_arm_v_the_attempts_own_word_is_provisional_while_it_writes() -> None:
+    """Arm v: the attempt wrote ``blocked`` itself and went on writing.
+
+    The word belongs to the attempt now running — the manifest postdates its own
+    claim — and the attempt was launched on another host, so nothing here has
+    observed its process end while its stream is still moving inside the stall
+    window. Read as the stop, a worker that wrote an interim word and carried on
+    working is drawn halted, and every reader is sent to a blocker it is still
+    working through.
+    """
+    run_id = "run-own-interim-word"
+    pointer = _write_run(
+        run_id=run_id,
+        attempt=2,
+        claim_age_seconds=900.0,
+        manifest_age_seconds=120.0,
+        stream_age_seconds=20.0,
+    )
+
+    _assert_state(pointer, "arm v", "working")
+
+
+def test_arm_v_the_same_word_holds_once_nothing_writes_it() -> None:
+    """Arm v's control: the same word with its stream quiet past the window.
+
+    Nothing has written the run's stream for longer than the stall window, so
+    the word is not a checkpoint in progress: the run has really stopped and the
+    attempt's own verdict governs again.
+    """
+    run_id = "run-own-word-quiet-stream"
+    pointer = _write_run(
+        run_id=run_id,
+        attempt=2,
+        claim_age_seconds=STALE_SECONDS + 300.0,
+        manifest_age_seconds=120.0,
+        stream_age_seconds=STALE_SECONDS + 600.0,
+    )
+
+    snapshot = _snapshot(pointer)
+
+    assert snapshot["state"] in HALTED_STATES, (
+        "arm v quiet: nothing has written the run's stream inside the stall "
+        f"window, so the attempt's own word governs; it read "
+        f"{snapshot['state']!r}"
+    )
+    assert snapshot["state"] == "blocked", snapshot
+
+
+def test_every_claim_in_the_directory_dates_the_attempt() -> None:
+    """Two claims with no attempt record between them are both read.
+
+    A resume takes its claim before it writes anything else, so the directory can
+    hold two claims and no attempt record at all, with the pointer still naming
+    the attempt before them: the run advanced twice and only its claims say so.
+    A reader that counts candidates from the records beside them stops short of
+    the newer claim and dates the run from an attempt that has already ended.
+    """
+    run_id = "run-two-claims-no-record"
+    pointer = _write_run(
+        run_id=run_id,
+        attempt=5,
+        claim_age_seconds=60.0,
+        extra_claims=(4,),
+    )
+    # The pointer lags the directory, which is the window this reads: the
+    # attempt record has not been written and the pointer names attempt 1.
+    pointer["attempt"] = 1
+    runs._write_json(runs.pointer_path(run_id), pointer)
+
+    assert recovery_liveness._attempt_claim_numbers(pointer) == [4, 5]
+    assert recovery_liveness._current_attempt_number(pointer) == 5
