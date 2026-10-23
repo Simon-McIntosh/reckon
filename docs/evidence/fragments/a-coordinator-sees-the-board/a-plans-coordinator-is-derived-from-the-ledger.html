@@ -176,39 +176,50 @@ resolver answer: coordinator=- tier=unowned matched_by=- run=-</code></pre>
 
   <p><strong>Repair: a run review was resolved by the wrong name.</strong> Review found
   that the first cut resolved a run review's subject by looking the node id's source up in
-  a map keyed by run id. A real review node id embeds the reviewed run's <em>node</em> id
-  (<code>round_node_id</code> is given <code>source_node</code>, and for a paired arm the
-  run id), so the lookup missed for every ordinary review and left it matched to no plan —
-  precisely the case the section asks for. The subject is now resolved by three names,
-  strongest first: the <code>reviewed_run_id</code> the review's own record carries (top
-  level on a pointer, inside its <code>review</code> body on a committed row), then the
-  node id's source read as a run id — the spelling a paired arm mints — and then the newest
-  row of the node the source names, because one node id is shared by every row of that node
-  and only the review's own record can say which delivery it read.</p>
+  a map keyed by run id. A real review node id embeds the reviewed run's <em>node</em> id,
+  so the lookup missed for every ordinary review and left it matched to no plan — precisely
+  the case the section asks for. The tests were part of the defect: they hand-wrote
+  <code>review-of-&lt;run id&gt;…</code>, a spelling only a paired arm produces, so they passed
+  against the broken resolver. They now mint their review node ids through
+  <code>round_node_id</code>.</p>
 
-  <p>The tests were part of the defect: the original fixture wrote
-  <code>review-of-&lt;run id&gt;…</code> by hand, a spelling only a paired arm mints, so it
-  passed against the broken resolver. They now mint their node ids through the writer the
-  fleet's rounds use, and cover all three paths — the ordinary node-id spelling, the paired
-  spelling, and a review whose recorded subject is the only name that resolves, beside a
-  control showing an older row of a reused node still deciding its own plan.</p>
+  <p>A second review read the fix as writing the fleet's own resolution a second time, and
+  it was right: <code>reckon/crew/dispatch_sections.py</code>'s
+  <code>_reviewed_run_id</code> already turns a review node id's source into the reviewed
+  run's id — for a paired arm from the run id, otherwise through the newest row of the node
+  the source names — over exactly the records this resolver reads. That copy is deleted and
+  the shared resolver is called instead, so the two cannot drift and a node id this module
+  reads is read the way every other reader reads it. What the module keeps is the part the
+  fleet does not own: which node prefix means what, and that the review's own dispatch —
+  never the reviewed run's — is the session that answered.</p>
 
-  <p>The declared negative control for this round reverts the answering commit — the module
-  restored to <code>20030d0d0</code>, nothing else changed — and the checks the finding
-  names fail: <strong>3 failed, 8 passed, <code>EXIT=1</code></strong>, failing
-  <code>test_a_run_review_resolves_through_the_run_it_reviews</code>,
-  <code>test_a_run_review_of_a_reused_node_takes_the_nodes_newest_row</code> and
-  <code>test_a_run_review_names_its_subject_run_where_it_records_one</code>, all of which
-  the repaired head passes. Log: <code>negative-control-plan-coordinator-repair.log</code>.</p>
+  <p>The recorded-reviewed-run path the first fix added is gone with it. No writer puts a
+  <code>reviewed_run_id</code> on a ledger row or a live pointer; the field lives in the
+  stored review file, which is a different store and a different reader's subject. The case
+  that asserted it was asserting a field the fleet never writes, so it is replaced by one
+  that pins what the node id alone can say: a review whose source names no row of this run
+  set answers no plan, and displaces no plan's own decider.</p>
 
-  <p><strong>Repair gate.</strong> The repaired head, at
-  <code>7defa912d</code>, over this node's own test file, the obligations suite and the
-  module-window member: <strong>23 passed, 1 failed, <code>EXIT=1</code></strong>. The one
-  failure is the pre-existing <code>reckon/roadmap.py</code> bound recorded above, in a
-  file this change does not touch; <code>tests/test_ledger.py</code> is not in this arm —
-  it is the member whose own per-test hangs consumed the earlier gate's wall clock, it is
-  untouched by this repair, and its result would say nothing about the review branch
-  repaired here. Log: <code>repair-gate-plan-coordinator.log</code>.</p>
+  <p><strong>The negative controls were not controls.</strong> Both assembled the resolver's
+  own answer by hand — blanking the coordinator of each row, or substituting an earliest-row
+  answer — and asserted against that. They passed whatever the resolver did. Each now patches
+  one broken behaviour into the real code path and runs it over fixture rows: the matching
+  step replaced by one that matches nothing, and the ordering rule by one that never
+  displaces what it already holds. The fixture rows also state their own
+  <code>completed_at</code>, which is the stamp the shared resolver orders by, so a reused
+  node's newest delivery is decided by the fixture rather than by the order its files were
+  written in. Arms: <code>head-arm-review-repair.log</code> — <strong>11 passed,
+  <code>EXIT=0</code></strong>, over this node's own cases; <code>negative-control-reuse-repair.log</code>
+  — the module taken back to its pre-repair copy with the new cases in place:
+  <strong>1 failed, 10 passed, <code>EXIT=1</code></strong>, the failure being the
+  order-blind control, which cannot even install its broken behaviour because the module it is
+  pointed at has no ordering rule to replace. The comparison it makes is worth stating plainly,
+  because it is narrower than it looks: the reuse change itself is behaviour-preserving by
+  design, so no case can discriminate <em>it</em> by output — what the arm shows is that the
+  control is bound to a code path the repair introduced. What discriminates the deletion is
+  that the duplicate is gone, which a reader checks in the code:
+  <code>grep -c '_newest_run_of_node\|_named_reviewed_run_id'</code> on the committed module
+  returns nothing.</p>
 
   <p><strong>Lint.</strong> <code>ruff check</code> reports no findings on the two staged
   paths, and <code>ruff format --check</code> reads <em>2 files already formatted</em>.
