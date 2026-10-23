@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T22:08:20.089Z",
+  "dispatched_at": "2026-10-23T21:57:28Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/crew-state-stays-bounded.html:169",
+      "id": "reasoning-1",
+      "reason": "as written the repair cannot clear the case its own bullet 1 quotes, so the plan must record the host per attempt (or sweep every host's copy once the run is terminal) or it ships a fix whose own evidence still leaks.",
+      "text": "the change records one host per run, but a run gets a scratch directory named for its run id on every host an attempt ran on, so the recorded host's removal leaves every other attempt's copy; this is exactly the cited evidence, where 5,014 bytes were removed on one host while 172 KB from later attempts survives on another",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/crew-state-stays-bounded.html:169",
+      "id": "reasoning-2",
+      "reason": "with no named production caller the debt is recorded and never settled, so the node would have to modify a landed section's pass without the plan saying so, and the existing reaper must be extended or the claim dropped.",
+      "text": "\"The \u00a77 sweep, run on that host, settles the debt\" names a caller that does not do this: `retention_sweep` in reckon/crew/gc.py:1329 runs run-directory retention and, per \u00a77, \"runs the run-directory retention alone, not the rest of gc\", while the only scratch reaper, `garbage_collect_orphan_scratch` (gc.py:1030), is reached from `garbage_collect` and deliberately withholds a resumable run's scratch",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/crew-state-stays-bounded.html:170",
+      "id": "done_when-1",
+      "reason": "a control that cannot fail is the thing the rubric exists to catch, and the fixture needs a same-named scratch on the release host (which is also the real shape) to redden it.",
+      "text": "the negative control is inert as specified: with the release host holding no directory of the run's name, the mutated release (removing on its own host whichever host made the scratch) removes nothing and still reports not-removed, so the second case passes unchanged",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/crew-state-stays-bounded.html:169",
+      "id": "reasoning-3",
+      "reason": "the plan already sends the node to find the route that skipped the release, so the sentence is a loose claim about code the node inspects rather than an instruction it would follow wrongly.",
+      "text": "\"Every completion path already calls `_release_after_promotion`\" is contradicted by the plan's own bullet 3, which reports 13 review and plan-review runs with no release block at all",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "040f5cdaa470fe7bcd9997d3a55924fceeceaf2042148335b796bd657969d4ea",
+  "plan_slug": "crew-state-stays-bounded",
+  "plan_version": 20,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T214702409849-plan-review-of-crew-state-stays-bounded",
+  "reviewed_blob_sha": "3bc60e9a75bf178a5057fbeb3995509ca10e1cb4",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `remove_worker_scratch` resolves at reckon/crew/dispatch_launch.py:829, `_release_after_promotion` at reckon/crew/promotion.py:1125 and 1752, reckon/crew/promotion_records.py:188 and reckon/crew_run_commands.py:2590; the four hrefs resolve once `.html` is appended (monitor-storage-load-rca, history-persists-as-detail-washes-out, the-crew-home-has-a-bound, evidence/archive/crew-state-stays-bounded-landed all exist).",
+    "done_when": "a finding \u2014 \u00a78's declared negative control (plan.html:170) cannot redden the case it is attached to, because the second case's release host is given no same-named scratch to remove.",
+    "evidence_paths": "pass \u2014 \u00a78 puts gate logs under the run directory and names the committed evidence fragment as the durable record, the same disposition already given to \u00a76: the fragment is committed and must quote each gate's command and summary line.",
+    "naming": "pass \u2014 \u00a78 introduces no symbol, filename or comment carrying a plan label, stage name or ticket number; \"\u00a77 sweep\" is a reference between plan sections, not a name entering code.",
+    "reasoning": "a finding \u2014 \u00a78 keys the host to the run while the failure the plan cites is per attempt across hosts, and it names the \u00a77 sweep as the caller that settles a cross-host debt when \u00a77 as landed runs the run-directory retention alone and touches no scratch.",
+    "single_goal": "pass \u2014 \u00a78 has one goal (a run's scratch leaves with the run, on the host that made it); the review-promotion clause is one of the routes to that same goal.",
+    "wiring": "pass \u2014 `plan-section-depends-on` records `s8:[\"crew-state-stays-bounded#s7\"]` and s7 exists and is declared done, which is the ordering \u00a78 needs; no relationship points at a wrong node."
+  },
+  "section_digests": {
+    "_document": "7b027ab93025f3f1274af4c8c21f7e58c154d6e99dbdf5e7f4aa8931cbb1f280",
+    "s1": "61be6bb6df8b986fbb68c3273e136fcef1b9fa13e7bcadb4fb62eab2fa4145ff",
+    "s2": "9201fe37417310883d221ec7b0b5b4ff7de29f66ab073ede465175d42aa91bc4",
+    "s3": "9aa4d5f5a6287b698b7d6011ac8fcc295589c20484d8892a3c86d88d629b8793",
+    "s4": "2681ac58d6ae7457bc800678db433ce359be271248b74a429b44ee4d817769b4",
+    "s5": "bba37241ec93e13e0fb1eb173abfd49db0b6e77d788aa2dbec1608d164852542",
+    "s6": "c491229cedc576a79a4628da53168b317ce14fef88d78739c48e86b16aaff17a",
+    "s7": "1f6a99e4b8834c4a8bea5559a1507e6da85988f873d5547c7804930237104694",
+    "s8": "017cc195fc2a899c833a29af7e162df43ec31e30b6a60fd2982700df04380c58"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T22:12:19.317700+00:00"
+}
