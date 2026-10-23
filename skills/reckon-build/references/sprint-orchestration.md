@@ -824,7 +824,7 @@ Four rules follow.
    picker still keeps ordinary work local while the local lane has room. To
    spend a lifted lane, name it with `--backend` and give the reason in
    `--comment`. Every power_convertor session held a codex lift from 22 October
-   19:11Z, and the project ran one codex run in four days.
+   19:11Z, yet from 21 October the project ran one codex run against 282 local.
 4. **Review once per delivered head.** A second code review of an unchanged
    head, or a plan review owed only because sprint or status metadata changed,
    buys no decision. From 19 to 23 October the project ran 345 reviews against
