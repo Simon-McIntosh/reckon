@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T17:18:30.645Z",
+  "dispatched_at": "2026-10-23T17:10:42Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-is-never-drawn-halted.html:325",
+      "id": "reasoning-1",
+      "reason": "a node sent to change an ordering that the code already has will either report no defect found or \"fix\" a non-defect, and the real cause stays in place while the plan records the section implemented.",
+      "text": "\u00a713 says to \"Name in the manifest the ordering that lets the spawn precede the write, and change that ordering\", but at HEAD `reckon/crew/dispatch.py:2606` and `:2617` (`_write_json(pointer_path(run_id), record)`) both run before the supervisor is started at `:2667` (`_start_supervisor`) and before a caller-supplied `launcher` at `:2670`; `git blame` dates both writes to 2026-10-08 (`aedd692709`), so no ordering exists for the node to change and the node will find nothing to fix. The evidence \u00a713 cites (a supervisor that died with `no live run '<run>'`, raised by `read_pointer` at `reckon/crew/runs.py:734` from the supervisor's own first act at `reckon/crew/dispatch_launch.py:2472`) is real, but it establishes an absent pointer at the supervisor's read, not that the spawn preceded the write; the cited facts do not support the named cause \u2014 for example, the deletion \u00a713 itself describes at `reckon/crew/queue_admission.py:181-182` and a cross-node visibility window would both produce the same symptom with no ordering defect.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-is-never-drawn-halted.html:325",
+      "id": "done_when-1",
+      "reason": "the section's whole measure rests on this arm, so as written the node has no way to show its guard fires and cannot be closed on a verdict.",
+      "text": "\u00a713's done-when says \"Negative control: at the base revision the same launcher records the pointer absent at spawn time (the ordering the manifest names)\", but a recording `launcher` passed through `_launch_queued` is invoked at `reckon/crew/dispatch.py:2670`, after the unconditional pointer writes at `:2606`/`:2617`, so at the base revision it records the pointer **present**; the asserted red arm cannot reproduce, and a control that holds however the code behaves measures nothing.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-is-never-drawn-halted.html:331",
+      "id": "wiring-1",
+      "reason": "the driver is what a coordinator schedules from, so an unnamed section is either never dispatched or dispatched at a point that collides with a peer.",
+      "text": "the followup body is this plan's dispatch driver (`data-recommends-skill=\"/reckon-build a-live-worker-is-never-drawn-halted\"`) and it enumerates the schedule as \"\u00a72, \u00a74, \u00a76, \u00a78 and \u00a79 are independent. \u00a73 follows \u00a72, and \u00a75 then \u00a77 follow \u00a74\", leaving \u00a713 unnamed \u2014 the same omission an earlier review raised for \u00a710\u2013\u00a712, which was answered by adding an ordering sentence to \u00a712's body, but \u00a713 was added afterwards and carries none; a dispatcher reading the driver sees no slot for \u00a713. \u00a713's write paths (`reckon/crew/queue_admission.py`, the dispatch module) are in fact disjoint from every other section's, so it is independent and one clause states it.",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ed6efe54ecf8b34997f62f9900e81944874475fe50bb460f8da5ddc92470b5b9",
+  "plan_slug": "a-live-worker-is-never-drawn-halted",
+  "plan_version": 14,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T170418240513-plan-review-of-a-live-worker-is-never-drawn-halted",
+  "reviewed_blob_sha": "ad70b3867c44515c8095f08bd52e72230d8e89fc",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited `reckon/crew/queue_admission.py` (`_launch_queued`), `reckon/crew/dispatch.py` / `reckon/crew/dispatch_launch.py`, and the `live/<run>.json` pointer path all resolve at HEAD.",
+    "done_when": "a finding \u2014 \u00a713's negative control asserts a base-revision reading that the cited code cannot produce, so the node's measure cannot fail.",
+    "evidence_paths": "pass \u2014 \u00a713's gate log is the node's own run log, and its evidence fragment path under `docs/evidence/fragments/` is durable and matched by \u00a711's landing convention.",
+    "naming": "pass \u2014 \u00a713 introduces no plan labels, ticket numbers or changelog prose; `_launch_queued`, the pointer path and the ordering are named by mechanism.",
+    "reasoning": "a finding \u2014 \u00a713's stated root cause (\"the ordering that lets the spawn precede the write\") is contradicted by the code it cites, where the pointer write already precedes both the supervisor spawn and any caller-supplied launcher.",
+    "single_goal": "pass \u2014 \u00a713 carries one deliverable (publish the pointer before the supervisor is spawned) and its write paths are disjoint from every other section's.",
+    "wiring": "a finding \u2014 the followup that drives the build (`docs/plans/a-live-worker-is-never-drawn-halted.html#s13) is not named by it."
+  },
+  "section_digests": {
+    "_document": "77f3c30ac1fae1a90bce2394ee13207c57973da1594d680d7cacc4b40bbe201b",
+    "s1": "fdb0ee3dedcf73cd7c31af5f79b1d6f1be8507f3719e92fd34a61e01cdd35b78",
+    "s10": "70c7adc788727af45a8714a697d6346247fe2103ec92cc0aabe31175592510f3",
+    "s11": "75b4df0e4c67134607272550aaa2236e7b1d3066609a6473041e0749aeed2ed8",
+    "s12": "928be57771c429d0e8372b33d7a14af3b1fdd4ccf96b21742f9039579d68e340",
+    "s13": "1318281268109c05a0172cf2274c4c0aeaf1827407e2cc7b4a639f09eec7f7e7",
+    "s2": "c70702959e42962a53184387993123e6b33693a435a06e946ca449754b33ea68",
+    "s3": "be700141126a9f237bac20562b4dcfad23aac331578ae9436e34181230a8be67",
+    "s4": "789bd707090d33eccd7a114acae9de24ed9233fbe5d4912aa2f82e553ca1c10d",
+    "s5": "1fbaee6774bb925bffb02f59d8d4442ab2ecbdce493922561ca3818683ca89fe",
+    "s6": "7bacac917ceea413da790f88aade389dde79677d9d8952459a1700a2c2bb3707",
+    "s7": "e0d2472a318e1a27f08abcca88ffe574165e01b272d6138ba68c315ecbfc6f68",
+    "s8": "6b624c6cbe92fe711fc3a9dafd75574d3ef03e725cd3e30db12854627b923470",
+    "s9": "5c3001670a292c0e3c97fd032cdc06a5d469d910086004b3df0f4540767159d0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T17:26:14.440796+00:00"
+}
