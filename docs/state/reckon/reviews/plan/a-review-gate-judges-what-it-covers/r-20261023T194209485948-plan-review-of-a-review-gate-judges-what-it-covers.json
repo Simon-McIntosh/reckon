@@ -1,0 +1,92 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T20:26:19.911Z",
+  "dispatched_at": "2026-10-23T20:01:18Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/promotion_evidence.py:88",
+      "id": "reuse_search-1",
+      "reason": "the section's premise and its negative control both describe a defect the owner already fixed, so the node would be built against code that does not need it.",
+      "text": "\u00a75 asks the first step to be \"find which comparison the check makes today\", and that check already exists: `_committed_scope` (called from `reckon/crew/promotion_checks.py:2197`) reads each cited commit's diff against its own first parent, so a path the base commit changed is never in `cumulative.paths` unless the run itself cited it. \u00a75's deliverable \u2014 \"compare the run's own commits against its recorded base\" \u2014 re-proposes the span diff its own docstring rejects as a diff \"of a span, not of a run\", and its negative control (\"a comparison taken from the base's parent must charge the base's path\") is unsatisfiable without adding the very bug `_committed_scope` exists to prevent. The live defect is elsewhere \u2014 a run that cites no commit, or that is charged the worktree shadow diff \u2014 and \u00a75 does not look there",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/promotion_gate.py:246",
+      "id": "reuse_search-2",
+      "reason": "naming the owner turns three \"somewhere in the promotion/dispatch path\" nodes into three one-file edits and prevents a second implementation of record reading or of the scope comparison.",
+      "text": "census of the same type across the plan's unowned sections: \u00a74 (promotion-path exemption) names no file, though the executable-gate check it would bypass is `_require_executable_gate_command` at `reckon/crew/promotion_gate.py:246` and the stored-record read it would use already exists as `recovery_review_delivery._delivered_review_record:464` with the review-role promotion already implemented in `reckon/crew/recovery_review_acceptance.py:250`; \u00a76 (printed command) names no file, though the composer is `_health_review_compose_command` at `reckon/crew/dispatch_admission.py:809`; \u00a75 names no file at all (\"the one place the diff is taken\")",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch_admission.py:809",
+      "id": "reuse_search-3",
+      "reason": "the section as written would produce a printed command that still refuses when run, defeating its own done-when.",
+      "text": "\u00a76 designs its command as \"`--around <path>` for each\", but `--around` is plan-only: the option is declared `click.option(\"--around\", \"around_plan\")` at `reckon/crew_dispatch_commands.py:2389`, validated as a plan subject at `:2538` (\"`--around PLAN`\"), and a path is named by `--path` (`:2390`, multiple=True). A compose command emitted as `--around <path>` would be refused exactly as the plan-slug form it replaces, which is the failure \u00a76 exists to remove",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:821",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a72 explicitly promises it is \"not a second predicate\", but the predicate as it stands cannot answer the question the gate must ask, so the change lands in `review_coverage` (return per-sub-unit document state) or the plan is wrong about where it lands.",
+      "text": "\u00a72 requires the gate to treat the document unit as owed \"only when the document-level text that changed is text the node reads as its contract (the summary, decisions and gates)\", but `review_coverage` returns the document as one unit: `_section_digests` folds decisions, gates and dependencies into a single `_document` digest (`reckon/crew/plan_review.py:364`), and the coverage loop covers it only on an exact whole-digest match (`:931`). There is no sub-unit granularity to read, see below",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:931",
+      "id": "duplicate_owner-2",
+      "reason": "the plan must state that `review_coverage` gains sub-unit document output, so the author does not implement a fork in the dispatch gate.",
+      "text": "the same defect's second site: if the gate instead recomputes the document's sub-digests itself it becomes the second coverage predicate \u00a72 disclaims, and will drift from `_section_digests`/`_digest_state`",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/plan_review.py:931",
+      "id": "reuse_search-4",
+      "reason": "the section's test cannot demonstrate the rule it adds, so the node would ship a test that passes before and after the change.",
+      "text": "\u00a73's done-when assumes the answered-finding rule is what makes a 1 % edit to an anchored section covered, and that removing the rule leaves the edit uncovered. The word-share rule already covers any section whose done-when paragraph is unchanged and whose `_edit_share` is under `plan_change_threshold`: `reckon/crew/plan_review.py:949-959` applies it to every section, so the first done-when case passes today with no answered-finding link, and \u00a73's negative control (\"with the answered-finding rule removed, the 1 % edit to s5 must read as uncovered\") cannot fail. The discriminating fixture is a change the existing rule does not cover \u2014 a done-when edit, or a change `review_need` marks as required",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "skills/reckon-edit/SKILL.md:163",
+      "id": "interface_budget-1",
+      "reason": "the section must either name the field it replaces or state in its own text why the plan's whole debt and the write's own debt must both survive.",
+      "text": "\u00a78 adds `uncovered_by_write` to the `edit_plan` answer (and the edit skill's step 10) without naming a field it retires or merges, or why nothing can be. `review_owed` stays as the plan's whole debt, so one write answer now carries two overlapping uncovered lists that a coordinator must learn to read differently; the supplied counts (public_definitions 2062, cli_options 407, mcp_views 19, refusal_families 23) already carry this surface and \u00a78 adds to it without accounting",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c63111f54dba53e6cb806dc6d7c7a8c5fae07df8fe4386b7f61e8b0000f8946e",
+  "plan_slug": "a-review-gate-judges-what-it-covers",
+  "plan_version": 7,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T194209485948-plan-review-of-a-review-gate-judges-what-it-covers",
+  "reviewed_blob_sha": "8fb6e88c150bf1ecbac9b59997fa70ec5208376b",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 no section adds a module; each changes how an existing predicate or check is read, with \u00a72 naming `plan_review.review_coverage` and \u00a78 naming `_review_owed_fields` and `PLAN_METADATA_SCALARS`.",
+    "duplicate_owner": "a finding \u2014 \u00a72 promises \"how the dispatch gate reads\" `review_coverage`, but the document-unit rule it needs cannot be read from that predicate at all; \u00a75 re-proposes a base comparison `promotion_evidence._committed_scope` already implements.",
+    "interface_budget": "a finding \u2014 public_definitions 2062, cli_options 407, mcp_views 19, refusal_families 23; \u00a78 adds `uncovered_by_write` to the `edit_plan` answer without naming what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a74, \u00a75 and \u00a76 each propose machinery without naming the mechanism that already does it, and \u00a75's premise is contradicted by code it does not cite.",
+    "thin_wrapper": "pass \u2014 the closest call is \u00a78's `uncovered_by_write`, which extends `_review_owed_fields` in place rather than wrapping it; no section proposes a parallel wrapper over existing machinery."
+  },
+  "section_digests": {
+    "_document": "225a815e200cd0c1c3312dbdd4368b3acedadc4db09e01460d20ac082ce050cb",
+    "s1": "2f80e3c4526e5da0f46c438dc82b2880b0fa395a71a3807823c00850eb9622b9",
+    "s2": "b003c30eb192f0dfa86d4e6518b4deede24bf6b15c0b15ba5784a6066d3da870",
+    "s3": "7df7d94c9d011998671062ddf1072ba44b1c08d7172f92e43f18961813f1d434",
+    "s4": "491337ffa1e3dbb35aed0b41de9bfb17126787d7b0a08c15bb12879faa1a9b43",
+    "s5": "f21e5477c01ae1e8fb4da7b3d607da52313f50d700b6b7dc3d5a2adb8d9f8956",
+    "s6": "534a6debaffa16edfc0cb75f6488191af897e1ff0b9ad32ecdaaa28148c119ff",
+    "s7": "ce6bf11980ac24dc184e5bd2aa6fd813667fe40e90c0ea97a60a56d649f3fd30",
+    "s8": "fd5dc1e3777871755eeeb65dc14935764ea25a67e2902dd8de2e8831cb64fa78"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T20:28:57.404527+00:00"
+}
