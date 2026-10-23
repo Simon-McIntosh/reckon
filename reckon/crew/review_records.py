@@ -686,10 +686,19 @@ def stored_records_for_run(
     the same order. A file that cannot be read or does not parse is skipped and
     named to the caller's ``skipped`` list or collection region, the same rule
     the by-head readers apply.
+
+    Each record carries the answer fields of every copy of the same review run
+    — its own staging copy, its head-keyed siblings and the committed record
+    under the project's reviews tree — merged through
+    :func:`_record_with_merged_answers`, so a finding disposition recorded after
+    a promotion is read by every caller of this lookup rather than only by the
+    by-head readers. The records returned, and their order, are unchanged: the
+    merge adds answers to a selected record and selects nothing else.
     """
     directory = _review.review_store_root(base_dir) / project
     if not directory.is_dir():
         return []
+    committed = _review.committed_review_root(project)
     records: list[tuple[Path, dict[str, Any]]] = []
     seen: set[str] = set()
     entries = sorted(
@@ -711,7 +720,17 @@ def stored_records_for_run(
             continue
         if str(record.get("reviewed_run_id") or "").strip() != reviewed_run_id:
             continue
-        records.append((path, dict(record)))
+        _merged_path, merged = _record_with_merged_answers(
+            project,
+            reviewed_run_id,
+            (path, record),
+            committed=committed,
+            base_dir=base_dir,
+            skipped=skipped,
+        )
+        if merged is None:
+            continue
+        records.append((path, merged))
     return records
 
 
