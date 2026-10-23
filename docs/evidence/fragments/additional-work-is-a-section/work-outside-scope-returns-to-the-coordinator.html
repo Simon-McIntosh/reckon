@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="plan-slug" content="additional-work-is-a-section">
+  <meta name="plan-node" content="work-outside-scope-returns-to-the-coordinator">
+  <meta name="plan-section" content="s3">
+  <title>Work outside a worker's fence returns to its coordinator</title>
+</head>
+<body>
+  <main class="plan-doc">
+    <p id="wosr-summary">The worker manifest field <code>follow_ons</code> is
+    renamed <code>outside_scope</code>, and the entries it carries reach the
+    dispatching coordinator instead of being converted into plan followups.</p>
+
+    <h3 id="wosr-changed">What changed</h3>
+    <ul>
+      <li id="wosr-changed-field"><code>reckon/crew/reports.py</code> names the
+      field <code>outside_scope</code> in <code>_MANIFEST_LIST_KEYS</code>, and
+      maps the retired spelling onto it in the parser on the way in, dropping
+      the retired key so it is never written back.</li>
+      <li id="wosr-changed-deleted">The conversion
+      <code>followup_ops_from_manifest</code> and its export from
+      <code>reckon.crew</code> are deleted.</li>
+      <li id="wosr-changed-report"><code>reckon/crew/promotion.py</code> carries
+      the entries on the promotion report under <code>outside_scope</code> and
+      writes the extracted paths on the ledger row under
+      <code>outside_scope_paths</code>.</li>
+      <li id="wosr-changed-prompt">The worker prompt asks for the new field and
+      states the rule: the coordinator answers each entry as a plan section or
+      as an instruction in the next dispatch's prompt.</li>
+      <li id="wosr-changed-refs">Both skill references
+      (<code>worker-protocol.md</code>, <code>coordinator-reference.md</code>)
+      tell the coordinator to answer each entry, and neither names the deleted
+      conversion.</li>
+    </ul>
+
+    <h3 id="wosr-negative-control">Negative control</h3>
+    <p id="wosr-negative-control-body">Restoring
+    <code>followup_ops_from_manifest</code> and its export reddens the case that
+    asserts the conversion is gone.</p>
+
+    <h3 id="wosr-followons">Outside scope</h3>
+    <p id="wosr-followons-body">Test files that call the deleted conversion or
+    assert the retired manifest key directly red at head, and are outside this
+    node's write scope; their ids are recorded in the manifest under
+    <code>follow_ons</code> so the coordinator can grant them.</p>
+  </main>
+</body>
+</html>
