@@ -899,6 +899,33 @@ def _wait_declaration_signature(
 # happens.
 RUN_STREAM_GLOBS = ("stream.jsonl", "resume-*.jsonl", "lane-change-*.jsonl")
 
+# Which stream files a run directory holds, kept per process by the
+# directory's inode and mtime. Every producer pass lists every live run's
+# directory to find its newest stream; every stream file sits directly in the
+# run directory, so creating, removing or renaming one moves the directory's
+# mtime and the listing is taken again. The store is cleared whole at its bound.
+_RUN_STREAM_NAMES: dict[str, tuple[tuple[int, int], tuple[Path, ...]]] = {}
+_RUN_STREAM_NAMES_LIMIT = 4096
+
+
+def _run_stream_names(directory: Path) -> tuple[Path, ...]:
+    """The run directory's stream files, listed again only when it changed."""
+    try:
+        info = directory.stat()
+    except OSError:
+        return ()
+    identity = (info.st_ino, info.st_mtime_ns)
+    kept = _RUN_STREAM_NAMES.get(str(directory))
+    if kept is not None and kept[0] == identity:
+        return kept[1]
+    found = tuple(
+        path for pattern in RUN_STREAM_GLOBS for path in directory.glob(pattern)
+    )
+    if len(_RUN_STREAM_NAMES) >= _RUN_STREAM_NAMES_LIMIT:
+        _RUN_STREAM_NAMES.clear()
+    _RUN_STREAM_NAMES[str(directory)] = (identity, found)
+    return found
+
 
 def stream_paths_newest_first(
     run_dir: str | Path, *, include: Iterable[str | Path] = ()
@@ -912,9 +939,7 @@ def stream_paths_newest_first(
     record whose current stream sits outside the run directory is still read.
     """
     directory = Path(run_dir)
-    candidates: list[Path] = []
-    for pattern in RUN_STREAM_GLOBS:
-        candidates.extend(directory.glob(pattern))
+    candidates: list[Path] = list(_run_stream_names(directory))
     for extra in include:
         if str(extra or ""):
             candidates.append(Path(str(extra)))
