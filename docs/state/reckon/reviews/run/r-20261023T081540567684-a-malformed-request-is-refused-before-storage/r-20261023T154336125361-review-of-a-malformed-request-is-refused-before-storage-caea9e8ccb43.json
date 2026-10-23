@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window"
+  ],
+  "added_failures_note": "derived from the reviewed manifest's own arms: baseline_suite (base-arm.log, the new test file alone) records 5 failing ids and after_suite (gate.log, seven files) records 1, so the set difference is tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window and the count is 1. The adjudicated delta is zero: that failure is reckon/roadmap.py exceeding its 50000-token bound, a module no commit in this range touches, so the baseline arm could not have shown it and it is pre-existing, as the reviewed manifest's failure_attribution states.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/mcp.py:3306",
+    "reckon/mcp.py:3316",
+    "reckon/mcp.py:3322",
+    "reckon/mcp.py:3339",
+    "reckon/crew_run_commands.py:335"
+  ],
+  "completed_at": "2026-10-23T16:09:18.466Z",
+  "dispatched_at": "2026-10-23T15:45:14Z",
+  "findings": [
+    {
+      "file": "reckon/mcp.py",
+      "line": "320",
+      "text": "blocking: the runs pre-flight judges source/scope by raw membership (`if source not in RUN_SOURCES` / `if scope not in RUN_SCOPES`), while the view that owns the check normalizes first (reckon/crew/query.py:802 `str(source or \"all\").strip().lower()`), so mcp._crew(project='fixture', view='runs', source='ALL') is refused with 'runs source must be one of all, ledger, live' and the same call with scope='Project' with \"unknown runs scope 'Project'\"; both were served before this change and are still served through serve_crew_view, so the pre-flight refuses a well-formed request - the inversion reckon/mcp.py:295-303's own docstring forbids."
+    },
+    {
+      "file": "reckon/mcp.py",
+      "line": "320",
+      "text": "non-blocking: the runs source/scope validation is restated in the pre-flight rather than delegated to reckon/crew/query.py:802-810, which owns it, and the restatement is what let the two diverge in normalization and in wording ('runs source must be one of ...' here against 'unknown runs scope ...; scope must be one of ...' there); extracting the owner's check as a no-I/O validator, as crew_view_name and normalize_roadmap_view were extracted in this same node, would hold both surfaces to one fact."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/mcp.py:3306, :3316, :3322 and :3339 register the four changed tools; reckon/crew_run_commands.py:335 is the `crew view` CLI reaching serve_crew_view's changed refusal contract.",
+    "diff": "read the 13 commits from 3a985827 to caea9e8cc commit by commit; 8 files, +832/-50, the production change in reckon/mcp.py (_view_refusal, _argument_selector, _crew_argument_refusal and the plan/roadmap pre-flights), reckon/mcp_edit_plan.py (_refuse_unknown_op_verbs), reckon/mcp_views.py (crew_view_name and normalize_roadmap_view split out of the reads), reckon/crew/query.py (LIVE_FIELD_VOCABULARY and its parts) and reckon/project_state.py (accepted_op_verbs), the rest tests and the evidence fragment.",
+    "done_when": "the measure names a crew live call with an unknown field, a crew call with an unknown view and an edit_plan call with an unknown op, each refused without the storage stub being reached; tests/test_a_malformed_request_is_refused_before_storage.py:147, :178 and :212 assert exactly that under a stub raising on every open and on the project docs-dir resolution, and the manifest records 5 failed/1 passed at the base revision against 13 passed at head.",
+    "goal": "the node goal is to refuse a malformed reckon MCP request before any file is opened; reckon/mcp.py:1157 and :2116 refuse an unknown plan or roadmap view before the read they guard, reckon/mcp.py:286 refuses an unknown crew view, field, source or scope from the argument, and reckon/mcp_edit_plan.py:1132 refuses an op verb.",
+    "manifest": "read .../runs/r-20261023T081540567684-a-malformed-request-is-refused-before-storage/manifest.md; status complete, gate '1 failed, 151 passed in 89.58s', the sole failure tests/test_every_module_fits_a_worker_window.py attributed pre-existing on reckon/roadmap.py, baseline_suite 5 failed/1 passed, seven-arm negative control.",
+    "write_paths": "the manifest declares eight paths (reckon/mcp.py, reckon/mcp_edit_plan.py, reckon/crew/query.py, reckon/mcp_views.py, reckon/project_state.py, tests/test_a_malformed_request_is_refused_before_storage.py, tests/test_crew_view_serves_every_view.py and the evidence fragment); `reckon crew check --manifest --run r-20261023T081540567684-a-malformed-request-is-refused-before-storage` returns ok:true, so every path the diff touches is inside the recorded scope."
+  },
+  "justifications": {
+    "durability": "negative-control.log arms 1-7 each redden (7/6, 1/12, 2/11, 1, 2/11, 4/9, 1/12 failing/passing) on the mutation they name, and arm 4 covers view case-insensitivity, but no arm covers the runs source/scope spelling that reckon/mcp.py:320 accepts only exactly, so that behaviour is unguarded.",
+    "evidence": "gate.log at caea9e8cc records '1 failed, 151 passed in 89.58s' with the sole failure reckon/roadmap.py (untouched by the diff, so pre-existing), base-arm.log records '5 failed, 1 passed' for the new test file, and negative-control.log's seven arms each redden on a stated mutation.",
+    "fit": "the added definitions follow the module's idiom (a module-level helper with a mechanism docstring, refusal through the owner's error_response) and introduce no plan, issue or version label; reckon/crew/query.py:96-155 adds a 58-name literal tuple duplicating the keys classify_pointer already answers, which its parity test holds in step.",
+    "goal_fidelity": "reckon/mcp.py:1157, :2116, :286 and reckon/mcp_edit_plan.py:1132 refuse each malformed argument before the read is entered, but reckon/mcp.py:320 also refuses source/scope spellings the runs view serves (reckon/crew/query.py:802 lowercases and strips), so the pre-flight refuses a well-formed request as well as a malformed one.",
+    "reuse": "crew_view_name (reckon/mcp_views.py:3750), normalize_roadmap_view (:3546), accepted_op_verbs (reckon/project_state.py:2366), LIVE_FIELD_VOCABULARY (reckon/crew/query.py:274) and _view_refusal (reckon/mcp.py:247) each extend the owner of their capability, but _crew_argument_refusal re-implements the runs source/scope check owned by reckon/crew/query.py:802-810 instead of calling it.",
+    "scope_discipline": "git diff --stat 3a985827 caea9e8cc lists exactly the eight paths the manifest declares and `crew check --manifest --run r-20261023T081540567684-a-malformed-request-is-refused-before-storage` returns ok:true, the tests/test_crew_view_serves_every_view.py change being one docstring sentence repointing a deleted constant."
+  },
+  "node": "review-of-a-malformed-request-is-refused-before-storage-caea9e8ccb43",
+  "node:reviewed": "a-malformed-request-is-refused-before-storage",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to refuse a malformed reckon MCP request before any file is opened; reckon/mcp.py:1157 and :2116 refuse an unknown plan or roadmap view before the read they guard, reckon/mcp.py:286 refuses an unknown crew view, field, source or scope from the argument, and reckon/mcp_edit_plan.py:1132 refuses an op verb.\nVERDICT done_when: the measure names a crew live call with an unknown field, a crew call with an unknown view and an edit_plan call with an unknown op, each refused without the storage stub being reached; tests/test_a_malformed_request_is_refused_before_storage.py:147, :178 and :212 assert exactly that under a stub raising on every open and on the project docs-dir resolution, and the manifest records 5 failed/1 passed at the base revision against 13 passed at head.\nVERDICT write_paths: the manifest declares eight paths (reckon/mcp.py, reckon/mcp_edit_plan.py, reckon/crew/query.py, reckon/mcp_views.py, reckon/project_state.py, tests/test_a_malformed_request_is_refused_before_storage.py, tests/test_crew_view_serves_every_view.py and the evidence fragment); `reckon crew check --manifest --run r-20261023T081540567684-a-malformed-request-is-refused-before-storage` returns ok:true, so every path the diff touches is inside the recorded scope.\nVERDICT manifest: read .../runs/r-20261023T081540567684-a-malformed-request-is-refused-before-storage/manifest.md; status complete, gate '1 failed, 151 passed in 89.58s', the sole failure tests/test_every_module_fits_a_worker_window.py attributed pre-existing on reckon/roadmap.py, baseline_suite 5 failed/1 passed, seven-arm negative control.\nVERDICT diff: read the 13 commits from 3a985827 to caea9e8cc commit by commit; 8 files, +832/-50, the production change in reckon/mcp.py (_view_refusal, _argument_selector, _crew_argument_refusal and the plan/roadmap pre-flights), reckon/mcp_edit_plan.py (_refuse_unknown_op_verbs), reckon/mcp_views.py (crew_view_name and normalize_roadmap_view split out of the reads), reckon/crew/query.py (LIVE_FIELD_VOCABULARY and its parts) and reckon/project_state.py (accepted_op_verbs), the rest tests and the evidence fragment.\nCALL_SITES: reckon/mcp.py:3306 (_read_plan_tool registered as the read_plan tool), reckon/mcp.py:3316 (_edit_plan_tool), reckon/mcp.py:3322 (_roadmap_tool), reckon/mcp.py:3339 (_crew), reckon/crew_run_commands.py:335 (the `crew view` CLI calling serve_crew_view, whose refusal contract this node changed)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/mcp.py:1157, :2116, :286 and reckon/mcp_edit_plan.py:1132 refuse each malformed argument before the read is entered, but reckon/mcp.py:320 also refuses source/scope spellings the runs view serves (reckon/crew/query.py:802 lowercases and strips), so the pre-flight refuses a well-formed request as well as a malformed one.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate.log at caea9e8cc records '1 failed, 151 passed in 89.58s' with the sole failure reckon/roadmap.py (untouched by the diff, so pre-existing), base-arm.log records '5 failed, 1 passed' for the new test file, and negative-control.log's seven arms each redden on a stated mutation.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff --stat 3a985827 caea9e8cc lists exactly the eight paths the manifest declares and `crew check --manifest --run r-20261023T081540567684-a-malformed-request-is-refused-before-storage` returns ok:true, the tests/test_crew_view_serves_every_view.py change being one docstring sentence repointing a deleted constant.\nSCORE durability: 16\nJUSTIFICATION durability: negative-control.log arms 1-7 each redden (7/6, 1/12, 2/11, 1, 2/11, 4/9, 1/12 failing/passing) on the mutation they name, and arm 4 covers view case-insensitivity, but no arm covers the runs source/scope spelling that reckon/mcp.py:320 accepts only exactly, so that behaviour is unguarded.\nSCORE fit: 16\nJUSTIFICATION fit: the added definitions follow the module's idiom (a module-level helper with a mechanism docstring, refusal through the owner's error_response) and introduce no plan, issue or version label; reckon/crew/query.py:96-155 adds a 58-name literal tuple duplicating the keys classify_pointer already answers, which its parity test holds in step.\nSCORE reuse: 12\nJUSTIFICATION reuse: crew_view_name (reckon/mcp_views.py:3750), normalize_roadmap_view (:3546), accepted_op_verbs (reckon/project_state.py:2366), LIVE_FIELD_VOCABULARY (reckon/crew/query.py:274) and _view_refusal (reckon/mcp.py:247) each extend the owner of their capability, but _crew_argument_refusal re-implements the runs source/scope check owned by reckon/crew/query.py:802-810 instead of calling it.\nFINDING reckon/mcp.py:320 blocking: the runs pre-flight judges source/scope by raw membership (`if source not in RUN_SOURCES` / `if scope not in RUN_SCOPES`), while the view that owns the check normalizes first (reckon/crew/query.py:802 `str(source or \"all\").strip().lower()`), so mcp._crew(project='fixture', view='runs', source='ALL') is refused with 'runs source must be one of all, ledger, live' and the same call with scope='Project' with \"unknown runs scope 'Project'\"; both were served before this change and are still served through serve_crew_view, so the pre-flight refuses a well-formed request - the inversion reckon/mcp.py:295-303's own docstring forbids.\nFINDING reckon/mcp.py:320 non-blocking: the runs source/scope validation is restated in the pre-flight rather than delegated to reckon/crew/query.py:802-810, which owns it, and the restatement is what let the two diverge in normalization and in wording ('runs source must be one of ...' here against 'unknown runs scope ...; scope must be one of ...' there); extracting the owner's check as a no-I/O validator, as crew_view_name and normalize_roadmap_view were extracted in this same node, would hold both surfaces to one fact.\n",
+  "review_run_id": "r-20261023T154336125361-review-of-a-malformed-request-is-refused-before-storage-caea9e8ccb43",
+  "reviewed_base_sha": "3a985827baf90836c57d16ab069ec38c3cb80e24",
+  "reviewed_head_sha": "caea9e8ccb438ccdb05d3aaa0f47969dc00e50ba",
+  "reviewed_run_id": "r-20261023T081540567684-a-malformed-request-is-refused-before-storage",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 12,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T16:05:00+00:00",
+  "total": 97
+}
