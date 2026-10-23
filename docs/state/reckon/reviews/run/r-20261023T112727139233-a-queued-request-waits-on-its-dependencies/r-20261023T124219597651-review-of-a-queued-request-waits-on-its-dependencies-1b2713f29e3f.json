@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest carries no baseline_suite/after_suite keys, but names the equivalent pair in test_logs: delta-base.log (head tree with reckon/crew/queue_admission.py reverted, 13 failed, EXIT=1) and delta-head.log (reviewed head, 13 failed, EXIT=1) rerun the same 13 ids that failed in the parallel gate arm; both arms fail exactly those ids and neither fails an id the other passes, so the change adds 0 failures.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-23T13:01:57.694Z",
+  "dispatched_at": "2026-10-23T12:43:22Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "1338",
+      "text": "blocking: queue_requests is the only producer of the waits field and of AWAITING_UPSTREAM_PHASE, and no production code calls it \u2014 git grep -n queue_requests at the reviewed head matches only the new test module and the evidence fragment, so no dispatched node can enter awaiting-upstream and the goal's hold-a-dispatched-node half is unreachable; the node held write grants on reckon/crew/dispatch.py and reckon/crew/dispatch_admission.py and used neither, and plan section 2's owners name only admit_once while section 5 adds crew queue edit/reprioritise/drop and no queueing verb, so no other section owns the entry point."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T112727139233-a-queued-request-waits-on-its-dependencies/gate-base.log",
+      "line": "1",
+      "text": "non-blocking: the base arm does not demonstrate the failure the done_when claims (the chain's later sections launch at once, ignoring their waits) \u2014 all three cases stop at AttributeError: module reckon.crew.queue_admission has no attribute queue_requests, so nothing about the base ordering was observed, and the log's header names neither measurement_module nor measurement_cwd, so a reader cannot tell which module the scratch tree imported."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T112727139233-a-queued-request-waits-on-its-dependencies/manifest.md",
+      "line": "15",
+      "text": "non-blocking: the tests line is a prose description of the new module's outcome (3 passed) rather than the literal command the shell was handed, and it does not reconcile with the gate log named in the same manifest \u2014 test_logs carries gate-main.log, whose last line is EXIT=1 under 13 failed, 1100 passed, 1 skipped, 2 warnings, 1 error, so the record reads green while its own log exits red."
+    },
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": "1052",
+      "text": "non-blocking: plan section 2 states every reader that filters on a request's phase reads the new vocabulary, but the duties view still resolves placements through queue_admission.queued_placements alone (reckon/crew/obligation_snapshot.py:1052, reckon/crew/obligations.py:1348) and the watch classification at reckon/crew/recovery_classification.py:143 reads neither new phase, so an awaiting-upstream or blocked-upstream request exists and is released on time yet is not drawn on its session's duties view; the worker recorded this under follow_ons because those files sit outside its fence."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "1109",
+      "text": "non-blocking: _parse_section_ref re-implements ref parsing the repository already owns \u2014 it partitions on a hash and strips a project prefix by hand, where reckon/_schema.py:276 parse_plan_ref already answers this for ten other callers (roadmap.py, doccheck.py, ledger.py among them) and exists because two spellings of one ref must compare equal; the diff imports section_depends_on from that same module but not parse_plan_ref."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "git grep at the reviewed head finds queue_requests referenced only by tests/test_a_queued_request_waits_on_its_dependencies.py:178 and :239 and by the evidence fragment; advance_waiting_requests is reached in production from admit_once at reckon/crew/queue_admission.py:1538.",
+    "diff": "read commit by commit against the base; cce801f3c adds the phases, the readiness re-read and the queue call to reckon/crew/queue_admission.py plus the test module, 1b2713f29 adds the evidence fragment, and nothing outside the declared scope moves.",
+    "done_when": "the done_when's gate is tests/test_a_queued_request_waits_on_its_dependencies.py; the manifest names it and gate-main.log records it passing inside a red arm (13 failed, EXIT=1), while its base arm gate-base.log fails on AttributeError, not on the ordering the done_when claims.",
+    "goal": "the node's goal is to hold a dispatched node with unmet section waits as an awaiting-upstream request that admission releases as they land; reckon/crew/queue_admission.py:53 defines the awaiting-upstream phase and :1274 the pass that releases it, but the only producer of that state, queue_requests at :1338, has no production caller.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T112727139233-a-queued-request-waits-on-its-dependencies/manifest.md; status complete with two commits and the gate and negative-control logs named, but its tests line (manifest.md:15) is a prose description of the new module's result rather than the literal command, and it does not reconcile with gate-main.log's EXIT=1.",
+    "write_paths": "the manifest declares six paths and the diff of 43677d0d..1b2713f2 changes three of them, all inside that set (reckon/crew/queue_admission.py, tests/test_a_queued_request_waits_on_its_dependencies.py, docs/evidence/fragments/a-queue-holds-the-whole-plan/a-queued-request-waits-on-its-dependencies.html)."
+  },
+  "node": "review-of-a-queued-request-waits-on-its-dependencies-1b2713f29e3f",
+  "node:reviewed": "a-queued-request-waits-on-its-dependencies",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to hold a dispatched node with unmet section waits as an awaiting-upstream request that admission releases as they land; reckon/crew/queue_admission.py:53 defines the awaiting-upstream phase and :1274 the pass that releases it, but the only producer of that state, queue_requests at :1338, has no production caller.\nVERDICT done_when: the done_when's gate is tests/test_a_queued_request_waits_on_its_dependencies.py; the manifest names it and gate-main.log records it passing inside a red arm (13 failed, EXIT=1), while its base arm gate-base.log fails on AttributeError, not on the ordering the done_when claims.\nVERDICT write_paths: the manifest declares six paths and the diff of 43677d0d..1b2713f2 changes three of them, all inside that set (reckon/crew/queue_admission.py, tests/test_a_queued_request_waits_on_its_dependencies.py, docs/evidence/fragments/a-queue-holds-the-whole-plan/a-queued-request-waits-on-its-dependencies.html).\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T112727139233-a-queued-request-waits-on-its-dependencies/manifest.md; status complete with two commits and the gate and negative-control logs named, but its tests line (manifest.md:15) is a prose description of the new module's result rather than the literal command, and it does not reconcile with gate-main.log's EXIT=1.\nVERDICT diff: read commit by commit against the base; cce801f3c adds the phases, the readiness re-read and the queue call to reckon/crew/queue_admission.py plus the test module, 1b2713f29 adds the evidence fragment, and nothing outside the declared scope moves.\nCALL_SITES: none\nSCORE goal_fidelity: 8\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:1338 defines queue_requests, the only writer of the waits field the awaiting-upstream state depends on, and no production module calls it, so the goal's hold-a-dispatched-node half is unreachable outside the test.\nSCORE evidence: 12\nJUSTIFICATION evidence: tests/test_a_queued_request_waits_on_its_dependencies.py passes inside gate-main.log and the declared control at gate-negative.log reddens it, but the base arm gate-base.log fails on AttributeError rather than on the behaviour the done_when names.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff --stat 43677d0d..1b2713f2 changes three files, every one a declared write path, and touches no concurrent node's path.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_queued_request_waits_on_its_dependencies.py:205 asserts one launch before the upstream lands and :216 the tail still held, and the declared mutation (releasing a waiting request without re-reading readiness) reddens exactly those, per gate-negative.log.\nSCORE fit: 17\nJUSTIFICATION fit: the new phases and vocabulary sit beside QUEUED_PHASE at reckon/crew/queue_admission.py:45-56 as the plan requires, the surrounding docstring and naming idiom is followed, and no name carries a plan, ticket or version label; advance_waiting_requests at :1274 takes a now argument it never reads.\nSCORE reuse: 13\nJUSTIFICATION reuse: readiness is imported from the roadmap's own derivation at reckon/crew/queue_admission.py:1065, but _parse_section_ref at :1109 re-parses a ref the repository already parses in reckon/_schema.py:276 parse_plan_ref.\nFINDING reckon/crew/queue_admission.py:1338 blocking: queue_requests is the only producer of the waits field and of AWAITING_UPSTREAM_PHASE, and git grep at the reviewed head finds it called only by the new test module and the evidence fragment, so no dispatched node can enter awaiting-upstream and the goal's hold-a-dispatched-node half is unreachable.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T112727139233-a-queued-request-waits-on-its-dependencies/gate-base.log:1 non-blocking: the base arm fails on AttributeError (no attribute queue_requests) rather than on the ordering the done_when claims, and its header names neither measurement_module nor measurement_cwd.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T112727139233-a-queued-request-waits-on-its-dependencies/manifest.md:15 non-blocking: the tests line is prose rather than the literal command and reads green (3 passed) while the gate log it names in test_logs ends EXIT=1 with 13 failed.\nFINDING reckon/crew/obligation_snapshot.py:1052 non-blocking: the duties view still resolves placements through queue_admission.queued_placements alone, so an awaiting-upstream or blocked-upstream request is never drawn on its session's duties view although plan section 2 requires every phase filter to read the new vocabulary.\nFINDING reckon/crew/queue_admission.py:1109 non-blocking: _parse_section_ref re-implements ref parsing that reckon/_schema.py:276 parse_plan_ref already owns, without extending it.",
+  "review_run_id": "r-20261023T124219597651-review-of-a-queued-request-waits-on-its-dependencies-1b2713f29e3f",
+  "reviewed_base_sha": "43677d0d2697ae3d8841b6d19addcdb77cc572be",
+  "reviewed_head_sha": "1b2713f29e3f8e1569c688953e757ec6144305c1",
+  "reviewed_run_id": "r-20261023T112727139233-a-queued-request-waits-on-its-dependencies",
+  "scores": {
+    "durability": 18,
+    "evidence": 12,
+    "fit": 17,
+    "goal_fidelity": 8,
+    "reuse": 13,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T14:55:00+00:00",
+  "total": 86
+}
