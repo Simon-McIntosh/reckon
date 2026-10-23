@@ -28,6 +28,7 @@ from pathlib import Path
 import pytest
 
 from reckon.crew import recovery, recovery_classification, runs
+from reckon.crew import review as review_module
 
 # The run is classified as if read from another login node, so liveness comes
 # from the run's own exit record rather than from a process table here — the
@@ -43,13 +44,15 @@ IN_PROGRESS_BODY = (
     "checkpoint: driving the classifier\n"
 )
 
-# A record as the review module writes it: `parsed` is the status a reviewer's
-# record carries once it reads, which is what the classifier treats as a filed
-# review.
+# A record as the review module writes it: a reviewer's record scores every
+# dimension its rubric demands and carries the total they sum to, which is what
+# the classifier's completeness predicate reads. A record missing a measure is
+# one no reader acts on, however it exited.
+COMPLETE_SCORES = dict.fromkeys(review_module.REVIEW_DIMENSIONS, 12)
 PARSED_REVIEW = {
     "status": "parsed",
-    "total": 82,
-    "scores": {},
+    "scores": COMPLETE_SCORES,
+    "total": sum(COMPLETE_SCORES.values()),
 }
 
 
@@ -59,6 +62,8 @@ PARSED_REVIEW = {
 # existed. ``ignore-attempt`` keeps the read but drops the attempt key, keying
 # the receipt on whichever attempt filed one — so a receipt filed by a
 # superseded attempt would let the running attempt read as a delivery.
+# ``wide-status`` keeps the read and drops the completeness predicate, taking
+# any status the store recognises for a delivered review.
 NEGATIVE_CONTROL = os.environ.get("RECKON_FILED_REVIEW_NEGATIVE_CONTROL", "").strip()
 
 
@@ -93,14 +98,23 @@ def _isolated_crew_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None
             "_current_attempt_number",
             _receipt_attempt,
         )
-    elif NEGATIVE_CONTROL == "wide-status":
-        # Every status the store validates is taken for a review, which is what
-        # the reading did before it selected on the one a reader acts on.
+    elif NEGATIVE_CONTROL == "ignore-measures":
+        # The completeness predicate is dropped for the status word alone,
+        # which is how the reading selected before it asked the predicate.
         monkeypatch.setattr(
             recovery_classification,
-            "_parsed_review_record",
+            "_review_is_complete",
+            lambda stored: str((stored or {}).get("status") or "") == "parsed",
+        )
+    elif NEGATIVE_CONTROL == "wide-status":
+        # Every status the store validates is taken for a delivered review,
+        # which is what the reading did when it rested on that vocabulary.
+        monkeypatch.setattr(
+            recovery_classification,
+            "_review_is_complete",
             lambda stored: (
-                str(stored.get("status") or "") in ("parsed", "unparsed", "incomplete")
+                str((stored or {}).get("status") or "")
+                in ("parsed", "unparsed", "incomplete")
             ),
         )
 
@@ -111,11 +125,19 @@ def _write_json(path: Path, payload: object) -> None:
 
 
 def _filed_record(
-    directory: Path, *, attempt: int, status: str = "parsed"
+    directory: Path,
+    *,
+    attempt: int,
+    status: str = "parsed",
+    scores: dict[str, int] | None = None,
 ) -> tuple[Path, Path]:
     """Write the filed store record and the receipt naming it."""
     stored = directory / f"filed-review-{attempt}.json"
-    _write_json(stored, {**PARSED_REVIEW, "status": status})
+    record = {**PARSED_REVIEW, "status": status}
+    if scores is not None:
+        record["scores"] = scores
+        record["total"] = sum(scores.values())
+    _write_json(stored, record)
     filed = directory / f"attempt-{attempt}-review-filed.json"
     _write_json(
         filed,
@@ -288,10 +310,38 @@ def test_an_exited_review_whose_filed_record_did_not_parse_is_not_delivered(
     # The store validates a record's status against three words, but a reader
     # acts on "parsed" alone: an "unparsed" record recognised no score, and an
     # "incomplete" one could not identify the diff its revision pair named. The
-    # promotion gate refuses either, so a run holding one has satisfied no gate
-    # and must keep the base reading rather than reading as a delivery.
+    # completeness predicate refuses either, so a run holding one has satisfied
+    # no gate and must keep the base reading rather than reading as a delivery.
     directory = runs.run_dir(RUN_ID)
     _filed_record(directory, attempt=2, status=status)
+    pointer = _pointer(
+        tmp_path,
+        attempt=2,
+        manifest_body=IN_PROGRESS_BODY,
+        pid=None,
+        launcher_host=OTHER_HOST,
+        exit_record=True,
+    )
+
+    row = _classify(pointer)
+
+    assert row["classification"] == "running"
+    assert row["classification"] != "promotable"
+
+
+def test_an_exited_review_whose_filed_record_lacks_a_measure_is_not_delivered(
+    tmp_path: Path,
+) -> None:
+    # A parsed record that omits a dimension its rubric demands is one no reader
+    # acts on: the same predicate the promotion gate reads refuses it, so the
+    # run keeps the base reading although its process has ended and it filed a
+    # parsed record.
+    directory = runs.run_dir(RUN_ID)
+    _filed_record(
+        directory,
+        attempt=2,
+        scores={"goal_fidelity": 12},
+    )
     pointer = _pointer(
         tmp_path,
         attempt=2,
