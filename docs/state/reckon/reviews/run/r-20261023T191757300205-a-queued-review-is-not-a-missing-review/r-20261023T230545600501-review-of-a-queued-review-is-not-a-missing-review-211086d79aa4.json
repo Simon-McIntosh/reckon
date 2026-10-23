@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/mcp_views.py:3960",
+    "reckon/crew/obligation_snapshot.py:954",
+    "reckon/crew/obligations.py:474",
+    "reckon/crew/recovery_review_dispatch.py:2068",
+    "reckon/crew/recovery_review_dispatch.py:2218"
+  ],
+  "completed_at": "2026-10-23T23:17:29.071Z",
+  "dispatched_at": "2026-10-23T23:07:03Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 758,
+      "severity": "non-blocking",
+      "text": "_queued_review_run_fields now asks _review_in_flight for the single standing review, and that reader has no phase filter: a launched review standing for the same head is returned, obligations.py:771 then returns None, and a queued review that also stands for the head is reported as review-missing. The sweep this replaced filtered on QUEUED_PHASE first and ordered candidates by queued_at, so the earliest queued review was always the one named; that tie-break is gone and the choice now follows list_live order. Two reviews for one head are needed to reach it, so it is latent rather than live."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 380,
+      "severity": "non-blocking",
+      "text": "_live_pointers ignores its project argument whenever a view region is open, so a reader inside a view that asks for another project is silently served the view's snapshot; the region is also private to this module, so the per-pointer loop at reckon/crew/obligation_snapshot.py:954 calls _current_review_in_flight outside any region and still reads the whole live directory once per pointer, which is the repeated read this change removes only on the obligations() path."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 178fd3d53: d3c40faab adds the contextvar region, the snapshot handoff into _review_in_flight and one arm, and 211086d79 carries the evidence text.",
+    "done_when": "the measure names a queued arm, a removal arm returning review-missing, the base arm, no added failures across the tests importing obligations, and clean ruff; the first three are recorded in gate-base-focused-view.log and gate-head-focused-view.log, ruff is clean on re-check, and the 80-file import set is unread at head.",
+    "goal": "the node's goal is to read a queued review run as a second source of the review-queued duty; obligations.py:758 still produces REVIEW_QUEUED_DUTY_KIND with its admission place, now through recovery._review_in_flight.",
+    "manifest": "read at the source run directory; it states complete, names seven commits, both arms, the negative control at 4 failed / 2 passed and the full head arm as unread.",
+    "write_paths": "the manifest declares obligations.py, the test file, the landing fragment and a figures directory; the diff also changes recovery_review_dispatch.py, recorded there as a scope_extension."
+  },
+  "justifications": {
+    "durability": "tests/test_a_queued_review_is_not_missing.py:303 test_one_view_reads_the_live_pointers_once is a real guard \u2014 it is red at base (gate-base-focused-view.log lists test_one_view_reads_the_live_pointers_once among the 6 failures) and green at head \u2014 but nothing fails if the queued reader is reverted to its old sweep or if the dropped earliest-queued tie-break returns.",
+    "evidence": "gate-base-focused-view.log records 6 failed / 55 passed at 9bc0690f5 and gate-head-focused-view.log records 1 failed / 60 passed at d3c40faab with that one failure present in the base arm, and ruff re-run on the three staged Python paths at head is clean; the done_when's wider 'tests importing obligations' arm is unread at head, and the base-only failures are this node's own arms.",
+    "fit": "reckon/crew/obligations.py:366 follows the repository's ContextVar region idiom and introduces no plan, ticket or version identifier, and recovery_review_dispatch.py:491 keeps its keyword-only signature so existing callers at recovery_review_dispatch.py:2068 and :2218 are unchanged.",
+    "goal_fidelity": "reckon/crew/obligations.py:758 replaces the forked queued sweep with recovery._review_in_flight over the view's own snapshot while still publishing REVIEW_QUEUED_DUTY_KIND with position and rank from one placements map (obligations.py:1478-1484), so the node's goal is preserved and its recognition now extends the owner.",
+    "reuse": "the change removes the duplicate subject sweep the previous review named by extending recovery_review_dispatch.py:491 _review_in_flight, which is a genuine reuse win, but the new private region at obligations.py:371 duplicates the shared-read idiom owned at recovery_review_dispatch.py:738 review_heads_resolve_once and ledger.py:1390 index_reuse without being reachable from the other production caller at obligation_snapshot.py:954.",
+    "scope_discipline": "reckon/crew/recovery_review_dispatch.py is outside the sourced node's declared write paths (prompt.txt:55-58 lists obligations.py, the test file, the fragment and a figures directory) and is in the diff, recorded by the manifest as a scope_extension."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to read a queued review run targeting a delivered run as a second source of the review-queued duty; reckon/crew/obligations.py:758 now resolves that review through recovery._review_in_flight over the view's own pointer snapshot and still publishes REVIEW_QUEUED_DUTY_KIND with position and rank, so the goal is preserved and its recognition extends the owner.\nVERDICT done_when: the measure asks for a queued arm, a removal arm reading review-missing, the first arm missing at base, no added failures in the tests importing obligations and clean ruff; gate-base-focused-view.log records 6 failed / 55 passed at 9bc0690f5 and gate-head-focused-view.log records 1 failed / 60 passed at d3c40faab, that single head failure is listed among the base failures, ruff re-run on the three staged Python paths at head is clean, and the 80-file import set is unread at head.\nVERDICT write_paths: the manifest declares reckon/crew/obligations.py, tests/test_a_queued_review_is_not_missing.py, the landing fragment and a figures directory (prompt.txt:55-58); the diff also changes reckon/crew/recovery_review_dispatch.py, outside that set and recorded in the manifest as a scope_extension.\nVERDICT manifest: read at the source run directory; it states complete, names the seven commits, both arms with their figures, the negative control at 4 failed / 2 passed and the full head arm as unread rather than passing.\nVERDICT diff: read commit by commit against 178fd3d53; d3c40faab adds the _VIEW_LIVE_POINTERS region, hands the snapshot to _review_in_flight and adds one arm, and 211086d79 carries the evidence text describing both.\nCALL_SITES: reckon/mcp_views.py:3960, reckon/crew/obligation_snapshot.py:954, reckon/crew/obligations.py:474, reckon/crew/recovery_review_dispatch.py:2068, reckon/crew/recovery_review_dispatch.py:2218\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: obligations.py:758 keeps the queued review reading REVIEW_QUEUED_DUTY_KIND with its admission place while moving its recognition onto the owner the reflex uses.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-base-focused-view.log 6 failed / 55 passed against gate-head-focused-view.log 1 failed / 60 passed carry the measure's arms and no added failure, but the wider tests-importing-obligations arm the done_when names is unread at head.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: reckon/crew/recovery_review_dispatch.py:491 is changed though prompt.txt:55-58 does not grant it, recorded in the manifest as a scope_extension.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_queued_review_is_not_missing.py:303 is red at base and green at head, so it fails if the single-read region regresses, but no arm fails if the queued reader reverts to its old sweep or loses the earliest-queued tie-break.\nSCORE fit: 18\nJUSTIFICATION fit: obligations.py:366 follows the repository's ContextVar region idiom and recovery_review_dispatch.py:491 adds a keyword-only parameter that leaves callers at :2068 and :2218 unchanged.\nSCORE reuse: 16\nJUSTIFICATION reuse: the duplicate subject sweep is removed by extending recovery_review_dispatch.py:491, a real reuse win, but the region at obligations.py:371 repeats the shared-read idiom owned at recovery_review_dispatch.py:738 and ledger.py:1390 privately and is not reachable from obligation_snapshot.py:954.\nFINDING reckon/crew/obligations.py:758 non-blocking: _review_in_flight has no phase filter, so a launched review standing for the same head makes obligations.py:771 return None and masks a queued review that also stands, and the replaced sweep's earliest-queued ordering is gone, leaving the choice to list_live order.\nFINDING reckon/crew/obligations.py:380 non-blocking: _live_pointers ignores its project argument while a view region is open, and the region is private so obligation_snapshot.py:954 still reads the whole live directory once per pointer outside it.\n",
+  "review_run_id": "r-20261023T230545600501-review-of-a-queued-review-is-not-a-missing-review-211086d79aa4",
+  "reviewed_at": "2026-10-24T02:12:00Z",
+  "reviewed_base_sha": "178fd3d53f4431986516c91a31059263063c39b5",
+  "reviewed_head_sha": "211086d79aa480997cf578b2329dae40ccf7aa34",
+  "reviewed_run_id": "r-20261023T191757300205-a-queued-review-is-not-a-missing-review",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T23:22:17.184153+00:00",
+  "total": 99
+}
