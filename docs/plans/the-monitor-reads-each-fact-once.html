@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 <meta name="plan-modified" content="2026-10-23">
 </head>
 <body>
@@ -110,9 +110,17 @@
     <h2 id="s5">§5 — The station's node-local store</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p>A new module <code>reckon/crew/station_store.py</code> owns one SQLite database in WAL mode under the
-    node-local runtime root, resolved in the order <code>reckon/crew/dispatch_watch.py</code>'s
-    <code>_session_host_runtime_root</code> already uses (<code>$XDG_RUNTIME_DIR</code>,
-    <code>/run/user/&lt;uid&gt;</code>, then <code>/dev/shm</code>), never under the crew home. Tables:</p>
+    node-local runtime root, never under the crew home. The root is the one
+    <code>reckon/crew/dispatch_watch.py</code>'s <code>_session_host_runtime_root</code> returns, made public so
+    the station and the session host resolve a single directory. Only its first two candidates,
+    <code>$XDG_RUNTIME_DIR</code> and then <code>/run/user/&lt;uid&gt;</code>, are shared by every process on
+    a node. Its last, <code>TMPDIR</code>, differs per session: on clu-2068 on 2026-10-23 every session host read
+    <code>XDG_RUNTIME_DIR=/tmp/39486-fleet</code>, while <code>TMPDIR</code> was <code>/tmp</code> for two of them
+    and <code>/dev/shm/39486-fleet-1291586</code> for a third. So a root reached only through <code>TMPDIR</code>
+    is refused rather than opened as a per-session database. The stat identity stored for each pointer and
+    stream is <code>reckon/file_memo.file_signature</code>'s, so the station keys a file as every in-process memo
+    does. The table holds that identity because the station's state must survive a restart, which
+    <code>file_memo</code>'s in-process map cannot. Tables:</p>
     <ul>
       <li><code>pointers</code>: path, stat identity, run id, project, session, phase and the fields the
       classifier reads;</li>
@@ -124,18 +132,26 @@
     </ul>
     <p>Events are written to one file per UTC day, attached for reads, and a file older than the retention
     window (seven days, a configuration value) is unlinked. A missing database is rebuilt from the crew home.
-    The module refuses a path on a network filesystem by checking the mount's type, because WAL requires
-    shared memory that GPFS cannot provide across nodes.</p>
+    The module refuses a path that <code>reckon/host.py</code>'s <code>_is_node_local</code> does not report as
+    node-local. That check reads the mount type through <code>_filesystem_type</code> against
+    <code>_SHARED_FILESYSTEMS</code>, so all eight shared types are refused, because WAL needs shared memory that
+    a network filesystem cannot provide across nodes. That refusal and the <code>TMPDIR</code> one are one
+    refusal family, <code>station-store-not-node-local</code>, registered with its remedy in
+    <code>reckon/crew/refusals.py</code>. This section adds the module and that family and retires nothing yet,
+    because nothing reads the station until §7 and §8. The surfaces the station replaces are retired where they
+    are named, in §7 and §12.</p>
     <p>Done when unit tests show: a rebuild from a fixture crew home (three pointers, two streams) produces
     the same pointer and observation rows as an incremental build; a day partition older than the window is
-    unlinked and its rows are gone; a path whose mount type is <code>gpfs</code> or <code>nfs</code> is
-    refused with that reason. Negative control: a store that writes events into one undated file must fail
+    unlinked and its rows are gone; a path on each type in <code>host._SHARED_FILESYSTEMS</code> is refused
+    naming its type, with <code>_filesystem_type</code> patched per case; a root that resolves only through
+    <code>TMPDIR</code> is refused; and a pointer whose <code>file_memo.file_signature</code> is unchanged is not
+    re-parsed. Negative control: a store that writes events into one undated file must fail
     the retention test.</p>
 
     <h2 id="s6">§6 — Ingest reads only bytes it has not read</h2>
 <section data-reckon="section" data-id="s6" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
     <p>The station's tick stats the live directory and each live pointer and stream. A pointer is parsed only
-    when its stat identity moved. A stream is read only past its stored offset, up to the last whole record,
+    when its <code>file_memo.file_signature</code> moved against the stored one. A stream is read only past its stored offset, up to the last whole record,
     and folded by <code>_backends.observe_stream</code> with the stored fold state as <code>state</code>; a
     stream whose inode changed or that shrank is folded from its start. The classifier
     (<code>recovery.classify_pointer</code>) runs once per run whose inputs changed, and its liveness probe
@@ -150,12 +166,15 @@
     <h2 id="s7">§7 — One station per node replaces the per-project producers</h2>
 <section data-reckon="section" data-id="s7" data-effort-hours="6.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
     <p><code>reckon crew station</code> runs one process per node, held by a lock under the node-local
-    runtime root, for every mounted project on the node. It is the database's only writer. Each tick it
+    runtime root §5 resolves, for every mounted project on the node. It is the database's only writer. Each tick it
     ingests (§6), writes each transition once with the same row fields <code>crew watch</code> writes today
     plus its audience and duty, and refreshes its heartbeat. It is started where workers run: on the fleet
     node by the crew host when a session first dispatches, and by the fleet supervisor otherwise.
     <code>crew watch</code> becomes an alias that ensures the station, and the per-project seats, leases and
-    the producer user units on the login nodes are retired once §12's cutover passes.</p>
+    the producer user units on the login nodes are retired once §12's cutover passes. This section adds the
+    <code>station</code> verb and retires nothing immediately, because the per-project producers must run beside
+    the station until §12's measured cutover shows it carries every row. §12 then removes the producer seat, its
+    leases and its user units, and <code>crew watch</code> keeps only the alias.</p>
     <p>The station is the only process that reloads onto new code. It reloads from a reload image
     materialised under the node-local runtime root, so no cross-node lease record is written.</p>
     <p>Done when an integration test starts a station against a temporary crew home with two projects and
