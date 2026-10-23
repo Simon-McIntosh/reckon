@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T23:35:47.167Z",
+  "dispatched_at": "2026-10-23T23:26:03Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/crew-state-stays-bounded.html:169",
+      "id": "reasoning-1",
+      "reason": "the fix turns on which host owns the copy, and recording the attempt's host rather than the host that ran `ensure_worker_scratch` reproduces the leak the section exists to close.",
+      "text": "\u00a78 states \"Every attempt makes a scratch directory named for the run on the host it runs on\" and records \"the host it ran on and the path `ensure_worker_scratch` made there\", but `ensure_worker_scratch` is called only from `_worker_runtime_environment` invoked by `_supervisor_spawn_worker` (reckon/crew/dispatch_launch.py:2488) in the supervisor's process on the dispatch host, and for a step-placed launch the worker argv is `srun --jobid=\u2026` (:2497-2506), so the directory is made on the dispatch host while the attempt runs on another node \u2014 the recorded host is then not the host that made the copy, a release on the recorded host removes nothing there while the copy on the dispatch host is left to `garbage_collect_orphan_scratch`'s two-hour ctime sweep, which is exactly the \"recorded removed while the worker's files remain\" shape \u00a78 cites in bullet 1",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/crew-state-stays-bounded.html:169",
+      "id": "reasoning-2",
+      "reason": "the plan must state how an entry leaves the list (and how that rewrite stays atomic against a concurrent append from another host), or the new store becomes the next unbounded one.",
+      "text": "\u00a78 says a removal owed to a host \"is appended to that host's owed list in the crew home, so settling reads one small file\", but no step removes an entry once the copy has been settled, so every launch and every hourly pass re-reads and re-attempts every entry ever recorded and the shared per-host file grows without bound, which contradicts the section's own \"one small file\" premise and its \u00a71 thesis that every store has a bound",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f493c5899cd6fcea94cf4ff6d2f89c20461cde91afdf94ccfafec1ba705ee21d",
+  "plan_slug": "crew-state-stays-bounded",
+  "plan_version": 24,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T232453312945-plan-review-of-crew-state-stays-bounded",
+  "reviewed_blob_sha": "b764f293187a73729553b6f69759494999fca661",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol resolves: `ensure_worker_scratch` (reckon/crew/dispatch_launch.py:782), `remove_worker_scratch` (:829), `attempt-<n>-worker.json` (:1805, :1895-1908), `_ledgered_run_ids` (reckon/crew/routing.py:920), `garbage_collect_scratch` (reckon/crew/gc.py:1173), `garbage_collect_orphan_scratch` (:1030), `retention_sweep` (:1329) and `_release_after_promotion` (reckon/crew/promotion_release.py:476).",
+    "done_when": "pass \u2014 \u00a78's cases are measurable and the negative control now reddens: case 2 puts a directory of the run's name that no attempt recorded on the releasing host and asserts it survives (plan.html:170), so the current behaviour (removing `<root>/<run id>` on its own host irrespective of who made it, dispatch_launch.py:829-877) makes that case fail.",
+    "evidence_paths": "pass \u2014 the durable record \u00a78 names is the evidence fragment, which \"quotes each gate's command and summary line\" (plan.html:170); the run-directory logs are transient by design (\u00a73).",
+    "naming": "pass \u2014 \u00a78 introduces no plan labels, stage names or ticket numbers.",
+    "reasoning": "a finding \u2014 \u00a78 attributes the scratch directory's creation to the attempt on the host it runs on, but the only production creator is `ensure_worker_scratch`, called from `_worker_runtime_environment` inside `_supervisor_spawn_worker` (reckon/crew/dispatch_launch.py:2488), which runs in the supervisor's own process on the dispatch host before a possibly step-placed worker (`srun --jobid=`, :2497-2506) starts elsewhere; the owed list also has no stated removal after settlement, so it never shrinks.",
+    "single_goal": "pass \u2014 \u00a78 has one deliverable, and the reading of the 13 review runs' promoted records is instrumental to it rather than a second deliverable.",
+    "wiring": "pass \u2014 `plan-section-depends-on` records `s8: [crew-state-stays-bounded#s7]` (plan.html:22), which is the edge \u00a78 needs because retention_sweep calls the new owed-list pass; no other dependency is used by the section."
+  },
+  "section_digests": {
+    "_document": "7b027ab93025f3f1274af4c8c21f7e58c154d6e99dbdf5e7f4aa8931cbb1f280",
+    "s1": "61be6bb6df8b986fbb68c3273e136fcef1b9fa13e7bcadb4fb62eab2fa4145ff",
+    "s2": "9201fe37417310883d221ec7b0b5b4ff7de29f66ab073ede465175d42aa91bc4",
+    "s3": "9aa4d5f5a6287b698b7d6011ac8fcc295589c20484d8892a3c86d88d629b8793",
+    "s4": "2681ac58d6ae7457bc800678db433ce359be271248b74a429b44ee4d817769b4",
+    "s5": "bba37241ec93e13e0fb1eb173abfd49db0b6e77d788aa2dbec1608d164852542",
+    "s6": "c491229cedc576a79a4628da53168b317ce14fef88d78739c48e86b16aaff17a",
+    "s7": "1f6a99e4b8834c4a8bea5559a1507e6da85988f873d5547c7804930237104694",
+    "s8": "bc339be825121a179cd60fc7ca9531be1a5885113d204adda1ef54163f108384"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T23:36:32.195951+00:00"
+}
