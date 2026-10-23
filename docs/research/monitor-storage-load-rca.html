@@ -8,13 +8,15 @@
   <meta name="plan-slug" content="monitor-storage-load-rca">
   <meta name="plan-title" content="Monitor Storage Load: Root Cause and Redesign">
   <meta name="plan-summary" content="Why the monitor loaded clu-2068 (load 38, 20 tasks blocked on GPFS), what was fixed in session on 2026-10-22, and the one-reader-per-fact station that replaces it.">
-  <meta name="plan-status" content="active">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-informs" content="the-monitor-reads-each-fact-once,crew-state-stays-bounded,a-landing-never-waits-on-a-shared-index">
   <title>Monitor Storage Load: Root Cause and Redesign | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="2">
+<meta name="plan-modified" content="2026-10-23">
+<meta name="plan-status" content="active">
 </head>
 <body>
   <main class="plan-doc">
@@ -244,6 +246,62 @@
       <li><a href="/reckon/plans/a-landing-never-waits-on-a-shared-index">a-landing-never-waits-on-a-shared-index</a>,
       promotion off the shared git index and reading only what moved.</li>
     </ul>
+
+    <h2 id="s10">§10 — A second reading on 2026-10-23: what still loads the node</h2>
+    <p>At 12:14Z on 2026-10-23 a 30 s per-process read sample on clu-2068, the one fleet node, showed the GPFS daemon at
+    about 520% CPU, against about 150% when the load began. The two largest readers were the Claude session
+    <code>efd0ee8c</code> at 287 MB/s and a <code>ugrep</code> at 259 MB/s. The imas-ambix router side had already been repaired.
+    Between 12:53 and 13:20Z the coordinator of this section measured again: 20 s <code>/proc/&lt;pid&gt;/io</code> deltas,
+    15 s <code>strace -c</code> counts of file syscalls on each long-lived reckon process, and 20 s <code>py-spy</code> profiles of
+    two producers. These are the findings.</p>
+    <figure>
+      <img src="/reckon/figures/monitor-storage-load-rca/file-syscalls-by-reader.svg" alt="File syscalls per second by reckon reader on clu-2068">
+      <figcaption>File syscalls per second (stat, lstat, openat, read, getdents64 and the rest of the file class) for
+      each long-lived reckon reader on clu-2068, over 15 s windows between 13:00 and 13:15Z on 2026-10-23. The three
+      per-project producers are coloured. The follower bar is 14 processes at about 310 each. The admit service's
+      launching figure is its 31,049 calls over an 8 s window in which it was launching a queued run. Its idle figure
+      is a separate 15 s window.</figcaption>
+    </figure>
+    <table>
+      <thead><tr><th>Reader</th><th>What it does</th><th>Where the fix lives</th></tr></thead>
+      <tbody>
+        <tr><td>Recursive searches of the crew home by workers</td><td>The 259 MB/s <code>ugrep</code> was
+        <code>grep -rl "fb2ad51a866" ~/.config/reckon/crew/ | head</code>, run at 12:06:22Z by the review worker
+        <code>r-20261023T120024426977</code> to find where a finding id was stored. In the same 40 minutes, three other
+        review workers ran unbounded <code>find ~/.config/reckon/crew/runs … -path '*review-records*'</code>, and one
+        implement worker grepped the whole crew home for its own run id. The crew home holds 17,584 run directories,
+        about 270 GB, so a search for an id that matches few files reads nearly all of it.</td>
+        <td><a href="/reckon/plans/a-worker-cannot-write-your-home#s20">a-worker-cannot-write-your-home §20</a>, a
+        worker guard; <a href="/reckon/plans/a-worker-cannot-write-your-home#s21">§21</a> removes the false scope
+        refusal that sent the implement worker searching.</td></tr>
+        <tr><td>Per-project producers (<code>crew watch</code>)</td><td>imas-ambix at 6,312 calls/s, imas-efit at 3,323 and
+        imas-codex at 875. In the ambix profile, 55% of busy samples were in the obligations thread. Each pointer
+        transition re-derives the whole fleet in <code>obligation_snapshot.fleet_state</code>, and the stat identity of
+        the project's state and plan trees is re-walked by <code>rglob</code> every 10 s (802 files for imas-ambix,
+        1,371 for imas-codex). A busy fleet moves the crew-home fingerprint on nearly every tick, so the ticker's own
+        change gate rarely holds: listing, lift-row resolution through <code>flight.resolve</code>, and the orphan
+        sweep then run on most passes.</td>
+        <td><a href="/reckon/plans/the-monitor-reads-each-fact-once#s7">the-monitor-reads-each-fact-once §7</a> (one
+        station per node) and <a href="/reckon/plans/the-monitor-reads-each-fact-once#s9">§9</a> (obligations computed
+        once, in the station).</td></tr>
+        <tr><td>Followers (<code>crew follow</code>)</td><td>About 310 calls/s each, 14 of them. Pointer bytes fell to
+        0.10 MB per 15 s once §4 of the station plan was in the running image, against 34.4 MB before.</td>
+        <td>§4 landed; <a href="/reckon/plans/the-monitor-reads-each-fact-once#s8">§8</a> makes a follower read nothing
+        on GPFS.</td></tr>
+        <tr><td>Admit service</td><td>Near idle between launches. While launching, each queued launch runs a full
+        <code>dispatch()</code>, which re-reads the run ledger (5,806 opens of <code>docs/state/reckon/runs/*</code> in
+        8 s) and re-walks directory identities.</td>
+        <td><a href="/reckon/plans/a-read-answers-inside-its-deadline">a-read-answers-inside-its-deadline</a> §54,
+        held by a live session; not re-planned here.</td></tr>
+        <tr><td>Claude sessions <code>efd0ee8c</code> and <code>d768318d</code></td><td>Their <code>rchar</code> counts
+        pipe reads of tool output as well as file reads. A 10 s trace of <code>efd0ee8c</code> at 13:00Z read 5.8 kB from
+        files. Their transcripts are 48 MB and 196 MB. These are the harness's own reads, not reckon's.</td>
+        <td>No reckon change. Ending a long session is the lead's decision.</td></tr>
+      </tbody>
+    </table>
+    <p>The reading confirms §3's diagnosis and adds one cause §3 did not name: the workers themselves. Each walk was a
+    worker looking for a fact reckon stores at a known path. The fence governs writes, and nothing bounded reads, so
+    one search could cost more than every monitor process on the node combined.</p>
   </main>
 </body>
 </html>
