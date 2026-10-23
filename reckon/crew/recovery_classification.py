@@ -6,7 +6,7 @@ import hashlib
 import json
 import re
 import shlex
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
@@ -81,7 +81,7 @@ def _manifest_is_the_predecessor_attempts_report(
     attempt = _current_attempt_number(record)
     if attempt is None:
         return False
-    if _attempt_end_recorded(record, attempt):
+    if _exit_record_names_attempt(record, attempt):
         return False
     if manifest_status in NON_TERMINAL_MANIFEST_STATUSES:
         return False
@@ -727,7 +727,7 @@ def classify_pointer(
     if manifest_status in TERMINAL_MANIFEST_STATUSES and not deferred_outcome:
         terminal_seconds = manifest.stat().st_mtime
         terminal_at = (
-            datetime.fromtimestamp(terminal_seconds, tz=UTC)
+            datetime.fromtimestamp(terminal_seconds, tz=timezone.utc)
             .isoformat(timespec="seconds")
             .replace("+00:00", "Z")
         )
@@ -1806,12 +1806,12 @@ from .recovery_liveness import (  # noqa: E402
     _PRE_SPAWN_PHASES,
     _absence_of_a_verdict_is_transient,
     _attempt_awaits_its_worker,
-    _attempt_end_recorded,
     _current_attempt_number,
     _manifest_predates_the_current_attempt,
     _carries_orientation_write,
     _exit_record_end_phrase,
     _exit_record_is_launch_failure,
+    _exit_record_names_attempt,
     _int_or_none,
     _interruption_evidence,
     _live_descendant,

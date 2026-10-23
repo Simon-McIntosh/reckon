@@ -31,6 +31,7 @@ from __future__ import annotations
 import importlib
 import json
 import os
+import socket
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -39,6 +40,7 @@ import pytest
 
 from reckon.crew import recovery, recovery_liveness, runs
 from reckon.crew.ticker import PANE_STATES
+from tests import test_a_live_run_never_reads_dead as liveness
 
 classification_module = importlib.import_module("reckon.crew.recovery_classification")
 
@@ -125,6 +127,7 @@ def _write_run(
     worker_record: bool = False,
     stream_age_seconds: float = STALE_SECONDS,
     attempt_record: bool = False,
+    local_launcher: bool = False,
 ) -> dict:
     """Write one resumed run's own records and return its pointer.
 
@@ -132,9 +135,13 @@ def _write_run(
     began. Everything a later attempt records — the attempt record, the worker
     record — is optional, so a case can build the window the claim alone fills.
     ``attempt_record`` publishes attempt.json for the arms where the resume has
-    got that far.
+    got that far. ``local_launcher`` names this host as the launching host, so
+    the pointer's pid is probed here and reads as gone; left false the launcher
+    is another host and the pid is unprobeable, which is the reading a producer
+    on a peer host makes.
     """
     now = time.time()
+    pid = liveness._absent_pid() if local_launcher else DEAD_PID
     directory = directory_of(run_id)
     directory.mkdir(parents=True, exist_ok=True)
 
@@ -151,7 +158,7 @@ def _write_run(
         json.dumps(
             {
                 "attempt": attempt,
-                "pid": DEAD_PID,
+                "pid": pid,
                 "pid_start_time": "1",
                 "at": _at(now - claim_age_seconds),
             }
@@ -199,7 +206,7 @@ def _write_run(
             {
                 "run_id": run_id,
                 "attempt": attempt,
-                "pid": DEAD_PID,
+                "pid": pid,
                 "pid_start_time": "1",
                 "launched_at": _at(now - 25.0),
             }
@@ -209,7 +216,6 @@ def _write_run(
             body, encoding="utf-8"
         )
 
-    exit_record = None
     if exit_attempt is not None:
         exit_path = directory / recovery.EXIT_RECORD_NAME
         exit_path.write_text(
@@ -250,8 +256,8 @@ def _write_run(
         "phase": "working",
         "attempt": attempt - 1,
         "attempt_kind": "resume",
-        "pid": DEAD_PID,
-        "launcher_host": FOREIGN_HOST,
+        "pid": pid,
+        "launcher_host": socket.gethostname() if local_launcher else FOREIGN_HOST,
         "process_alive": None,
         "manifest_path": str(manifest),
         "log_path": str(stream),
@@ -277,16 +283,41 @@ def _snapshot(pointer: dict) -> dict:
     return recovery._watch_snapshot(pointer, moment=time.time(), stall_seconds=3600)
 
 
-def _assert_not_halted(pointer: dict, arm: str) -> dict:
-    """The arm's claim: the run is not drawn halted and reads as working."""
+def _assert_state(pointer: dict, arm: str, expected: str) -> dict:
+    """The arm's claim: the pane word, asserted by name and not by membership.
+
+    The word is asserted exactly rather than as membership of the working set,
+    so a run that reads a neighbouring working state fails here instead of
+    passing quietly. The claim-only arms read the pane's working word: the
+    classifier stands the predecessor's word down and leaves the resumed
+    attempt's liveness unknown, which is the reading the pane draws from the
+    pointer's phase. The run's own reading — that it awaits a worker it has not
+    registered — is asserted beside it by ``_assert_reads_as_starting``.
+    """
     snapshot = _snapshot(pointer)
     state = snapshot["state"]
     assert state not in HALTED_STATES, (
         f"{arm}: the repaired word governs the attempt that is only starting; "
         f"it read {state!r} with {snapshot!r}"
     )
-    assert state in recovery.FLEET_WORKING_STATES, (arm, snapshot)
+    assert state == expected, (arm, state, snapshot)
     return pointer
+
+
+def _assert_reads_as_starting(pointer: dict, arm: str) -> None:
+    """The attempt's own reading: it awaits the worker it has not registered.
+
+    The current attempt's record is a claim and nothing more, so the run is read
+    as an attempt that is only starting rather than as the end of the attempt
+    the pointer still names. ``_attempt_awaits_its_worker`` is the reading that
+    states it, and the classification says so in its own clause.
+    """
+    assert recovery_liveness._attempt_awaits_its_worker(pointer) is True, (
+        f"{arm}: the current attempt has registered no worker of its own, so it "
+        "awaits one"
+    )
+    detail = str(_classify(pointer).get("detail") or "")
+    assert "no process and no end of its own" in detail, (arm, detail)
 
 
 def test_arm_i_a_claim_after_a_status_repair_is_not_the_repaired_word() -> None:
@@ -303,9 +334,11 @@ def test_arm_i_a_claim_after_a_status_repair_is_not_the_repaired_word() -> None:
         attempt=2,
         claim_age_seconds=350.0,
         status_repair=True,
+        local_launcher=True,
     )
 
-    _assert_not_halted(pointer, "arm i")
+    _assert_state(pointer, "arm i", "working")
+    _assert_reads_as_starting(pointer, "arm i")
 
 
 def test_arm_ii_a_claiming_attempt_with_a_worker_is_not_the_repaired_word() -> None:
@@ -325,7 +358,11 @@ def test_arm_ii_a_claiming_attempt_with_a_worker_is_not_the_repaired_word() -> N
         stream_age_seconds=20.0,
     )
 
-    _assert_not_halted(pointer, "arm ii")
+    _assert_state(pointer, "arm ii", "working")
+    assert recovery_liveness._attempt_awaits_its_worker(pointer) is False, (
+        "arm ii: the current attempt has registered a worker of its own, so it "
+        "no longer awaits one"
+    )
 
 
 def test_arm_iii_a_launch_failed_attempt_with_a_next_claim_starts() -> None:
@@ -336,18 +373,18 @@ def test_arm_iii_a_launch_failed_attempt_with_a_next_claim_starts() -> None:
     statement about itself, and the failed launch is not its end.
     """
     run_id = "run-launch-failed-then-claimed"
-    pointer = _assert_not_halted(
-        _write_run(
-            run_id=run_id,
-            attempt=2,
-            claim_age_seconds=30.0,
-            exit_attempt=1,
-            exit_ended_during="launch",
-            exit_stream_records=0,
-        ),
-        "arm iii",
+    pointer = _write_run(
+        run_id=run_id,
+        attempt=2,
+        claim_age_seconds=30.0,
+        exit_attempt=1,
+        exit_ended_during="launch",
+        exit_stream_records=0,
+        local_launcher=True,
     )
 
+    _assert_state(pointer, "arm iii", "working")
+    _assert_reads_as_starting(pointer, "arm iii")
     assert pointer["attempt"] == 1, pointer
 
 
@@ -359,16 +396,16 @@ def test_arm_iv_an_exit_unfinished_attempt_with_a_next_claim_starts() -> None:
     already ended, so the claim is what dates the reading.
     """
     run_id = "run-exit-unfinished-then-claimed"
-    pointer = _assert_not_halted(
-        _write_run(
-            run_id=run_id,
-            attempt=5,
-            claim_age_seconds=30.0,
-            exit_attempt=4,
-        ),
-        "arm iv",
+    pointer = _write_run(
+        run_id=run_id,
+        attempt=5,
+        claim_age_seconds=30.0,
+        exit_attempt=4,
+        local_launcher=True,
     )
 
+    _assert_state(pointer, "arm iv", "working")
+    _assert_reads_as_starting(pointer, "arm iv")
     assert pointer["attempt"] == 4, pointer
 
 
