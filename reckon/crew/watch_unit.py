@@ -177,6 +177,149 @@ def seat_names_a_live_foreign_producer(project: str) -> bool:
     return bool(live_foreign_seat_host(project))
 
 
+# ── Producer start-up decision ──────────────────────────────────────────────
+
+
+def _hosts_match(host: str, node: str) -> bool:
+    """Whether a producer host and a fleet-record node name one machine.
+
+    A fleet record publishes a short hostname, while a seat records
+    ``socket.gethostname()`` whole, so both are compared on the short form. An
+    empty name matches nothing: a record that names no node says nothing about
+    where this producer runs, and an absent fleet record must never read as a
+    foreign host.
+    """
+    left = str(host or "").split(".")[0]
+    right = str(node or "").split(".")[0]
+    return bool(left) and bool(right) and left == right
+
+
+def _fleet_node_from_record(record: Mapping[str, Any] | None) -> str:
+    """The node a fleet record names, or an empty string when it names none."""
+    if not record:
+        return ""
+    return str(record.get("node") or "")
+
+
+def fleet_record_node() -> str:
+    """The node the published fleet record names, or "" when none is readable.
+
+    Read through the fleet record's existing owner rather than a new path
+    literal: ``dispatch_launch`` already resolves the record from
+    ``RECKON_FLEET_RECORD`` and ``XDG_STATE_HOME``, and a second resolution
+    would drift from the one the spawn path acts on.
+    """
+    from reckon.crew.dispatch_launch import _read_fleet_record
+
+    return _fleet_node_from_record(_read_fleet_record())
+
+
+def runs_launched_on(project: str, node: str) -> list[str]:
+    """Run ids of a project's live runs whose ``launcher_host`` is ``node``.
+
+    A pointer's ``launcher_host`` names the machine that issued its worker pid.
+    For a producer on another host that is the run whose liveness it cannot
+    probe: the number answers only on the machine that issued it.
+    """
+    if not node:
+        return []
+    from reckon.crew.runs import list_live
+
+    return [
+        str(record.get("run_id") or "")
+        for record in list_live(project=project)
+        if _hosts_match(str(record.get("launcher_host") or ""), node)
+    ]
+
+
+def _unit_disable_command(unit: str) -> list[str]:
+    """The command that stops ``unit`` and keeps its policy from reviving it.
+
+    Composed, never run here: the caller carries it onto the announcement so the
+    seat is given up without the producer subcommand reaching into the service
+    manager itself. It is the same ``systemctl --user`` surface the arming path
+    drives.
+    """
+    return ["systemctl", "--user", "disable", "--now", unit]
+
+
+def producer_start_decision(
+    project: str,
+    *,
+    host: str | None = None,
+    fleet_record: Mapping[str, Any] | None = None,
+    environ: Mapping[str, str] | None = None,
+) -> dict[str, Any]:
+    """Decide whether a producer must release its seat and exit.
+
+    A producer whose host is not the node the fleet record names cannot probe a
+    worker pid issued on that node, so every liveness reading it publishes for a
+    run launched there reads unknown while it still holds the seat that would
+    let a producer on the fleet node start. When this project has a live run
+    launched on that node, the two facts together make this producer misplaced:
+    the verdict is to release the seat and exit, disabling the unit first so
+    ``Restart=always`` cannot bring the same misplaced producer back every few
+    seconds.
+
+    The fleet record is read through its existing owner, and the decision is
+    made here beside the readers that already judge a foreign seat, so the
+    producer's own verdict cannot disagree with what those readers report.
+
+    The same host, an absent fleet record, and a project with no run launched on
+    the fleet node all hold: a producer that holds is the one already at work,
+    and nothing in those cases says it is somewhere it cannot serve.
+    """
+    resolved_host = host or socket.gethostname()
+    node = (
+        _fleet_node_from_record(fleet_record)
+        if fleet_record is not None
+        else fleet_record_node()
+    )
+    base = {
+        "project": project,
+        "host": resolved_host,
+        "fleet_node": node,
+        "runs": [],
+        "unit": None,
+        "unit_disable_command": None,
+        "announcement": None,
+    }
+    if not node:
+        return {**base, "action": "hold", "reason": "no fleet record names a node"}
+    if _hosts_match(resolved_host, node):
+        return {
+            **base,
+            "action": "hold",
+            "reason": f"producer host is the fleet record's node {node!r}",
+        }
+    runs = runs_launched_on(project, node)
+    if not runs:
+        return {
+            **base,
+            "action": "hold",
+            "reason": f"no live run of {project!r} was launched on {node!r}",
+        }
+    unit = str(
+        (environ if environ is not None else os.environ).get(WATCH_UNIT_ENV) or ""
+    )
+    return {
+        **base,
+        "action": "release-and-exit",
+        "reason": (
+            f"producer on {resolved_host!r} holds the seat while runs were "
+            f"launched on the fleet record's node {node!r}"
+        ),
+        "runs": runs,
+        "unit": unit or None,
+        "unit_disable_command": _unit_disable_command(unit) if unit else None,
+        "announcement": (
+            f"reckon crew watch releasing the seat: producer on "
+            f"{resolved_host} cannot probe runs launched on the fleet node "
+            f"{node}; exiting"
+        ),
+    }
+
+
 def watch_state(project: str, *, session: str | None = None) -> dict[str, Any]:
     """Return the paste-ready arming line and process-backed watcher liveness."""
     arming_line = _watch_arming_line(project)
