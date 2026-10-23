@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T07:06:51.714Z",
+  "dispatched_at": "2026-10-23T06:56:07Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html:23",
+      "id": "wiring-1",
+      "reason": "the same prose-vs-declared-closure mismatch already produced three wiring findings on s5/s6/s7 (all acted), and an undeclared dependency is what a dispatch order reads.",
+      "text": "`plan-section-depends-on` has no `s9` entry, while \u00a79's change is defined as an extension of \u00a75's board and consumes \u00a72's coordinator resolution, so a node dispatched on s9 would be dispatched without either dependency in its closure",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html:211",
+      "id": "single_goal-1",
+      "reason": "\u00a75's directory already owns the coordinator list, and the context-use figure is a separate capability that can ship or fail independently, so one gate proves neither.",
+      "text": "\u00a79 carries two deliverables, the host-only coordinator listing and the transcript-sourced context-use figure, and its done-when asserts each, so the node cannot be closed on one verdict",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html:211",
+      "id": "reasoning-1",
+      "reason": "the record \u00a79 names as its source cannot name the session it needs for the very case \u00a79 was written to fix, so the node would be built on a source that is empty exactly when it matters; the plan needs a source that survives settle (the host's owner pair plus the fleet's own session\u2192project mapping, or a census that keeps a settled child) before it is dispatched.",
+      "text": "\u00a79's mechanism is a claim the census does not support: the record's `children` lists only children with a pid (`if child.pid is not None`, session_host.py:340), a settle-aware host nulls a settled child's pid (session_host.py:477-480), and a follower settles once its session has no live work (`_population_has_live_work`, crew_follow_commands.py:464-492; settle at :1532-1542), so an idle coordinator's follower has settled and its census names no session or project \u2014 and the census carries only `updated_at`, not a last-dispatch time",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "8b4ce6cc9cf465c065c40081ebb93b40d3ba0e8e0c4e521ce4ad149d7618e7f7",
+  "plan_slug": "a-coordinator-sees-the-board",
+  "plan_version": 9,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T063959200821-plan-review-of-a-coordinator-sees-the-board",
+  "reviewed_blob_sha": "abaadb84119288b6b8fda24c76cf39bda5cc034a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/session_host.py` exists and owns `session-hosts/` (`_state_dir`, session_host.py:117-123); \u00a79's `\u00a75` resolves to an existing section; the plans cited elsewhere resolve with extensionless hrefs treated as `<path>.html` (a-project-reads-as-one-picture.html, the-mcp-answers-the-question-asked.html, the-monitor-shows-the-work-it-watches.html all exist, and the named \u00a72/\u00a73/\u00a74/\u00a77 sections exist in them).",
+    "done_when": "pass \u2014 \u00a79's done-when names a fixture crew home, a stopped-host case, a transcript-present and transcript-absent case, and a declared negative control (\"a board built from live pointers alone must fail the two-session case\"); \u00a79's prose also names the fixture and the unmeasured branch, so the measures can fail.",
+    "evidence_paths": "pass \u2014 \u00a79 names no session scratchpad or node-local temporary path; its fixtures are described as fixture crew homes and the other sections' evidence lands in the plan's own evidence record (\u00a78).",
+    "naming": "pass \u2014 \u00a79 introduces no plan label, stage name, ticket number or version tag; `power-convertor-fe` is a live session name, not a plan label, and the section cites mechanism rather than tracker prose.",
+    "reasoning": "a finding \u2014 \u00a79 rests on \"Each record names its sessions and their projects\", but the session-host census omits every child whose pid is null (session_host.py:333-341), and a settle-aware host sets a settled child's pid to null (session_host.py:477-480), so a coordinator with nothing in flight has a live host whose record names no session and no project \u2014 exactly the case \u00a79 exists to surface.",
+    "single_goal": "a finding \u2014 \u00a79 carries two deliverables: (a) surfacing a coordinator with no run in flight from session-host records, and (b) attaching the session's context use from its harness transcript, and its done-when asserts both.",
+    "wiring": "a finding \u2014 `plan-section-depends-on` (a-coordinator-sees-the-board.html:23) declares no `s9` key, yet \u00a79's change is \"The board's coordinator list (\u00a75) also reads \u2026\" and its row carries \u00a72's coordinator identity, so s9's declared closure omits both \u00a75 and \u00a72."
+  },
+  "section_digests": {
+    "_document": "c3540327cf02d49622bc64a2c5804c00f42a0efacf1d97eba069b370e4091ae7",
+    "s1": "4f48bcfe2c71d1397f0eeb277ff928920d1ed0ae7cfb0da777c94e4943eadf87",
+    "s2": "e8a77da3ee95b252c49524e82dbed4c7af59fd2cf8813eca867555771e9c15d5",
+    "s3": "e4cd7ce8696d0d9fb511a9be2379e2561a08418a1d1f759c42a926231bad6e36",
+    "s4": "ba6bafca3a7e3ae7fb186980afd26dd26e183bf99b72272ea15f06fbaeb19e5f",
+    "s5": "c7676f30d627a592319ab4f34cbd8352167ba0b9b92a20d5cbafea4a685b90ae",
+    "s6": "b5875d403856eb185e06155d0c62410ab30a447353779fe729a12b57c2607cf0",
+    "s7": "4428c6858fc7f10400173c2e619ad379aa49779cef060ae4b50d866fde4a59a7",
+    "s8": "f9f58e76a5713eb901b1e780fcb93d48ca773a573fded72ec476738a59629b67",
+    "s9": "12dfd6503637b6f22bc3f411e323bbf08b7e61d2a52d3e1c5155c344f27b35e2"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T07:18:57.550995+00:00"
+}
