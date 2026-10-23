@@ -1840,8 +1840,8 @@ def _roadmap(
     if scoped is not None:
         from reckon import serve as serve_module
 
-        key, _mounts = scoped
-        served = serve_module.roadmap_snapshot_load(project, key)
+        key, mounts = scoped
+        served = serve_module.roadmap_snapshot_load(project, mounts.get(project), key)
         if served is not None:
             return served
     with metadata_index.discovery_file_scope():
@@ -1864,7 +1864,9 @@ def _roadmap(
         # *after* the read: a write that landed while it ran would otherwise
         # be answered from the snapshot for the state before that write.
         if settled is not None and settled[0] == scoped[0]:
-            serve_module.roadmap_snapshot_store(project, scoped[0], result)
+            serve_module.roadmap_snapshot_store(
+                project, scoped[1].get(project), scoped[0], result
+            )
     return result
 
 

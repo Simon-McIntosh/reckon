@@ -22,6 +22,7 @@ answer their first call from a composition one of them already made.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import threading
@@ -33,7 +34,7 @@ from typing import Any
 # Bumped when the key's shape changes in a way a stored snapshot cannot survive:
 # a record written by an older shape would be compared field by field against a
 # key that no longer has the same fields.
-_ROADMAP_SNAPSHOT_VERSION = 1
+_ROADMAP_SNAPSHOT_VERSION = 2
 # A read whose key matches recomputes nothing, so a write that neither reckon
 # nor git made — an editor saving a plan in place — would be answered from a
 # stale snapshot until something else moved. A full revalidation at most once
@@ -41,7 +42,7 @@ _ROADMAP_SNAPSHOT_VERSION = 1
 _ROADMAP_REVALIDATE_DEFAULT_S = 120.0
 _ROADMAP_SNAPSHOT_LOCK = threading.Lock()
 # In-process reuse, so a hit costs no open beyond the snapshot file itself.
-_ROADMAP_SNAPSHOTS: dict[str, tuple[str, dict[str, Any]]] = {}
+_ROADMAP_SNAPSHOTS: dict[tuple[str, str], tuple[str, dict[str, Any]]] = {}
 
 
 class _MountsMemo:
@@ -138,8 +139,66 @@ def _head_commit_of(git_dir: Path) -> str:
     return ""
 
 
+def _covered_directory_shape(docs_dir: Path, max_dirs: int = 64, depth: int = 2) -> str:
+    """Return the stat identity of the directories a plan read walks.
+
+    A document added to the tree is not a write reckon or git made: it moves no
+    staging index, no HEAD and no write counter, so a key built only from those
+    would keep answering from a composition that predates the new document.
+    What a document's arrival does move is the identity of the directory it was
+    written into, so the key carries one stat per covered directory — the docs
+    root, and the subdirectories a plan read descends into, bounded in both
+    depth and count so a deep figure tree cannot turn the key into a walk.
+
+    The result is a string rather than a list so it compares as one key field
+    and serialises into the key's json as a single value.
+    """
+    from reckon.metadata_index import _dir_identity
+
+    readings: list[str] = []
+    pending: list[tuple[Path, str, int]] = [(docs_dir, ".", 0)]
+    while pending and len(readings) < max_dirs:
+        directory, relative, level = pending.pop()
+        identity = _dir_identity(directory)
+        readings.append(f"{relative}={identity}")
+        if level >= depth:
+            continue
+        try:
+            with os.scandir(directory) as scanned:
+                children = sorted(
+                    entry.path
+                    for entry in scanned
+                    if entry.is_dir(follow_symlinks=False)
+                )
+        except OSError:
+            continue
+        pending.extend(
+            (Path(child), f"{relative}/{os.path.basename(child)}", level + 1)
+            for child in reversed(children)
+        )
+    return "|".join(sorted(readings))
+
+
+def roadmap_docs_identity(docs_dir: Path | None) -> str:
+    """Return a short digest of the absolute path a project's docs live at.
+
+    A project name alone does not name a tree: two checkouts, and two temporary
+    trees under one test run, routinely declare the same project out of
+    different directories. A snapshot keyed and stored on the name alone would
+    be served across them, so the location and the key both carry this digest
+    and two trees with one name never open each other's record.
+    """
+    if docs_dir is None:
+        return "none"
+    try:
+        resolved = str(Path(docs_dir).resolve())
+    except OSError:
+        resolved = str(docs_dir)
+    return hashlib.sha256(resolved.encode("utf-8")).hexdigest()[:16]
+
+
 def roadmap_project_generation(project: str, docs_dir: Path | None) -> list[str]:
-    """Return the three facts one mounted project's plan state is keyed on."""
+    """Return the facts one mounted project's plan state is keyed on."""
     from reckon._store import read_write_generation
 
     index_identity = "none"
@@ -151,7 +210,8 @@ def roadmap_project_generation(project: str, docs_dir: Path | None) -> list[str]
         except OSError:
             index_identity = "none"
         head = _head_commit_of(git_dir)
-    return [index_identity, head, read_write_generation(project)]
+    shape = _covered_directory_shape(docs_dir) if docs_dir is not None else "none"
+    return [index_identity, head, read_write_generation(project), shape]
 
 
 def _roadmap_live_readings(project: str) -> tuple[list[list[str]], dict[str, Any]]:
@@ -195,8 +255,12 @@ def _roadmap_live_readings(project: str) -> tuple[list[list[str]], dict[str, Any
     from reckon.crew import recovery_watch as watch
     from reckon.crew import runs as crew_runs
 
+    # Every project's pointer is read and this project's kept here: the
+    # filter is the same set as a project-scoped listing, and taking it in the
+    # snapshot's own module leaves no caller-supplied argument between the
+    # listing and the rows the key is built from.
     try:
-        pointers = crew_runs.list_live(project=project)
+        pointers = crew_runs.list_live()
     except OSError:
         pointers = []
     moment = time.time()
@@ -256,6 +320,26 @@ def _roadmap_live_readings(project: str) -> tuple[list[list[str]], dict[str, Any
     return rows, states
 
 
+def _watch_stream_identity(project: str) -> str:
+    """Return the identity of the watch stream this project's read consumes.
+
+    A roadmap read derives sprint liveness and live-run classification from the
+    project's append-only watch stream. Appending a line to it is not a plan
+    write: it moves no staging index, no HEAD and no write counter, and a run
+    with no live pointer has no row in the key that could carry it — so a key
+    built without the stream would answer a read from the composition made
+    before the appended transitions. Size and mtime together move on an append
+    and on a truncation, and one stat is the whole cost.
+    """
+    from reckon.crew import runs as crew_runs
+
+    try:
+        observed = crew_runs.watch_stream_path(project).stat()
+    except OSError:
+        return "none"
+    return f"{observed.st_size}:{observed.st_mtime_ns}"
+
+
 def roadmap_snapshot_key(
     project: str,
     mounts: Mapping[str, Path],
@@ -274,14 +358,20 @@ def roadmap_snapshot_key(
         name: roadmap_project_generation(name, docs_dir)
         for name, docs_dir in sorted(mounts.items())
     }
+    roots = {
+        name: roadmap_docs_identity(docs_dir)
+        for name, docs_dir in sorted(mounts.items())
+    }
     live_rows, live_states = _roadmap_live_readings(project)
     key = json.dumps(
         {
             "version": _ROADMAP_SNAPSHOT_VERSION,
             "code": code_stamp,
             "project": project,
+            "roots": roots,
             "shape": dict(shape or {}),
             "projects": generations,
+            "watch": _watch_stream_identity(project),
             "live": live_rows,
         },
         sort_keys=True,
@@ -289,14 +379,23 @@ def roadmap_snapshot_key(
     return key, live_states
 
 
-def roadmap_snapshot_path(project: str) -> Path:
-    """Return the node-local file one project's roadmap snapshot lives in."""
+def roadmap_snapshot_path(project: str, docs_dir: Path | None) -> Path:
+    """Return the node-local file one tree's roadmap snapshot lives in.
+
+    The file is filed under the filesystem identity of the project's docs root
+    as well as its name. The node-local cache directory is shared by every tree
+    on the node, so a name alone would let a read of one tree's docs open the
+    composition another tree with the same project name made.
+    """
     from reckon.crew.review_records import node_local_cache_dir
 
-    return node_local_cache_dir(project) / "roadmap-snapshot.json"
+    identity = roadmap_docs_identity(docs_dir)
+    return node_local_cache_dir(project) / f"roadmap-snapshot-{identity}.json"
 
 
-def roadmap_snapshot_load(project: str, key: str) -> dict[str, Any] | None:
+def roadmap_snapshot_load(
+    project: str, docs_dir: Path | None, key: str
+) -> dict[str, Any] | None:
     """Return the stored snapshot when the key matches and it is still fresh.
 
     The persisted file is read on every call: a fresh process, another
@@ -308,11 +407,11 @@ def roadmap_snapshot_load(project: str, key: str) -> dict[str, Any] | None:
     moment = time.time()
     candidates: list[dict[str, Any]] = []
     with _ROADMAP_SNAPSHOT_LOCK:
-        served = _ROADMAP_SNAPSHOTS.get(project)
+        served = _ROADMAP_SNAPSHOTS.get((project, roadmap_docs_identity(docs_dir)))
     if served is not None and served[0] == key:
         candidates.append(served[1])
     try:
-        raw = roadmap_snapshot_path(project).read_text()
+        raw = roadmap_snapshot_path(project, docs_dir).read_text()
         persisted = json.loads(raw)
     except (OSError, ValueError):
         persisted = None
@@ -330,7 +429,9 @@ def roadmap_snapshot_load(project: str, key: str) -> dict[str, Any] | None:
     return None
 
 
-def roadmap_snapshot_store(project: str, key: str, payload: dict[str, Any]) -> None:
+def roadmap_snapshot_store(
+    project: str, docs_dir: Path | None, key: str, payload: dict[str, Any]
+) -> None:
     """Store a snapshot under its key, in process and on node-local disk."""
     record = {
         "version": _ROADMAP_SNAPSHOT_VERSION,
@@ -339,13 +440,19 @@ def roadmap_snapshot_store(project: str, key: str, payload: dict[str, Any]) -> N
         "payload": payload,
     }
     with _ROADMAP_SNAPSHOT_LOCK:
-        _ROADMAP_SNAPSHOTS[project] = (key, record)
-    path = roadmap_snapshot_path(project)
+        _ROADMAP_SNAPSHOTS[(project, roadmap_docs_identity(docs_dir))] = (key, record)
+    from reckon._store import write_atomically
+
+    path = roadmap_snapshot_path(project, docs_dir)
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = path.with_suffix(".json.tmp")
-        tmp.write_text(json.dumps(record))
-        tmp.replace(path)
+        # The snapshot is a disposable cache, so its bytes need not be durable:
+        # the rename is what a concurrent reader needs, not a fsync before it.
+        write_atomically(
+            path,
+            lambda handle: handle.write(json.dumps(record)),
+            fsync=False,
+        )
     except (OSError, TypeError, ValueError):
         # A snapshot that cannot be persisted costs the next process a cold
         # read rather than an incorrect one: the answer already served is the

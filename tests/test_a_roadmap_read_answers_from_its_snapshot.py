@@ -37,6 +37,7 @@ DRIVER = dedent(
     import io
     import json
     import os
+    import stat
     import subprocess
     import sys
     from pathlib import Path
@@ -63,7 +64,7 @@ DRIVER = dedent(
 
     real_stat = os.stat
     real_open = __import__("builtins").open
-    counts = {"covered": 0, "keys": {}}
+    counts = {"covered": 0, "dirs": 0, "keys": {}}
 
     p1_docs = (root / "p1" / "docs").resolve()
     p2_docs = (root / "p2" / "docs").resolve()
@@ -74,6 +75,15 @@ DRIVER = dedent(
         try:
             resolved = Path(str(path)).resolve()
         except OSError:
+            return
+        # A directory's stat is the key's shape reading, not a covered file:
+        # it is one observation per directory, and a covered file is what a
+        # read would have had to open to recompose.
+        if kind == "dir":
+            if str(resolved).startswith(str(p1_docs)) or str(resolved).startswith(
+                str(p2_docs)
+            ):
+                counts["dirs"] += 1
             return
         if kind == "stat" or kind == "open":
             if str(resolved).startswith(str(p1_docs)) or str(resolved).startswith(
@@ -86,8 +96,9 @@ DRIVER = dedent(
                     break
 
     def counting_stat(path, *args, **kwargs):
-        _note(path, "stat")
-        return real_stat(path, *args, **kwargs)
+        observed = real_stat(path, *args, **kwargs)
+        _note(path, "dir" if stat.S_ISDIR(observed.st_mode) else "stat")
+        return observed
 
     def counting_open(file, *args, **kwargs):
         _note(file, "open")
@@ -351,6 +362,7 @@ LIVE_DRIVER = dedent(
     import io
     import json
     import os
+    import stat
     import sys
     import time
     import types
@@ -370,12 +382,14 @@ LIVE_DRIVER = dedent(
     bases = {"p1": (root / "p1").resolve(), "p2": (root / "p2").resolve()}
     real_stat = os.stat
     real_open = __import__("builtins").open
-    counts = {"covered": 0, "keys": {}}
+    counts = {"covered": 0, "dirs": 0, "keys": {}}
 
-    def note(path):
+    def note(path, kind):
         try:
             resolved = Path(str(path)).resolve()
         except OSError:
+            return
+        if kind == "dir":
             return
         if str(resolved).startswith(str(docs["p1"])) or str(resolved).startswith(str(docs["p2"])):
             counts["covered"] += 1
@@ -385,11 +399,12 @@ LIVE_DRIVER = dedent(
                 break
 
     def counting_stat(path, *args, **kwargs):
-        note(path)
-        return real_stat(path, *args, **kwargs)
+        observed = real_stat(path, *args, **kwargs)
+        note(path, "dir" if stat.S_ISDIR(observed.st_mode) else "stat")
+        return observed
 
     def counting_open(file, *args, **kwargs):
-        note(file)
+        note(file, "open")
         return real_open(file, *args, **kwargs)
 
     os.stat = counting_stat
@@ -567,8 +582,9 @@ def _live_driver(tmp_path: Path) -> Path:
     return path
 
 
-def _snapshot_file(root: Path) -> Path:
-    return root / "runtime" / "reckon" / "p1" / "roadmap-snapshot.json"
+def _snapshot_files(root: Path) -> list[Path]:
+    """Every snapshot the read filed for this tree under the node cache."""
+    return sorted((root / "runtime" / "reckon" / "p1").glob("roadmap-snapshot-*.json"))
 
 
 def _listed(by_plan: dict) -> list[str]:
@@ -621,7 +637,7 @@ def test_a_fresh_process_answers_from_the_persisted_snapshot(tmp_path: Path) -> 
 
     cold = _run(root, "fresh", driver)
     assert cold["first_call_covered"] > DOCUMENT_COUNT, cold
-    assert _snapshot_file(root).exists(), "the snapshot was never persisted"
+    assert _snapshot_files(root), "the snapshot was never persisted"
 
     warm = _run(root, "fresh", driver)
     # A process that started cold pays one existence check per mount while it
