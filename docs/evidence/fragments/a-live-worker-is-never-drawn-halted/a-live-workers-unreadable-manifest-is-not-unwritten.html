@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-live-worker-is-never-drawn-halted">
+  <meta name="plan-title" content="A live worker's unreadable manifest is not unwritten">
+  <meta name="plan-summary" content="A run that is alive and writing keeps its working reading when its in-progress manifest is a body the strict reader refuses; the refusal stays named on the detail. A run whose process is gone keeps the halted word.">
+  <meta name="plan-evidence-for" content="reckon:a-live-worker-is-never-drawn-halted">
+  <meta name="plan-verifies" content="reckon:a-live-worker-is-never-drawn-halted#s2">
+  <meta name="plan-recorded-at" content="2026-10-23">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,recovery,manifest,classification">
+  <title>A live worker's unreadable manifest is not unwritten — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="a-live-workers-unreadable-manifest-is-not-unwritten-note" class="r-note" data-node="a-live-workers-unreadable-manifest-is-not-unwritten" data-reckon="landed" data-when="2026-10-23">
+  <h2 id="a-live-workers-unreadable-manifest-is-not-unwritten-head">A live worker's unreadable manifest is not unwritten</h2>
+  <p id="a-live-workers-unreadable-manifest-is-not-unwritten-rule">A run in motion may hold a manifest body the strict reader refuses — a list field joined with a separator <code>parse_manifest</code> does not accept, or a status word outside the vocabulary. That refusal is real and stays: it is named on the row's detail. What changed is what it is taken to mean. Classification reads the body for a status the reader accepts, and only that counts as a written verdict. Orientation keys alone, a non-vocabulary status word or an unsubstituted status template are all the same absence read from a later moment, and the motion predicate <code>_orientation_write_of_a_run_in_motion</code> already owns what to do with an absent verdict on a run in motion: a proven-live worker, or — for a run whose pid this host cannot look up — an assistant record in the newest stream inside the stall window the stall clock already applies.</p>
+  <p id="a-live-workers-unreadable-manifest-is-not-unwritten-mechanism">The change is one test in <code>reckon/crew/recovery_liveness.py</code>: a new helper <code>_manifest_carries_no_verdict_yet</code> reads a body as carrying no verdict when it is an orientation write, or when it is non-empty and its status is not one the reader recognises. The guard inside <code>_orientation_write_of_a_run_in_motion</code> now asks <code>not _manifest_carries_no_verdict_yet(...)</code> in place of its old orientation-only test, and the motion rule beside it is untouched — the same predicate, the same three-way live/unknown/gone decision. This is the size the node declared: an extension of the predicate, not a second rule. In <code>reckon/crew/recovery_classification.py</code> the live-unwritten arm's detail now names the parse error itself rather than only the path, so a coordinator still sees the body that needs rewriting.</p>
+  <p id="a-live-workers-unreadable-manifest-is-not-unwritten-gate">Head gate: <code>tests/test_a_live_workers_unreadable_manifest_is_working.py</code> at the committed revision, 5 passed in 2.83&nbsp;s, <code>EXIT=0</code>. The three fixture bodies name a live child process as the run's pid, age the pointer's dispatch time and the manifest's mtime decisively outside <code>LAUNCH_WINDOW_SECONDS</code> and <code>MANIFEST_REWRITE_WINDOW_SECONDS</code> (the margin is added to the constants, not written as an absolute), and carry an assistant record in the newest stream. Arms&nbsp;a and&nbsp;b assert the row reads <code>running</code>, the pane word is <code>working</code>, and the detail names the reader's own refusal — derived from <code>parse_manifest</code> at assertion time rather than quoted. The accepted-body control and the two process-gone arms are asserted too, the gone arms at <code>unreadable</code>/<code>unwritten</code>.</p>
+  <p id="a-live-workers-unreadable-manifest-is-not-unwritten-mutation">Negative control, the mutation this node declared — revert the classification change so a live in-progress manifest that fails <code>parse_manifest</code> is marked unwritten again: the two source files are returned to the base revision in a scratch tree holding the new test, and the run exits <code>1</code> with both refused-body arms failing at pane <code>halted</code>, while the accepted-body control and both gone arms still pass. Log: <code>negative-control.log</code> in the run directory, first line: <code>revert the classification change so a live in-progress manifest that fails parse_manifest is marked unwritten again; arms a and b must then draw halted</code>.</p>
+  <p id="a-live-workers-unreadable-manifest-is-not-unwritten-delta">The delta over the 73 test files that reach the changed modules is one added failure at head (13 against 12 at base), in <code>tests/test_a_producer_sweeps_only_on_change.py::test_quiet_cycles_list_nothing_and_spawn_no_git</code> — a positive control asserting the opening sweep spawned git. That file passes alone at head (3/3) and in every pairwise combination tried at both arms, so it is reported as an out-of-scope follow-on rather than diagnosed here; its write path is not this node's.</p>
+</article>
+</body>
+</html>
