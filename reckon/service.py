@@ -18,8 +18,9 @@ import shutil
 import socket
 import subprocess
 import sys
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
+from typing import Any
 
 UNIT_NAME = "reckon.service"
 
@@ -319,6 +320,48 @@ def write_named_unit(
     if not unchanged:
         target.write_text(content, encoding="utf-8")
     return target, not unchanged
+
+
+def install_timer_units(
+    service_name: str,
+    service_content: str,
+    timer_name: str,
+    timer_content: str,
+    *,
+    directory: str | Path | None = None,
+    run: Callable[[Sequence[str]], Any] | None = None,
+) -> dict[str, Any]:
+    """Write a service and its timer, then bring the timer up.
+
+    This is the one place a timer-backed pass is installed: a caller renders its
+    two unit files and names them, so the write, reload and enable steps exist
+    once rather than once per pass. Both units are written under the user's
+    systemd directory and, only when a definition actually changed, the manager
+    is reloaded and the timer enabled and started. An unchanged re-run writes
+    nothing and calls nothing, so installing repeatedly is free and leaves a
+    running timer untouched. The manager is reached through ``systemctl --user``
+    on PATH, so a caller can substitute a stub by putting one earlier on PATH.
+    """
+    target = Path(directory) if directory is not None else None
+    service_path, service_changed = write_named_unit(
+        service_name, service_content, directory=target
+    )
+    timer_path, timer_changed = write_named_unit(
+        timer_name, timer_content, directory=target
+    )
+    changed = service_changed or timer_changed
+    commands: list[list[str]] = []
+    if changed:
+        command = run or (lambda args: systemctl(*args))
+        for args in (("daemon-reload",), ("enable", "--now", timer_name)):
+            command(list(args))
+            commands.append(list(args))
+    return {
+        "changed": changed,
+        "service": service_path,
+        "timer": timer_path,
+        "commands": commands,
+    }
 
 
 def parse_restart_count(output: str) -> int | None:
