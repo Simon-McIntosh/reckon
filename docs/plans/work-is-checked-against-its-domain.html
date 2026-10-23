@@ -22,11 +22,11 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="scoring-should-stop-a-promotion">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;work-is-checked-against-its-domain#s3&quot;],&quot;s5&quot;:[&quot;work-is-checked-against-its-domain#s3&quot;],&quot;s7&quot;:[&quot;work-is-checked-against-its-domain#s2&quot;,&quot;work-is-checked-against-its-domain#s4&quot;,&quot;work-is-checked-against-its-domain#s5&quot;,&quot;work-is-checked-against-its-domain#s6&quot;,&quot;the-mcp-answers-the-question-asked#s9&quot;],&quot;s6&quot;:[&quot;work-is-checked-against-its-domain#s3&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;}">
   <title>Work Is Checked Against Its Domain | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="55">
+<meta name="plan-version" content="56">
 <meta name="plan-modified" content="2026-10-23">
 </head>
 <body>
@@ -101,7 +101,7 @@
 <p><strong>Why.</strong> The review of the crew-tool repair (<code>e513575de</code>, 110/120) found two gaps. The parity test never supplies <code>waive_domain_check</code>, so it proves the call can be placed but not that a stated reason reaches the promotion guard. And <code>_ACTION_OPTION_PARAM</code> does not carry <code>--waive-domain-check</code>, so a duty whose printed command states that waiver renders through <code>action_form</code> as unrenderable rather than as a crew-tool call.</p><p><strong>Change.</strong> The option joins <code>_ACTION_OPTION_PARAM</code>, and the parity test supplies a reason on both actions and asserts it reaches the guard's waiver.</p><p><strong>Done when:</strong> a fixture promotion through the crew tool stating a domain-check waiver records that reason on the promotion, and a duty command carrying <code>--waive-domain-check</code> renders as a crew-tool action. On the base commit both fail.</p>
 
     <h2 id="s11">§11 — A domain waiver is written to the promoted row</h2>
-<section data-reckon="section" data-id="s11" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s11" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> §10 made the domain-check waiver reachable from every surface, and its landing measured that the stated reason reaches the promotion guard. It reaches nothing after the guard: the guard's returned waiver record is bound to <code>_domain_checks</code> and discarded (<code>reckon/crew/promotion.py</code> near line 535), so neither the promotion's outcome nor the promoted ledger row carries it. <code>reckon/crew/promotion.py</code> unpacks <code>_domain_checks</code> from its guard set and passes nothing on to <code>_complete_locked</code>, and <code>reckon/run_record.py</code> seeds only <code>boundary_waiver</code> and <code>resume_waiver</code>. So a reviewer auditing a landed run cannot see that a declared check failed and was waived, or why. Every other waiver a promotion accepts rides the row; this one is dropped.</p><p><strong>Change.</strong> The waived checks and their stated reason are recorded on the promoted row the way <code>boundary_waiver</code> is, through the same record seeding in <code>reckon/run_record.py</code>, so the ledger, <code>crew(view="records")</code> and the run's landed record all read one field. No new waiver option is added.</p><p><strong>Done when:</strong> a fixture promotion whose declared invariant check fails over the node's write paths, landed with <code>--waive-domain-check</code> and a reason, carries the waived check names and that reason on its ledger row, read back through <code>crew(view="records")</code>; a promotion with no waiver carries the field empty. On the base commit the row carries no such field, so the test fails there.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
@@ -118,10 +118,16 @@
     <pre class="r-fu-prompt">/reckon-build work-is-checked-against-its-domain §6</pre>
     <p class="r-fu-outcome">§6 landed: a missing declared input is refused and an unnamed comparison is a dispatch warning. The remaining work is §11 (a domain waiver written to the promoted row) and §7 (the replay); the next invocation is f-wicd-003.</p>
     </article>
-<article class="r-fu" data-id="f-wicd-003" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-23" data-recommends-skill="/reckon-build work-is-checked-against-its-domain §11" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-wicd-003" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-23" data-recommends-skill="/reckon-build work-is-checked-against-its-domain §11" data-resolved-at="2026-10-23T05:48:28+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Build §11, then replay the cases in §7</h4>
     <div class="r-fu-body">§11 writes a waived domain check and its reason onto the promoted ledger row. §7 replays the recorded cases once the checks are complete.</div>
     <pre class="r-fu-prompt">/reckon-build work-is-checked-against-its-domain §11</pre>
+    <p class="r-fu-outcome">§11 landed by merge bf82cb7b2; the domain waiver is on the promoted ledger row.</p>
+    </article>
+<article class="r-fu" data-id="f-wicd-004" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-23 08:00" data-recommends-skill="/reckon-build work-is-checked-against-its-domain §7" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §7</h4>
+    <div class="r-fu-body"><p>§11 has landed. §7 is the one section still implementable.</p></div>
+    <pre class="r-fu-prompt">/reckon-build work-is-checked-against-its-domain §7</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -252,7 +258,10 @@
     <div class="r-comment-body"><p>independent review of r-20261022T234509733071-a-domain-waiver-is-written-to-the-promoted-row attached at reviewed_base_sha 5b1ed1046 / reviewed_head_sha 59493ae56; six dimensions scored (goal_fidelity 20, evidence 15, scope_discipline 20, durability 19, fit 20, reuse 20), added_failure_count 0, two follow-on findings and no blocking one</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261022T234509733071-a-domain-waiver-is-written-to-the-promoted-row" data-who="reckon-build" data-when="2026-10-23T04:26:22Z">
-    <div class="r-comment-body"><p>The domain-check waiver now rides the promoted ledger row: the guard&#x27;s returned mapping (waived invariant ids and the stated reason) is written as `domain_waiver` beside `boundary_waiver` through reckon/crew/promotion_waivers.py, seeded in build_record and declared in RECORD_FIELDS; at the committed head 9d0b33afe the node&#x27;s tests are 3 passed in 175.10s and the paired arm is 6 passed with the one pre-existing window failure.</p></div>
+    <div class="r-comment-body"><p>The domain-check waiver now rides the promoted ledger row: the guard's returned mapping (waived invariant ids and the stated reason) is written as `domain_waiver` beside `boundary_waiver` through reckon/crew/promotion_waivers.py, seeded in build_record and declared in RECORD_FIELDS; at the committed head 9d0b33afe the node's tests are 3 passed in 175.10s and the paired arm is 6 passed with the one pre-existing window failure.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-10-23T08:00:00Z">
+    <div class="r-comment-body"><p>§11 landed by merge <code>bf82cb7b2</code>: the waived domain checks and their reason ride the promoted row as <code>domain_waiver</code>; six-file gate 64 passed at head with only the pre-existing width failure, three new tests red at base; review 114/120. <a href="/reckon/evidence/archive/work-is-checked-against-its-domain-landed.html#s11">evidence</a></p></div>
 </div>
 </section>
 </main>
