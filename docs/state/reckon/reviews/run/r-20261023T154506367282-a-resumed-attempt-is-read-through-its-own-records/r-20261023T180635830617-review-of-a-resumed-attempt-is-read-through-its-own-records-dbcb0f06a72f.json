@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 9,
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:405",
+    "reckon/crew/recovery_classification.py:766",
+    "reckon/crew/recovery_watch.py:838",
+    "reckon/crew/directory.py:97",
+    "reckon/crew/forgotten_runs.py:94",
+    "reckon/crew/obligations.py:482",
+    "reckon/crew/promotion.py:387",
+    "reckon/crew/promotion_release.py:862",
+    "reckon/crew/recovery_liveness.py:563"
+  ],
+  "completed_at": "2026-10-23T18:31:14.228Z",
+  "dispatched_at": "2026-10-23T18:10:04Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_liveness.py",
+      "line": "557",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_attempt_claim_numbers` bounds its scan at `max(pointer attempt, attempt record) + 1` (range(1, highest + 2), line 563) instead of enumerating the directory the way the glob it replaced did, so when two claims are taken without an intervening attempt record \u2014 the resume-cut-off-before-spawn window this node exists to read \u2014 the newest claim sits two above `highest` and is missed, understating `_current_attempt_number`; the docstring's \"Every attempt the run's directory holds a claim for\" (line 543) states a coverage the bound does not give."
+    },
+    {
+      "file": "reckon/crew/recovery_liveness.py",
+      "line": "553",
+      "severity": "non-blocking",
+      "text": "non-blocking: the same guarded import `from reckon.crew import resumption` and its two-line \"cycle\" comment are written twice in one module (line 555 and line 592) rather than once; the deferred import is correct because reckon/crew/resumption.py:88 imports this module, but the repetition is a copy that a later edit can leave behind in one place and not the other."
+    },
+    {
+      "file": "docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-resumed-attempt-is-read-through-its-own-records.html",
+      "line": "29",
+      "severity": "non-blocking",
+      "text": "non-blocking: the lint paragraph states \"the two changed modules carry 3 findings at the base revision and 3 at the head ... a UP017 among them\", but `ruff check` reports one finding (the UP017 at recovery_classification.py:730) at both revisions and the count of 3 is the number of `ruff format --check` hunks in recovery_liveness.py, so the sentence conflates the two tools and describes a UP017 as among the three format hunks; the zero-added-delta conclusion it draws is nonetheless correct."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 9 production call site(s)",
+    "diff": "read commit by commit against 0231ca112322d2f02e565eca140525b503a819cc; 56b638531 takes the claim's name from reckon/crew/resumption.py:305, routes the attempt's own end to recovery_liveness.py:628, deletes the duplicated `_attempt_end_recorded` and the re-declared claim-name constants, reverts an out-of-scope import rewrite in recovery_classification.py and the unrelated line joins in recovery_liveness.py, and restates the fixture arms to the exact pane word; dbcb0f06 rewrites the fragment's gate, lint and follow-on paragraphs; all four changed files are inside the declared write paths.",
+    "done_when": "the done_when names four fixture arms, a base arm, a negative control and the ruff/format deltas on tests/test_a_resumed_attempt_is_read_through_its_own_records.py; base-gate.log records 5 failed EXIT=1, head-gate.log records 19 passed EXIT=0 over the test plus its two sibling suites, negative-control.log records 4 failed EXIT=1 under the declared mutation, and the ruff figure is a command this review re-ran and confirmed.",
+    "goal": "the node's goal is to read a resumed attempt's liveness and verdict through its own claim, worker and exit records rather than its predecessor's; the repair round keeps that reading and re-sources it through the modules that own the names, at reckon/crew/recovery_liveness.py:555 (the claim) and reckon/crew/recovery_classification.py:84 (the attempt's own end).",
+    "manifest": "read; it records status complete, four commits, the single-file gate command on its `tests:` line, four gate logs, baseline_suite at exit 1 with five failure ids and after_suite at exit 0 with none, and follow_ons naming the reducer word for the claim-only arms and the wide sweep that did not complete.",
+    "write_paths": "the manifest declares five paths \u2014 the two source modules, the manifest's test, the evidence fragment under docs/evidence/fragments/ and the docs/figures/ directory \u2014 and `git diff --stat 0231ca112322d2f02e565eca140525b503a819cc dbcb0f06a72fba273a8cbb8ba8a26a1567fca589` shows exactly the four files those paths name and nothing outside them."
+  },
+  "justifications": {
+    "durability": "the four arms fail at the base revision (base-gate.log, 5 failed) and under the declared mutation (negative-control.log, 4 failed), and the repair's exact-word assertion at tests/test_a_resumed_attempt_is_read_through_its_own_records.py:286 replaces the membership check that would have accepted any neighbouring working state, so a revert of the claim branch reddens arm i rather than passing quietly.",
+    "evidence": "the recorded gate could have failed and did \u2014 base-gate.log 5 failed against head-gate.log 19 passed EXIT=0 \u2014 and this review re-ran the ruff half of the bare done-when and confirmed the zero delta, but the html's lint paragraph conflates two tool counts (docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-resumed-attempt-is-read-through-its-own-records.html:29) and its \"6 passed in 5.44s\" figure has no log named in test_logs, only the widened 19-passed run.",
+    "fit": "the additions follow the module's convention of deferred imports and mechanism-stating docstrings (reckon/crew/recovery_liveness.py:553), and no plan label, version or ticket reference appears in an added name or comment, though the deferred import is written twice.",
+    "goal_fidelity": "reckon/crew/recovery_liveness.py:542 builds each claim path through the owner at reckon/crew/resumption.py:305 instead of re-spelling it, and reckon/crew/recovery_classification.py:84 resolves the attempt's end through the single owner at recovery_liveness.py:628, which is the same reading the goal names without the duplicate.",
+    "reuse": "the repair resolves the two reuse defects the prior review named \u2014 the re-declared claim-file spelling is gone in favour of reckon/crew/resumption.py:305, and `_attempt_end_recorded` is deleted in favour of the existing `_exit_record_names_attempt` at reckon/crew/recovery_liveness.py:628 \u2014 with only the bounded scan at recovery_liveness.py:557 a partial fork of the directory enumeration it replaced.",
+    "scope_discipline": "every changed path is one the manifest declares and nothing outside them was touched, though the gained diff still carries three line joins in recovery_liveness.py (ruff format hunks at lines 431, 735 and 957) and a two-line import revert in recovery_classification.py that are churn relative to the revision this diff is taken from."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to read a resumed attempt's liveness and verdict through its own claim, worker and exit records rather than its predecessor's; the repair round keeps that reading and re-sources it through the owners, at reckon/crew/recovery_liveness.py:555 (the claim) and reckon/crew/recovery_classification.py:84 (the attempt's own end).\nVERDICT done_when: the done_when names four fixture arms, a base arm, a negative control and the ruff/format deltas on tests/test_a_resumed_attempt_is_read_through_its_own_records.py; base-gate.log 5 failed EXIT=1, head-gate.log 19 passed EXIT=0 over the test plus its two sibling suites, negative-control.log 4 failed EXIT=1 under the declared mutation, and the ruff figure re-run and confirmed.\nVERDICT write_paths: the manifest declares the two source modules, the manifest's test, the evidence fragment and the docs/figures directory; `git diff --stat 0231ca112322d2f02e565eca140525b503a819cc dbcb0f06a72fba273a8cbb8ba8a26a1567fca589` shows exactly four files, all inside them.\nVERDICT manifest: read; it records status complete, four commits, the single-file gate command, four gate logs, baseline_suite at exit 1 with five failure ids and after_suite at exit 0 with none, and follow_ons naming the reducer word and the incomplete wide sweep.\nVERDICT diff: read commit by commit against 0231ca112322d2f02e565eca140525b503a819cc; 56b638531 takes the claim's name from resumption, routes the attempt's own end to _exit_record_names_attempt, deletes the duplicated `_attempt_end_recorded` and the re-declared claim constants, reverts an out-of-scope import rewrite and the unrelated line joins, and restates the fixture arms to the exact pane word; dbcb0f06 rewrites the fragment's gate, lint and follow-on paragraphs.\nCALL_SITES: reckon/crew/recovery_classification.py:405, reckon/crew/recovery_classification.py:766, reckon/crew/recovery_watch.py:838, reckon/crew/directory.py:97, reckon/crew/forgotten_runs.py:94, reckon/crew/obligations.py:482, reckon/crew/promotion.py:387, reckon/crew/promotion_release.py:862, reckon/crew/recovery_liveness.py:563\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_liveness.py:542 builds each claim path through the owner at reckon/crew/resumption.py:305, and reckon/crew/recovery_classification.py:84 resolves the attempt's end through the single owner at recovery_liveness.py:628, the reading the goal names without the duplicate.\nSCORE evidence: 15\nJUSTIFICATION evidence: the recorded gate could have failed and did \u2014 base-gate.log 5 failed against head-gate.log 19 passed EXIT=0 \u2014 but the html's lint paragraph conflates two tool counts (docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-resumed-attempt-is-read-through-its-own-records.html:29) and its \"6 passed in 5.44s\" figure has no log named in test_logs.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every changed path is one the manifest declares, though the gained diff still carries three line joins in recovery_liveness.py and a two-line import revert in recovery_classification.py that are churn relative to 0231ca112.\nSCORE durability: 16\nJUSTIFICATION durability: the four arms fail at the base revision (base-gate.log, 5 failed) and under the declared mutation (negative-control.log, 4 failed), and the exact-word assertion at tests/test_a_resumed_attempt_is_read_through_its_own_records.py:286 reddens where the replaced membership check would have passed any neighbouring working state.\nSCORE fit: 15\nJUSTIFICATION fit: the additions follow the module's deferred-import and docstring convention (reckon/crew/recovery_liveness.py:553) and carry no plan label or ticket reference, though the deferred import is written twice in the one module.\nSCORE reuse: 18\nJUSTIFICATION reuse: the repair resolves the two reuse defects the prior review named \u2014 the re-declared claim spelling is gone in favour of reckon/crew/resumption.py:305 and `_attempt_end_recorded` is deleted in favour of reckon/crew/recovery_liveness.py:628 \u2014 leaving only the bounded scan at recovery_liveness.py:557 a partial fork of the enumeration it replaced.\nFINDING reckon/crew/recovery_liveness.py:557 non-blocking: `_attempt_claim_numbers` bounds its scan at `max(pointer attempt, attempt record) + 1` instead of enumerating the directory as the glob it replaced did, so two claims taken without an intervening attempt record leave the newest claim two above `highest` and missed, understating `_current_attempt_number`; the docstring's \"Every attempt the run's directory holds a claim for\" (line 543) states a coverage the bound does not give.\nFINDING reckon/crew/recovery_liveness.py:555 non-blocking: the guarded `from reckon.crew import resumption` and its two-line cycle comment are written twice in one module (line 555 and line 592) rather than once, so a later edit can update one and leave the other.\nFINDING docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-resumed-attempt-is-read-through-its-own-records.html:29 non-blocking: the lint paragraph states \"3 findings at the base revision and 3 at the head ... a UP017 among them\", but `ruff check` reports one finding (the UP017 at recovery_classification.py:730) at both revisions and the count of 3 is the number of `ruff format --check` hunks, so the sentence conflates the two tools; its zero-added-delta conclusion is nonetheless correct.\n",
+  "review_run_id": "r-20261023T180635830617-review-of-a-resumed-attempt-is-read-through-its-own-records-dbcb0f06a72f",
+  "reviewed_base_sha": "0231ca112322d2f02e565eca140525b503a819cc",
+  "reviewed_head_sha": "dbcb0f06a72fba273a8cbb8ba8a26a1567fca589",
+  "reviewed_run_id": "r-20261023T154506367282-a-resumed-attempt-is-read-through-its-own-records",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 15,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T18:37:55.289486+00:00",
+  "total": 97
+}
