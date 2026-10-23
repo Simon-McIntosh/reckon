@@ -117,11 +117,11 @@ from reckon.resources import (
     resource_map,
     resource_scan_scope,
 )
+from reckon.graph_target import resolve_graph_target
 from reckon.roadmap import (
     GraphTargetError,
     build_roadmap,
     dependency_row_state,
-    resolve_graph_target,
 )
 
 # Names moved into sibling modules stay importable from reckon.mcp so that

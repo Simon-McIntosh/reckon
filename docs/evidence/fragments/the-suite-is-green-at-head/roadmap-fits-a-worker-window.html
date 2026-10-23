@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s39">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-23">
+  <meta name="plan-tags" content="roadmap,graph-target,module-split,worker-window">
+  <title>reckon/roadmap.py fits a worker window | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="roadmap-fits-a-worker-window-note" data-node="roadmap-fits-a-worker-window" data-reckon="landed" data-when="2026-10-23">
+  <h2 id="roadmap-fits-a-worker-window-heading">The graph-target family moves out of reckon/roadmap.py</h2>
+
+  <p id="roadmap-fits-a-worker-window-cause"><strong>Cause.</strong>
+  <code>tests/test_every_module_fits_a_worker_window.py</code> holds every module at or
+  under 50,000 estimated tokens. Two landings on 2026-10-22 took
+  <code>reckon/roadmap.py</code> over that bound and neither node's gate ran the width
+  test, so the file measured 51,232 estimated tokens against the bound at
+  <code>77213b275</code>. The reproduction is the base arm's one failure, quoted from
+  <code>logs/gate-base.log</code>:
+  <code>reckon/roadmap.py: 51232 estimated tokens exceeds the 50000 bound and is not allowlisted</code>.</p>
+
+  <p id="roadmap-fits-a-worker-window-moved"><strong>What moved.</strong> The
+  graph-target family now lives in <code>reckon/graph_target.py</code>, named for what the
+  family does: <code>resolve_ship_target</code>, <code>resolve_graph_target</code>,
+  <code>_claims_graph_handle</code>,
+  <code>_qualified_plan</code> and <code>_dependency_endpoints</code>. No helper the
+  family shares with code that stays was copied, and no
+  <code>ALLOWLIST</code> entry was added to the width test: the bound is met by the split
+  itself.</p>
+
+  <p id="roadmap-fits-a-worker-window-callers"><strong>Callers.</strong>
+  <code>reckon/mcp.py</code> imports <code>resolve_graph_target</code> from the new owner.
+  <code>_dependency_endpoints</code> and <code>_qualified_plan</code> stay importable from
+  <code>reckon.roadmap</code> because code there reads them — <code>_build_roadmap</code>
+  calls the first and <code>_judgment_member</code> calls the second twice — and the two
+  resolvers are re-exported so a caller or test that already names
+  <code>reckon.roadmap</code> keeps resolving them. The re-export is a binding of the same
+  object, not a copy: <code>reckon.mcp.resolve_graph_target is
+  reckon.roadmap.resolve_graph_target is reckon.graph_target.resolve_graph_target</code>,
+  which is what <code>tests/test_mcp_import_surface.py</code> asserts.</p>
+
+  <p id="roadmap-fits-a-worker-window-deferred"><strong>Why the imports are deferred.</strong>
+  The dependency runs both ways — the graph resolver reads readiness and closure verdicts
+  that stay in the roadmap (<code>build_roadmap</code>, <code>_plan_decision_sections</code>,
+  <code>unsettled_decisions</code>, <code>closure_blockers</code>,
+  <code>_whole_plan_dependency</code>, <code>_judgment_member</code>, <code>_status</code>,
+  <code>_progress</code>, <code>_decision_rows</code> and
+  <code>GraphTargetError</code>) — so the moved functions read those names from
+  <code>reckon.roadmap</code> at call time while <code>reckon.roadmap</code> imports the new
+  module at its top. No cycle forms at import time, and a patch on
+  <code>reckon.roadmap.build_roadmap</code> still reaches the graph resolver: the wheel test
+  below exercises that path and its graph arm passes. No behaviour changes.</p>
+
+  <p id="roadmap-fits-a-worker-window-measure"><strong>Measure.</strong> Logs are under the
+  run directory's <code>logs/</code>. The gate is the nine named test files at
+  <code>-n 8</code>. Base arm (revision <code>77213b275</code>, tree clean, change absent):
+  <strong>1 failed, 94 passed</strong> in 106.71s, the single failure being
+  <code>test_every_module_fits_a_worker_window</code> naming
+  <code>reckon/roadmap.py</code> at 51,232 tokens. Head arm (revision
+  <code>4a54f633b</code>, change present): <strong>95 passed, 0 failed</strong> in 106.57s.
+  Added failures: <strong>zero</strong>; the one base failure is the id this node repairs,
+  and no id moved from pass to fail.</p>
+
+  <p id="roadmap-fits-a-worker-window-tokens"><strong>Width at head.</strong>
+  <code>reckon/roadmap.py</code> measures <strong>46,598</strong> estimated tokens
+  (163,091 bytes; 51,232 at base; the done-when allows at most 47,000) and
+  <code>reckon/graph_target.py</code> measures <strong>5,098</strong> (17,842 bytes; the
+  done-when allows at most 40,000). Both are measured with the width test's own estimator,
+  <code>_tokens_for_bytes</code> at 3.5 bytes per token, rather than a second ratio.</p>
+
+  <p id="roadmap-fits-a-worker-window-negative"><strong>Negative control.</strong> A scratch
+  tree under the run's scratch directory holds the head tree with
+  <code>reckon/roadmap.py</code> restored to its base content, and the width test names it
+  again: <strong>1 failed, 3 passed in 0.74s</strong>, the failure reading
+  <code>reckon/roadmap.py: 51232 estimated tokens exceeds the 50000 bound</code>. The guard
+  therefore fails on the condition it exists to catch, rather than the split having found a
+  file already under the bound.</p>
+
+  <p id="roadmap-fits-a-worker-window-repeats"><strong>One-arm-only id, repeated alone.</strong>
+  The width test is the only id failing in one arm and not the other, so it ran five times
+  alone in each arm: base <strong>1 failed</strong> on all five (0.45–0.82s), head
+  <strong>1 passed</strong> on all five (1.72–2.05s).</p>
+
+  <p id="roadmap-fits-a-worker-window-ruff"><strong>Ruff.</strong> On the three changed
+  paths, <code>ruff check</code> reports 12 findings at head against 12 at base — two in
+  <code>reckon/roadmap.py</code>, ten in <code>reckon/mcp.py</code>, none in the new
+  module — so the change adds none. <code>ruff format --check</code> passes on all three.
+  The two re-exports carry a narrow line-level <code># noqa: PLC0414</code> because ruff's
+  default isort wants each redundant alias on its own statement.</p>
+
+  <p id="roadmap-fits-a-worker-window-notes"><strong>Notes for the coordinator.</strong>
+  The gate in this node's done-when excludes the rest of the suite, so the wider population
+  belongs to the separately dispatched test node at merge. Nothing here changed a test
+  file, and no test needed a patch target re-pointed: the deferred-import idiom keeps
+  <code>reckon.roadmap</code> as the module a patch reaches.</p>
+</article>
+</body>
+</html>
