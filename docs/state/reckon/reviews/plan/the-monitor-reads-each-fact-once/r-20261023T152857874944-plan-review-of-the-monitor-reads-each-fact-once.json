@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T15:41:00.587Z",
+  "dispatched_at": "2026-10-23T15:31:22Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:136",
+      "id": "reasoning-1",
+      "reason": "the plan must state which way the unknown type goes (and cover it in the done-when's refusal list); as written the node implements an unspecified, untested path in the one guard whose whole purpose is refusing a shared mount for WAL.",
+      "text": "\u00a75 refuses only types present in `_SHARED_FILESYSTEMS`, but `host._filesystem_type` returns `None` when `/proc/self/mountinfo` is unreadable (`reckon/host.py:168`\u2013`169`), so an undeterminable type is accepted and the guard fails open exactly when it cannot prove the root is node-local",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:174",
+      "id": "reasoning-2",
+      "reason": "the two sections must agree on who owns the `cursors` table, or the sole-writer invariant \u00a77 rests on is false and a node enforcing it would refuse the subscriber's write; the prior review never raised this.",
+      "text": "\u00a77 states the station \"is the database's only writer\", but \u00a78 has the subscriber \"advance its cursor in the same transaction\", and `cursors` is one of \u00a75's own tables in that store (a second writer process on the node-local database)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "61c5ffc5451ec7f362392fe1136d669d480384de0b1cc39c1a01e24430e653e7",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 6,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T152857874944-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "a031b538c735d6dad10100ab92aed14ac472665a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 verified each \u00a75 anchor in the working tree: `reckon/crew/dispatch_watch.py:481` `_session_host_runtime_root` (returns `$XDG_RUNTIME_DIR`, then `/run/user/<uid>`, then `_TMPDIR` in that order), `reckon/file_memo.py:270` `file_signature`, `reckon/host.py:51` `_SHARED_FILESYSTEMS` (eight types), `reckon/host.py:157` `_filesystem_type`, the `reckon/host.py:190`\u2013`192` citation (the prefix early-returns sit at 188/190 and the mount-type test at 192), `reckon/crew/refusals.py:18` `DISPATCH_REFUSAL_REMEDIES` keyed `D01`\u2013`D23` (the plan's \"joins no entry\" claim holds: `tests/test_crew_refusal_visibility.py:93` asserts the key set is exactly the D-codes); extensionless hrefs resolve as `<path>.html`, and the RCA's \u00a72/\u00a75 and the superseded plan's \u00a771\u2013\u00a788 ids all exist.",
+    "done_when": "pass \u2014 every implementable node names a negative control, and \u00a75's are falsifiable rather than decorative: the retention control (one undated events file) and the shared-type control fail as stated because `reckon/crew/dispatch_admission.py:1645`\u2013`1651` returns `True` for `/run/user` and `$XDG_RUNTIME_DIR` paths by prefix, so a store built on `host._is_node_local` would accept the shared-type root under `$XDG_RUNTIME_DIR` and fail that case.",
+    "evidence_paths": "pass \u2014 no gate log is placed in a session scratchpad or node-local temporary directory; \u00a74's population log sits at `~/.cache/reckon-pointer-population/`, which survives the run.",
+    "naming": "pass \u2014 `station_store.py` and the module's error class are named by mechanism; no plan label, stage name or ticket number reaches a symbol or comment.",
+    "reasoning": "a finding \u2014 \u00a75's stated mount guard accepts an undetermined mount type \u2014 `_filesystem_type` returns `None` when the mount table is unreadable, and `None` is not in `_SHARED_FILESYSTEMS` \u2014 and \u00a77's \"It is the database's only writer\" is contradicted by \u00a78's subscriber, which writes its cursor into the same store.",
+    "single_goal": "pass \u2014 \u00a75 delivers one thing, the node-local store module, and explicitly retires nothing (\"The surfaces the station replaces are retired where they are named, in \u00a77 and \u00a712\").",
+    "wiring": "pass \u2014 the declared section graph matches the plan's own narrative: `plan-section-depends-on` chains s6\u2192s5, s7\u2192s6, s9/s10\u2192s7, s12\u2192s8..s11, and the open followup `f-tmref-002` (\"\u00a76 waits on \u00a75, because its ingest writes \u00a75's tables\") agrees with it; `plan-blocks` names `crew-state-stays-bounded`, which reciprocates with `plan-section-depends-on` s4\u2192#s12 and s5\u2192#s7 in `docs/plans/crew-state-stays-bounded.html:22`."
+  },
+  "section_digests": {
+    "_document": "1efa3b16a9023a68c77c1bd2c38fc067afc4037d50dedf6106cc67229ac7bd51",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "a96b0172939e6d2b0b84ea329f6b40619869f7950fa9017676b03073117e36e7",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "dbb31166e4f98e4666bcc2b059bae80ff6a60faff00aa820ce4447358b94c1e5",
+    "s6": "8dd1a6bcc12434ce1356b84e953eca880aeb7931e264c7f66452ac7aabba09d3",
+    "s7": "eb721508f18a0af02a4cdcf987804de54710b4a956489dc7b65960ab73d73514",
+    "s8": "6c61416a6f6cf0d80aba5516d12a2d5329a34611ee0af8c0cdcc21e5ceaf37c1",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T15:50:19.260502+00:00"
+}
