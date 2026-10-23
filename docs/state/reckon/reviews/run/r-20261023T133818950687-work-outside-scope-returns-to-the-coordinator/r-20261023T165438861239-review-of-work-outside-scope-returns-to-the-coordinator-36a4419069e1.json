@@ -1,0 +1,86 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms; no error",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2431",
+    "reckon/crew/reports.py:317",
+    "reckon/crew/promotion.py:1270",
+    "reckon/crew/promotion.py:1452",
+    "reckon/crew/promotion.py:1794"
+  ],
+  "completed_at": "2026-10-23T17:18:47.289Z",
+  "dispatched_at": "2026-10-23T16:58:30Z",
+  "findings": [
+    {
+      "file": "tests/test_continuation.py",
+      "line": "566",
+      "severity": "non-blocking",
+      "text": "The rewritten chain case inserts the section it then asserts (op insert_section id s4 authored by the test itself at tests/test_continuation.py:566), so it passes whether or not any manifest entry reaches the coordinator; the previous version at least exercised the conversion, and the new file covers the report and row, so the loss is coverage of the entry-to-section link only. Folded into the node that owns the skill-text staleness below."
+    },
+    {
+      "file": "reckon/crew/dispatch_peer.py",
+      "line": "407",
+      "severity": "non-blocking",
+      "text": "Two production sites still write the retired key into synthesized manifests \u2014 reckon/crew/dispatch_peer.py:407 and reckon/crew/recovery_watch.py:201 emit a bare 'follow_ons: none' \u2014 so the field rename is incomplete in code that produces manifests; harmless today only because reckon/crew/reports.py:791 maps the retired spelling, which means the mapping cannot be retired. Exempted: no behaviour change, and both sites write the empty value."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T133818950687-work-outside-scope-returns-to-the-coordinator/base-arm.log",
+      "line": "4",
+      "severity": "non-blocking",
+      "text": "The base arm's command line names 22 of the 23 test files the done_when's census lists (git grep -l -E over tests/ at 04c10e00c47 minus tests/fixtures/), omitting tests/test_widen_reaches_a_blocked_run.py, so the zero-added-failures delta is measured over 22 files; the omitted file passes in the head arm, so no added failure can be hiding there, but the delta is not over the declared population. Exempted: direction of risk is closed by the head arm's own result."
+    },
+    {
+      "file": "docs/evidence/fragments/additional-work-is-a-section/work-outside-scope-returns-to-the-coordinator.html",
+      "line": "48",
+      "severity": "non-blocking",
+      "text": "The landing fragment's outside-scope section says the red test ids 'are recorded in the manifest under follow_ons', naming the retired key for the field this very change renamed; the manifest at head records them under outside_scope. Folded into the same node as the finding below."
+    },
+    {
+      "file": "tests/test_skill_contracts.py",
+      "line": "1030",
+      "severity": "non-blocking",
+      "text": "test_manifest_follow_ons_enter_the_open_followup_triage_loop pins the sentence 'Manifest `follow_ons` enter the same triage loop as open plan followups', which still stands at skills/reckon-build/SKILL.md:394 and skills/reckon-build/references/sprint-orchestration.md:542/560/623, so the repository now instructs coordinators to route follow_ons while the field is outside_scope and a test holds the stale text in place. Folded into a node holding those two skill files and this test, as the reviewed manifest's own outside_scope entry already proposes."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew_run_commands.py:2431 emits the completion report that now carries the outside_scope key, reckon/crew/reports.py:317 parse_manifest reaches the retired-key mapping, and reckon/crew/promotion.py:1270 feeds the ledger row.",
+    "diff": "Read commit by commit: 316d1d108 renames the field, deletes the conversion and its export and re-aims the two references, 64d5be41d adds the landing fragment, 36a441906 re-aims seven test files; 19 files, +398/-143, all inside scope.",
+    "done_when": "The done_when names the cases the new test file must hold and a base/head delta over the census population; tests/test_work_outside_scope_returns_to_the_coordinator.py holds all seven and the recorded arms show zero added failures.",
+    "goal": "The goal is to rename the manifest field follow_ons to outside_scope and return its entries to the coordinator in place of plan followups; reckon/crew/reports.py:82-83, reckon/crew/promotion.py:1270-1278 and the coordinator-reference.md:1044 rewrite land exactly that.",
+    "manifest": "Read .../r-20261023T133818950687-work-outside-scope-returns-to-the-coordinator/manifest.md: status complete, three commits, base 3-failed and head 3-failed with equal failure-id sets, negative_control_log set to the bare path that shows the red run.",
+    "write_paths": "Read the 20 declared paths in the reviewed manifest; git diff --name-only 04c10e00c47 36a441906 returns 19 paths and every one is among them."
+  },
+  "justifications": {
+    "durability": "tests/test_work_outside_scope_returns_to_the_coordinator.py:150 reddens under exactly the declared mutation, per negative-control.log (1 failed, EXIT=1), and the report and ledger cases raise on a reverted key; the rewritten chain case at tests/test_continuation.py:566 authors its own section so it no longer guards the link it names.",
+    "evidence": "The gate log head-arm-4.log records 3 failed / 660 passed against base-arm.log's 3 failed / 646 passed with identical failure-id sets, so the delta is zero; but the base arm ran 22 of the done_when's 23 census files (tests/test_widen_reaches_a_blocked_run.py is absent from its command line) and the after_suite revision states 64d5be41d rather than the reviewed head.",
+    "fit": "reckon/crew/promotion.py:107-108 and reckon/crew/reports.py:82 follow the retired-key idiom \u00a76 already established in reckon/run_record.py:32, and no name carries a plan label, ticket reference or version.",
+    "goal_fidelity": "reckon/crew/reports.py:82 renames the field and deletion of followup_ops_from_manifest plus its reckon/crew.py:190 export is complete, and the entries ride reckon/crew/promotion.py:1794 and :1452 to the coordinator, but two production manifest writers still emit the retired key (reckon/crew/dispatch_peer.py:407, reckon/crew/recovery_watch.py:201) so the rename is not complete across the writers.",
+    "reuse": "The change deletes a forked conversion and reuses ledger.follow_on_paths for path extraction; the retired-key mapping it adds at reckon/crew/reports.py:791 mirrors reckon/run_record.py:51 rather than sharing it, which is two mappers for two different records and not a duplicated capability.",
+    "scope_discipline": "git diff --name-only lists 19 paths and every one is inside the write_paths the reviewed manifest declares, the seven granted test files included; no file outside is touched."
+  },
+  "node": "review-of-work-outside-scope-returns-to-the-coordinator-36a4419069e1",
+  "node:reviewed": "work-outside-scope-returns-to-the-coordinator",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to rename the manifest field follow_ons to outside_scope and return its entries to the coordinator in place of plan followups; reckon/crew/reports.py:82 defines the field and the retired spelling and reckon/crew/promotion.py:1270-1278 and :1794 carry the entries to the report and the row, so the deliverable is present.\nVERDICT done_when: the done_when names the seven cases tests/test_work_outside_scope_returns_to_the_coordinator.py must hold plus a base/head delta over the census population; the file holds all seven, base-arm.log records 3 failed / 646 passed and head-arm-4.log 3 failed / 660 passed with equal failure-id sets, so the gate the worker ran asserts the measure.\nVERDICT write_paths: the reviewed manifest declares 20 paths; git diff --name-only 04c10e00c47fb315463350917f22af46e25d585a 36a4419069e1bdda4361a3cf59820adcd70169b9 returns 19 and every one is inside them, so the diff stayed in scope.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T133818950687-work-outside-scope-returns-to-the-coordinator/manifest.md; status complete, commits 316d1d108 64d5be41d 36a441906, tests line naming the 24-file pytest command, both suite arms recorded with failure ids in node-id form, and negative_control_log at the bare path.\nVERDICT diff: read all three commits against base 04c10e00c47: 316d1d108 renames the field and deletes followup_ops_from_manifest with its export and re-aims both references, 64d5be41d adds the landing fragment, 36a441906 re-aims seven test files; 19 files, +398/-143, all inside the declared write paths.\nCALL_SITES: reckon/crew_run_commands.py:2431, reckon/crew/reports.py:317, reckon/crew/promotion.py:1270, reckon/crew/promotion.py:1452, reckon/crew/promotion.py:1794\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/reports.py:82 renames the field and the deletion of followup_ops_from_manifest and its reckon/crew.py:190 export is complete, but two production manifest writers still emit the retired spelling into synthesized manifests (reckon/crew/dispatch_peer.py:407, reckon/crew/recovery_watch.py:201), so the rename does not reach every writer.\nSCORE evidence: 16\nJUSTIFICATION evidence: head-arm-4.log and base-arm.log give 3 failed / 660 passed against 3 failed / 646 passed with identical failure-id sets, but the base arm's command at base-arm.log:4 names 22 of the 23 census files and the after_suite revision reads 64d5be41d rather than the reviewed head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff --name-only 04c10e00c47 36a441906 is inside the write_paths the reviewed manifest declares, the seven granted test files included.\nSCORE durability: 16\nJUSTIFICATION durability: negative-control.log shows test_the_manifest_conversion_and_its_export_are_gone red at tests/test_work_outside_scope_returns_to_the_coordinator.py:150 under the declared mutation with EXIT=1, but the rewritten case at tests/test_continuation.py:566 supplies the section it asserts, so that case no longer fails if the entry never reaches the coordinator.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/promotion.py:107-108 and reckon/crew/reports.py:82 follow the retired-key idiom \u00a76 set in reckon/run_record.py:32, and the added names carry no plan label, ticket reference or version.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change deletes the forked conversion, reuses ledger.follow_on_paths, and adds no second owner for the manifest field; the retired-key mapping at reckon/crew/reports.py:791 mirrors reckon/run_record.py:51 for a different record rather than forking it.\nFINDING tests/test_continuation.py:566 non-blocking: the rewritten chain case authors the section it then asserts, so it passes whether or not a manifest entry reaches the coordinator and no longer guards the link its docstring names.\nFINDING reckon/crew/dispatch_peer.py:407 non-blocking: this site and reckon/crew/recovery_watch.py:201 still write 'follow_ons: none' into synthesized manifests, so the field rename is incomplete in manifest-writing code and the retired-key mapping can never be retired.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T133818950687-work-outside-scope-returns-to-the-coordinator/base-arm.log:4 non-blocking: the base arm runs 22 of the 23 test files the done_when's census names, omitting tests/test_widen_reaches_a_blocked_run.py, so the zero-added-failures delta does not cover the declared population.\nFINDING docs/evidence/fragments/additional-work-is-a-section/work-outside-scope-returns-to-the-coordinator.html:48 non-blocking: the landing fragment names the field follow_ons where the manifest it cites records the entries under outside_scope, the key this very change renamed.\nFINDING tests/test_skill_contracts.py:1030 non-blocking: this case pins the sentence 'Manifest `follow_ons` enter the same triage loop as open plan followups', which still stands at skills/reckon-build/SKILL.md:394 and skills/reckon-build/references/sprint-orchestration.md:542, so skill guidance and the pinned test still instruct the retired field while the field is outside_scope.\n",
+  "review_run_id": "r-20261023T165438861239-review-of-work-outside-scope-returns-to-the-coordinator-36a4419069e1",
+  "reviewed_base_sha": "04c10e00c47fb315463350917f22af46e25d585a",
+  "reviewed_head_sha": "36a4419069e1bdda4361a3cf59820adcd70169b9",
+  "reviewed_run_id": "r-20261023T133818950687-work-outside-scope-returns-to-the-coordinator",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T17:30:00+00:00",
+  "total": 106
+}
