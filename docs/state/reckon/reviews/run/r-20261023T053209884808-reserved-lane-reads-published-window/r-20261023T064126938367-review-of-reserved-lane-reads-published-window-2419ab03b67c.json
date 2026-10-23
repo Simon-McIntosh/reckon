@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:318 (snapshot.candidates via pick)",
+    "reckon/crew/picker/replay.py:58 (snapshot.candidates)",
+    "reckon/crew/dispatch_picker.py:544 (pick)",
+    "reckon/crew/dispatch.py:1791 (pace_row)",
+    "reckon/crew/dispatch_sessions.py:139 (reads pace_row['clocks'])"
+  ],
+  "completed_at": "2026-10-23T07:04:22.862Z",
+  "dispatched_at": "2026-10-23T06:47:41Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T053209884808-reserved-lane-reads-published-window/manifest.md",
+      "line": "20",
+      "severity": "blocking",
+      "text": "blocking: baseline_suite and after_suite are written as prose ('{\"arm: base, rev: ...}') rather than the declared JSON object, so reckon/crew/reports.py:913 _parse_suite_observation returns a string; reckon/crew/promotion_checks.py:1936 _head_suite_failure_ids then reads None and :1896 _baseline_suite_failure_ids reads an empty set, so the negative-control comparison at :2072-2088 runs against a baseline that 'failed nothing' and admits each control on an arm that was never measured -- exactly the vacuous admission the function's own docstring warns of -- and the suite-delta reader at promotion_evidence.py:1195-1219 finds no arm at all. Neither field carries the required 'completed' or 'failure_ids' keys; the ids exist only in the arm logs."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T053209884808-reserved-lane-reads-published-window/logs/head-arm.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: the header names revision ecd22bbd7 (the base) while the tree it measured is the head worktree at 2419ab03b, and logs/new-test.log:1 and both logs/negcontrol-*.log:1 carry the same base revision although tests/test_a_reserved_lane_reads_its_published_window.py exists only at head; 54 requires every log to start with its revision, and the header is inconsistent within the run because logs/head-arm-2.log:1 and logs/module-window.log:1 do name head, so a reader cannot tell from the header which revision the 9-passing run and the two red controls were taken at."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit from ecd22bbd7 to 2419ab03b, a single commit: it adds fill_window_clock to pace_report.py and makes pace_row call it, rewrites the picker's window term to read through it, and replaces the credits-only lift release with any-lift release resolved in candidates, beside a 476-line test and the evidence fragment.",
+    "done_when": "the done_when is lane-and-model-routing 54: nine test cases, two negative controls, no added failure against a base arm under -n 8, tests/test_every_module_fits_a_worker_window.py passes at head, and a clean ruff pair; logs/new-test.log records 9 passed EXIT=0, logs/negcontrol-operative-fallback.log (4 failed) and logs/negcontrol-credits-only.log (2 failed) are red as declared, and logs/ruff.log is CHECK_EXIT=0 FORMAT_EXIT=0, but the module-window clause is unmet: logs/module-window.log is 1 failed/3 passed on reckon/roadmap.py, identical at base in logs/module-window-base.log.",
+    "goal": "the node's goal is to make the picker's reserved-lane window term read the window the lane's account publishes and release the window term under any lift in force for the pick's session; reckon/pace_report.py:322 adds fill_window_clock, reckon/crew/picker/snapshot.py:1245 _reserved_fill_window_utilisation reads through it, and :1611 resolves lift_in_force from _effective_budget_block for request.session.",
+    "manifest": "read; it states commit 2419ab03b, the 9-passing new test, both negative controls with their red counts and first failing ids, four arm runs with their failure ids, the ruff pair, and it discloses the pre-existing module-window failure and the -n 8 flake; its baseline_suite and after_suite lines (manifest.md:20-21) are prose, not the declared JSON object.",
+    "write_paths": "the source run's fence grants reckon/crew/picker/snapshot.py, reckon/pace_report.py, tests/test_a_reserved_lane_reads_its_published_window.py, docs/evidence/fragments/lane-and-model-routing/reserved-lane-reads-published-window.html and a figures directory; git diff --stat ecd22bbd7..2419ab03b changes exactly the first four, all inside the grant, and the figures path is unused."
+  },
+  "justifications": {
+    "durability": "the nine cases assert the candidate output set (reckon/crew/picker/snapshot.py:1595-1630) and the row's clock mapping at reckon/pace_report.py:367 rather than the values handed in, and logs/negcontrol-operative-fallback.log (4 failed) and logs/negcontrol-credits-only.log (2 failed) show each reinstated defect reddens a named case.",
+    "evidence": "logs/new-test.log records 9 passed with EXIT=0 and both controls are red, but logs/module-window.log fails the 54 clause that the module-window test passes at head, and manifest.md:20-21 records its two arms as prose the promotion readers at reckon/crew/promotion_checks.py:1896,1936 cannot parse.",
+    "fit": "reckon/pace_report.py:322-378 follows the module's clock-dict and deferred-import idiom and introduces no plan, ticket or version identifier in any name or comment.",
+    "goal_fidelity": "reckon/pace_report.py:322 fill_window_clock is the one reader both pace_row (:1770) and the two picker sites (reckon/crew/picker/snapshot.py:1265, :1625) call, and snapshot.py:1611 resolves whether any lift governs for the pick's session.",
+    "reuse": "fill_window_clock is the sole owner of the allowance-to-clock fallback -- a repository search found no second copy and pace_row's inline block was deleted -- but candidates resolves _effective_budget_block twice per reserved candidate (reckon/crew/picker/snapshot.py:1562 and :1611).",
+    "scope_discipline": "git diff --stat ecd22bbd7..2419ab03b touches only the four granted paths and carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the picker's reserved-lane window term read the window the lane's account publishes and release the window term under any lift in force for the pick's session; reckon/pace_report.py:322 adds fill_window_clock, reckon/crew/picker/snapshot.py:1245 _reserved_fill_window_utilisation reads through it, and :1611 resolves lift_in_force from _effective_budget_block for request.session.\nVERDICT done_when: the done_when is lane-and-model-routing 54: nine test cases, two negative controls, no added failure against a base arm under -n 8, tests/test_every_module_fits_a_worker_window.py passes at head, and a clean ruff pair; logs/new-test.log records 9 passed EXIT=0, logs/negcontrol-operative-fallback.log (4 failed) and logs/negcontrol-credits-only.log (2 failed) are red as declared, and logs/ruff.log is CHECK_EXIT=0 FORMAT_EXIT=0, but the module-window clause is unmet: logs/module-window.log is 1 failed/3 passed on reckon/roadmap.py, identical at base in logs/module-window-base.log.\nVERDICT write_paths: the source run's fence grants reckon/crew/picker/snapshot.py, reckon/pace_report.py, tests/test_a_reserved_lane_reads_its_published_window.py, docs/evidence/fragments/lane-and-model-routing/reserved-lane-reads-published-window.html and a figures directory; git diff --stat ecd22bbd7..2419ab03b changes exactly the first four, all inside the grant, and the figures path is unused.\nVERDICT manifest: read; it states commit 2419ab03b, the 9-passing new test, both negative controls with their red counts and first failing ids, four arm runs with their failure ids, the ruff pair, and it discloses the pre-existing module-window failure and the -n 8 flake; its baseline_suite and after_suite lines (manifest.md:20-21) are prose, not the declared JSON object.\nVERDICT diff: read commit by commit from ecd22bbd7 to 2419ab03b, a single commit: it adds fill_window_clock to pace_report.py and makes pace_row call it, rewrites the picker's window term to read through it, and replaces the credits-only lift release with any-lift release resolved in candidates, beside a 476-line test and the evidence fragment.\nCALL_SITES: reckon/crew/picker/__init__.py:318 (snapshot.candidates via pick), reckon/crew/picker/replay.py:58 (snapshot.candidates), reckon/crew/dispatch_picker.py:544 (pick), reckon/crew/dispatch.py:1791 (pace_row), reckon/crew/dispatch_sessions.py:139 (reads pace_row['clocks'])\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/pace_report.py:322 fill_window_clock is the one reader both pace_row (:1770) and the two picker sites (reckon/crew/picker/snapshot.py:1265, :1625) call, and snapshot.py:1611 resolves whether any lift governs for the pick's session.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/new-test.log records 9 passed with EXIT=0 and both controls are red, but logs/module-window.log fails the 54 clause that the module-window test passes at head, and manifest.md:20-21 records its two arms as prose the promotion readers at reckon/crew/promotion_checks.py:1896,1936 cannot parse.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat ecd22bbd7..2419ab03b touches only the four granted paths and carries nothing the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: the nine cases assert the candidate output set (reckon/crew/picker/snapshot.py:1595-1630) and the row's clock mapping at reckon/pace_report.py:367 rather than the values handed in, and logs/negcontrol-operative-fallback.log (4 failed) and logs/negcontrol-credits-only.log (2 failed) show each reinstated defect reddens a named case.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/pace_report.py:322-378 follows the module's clock-dict and deferred-import idiom and introduces no plan, ticket or version identifier in any name or comment.\nSCORE reuse: 18\nJUSTIFICATION reuse: fill_window_clock is the sole owner of the allowance-to-clock fallback -- a repository search found no second copy and pace_row's inline block was deleted -- but candidates resolves _effective_budget_block twice per reserved candidate (reckon/crew/picker/snapshot.py:1562 and :1611).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T053209884808-reserved-lane-reads-published-window/manifest.md:20 blocking: baseline_suite and after_suite are written as prose ('{\"arm: base, rev: ...}') rather than the declared JSON object, so reckon/crew/reports.py:913 _parse_suite_observation returns a string; reckon/crew/promotion_checks.py:1936 _head_suite_failure_ids then reads None and :1896 _baseline_suite_failure_ids reads an empty set, so the negative-control comparison at :2072-2088 runs against a baseline that 'failed nothing' and admits each control on an arm that was never measured -- exactly the vacuous admission the function's own docstring warns of -- and the suite-delta reader at promotion_evidence.py:1195-1219 finds no arm at all. Neither field carries the required 'completed' or 'failure_ids' keys; the ids exist only in the arm logs.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T053209884808-reserved-lane-reads-published-window/logs/head-arm.log:1 follow-on: the header names revision ecd22bbd7 (the base) while the tree it measured is the head worktree at 2419ab03b, and logs/new-test.log:1 and both logs/negcontrol-*.log:1 carry the same base revision although tests/test_a_reserved_lane_reads_its_published_window.py exists only at head; 54 requires every log to start with its revision, and the header is inconsistent within the run because logs/head-arm-2.log:1 and logs/module-window.log:1 do name head, so a reader cannot tell from the header which revision the 9-passing run and the two red controls were taken at.\n",
+  "review_run_id": "r-20261023T064126938367-review-of-reserved-lane-reads-published-window-2419ab03b67c",
+  "reviewed_base_sha": "ecd22bbd7c4f6e99004da32c07d4d4f0237027b6",
+  "reviewed_head_sha": "2419ab03b67c5557232b9761a4fdb485a63685bc",
+  "reviewed_run_id": "r-20261023T053209884808-reserved-lane-reads-published-window",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T07:02:00+00:00",
+  "total": 107
+}
