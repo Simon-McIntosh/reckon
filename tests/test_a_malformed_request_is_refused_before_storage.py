@@ -77,6 +77,11 @@ def test_the_declared_vocabulary_matches_a_classified_pointer() -> None:
     classified = classify_pointer(_FIXTURE_POINTER)
     derived = query._live_field_vocabulary([classified], with_mine=False)
     assert derived == set(query.LIVE_FIELD_VOCABULARY)
+    # The parts the view composes a row from that a classification of a pointer
+    # does not itself carry: a name dropped from one of them is a field the
+    # view fills, and the pre-flight would then refuse a request for it.
+    for part in (query.COMMON_RUN_FIELDS, query.LIVE_PLACEMENT_FIELDS):
+        assert set(part) <= query.LIVE_FIELD_VOCABULARY
 
 
 def test_a_live_read_of_a_served_field_is_not_refused() -> None:
