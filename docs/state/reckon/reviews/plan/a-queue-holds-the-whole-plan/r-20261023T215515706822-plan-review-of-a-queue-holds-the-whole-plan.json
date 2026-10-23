@@ -1,0 +1,154 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T22:06:57.567Z",
+  "dispatched_at": "2026-10-23T21:56:18Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html:80",
+      "id": "wiring-1",
+      "reason": "\u00a72 is dispatched first on its own write paths and would land without the constant, so \u00a78's readiness read names an object nothing defines.",
+      "text": "\u00a78 says `RUN_DELIVERED_STATUSES` in `reckon/crew/queue_admission.py` is a constant \"which \u00a72 introduced\", but \u00a72 (snapshot line 47-49) never specifies it and names no such symbol in its mechanism, so the predecessor node has nothing telling the implementer to create it",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html:65",
+      "id": "done_when-1",
+      "reason": "without an arm that mutates the queued pointer's brief the node cannot show its guard fires; a discriminating arm leaves `steering.md` alone and changes the pointer's stored `node.brief`, or edits `steering.md` directly and requires the launched digest to follow it.",
+      "text": "\u00a75's negative arm (\"edits the original `--brief` source file after dispatch, and the worker reads the text as dispatched\") passes on the unfixed code, because `dispatch()` already copies the brief into the run directory at dispatch (`reckon/crew/dispatch.py:1816` calls `_store_brief` there), so the arm cannot distinguish a launch-time read of `steering.md` from today's dispatch-time copy",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html:80",
+      "id": "done_when-2",
+      "reason": "the only test of the delivered set measures acceptance rather than delivery, so the node's gate can be green while a failed upstream launches its tail; it needs an arm where an upstream closes `blocked` or `failed` and the waiter moves to `blocked-upstream`.",
+      "text": "\u00a78's assertion that \"every status the delivered set names is one `parse_manifest` accepts\" holds by construction once the set is derived from `TERMINAL_MANIFEST_STATUSES`, and it would pass on the very derivation defect that finding `reasoning` names",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html:80",
+      "id": "evidence_paths-1",
+      "reason": "a worker fenced to the stated paths cannot implement `--after` and must stop for a scope extension, which is the cost \u00a72 and \u00a75 avoid by naming their CLI module; it also omits the `--after` option itself from the mechanism's description of what is new.",
+      "text": "\u00a78 introduces `--after <request-id>` for a brief dispatch but declares write paths only for `reckon/crew/queue_admission.py`, `reckon/crew/dispatch_admission.py` and a new test file, while the option must be parsed and carried by the dispatch command surface (the module that registers `crew dispatch`, alongside the `TaskNode` it builds)",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html:80",
+      "id": "reasoning-1",
+      "reason": "it inverts the DAG guarantee the section exists to provide; the repair is to derive delivered from a delivered-status set (a `completed`-only member of the vocabulary, or a small named set \u00a78 owns).",
+      "text": "\u00a78 says \"the delivered set is derived from `TERMINAL_MANIFEST_STATUSES` in `reckon/crew/reports.py`, not restated\", but that set is `{\"complete\", \"blocked\", \"failed\"}` (`reports.py:126`), so deriving it makes a failed or blocked upstream count as delivered and lets the waiter launch, while \u00a72 (line 47) requires a ref closed as abandoned or failed to move its dependents to `blocked-upstream`",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "2366e1b3b8c51b737a75ac4324e842b8f939a184891a86a86bfa113e593db2f7",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 27,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-23T22:06:32.865988+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-23T22:06:45.125361+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "done_when-2",
+      "reason": "",
+      "when": "2026-10-23T22:06:56.610775+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "evidence_paths-1",
+      "reason": "",
+      "when": "2026-10-23T22:07:09.917723+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-23T22:07:26.982521+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-23T22:06:45.125361+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-23T22:06:56.610775+00:00"
+    },
+    "evidence_paths-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-23T22:07:09.917723+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-23T22:07:26.982521+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-23T22:06:32.865988+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-queue-holds-the-whole-plan.v27.json",
+  "review_run_id": "r-20261023T215515706822-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "8d2ef47e67f9a45727921ce33fb4faa21a93db31",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every file \u00a75 and \u00a78 cite resolves: `reckon/crew/queue_admission.py` (`_launch_queued`:158, `_node_from_pointer`:106, `QUEUED_PHASE`:46), `reckon/crew/dispatch_admission.py` (`_store_brief`:2241, `_brief_digest`:2204), `reckon/crew/reports.py` (`TERMINAL_MANIFEST_STATUSES`:126, `parse_manifest` refusal at :735), `reckon/_schema.py` (`parse_plan_ref`:276), `reckon/crew_run_commands.py` (`--phase`:238), `reckon/mcp_crew_actions.py`, and `crew view live --phase` plus the `position`/`rank` fields from `queued_placements` (`queue_admission.py:1043-1044`).",
+    "done_when": "a finding \u2014 \u00a75's declared negative arm (line 65) edits the original `--brief` source after dispatch, which already changes nothing today because `dispatch.py:1816` stores a copy at dispatch; \u00a78's delivered-set assertion (line 80) is true by construction.",
+    "evidence_paths": "a finding \u2014 \u00a78's write paths (line 80) list only `queue_admission.py`, `dispatch_admission.py` and a new test file, while its mechanism requires a new dispatch option `--after <request-id>` whose parse site is the dispatch CLI surface, which no declared path covers.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or changelog prose reach the symbols or comments the two sections name (`RUN_DELIVERED_STATUSES`, `steering.md`, the three queue verbs).",
+    "reasoning": "a finding \u2014 \u00a78 derives the delivered set from `TERMINAL_MANIFEST_STATUSES`, which is `{\"complete\", \"blocked\", \"failed\"}` in `reckon/crew/reports.py:126`, so a failed or blocked upstream would read as delivered and satisfy a wait; \u00a72 requires the opposite.",
+    "single_goal": "pass \u2014 each of \u00a75 and \u00a78 names one deliverable (a launch-bound, editable brief; a whole-DAG readiness check across projects); \u00a75's three verbs were settled in an earlier review and are not re-raised.",
+    "wiring": "a finding \u2014 \u00a78 attributes `RUN_DELIVERED_STATUSES` to \u00a72 (\u00a78, snapshot line 80), but \u00a72 (line 47) specifies no such constant and its write paths do not name one, and no object of that name exists in the tree at base 4d3da7237."
+  },
+  "section_digests": {
+    "_document": "3687b78879f4254bc12755beb7d845e4cb94fe5d4fe55ae3e033ddf86e0d5cb5",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "c5b9ec6971c99d11598fc75b9daab4490f64dd91b5df2e4b7178aa79ddb83a6d",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "7bb3dd3b3d1e28b5d5ed470cd96cfee891a8886a6f5317f7e1d5d5bb21ba5a7f",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "1b33e80f28eb603b08b8c69c1883ff5306cbce5dead0f58256dd31f3184439b3",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s3": "c8987dddf45ef27369fcce604285a552d5745bc1002c6947159125bd1216caa7",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s5": "0ffe2050b992da56c1c00729e52aa40a54e16bbaa1ae24a5740e1db6a6f8bb80",
+    "s6": "888a359c62d83eaa231df69d5107745fb5a7f0b30320d77ca0a8586aff7965b6",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "d5f44d2886898709f86dc245cc7bf092ce954d4148f2c35b381f7f3491a8df93",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T22:06:25.482554+00:00"
+}
