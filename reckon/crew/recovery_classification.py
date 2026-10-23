@@ -6,7 +6,7 @@ import hashlib
 import json
 import re
 import shlex
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
@@ -52,10 +52,15 @@ def _manifest_is_the_predecessor_attempts_report(
 
     The first is that the run has published the attempt the manifest would have
     to belong to. The resume window is what makes a manifest ambiguous, and the
-    record that opens it lives in the run directory: a run whose attempt record
-    names no current attempt has nothing newer for its manifest to predate, and
-    is read from its pointer alone exactly as before. Outside that window the
-    manifest stands untouched, whatever a liveness reading says about it.
+    record that opens it lives in the run directory: a run whose own records
+    name no current attempt has nothing newer for its manifest to predate, and
+    is read from its pointer alone exactly as before. The current attempt is
+    resolved from the claim a resume takes as well as from the attempt record,
+    because the claim is the first thing a resume writes and the only thing
+    naming the new attempt while the attempt record is still to come. An attempt
+    that has recorded an end of its own is read from that end and not from the
+    manifest, so a real halt inside the window still governs. Outside the window
+    the manifest stands untouched, whatever a liveness reading says about it.
 
     The second is that the manifest offers no progress word. A run that reports
     itself working has already said it has no verdict, so there is nothing to
@@ -73,7 +78,10 @@ def _manifest_is_the_predecessor_attempts_report(
     consulted: inside the resume window it is its predecessor's, so its death is
     not this attempt's.
     """
-    if _current_attempt_number(record) is None:
+    attempt = _current_attempt_number(record)
+    if attempt is None:
+        return False
+    if _attempt_end_recorded(record, attempt):
         return False
     if manifest_status in NON_TERMINAL_MANIFEST_STATUSES:
         return False
@@ -719,7 +727,7 @@ def classify_pointer(
     if manifest_status in TERMINAL_MANIFEST_STATUSES and not deferred_outcome:
         terminal_seconds = manifest.stat().st_mtime
         terminal_at = (
-            datetime.fromtimestamp(terminal_seconds, tz=timezone.utc)
+            datetime.fromtimestamp(terminal_seconds, tz=UTC)
             .isoformat(timespec="seconds")
             .replace("+00:00", "Z")
         )
@@ -1798,6 +1806,7 @@ from .recovery_liveness import (  # noqa: E402
     _PRE_SPAWN_PHASES,
     _absence_of_a_verdict_is_transient,
     _attempt_awaits_its_worker,
+    _attempt_end_recorded,
     _current_attempt_number,
     _manifest_predates_the_current_attempt,
     _carries_orientation_write,
