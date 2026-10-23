@@ -404,7 +404,7 @@ tests: not-run — blocked on the peer answer
 test_logs: none
 artifacts: {_question_path(run_id, str(event.get("id") or "unknown"))}
 evidence_inputs: unanswered peer question {question}
-follow_ons: none
+outside_scope: none
 blockers: unanswered peer question {question}
 """
     report_path = _channel_root(run_id) / f"needs-help-{event.get('id')}.md"

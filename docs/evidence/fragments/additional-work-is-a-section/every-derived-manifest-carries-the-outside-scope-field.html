@@ -1,0 +1,66 @@
+<section id="every-derived-manifest-carries-the-outside-scope-field-landing">
+  <h2>Every derived manifest carries the outside-scope field</h2>
+
+  <p id="every-derived-manifest-carries-the-outside-scope-field-what-changed"><strong>What
+  changed.</strong> Three places write or list the manifest field from a list
+  reckon composes itself, and each now names it <code>outside_scope</code>.
+  Recovery's fabricated manifest for a terminal run that omitted its worker
+  manifest emits <code>outside_scope: none</code>
+  (<code>reckon/crew/recovery_watch.py</code>); the NEEDS-HELP report a failed
+  peer wait writes does the same (<code>reckon/crew/dispatch_peer.py</code>);
+  and the census fixture's key set names it too
+  (<code>scripts/check_snapshot_assertions.py</code>, <code>CREW_ROW_KEYS</code>).
+  Two docstrings in <code>reckon/ledger.py</code> carried the retired spelling
+  and now name the current field: the path extractor's and
+  <code>_path_like_tokens</code>'s.</p>
+
+  <p id="every-derived-manifest-carries-the-outside-scope-field-parses"><strong>Both
+  manifests still parse to an empty section.</strong> The manifest parser maps
+  the retired spelling onto the current key on the way in, so a report written
+  before this change and one written after present one key. The new test drives
+  recovery's real derivation (<code>_derive_missing_manifest</code>) and the real
+  NEEDS-HELP writer (<code>_needs_help_for_question</code>) rather than a
+  template string, then reads each file back through
+  <code>reckon.crew.reports.parse_manifest</code> and asserts
+  <code>outside_scope == []</code> with no retired key present.</p>
+
+  <p id="every-derived-manifest-carries-the-outside-scope-field-ledger-scope">The
+  ledger's public helper keeps its function name, which is an API surface used
+  outside this node's write scope; only its docstrings changed, which is what
+  the section's done-when reads (every docstring, read with <code>ast</code>,
+  names <code>outside_scope</code>).</p>
+
+  <h3>Measured</h3>
+
+  <p id="every-derived-manifest-carries-the-outside-scope-field-negative-control">The
+  declared mutation restores the old word at
+  <code>reckon/crew/recovery_watch.py</code>. Under it the first case fails with
+  the manifest text still reading <code>follow_ons: none</code>, and the run
+  exits non-zero; the other three cases pass, so the assertion that first case
+  makes is what the site's change is responsible for, and nothing else in the
+  test file covers that site. The source is restored in the same step and the
+  tree carries no mutation afterwards.</p>
+
+  <table id="every-derived-manifest-carries-the-outside-scope-field-arms">
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>the new test file alone</td>
+        <td>ARMS_NEW_TEST_REV</td>
+        <td>ARMS_NEW_TEST_RESULT</td>
+      </tr>
+      <tr>
+        <td>the population of test files importing the three modules</td>
+        <td>67cba14e6 (base, scratch tree plus the new test)</td>
+        <td>ARMS_BASE_RESULT</td>
+      </tr>
+      <tr>
+        <td>the same population at the head</td>
+        <td>HEAD_REV</td>
+        <td>ARMS_HEAD_RESULT</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p id="every-derived-manifest-carries-the-outside-scope-field-arms-note">ARMS_NOTE</p>
+</section>

@@ -144,7 +144,7 @@ CREW_ROW_KEYS = frozenset(
         "gate",
         "exit_status",
         "artifacts",
-        "follow_ons",
+        "outside_scope",
         "blockers",
     }
 )
