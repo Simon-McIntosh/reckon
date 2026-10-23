@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T17:42:19.992Z",
+  "dispatched_at": "2026-10-23T17:30:52Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-page-paints-from-an-index.html:277",
+      "id": "done_when-1",
+      "reason": "the node would land a shared builder and re-point a negative control at a point where the mutation cannot bite, so the plan loses the only coverage that shows the figure revision reaches the row, and the fixture must instead be re-pointed at the index's own row assembly (or at `file_revision`).",
+      "text": "\u00a716's done-when says the negative-control fixture in `tests/test_a_figure_revision_is_fetched_once.py` \"is rewritten to patch the builder the index now calls, and the file's cases are otherwise unchanged and pass\", but under the deliverable the index adds `revision` itself after the builder returns (only `created`, `edited` and `revision` are what the index \"alone carries\"), so a wrapper around the builder that pops `revision` removes nothing, the mutation becomes indistinguishable from the unarmed arm, and the test's declared control stops firing while its cases still pass \u2014 the same shape as a guard that reports protection it does not provide",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-page-paints-from-an-index.html:277",
+      "id": "reasoning-1",
+      "reason": "the node would implement the projection literally, or leave the conversion unnamed, and a page painting from the index would lose the figure dimensions \u00a73 declares its rows carry, with the new test green over the loss; the plan should name the dimension conversion (or have the builder emit `width`/`height`) and assert the index row keeps them.",
+      "text": "\u00a716's deliverable has the index call the shared builder and add \"only what it alone carries (its `created` and `edited` stamps and its `revision`), projected onto `ROW_FIELDS`\", but the two rows name dimensions differently \u2014 the builder that `figure_rows` builds today carries `dims`, a formatted string (`reckon/figures.py:54-55`, `:192`), while the index row carries `width` and `height` as integers and `ROW_FIELDS` names `width` and `height` (`reckon/metadata_index.py:62-76`, `:1246-1247`), and the plan's Why describes the two copies as deriving \"the same fields\" including dimensions \u2014 so the projection as written drops `width`/`height` unless a conversion rule the plan never states is added, and the done-when cannot catch it because its agreement case compares only the four fields the two rows share by name (`slug`, `type`, `title`, `href`)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "08c715b9b7100f6e0414b1edde6b20d63f0ff6b489fdd925a0b2f1fa9aee70e4",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 125,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T171652185421-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "1b241e6cb3f04243c52b74d193436bff2888469a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_figure_row` (`reckon/metadata_index.py:1215`, called at `:920`), `figures.figure_rows` (`reckon/figures.py:135`) and the private names it reaches (`figures._DIMS_BY_SUFFIX:132`, `figures._capture_metadata:102`, `reckon `_titleize:45`) all resolve, and `tests/test_a_figure_revision_is_fetched_once.py` exists and patches `metadata_index._figure_row` at its negative-control fixture (`:129`/`:137`) as the plan says.",
+    "done_when": "a finding \u2014 \u00a716's done-when claims the revision test's negative-control fixture can be re-pointed at the new builder while the file's cases go on passing, but that patch cannot remove the revision the index adds after the builder returns.",
+    "evidence_paths": "pass \u2014 \u00a716 puts its logs under the run directory with a revision header, on durable paths, not a session scratchpad.",
+    "naming": "pass \u2014 \u00a716's new symbol (`test_one_builder_owns_a_figure_row`) and its test names carry no plan label, stage name or ticket number; the plan prose's section numbers are the plan's own addressing, not code.",
+    "reasoning": "a finding \u2014 \u00a716's deliverable says the index adds \"only what it alone carries (its `created` and `edited` stamps and its `revision`), projected onto `ROW_FIELDS`\", but the shared builder's dimension field is named and formatted differently from the index row's, so the mechanism as written cannot produce the index row `ROW_FIELDS` declares.",
+    "single_goal": "pass \u2014 \u00a716 carries one deliverable (one public builder of a figure row in `reckon/figures.py`, `_figure_row` deleted).",
+    "wiring": "pass \u2014 \u00a716's only declared relationship, `depends-on` s15, resolves (`plan-section-depends-on` s16 -> the-page-paints-from-an-index#s15), and \u00a715 already chains s14 -> s13, the other sharers of `reckon/metadata_index.py`."
+  },
+  "section_digests": {
+    "_document": "9641589c0a5677653db645be02ba4f183517fcaa540827048893e3baff8139ff",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "17515cc4d212280b53e77d7279aa81e37c7d58f877ada031f77705b31e53d437",
+    "s11": "bb32b98b9a0a5070d5ec6b5387862bef5af3ba37b5956ac7c9d734723c2ac9fa",
+    "s12": "071a3e9ff829e6cc2047658d80b57b5d30603318f0fa4a31084d94b5ed308185",
+    "s13": "c1b191dea15e7b03a3c847c3a5729ac7a4ca2d0492920bd5b273d04a79593d48",
+    "s14": "81d5ac4cc3ec42e5b1f7e8ee9da1f92e89073fdda2bd21fda06046a2d2e15b68",
+    "s15": "3d4cfa1da9189164bbed1e32561bf56b7c50e4bdf48280de5f2606d2ac87445d",
+    "s16": "97f811ae25f9d62052f74dc79ba5dac937c0a6a53d4f7a1c4c1806a5ac261628",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "048a1031945a098f9a63b70d985d91dd2d9ee2f67f1ac1a2132e4c7d21b89e7e",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T17:46:27.124920+00:00"
+}
