@@ -112,7 +112,7 @@ def test_a_refused_store_records_its_reason_on_the_sidecar_and_in_the_refusal(
     directory.mkdir(parents=True)
     report_path = directory / "report.md"
     report_path.write_text(
-        "RUBRIC wiring: pass — the plan declares a dependency that resolves.\n",
+        "RUBRIC reuse_search: pass — the plan reuses the existing owner.\n",
         encoding="utf-8",
     )
     # The delivered sidecar names no plan_version, which the store cannot key on,
@@ -202,7 +202,7 @@ def test_a_delivery_refused_once_clears_its_reason_when_it_stores(
     directory.mkdir(parents=True)
     report_path = directory / "report.md"
     report_path.write_text(
-        "RUBRIC wiring: pass — the plan declares a dependency that resolves.\n",
+        "RUBRIC reuse_search: pass — the plan reuses the existing owner.\n",
         encoding="utf-8",
     )
     # The sidecar names no plan_version, which the store cannot key on, so the

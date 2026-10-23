@@ -252,30 +252,39 @@ def test_an_unmarked_older_review_keeps_its_coverage(section_plan):
     assert [item["review_run_id"] for item in records] == ["content-partial"]
 
 
-def test_a_bulleted_code_report_is_not_admitted_as_a_review(project):
-    """A code report is guarded by the grammar its own parser reads it with.
+def test_a_bulleted_code_report_is_refused_as_not_a_review(project):
+    """A code report is refused when the grammar its own parser reads sees nothing.
 
     The health grammar reads its lines as written, so a report whose ``RUBRIC``
-    and ``FINDING`` lines are bulleted carries neither as the health parser sees
-    it: it parses to no item and no finding. Reading the guard's lines with the
-    plan report's marker-stripping reader would admit it on the stripped bullet
-    and store it as a review with every item absent — the composed-but-
-    undelivered false pass the guard exists to prevent.
+    and ``FINDING`` lines are bulleted parses to no item and no finding: the
+    builder refuses it rather than storing it as a review with every item absent.
+    Reading the report through the plan report's marker-stripping reader would
+    admit it on the stripped bullet the health parser never sees.
     """
     report = _code_report(bulleted=True)
-    assert not plan_review.report_carries_review_lines(report, subject="code")
     parsed = review.parse_health_review(report)
     assert parsed["rubric_items"] == {} and parsed["findings"] == []
     with pytest.raises(ValueError, match="carries no RUBRIC or FINDING line"):
         plan_review.delivered_report_record(_code_sidecar(report))
 
 
-def test_a_bare_code_report_carries_its_items_and_finding(project):
-    """The control: the guard admits the code report its parser reads in full."""
+def test_a_bare_code_report_stores_its_items_and_finding(project):
+    """The control: the builder stores the code report its parser reads in full.
+
+    The stored items are compared with a hand-written list, not with the item
+    constant the report was built from, so the assertion can tell a correct
+    parse from an echo of the test's own input.
+    """
     report = _code_report(bulleted=False)
-    assert plan_review.report_carries_review_lines(report, subject="code")
     record = plan_review.delivered_report_record(_code_sidecar(report))
-    assert sorted(record["rubric_items"]) == sorted(CODE_ITEMS)
+    assert sorted(record["rubric_items"]) == [
+        "duplicate_capability",
+        "interface_growth",
+        "known_findings",
+        "test_debt",
+        "unreached",
+        "width",
+    ]
     assert record["absent_items"] == []
     assert [finding["id"] for finding in record["findings"]] == ["unreached-1"]
 

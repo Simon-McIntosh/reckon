@@ -193,7 +193,7 @@ def _compose_directly(repo: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 def _deliver(composed: Path) -> None:
     (composed / plan_review._REVIEW_REPORT_NAME).write_text(
-        "RUBRIC wiring: pass — the plan declares a dependency that resolves.\n",
+        "RUBRIC reuse_search: pass — the plan reuses the existing owner.\n",
         encoding="utf-8",
     )
 

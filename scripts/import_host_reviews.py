@@ -468,15 +468,6 @@ def _carried_reports(
     return run_ids, triples
 
 
-def _report_is_review(report_path: Path) -> bool:
-    """Whether a report file carries a RUBRIC or FINDING line, so it is a review."""
-    try:
-        text = report_path.read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return False
-    return plan_review.report_carries_review_lines(text)
-
-
 def _delivered_report_candidates(
     project: str, committed_root: Path
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
@@ -487,8 +478,9 @@ def _delivered_report_candidates(
     built, so a report that is a review but cannot be parsed is listed and
     counted rather than silently dropped. A report a record already carries — by
     review run id or by plan, fingerprint and rubric — is skipped, so a second
-    pass imports zero. A directory whose report carries no ``RUBRIC`` or
-    ``FINDING`` line is not a review and is neither returned nor counted.
+    pass imports zero. A report whose own grammar yields no rubric item and no
+    finding is refused by the record builder and counted with the rest, so the
+    admission rule lives in one place.
     """
     run_ids, triples = _carried_reports(project, committed_root)
     candidates: list[dict[str, Any]] = []
@@ -502,8 +494,6 @@ def _delivered_report_candidates(
                 str(sidecar.get("rubric") or ""),
             )
             if run_id in run_ids or triple in triples:
-                continue
-            if not _report_is_review(Path(str(sidecar.get("report_path") or ""))):
                 continue
             try:
                 record = plan_review.delivered_report_record(sidecar)
