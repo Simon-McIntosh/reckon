@@ -1,0 +1,78 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 21,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:311",
+    "reckon/crew/recovery_watch.py:1182",
+    "reckon/crew/recovery_watch.py:2932",
+    "reckon/crew/recovery_watch.py:3014",
+    "reckon/crew/runs.py:1775",
+    "reckon/crew/runs.py:3311",
+    "reckon/crew/query.py:422",
+    "reckon/crew/query.py:559",
+    "reckon/crew/query.py:885",
+    "reckon/crew/promotion.py:387",
+    "reckon/crew/recovery_review_acceptance.py:451",
+    "reckon/crew/promotion_release.py:862",
+    "reckon/crew/obligations.py:482",
+    "reckon/crew/directory.py:97",
+    "reckon/crew/forgotten_runs.py:94",
+    "reckon/crew/recovery_review_dispatch.py:2047",
+    "reckon/serve.py:884",
+    "reckon/crew/resumption.py:1869",
+    "reckon/crew/recovery_liveness.py:563",
+    "reckon/crew/recovery_liveness.py:1036",
+    "reckon/crew/placement.py:1224"
+  ],
+  "completed_at": "2026-10-23T20:34:23.036Z",
+  "dispatched_at": "2026-10-23T19:54:20Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-resumed-attempt-is-read-through-its-own-records.html",
+      "line": "24",
+      "severity": "blocking",
+      "text": "blocking: the landing fragment names `_attempt_end_recorded` as \"the new predicate\" that stands the guard down, but no `_attempt_end_recorded` exists anywhere in reckon/ or tests/ at the reviewed head c13b40969 (grep returns nothing); the mechanism is the pre-existing `_exit_record_names_attempt` (reckon/crew/recovery_liveness.py:528, present unchanged at base 85717297) imported at reckon/crew/recovery_classification.py:1829. A reader verifying the anchor greps a symbol that does not exist, so the evidence record misstates both the name and the novelty of the safeguard it documents."
+    },
+    {
+      "file": "docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-resumed-attempt-is-read-through-its-own-records.html",
+      "line": "29",
+      "severity": "non-blocking",
+      "text": "non-blocking: the negative-control paragraph reports \"the four arms fail ... and the two controls still pass (4 failed, 2 passed, EXIT=1)\", but the negative-control.log it cites in the same sentence records `5 failed, 4 passed in 6.11s` with arm v also among the failures, and the manifest records the same 5/4; the counts are those of the six-test file from before arm v was added and contradict both the log cited and the fragment's own gate sentence naming nine tests."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "VERDICT diff: read commit by commit from 85717297 to c13b40969 across seven commits; four paths changed (+720/-11) \u2014 the two modules, the 545-line test file and one evidence fragment; the claim enumeration is a directory glob rather than a bounded range, and the interim-word deferral is a narrow extra term on deferred_outcome at reckon/crew/recovery_classification.py:688-699.",
+    "done_when": "VERDICT done_when: the arm, clock and own-end clauses are asserted by tests/test_a_resumed_attempt_is_read_through_its_own_records.py:337-423 (arms i-iv), :426 (the attempt's own end), :453 (claim as the clock) and :523 (two claims, no attempt record); the base arm and the declared mutation are recorded in base-gate-3.log (7 failed, 2 passed, EXIT=1) and negative-control.log (5 failed, 4 passed, EXIT=1), each naming its revision and command; the docstring-consistency clause and the ruff-delta clause carry no test and no recorded log.",
+    "goal": "VERDICT goal: the goal is to read a resumed attempt's liveness and verdict through its own claim, worker and exit records; reckon/crew/recovery_liveness.py:501-538 now answers _current_attempt_number with the described pair and reckon/crew/recovery_classification.py:81-85 adds the exit-record stand-down, so a just-resumed attempt is dated from its own claim rather than from the coordinator's repaired word.",
+    "manifest": "VERDICT manifest: read; status complete, seven commits listed, the tests: line is the literal pytest invocation, and baseline_suite (85717297, base-gate-3.log, exit 1, 7 failure ids) and after_suite (d9f264df8, head-gate.log, exit 0, no failures) each name a log whose last line is a bare EXIT= line.",
+    "write_paths": "VERDICT write_paths: the declared scope is reckon/crew/recovery_classification.py, reckon/crew/recovery_liveness.py, tests/test_a_resumed_attempt_is_read_through_its_own_records.py, the fragment under docs/evidence/fragments/a-live-worker-is-never-drawn-halted/ and the figures directory; the diff's four changed paths all sit inside that scope and the figures directory is correctly unused."
+  },
+  "justifications": {
+    "durability": "Arms i-iv and arm v each redden under the declared mutation (negative-control.log, 5 failed) and arms i-iv redden at the base revision (base-gate-3.log), while the exit-record clause at reckon/crew/recovery_classification.py:84 is guarded only by tests/test_a_resumed_attempt_is_read_through_its_own_records.py:426, which passes at base as well and so is established by reading rather than by a recorded control.",
+    "evidence": "The gate could have failed and did \u2014 base-gate-3.log records 7 failed against head-gate.log's 70 passed EXIT=0 \u2014 but two done_when clauses (the _manifest_carries_no_verdict_yet docstring and the ruff check/format delta) have no test and no log anywhere in the run directory, and the landing fragment's mutation figures contradict the log they cite.",
+    "fit": "The new helpers in reckon/crew/recovery_liveness.py:539-624 follow the surrounding module's idiom \u2014 full docstrings, and a deferred import justified by the cycle through reckon/crew/resumption.py:88 \u2014 and no name carries a plan, sprint or ticket label.",
+    "goal_fidelity": "The landed change reads the claim and the exit record exactly as the goal states: reckon/crew/recovery_liveness.py:520-524 takes the higher of the claim and the attempt record, and reckon/crew/recovery_classification.py:84 stands the predecessor-report guard down when the exit record names the current attempt.",
+    "reuse": "The claim filename is taken from its owner at reckon/crew/resumption.py:305 attempt_claim_path rather than re-spelled, and the claim enumeration has no prior owner in the repository; the earlier duplicate predicate was folded back into the existing _exit_record_names_attempt at reckon/crew/recovery_liveness.py:528.",
+    "scope_discipline": "Every path in the diff (reckon/crew/recovery_liveness.py, reckon/crew/recovery_classification.py, tests/test_a_resumed_attempt_is_read_through_its_own_records.py, the docs evidence fragment) is inside the declared write paths, and the declared figures directory is left unused."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to read a resumed attempt's liveness and verdict through its own claim, worker and exit records; reckon/crew/recovery_liveness.py:501-538 now answers _current_attempt_number with the described pair and reckon/crew/recovery_classification.py:81-85 adds the exit-record stand-down, so a just-resumed attempt is dated from its own claim rather than from the coordinator's repaired word.\nVERDICT done_when: the arm, clock and own-end clauses are asserted by tests/test_a_resumed_attempt_is_read_through_its_own_records.py:337-423 (arms i-iv), :426 (the attempt's own end), :453 (claim as the clock) and :523 (two claims, no attempt record); the base arm and the declared mutation are recorded in base-gate-3.log (7 failed, 2 passed, EXIT=1) and negative-control.log (5 failed, 4 passed, EXIT=1), each naming its revision and command; the docstring-consistency clause and the ruff-delta clause carry no test and no recorded log.\nVERDICT write_paths: the declared scope is reckon/crew/recovery_classification.py, reckon/crew/recovery_liveness.py, tests/test_a_resumed_attempt_is_read_through_its_own_records.py, the fragment under docs/evidence/fragments/a-live-worker-is-never-drawn-halted/ and the figures directory; the diff's four changed paths all sit inside that scope and the figures directory is correctly unused.\nVERDICT manifest: read; status complete, seven commits listed, the tests: line is the literal pytest invocation, and baseline_suite (85717297, base-gate-3.log, exit 1, 7 failure ids) and after_suite (d9f264df8, head-gate.log, exit 0, no failures) each name a log whose last line is a bare EXIT= line.\nVERDICT diff: read commit by commit from 85717297 to c13b40969 across seven commits; four paths changed (+720/-11) \u2014 the two modules, the 545-line test file and one evidence fragment; the claim enumeration is a directory glob rather than a bounded range, and the interim-word deferral is a narrow extra term on deferred_outcome at reckon/crew/recovery_classification.py:688-699.\nCALL_SITES: reckon/crew/recovery_watch.py:311, reckon/crew/recovery_watch.py:1182, reckon/crew/recovery_watch.py:2932, reckon/crew/recovery_watch.py:3014, reckon/crew/runs.py:1775, reckon/crew/runs.py:3311, reckon/crew/query.py:422, reckon/crew/query.py:559, reckon/crew/query.py:885, reckon/crew/promotion.py:387, reckon/crew/recovery_review_acceptance.py:451, reckon/crew/promotion_release.py:862, reckon/crew/obligations.py:482, reckon/crew/directory.py:97, reckon/crew/forgotten_runs.py:94, reckon/crew/recovery_review_dispatch.py:2047, reckon/serve.py:884, reckon/crew/resumption.py:1869, reckon/crew/recovery_liveness.py:563, reckon/crew/recovery_liveness.py:1036, reckon/crew/placement.py:1224\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: The landed change reads the claim and the exit record exactly as the goal states: reckon/crew/recovery_liveness.py:520-524 takes the higher of the claim and the attempt record, and reckon/crew/recovery_classification.py:84 stands the predecessor-report guard down when the exit record names the current attempt.\nSCORE evidence: 13\nJUSTIFICATION evidence: The gate could have failed and did \u2014 base-gate-3.log records 7 failed against head-gate.log's 70 passed EXIT=0 \u2014 but two done_when clauses (the _manifest_carries_no_verdict_yet docstring and the ruff check/format delta) have no test and no log anywhere in the run directory, and the landing fragment's mutation figures contradict the log they cite.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: Every path in the diff (reckon/crew/recovery_liveness.py, reckon/crew/recovery_classification.py, tests/test_a_resumed_attempt_is_read_through_its_own_records.py, the docs evidence fragment) is inside the declared write paths, and the declared figures directory is left unused.\nSCORE durability: 16\nJUSTIFICATION durability: Arms i-iv and arm v each redden under the declared mutation (negative-control.log, 5 failed) and arms i-iv redden at the base revision (base-gate-3.log), while the exit-record clause at reckon/crew/recovery_classification.py:84 is guarded only by tests/test_a_resumed_attempt_is_read_through_its_own_records.py:426, which passes at base as well and so is established by reading rather than by a recorded control.\nSCORE fit: 17\nJUSTIFICATION fit: The new helpers in reckon/crew/recovery_liveness.py:539-624 follow the surrounding module's idiom \u2014 full docstrings, and a deferred import justified by the cycle through reckon/crew/resumption.py:88 \u2014 and no name carries a plan, sprint or ticket label.\nSCORE reuse: 19\nJUSTIFICATION reuse: The claim filename is taken from its owner at reckon/crew/resumption.py:305 attempt_claim_path rather than re-spelled, and the claim enumeration has no prior owner in the repository; the earlier duplicate predicate was folded back into the existing _exit_record_names_attempt at reckon/crew/recovery_liveness.py:528.\nFINDING docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-resumed-attempt-is-read-through-its-own-records.html:24 blocking: the landing fragment names `_attempt_end_recorded` as \"the new predicate\" that stands the guard down, but no `_attempt_end_recorded` exists anywhere in reckon/ or tests/ at the reviewed head c13b40969 (grep returns nothing); the mechanism is the pre-existing `_exit_record_names_attempt` (reckon/crew/recovery_liveness.py:528, present unchanged at base 85717297) imported at reckon/crew/recovery_classification.py:1829. A reader verifying the anchor greps a symbol that does not exist, so the evidence record misstates both the name and the novelty of the safeguard it documents.\nFINDING docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-resumed-attempt-is-read-through-its-own-records.html:29 non-blocking: the negative-control paragraph reports \"the four arms fail ... and the two controls still pass (4 failed, 2 passed, EXIT=1)\", but the negative-control.log it cites in the same sentence records `5 failed, 4 passed in 6.11s` with arm v also among the failures, and the manifest records the same 5/4; the counts are those of the six-test file from before arm v was added and contradict both the log cited and the fragment's own gate sentence naming nine tests.\n",
+  "review_run_id": "r-20261023T194545747496-review-of-a-resumed-attempt-is-read-through-its-own-records-c13b40969a8e",
+  "reviewed_base_sha": "857172971597f91cc29618745a515bb67ca6350d",
+  "reviewed_head_sha": "c13b40969a8e5b8cb16bf212b334914f4fe622f0",
+  "reviewed_run_id": "r-20261023T154506367282-a-resumed-attempt-is-read-through-its-own-records",
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T20:37:19.553189+00:00",
+  "total": 102
+}
