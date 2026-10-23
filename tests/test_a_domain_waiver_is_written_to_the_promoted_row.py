@@ -21,6 +21,7 @@ from pathlib import Path
 import pytest
 
 import reckon.mcp as mcp_module
+from reckon import ledger
 from reckon.crew import promotion as promotion_module
 from reckon.crew.routing import run_directory_of
 from reckon.crew.runs import _write_json, pointer_path
@@ -140,6 +141,8 @@ def test_a_waived_domain_check_lands_on_the_promoted_row(
     assert log.is_file() and "EXIT=3" in log_text, (log, log_text)
 
     row = _rows(repository)[run_id]
+    assert "domain_waiver" in ledger.RECORD_FIELDS
+    assert set(ledger.RECORD_FIELDS) <= set(row)
     waiver = row.get("domain_waiver")
     assert waiver is not None, row
     assert waiver["waived_invariants"] == ["convergence"], waiver
@@ -203,3 +206,9 @@ def test_the_waiver_the_guard_applied_is_the_one_on_the_row(
     assert answer.get("ok") is True, answer
     row = _rows(repository)[run_id]
     assert row["domain_waiver"] == seen["product"], (row["domain_waiver"], seen)
+    # Stated here as the words themselves: a row's reason compared against the
+    # constant the test handed the tool could agree with the guard's input while
+    # the row carried something else entirely.
+    assert (
+        row["domain_waiver"]["reason"] == "the record predates the convergence fix"
+    ), row["domain_waiver"]
