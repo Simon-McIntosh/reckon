@@ -46,21 +46,51 @@
     <tbody>
       <tr>
         <td>the new test file alone</td>
-        <td>ARMS_NEW_TEST_REV</td>
-        <td>ARMS_NEW_TEST_RESULT</td>
+        <td>160e251c2</td>
+        <td>4 cases pass; under the declared mutation 1 fails and 3 pass</td>
       </tr>
       <tr>
-        <td>the population of test files importing the three modules</td>
+        <td>the population of test files importing the three modules (284 files)</td>
         <td>67cba14e6 (base, scratch tree plus the new test)</td>
-        <td>ARMS_BASE_RESULT</td>
+        <td>31 failed, 2938 passed, 4 skipped, 5 setup errors — the four new cases are among the failures, each reproducing the defect at base</td>
       </tr>
       <tr>
         <td>the same population at the head</td>
-        <td>HEAD_REV</td>
-        <td>ARMS_HEAD_RESULT</td>
+        <td>160e251c2</td>
+        <td>25 failed, 2949 passed, 4 skipped, no errors — none of the 25 is a case this work touched</td>
       </tr>
     </tbody>
   </table>
 
-  <p id="every-derived-manifest-carries-the-outside-scope-field-arms-note">ARMS_NOTE</p>
+  <p id="every-derived-manifest-carries-the-outside-scope-field-arms-note"><strong>The
+  change adds no failure.</strong> Taking the head arm's failing ids away from
+  the base arm's leaves nothing: every head failure was already failing at base,
+  and the head arm runs eleven more passing cases, which is the four new ones plus
+  seven the base run's five timed-out fixtures never got to run. The four new cases fail at base — the
+  defect the section names, reproduced — and pass at head. Both arms ran with
+  <code>-n 8</code> on a host carrying load 23 on eight CPUs, which is why the
+  base arm also lost five costly module-scoped fixtures to a 300 s timeout at
+  setup; those five are a contention artifact of the base run, absent at head,
+  and are not failure ids.</p>
+
+  <p id="every-derived-manifest-carries-the-outside-scope-field-outside">Failing at
+  both revisions and outside this node's scope:
+  <code>tests/test_dispatch_names_a_model.py::test_local_model_outside_the_local_lane_is_refused_naming_both</code>,
+  <code>tests/test_dispatch_names_a_model.py::test_sibling_surfaces_name_a_model</code>,
+  <code>tests/test_edit_plan_section_writes.py::test_unknown_declaration_value_is_refused_with_the_accepted_values</code>,
+  <code>tests/test_orchestrator_assessment_reaches_jev.py</code> (2 cases),
+  the four
+  <code>tests/test_read_verbs_retire_behind_crew_view.py::test_crew_view_live_gives_the_listings_answer</code>
+  parametrisations, <code>tests/test_partition_live_runs_recorded.py::test_recorded_classification_is_used_without_observing_logs</code>,
+  the four
+  <code>tests/test_promotion_never_amends_its_commit.py::test_complete_preserves_the_promotion_commit_through_release</code>
+  parametrisations, <code>tests/test_promotion_releases_its_worktree.py::test_promotion_releases_only_the_integrated_clean_case</code>,
+  <code>tests/test_promotion_reads_the_review_tier.py::test_an_unreadable_light_ceiling_falls_back_to_the_shipped_one</code>,
+  the two <code>tests/test_promotion_stages_its_one_run_file.py</code> cases,
+  the three <code>tests/test_obligations_snapshot_is_published.py</code> cases,
+  <code>tests/test_queued_work_shows_where_held_work_shows.py::test_the_published_snapshot_lists_the_queued_run_the_derivation_lists</code>,
+  <code>tests/test_ledger.py::test_an_unknown_crew_view_names_every_view_it_has</code>,
+  <code>tests/test_structural_invariants.py::test_only_the_shared_parser_calls_fromisoformat</code> and
+  <code>tests/test_unmeasured_horizon_never_refuses.py::test_redispatch_cli_accepts_estimated_hours</code>.
+  None of them reads the three changed sites.</p>
 </section>
