@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="additional-work-is-a-section">
+  <meta name="plan-title" content="The ledger key names work outside a worker's scope">
+  <meta name="plan-evidence-for" content="reckon:additional-work-is-a-section">
+  <meta name="plan-verifies" content="reckon:additional-work-is-a-section#s6">
+  <meta name="plan-recorded-at" content="2026-10-23">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="ledger,rename,backward-compatible,run-record">
+  <title>The ledger key names work outside a worker's scope — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-ledger-key-names-outside-scope-work" data-reckon="landed" data-when="2026-10-23">
+  <h2>The ledger key names work outside a worker's scope</h2>
+  <p id="the-ledger-key-names-outside-scope-work-key">The committed run row names the paths a worker reported beyond its own scope under <code>outside_scope_paths</code>, renamed from <code>follow_on_paths</code>. <code>build_record</code> writes the new key and promotion passes its extracted paths under it, so a promotion produces <code>outside_scope_paths</code> and no <code>follow_on_paths</code> on the row. The manifest field the paths are read from keeps its own name here.</p>
+  <p id="the-ledger-key-names-outside-scope-work-mapping">A row promoted before the change still reads. <code>run_record</code> owns the mapping from the retired spelling onto the current one and exposes it as <code>outside_scope_paths</code> (read, with fallback) and <code>normalize_outside_scope_paths</code> (the row with the retired key dropped). <code>ledger</code> applies it in <code>_read_run</code>, <code>_load_aggregate</code> and <code>_index_payload</code>; <code>run_store</code> applies it at every stored-payload decode. One key therefore answers whichever revision wrote the row, and the retired spelling is never carried into a later write.</p>
+  <p id="the-ledger-key-names-outside-scope-work-gate">The gate runs the new test with the three test files that named <code>follow_on_paths</code> at the base revision, from the worktree interpreter, at base and at head. Base arm at <code>305145f7d</code>: 49 passed, 1 skipped, <code>EXIT=0</code>. Head arm at <code>b77779666</code>: 53 passed, 1 skipped, <code>EXIT=0</code>, adding the new test's four cases and no failure on the three shared files. The single skip is <code>tests/test_record_fields_declare_every_key.py</code>, which skips identically at both arms because no mounted ledger row is readable in the sandbox.</p>
+  <p id="the-ledger-key-names-outside-scope-work-negative">Negative control, declared as <em>drop the old-key mapping, and the old row reads with no entries</em>: with the retired-key fallback removed in <code>reckon/run_record.py</code>, <code>test_the_renamed_key_reads_through_record_store_and_ledger</code> fails at <code>assert run_record.outside_scope_paths({'follow_on_paths': [...]}) == paths</code> with <code>AssertionError: assert None == ['reckon/ledger.py', 'reckon/crew/promotion.py']</code>, and the run ends <code>EXIT=1</code>. The mutation was reverted and the working tree is byte-identical to the commit.</p>
+  <p id="the-ledger-key-names-outside-scope-work-scope">The three base test files were updated to the current key; their only change is the key's name (<code>tests/test_run_store.py</code> fixture key and detail-set literal, <code>tests/test_routing_evidence_fields.py</code> row assertions, <code>tests/test_record_fields_declare_every_key.py</code> declared-key assertion). <code>ruff check</code> and <code>ruff format --check</code> on the changed paths report the same four findings and one unformatted file as the base revision, so the commit adds none.</p>
+</article>
+</body>
+</html>
