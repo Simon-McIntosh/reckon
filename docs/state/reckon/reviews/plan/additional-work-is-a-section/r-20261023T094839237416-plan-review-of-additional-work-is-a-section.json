@@ -1,0 +1,83 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T10:07:31.294Z",
+  "dispatched_at": "2026-10-23T09:50:12Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/additional-work-is-a-section.html:94",
+      "id": "reasoning-1",
+      "reason": "a node building \u00a77 as written fixes line 651 only, so a production module keeps the retired term and \u00a71's stated goal (\"its language is to be purged from every reckon surface\") is unmet by the plan as written, with no other section left to catch it.",
+      "text": "\u00a77 selects only `reckon/ledger.py`'s extractor docstring (near line 651) as the ledger site carrying the retired term, but the same module carries the term in a second docstring \u2014 `reckon/ledger.py:629-639`, `_path_like_tokens`, \"A follow_on is free text a worker wrote\" \u2014 and no section owns it: \u00a76's write path lists `reckon/ledger.py` only to rename the key and explicitly defers the docstring to \u00a77, and \u00a73 does not include `reckon/ledger.py` at all",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/additional-work-is-a-section.html:94",
+      "id": "reasoning-2",
+      "reason": "the edit itself is still required by \u00a71's purge rule, so only the stated rationale is inaccurate and no node's action changes, but the \"output reckon emits\" framing is unsupported by the cited file.",
+      "text": "\u00a77's \"Why\" justifies the `scripts/check_snapshot_assertions.py` change as one of the three places that \"would then keep the retired word in output reckon emits\", but that site is a self-contained census fixture: `CREW_ROW_KEYS` (line 133) is consumed only by the script's own specimen (`_served_row`/`_assert_closed_key_set`, lines 153-158), and the script emits tallies, never the key set",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "aed5a879ed75924e7746c9ec7dba23808b4d4ffd1e8a00a93def90688fee541c",
+  "plan_slug": "additional-work-is-a-section",
+  "plan_version": 30,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-23T10:23:07.162597+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-23T10:23:31.488041+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-23T10:23:07.162597+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-23T10:23:31.488041+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-additional-work-is-a-section.v30.json",
+  "review_run_id": "r-20261023T094839237416-plan-review-of-additional-work-is-a-section",
+  "reviewed_blob_sha": "cc9b65183fd6d4a9c896b37c80ec6466a53be756",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/ledger.py:651`, `reckon/crew/recovery_watch.py:201`, `reckon/crew/dispatch_peer.py:407` and `scripts/check_snapshot_assertions.py:147` each resolve at HEAD and each carries the field name \u00a77 says it carries.",
+    "done_when": "pass \u2014 \u00a77's three cases are measurable (a written string, a parser result, a frozen key set) and it declares a negative control for the first case (\"restore the old word at `recovery_watch.py`, and the first case fails\").",
+    "evidence_paths": "pass \u2014 \u00a77's evidence target is `docs/evidence/fragments/additional-work-is-a-section/every-derived-manifest-carries-the-outside-scope-field.html`, a durable repository path, not a scratchpad.",
+    "naming": "pass \u2014 the introduced names (`outside_scope`, `outside_scope_paths`) and the test/fragment filenames carry no plan label, stage name or ticket number.",
+    "reasoning": "a finding \u2014 \u00a77's claim that these are the sites keeping the retired word is incomplete: `reckon/ledger.py` carries the retired term in a second docstring (\u00a77's anchor at :651) and no other section names it.",
+    "single_goal": "pass \u2014 \u00a77 carries one deliverable: the sites that compose the old field name take the new one.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares `s7:[s3]` and `s3:[s2,s6]`, so \u00a77 follows \u00a73 which follows \u00a76, matching \u00a77's \"Why\" and the followup body."
+  },
+  "section_digests": {
+    "_document": "edf7f32827e72affb12cd9e488ed27db272b42b30d40a6095338f58ef1bbe1bd",
+    "s1": "53035db610c769f9fabc12038e7a13898064f071d29b27f9e4b9cfe7e6e9cbfb",
+    "s2": "da6965864ffd2ed27a0442cf22caf15936faa1f5ecfe3c8d4be21504a5d51387",
+    "s3": "ac2943c184863917be20d90cb41e0c41066fd2dd0cf386d57cc73789f89d8187",
+    "s4": "f54fdafb18757876821e9a2c5955d3db854946ef19afb4d56a5e83886375b088",
+    "s5": "a6fa784958eef11b006d0cb4912714d98031c18adf47e32ecc1f84a23d578e4d",
+    "s6": "0f8796c8305cc16163a272e7a32db694def457ce5ed1c506aa8ed5d5e962f591",
+    "s7": "ef0f3ce0d30ab225f4f27568305f45f8d455ab5e35a62226a248a8e9e8f2c172"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T10:22:56.127400+00:00"
+}
