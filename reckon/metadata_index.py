@@ -197,6 +197,19 @@ def _stat_signature(observed: os.stat_result) -> list[int]:
     return list(signature_from_stat(observed))[1:]
 
 
+def _same_stat_identity(recorded: object, observed: os.stat_result) -> bool:
+    """Whether a persisted signature matches a file's observed stat identity.
+
+    A write to the file moves at least one field of
+    :func:`_stat_signature`'s identity, so a match says the file has not been
+    written since the row was built and the row can be served without reading
+    its bytes. A mismatch leaves the digest to decide, because a rewrite that
+    restores the same bytes carries a new identity and must keep its row.
+    """
+
+    return recorded == _stat_signature(observed)
+
+
 #: The types discovery keeps in an inventory, so the index answers with the
 #: same row set the derived payload is merged into.
 _INDEX_TYPES = frozenset({"plan", "research", "evidence"})
@@ -365,7 +378,7 @@ def index_rows(
     dirs: dict[str, Path] | None = None
     reused = _reuse_covered(docs_dir, project)
     if reused is not None:
-        covered, dirs, _scanned = reused
+        covered, dirs = reused
     build = _build_and_cache(
         key,
         docs_dir,
@@ -381,7 +394,7 @@ def index_rows(
 
 def _reuse_covered(
     docs_dir: Path, project: str
-) -> tuple[list[tuple[str, Path]], dict[str, Path], bool] | None:
+) -> tuple[list[tuple[str, Path]], dict[str, Path]] | None:
     """Return the persisted file set, scanning only the directories that moved.
 
     A reader with no change watch checks every covered file to revalidate, and
@@ -394,12 +407,11 @@ def _reuse_covered(
     before. A recorded directory that no longer exists drops its files and its
     descendants. An absent index returns ``None``, so the caller walks.
 
-    The third element reports whether any directory was scanned. The observed
-    shape is recorded here, before the caller reaches whatever it does with the
-    file set, because the readers that want only the file set never build an
-    index: a scan left unrecorded is a scan the next reader repeats. A shape
-    that moved is therefore recorded even when no row changed, so the next read
-    starts from the whole shape rather than scanning the same directory again.
+    A shape that moved is recorded here, before the caller reaches whatever it
+    does with the file set, because the readers that want only the file set
+    never build an index: a scan left unrecorded is a scan the next reader
+    repeats. Recording it even when no row changed lets the next read start
+    from the whole shape rather than scanning the same directory again.
     """
 
     stamps = _load_dir_stamps(docs_dir, project)
@@ -436,7 +448,7 @@ def _reuse_covered(
         _record_covered_shape(
             docs_dir, project, sorted(covered.items()), sorted(dirs.items())
         )
-    return sorted(covered.items()), dirs, bool(moved)
+    return sorted(covered.items()), dirs
 
 
 def plan_derivations(docs_dir: Path, project: str) -> list[dict]:
@@ -496,6 +508,25 @@ def _build_and_cache(
     return build
 
 
+def _reuse_entry(
+    build: IndexBuild, entries: list[dict], relative: str, entry: Mapping
+) -> None:
+    """Carry a persisted entry's row, discovery state and plan record forward.
+
+    The entry is kept as it stands and copied into the build, so a reused file's
+    row reaches the caller without its bytes being read or parsed.
+    """
+
+    build.reused += 1
+    entries.append(entry)
+    if "fields" in entry:
+        build.rows.append(dict(entry["fields"]))
+    if isinstance(entry.get("discovery"), Mapping):
+        build.discovery[relative] = entry["discovery"]
+    if isinstance(entry.get("plan"), Mapping):
+        build.plans.append({"path": relative, **entry["plan"]})
+
+
 def build_index(
     docs_dir: Path,
     project: str,
@@ -512,6 +543,13 @@ def build_index(
     tree's shape — by comparing the recorded directory identities — hand the
     file set in instead of walking the tree to rediscover it. With ``covered``
     absent the walk runs and both are derived from it.
+
+    A persisted row whose recorded stat identity still matches the file is
+    reused without reading the file, so the first build after a restart costs a
+    stat per file rather than a read and a hash of every one. A file whose
+    identity moved takes the digest path, which decides from the bytes: a
+    rewrite that restored the same content keeps its row, and any byte change
+    is parsed again.
     """
 
     docs_dir = Path(docs_dir)
@@ -533,6 +571,14 @@ def build_index(
 
     for relative, path in files:
         seen.add(relative)
+        entry = known.get(relative)
+        if entry is not None and _row_is_complete(entry):
+            observed = covered_stat(docs_dir, project, relative, path)
+            if observed is not None and _same_stat_identity(
+                entry.get("signature"), observed
+            ):
+                _reuse_entry(build, entries, relative, entry)
+                continue
         try:
             digest = _content_digest(path)
         except OSError:
@@ -540,21 +586,13 @@ def build_index(
             # parse left unknown; a vanished one drops out and the next build
             # sees whatever replaced it.
             digest = None
-        entry = known.get(relative)
         if (
             entry is not None
             and digest is not None
             and entry.get("digest") == digest
             and _row_is_complete(entry)
         ):
-            build.reused += 1
-            entries.append(entry)
-            if "fields" in entry:
-                build.rows.append(dict(entry["fields"]))
-            if isinstance(entry.get("discovery"), Mapping):
-                build.discovery[relative] = entry["discovery"]
-            if isinstance(entry.get("plan"), Mapping):
-                build.plans.append({"path": relative, **entry["plan"]})
+            _reuse_entry(build, entries, relative, entry)
             continue
         try:
             signature = list(file_signature(path))
