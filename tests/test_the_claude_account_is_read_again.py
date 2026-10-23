@@ -174,7 +174,7 @@ def test_an_answer_naming_neither_window_is_refused_in_the_readers_own_words():
 # ── No test reads the login's own account ───────────────────────────────────
 
 
-def test_a_test_cannot_read_the_logins_own_account():
+def test_a_test_cannot_read_the_logins_own_account(monkeypatch):
     """The suite guard replaces the account-surface read with a no-answer stub.
 
     Asserted on the replacement rather than on a reading, because a reading
@@ -187,10 +187,26 @@ def test_a_test_cannot_read_the_logins_own_account():
     and that holds whatever this machine's account state is.
     """
     from reckon import _backends
+    from tests.conftest import (
+        ACCOUNT_SURFACE_GUARD_MARKER,
+        unguarded_account_surface_read,
+    )
 
     claude = _backends.dialect_for({"command": "claude"})
+    surface = type(claude)
+    guarded = surface.read_account_surface
 
+    assert getattr(guarded, ACCOUNT_SURFACE_GUARD_MARKER, False) is True
     assert claude.read_account_surface(backend={"command": "claude"}) is None
+
+    unguarded_account_surface_read(monkeypatch)
+
+    lifted = surface.read_account_surface
+    assert lifted is not guarded
+    assert not getattr(lifted, ACCOUNT_SURFACE_GUARD_MARKER, False)
+
+    with pytest.raises(RuntimeError, match="no account-surface guard is in place"):
+        unguarded_account_surface_read(monkeypatch)
 
 
 # ── An all-unknown account is due for a probe ───────────────────────────────

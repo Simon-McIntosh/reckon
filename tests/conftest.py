@@ -411,7 +411,11 @@ def no_live_jev(request, tmp_path_factory, monkeypatch):
 # subject is the probe exchange passes the probe a ``runner`` of its own, injects
 # its own ``fetch`` — honoured by the stub, since a fetch is a transport the test
 # already owns — or patches ``reckon._backends.run_probe`` itself, which replaces
-# this guard for that test.
+# this guard for that test. A test whose subject is the read itself, injecting a
+# dead transport to exercise the read's own failure path, declares it with
+# ``unguarded_account_surface_read`` below: the stub answers nothing before that
+# injection is ever reached, so the test would otherwise pass for a reason it
+# does not name.
 _ACCOUNT_PROBE_GUARD_DISABLE_ENV = "RECKON_TEST_DISABLE_ACCOUNT_PROBE_GUARD"
 
 # Carried on the replacement below, so that a test can assert the guard is in
@@ -420,6 +424,11 @@ _ACCOUNT_PROBE_GUARD_DISABLE_ENV = "RECKON_TEST_DISABLE_ACCOUNT_PROBE_GUARD"
 # too, so it would pass with the guard removed. The replacement itself is the
 # fact that holds everywhere.
 ACCOUNT_SURFACE_GUARD_MARKER = "_reckon_test_account_surface_is_stubbed"
+
+# Where the replacement keeps the read it stood in for, so a test whose subject
+# is that read can be handed it back. A named attribute rather than
+# ``__wrapped__`` keeps its one reader findable by grep.
+_ACCOUNT_SURFACE_GUARD_REPLACED = "_reckon_account_surface_read_replaced"
 
 
 def _account_surface_without_a_live_read(original):
@@ -438,7 +447,40 @@ def _account_surface_without_a_live_read(original):
         return None
 
     setattr(read, ACCOUNT_SURFACE_GUARD_MARKER, True)
+    setattr(read, _ACCOUNT_SURFACE_GUARD_REPLACED, original)
     return read
+
+
+def unguarded_account_surface_read(monkeypatch):
+    """Lift the guard for one test whose own subject is the account read.
+
+    A test that injects a dead transport to exercise the read's failure path
+    needs the real read to run; under the guard its injection is inert, and
+    the test passes for a reason it does not name. It declares that subject by
+    calling this.
+
+    The marker on the installed read is what this reads before lifting. It
+    confirms the replacement is this guard's — the call cannot silently strip
+    a stub another test installed — and it refuses by name when the guard is
+    not in force, as in a run with
+    ``RECKON_TEST_DISABLE_ACCOUNT_PROBE_GUARD=1``: there is nothing to go
+    through then, and a loud refusal is cheaper than a test that quietly reads
+    the machine's own account.
+    """
+    from reckon import _backends
+
+    surface = type(_backends.dialect_for({"command": "claude"}))
+    guarded = surface.read_account_surface
+    if not getattr(guarded, ACCOUNT_SURFACE_GUARD_MARKER, False):
+        raise RuntimeError(
+            "this test declares the account read as its subject, but no "
+            "account-surface guard is in place to go through"
+        )
+    monkeypatch.setattr(
+        surface,
+        "read_account_surface",
+        getattr(guarded, _ACCOUNT_SURFACE_GUARD_REPLACED),
+    )
 
 
 @pytest.fixture(autouse=True)

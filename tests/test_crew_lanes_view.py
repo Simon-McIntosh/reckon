@@ -16,6 +16,7 @@ from reckon import _backends, mcp, mcp_views
 from reckon._mcp_tools import CrewArgs
 from reckon.crew.rollout import Unmeasured
 from reckon.flight import resolve
+from tests.conftest import unguarded_account_surface_read
 
 
 @dataclass(frozen=True)
@@ -622,6 +623,7 @@ def _cache_sourced_view(
             "refreshTokenExpiresAt": int((composed + timedelta(days=30)).timestamp()),
         },
     )
+    unguarded_account_surface_read(monkeypatch)
     monkeypatch.setattr(
         _backends,
         "_fetch_claude_account",

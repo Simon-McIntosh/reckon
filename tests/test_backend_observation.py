@@ -23,6 +23,7 @@ import pytest
 
 from reckon import _backends
 from reckon.crew import rollout
+from tests.conftest import unguarded_account_surface_read
 
 FIXTURES = Path(__file__).parent / "fixtures" / "backends"
 
@@ -585,6 +586,7 @@ def test_a_cached_figure_never_appears_without_its_age_beside_it(tmp_path, monke
     monkeypatch.setattr(
         _backends, "_load_claude_credential", lambda: _live_credential(now)
     )
+    unguarded_account_surface_read(monkeypatch)
     monkeypatch.setattr(
         _backends,
         "_fetch_claude_account",
@@ -623,6 +625,7 @@ def test_a_cached_block_without_a_trustworthy_stamp_is_unknown_not_a_figure(
     monkeypatch.setattr(
         _backends, "_load_claude_credential", lambda: _live_credential(now)
     )
+    unguarded_account_surface_read(monkeypatch)
     monkeypatch.setattr(
         _backends,
         "_fetch_claude_account",
@@ -741,6 +744,7 @@ def test_an_unreadable_cache_is_an_unknown_reason_not_a_crash(tmp_path, monkeypa
     monkeypatch.setattr(
         _backends, "_load_claude_credential", lambda: _live_credential(now)
     )
+    unguarded_account_surface_read(monkeypatch)
     monkeypatch.setattr(
         _backends,
         "_fetch_claude_account",
