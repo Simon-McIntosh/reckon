@@ -40,7 +40,6 @@ from reckon.crew.runs import (
 )
 
 
-
 # Process startup and registration may receive only one scheduler slice in six
 # while two CPU-bound jobs share a loaded host. Keep every watcher condition
 # wait on this one six-times-unloaded bound so a red test reports a producer
@@ -478,23 +477,61 @@ def _ensure_watch_producer(
 SESSION_HOST_DIRECTORY = "reckon-session-host"
 
 
-def _session_host_runtime_root() -> Path | None:
-    """The node-local root a session host's FIFO lives under, or None.
+def session_host_runtime_candidate(
+    *,
+    environ: Mapping[str, str] | None = None,
+    run_user_root: str | Path | None = None,
+) -> tuple[Path | None, str]:
+    """The node-local root and which candidate produced it, or ``(None, "none")``.
 
     The same three candidates the host entry point chooses from, so a dispatch
     and the host it asks resolve the same directory: the session's own runtime
     directory first, then the per-user directory a login node provides, then the
-    scratch root. Each is node-local, so waiting on the FIFO costs nothing on
-    shared storage.
+    scratch root. The source it returns tells a caller which of the three it
+    landed on, because only the first two are shared by every process on the
+    node -- ``TMPDIR`` differs per session.
+
+    ``environ`` and ``run_user_root`` are named so a caller can feed fixture
+    values, exactly as ``reckon.host.host_facts`` does; the defaults are the
+    process's own environment and the node's per-user runtime directory.
     """
-    runtime = str(os.environ.get("XDG_RUNTIME_DIR") or "").strip()
+    env = os.environ if environ is None else environ
+    runtime = str(env.get("XDG_RUNTIME_DIR") or "").strip()
     if runtime:
-        return Path(runtime)
-    run_user = Path(f"/run/user/{os.getuid()}")
+        return Path(runtime), "runtime-directory"
+    run_user = (
+        Path(run_user_root)
+        if run_user_root is not None
+        else Path(f"/run/user/{os.getuid()}")
+    )
     if run_user.is_dir():
-        return run_user
-    scratch = str(os.environ.get("TMPDIR") or "").strip()
-    return Path(scratch) if scratch else None
+        return run_user, "per-user-runtime"
+    scratch = str(env.get("TMPDIR") or "").strip()
+    if scratch:
+        return Path(scratch), "scratch"
+    return None, "none"
+
+
+def session_host_runtime_root(
+    *,
+    environ: Mapping[str, str] | None = None,
+    run_user_root: str | Path | None = None,
+) -> Path | None:
+    """The node-local root a session host's FIFO lives under, or None.
+
+    Each candidate is node-local, so waiting on the FIFO costs nothing on
+    shared storage. Public so the station's store resolves the same root the
+    session host that starts it resolves; :func:`session_host_runtime_candidate`
+    answers the same question beside the name of the candidate it chose.
+    """
+    return session_host_runtime_candidate(environ=environ, run_user_root=run_user_root)[
+        0
+    ]
+
+
+def _session_host_runtime_root() -> Path | None:
+    """The private spelling the crew dispatch surface re-exports."""
+    return session_host_runtime_root()
 
 
 def _session_host_owner() -> tuple[int, str] | None:
@@ -922,6 +959,7 @@ def _open_request_fifo(fifo: Path, deadline: float) -> int:
             raise CrewError(
                 f"the fleet's request FIFO {fifo} could not be written: {exc}"
             ) from exc
+
 
 from .dispatch_accounting import (  # noqa: E402
     _coordinator_runtime,
