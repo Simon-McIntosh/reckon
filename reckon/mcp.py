@@ -1796,7 +1796,7 @@ def _roadmap_snapshot_scope(
     from reckon import serve as serve_module
 
     try:
-        mounts = dict(serve_module.load_mounts())
+        mounts = dict(serve_module.mounts_for_snapshot())
     except OSError:
         return None
     key, _live_states = serve_module.roadmap_snapshot_key(

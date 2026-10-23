@@ -1151,6 +1151,9 @@ _ROADMAP_REVALIDATE_DEFAULT_S = 120.0
 _ROADMAP_SNAPSHOT_LOCK = threading.Lock()
 # In-process reuse, so a hit costs no open beyond the snapshot file itself.
 _ROADMAP_SNAPSHOTS: dict[str, tuple[str, dict[str, Any]]] = {}
+# The resolved mounts the last snapshot key was built over, with the stamp of
+# the file it was read from.
+_MOUNTS_MEMO: tuple[int | None, dict[str, Path]] | None = None
 
 
 def roadmap_revalidate_window() -> float:
@@ -1296,6 +1299,31 @@ def roadmap_snapshot_key(
         sort_keys=True,
     )
     return key, live_states
+
+
+def mounts_for_snapshot() -> dict[str, Path]:
+    """Resolve the mounts a snapshot key is built over, reusing the last answer.
+
+    ``load_mounts`` establishes that each mount's docs tree exists, and that
+    stat lands on a path inside the covered tree — the one place the key would
+    otherwise touch it, on every call, to learn nothing that changed. The
+    resolution is held until the mounts file itself moves, which is the only
+    way a mount can be added, removed or repointed under a running process.
+    """
+    global _MOUNTS_MEMO
+    path = _MOUNTS_FILE
+    if path is None:
+        _resolve_paths()
+        path = _MOUNTS_FILE
+    try:
+        stamp = path.stat().st_mtime_ns if path is not None else None
+    except OSError:
+        stamp = None
+    if _MOUNTS_MEMO is not None and _MOUNTS_MEMO[0] == stamp:
+        return _MOUNTS_MEMO[1]
+    resolved = load_mounts()
+    _MOUNTS_MEMO = (stamp, resolved)
+    return resolved
 
 
 def roadmap_snapshot_path(project: str) -> Path:
