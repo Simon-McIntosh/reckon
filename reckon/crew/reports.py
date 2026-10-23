@@ -729,14 +729,12 @@ def _refuse_undetermined_status(
                 _missing_status_manifest_message(path, sorted(outcome_fields))
             )
     status = fields.get("status")
-    if status is not None:
-        if (
-            not manifest_status_is_template(status)
-            and str(status).strip().lower() not in MANIFEST_STATUSES
-        ):
-            raise ManifestParseError(
-                _unknown_status_word_manifest_message(path, status)
-            )
+    if (
+        status is not None
+        and not manifest_status_is_template(status)
+        and str(status).strip().lower() not in MANIFEST_STATUSES
+    ):
+        raise ManifestParseError(_unknown_status_word_manifest_message(path, status))
     return fields
 
 
@@ -2600,18 +2598,14 @@ def audit_manifest(
     findings.extend(_unresolved_revision_findings(node))
     findings.extend(_review_record_status_findings(node))
     if node is not None and manifest["changed_paths"]:
-        declared = tuple(node.write_paths or ())
-        stray = sorted(
-            path
-            for path in manifest["changed_paths"]
-            if not path_within_declared_scope(
-                path, declared, worktree=worktree, repository=repository
+        findings.extend(
+            _write_scope_findings(
+                manifest["changed_paths"],
+                tuple(node.write_paths or ()),
+                worktree=worktree,
+                repository=repository,
             )
         )
-        if stray:
-            findings.append(
-                "changed paths outside the write scope: " + ", ".join(stray)
-            )
     findings.extend(
         _composed_record_id_findings(
             manifest["changed_paths"] or (),
@@ -2620,6 +2614,86 @@ def audit_manifest(
         )
     )
     return {"manifest": manifest, "findings": findings, "ok": not findings}
+
+
+def _write_scope_findings(
+    changed_paths: Iterable[Any],
+    declared: Iterable[str],
+    *,
+    worktree: Path | None,
+    repository: Path | None,
+) -> list[str]:
+    """Report changed paths outside the write scope, naming a joined list as one.
+
+    A list field is split on commas, not spaces, so a value whose entries are
+    separated by spaces arrives as one item holding internal whitespace. That
+    item lies outside every declared root, and a scope finding printing it among
+    the strays would render the single joined item as the several paths it names,
+    leaving the missing commas as the only sign it parsed one. When the item's
+    own whitespace-separated parts each lie within the declared scope, the value
+    is a space-separated list rather than a stray path, and the audit names that
+    reading in place of a scope finding for the item — the field, the single item
+    it parsed and the comma rule — so its author rewrites the value rather than
+    hunting a record the check is not comparing against. The parse is unchanged,
+    so the value stays a defect the worker fixes; every remaining stray path is
+    quoted, so one path can never read as several.
+    """
+    declared = tuple(declared)
+    separated: set[str] = set()
+    stray: set[str] = set()
+    for path in changed_paths:
+        if path_within_declared_scope(
+            path, declared, worktree=worktree, repository=repository
+        ):
+            continue
+        item = str(path).strip()
+        if not item:
+            continue
+        if _is_space_separated_scope_item(
+            item, declared, worktree=worktree, repository=repository
+        ):
+            separated.add(item)
+        else:
+            stray.add(item)
+    findings = [
+        f"changed_paths reads {item!r} as a single item because list fields are "
+        "split on commas, not spaces; its whitespace-separated parts each lie "
+        "within the write scope, so the value is a space-separated list rather "
+        "than one stray path — write the entries comma-separated or as a JSON "
+        "array"
+        for item in sorted(separated)
+    ]
+    if stray:
+        findings.append(
+            "changed paths outside the write scope: "
+            + ", ".join(f'"{path}"' for path in sorted(stray))
+        )
+    return findings
+
+
+def _is_space_separated_scope_item(
+    item: str,
+    declared: Iterable[str],
+    *,
+    worktree: Path | None,
+    repository: Path | None,
+) -> bool:
+    """Whether a stray item is a space-separated list of declared paths.
+
+    One item with internal whitespace is a joined list only when every part it
+    would split into is itself within the declared scope: a genuine stray path
+    and a joined item naming a path outside the scope both stay strays, so the
+    finding never explains away a path the worker should not have touched.
+    """
+    parts = item.split()
+    if len(parts) < 2:
+        return False
+    return all(
+        path_within_declared_scope(
+            part, declared, worktree=worktree, repository=repository
+        )
+        for part in parts
+    )
 
 
 def _normalized_scope_path(text: Any) -> PurePosixPath:
