@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest carries no baseline_suite/after_suite keys, but names the equivalent pair in test_logs: gate-main.log at head 06c368dce (14 failed, 1101 passed, 1 skipped, 2 warnings, 1 error, EXIT=1), delta-head.log rerunning those 14 ids at head (14 failed, EXIT=1) and delta-base.log rerunning the same 14 ids with reckon/crew/queue_admission.py, reckon/crew/dispatch.py and reckon/crew/obligation_snapshot.py reverted to 43677d0d (14 failed, EXIT=1); no id fails in one arm and passes in the other, so the change adds 0 failures. The absent pair is not treated as a zero of its own.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1671",
+    "reckon/crew/dispatch.py:1759",
+    "reckon/crew/queue_admission.py:1594",
+    "reckon/crew/obligation_snapshot.py:1060"
+  ],
+  "completed_at": "2026-10-23T14:22:01.818Z",
+  "dispatched_at": "2026-10-23T14:04:22Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "1671 non-blocking",
+      "text": "the upstream hold is written only inside the local-lane-held branches (is_local at :1652 and :1723), so a node whose section waits are unmet and whose lane has room launches immediately against sections that have not been built, and no arm covers that path because both new dispatch arms pin session_slots=0 at tests/test_a_queued_request_waits_on_its_dependencies.py:283 and :301; whether the free-lane case belongs to plan section 2's \"a queued request\" or to the node goal's \"a dispatched node\" is a reading the coordinator should settle."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "1347 non-blocking",
+      "text": "queue_requests is the batch producer plan section 2's \"queue a whole width in one call\" needs and no production module calls it \u2014 grep at the reviewed head finds it only in the new test module \u2014 so that half stays inert until section 5's crew queue verbs land, and plan section 2's other two wait kinds (a gate, another queued request named by id) are implemented nowhere."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "1284 non-blocking",
+      "text": "advance_waiting_requests accepts a now argument its body never reads and admit_once passes now=moment at :1594, so the parameter advertises a time-dependence the pass does not have."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T112727139233-a-queued-request-waits-on-its-dependencies/manifest.md",
+      "line": "15 non-blocking",
+      "text": "the tests line still carries an unsubstituted placeholder for the gate command, and gate-main.log's own command header repeats the placeholder with the targets on a separate line, so promotion's gate receipt cannot be re-run from either field."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T112727139233-a-queued-request-waits-on-its-dependencies/gate-base.log",
+      "line": "1 non-blocking",
+      "text": "the base arm's node-test arm fails four of five on AttributeError (no attribute queue_requests) rather than on the ordering the done_when claims, and the added ordering probe prints launched: 0 in both trees, so it observes the stored phases rather than a base launch."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit by commit against 43677d0d; cce801f3c adds the two phases, the readiness re-read and the batch helper to reckon/crew/queue_admission.py plus the test module, 06c368dce wires hold_request_for_upstream into reckon/crew/dispatch.py and raises the duty in reckon/crew/obligation_snapshot.py, and 1b2713f29 plus 529874ebd add the evidence fragment; no commit touches a concurrent node's path.",
+    "done_when": "the done_when names tests/test_a_queued_request_waits_on_its_dependencies.py; its five arms pass at the reviewed head and the base arm's ordering probe (in the reviewed run's gate-base.log, section \"the ordering probe at base\") shows all three base requests stored queued against n2/n3 awaiting-upstream at head, but the base ordering claim itself is not observed because the base node-test arm stops on AttributeError.",
+    "goal": "the goal is to hold a dispatched node with unmet section waits as an awaiting-upstream request that admission releases as they land; reckon/crew/dispatch.py:1671 and :1759 write that hold on the real dispatch path and reckon/crew/queue_admission.py:1594 re-reads readiness in admit_once, so the mechanism is reachable for a queued request, but the hold fires only in the lane-held branches and the batch producer queue_requests (reckon/crew/queue_admission.py:1347) still has no production caller.",
+    "manifest": "read the reviewed run's manifest.md; status complete with four commits and gate-base.log, delta-base.log, delta-head.log and neg-wiring.log named (the ordering probe is a section inside gate-base.log), but the tests line at manifest.md:15 still carries an unsubstituted placeholder for the gate command.",
+    "write_paths": "the six declared paths were read; the diff of 43677d0d..529874eb changes five files, of which reckon/crew/obligation_snapshot.py is inside the repair round's extended scope (the reviewed run's resume-1-advice.txt grants it for exactly the duties-view finding) and the rest are inside the original six, so nothing lands outside a granted path."
+  },
+  "node": "review-of-a-queued-request-waits-on-its-dependencies-529874ebd7f0",
+  "node:reviewed": "a-queued-request-waits-on-its-dependencies",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to hold a dispatched node with unmet section waits as an awaiting-upstream request that admission releases as they land; reckon/crew/dispatch.py:1671 and :1759 write that hold on the real dispatch path and reckon/crew/queue_admission.py:1594 re-reads readiness in admit_once, so the mechanism is reachable for a queued request, but the hold fires only in the lane-held branches and the batch producer queue_requests (reckon/crew/queue_admission.py:1347) still has no production caller.\nVERDICT done_when: the done_when names tests/test_a_queued_request_waits_on_its_dependencies.py; its five arms pass at the reviewed head and the base arm's ordering probe (in the reviewed run's gate-base.log, section \"the ordering probe at base\") shows all three base requests stored queued against n2/n3 awaiting-upstream at head, but the base ordering claim itself is not observed because the base node-test arm stops on AttributeError.\nVERDICT write_paths: the six declared paths were read; the diff of 43677d0d..529874eb changes five files, of which reckon/crew/obligation_snapshot.py is inside the repair round's extended scope (the reviewed run's resume-1-advice.txt grants it for exactly the duties-view finding) and the rest are inside the original six, so nothing lands outside a granted path.\nVERDICT manifest: read the reviewed run's manifest.md; status complete with four commits and gate-base.log, delta-base.log, delta-head.log and neg-wiring.log named (the ordering probe is a section inside gate-base.log), but the tests line at manifest.md:15 still carries an unsubstituted placeholder for the gate command.\nVERDICT diff: read commit by commit against 43677d0d; cce801f3c adds the two phases, the readiness re-read and the batch helper to reckon/crew/queue_admission.py plus the test module, 06c368dce wires hold_request_for_upstream into reckon/crew/dispatch.py and raises the duty in reckon/crew/obligation_snapshot.py, and 1b2713f29 plus 529874ebd add the evidence fragment; no commit touches a concurrent node's path.\nCALL_SITES: reckon/crew/dispatch.py:1671, reckon/crew/dispatch.py:1759, reckon/crew/queue_admission.py:1594, reckon/crew/obligation_snapshot.py:1060\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:1671 writes the awaiting-upstream hold from the command a coordinator runs and reckon/crew/queue_admission.py:1594 releases it, but two of the three wait kinds plan section 2 names (a gate, another queued request by id) exist nowhere and reckon/crew/queue_admission.py:1347 has no production caller.\nSCORE evidence: 14\nJUSTIFICATION evidence: gate-main.log ends \"14 failed, 1101 passed, 1 skipped, 2 warnings, 1 error\" with EXIT=1 and delta-base.log and delta-head.log re-run the same 14 ids failing identically, so the delta is zero, but gate-base.log is red on AttributeError rather than on the ordering the done_when asserts.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 43677d0d..529874eb changes only reckon/crew/queue_admission.py, reckon/crew/dispatch.py, reckon/crew/obligation_snapshot.py, tests/test_a_queued_request_waits_on_its_dependencies.py and the node's evidence fragment, every one inside the declared or repair-extended scope.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_queued_request_waits_on_its_dependencies.py:283 fails on removing the two hold_request_for_upstream calls (neg-wiring.log: 1 failed, 4 passed, EXIT=1), but the same file's ordering arms still pass without that wiring and no arm exercises a free-lane dispatch.\nSCORE fit: 17\nJUSTIFICATION fit: the two phases sit beside QUEUED_PHASE at reckon/crew/queue_admission.py:47-58 as plan section 2 requires and no name carries a plan, ticket or version label, though advance_waiting_requests at :1284 accepts a now argument its body never reads.\nSCORE reuse: 18\nJUSTIFICATION reuse: readiness is read through roadmap's own derivation at reckon/crew/queue_admission.py:1238 and the section ref through reckon/_schema.py:276 parse_plan_ref at :1109, so the round-one duplication is gone; _plan_html at :1335 re-reads a plan document that reckon/roadmap.py:478 reads memoized.\nFINDING reckon/crew/dispatch.py:1671 non-blocking: the upstream hold is written only inside the local-lane-held branches (is_local at :1652 and :1723), so a node whose section waits are unmet and whose lane has room launches immediately against sections that have not been built, and no arm covers that path because both new dispatch arms pin session_slots=0 at tests/test_a_queued_request_waits_on_its_dependencies.py:283 and :301; whether the free-lane case belongs to plan section 2's \"a queued request\" or to the node goal's \"a dispatched node\" is a reading the coordinator should settle.\nFINDING reckon/crew/queue_admission.py:1347 non-blocking: queue_requests is the batch producer plan section 2's \"queue a whole width in one call\" needs and no production module calls it \u2014 grep at the reviewed head finds it only in the new test module \u2014 so that half stays inert until section 5's crew queue verbs land, and plan section 2's other two wait kinds (a gate, another queued request named by id) are implemented nowhere.\nFINDING reckon/crew/queue_admission.py:1284 non-blocking: advance_waiting_requests accepts a now argument its body never reads and admit_once passes now=moment at :1594, so the parameter advertises a time-dependence the pass does not have.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T112727139233-a-queued-request-waits-on-its-dependencies/manifest.md:15 non-blocking: the tests line still carries an unsubstituted placeholder for the gate command, and gate-main.log's own command header repeats the placeholder with the targets on a separate line, so promotion's gate receipt cannot be re-run from either field.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T112727139233-a-queued-request-waits-on-its-dependencies/gate-base.log:1 non-blocking: the base arm's node-test arm fails four of five on AttributeError (no attribute queue_requests) rather than on the ordering the done_when claims, and the added ordering probe prints launched: 0 in both trees, so it observes the stored phases rather than a base launch.",
+  "review_run_id": "r-20261023T134325572419-review-of-a-queued-request-waits-on-its-dependencies-529874ebd7f0",
+  "reviewed_base_sha": "43677d0d2697ae3d8841b6d19addcdb77cc572be",
+  "reviewed_head_sha": "529874ebd7f039af96b6658d2f0dfc08cabdabe6",
+  "reviewed_run_id": "r-20261023T112727139233-a-queued-request-waits-on-its-dependencies",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 14,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T14:20:10+00:00",
+  "total": 98
+}
