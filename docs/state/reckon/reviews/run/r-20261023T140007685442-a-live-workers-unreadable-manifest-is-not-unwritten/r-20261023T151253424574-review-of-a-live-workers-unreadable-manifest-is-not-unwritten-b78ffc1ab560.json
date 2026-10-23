@@ -1,0 +1,46 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_a_producer_sweeps_only_on_change.py::test_quiet_cycles_list_nothing_and_spawn_no_git"
+  ],
+  "completed_at": "2026-10-23T15:37:56.839Z",
+  "dispatched_at": "2026-10-23T15:14:19Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_liveness.py",
+      "line": "162",
+      "severity": "non-blocking",
+      "text": "the predicate docstring says it answers false for a body carrying a status the reader recognises, but the implementation at line 168 answers false only for TERMINAL_MANIFEST_STATUSES, so a recognised non-terminal status and the unsubstituted status template both answer true; the template case is reachable because manifest_status_is_template sets manifest_unwritten at reckon/crew/recovery_classification.py:331."
+    },
+    {
+      "file": "tests/test_a_producer_sweeps_only_on_change.py",
+      "line": "203",
+      "severity": "non-blocking",
+      "text": "the run's own 69-test cohort keeps this positive control failing at head and passing at base (subset-head.log 13 failed vs subset-base.log 12 failed, reproduced 3/3 at each arm), so the done_when item that the tests covering recovery_classification and recovery_liveness add no failures against the base is unmet on that evidence; the reviewer re-ran the test alone at head and it passed (1 passed in 4.90s), so it reads as a cohort-ordering interaction rather than a defect this node change introduces."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T140007685442-a-live-workers-unreadable-manifest-is-not-unwritten/manifest.md",
+      "line": "14",
+      "severity": "non-blocking",
+      "text": "the done_when requires that ruff check and ruff format --check add no findings on the staged paths, and the run records no ruff run at all - no log on disk and no manifest line - so that item of the done_when is asserted rather than measured."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a live worker's unreadable in-progress manifest is not drawn halted; reckon/crew/recovery_liveness.py:152 adds _manifest_carries_no_verdict_yet, which now reads a refused body of a live worker as a missing verdict, and reckon/crew/recovery_classification.py:847 names the parse error on the live-unwritten detail, so a worker holding a ;-joined list field or a non-vocabulary status keeps classification running instead of unwritten.\nVERDICT done_when: the done_when names one new test file whose three fixtures read pane word working, whose (a)/(b) detail names the parse error, whose process-gone arms still read halted, and whose negative control is logged; tests/test_a_live_workers_unreadable_manifest_is_working.py builds a ;-joined body, a non-vocabulary status and an accepted checkpoint body, gate-head.log records 5 passed at b78ffc1ab, gate-base.log records the negative control (2 failed: loose-list-field, non-vocabulary-status) and negative-control.log reproduces the reverted mutation; the done_when's ruff item is recorded nowhere.\nVERDICT write_paths: the manifest's orientation_write_paths name reckon/crew/recovery_classification.py, reckon/crew/recovery_liveness.py, tests/test_a_live_workers_unreadable_manifest_is_working.py, the evidence fragment and the figures directory; git diff 7a26aba58fbbd23ffa08d8c6d520ac8ce618bb27..b78ffc1ab5604f8750d7bb417d83304913cd9168 touches four files and every one of them is inside that set.\nVERDICT manifest: read; status complete, tests: is a literal re-runnable pytest command over the new test file, test_logs names gate-head.log and gate-base.log with their EXIT lines, negative_control_log is a bare path; baseline_suite and after_suite are null, so the run's 69-test cohort comparison lives only in subset-base.log and subset-head.log, which are named in follow_ons and not linked under test_logs.\nVERDICT diff: read commit by commit against 7a26aba58fbbd23ffa08d8c6d520ac8ce618bb27; c4a21a4d4 splits the manifest_error arm from the not-manifest_present arm in reckon/crew/recovery_classification.py:847 and names the parse error on the detail, and adds _manifest_carries_no_verdict_yet at reckon/crew/recovery_liveness.py:152 and swaps it in at line 208; b78ffc1ab adds the evidence fragment; 4 files, +294/-13, all inside the declared scope.\nCALL_SITES: reckon/crew/recovery_classification.py:1498, reckon/crew/recovery_watch.py:2974, reckon/crew/ticker.py:1178\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_liveness.py:152 now reads a refused live body as a missing verdict and reckon/crew/recovery_classification.py:847 keeps the parse error on the detail, which is the section-2 behaviour.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate-head.log records 5 passed at b78ffc1ab and gate-base.log records the FF... negative control at 7a26aba58, but the done_when's ruff item is not recorded and the run's own suite comparison is left in subset-head.log and subset-base.log rather than in a baseline_suite/after_suite block.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff 7a26aba58..b78ffc1ab changes four files, all inside the manifest's declared write paths, with no test outside the new file and no source beyond the two named modules.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_live_workers_unreadable_manifest_is_working.py reddens on the reinstated regression (gate-base.log and negative-control.log both show FF... at the base revision), and its detail assertion derives its expected text from reports.parse_manifest rather than from the classifier it judges.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/recovery_liveness.py:152 follows the shape of the neighbouring predicates and introduces no name the naming rules forbid, though its docstring at line 162 misstates the implementation at line 168.\nSCORE reuse: 19\nJUSTIFICATION reuse: _manifest_carries_no_verdict_yet at reckon/crew/recovery_liveness.py:168 extends the existing _carries_orientation_write predicate at line 132, and the search over reckon/crew found no other owner of the no-verdict-yet reading.\nFINDING reckon/crew/recovery_liveness.py:162 non-blocking: the predicate docstring says it answers false for a body carrying a status the reader recognises, but the implementation at line 168 answers false only for TERMINAL_MANIFEST_STATUSES, so a recognised non-terminal status and the unsubstituted status template both answer true; the template case is reachable because manifest_status_is_template sets manifest_unwritten at reckon/crew/recovery_classification.py:331.\nFINDING tests/test_a_producer_sweeps_only_on_change.py:203 non-blocking: the run's own 69-test cohort keeps this positive control failing at head and passing at base (subset-head.log 13 failed vs subset-base.log 12 failed, reproduced 3/3 at each arm), so the done_when item that the tests covering recovery_classification and recovery_liveness add no failures against the base is unmet on that evidence, though tests/test_a_producer_sweeps_only_on_change.py::test_quiet_cycles_list_nothing_and_spawn_no_git passes alone at head.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T140007685442-a-live-workers-unreadable-manifest-is-not-unwritten/manifest.md:14 non-blocking: the done_when requires that ruff check and ruff format --check add no findings on the staged paths, and the run records no ruff run at all - no log on disk and no manifest line - so that item of the done_when is asserted rather than measured.\n",
+  "review_run_id": "r-20261023T151253424574-review-of-a-live-workers-unreadable-manifest-is-not-unwritten-b78ffc1ab560",
+  "reviewed_base_sha": "7a26aba58fbbd23ffa08d8c6d520ac8ce618bb27",
+  "reviewed_head_sha": "b78ffc1ab5604f8750d7bb417d83304913cd9168",
+  "reviewed_run_id": "r-20261023T140007685442-a-live-workers-unreadable-manifest-is-not-unwritten",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T15:38:00.099296+00:00",
+  "total": 106
+}
