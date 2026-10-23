@@ -1,0 +1,81 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured from the reviewed run's own armed gate logs: logs/base-arm.log at 7cb177e8a records the failure id tests/test_overlapping_queued_requests_launch_in_turn.py::test_a_new_dispatch_over_a_queued_claim_queues_then_launches (1 failed / 86 passed) and logs/head-arm-round2b.log at 21bcebf83 records that same single id (1 failed / 92 passed), so the delta adds no failure and the head is six tests greener at the same red.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1381-1414",
+    "reckon/crew/dispatch.py:2606",
+    "reckon/crew/dispatch_claims.py:1775",
+    "reckon/crew/dispatch_claims.py:1972",
+    "reckon/crew/dispatch_plan.py:1059"
+  ],
+  "commits_read": [
+    "f0c2808fd",
+    "50414da3f",
+    "2223e8eef",
+    "21bcebf83",
+    "0d444465d"
+  ],
+  "completed_at": "2026-10-23T16:37:47.441Z",
+  "dispatched_at": "2026-10-23T16:09:14Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "1385",
+      "severity": "non-blocking",
+      "text": "the delta depends on a write grant the durable record does not carry. The run's recorded node.write_paths (read from its live pointer) and section 54's own list both name reckon/crew/dispatch_claims.py, reckon/crew/node.py, the test file and the fragment, and neither names reckon/crew/dispatch.py, which two of these five commits change. The grant lives only in the repair round's brief and in the manifest's scope_exception prose, so a later reader comparing the landed diff against the plan's declared write paths still sees a mismatch and crew check keeps reporting changed-paths-outside-the-write-scope until the record is widened. The work itself is the repair the earlier review asked for."
+    },
+    {
+      "file": "reckon/crew/dispatch_claims.py",
+      "line": "274",
+      "severity": "non-blocking",
+      "text": "_pointer_can_meet re-implements the derivation-project choice that _scope_derivation_project (reckon/crew/dispatch_claims.py:180) owns: the project / preferred / mounted-first selection is keyed on the raw candidate repository root, where the owner keys on repository_identity(repository) through the identity cache. The comment at :276-284 names avoiding the probe as the reason, so the divergence is deliberate, but two lookups of one choice can drift, and a disagreement changes which derivation map expands the pointer's declared paths, which decides whether the pre-filter passes a claim over. The expansion itself still delegates to _expanded_scope_paths, so this is a partial duplication rather than a fork of the capability."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit over 0be6a3dc0..0d444465d: f0c2808fd wires the dispatch's own scope into its claim read and adds the dispatch-path test; 50414da3f and 0d444465d record the narrowed traffic and the measured probe bound in the fragment; 2223e8eef adds _pointer_can_meet and the resolve_checkout parameter and repairs the two assertions the earlier review flagged; 21bcebf83 formats the fixture. Four paths in total, 237 insertions against 45 deletions.",
+    "done_when": "the done_when names tests/test_a_dispatch_asks_git_only_about_claims_that_could_meet_its_own.py with tests/test_crew_cross_project_claims.py, tests/test_shared_claims_on_declared_hot_files.py, tests/test_standby_promotion_claims_leases.py and every test file importing reckon.crew.dispatch_claims, judged by delta, with each log naming its revision and the literal command and closing on EXIT=, and ruff not exceeding base; the manifest's single gate command runs eleven files covering all three named files and all eight importers, logs/base-arm.log and logs/head-arm-round2b.log both satisfy the log contract, and logs/ruff-base.log (11 findings) against logs/ruff-head.log (10 findings) shows the staged paths add none.",
+    "goal": "the node's goal is to run the claim read's git checks only for claims that could overlap the dispatch's paths; reckon/crew/dispatch.py:1381-1414 derives candidate_paths and candidate_repositories from the node's own resolved scope and passes them to _repository_scope_claims, and reckon/crew/dispatch_claims.py:440-455 returns a claim unread without a disposition or a rev-parse whenever reckon/crew/dispatch_claims.py:255 _pointer_can_meet finds no declared path that can meet a candidate.",
+    "manifest": "read; it states status complete, the five commits with their changed paths, both suite arms with revisions and failure ids, the declared negative control and the repair round's own control with their logs, the deliberately unapplied _WORKTREE_REPOSITORY_FIELDS reorder, the artifacts, the follow_ons and the scope_exception.",
+    "write_paths": "read from the run's live pointer: the recorded node.write_paths are reckon/crew/dispatch_claims.py, reckon/crew/node.py, the node's own test file, the evidence fragment and a figures topic; section 54's list is the same less the figures path. The delta's four changed paths are inside that set except reckon/crew/dispatch.py, which the manifest's scope_exception says the repair round's brief granted."
+  },
+  "justifications": {
+    "durability": "the dispatch-path assertion at tests/test_a_dispatch_asks_git_only_about_claims_that_could_meet_its_own.py:395 reads the bound from crew.dispatch itself, so reverting the wiring reddens it (the manifest's repair control records 42 disposition calls over the twenty-one pointers against 2 at head), and the unjudged check at :432 reddens under the read's own mutation (logs/mutation-scopes-view.log, EXIT=1).",
+    "evidence": "logs/base-arm.log (revision 7cb177e8a, 1 failed / 86 passed, EXIT=1) against logs/head-arm-round2b.log (21bcebf83, 1 failed / 92 passed, EXIT=1) carry the same single failure id, and the manifest's gate command covers all eight test files that import reckon.crew.dispatch_claims plus the three the done_when names.",
+    "fit": "the added helpers sit beside _pointer_scope_entries at reckon/crew/dispatch_claims.py:308 in the module's existing style, and neither the symbols nor the comments carry a plan, stage or ticket identifier.",
+    "goal_fidelity": "reckon/crew/dispatch.py:1381-1414 builds the candidate paths and repositories from the node's own resolved scope and hands both to the read, and reckon/crew/dispatch_claims.py:255-305 rejects a pointer with no git at all, so the production call site the earlier review found unwired now narrows.",
+    "reuse": "reckon/crew/dispatch_claims.py:274 inlines the derivation-project choice that _scope_derivation_project (reckon/crew/dispatch_claims.py:180) owns, keyed on the raw candidate root rather than the probed identity, while the expansion itself delegates to _expanded_scope_paths; every other added definition extracts existing inline code from its own owner.",
+    "scope_discipline": "reckon/crew/dispatch.py:1385 is outside both the run's recorded node.write_paths and section 54's own list, and the manifest discloses it under scope_exception rather than in the recorded scope."
+  },
+  "notes": "Independent review of the five commits the run gained since the earlier review at head 0be6a3dc0628 (base for this record 0be6a3dc0, head 0d444465d). The earlier review's blocking finding was at reckon/crew/dispatch.py:1378 - the production dispatch passed no candidate paths, so the read narrowed only for a caller that did not exist. f0c2808fd answers it by deriving the node's own scope and handing it over; the pre-filter uses the same repository-and-containment test the refusal applies over the same _candidate_scope_entries set, so a claim the pre-filter drops is one the refusal could not refuse through either. The earlier review's two non-blocking findings are repaired: the twenty disjoint claims now each name their own checkout so the three replacement assertions measure a bound a flat fixture could not produce, and the un-failable binding-or-reason assertion is replaced by a direct unjudged check plus a reason check, each of which the archived mutation reddens (logs/mutation-scopes-view.log EXIT=1, restored EXIT=0). Logs read: base-arm.log, head-arm-round2b.log, ruff-base.log, ruff-head.log, negative-control.log, mutation-scopes-view.log, mutation-scopes-view-restored.log. No figure was produced and section 54 names none.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to run the claim read's git checks only for claims that could overlap the dispatch's paths, and reckon/crew/dispatch.py:1381-1414 now hands the read the node's own resolved scope while reckon/crew/dispatch_claims.py:255-305 rejects a pointer without spending a disposition or a rev-parse.\nVERDICT done_when: the done_when names tests/test_a_dispatch_asks_git_only_about_claims_that_could_meet_its_own.py with the three named files and every test file importing reckon.crew.dispatch_claims, judged by delta with each log naming its revision and the literal command, and the manifest's gate command covers all eight importers; logs/base-arm.log (7cb177e8a, 1 failed / 86 passed) against logs/head-arm-round2b.log (21bcebf83, 1 failed / 92 passed) carry the same single failure id, and logs/ruff-head.log adds no finding over logs/ruff-base.log.\nVERDICT write_paths: the run's recorded write_paths are reckon/crew/dispatch_claims.py, reckon/crew/node.py, the test file, the evidence fragment and a figures topic, which section 54 repeats less the figures path; the delta's four paths are inside it except reckon/crew/dispatch.py, recorded in the manifest under scope_exception.\nVERDICT manifest: read; it states status complete, the five commits, both suite arms with their failure ids, both negative controls with their logs, the deliberately unapplied field-order reorder, artifacts, follow_ons and the scope_exception.\nVERDICT diff: read commit by commit: f0c2808fd wires the dispatch's own scope into its claim read and adds the dispatch-path test, 50414da3f and 0d444465d are the fragment's evidence, 2223e8eef adds _pointer_can_meet and resolve_checkout and repairs the two flagged assertions, 21bcebf83 formats the fixture; four paths, 237 insertions against 45 deletions.\nCALL_SITES: reckon/crew/dispatch.py:1381-1414, reckon/crew/dispatch.py:2606, reckon/crew/dispatch_claims.py:1775, reckon/crew/dispatch_claims.py:1972, reckon/crew/dispatch_plan.py:1059\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:1381-1414 passes candidate_paths and candidate_repositories from _candidate_scope_entries, so the production dispatch narrows where the earlier review found it did not.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/base-arm.log and logs/head-arm-round2b.log each name their revision and literal command and end on EXIT=1 with one shared failure id.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: reckon/crew/dispatch.py:1385 is outside the run's recorded node.write_paths and section 54's list, and is disclosed only as a manifest scope_exception.\nSCORE durability: 18\nJUSTIFICATION durability: the dispatch-path assertion at tests/test_a_dispatch_asks_git_only_about_claims_that_could_meet_its_own.py:395 asserts the bound from crew.dispatch itself, and reverting the wiring spends 42 disposition calls against 2.\nSCORE fit: 17\nJUSTIFICATION fit: the added helpers sit beside _pointer_scope_entries at reckon/crew/dispatch_claims.py:308 in the module's existing style and carry no plan label.\nSCORE reuse: 14\nJUSTIFICATION reuse: reckon/crew/dispatch_claims.py:274 inlines the derivation-project choice owned by _scope_derivation_project at reckon/crew/dispatch_claims.py:180.\nFINDING reckon/crew/dispatch.py:1385 non-blocking: the delta changes a path outside both the recorded write scope and section 54's own list, and the grant lives only in the repair round's brief and the manifest's prose.\nFINDING reckon/crew/dispatch_claims.py:274 non-blocking: _pointer_can_meet re-implements the derivation-project choice _scope_derivation_project owns, keyed on a different lookup, so the two can drift.\n",
+  "review_run_id": "r-20261023T153636474357-review-of-a-dispatch-asks-git-only-about-claims-that-could-meet-its-own-0d444465db1b",
+  "reviewed_base_sha": "0be6a3dc0628bdffb98e327d50470b08c83fdea3",
+  "reviewed_head_sha": "0d444465db1b92356d34bbb3fea28ca1ea3288be",
+  "reviewed_run_id": "r-20261023T120032911615-a-dispatch-asks-git-only-about-claims-that-could-meet-its-own",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/d768318d-3e86-4094-bdc7-3ed5964852ba/a-dispatch-asks-git-only-about-claims-that-could-meet-its-own",
+  "reviewer_node": "review-of-a-dispatch-asks-git-only-about-claims-that-could-meet-its-own-0d444465db1b",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T16:55:00+00:00",
+  "total": 102,
+  "verdict": "no blocking finding in this delta",
+  "verified_independently": [
+    "reviewed_head_sha 0d444465db1b92356d34bbb3fea28ca1ea3288be is the reviewed worktree's HEAD; its subject is 'docs(evidence): state the claim read's measured probe bound'.",
+    "reviewed_base_sha 0be6a3dc0628bdffb98e327d50470b08c83fdea3 is the head recorded by the earlier review; git log 0be6a3dc0..0d444465d lists exactly the five commits read here, and git rev-parse resolved all three revisions in the reviewed worktree.",
+    "git diff --stat 0be6a3dc0 0d444465d names four paths: the fragment, reckon/crew/dispatch.py, reckon/crew/dispatch_claims.py and the node's test file.",
+    "grep -rln dispatch_claims over tests/ lists eight test files, and the manifest's gate command names all eight plus the three the done_when names; the base arm runs the same cohort less the node's own file.",
+    "logs/base-arm.log and logs/head-arm-round2b.log each open with a '# revision:' line and their command, and each ends in a bare EXIT=1 line; both name the same single failing pytest node id.",
+    "logs/ruff-base.log shows 11 findings and logs/ruff-head.log shows 10 on the same four staged paths, so the staged paths add none."
+  ]
+}
