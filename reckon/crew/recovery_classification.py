@@ -103,6 +103,27 @@ def _manifest_is_the_predecessor_attempts_report(
 _QUOTED_COMMAND = re.compile(r"`(reckon [a-z][^`]*)`")
 _QUOTED_REVIEW_COMMAND = re.compile(r"`(reckon crew review[^`]*)`")
 
+# The exception class the admission pass stamps at the head of a stored
+# failure, ``<ClassName>: <text>``. The name says whose refusal the record
+# holds, which the text cannot: a refusal quotes the commands that clear it,
+# and a quoted command may carry the dispatching session's own id as one of its
+# arguments without the session being the subject of the refusal.
+_STAMPED_REFUSAL_CLASS = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*): ")
+
+# Refusals whose subject is the dispatching session. A follower condition is
+# stamped as the private subclass beside its public base, and either spelling
+# answers with the command that arms the follower.
+_SESSION_SUBJECT_REFUSALS = frozenset({"_FollowerAdmissionUnmet", "WatcherRequired"})
+
+# A refusal that names finished runs the coordinator must settle before more
+# work is admitted. No amount of arming a follower clears it.
+_UNRECONCILED_RUNS_REFUSAL = "UnreconciledRuns"
+
+# One run's line inside that refusal, as ``node.UnreconciledRuns`` renders each
+# of them: ``- <run_id>: <next action>``. The action is that run's own remedy,
+# read from the refusal rather than composed again here.
+_UNRECONCILED_RUN_LINE = re.compile(r"^-\s+(\S+):\s+(.+)$", re.MULTILINE)
+
 
 def _remedy_command_stated_by(text: str) -> str | None:
     """The command a refusal quotes as the one that clears it, if it quotes one.
@@ -121,6 +142,40 @@ def _remedy_command_stated_by(text: str) -> str | None:
     return None
 
 
+def _stamped_refusal_class(text: str) -> str | None:
+    """The class name the admission pass stamped at the head of a failure."""
+    stamped = _STAMPED_REFUSAL_CLASS.match(text)
+    return stamped.group(1) if stamped else None
+
+
+def _unreconciled_runs_remedy(text: str) -> dict[str, str] | None:
+    """The remedy an ``UnreconciledRuns`` refusal states, read from its lines.
+
+    The refusal names each finished run beside the action that settles it, and
+    the first named run's action is the one to publish: the coordinator must
+    reconcile the runs before the pass admits the queued request, and that
+    reconciliation is what the refusal itself asks for. The denial's other
+    route — passing ``--allow-unreconciled-runs`` — is only reachable when a
+    dispatch is made, so a request that is already queued can take it only by
+    being discarded and dispatched again, and the detail says so.
+    """
+    named = _UNRECONCILED_RUN_LINE.search(text)
+    if named is None:
+        return None
+    run_id, action = named.group(1), named.group(2).strip()
+    return {
+        "detail": (
+            f"the queued launch was refused because the project holds finished "
+            f"runs whose reviews are still owed, and {run_id} is the first the "
+            f"refusal names: {text} A queued run cannot take "
+            "--allow-unreconciled-runs after it is queued, so the alternative "
+            "is to discard the queued run and dispatch again with "
+            "--allow-unreconciled-runs"
+        ),
+        "next_command": action,
+    }
+
+
 def _queued_failure_remedy(record: Mapping[str, Any]) -> dict[str, str] | None:
     """The remedy for a queued request the session itself must unblock.
 
@@ -134,12 +189,18 @@ def _queued_failure_remedy(record: Mapping[str, Any]) -> dict[str, str] | None:
 
     A lane hold is told apart by its own message: it is the lane speaking and
     is left to the waiting reading. Any other refusal is surfaced, and the
-    remedy is the one the failure itself states. A refusal that names the
-    session is a condition of that session and keeps the follower the session
-    arms; a refusal that names no session but quotes the command which clears
-    it — the ``reckon crew review`` a plan-review gate names — publishes that
-    command. A refusal that does neither has no remedy to publish and keeps
-    the waiting reading rather than raising a duty with no command behind it.
+    remedy is the one the refusal itself states. Whose refusal it is comes from
+    the exception class the admission pass stamps at the head of the stored
+    failure, never from a search of its whole text — a refusal quotes the
+    commands that clear it, and a quoted command can carry this session's id
+    without the session being its subject. A follower condition keeps the
+    follower the session arms. An ``UnreconciledRuns`` refusal names finished
+    runs waiting on reconciliation and publishes the first run's own action,
+    the review dispatch the refusal names for it. A refusal that is neither,
+    but quotes the command which clears it — the ``reckon crew review`` a
+    plan-review gate names — publishes that command. A refusal with no remedy
+    to read keeps the waiting reading rather than raising a duty with no
+    command behind it.
 
     The command is the one the rest of the crew arms a session with, taken from
     the helper that owns it rather than spelled again here: a reader who runs
@@ -155,8 +216,22 @@ def _queued_failure_remedy(record: Mapping[str, Any]) -> dict[str, str] | None:
     if _is_lane_hold(failure):
         return None
     text = _failure_text(failure)
+    refusal_class = _stamped_refusal_class(text)
+    if refusal_class == _UNRECONCILED_RUNS_REFUSAL:
+        remedy = _unreconciled_runs_remedy(text)
+        if remedy is not None:
+            return remedy
     session = str(record.get("session") or "").strip()
-    if session and session in text:
+    # The class decides whose refusal this is. The text alone cannot: a
+    # refusal quotes the commands that clear it, and one of those commands can
+    # carry this session's id as an argument while the refusal is about
+    # something else entirely. An unstamped failure predates the stamp and has
+    # no class to read, so it keeps the text search it had. "WatcherRequired"
+    # is the public base of the follower condition, and an unstamped failure
+    # raising under that name is the same condition.
+    if refusal_class in _SESSION_SUBJECT_REFUSALS or (
+        refusal_class is None and session and session in text
+    ):
         project = str(record.get("project") or "").strip()
         # The plain follower name is what the record falls back to when no
         # attach line was written, and it is also all a process with no
