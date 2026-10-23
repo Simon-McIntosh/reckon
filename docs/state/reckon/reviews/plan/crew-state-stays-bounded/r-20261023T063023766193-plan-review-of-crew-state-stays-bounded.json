@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T06:46:28.706Z",
+  "dispatched_at": "2026-10-23T06:31:56Z",
+  "findings": [
+    {
+      "anchor": "plan.html:22",
+      "id": "wiring-1",
+      "reason": "with the intra-plan edge absent the roadmap reads \u00a77 as independent, so a coordinator may dispatch the hourly timer before \u00a73's sweep predicate exists, which is the ordering the plan itself relies on.",
+      "text": "\u00a77's mechanism runs the \u00a73 sweep (plan.html:142) and the plan's followup states \"\u00a73 lands before \u00a77, which calls it\" (plan.html:165), but `plan-section-depends-on` (plan.html:22) records only s4 and s5, and encodes no s7 \u2192 s3 edge",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:105",
+      "id": "done_when-1",
+      "reason": "read literally the gate directs an irreversible removal against the live crew home's event logs, which \u00a71 treats as another plan's one-off reclaim, instead of against a fixture whose removal can be re-run.",
+      "text": "\u00a74's done-when requires \"the real run removes exactly that list, and `crew/watch/` holds under 1 MB afterwards\" without scoping that run to a temporary crew home, where \u00a73 and \u00a77 both scope theirs",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:131",
+      "id": "reasoning-1",
+      "reason": "if the removal binds to an attempt's exit rather than the run's terminal exit it deletes `codex-home/cache/` and `codex-home/plugins/` out from under an attempt that is still running, which is the case the sentence claims cannot happen, so the node needs the caller pinned or a guard on the run's live state.",
+      "text": "\u00a76 asserts \"The removal runs where the exit is recorded, so a run that is still working is never touched\", but that site is not named and a run directory carries one exit record per attempt (an observed run directory holds `attempt-1-exit.json` beside `attempt-2-worker.json` and `attempt-2.claim`)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f587c38f963ca131f323410c2d04b620abfc9cf4bb59e34e6e2c0a4d7851fa50",
+  "plan_slug": "crew-state-stays-bounded",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T063023766193-plan-review-of-crew-state-stays-bounded",
+  "reviewed_blob_sha": "5c9def558e363c4777ca2e8202f79d8c2f176224",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `retention_days` in `reckon/crew/gc.py`, `reckon/crew/runs.py`, `RUN_HOME_SESSIONS` in `reckon/crew/rollout.py`, `_record_lease_node` and `_prune_must_keep` in `checkout_trust`, `mounts.json`, `reckon-paid-lanes.timer`, the monitor plan's \u00a77 and \u00a712, and the three linked docs all resolve.",
+    "done_when": "a finding \u2014 \u00a74's done-when (plan.html:105) measures a destructive sweep of the live `crew/watch/` tree and scopes no temporary crew home, unlike \u00a73 (plan.html:92) and \u00a77 (plan.html:149).",
+    "evidence_paths": "pass \u2014 the sweep's own log is placed under the crew home and rotates by size, and every gate measures in a temporary crew home or a temporary runtime root rather than a session scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 the prose carries only section references belonging to live plans, and no plan label, stage name, ticket number or version tag reaches a symbol, filename, comment or docstring.",
+    "reasoning": "a finding \u2014 \u00a76's claim that \"a run that is still working is never touched\" rests on an unnamed exit-recording site, while a run directory holds one exit record per attempt.",
+    "single_goal": "pass \u2014 each of \u00a72\u2013\u00a77 names one deliverable: pointer slimming, the retention predicate, event-log retirement, reload-cache relocation, harness-cache removal at exit, and the hourly cross-project sweep.",
+    "wiring": "a finding \u2014 `plan-section-depends-on` (plan.html:22) declares only s4 and s5 and omits the s7 \u2192 s3 edge the plan's own \u00a77 and followup f-cssb-002 both depend on."
+  },
+  "section_digests": {
+    "_document": "612e1478ab72d416411926cbb3ef84a93116133be176b322e61e8c1d0dd1f3a0",
+    "s1": "61be6bb6df8b986fbb68c3273e136fcef1b9fa13e7bcadb4fb62eab2fa4145ff",
+    "s2": "9201fe37417310883d221ec7b0b5b4ff7de29f66ab073ede465175d42aa91bc4",
+    "s3": "9aa4d5f5a6287b698b7d6011ac8fcc295589c20484d8892a3c86d88d629b8793",
+    "s4": "98e2195bd72b16a677414e275ff4a9d44a5beb318a5acb68f1dbb3ae883c1fbc",
+    "s5": "bba37241ec93e13e0fb1eb173abfd49db0b6e77d788aa2dbec1608d164852542",
+    "s6": "ce3cb69b982cf9e12735a5cbef1bd5e77754581eb7ad4d52b0a85d03f331a168",
+    "s7": "1f6a99e4b8834c4a8bea5559a1507e6da85988f873d5547c7804930237104694"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T06:49:40.543130+00:00"
+}
