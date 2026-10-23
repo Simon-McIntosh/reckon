@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>The Portfolio Reads True | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="54">
-<meta name="plan-modified" content="2026-10-13">
+<meta name="plan-version" content="55">
+<meta name="plan-modified" content="2026-10-23">
 </head>
 <body>
   <main class="plan-doc">
@@ -160,6 +160,10 @@
 <p><strong>Deliverable.</strong> A gate whose <code>gated_sections</code> is non-empty holds those sections only. A gate that names no sections holds the whole plan, as it does today. A plan that declares no implementable section outside the sections its unpassed gates name is held by those gates, and that includes a plan with no section declarations at all. A gate holds only its sections when the plan declares at least one implementable section that no unpassed gate names. This keeps <code>tests/test_roadmap.py::test_gate_verdict_blocks_and_releases_downstream_sections_without_status_edit</code> true as written: its plan gates <code>deployment</code> and <code>release</code>, declares no sections, and reads <code>blocked</code>. One function beside <code>execution_gates</code> in <code>reckon/roadmap.py</code> splits a plan's unpassed execution gates into the ones that hold the plan and the ones that hold only some of its sections. All three readers that today pass <code>unpassed_gate_blockers(execution_gates(plan))</code> into <code>effective_status</code> call it instead: the roadmap's readiness pass, the served plan composition in <code>reckon/serve.py</code> (which the plan page and fleet index read), and the MCP plan view in <code>reckon/mcp_views.py</code>. Only plan-holding gates enter <code>gate_blockers</code> and the blocker list <code>effective_status</code> reads. Section-holding gates are reported in a separate field on the same row, each with the sections it holds. Nothing retires, because no reader scopes a gate to its sections today.</p>
 <p><strong>Done when</strong> <code>tests/test_a_section_gate_holds_its_sections.py</code> builds a temporary project with three plans. Plan <code>p</code> has an ungated implementable <code>s1</code> and an implementable <code>s2</code> held by an unpassed gate naming <code>s2</code>. Plan <code>q</code>'s only implementable section is held by such a gate. Plan <code>r</code> holds an unpassed gate naming no section. Plan <code>t</code> holds an unpassed gate naming <code>s2</code> and declares no sections. The test asserts that <code>p</code> reads an <code>effective_status</code> other than <code>blocked</code> on the roadmap row, the served plan and the MCP plan view, that it is listed in <code>ready_now</code>, and that its gate appears in the section-hold field against <code>s2</code> and not in <code>gate_blockers</code>. It asserts that <code>q</code>, <code>r</code> and <code>t</code> read <code>blocked</code> on all three, each with its gate in <code>gate_blockers</code>, and that <code>tests/test_roadmap.py::test_gate_verdict_blocks_and_releases_downstream_sections_without_status_edit</code> passes unchanged. The tests importing <code>reckon/roadmap.py</code>, <code>reckon/serve.py</code> or <code>reckon/mcp_views.py</code> show no added failure against base, their list built from the head tree. The negative control is executed and logged: with the shared function returning every unpassed gate as plan-holding, <code>p</code> reads <code>blocked</code> and the test fails. Write paths: <code>reckon/roadmap.py</code>, <code>reckon/serve.py</code>, <code>reckon/mcp_views.py</code>, <code>tests/test_a_section_gate_holds_its_sections.py</code>. This section runs after §5, which also writes <code>reckon/roadmap.py</code>.</p>
 
+    <h2 id="s8">§8 — A sprint move writes the plan&#x27;s sprint</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> Measured on power_convertor on 2026-10-23: six plans moved between sprints with the sprint resource's <code>move</code> op kept their old <code>plan-sprint</code> until six separate <code>set sprint</code> writes were made. §4's audit reports that disagreement afterwards; the write that caused it reported success.</p><p><strong>Change.</strong> <code>_apply_move</code> in <code>reckon/_store.py</code> writes the moved plan's <code>plan-sprint</code> through the plan's own store write in the same call as the two sprint resources. If the plan write is refused, the sprints are left unchanged and the refusal names the plan.</p><p>Done when: a test moves a plan between two sprints of a temporary project and reads the plan's <code>sprint</code> as the destination, the source sprint no longer listing it and the destination listing it; a move whose plan write is refused leaves both sprints and the plan unchanged; and §4's audit reports no mismatch after a move. Negative control: a move that writes only the sprints must fail the first test.</p>
+
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
 <div class="r-gate" data-id="g-tprt-portfolio-mode" data-section="s6" data-gated-sections="s6" data-status="closed" data-verdict="passed">
@@ -203,6 +207,11 @@
     <h4 class="r-fu-title">Run the first portfolio review (§6)</h4>
     <div class="r-fu-body"><p>All three gates on §6 have passed. Compose <code>reckon crew review --project reckon --portfolio</code> and apply its dispositions through reckon-edit and reckon-sprint. A plan another live session is building is proposed, not changed. Closing a plan whose sections are all done is mechanical; merging and retiring plans changes what other sessions read, so put those dispositions to the lead before they are applied.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-portfolio-reads-true §6</pre>
+    </article>
+<article class="r-fu" data-id="f-tprt-008" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-edit" data-written-at="2026-10-23 09:00" data-recommends-skill="/reckon-build the-portfolio-reads-true §8" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A sprint move writes the plan&#x27;s sprint</h4>
+    <div class="r-fu-body"><p>Measured in a power_convertor portfolio review on 2026-10-23 and passed on by its coordinator. A content review of this section is owed before dispatch.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-portfolio-reads-true §8</pre>
     </article>
 </section>
   

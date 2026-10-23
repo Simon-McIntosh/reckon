@@ -21,13 +21,13 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="reckon-reads-answer-in-seconds">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;implementable&quot;}">
   <title>An MCP Failure Names Its Cause | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.75">
-<meta name="plan-version" content="98">
-<meta name="plan-modified" content="2026-10-15">
+<meta name="plan-version" content="99">
+<meta name="plan-modified" content="2026-10-23">
 <meta name="plan-commits" content="cff2bbed,e52b056f,abb84ca7,7057e247">
 </head>
 <body>
@@ -205,6 +205,10 @@
 <p><strong>Deliverable.</strong> A write's <code>landed</code> is <code>False</code> only when its body has finished, by returning or raising, and the file is unchanged. When the grace ends with the file unchanged and the body still running, <code>landed</code> is <code>None</code>. The message then says the write is still in flight and may yet land. The result's <code>hint</code>, today the fixed <code>_STORAGE_SLOW_HINT</code> ("Retry once the storage recovers"), becomes an instruction to read the resource back and resubmit only what is missing. A write reporting <code>landed: False</code> keeps the retry hint. <code>True</code> keeps its meaning: the file changed within the grace. The landing check reads the abandoned body's future, which <code>_InflightBody</code> already holds, rather than a second record of whether the body ended.</p>
 <p><strong>Done when</strong> a test drives the write deadline with three bodies. One writes its file after the landing grace and while the result is composed: it reports <code>landed: None</code> with the in-flight wording and a hint that says to read the resource back, not to retry. One finishes without writing: it reports <code>landed: False</code>. One writes within the grace: it reports <code>landed: True</code>. No real plan or crew home is written. The test files that import <code>reckon/mcp_deadlines.py</code> or <code>reckon/_mcp_tools.py</code> show no added failure against base. For the negative control, answer <code>False</code> whenever the grace ends with the file unchanged: the first body must then report <code>landed: False</code>. The control is logged under the run directory. Write paths: <code>reckon/mcp_deadlines.py</code>, <code>reckon/_mcp_tools.py</code> and <code>tests/test_a_write_in_flight_is_not_reported_unlanded.py</code>.</p>
 
+    <h2 id="s17">§17 — A malformed request is refused before it touches storage</h2>
+<section data-reckon="section" data-id="s17" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> On 2026-10-23 a power_convertor <code>crew view live</code> call naming an unknown field, <code>dispatched_at</code>, waited over 120 s on storage before it was refused. The refusal depended only on the arguments.</p><p><strong>Change.</strong> Every reckon MCP read and write checks its arguments against their declared vocabularies before it opens any file: field names, view names, op names and enumerated values. A malformed request is refused in milliseconds whatever storage is doing, and the refusal lists the accepted values as it does today.</p><p>Done when: under a storage stub that blocks on any open, a <code>crew view live</code> call with an unknown field, a <code>crew</code> call with an unknown view and an <code>edit_plan</code> call with an unknown op are each refused without the stub being reached. Negative control: validation moved after the first read must reach the stub.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="launch-form" data-choice="uv-no-sync" data-by="Simon McIntosh" data-when="2026-10-08T01:52:37+00:00">
@@ -247,6 +251,11 @@
     <div class="r-fu-body"><p>Twice on 2026-10-15 an <code>edit_plan</code> write timed out and reported <code>landed: false</code>, yet had landed about 20 s later. §16 reports such a write as unknown and still in flight, with a hint to read the resource back rather than retry.</p></div>
     <pre class="r-fu-prompt">/reckon-build an-mcp-failure-names-its-cause §16</pre>
     <p class="r-fu-outcome">§16 landed as 6f17bca2b: a timed-out write still in flight reports landed unknown with a read-back hint.</p>
+    </article>
+<article class="r-fu" data-id="f-amfnic-017" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-edit" data-written-at="2026-10-23 09:00" data-recommends-skill="/reckon-build an-mcp-failure-names-its-cause §17" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A malformed request is refused before it touches storage</h4>
+    <div class="r-fu-body"><p>Measured in a power_convertor portfolio review on 2026-10-23 and passed on by its coordinator. A content review of this section is owed before dispatch.</p></div>
+    <pre class="r-fu-prompt">/reckon-build an-mcp-failure-names-its-cause §17</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
