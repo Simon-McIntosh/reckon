@@ -1,0 +1,72 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T14:36:23.194Z",
+  "dispatched_at": "2026-10-23T14:24:29Z",
+  "findings": [
+    {
+      "anchor": "reckon/host.py:52",
+      "id": "reuse_search-1",
+      "reason": "the section should call `host._filesystem_type`/`host._is_node_local` and inherit all eight types, instead of writing a two-type test that silently accepts the other six.",
+      "text": "\u00a75's \"refuses a path on a network filesystem by checking the mount's type, because WAL requires shared memory\" re-derives a question `reckon/host.py` already owns: `_SHARED_FILESYSTEMS` (:52) lists `{\"gpfs\",\"nfs\",\"nfs4\",\"lustre\",\"ceph\",\"fuse\",\"fuseblk\",\"9p\"}`, `_filesystem_type` (:157) reads it from `/proc/self/mountinfo`, and `_is_node_local` (:181) already answers \"is this path node-local\" (also reported as `host_facts`'s `tmp_is_node_local`, :195); `reckon/crew/dispatch.py` already carries a second copy (`_is_node_local_path`, `_path_is_tmpfs` (reckon/crew/dispatch.py:2846, :2862)). The plan's Done-when (\"a path whose mount type is `gpfs` or `nfs` is refused\") narrows that set to two types, so a station store placed on lustre or ceph \u2014 on which WAL's shared memory is equally unavailable \u2014 would pass the plan's own gate.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/file_memo.py:270",
+      "id": "reuse_search-2",
+      "reason": "\u00a75 and \u00a76 should say whether the station's identity key comes from `file_memo` or state why an in-process memo cannot serve a DB-backed station (its state must survive a station restart, which `file_memo`'s in-process map cannot), rather than leaving a third spelling of the same key to be re-invented.",
+      "text": "\u00a75's `pointers` table stores \"stat identity\" and \u00a76 says \"a pointer is parsed only when its stat identity moved\", re-deriving the parse-keyed-by-stat-identity mechanism whose declared owner is `reckon/file_memo.py` (`file_signature`:270, `file_revision`:293, `memoized`:307); `reckon/ledger.py:1248` names it \"the repository's one memo for a parse keyed\" and `resources.py:301`, `_plan_html.py:1542+`, `_store.py:799`, `roadmap.py:55` route through it.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch_watch.py:481",
+      "id": "duplicate_owner-1",
+      "reason": "the section should name `_session_host_runtime_root` (widening it out of private scope, as dispatch_watch already does for the session host by deferred import) as the single owner, because a station that resolves a different root than the session host cannot find the host it is started by, and the plan as written resolves `/dev/shm` where the host resolves `TMPDIR`.",
+      "text": "the plan's \u00a75 says the store's root is \"resolved in the order `reckon/crew/dispatch_watch.py`'s `_session_host_runtime_root` already uses (`$XDG_RUNTIME_DIR`, `/run/user/<uid>`, then `/dev/shm`)\", but that function's third candidate is `TMPDIR` (dispatch_watch.py:504-505), not `/dev/shm`, so the plan's own restatement of the owner is already wrong; the node-local root is derived in three further places \u2014 `reckon/crew/fleet_supervisor.py:383` `session_tmp_root` / `:395` `prepare_session_tmp` (`/dev/shm` under `FLEET_SESSION_TMP_ROOT`, :104) and `reckon/crew/dispatch_launch.py:1079` `NODE_LOCAL_SHM_ROOT`. \u00a77 then adds a fourth derivation for the station's process lock.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "the-monitor-reads-each-fact-once#s5",
+      "id": "interface_budget-1",
+      "reason": "the section that adds the surface has to say in its own text what it retires or merges, or why nothing can be, so the new refusal family and the new verb are accounted for where they are introduced rather than in \u00a712's cutover.",
+      "text": "public_definitions 2036, cli_options 402, mcp_views 19, refusal_families 23: \u00a75 adds `reckon/crew/station_store.py` and its six tables and, in its own Done-when, a new operator-facing refusal (\"a path whose mount type is `gpfs` or `nfs` is refused with that reason\") \u2014 a twenty-fourth refusal family that must be registered with an id and a remedy in `reckon/crew/refusals.py` (`DISPATCH_REFUSAL_REMEDIES`) \u2014 while naming nothing this replaces; \u00a77 adds the crew CLI verb `station` and keeps `crew watch` as an alias rather than retiring it, deferring every retirement (\"the per-project seats, leases and the producer user units ... are retired once \u00a712's cutover passes\") to a later section.",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "19c2c73b7de6e3996e802fe9b550e5aab8ce7f53af5f3b3ff7bb2632fee56595",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 4,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T135810309099-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "30e1660d3d8a8bfb661fc32cacd03487f4f0a459",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a75\u2013\u00a77 consolidate four per-project mechanisms (the producer's row writing, `ticker.PaneRowPath`'s pane policy, `obligation_snapshot`'s derivation, `resumption.sweep`) behind one node-local station whose interface is \"one process, one lock, query the events table\", which is smaller than what it hides; the design concentrates rather than spreads.",
+    "duplicate_owner": "a finding \u2014 the plan re-derives two pieces of shared infrastructure that already have owners (`reckon/host.py` for the mount/shared-filesystem question, `reckon/file_memo.py` for stat-identity keyed reuse), and restates a third (`dispatch_watch._session_host_runtime_root`) instead of importing it, with the restatement already wrong in the plan's own text.",
+    "interface_budget": "a finding \u2014 public_definitions 2036, cli_options 402, mcp_views 19, refusal_families 23; \u00a75 adds a new module and a new operator-facing refusal (non-node-local path) and \u00a77 adds the crew CLI verb `station` while keeping `crew watch` as an alias, and neither section names what it retires or merges or why nothing can be \u2014 every retirement is deferred to \u00a712's cutover.",
+    "reuse_search": "pass \u2014 the plan opens the read-side owners it extends and cites each by file and symbol, but it missed two owners it is about to re-derive: `reckon/host.py`'s mount/shared-filesystem reader (\u00a75) and `reckon/file_memo.py`, which `reckon/ledger.py:1248` names as \"the repository's one memo for a parse keyed\" by stat identity (\u00a75's `pointers` table, \u00a76's identity check). Both misses are emitted below as findings rather than scored here.",
+    "thin_wrapper": "pass \u2014 no section adds a layer whose justification is absent. \u00a78 says in its own text why the follower becomes a query and a painter (it reads nothing on GPFS and does not reload), \u00a79 moves the snapshot rather than wrapping it, and \u00a77 states the station is the extension of the producer seat rather than a layer over it."
+  },
+  "section_digests": {
+    "_document": "1efa3b16a9023a68c77c1bd2c38fc067afc4037d50dedf6106cc67229ac7bd51",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "a96b0172939e6d2b0b84ea329f6b40619869f7950fa9017676b03073117e36e7",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "195727b1bd42108c6a3f05d7625fe86e299c59ea7eea8bd15b5c290da2aad883",
+    "s6": "cd2191c601a518f0d73390144a40c64a92bacc2aed65fe19393acb3d5742e650",
+    "s7": "7b41c4aeba17f9cb3d59318300b55e9eee211e09d022eb061a01b23b73a0fe40",
+    "s8": "6c61416a6f6cf0d80aba5516d12a2d5329a34611ee0af8c0cdcc21e5ceaf37c1",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T14:38:55.474922+00:00"
+}
