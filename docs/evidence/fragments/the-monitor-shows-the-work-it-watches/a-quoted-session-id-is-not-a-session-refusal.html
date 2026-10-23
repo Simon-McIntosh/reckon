@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s90">
+  <meta name="plan-recorded-at" content="2026-10-23">
+  <meta name="plan-verdict" content="passed">
+  <title>A session id quoted in a refusal is not a refusal of the session | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-quoted-session-id-is-not-a-session-refusal-landing" data-node="a-quoted-session-id-is-not-a-session-refusal" data-reckon="landed" data-when="2026-10-23">
+  <h2>A queued refusal is read by its stamped class, not by a substring of its text</h2>
+  <p><code>_queued_failure_remedy</code> (<code>reckon/crew/recovery_classification.py</code>) decided whose refusal a queued pointer's <code>failure</code> was by asking whether the dispatching session's id appeared anywhere in its text. An <code>UnreconciledRuns</code> refusal names each finished run beside the action that settles it, and a review action carries <code>--session &lt;id&gt;</code>, so the id appeared in a refusal whose subject was a set of finished runs. The queued run was published under <code>queued-awaiting-session</code> with <code>reckon crew follow</code> as its remedy, and no follower clears an unreconciled-runs refusal.</p>
+  <p><strong>What changed.</strong> The admission pass stamps the exception's class name at the head of the stored failure (<code>&lt;ClassName&gt;: &lt;text&gt;</code>), and that name is now what the reader keys on. <code>UnreconciledRuns</code> publishes the first named run's own action, read from its <code>- &lt;run_id&gt;: &lt;action&gt;</code> line; the classified row's <code>session_refusal</code> detail states that a queued run cannot take <code>--allow-unreconciled-runs</code> after it is queued and that the alternative is to discard it and dispatch again with that waiver. The follower condition keeps the follower remedy, matched on the private subclass <code>_FollowerAdmissionUnmet</code> beside its public base <code>WatcherRequired</code>. A failure recorded with no class stamp keeps the text search it had. The row still reads under <code>queued-awaiting-session</code> for both kinds, because in both the session owes the fix.</p>
+  <p><strong>Gate.</strong> <code>tests/test_a_quoted_session_id_is_not_a_session_refusal.py</code>, which builds each failure through the raising class rather than as hand-written text, with <code>tests/test_a_queued_refusal_names_its_remedy.py</code>, <code>tests/test_a_session_side_refusal_reaches_the_session.py</code>, <code>tests/test_crew_promotion.py</code> and the other 106 test files importing <code>reckon.crew.recovery_classification</code> or <code>reckon.crew.obligations</code> — 110 files — run at the base revision <code>40470cfe9</code> in a scratch tree and at head with the same command. New test alone: 5 passed. <strong>Base arm: 17 failed, 822 passed, 5 errors.</strong> <strong>Head arm: 14 failed, 820 passed, 10 errors.</strong> The head failures are a subset of the base failures: the three the base arm shows are exactly the new test's <code>UnreconciledRuns</code> cases, which the fix turns green, so <strong>0 added failures</strong>. Fourteen failure ids are red on both arms, none of them in this node's paths. The five extra head errors are <code>pytest-timeout (&gt;300 s)</code> while a module-scoped fixture built a synthesised ledger, all in <code>tests/test_held_worktree_records_match_each_record_once.py</code>, which does not reach the classifier; the base arm carries the same signature in <code>tests/test_the_held_worktree_read_is_bounded.py</code>. <code>ruff check</code> and <code>ruff format --check</code> report nothing on the two changed paths; the one <code>UP017</code> finding in <code>recovery_classification.py</code> is present at the base revision at the same site.</p>
+  <p><strong>Negative control.</strong> Restoring the substring test at line 151, with the class read removed, turns the first case red: <code>test_an_unreconciled_runs_refusal_publishes_the_named_runs_action</code> fails alongside the two other <code>UnreconciledRuns</code> cases — 3 failed, 2 passed, <code>EXIT=1</code>. The same three failed before the fix was written, which is the reproduction this repair answers.</p>
+  <p><strong>Commits.</strong> <code>f1181e0e5</code> (fix and test), <code>969aac8eb</code> (test formatting). Logs under the run directory: <code>gate_base.log</code>, <code>gate_head.log</code>, <code>negative_control.log</code>, <code>negative_control_before_fix.log</code>.</p>
+</article>
+</body>
+</html>
