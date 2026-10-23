@@ -2088,7 +2088,7 @@ def _delivered_status(parsed: Mapping[str, Any]) -> str:
     is decided here, from the parse's absent items, because that is where the
     rubric's shortfall is known.
     """
-    return DEFAULT_STATUS  # MUTATION: restore the rubric test
+    return INCOMPLETE_STATUS if parsed["absent_items"] else DEFAULT_STATUS
 
 
 def delivered_report_record(sidecar: Mapping[str, Any]) -> dict[str, Any]:
