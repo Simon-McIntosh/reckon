@@ -1,0 +1,71 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T13:05:46.915Z",
+  "dispatched_at": "2026-10-23T12:48:53Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-live-worker-is-never-drawn-halted.html:120 (\u00a72 done-when)",
+      "id": "done_when-1",
+      "reason": "without the fixture's dispatch time and manifest mtime stated to fall outside both windows, the declared negative control does not reproduce on the unfixed code and the section's whole measure rests on a control that passes either way.",
+      "text": "the fixture is specified only as \"each with a live pid (the test process) and a newest stream carrying an assistant record\"; at HEAD that fixture is suppressed before the arm under test runs, because `recovery_classification.py:583` calls `_absence_of_a_verdict_is_transient` (true within `LAUNCH_WINDOW_SECONDS = 120` of dispatch, and within `MANIFEST_REWRITE_WINDOW_SECONDS = 10` of the manifest's own mtime), and when it is true `manifest_unwritten` stays False and the run is classified `working` by the ordinary path \u2014 so arms (a) and (b) at the base revision would give pane word `working`, not the `halted` the negative control asserts, and the node cannot show its guard fires",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-live-worker-is-never-drawn-halted.html:107 (\u00a72 mechanism)",
+      "id": "reasoning-1",
+      "reason": "a node that extends the arm as described rather than against the existing guard lands a change whose relationship to the launch and rewrite windows is unstated, which is the same defect the done-when finding names.",
+      "text": "the plan describes the arm as setting `manifest_unwritten = True` \"whenever a present manifest carries no readable status and has a parse error\", but the arm at `reckon/crew/recovery_classification.py:582-587` sets it only when a present manifest has no readable status, has a parse error, and `_absence_of_a_verdict_is_transient` is false; writing the extension against the plan's description rather than against the real guard is what produces the unreproducible control above",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-live-worker-is-never-drawn-halted.html:102 (\u00a71)",
+      "id": "evidence_paths-1",
+      "reason": "the plan states that each section brief restates its own mechanism's fixture, so no node depends on the census; only a reader re-deriving the premise is affected.",
+      "text": "the census that the plan's premise rests on (\"20,675 events over 1,340 runs ... 242 carried halted rows\") is left \"in the coordinator's scratch\", so a later reader can neither open nor re-run the instrument that produced the plan's central figure",
+      "type": "evidence_paths",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-live-worker-is-never-drawn-halted.html:239 (\u00a78 mechanism)",
+      "id": "reasoning-2",
+      "reason": "a node reading \u00a78 as \"add a review-queued reading\" may add a parallel path or a second kind beside the existing one, and the two sources must then agree about the same duty.",
+      "text": "\u00a78 states the duty \"reads missing while its review is waiting to launch\", but `reckon/crew/obligations.py:112` already defines `REVIEW_QUEUED_DUTY_KIND = \"review-queued\"` and `_queued_review_fields` (`obligations.py:627`) already returns it for a review attempt the lane refused as `lane-paused`, so the kind and one of its two sources exist and the plan does not say it is pointing the reader at a second source of the same kind",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "0126b7a0cc2700c253232354a2cf6ffa2dfe11cbde5c2bd15e3f9ff0519e9fc5",
+  "plan_slug": "a-live-worker-is-never-drawn-halted",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T124757000394-plan-review-of-a-live-worker-is-never-drawn-halted",
+  "reviewed_blob_sha": "2f8687d038500cbaf317bbe869b26d607c547189",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `recovery_classification`, `recovery_liveness`, `ticker`, `budget_lift`, `lift_watch`, `obligations`, `reports.parse_manifest`, `recovery.recover` (re-exported from `recovery_watch.recover`) and `_orientation_write_of_a_run_in_motion` all exist, and the extensionless `/reckon/<slug>` hrefs resolve as `<slug>.html`.",
+    "done_when": "a finding \u2014 \u00a72's fixture and its declared negative control omit the two pre-existing windows (`LAUNCH_WINDOW_SECONDS`, `MANIFEST_REWRITE_WINDOW_SECONDS`) that suppress the arm under test for a freshly written fixture.",
+    "evidence_paths": "a finding \u2014 the census that supplies the plan's premise lives in the coordinator's scratch, so no later reader can re-run it; the plan disclaims any node's dependence on it, which is why this one does not change the plan.",
+    "naming": "pass \u2014 no plan label, stage name or ticket number reaches a symbol, path or comment the plan asks for; the section prose names mechanisms (`_orientation_write_of_a_run_in_motion`, `stream_carries`, the lift stamping path) rather than identifiers.",
+    "reasoning": "a finding \u2014 \u00a72's stated mechanism (\"sets `manifest_unwritten = True` whenever a present manifest carries no readable status and has a parse error\") does not match the arm's real code path, which consults `_absence_of_a_verdict_is_transient` first, so the plan's own description of the arm it means to extend is incomplete.",
+    "single_goal": "pass \u2014 each of \u00a72\u2013\u00a79 carries one deliverable and one measure; \u00a73's four arms all test the one resumed-attempt resolver.",
+    "wiring": "pass \u2014 `plan-after: a-seat-held-elsewhere-is-not-restarted` and the three `/reckon/...` prior-art hrefs all resolve to existing plan documents, and no declared relationship points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "8396e2c49fbed1b8aee2ca8de2cc036f07271da186c7606072a527201f64bd7f",
+    "s1": "fdb0ee3dedcf73cd7c31af5f79b1d6f1be8507f3719e92fd34a61e01cdd35b78",
+    "s2": "ff39a6f9dcf9489616fcdbb9c7030a6c3c587981f1d9a07cad18515da4e2a2c2",
+    "s3": "3daa8c74f018305cc871139ebadaf5e672e985f86d563932942e07d6b1b47f53",
+    "s4": "916c229456c2aa7ce42703fe54fcb20cf46b81947e5b1c0cec346ef4c2a0bbcd",
+    "s5": "73cf3ed3582c1ef8b8c75ab85af9e0f1752d54d1d85442d6e49480ae93782e45",
+    "s6": "7bacac917ceea413da790f88aade389dde79677d9d8952459a1700a2c2bb3707",
+    "s7": "e0d2472a318e1a27f08abcca88ffe574165e01b272d6138ba68c315ecbfc6f68",
+    "s8": "3d8a333a673c80e3518bed50f029b74238c19e2286e172a2b106b78bb36eda07",
+    "s9": "586befbc3bb3525a933001420630af47fad98192968fd35f1f3425dadeaf4278"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T13:10:13.353459+00:00"
+}
