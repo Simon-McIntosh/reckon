@@ -1163,7 +1163,6 @@ def mounts_for_snapshot() -> dict[str, Path]:
     return remembered_mounts(stamp, load_mounts)
 
 
-
 def _served_code_report() -> dict | None:
     """Use the same executed-source report for requests and the status route."""
 
