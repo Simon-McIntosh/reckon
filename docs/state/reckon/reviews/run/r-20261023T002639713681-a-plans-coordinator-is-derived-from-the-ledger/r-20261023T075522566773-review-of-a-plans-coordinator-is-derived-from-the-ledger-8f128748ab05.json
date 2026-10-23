@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_ledger.py::test_every_read_view_returns_and_large_defaults_are_compact"
+  ],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-23T08:15:03.339Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "a-plans-coordinator-is-derived-from-the-ledger",
+      "recorded_at": "2026-10-23T08:17:20.923889+00:00"
+    }
+  },
+  "dispatched_at": "2026-10-23T07:56:39Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_coordinator.py",
+      "line": "157",
+      "severity": "follow-on",
+      "text": "follow-on: _reviewed_run and _newest_run_of_node (plan_coordinator.py:132) re-implement the review-source-to-reviewed-run resolution the repository already owns at reckon/crew/dispatch_sessions.py:458 _reviewed_run_id and reckon/crew/recovery_review_delivery.py:218 _resolved_reviewed_run_id; the addition duplicates both owners rather than extending either."
+    },
+    {
+      "file": "tests/test_a_plans_coordinator_is_derived_from_the_ledger.py",
+      "line": "499",
+      "severity": "follow-on",
+      "text": "follow-on: test_a_resolver_that_returns_unowned_everywhere_fails_the_fixture (:499) and test_a_resolver_blind_to_dispatch_order_fails_the_a_then_b_case (:529) build their failing input by mutating the resolver's own output dict, so the assertion compares a value the test itself constructed and holds whatever the resolver does; the described negative controls are carried by :279 and :306."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found: nothing imports reckon.crew.plan_coordinator or calls resolve_plan_coordinators outside the node's own test file.",
+    "diff": "read all four commits against 017b346cb4 \u2014 73decd0f4 adds the module and its test, 20030d0d0 and 8f128748a add the landing fragment, 7defa912d repairs the run-review subject resolution \u2014 three files, all inside the declared scope.",
+    "done_when": "the done-when names tests/test_a_plans_coordinator_is_derived_from_the_ledger.py beside three sibling files; repair-head-plan-coordinator.log records 11 passed EXIT=0 and its output names the deciding row and matched field per plan.",
+    "goal": "the goal is to resolve each plan's coordinator session from its most recent dispatched run; reckon/crew/plan_coordinator.py:262 resolve_plan_coordinators returns it for the plan, plan_link and node matches, and the repaired plan_coordinator.py:157 resolves the ordinary run review through the reviewed run.",
+    "manifest": "read manifest.md; it names commits 73decd0f4, 20030d0d0, 7defa912d and 8f128748a, the literal gate command, both suite arms and four follow-ons, and its after_suite completed flag matches the coordinator's four-file re-run in coordinator-head-arm.log.",
+    "write_paths": "read the declared write paths; every path in the diff against 017b346cb4 is one of the three declared source, test and evidence paths, and no figure directory was written."
+  },
+  "justifications": {
+    "durability": "negative-control-plan-coordinator-repair.log shows that reverting commit 7defa912d fails tests/test_a_plans_coordinator_is_derived_from_the_ledger.py:335, :356 and :402, so those three guards fail if the repaired branch regresses.",
+    "evidence": "repair-head-plan-coordinator.log:1-3 names the revision, tree and command of the node's own arm and its last line reads EXIT=0 with 11 passed, and coordinator-head-arm.log:1 carries the fused gate's revision, tree and command.",
+    "fit": "reckon/crew/plan_coordinator.py:1 follows the surrounding style of reckon/crew/directory.py:1 and adds no plan, sprint or ticket identifier to a symbol, path or comment.",
+    "goal_fidelity": "reckon/crew/plan_coordinator.py:262 resolve_plan_coordinators returns each plan's newest in-window coordinator for the plan, plan_link and node matches, and plan_coordinator.py:157 resolves a run review through the reviewed run.",
+    "reuse": "reckon/crew/plan_coordinator.py:157 _reviewed_run and plan_coordinator.py:132 _newest_run_of_node duplicate reckon/crew/dispatch_sessions.py:157 _reviewed_run_id and reckon/crew/recovery_review_delivery.py:218 _resolved_reviewed_run_id, extending neither owner of the capability.",
+    "scope_discipline": "every path in git diff --stat 017b346cb4 8f128748a (reckon/crew/plan_coordinator.py, tests/test_a_plans_coordinator_is_derived_from_the_ledger.py, the landing fragment) is a declared write path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to resolve each plan's coordinator session from its most recent dispatched run; reckon/crew/plan_coordinator.py:262 resolve_plan_coordinators does so, and the repaired _reviewed_run at plan_coordinator.py:157 now resolves the ordinary run review whose node id embeds the reviewed run's node id.\nVERDICT done_when: the done-when names tests/test_a_plans_coordinator_is_derived_from_the_ledger.py beside three sibling gate files; the gate asserts the pinned fixture and its result is recorded in repair-head-plan-coordinator.log (11 passed, EXIT=0) and the coordinator arms coordinator-base-arm.log / coordinator-head-arm.log.\nVERDICT write_paths: read the declared paths (reckon/crew/plan_coordinator.py, tests/test_a_plans_coordinator_is_derived_from_the_ledger.py, the landing fragment, a figures directory); every path in the diff against 017b346cb4 is the first three and nothing outside them.\nVERDICT manifest: read manifest.md; it names commits 73decd0f4, 20030d0d0, 7defa912d and 8f128748a, the literal gate command, both suite arms, the repair round and four follow-ons, and its after_suite record reconciles with coordinator-head-arm.log.\nVERDICT diff: read all four commits against 017b346cb4 \u2014 73decd0f4 adds reckon/crew/plan_coordinator.py and its test, 20030d0d0 and 8f128748a add the landing fragment, 7defa912d repairs the run-review subject resolution \u2014 three files, all inside the declared scope.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/plan_coordinator.py:262 resolve_plan_coordinators returns each plan's newest in-window coordinator for the plan, plan_link and node matches, and the repaired plan_coordinator.py:157 now resolves a run review through the reviewed run, which the node's 11-case test file pins green.\nSCORE evidence: 16\nJUSTIFICATION evidence: the done-when gate names tests/test_a_plans_coordinator_is_derived_from_the_ledger.py and its three siblings, and repair-head-plan-coordinator.log:1-2 records the tree, revision and command of the node's own arm (unlike the fused run arm, which was cut off) while coordinator-head-arm.log and coordinator-base-arm.log carry the fused gate receipt.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 017b346cb4 8f128748a touches only reckon/crew/plan_coordinator.py, tests/test_a_plans_coordinator_is_derived_from_the_ledger.py and the landing fragment, all declared write paths, and no figure directory was written.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_plans_coordinator_is_derived_from_the_ledger.py:335-437 add three run-review guards, and negative-control-plan-coordinator-repair.log shows reverting commit 7defa912d reddens exactly those three, so the repaired branch fails if it regresses.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/plan_coordinator.py:1 follows the surrounding style of reckon/crew/directory.py:1 and adds no plan, sprint or ticket identifier to a symbol, path or comment.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/plan_coordinator.py:157 _reviewed_run and its helper plan_coordinator.py:132 _newest_run_of_node duplicate the review-node-to-reviewed-run resolution already owned by reckon/crew/dispatch_sessions.py:458 _reviewed_run_id and reckon/crew/recovery_review_delivery.py:218 _resolved_reviewed_run_id, extending neither.\nFINDING reckon/crew/plan_coordinator.py:157 follow-on: _reviewed_run and _newest_run_of_node re-implement the review-source-to-reviewed-run resolution the repository already owns at reckon/crew/dispatch_sessions.py:458 _reviewed_run_id (source-as-run-id, then newest record whose node id equals source) and reckon/crew/recovery_review_delivery.py:218 _resolved_reviewed_run_id (which adds the durable-row path those functions live over); the addition duplicates both rather than extending either owner, so a further change to how a review names its subject must now be made in three places.\nFINDING tests/test_a_plans_coordinator_is_derived_from_the_ledger.py:499 follow-on: test_a_resolver_that_returns_unowned_everywhere_fails_the_fixture and test_a_resolver_blind_to_dispatch_order_fails_the_a_then_b_case (at :529) build their failing input by mutating the resolver's own output dict and then assert an inequality that holds whatever the resolver does, so they compare a value the test itself constructed and would pass against a completely broken resolver; the guards the done-when's negative controls describe are carried by test_the_fixture_pins_each_plans_coordinator (:279) and test_a_later_dispatch_takes_the_plan_over (:306), not here.",
+  "review_run_id": "r-20261023T075522566773-review-of-a-plans-coordinator-is-derived-from-the-ledger-8f128748ab05",
+  "reviewed_base_sha": "017b346cb43a597da2b3d4c37bea6657eac1c886",
+  "reviewed_head_sha": "8f128748ab059cd46eaca06d4a419089584c77da",
+  "reviewed_run_id": "r-20261023T002639713681-a-plans-coordinator-is-derived-from-the-ledger",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T08:20:00+00:00",
+  "total": 96
+}
