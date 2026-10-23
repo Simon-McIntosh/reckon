@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured from the run's own arms: baseline_suite (43677d0d, 29 ids) and after_suite (18f05d0da, 28 ids) share 25 ids, so the raw set difference is 3 added ids and 4 recovered: tests/test_session_host.py::test_no_child_survives_its_owners_exit, tests/test_session_host.py::test_no_child_survives_the_hosts_sigterm and tests/test_test_watchers_are_reaped.py::test_a_watcher_armed_by_a_child_session_is_not_left_running. Both modules are outside this node's changed paths and both pass serially at the head (gate-round6-sessionhost-serial.log, 20 passed, 1 skipped), so they read as load under -n 8 rather than this change; that serial log carries no revision header, recorded as a finding. added_failure_count is 0 on that reading.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1630",
+    "reckon/crew/obligations.py:482",
+    "reckon/crew/query.py:348",
+    "reckon/crew/recovery.py:69",
+    "reckon/crew/ticker.py:2132",
+    "reckon/crew/recovery_classification.py:663"
+  ],
+  "completed_at": "2026-10-23T21:22:56.032Z",
+  "dispatched_at": "2026-10-23T21:05:38Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "1023 non-blocking",
+      "text": "RUN_DELIVERED_STATUSES still lists completed, done, landed and promoted, but the status is now read through reckon/crew/reports.py:309 parse_manifest, which raises ManifestParseError for every one of those four words (reports.py:130-132 recognises only complete, blocked, failed, in-progress, in_progress, running, pending, waiting, derived), so _request_state answers PENDING for them. A manifest that says status: done used to release its waiter and now holds it forever, and four of the five members of this tuple are unreachable; either the tuple should shrink to the owner's vocabulary or the owner's set should grow."
+    },
+    {
+      "file": "manifest.md",
+      "line": "17 non-blocking",
+      "text": "gate-round6-sessionhost-serial.log, cited as after_suite's rerun_log, carries no revision, tree or command header and no EXIT= line, so the three-id delta it is used to explain cannot be tied to 18f05d0da; a log a later reader cannot date is not a receipt."
+    },
+    {
+      "file": "docs/evidence/fragments/a-queue-holds-the-whole-plan/a-queued-request-waits-on-its-dependencies.html",
+      "line": "421 non-blocking",
+      "text": "the fifth-round section says 'node's own module is 14 passed', a figure carried over from the round-4 section at line 358; at 18f05d0da the module collects 16 (15 test functions plus one parametrisation) and 16 pass at the reviewed head (review-node-module.log), so the fragment quotes a count that does not reconcile with the revision it names."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read against f88db6c82 to 9b3ebc9c5; three commits over six paths, +135/-56, the head commit changing docs only so the gate at 18f05d0da covers the code.",
+    "done_when": "the measure names the three-section chain, the abandoned-upstream negative arm and the malformed-node refusal, carried in tests/test_a_queued_request_waits_on_its_dependencies.py; the module runs 16 passed at the reviewed head (review-node-module.log), gate-round6.log at 18f05d0da records 1320 passed/27 failed/1 error/EXIT=1 against gate-base2.log at 43677d0d 1303 passed/28 failed, and the round-4 deviation is now repaired: the three phase names are declared in reckon/crew/queue_admission.py:47-57.",
+    "goal": "the goal is to hold a dispatched node with unmet section waits as an awaiting-upstream request admission releases as they land; reckon/crew/dispatch.py:1630 reads the waits and reckon/crew/queue_admission.py:1231-1250 now reads the upstream manifest through the reader that owns that format, so a delivery written as JSON releases the wait.",
+    "manifest": "read; status complete, checkpoint naming the fifth round, both suite arms as flat JSON, negative_control_log neg-wiring-redispatch.log, retry_failures empty.",
+    "write_paths": "the six paths this review's goal names are exactly the six the gained diff touches; reckon/crew/node.py now diffs empty against 43677d0d and carries no change, while reckon/crew/recovery_classification.py and reckon/crew/recovery_vocabulary.py are in the manifest's orientation_write_paths but not in the source dispatch's six-path fence."
+  },
+  "node": "review-of-a-queued-request-waits-on-its-dependencies-9b3ebc9c5964",
+  "node:reviewed": "a-queued-request-waits-on-its-dependencies",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to hold a dispatched node with unmet section waits as an awaiting-upstream request that admission releases as they land; reckon/crew/dispatch.py:1630 reads the waits and reckon/crew/queue_admission.py:1231-1250 now reads the upstream manifest through reports.parse_manifest, so a delivery written as JSON releases the wait it previously held forever.\\nVERDICT done_when: the measure names the three-section chain, the abandoned-upstream negative arm and the malformed-node refusal, carried in tests/test_a_queued_request_waits_on_its_dependencies.py:357 and :610; the module runs 16 passed at the reviewed head (review-node-module.log), gate-round6.log at 18f05d0da records 1320 passed/27 failed/1 skipped/1 error/EXIT=1 against gate-base2.log at 43677d0d 1303 passed/28 failed, and the round-4 deviation is repaired, the three phase names now declared in reckon/crew/queue_admission.py:47-57.\\nVERDICT write_paths: the six paths this review's goal names are exactly the six the gained diff touches; reckon/crew/node.py now carries an empty diff against 43677d0d, while reckon/crew/recovery_classification.py and reckon/crew/recovery_vocabulary.py are in the manifest's orientation_write_paths but not in the source dispatch's six-path fence.\\nVERDICT manifest: read; status complete, the checkpoint naming the fifth round, both suite arms as flat JSON, negative_control_log neg-wiring-redispatch.log, retry_failures empty.\\nVERDICT diff: read against f88db6c82 to 9b3ebc9c5; three commits over six paths, +135/-56, the head commit 9b3ebc9c5 changing docs only so the gate at 18f05d0da covers the code.\\nCALL_SITES: reckon/crew/dispatch.py:1630, reckon/crew/obligations.py:482, reckon/crew/query.py:348, reckon/crew/recovery.py:69, reckon/crew/ticker.py:2132, reckon/crew/recovery_classification.py:663\\nSCORE goal_fidelity: 18\\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:1231-1250 now reads the upstream manifest through the reader that owns the format, so the hold the goal describes releases on a JSON delivery and on a text one alike.\\nSCORE evidence: 15\\nJUSTIFICATION evidence: gate-round6.log names revision 18f05d0da, its tree and command on its first lines and ends EXIT=1, and both arms are flat JSON in the manifest, but the serial re-run offered as the flake's corroboration (manifest.md:17) carries no revision header or EXIT line.\\nSCORE scope_discipline: 17\\nJUSTIFICATION scope_discipline: the gained diff touches only the six paths this review's goal names, and reckon/crew/node.py is restored to base so its 11 deleted lines leave an empty diff against 43677d0d.\\nSCORE durability: 18\\nJUSTIFICATION durability: tests/test_a_queued_request_waits_on_its_dependencies.py:360 fails if _manifest_status is restored, since the base helper returns '' for the JSON body while parse_manifest returns complete (reproduced at the base revision), and :610 fails if queue_admission's phase constants and recovery_vocabulary's keys drift apart.\\nSCORE fit: 17\\nJUSTIFICATION fit: the deferred import at reckon/crew/recovery_classification.py:666 is justified by a real cycle (importing queue_admission loads recovery_vocabulary, measured), ruff over the five changed files drops from 15 findings at the base to 8 at the head, all eight pre-existing in the untouched reckon/crew/node.py.\\nSCORE reuse: 20\\nJUSTIFICATION reuse: reckon/crew/queue_admission.py:1231 deletes the local _manifest_status and calls reckon/crew/reports.py:309 parse_manifest, the owner of that read, which is exactly the remedy the previous review asked for.\\nFINDING reckon/crew/queue_admission.py:1023 non-blocking: RUN_DELIVERED_STATUSES still lists completed, done, landed and promoted, but parse_manifest raises ManifestParseError for all four (reports.py:130-132), so _request_state answers PENDING for them and a manifest saying status: done holds its waiter forever; four of the five members are unreachable.\\nFINDING manifest.md:17 non-blocking: gate-round6-sessionhost-serial.log, cited as after_suite's rerun_log, has no revision, tree or command header and no EXIT= line, so the three-id delta it is used to explain cannot be tied to 18f05d0da.\\nFINDING docs/evidence/fragments/a-queue-holds-the-whole-plan/a-queued-request-waits-on-its-dependencies.html:421 non-blocking: the fifth-round section says the node's own module is 14 passed, a figure carried from the round-4 section at line 358; at 18f05d0da the module collects 16 and 16 pass at the reviewed head, so the fragment quotes a count that does not reconcile with the revision it names.\\n",
+  "review_run_id": "r-20261023T210038348339-review-of-a-queued-request-waits-on-its-dependencies-9b3ebc9c5964",
+  "reviewed_base_sha": "f88db6c8236291550ab3ee8a14ff2fc094f8fc88",
+  "reviewed_head_sha": "9b3ebc9c5964c87e7ee3edbefcbaff3bd2485e94",
+  "reviewed_run_id": "r-20261023T112727139233-a-queued-request-waits-on-its-dependencies",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T23:20:00+00:00",
+  "total": 105
+}
