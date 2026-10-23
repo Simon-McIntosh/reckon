@@ -1,0 +1,80 @@
+<section id="a-plan-write-refuses-the-bucket-landing">
+  <h2>A plan write that names the deferred-work term in prose is refused</h2>
+
+  <p id="a-plan-write-refuses-the-bucket-what-changed"><strong>What changed.</strong>
+  The plan store now refuses an authored plan body that names the deferred-work
+  term in prose. The refusal is one more reason the existing forged-body
+  predicate reports (<code>_forged_plan_structure</code> in
+  <code>reckon/_store.py</code>), not a second check: <code>insert_section</code>,
+  an <code>append_evidence</code> body, a created plan's section body — which
+  reaches the same predicate through <code>_queue_authored_section</code> and
+  <code>_insert_authored_section</code> — and a <code>set</code> of
+  <code>sections.&lt;id&gt;.body</code> through
+  <code>reckon/_store_section_ops.py</code>'s <code>_refuse_forged_structure</code>
+  all raise it in the channel they already used, so no caller sees a new error
+  code: an operation error on the state routes and a text-edit error on text
+  mode. The reason the predicate returns is the rule itself with the quoted
+  fragment, as in <code>the term "follow-on" in prose; additional work is a plan
+  section or an instruction in the dispatching prompt</code>.</p>
+
+  <p id="a-plan-write-refuses-the-bucket-design"><strong>Three details carry the
+  design.</strong> The prose is read by the audit's own reader,
+  <code>reckon/doccheck.py</code>'s <code>_prose_text</code>, which already leaves
+  the <code>&lt;pre&gt;</code> and <code>&lt;code&gt;</code> subtrees out, so a
+  section citing the term as a symbol stays writable and the store and the audit
+  cannot disagree about what counts as prose. Text mode
+  (<code>_replace_plan_text</code>) supplies the fragment it replaces beside the
+  fragment it writes, and only the term the edit adds is refused, counted per
+  occurrence, so a plan whose older prose already carries the term stays
+  editable. A <code>sections.&lt;id&gt;.body</code> set has no prior body to
+  compare against, so a legacy body carrying the term is refused there, and that
+  refusal names text mode as the route out.</p>
+
+  <p id="a-plan-write-refuses-the-bucket-audit"><code>reckon audit-doc</code>
+  reports the term in prose as one new warning kind,
+  <code>deferred-work-term-in-prose</code>, on a plan that already carries it, so
+  the corpus is converted without a write-time refusal breaking on history.</p>
+
+  <h3>Measured</h3>
+
+  <p id="a-plan-write-refuses-the-bucket-negative-control">The declared mutation
+  removes the term clause from <code>_forged_plan_structure</code>. Under it four
+  of the eleven cases report acceptance where the test asserts a refusal — the
+  inserted section, the created plan's section body, the
+  <code>sections.&lt;id&gt;.body</code> set and the <code>append_evidence</code>
+  body — so the term clause, and not some other reason, is what refuses them. The
+  run exits non-zero with those four test ids failing. The source is restored in
+  the same command, and the tree carries no mutation (an empty diff against the
+  committed head).</p>
+
+  <table id="a-plan-write-refuses-the-bucket-arms">
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>the new test file alone</td>
+        <td>8e7955f88</td>
+        <td>11 cases pass; under the declared mutation 4 fail and 7 pass</td>
+      </tr>
+      <tr>
+        <td>the population of test files that reach the authored-body paths</td>
+        <td>8e7955f88 (head)</td>
+        <td>no summary line: the arm closed without one, so it yields no failure
+          ids and no delta</td>
+      </tr>
+      <tr>
+        <td>the same population at the base revision</td>
+        <td>4d75245b4</td>
+        <td>collected nothing, so the arm is void</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p id="a-plan-write-refuses-the-bucket-arms-note"><strong>The population arms
+  did not close.</strong> The head arm ran the list and its progress line carries
+  three failure markers, but its log ends without the summary that names them, so
+  nothing here attributes those failures and no delta is claimed. The base arm
+  was handed a list naming the new test file, which does not exist in the
+  extracted base tree, and collected nothing. Both arms are the remaining work,
+  not a result: the population gate needs a re-run at the base revision and at
+  the head with a base list that omits the new test file.</p>
+</section>
