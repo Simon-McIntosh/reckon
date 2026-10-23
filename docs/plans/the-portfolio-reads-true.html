@@ -24,7 +24,7 @@
   <title>The Portfolio Reads True | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="58">
+<meta name="plan-version" content="59">
 <meta name="plan-modified" content="2026-10-23">
 <meta name="plan-section-depends-on" content="{&quot;s6&quot;:[&quot;the-portfolio-reads-true#s8&quot;]}">
 </head>
@@ -335,6 +335,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261023T190134350875-review-of-a-sprint-move-writes-the-plans-sprint-d648d001969f" data-who="reckon-build" data-when="2026-10-23T19:26:20.339Z">
     <div class="r-comment-body"><p>review of r-20261023T175236866631-a-sprint-move-writes-the-plans-sprint read at base 669f3f5f4 head d648d0019, stored parsed with scores goal_fidelity 20, evidence 18, scope_discipline 20, durability 18, fit 18, reuse 16, added_failure_count 0 and two non-blocking findings (a same-id replay at reckon/mcp_edit_plan.py:1324 reports a partial sprint move as success; the SPRINT_MEMBERSHIP assertion at tests/test_a_sprint_move_writes_the_plans_sprint.py:160 is masked on every red arm), and crew check --review reports ok:true.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261023T175236866631-a-sprint-move-writes-the-plans-sprint" data-who="reckon-build" data-when="2026-10-23T18:33:47.250Z">
+    <div class="r-comment-body"><p>a sprint move now writes the plan&#x27;s own sprint in the same call through both entry points (edit_plan&#x27;s index batch pre-reads each moved plan, refuses a ref another project owns naming both sprints, then carries each plan&#x27;s sprint through its own versioned write and reports plan_writes beside the index version; _move_sprint_item goes through the same read and writer); gate 122 passed EXIT=0 at 14ddfb20a against a 669f3f5f4 base arm of 5 failed and a negative control of 3 failed.</p></div>
 </div>
 </section>
 </main>
