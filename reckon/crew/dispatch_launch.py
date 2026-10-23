@@ -2605,6 +2605,54 @@ def _supervisor_tree_snapshot(spec: Mapping[str, Any]) -> None:
     )
 
 
+# The harness scratch an attempt builds for its own process, which nothing
+# reads once that process ends: the client's plugin catalog and download cache
+# under its run-owned home, and the per-run cache the worktree's library stack
+# fills. They are removed as the attempt's exit record is written, so a
+# directory that outlives its run does not carry them. The client's session
+# tree that a resume reads is deliberately not listed here and survives.
+ATTEMPT_HARNESS_CACHES: tuple[str, ...] = (
+    "codex-home/cache",
+    "codex-home/plugins",
+    "cache",
+)
+
+
+def _remove_attempt_harness_caches(
+    run_directory: Path, *, attempt: int
+) -> list[dict[str, Any]]:
+    """Remove the harness caches an exited attempt left, returning what went.
+
+    Bound to the writing of an attempt's exit record rather than to the
+    presence of that record, so an attempt that exits removes only the caches
+    it built. A later attempt of the same run fills the same paths, so the
+    removal runs only while the attempt being recorded is still the run's
+    current one: a record written late, after a newer attempt has started, must
+    leave that newer attempt's caches alone. A run naming no current attempt
+    yields no attempt to remove for, so nothing goes. A removal that fails
+    leaves the path in place rather than raising, since a surviving cache must
+    not cost the run its exit record.
+    """
+    if not _attempt_is_current(run_directory, attempt):
+        return []
+    removed: list[dict[str, Any]] = []
+    for relative in ATTEMPT_HARNESS_CACHES:
+        target = run_directory / relative
+        try:
+            if target.is_symlink():
+                size = 0
+                target.unlink()
+            elif target.is_dir():
+                size = tree_size_bytes(target)
+                shutil.rmtree(target)
+            else:
+                continue
+        except OSError:
+            continue
+        removed.append({"path": str(target), "bytes": size})
+    return removed
+
+
 def _supervisor_exit_record(
     *,
     run_id: str,
@@ -2615,7 +2663,13 @@ def _supervisor_exit_record(
     run_directory: Path,
     ended_pids: list[int] | None = None,
 ) -> dict[str, Any]:
-    """Compose the one record written for a worker's exit or launch failure."""
+    """Compose the one record written for a worker's exit or launch failure.
+
+    The attempt's harness caches are removed here, on the record's own write,
+    and the paths and sizes that went are carried on the record so a reader can
+    see what left with the attempt.
+    """
+    removed_caches = _remove_attempt_harness_caches(run_directory, attempt=attempt)
     paths = stream_paths_newest_first(run_directory)
     count, last_type = _stream_record_facts(paths)
     record: dict[str, Any] = {
@@ -2635,6 +2689,10 @@ def _supervisor_exit_record(
         # record, so a reader can see the run's tree was ended rather than
         # guessing from the single worker pid.
         "ended_pids": list(ended_pids or []),
+        # The harness caches this attempt built and this record's write
+        # removed, each with the size it held, so what left with the attempt is
+        # on the attempt's own record rather than inferred from disk.
+        "removed_harness_caches": removed_caches,
     }
     if status is None:
         record.update({"exit_code": None, "signal": None, "signal_name": None})
