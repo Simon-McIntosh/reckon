@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:crew-state-stays-bounded">
+  <meta name="plan-verifies" content="reckon:crew-state-stays-bounded#s3">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-23">
+  <title>Only a run something can still need keeps its directory | reckon</title>
+  <link rel="stylesheet" href="/reckon/_shared/foundation.css">
+  <link rel="stylesheet" href="/reckon/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="only-a-run-something-can-still-need-keeps-its-directory-retention">
+  <h2>A finished run's directory is retired on need, not on age</h2>
+  <p>The retention pass no longer judges a run directory by its mtime alone. A directory is kept
+  while anything can still need it — a live pointer or a queued entry, no terminal ledger row (an unpromoted
+  run may still be resumed and re-promoted), a review owed or in flight, or stream-derived figures
+  absent from the ledger row — and once none of those holds it is held for a configured grace
+  window and then removed. The window is the flight key <code>gc.directory_grace</code>, written as
+  an integer and a unit (<code>s</code>, <code>m</code>, <code>h</code>) and defaulting to
+  <code>24h</code>; it is declared in <code>reckon/schema/flight.yaml</code> and regenerated into
+  <code>reckon/_flight_schema.py</code> and <code>docs/_shared/flight.schema.json</code> by
+  <code>scripts/regen_flight_schema.py</code>, never hand-edited. The raw-report, lock and
+  unledgered-directory sweeps keep their own thirty-day age and are untouched.</p>
+  <p>Each removal prints the directory's path and its measured size before it happens, on the same
+  pass that removes it, so the reclaimed set is readable in the command's own output rather than
+  inferred from a report afterwards.</p>
+</section>
+<section id="only-a-run-something-can-still-need-keeps-its-directory-seven-states">
+  <h2>Seven planted states, one removal</h2>
+  <p>One temporary crew home holds seven run directories, one per state a finished run can be in:
+  a live run and a queued run (each sixty days old), an unpromoted run with no ledger row, a
+  promoted run owing a review, a promoted run whose stream-derived figures were never recorded, a
+  promoted and reviewed run inside the grace window, and one reviewed run past it. A dry run of
+  <code>garbage_collect</code> lists <strong>exactly one</strong> for removal — the reviewed run
+  past its window — and the real run removes that one and leaves the other six on disk; the
+  withheld rows name <code>review-owed</code> and <code>missing-derived-figure</code> as their
+  reasons. Measured: <strong>3 passed</strong>.</p>
+  <p>The unpromoted fixture is deliberately <em>younger</em> than thirty days but far older than the
+  grace window, so it is the unledgered-directory sweep (a different pass, thirty days, outside this
+  node's write scope) that would hold it on age alone and the retention predicate that holds it here.
+  That is what makes the declared mutation decisive.</p>
+</section>
+<section id="only-a-run-something-can-still-need-keeps-its-directory-negative-control">
+  <h2>Declared negative control: the predicate reduced to age alone</h2>
+  <p>Applying the declared mutation — the live-pointer, queued-entry, in-flight-review and
+  review-owed tests removed so the directory is judged by age alone — fails all three cases
+  (<strong>3 failed</strong>, EXIT=1): the dry run offers runs that something can still need, and the
+  withheld-reason assertions lose their rows. Restoring the predicate from a byte-identical backup
+  brings the file back to <strong>3 passed</strong>.</p>
+</section>
+</main>
+</body>
+</html>

@@ -1134,7 +1134,7 @@
                             "type": "null"
                         }
                     ],
-                    "description": "How gc bounds the files a promoted run captured. Declared on the flight config so a host or project layer retunes the limit without a code change; the resolver reads it from the resolved config."
+                    "description": "How gc bounds the files a promoted run captured and how long it keeps a finished run's directory. Declared on the flight config so a host or project layer retunes the limits without a code change; the resolver reads them from the resolved config."
                 },
                 "lanes": {
                     "additionalProperties": {
@@ -1356,6 +1356,14 @@
             "additionalProperties": false,
             "description": "How gc bounds the files a promoted run captured. Declared on the flight config so the size a run's captured file is held to is set by a layer rather than by code.",
             "properties": {
+                "directory_grace": {
+                    "description": "How long a finished run's directory is kept after the moment nothing can still need it \u2014 the run has no live pointer and no queued entry, it has a terminal ledger row, no review of it is owed or in flight, and the figures derived from its stream are on its ledger row \u2014 so that a reader holding a path to it does not lose it mid-read. The retention sweep removes the directory once this window has passed. Written as an integer followed by a unit, s, m or h; one day by default.",
+                    "pattern": "^[0-9]+[smh]$",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
                 "run_file_max_mb": {
                     "description": "The size a promoted run's captured file may reach before gc bounds it, in megabytes. A text file over the limit keeps its head and its tail around a one-line marker naming the original size and sha256; a recognised binary artefact over the limit is reported and left untouched.",
                     "minimum": 1,
@@ -3093,7 +3101,7 @@
                     "type": "null"
                 }
             ],
-            "description": "How gc bounds the files a promoted run captured. Declared on the flight config so a host or project layer retunes the limit without a code change; the resolver reads it from the resolved config."
+            "description": "How gc bounds the files a promoted run captured and how long it keeps a finished run's directory. Declared on the flight config so a host or project layer retunes the limits without a code change; the resolver reads them from the resolved config."
         },
         "lanes": {
             "additionalProperties": {

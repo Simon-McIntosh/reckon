@@ -215,7 +215,7 @@ class FlightConfig(ConfiguredBaseModel):
     routing: RoutingConfig | None = Field(default=None, description="""How dispatch selects its worker backend.""")
     gates: GateConfig | None = Field(default=None)
     review: ReviewConfig | None = Field(default=None)
-    gc: GcConfig | None = Field(default=None, description="""How gc bounds the files a promoted run captured. Declared on the flight config so a host or project layer retunes the limit without a code change; the resolver reads it from the resolved config.""")
+    gc: GcConfig | None = Field(default=None, description="""How gc bounds the files a promoted run captured and how long it keeps a finished run's directory. Declared on the flight config so a host or project layer retunes the limits without a code change; the resolver reads them from the resolved config.""")
     budget: BudgetConfig | None = Field(default=None)
     fences: FenceConfig | None = Field(default=None)
     capability_raise: CapabilityRaise | None = Field(default=None, description="""Rule that raises the capability a node resolves at once its plan section has been attempted at or above a threshold, so a section that keeps costing attempts stops landing on the raise's own lane without anyone deciding it by hand. The raise moves a node upward only: a node already at or above the raised level resolves unchanged.""")
@@ -248,6 +248,20 @@ class GcConfig(ConfiguredBaseModel):
     How gc bounds the files a promoted run captured. Declared on the flight config so the size a run's captured file is held to is set by a layer rather than by code.
     """
     run_file_max_mb: int | None = Field(default=None, description="""The size a promoted run's captured file may reach before gc bounds it, in megabytes. A text file over the limit keeps its head and its tail around a one-line marker naming the original size and sha256; a recognised binary artefact over the limit is reported and left untouched.""", ge=1)
+    directory_grace: str | None = Field(default=None, description="""How long a finished run's directory is kept after the moment nothing can still need it — the run has no live pointer and no queued entry, it has a terminal ledger row, no review of it is owed or in flight, and the figures derived from its stream are on its ledger row — so that a reader holding a path to it does not lose it mid-read. The retention sweep removes the directory once this window has passed. Written as an integer followed by a unit, s, m or h; one day by default.""")
+
+    @field_validator('directory_grace')
+    def pattern_directory_grace(cls, v):
+        pattern=re.compile(r"^[0-9]+[smh]$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid directory_grace format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid directory_grace format: {v}"
+            raise ValueError(err_msg)
+        return v
 
 
 class ReviewSuite(ConfiguredBaseModel):
