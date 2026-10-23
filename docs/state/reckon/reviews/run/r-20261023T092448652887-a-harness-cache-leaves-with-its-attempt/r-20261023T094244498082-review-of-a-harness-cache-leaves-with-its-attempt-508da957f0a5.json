@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:2726",
+    "reckon/crew/dispatch_launch.py:3528",
+    "reckon/crew/dispatch_launch.py:3607"
+  ],
+  "completed_at": "2026-10-23T10:30:14.666Z",
+  "dispatched_at": "2026-10-23T10:20:18Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "2621",
+      "severity": "non-blocking",
+      "text": "the added _tree_bytes duplicates tree_size_bytes (reckon/crew/dispatch_launch.py:741), which already owns 'total bytes of the regular files beneath a path, symlinks excluded' and is used by remove_worker_scratch at :871 and imported by reckon/crew/promotion.py:75, promotion_release.py:18 and reckon/crew/routing.py:1733,1915; the only caller _remove_attempt_harness_caches calls _tree_bytes after establishing target is not a symlink (:2645-2647), so the duplicate's extra top-level-symlink branch is unreachable and tree_size_bytes(target) is a drop-in; a second walk implementation in the same module drifts from the one four other modules measure run directories with."
+    },
+    {
+      "file": "tests/test_a_harness_cache_leaves_with_its_attempt.py",
+      "line": "91",
+      "severity": "non-blocking",
+      "text": "test_a_run_that_*_keeps_every_cache (line 85-93) seeds the fixtures and asserts they are present without invoking any production code, so it passes for every possible implementation of _remove_attempt_harness_caches and cannot redden on any regression; the done_when clause 'a fixture that has not exited keeps everything' is therefore recorded as covered while nothing exercises the exit path's absence."
+    },
+    {
+      "file": "tests/test_a_harness_cache_leaves_with_its_attempt.py",
+      "line": "134",
+      "severity": "non-blocking",
+      "text": "the path-set assertion compares _remove_attempt_harness_caches' returned paths against ATTEMPT_HARNESS_CACHES, the same constant the function reads to build them, so the two sides move together and the assertion survives any mutation of that constant on its own; only the byte-sum assertion at :138, pinned to the independently seeded _CACHE_FILES sizes, and the presence assertions in test_an_exited_attempt_* at :78 make the file meaningful."
+    }
+  ],
+  "node": "review-of-a-harness-cache-leaves-with-its-attempt-508da957f0a5",
+  "node:reviewed": "a-harness-cache-leaves-with-its-attempt",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to remove an exited attempt's harness caches from its run directory in the exit-record writer; reckon/crew/dispatch_launch.py:2680 calls the added _remove_attempt_harness_caches from _supervisor_exit_record and :2613-2617 name codex-home/cache, codex-home/plugins and cache, so the exit-record composer is where the caches leave.\nVERDICT done_when: the measure names a fixture holding the three caches plus codex-home/sessions put through _supervisor_exit_record, a fixture that has not exited, and a second attempt's caches surviving a read of the first's record; tests/test_a_harness_cache_leaves_with_*_attempt.py:51,85,96,128 carry one case each and the manifest records the gate (gate-head.log `1 failed, 38 passed, 1 skipped`, the single failure the pre-existing reckon/roadmap.py width test) plus a negative control whose log closes EXIT=1 on two ids the head arm does not fail.\nVERDICT write_paths: the manifest declares reckon/crew/dispatch_launch.py, tests/test_a_harness_cache_leaves_with_*_attempt.py, the crew-state-stays-bounded evidence fragment and the node's figures dir; git diff --stat 6fe36f374..508da957f lists exactly dispatch_launch.py (+68/-1), the test file (+140) and the evidence fragment (+44), so nothing left the fence and the unused figures grant wrote nothing.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T092448652887-a-harness-cache-leaves-with-its-attempt/manifest.md; status complete, two commits, negative_control_log named as a bare path, after_suite completed with one attributed failure; baseline_suite records completed:false (collection ImportError on the base tree) so the base arm measures nothing and added_failure_count is taken as 0 from the after arm's attributed pre-existing failure.\nVERDICT diff: read both commits against 6fe36f374; de724b429 adds ATTEMPT_HARNESS_CACHES, _tree_bytes, _remove_attempt_harness_caches and the removed_harness_caches key wired into _supervisor_exit_record, and 508da957f adds only the landing fragment; no removed code outside the one-line docstring replacement at :2671-2678, and every changed path is inside the declared scope.\nCALL_SITES: reckon/crew/dispatch_launch.py:2726, reckon/crew/dispatch_launch.py:3528, reckon/crew/dispatch_launch.py:3607\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:2680 runs the removal inside _supervisor_exit_record, and all three production callers (:2726 in _record_launch_abandoned_before_spawn, :3528 and :3607 in _run_supervisor) write the composed record to EXIT_RECORD_NAME immediately after, so the caches leave exactly as an attempt's exit record is written.\nSCORE evidence: 14\nJUSTIFICATION evidence: gate-head.log closes `1 failed, 38 passed, 1 skipped` at 508da957f and negative-control.log closes EXIT=1 on two ids the head arm does not fail, but gate-base.log is a collection ImportError on the base tree (baseline_suite completed:false), so the done_when's claim that the caches survive at base is inferred from ATTEMPT_HARNESS_CACHES' absence rather than measured.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 6fe36f374..508da957f changes only reckon/crew/dispatch_launch.py, tests/test_a_harness_cache_leaves_with_*_attempt.py and the declared crew-state-stays-bounded fragment, and the figures grant it was given produced no file.\nSCORE durability: 15\nJUSTIFICATION durability: the negative control reddens tests/test_a_harness_cache_leaves_with_*_attempt.py:69,78,79 and :137,138 when codex-home/sessions is added to the removed set, so the removal-and-keep guard is real, but test_a_run_that_has_not_exited_* at :85-93 invokes no production code and the path-set assertion at :134 is self-referential, so part of the claimed coverage rests on assertions that cannot fail (see FINDINGS).\nSCORE fit: 18\nJUSTIFICATION fit: the added names ATTEMPT_HARNESS_CACHES, _tree_bytes, _remove_attempt_harness_caches and removed_harness_caches at reckon/crew/dispatch_launch.py:2613-2703 are mechanism-named with no plan, stage or ticket label, and the per-target try/except-continue removal matches the idiom of remove_worker_scratch at :878-889.\nSCORE reuse: 4\nJUSTIFICATION reuse: _tree_bytes at :2621 re-implements tree_size_bytes at :741 in the same module without extending it, and since its only caller removes a symlink before walking, tree_size_bytes(target) is a drop-in; see FINDING at reckon/crew/dispatch_launch.py:2621.\nFINDING reckon/crew/dispatch_launch.py:2621 non-blocking: _tree_bytes duplicates tree_size_bytes (reckon/crew/dispatch_launch.py:741), used by remove_worker_scratch at :871 and imported by promotion.py:75, promotion_release.py:18 and routing.py:1733,1915, and its only caller never reaches the duplicate's symlink branch, so the repo now has two walkers measuring run directories.\nFINDING tests/test_a_harness_cache_leaves_with_its_attempt.py:91 non-blocking: test_a_run_that_has_not_exited_keeps_every_cache runs no production code, so it passes for any implementation and the 'unexited run keeps everything' clause is unguarded.\nFINDING tests/test_a_harness_cache_leaves_with_its_attempt.py:134 non-blocking: the path-set assertion compares the removal's output against ATTEMPT_HARNESS_CACHES, the constant the function reads, so both sides move together; only the byte-sum at :138 is independent of the code under test.",
+  "review_run_id": "r-20261023T094244498082-review-of-a-harness-cache-leaves-with-its-attempt-508da957f0a5",
+  "reviewed_base_sha": "6fe36f374eb6fc27cca985e30f9a9791575ece6a",
+  "reviewed_head_sha": "508da957f0a5b62a3c79b639235591534e06123a",
+  "reviewed_run_id": "r-20261023T092448652887-a-harness-cache-leaves-with-its-attempt",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 4,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T10:30:48.462048+00:00",
+  "total": 88
+}
