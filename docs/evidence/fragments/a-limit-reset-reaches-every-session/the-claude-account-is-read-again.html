@@ -121,4 +121,14 @@ removed and fail only on a machine that happened to be logged in. Both populatio
 pass 5 of 5 alone because the guarded read is deterministic, not because this box's account
 answered or failed. At the guarded head the same arm is 2 failed / 77 passed against the base arm's
 2 failed / 68 passed, with the same two pre-existing CLI failures in both and none added.</p>
+<p id="the-claude-account-is-read-again-probe-runner-way-through">One case had to keep the real read:
+<code>test_an_unreadable_cache_is_an_unknown_reason_not_a_crash</code> exists to show that a live read
+which fails carries its reason through to the detail, so a guard that answers nothing before its
+injected transport is ever reached makes it pass for the wrong reason. The guard therefore carries one
+declared way through. A test whose subject is the read calls it, it reads the guard's own marker
+before lifting the replacement — so it cannot strip a stub some other test installed, and it refuses
+by name when the guard is not in force. Four call sites declare it, and lint is clean on all four
+changed files as before. The guard's own test asserts the marker is read, so the mechanism cannot
+quietly become decorative, and every test that does not declare the read is still held off the
+login's own account exactly as before.</p>
 </article>
