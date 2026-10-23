@@ -1,0 +1,69 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T08:08:14.181Z",
+  "dispatched_at": "2026-10-23T07:52:43Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/crew-state-stays-bounded.html:140",
+      "id": "evidence_paths-1",
+      "reason": "a later reader cannot open the \u00a76 gate log once \u00a73 lands, so the declared log location must move to a durable path, which changes what the section instructs its node to do.",
+      "text": "\u00a76 places every log \"under the run directory\", but \u00a73 in the same plan removes a run directory once nothing can still need it (a day of grace by default, plan.html:82-86) and names as durable only the run's ledger row, committed run record and evidence fragment \u2014 the gate logs \u00a76 writes are none of those, so the node's own gate evidence is deleted about a day after it lands",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/crew-state-stays-bounded.html:105",
+      "id": "done_when-1",
+      "reason": "the archive is the section's stated justification for deleting a store other readers may still want, so \u00a74's done-when should carry an assertion that the dated archive exists and is non-empty.",
+      "text": "\u00a74's mechanism is that the files \"are compressed into one dated archive under the crew home and removed\" (plan.html:102-103), but its done-when checks only the dry-run listing, that the real run removes exactly that list, and that the copy's `crew/watch/` holds under 1 MB \u2014 nothing asserts the archive exists or holds the removed bytes, so a sweep that deletes without archiving satisfies every clause",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/crew-state-stays-bounded.html:102",
+      "id": "reasoning-1",
+      "reason": "a node dispatched to \u00a74 must invent both the sweep's home and its integration point, and the plan's own third reasoning check requires the production caller be named.",
+      "text": "\u00a74 names no implementation site for its sweep: \u00a73 extends \"the retention pass in `reckon/crew/gc.py`\" (plan.html:87), \u00a76 names `_supervisor_exit_record` in `reckon/crew/dispatch_launch.py` (plan.html:130), and \u00a77 names an hourly user timer over the \u00a73 pass (plan.html:146), while \u00a74 names no module, command or caller",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/crew-state-stays-bounded.html:124",
+      "id": "reasoning-2",
+      "reason": "the path is named in \u00a71's own 200-directory sample, my scan is a different and partial instrument; flagged so the author confirms the removed-path list, not because I have falsified it.",
+      "text": "\u00a76's removed-path set includes a per-run `cache/` tree \"a worker's tools fill (matplotlib, xdg, numba)\" (plan.html:127-128); I could not reproduce it: of the 400 most recently modified run directories under `~/.config/reckon/crew/runs/`, none held a top-level `cache/` or `.cache`, and the only top-level `cache/` I opened from the wider population (`r-20261014T013636329481-carrier-agreement`) held a worker's own zarr lock files, not matplotlib, xdg or numba caches",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "6cefbd62859e75213fa2b6334628bb32927378e61915e20828d37d0dc6fb8664",
+  "plan_slug": "crew-state-stays-bounded",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T074950909361-plan-review-of-crew-state-stays-bounded",
+  "reviewed_blob_sha": "7aaec095f52c709f4297deaba4649adae8109cd8",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_supervisor_exit_record` resolves at `reckon/crew/dispatch_launch.py:2608`; `RUN_HOME_SESSIONS` resolves at `reckon/crew/rollout.py:43`; \u00a74's `the-monitor-reads-each-fact-once \u00a712` and \u00a71's hrefs resolve. Noted without a finding: \u00a76 calls `_supervisor_exit_record` \"the code that writes that attempt's exit record\", while that function composes the record and `_write_attempt_artifact` (dispatch_launch.py:3546) writes it \u2014 the named function is nonetheless where the \"removed paths and their sizes\" must be added, so the anchor is workable.",
+    "done_when": "a finding \u2014 \u00a74's done-when asserts the removal and the 1 MB bound but never asserts the dated archive that the same section's mechanism creates.",
+    "evidence_paths": "a finding \u2014 \u00a76 says \"Every log is under the run directory\" (plan.html:140), and \u00a73 (plan.html:82-86) retires a run directory about a day after the run finishes.",
+    "naming": "pass \u2014 \u00a74 and \u00a76 introduce no plan labels, ticket numbers or version tags, and the symbols they cite are named by mechanism.",
+    "reasoning": "a finding \u2014 \u00a74's mechanism is given no implementation site while \u00a73, \u00a76 and \u00a77 each name theirs; and \u00a76's removed-path set includes a `cache/` tree I could not reproduce.",
+    "single_goal": "pass \u2014 \u00a74 carries one deliverable (retire the old event-log store) and \u00a76 one (remove a worker's harness caches at attempt exit); neither splits into two verdicts.",
+    "wiring": "pass \u2014 \u00a74's only edge, `s4 \u2192 the-monitor-reads-each-fact-once#s12` (plan.html:22), resolves: that plan carries `<h2 id=\"s12\">\u00a712 \u2014 Cutover, measured with the same instruments</h2>` (the-monitor-reads-each-fact-once.html:221); \u00a75's edge to that plan's \u00a77 resolves to \u00a77 \"One station per node replaces the per-project producers\"; and the \u00a77\u2192\u00a73 edge raised and acted on earlier is now recorded in `plan-section-depends-on` (plan.html:22)."
+  },
+  "section_digests": {
+    "_document": "612e1478ab72d416411926cbb3ef84a93116133be176b322e61e8c1d0dd1f3a0",
+    "s1": "61be6bb6df8b986fbb68c3273e136fcef1b9fa13e7bcadb4fb62eab2fa4145ff",
+    "s2": "9201fe37417310883d221ec7b0b5b4ff7de29f66ab073ede465175d42aa91bc4",
+    "s3": "9aa4d5f5a6287b698b7d6011ac8fcc295589c20484d8892a3c86d88d629b8793",
+    "s4": "2681ac58d6ae7457bc800678db433ce359be271248b74a429b44ee4d817769b4",
+    "s5": "bba37241ec93e13e0fb1eb173abfd49db0b6e77d788aa2dbec1608d164852542",
+    "s6": "c491229cedc576a79a4628da53168b317ce14fef88d78739c48e86b16aaff17a",
+    "s7": "1f6a99e4b8834c4a8bea5559a1507e6da85988f873d5547c7804930237104694"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T08:23:15.135996+00:00"
+}
