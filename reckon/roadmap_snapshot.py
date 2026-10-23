@@ -45,10 +45,15 @@ _ROADMAP_SNAPSHOTS: dict[str, tuple[str, dict[str, Any]]] = {}
 
 
 class _MountsMemo:
-    """The mounts last resolved for a stamp, held until the stamp moves."""
+    """The mounts last resolved, as one ``(stamp, mounts)`` pair.
 
-    stamp: int | None = None
-    mounts: dict[str, Path] | None = None
+    The pair is a single value stored with one assignment, because the server
+    answers requests on several threads at once: two stores would let a reader
+    see the new stamp beside the mounts resolved under the old one and return a
+    set of mounts the stamp it just read no longer describes.
+    """
+
+    pair: tuple[int | None, dict[str, Path]] | None = None
 
 
 _MOUNTS_MEMO = _MountsMemo()
@@ -64,12 +69,16 @@ def remembered_mounts(
     otherwise touch it on every call, to learn nothing that changed. Holding the
     answer until the mounts file's own stamp moves is the only way a mount can
     be added, removed or repointed under a running process.
+
+    A reader takes the stored pair once and uses both halves from that one
+    value, so a resolution landing between its two checks cannot hand back
+    mounts belonging to a stamp other than the one it matched.
     """
-    memo = _MOUNTS_MEMO
-    if memo.mounts is not None and memo.stamp == stamp:
-        return memo.mounts
+    pair = _MOUNTS_MEMO.pair
+    if pair is not None and pair[0] == stamp:
+        return pair[1]
     resolved = resolve()
-    memo.stamp, memo.mounts = stamp, resolved
+    _MOUNTS_MEMO.pair = (stamp, resolved)
     return resolved
 
 

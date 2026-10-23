@@ -706,3 +706,116 @@ def test_an_advanced_clock_recomputes_a_run_whose_files_did_not_move(
     assert measured["classification_before"] == "waiting", measured
     assert measured["classification_after"] == "wait-aged", measured
     assert measured["recomposed"] > DOCUMENT_COUNT, measured
+
+
+class _InterleavingMemo:
+    """A mounts memo whose every store is followed by a reader's observation.
+
+    The module stores the pair of a stamp and the mounts resolved under it as a
+    single value. A reader running on another thread could otherwise land
+    between two stores and take the new stamp beside the mounts resolved under
+    the old one; this stands in for that reader, and it reads the same way a
+    concurrent caller would: the pair first, and a memo written as two separate
+    attributes leaves it no pair to read, so it takes the two halves one at a
+    time and records whatever combination it lands on.
+    """
+
+    def __init__(self, observe) -> None:
+        object.__setattr__(self, "_observe", observe)
+        object.__setattr__(self, "pair", None)
+
+    def __setattr__(self, name: str, value: object) -> None:
+        object.__setattr__(self, name, value)
+        observe = object.__getattribute__(self, "_observe")
+        observe(self)
+
+
+def test_a_second_call_with_the_same_stamp_resolves_nothing_again(
+    monkeypatch,
+) -> None:
+    """A mounts file that has not moved is not resolved a second time.
+
+    The resolution stats every mounted docs tree, so repeating it per request
+    is the cost the memo exists to remove. The count is the measurement: the
+    resolver runs once for the first call and not at all for the second.
+    """
+    from reckon import roadmap_snapshot
+
+    monkeypatch.setattr(roadmap_snapshot._MOUNTS_MEMO, "pair", None)
+    resolutions: list[int] = []
+
+    def resolve() -> dict[str, Path]:
+        resolutions.append(1)
+        return {"p1": Path("/tmp/p1/docs")}
+
+    first = roadmap_snapshot.remembered_mounts(7, resolve)
+    second = roadmap_snapshot.remembered_mounts(7, resolve)
+
+    assert first == second == {"p1": Path("/tmp/p1/docs")}
+    assert len(resolutions) == 1, resolutions
+
+
+def test_a_moved_mounts_file_is_resolved_again(monkeypatch) -> None:
+    """A mounts file that moved is resolved afresh, and its answer replaces the old."""
+    from reckon import roadmap_snapshot
+
+    monkeypatch.setattr(roadmap_snapshot._MOUNTS_MEMO, "pair", None)
+    resolutions: list[int] = []
+
+    def resolve() -> dict[str, Path]:
+        resolutions.append(1)
+        return {"p%d" % len(resolutions): Path("/tmp/p%d/docs" % len(resolutions))}
+
+    first = roadmap_snapshot.remembered_mounts(7, resolve)
+    second = roadmap_snapshot.remembered_mounts(8, resolve)
+    third = roadmap_snapshot.remembered_mounts(7, resolve)
+
+    assert first == {"p1": Path("/tmp/p1/docs")}, first
+    assert second == {"p2": Path("/tmp/p2/docs")}, second
+    assert third == {"p3": Path("/tmp/p3/docs")}, third
+    assert len(resolutions) == 3, resolutions
+
+
+def test_a_reader_never_sees_a_stamp_beside_mounts_from_another_store(
+    monkeypatch,
+) -> None:
+    """The stamp and the mounts a reader returns come from one store.
+
+    Each store is followed by a reader, the way a second thread would land on
+    it. Every observation must pair a stamp with the mounts the resolver
+    returned for that stamp: an observation carrying a stamp beside the mounts
+    of the previous resolution is a reader answering from a set the stamp does
+    not describe, which is what a memo written as two attributes allows.
+    """
+    from reckon import roadmap_snapshot
+
+    resolved_for: dict[int, dict[str, Path]] = {}
+    observations: list[tuple[object, object]] = []
+
+    def observe(memo) -> None:
+        pair = getattr(memo, "pair", None)
+        if pair is None:
+            pair = (getattr(memo, "stamp", None), getattr(memo, "mounts", None))
+        observations.append((pair[0], pair[1]))
+
+    def resolver_for(stamp: int):
+        def resolve() -> dict[str, Path]:
+            mounts = {"p": Path("/tmp/p%s/docs" % stamp)}
+            resolved_for[stamp] = mounts
+            return mounts
+
+        return resolve
+
+    memo = _InterleavingMemo(observe)
+    monkeypatch.setattr(roadmap_snapshot, "_MOUNTS_MEMO", memo)
+
+    roadmap_snapshot.remembered_mounts(7, resolver_for(7))
+    roadmap_snapshot.remembered_mounts(8, resolver_for(8))
+
+    assert observations, "the probe observed no store, so this case checks nothing"
+    mixed = [
+        (stamp, mounts)
+        for stamp, mounts in observations
+        if mounts is not None and mounts is not resolved_for.get(stamp)
+    ]
+    assert mixed == [], observations
