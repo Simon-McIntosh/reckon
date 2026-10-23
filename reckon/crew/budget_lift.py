@@ -574,14 +574,20 @@ def record_observed_end(
     now: datetime,
     bound: LiftCeilings,
 ) -> bool:
-    """Stamp a lift's end the first time a read observes it, and no later.
+    """Record a lift's end the first time a read observes a reset, and no later.
 
-    A lift's end is read at the moment of use, so a reading that flips between
-    two figures ends a reset-anchored lift on one read and revives it on the
-    next. Recording the end the first time it is observed makes it final:
-    :func:`end_cause` reads ``ended_at`` ahead of every reading, so no later
-    reading returns the id to in force, and the producer emits one
-    ``lift-granted`` and one ``lift-ended`` for the id.
+    A reset-anchored lift's end is read from the group's window reading at the
+    moment of use, so a reading that flips between two figures ends the lift on
+    one read and revives it on the next. Recording that end the first time it is
+    observed makes it final: :func:`end_cause` reads ``ended_at`` ahead of every
+    reading, so no later reading returns the id to in force, and the producer
+    emits one ``lift-granted`` and one ``lift-ended`` for the id.
+
+    Only the reset cause is recorded. The other three are functions of the
+    ceiling clock, a stated instant or a clear, each already fixed on the record
+    and monotone in time, so a stamp would add nothing — while a read that
+    judged the ceiling at one clock would make it permanent for a reader
+    resolving the same lift at another.
 
     A lift that has not started, or that carries no grant, is never stamped,
     because neither is an observed end. Returns whether the record changed.
@@ -594,10 +600,10 @@ def record_observed_end(
     if starts is not None and _aware(now) < starts:
         return False
     cause = end_cause(lift, readings=readings, now=now, bound=bound)
-    if cause is None:
+    if cause != END_RESET:
         return False
     lift["ended_at"] = _iso(now)
-    lift["ended_cause"] = cause
+    lift["ended_cause"] = END_RESET
     return True
 
 
