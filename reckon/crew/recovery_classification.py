@@ -844,10 +844,21 @@ def classify_pointer(
                 f"reckon crew resume --run {run_id} --advice "
                 "write the manifest's current status before continuing"
             )
-        if not manifest_present or manifest_error:
-            # A live run whose manifest is absent or unreadable carries no
-            # verdict to repair, so the reader is pointed at the run rather
-            # than at a status line that does not exist.
+        if manifest_error:
+            # A live run whose manifest is present but refused carries no
+            # verdict to repair, and the refusal is the fact a reader needs: it
+            # names what about the body the strict reader would not accept, so
+            # the row is pointed at the run rather than at a status line the
+            # file does not yield.
+            detail = (
+                f"the run is live and its manifest at {manifest} carries no "
+                f"verdict a reader can act on: {manifest_error}"
+            )
+            action = f"reckon crew observe --run {run_id}"
+        elif not manifest_present:
+            # A live run with no manifest at all carries no verdict to repair,
+            # so the reader is pointed at the run rather than at a file that
+            # does not exist.
             detail = (
                 f"the run is live and has no written verdict at {manifest}; "
                 "the worker has not delivered a status yet"
