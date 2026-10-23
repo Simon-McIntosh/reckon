@@ -715,9 +715,14 @@ def _queued_review_run_fields(
     ordering, for the same reason a queued request's does — this view must not
     be able to disagree with the lane about which request goes first. The
     earliest queued review is the one named when more than one is waiting.
+
+    A pointer whose ``queued_at`` is unreadable publishes no ``queued_at`` of
+    its own, and no place either: the ordering cannot place it, so the reading
+    withholds both rather than substituting the read time, which would report a
+    dispatch instant that never happened.
     """
     live_pointers = runs.list_live(project=project)
-    waiting: list[tuple[datetime, Mapping[str, Any]]] = []
+    waiting: list[tuple[datetime, datetime | None, Mapping[str, Any]]] = []
     for candidate in live_pointers:
         if str(candidate.get("phase") or "") != queue_admission.QUEUED_PHASE:
             continue
@@ -729,12 +734,14 @@ def _queued_review_run_fields(
         if not recovery._review_head_covers(reviewed_head, head):
             continue
         queued_at = parse_utc(candidate.get("queued_at"))
-        waiting.append((queued_at or now, candidate))
+        waiting.append((queued_at or now, queued_at, candidate))
     if not waiting:
         return None
-    waiting.sort(key=lambda pair: pair[0])
-    placed_at, review_pointer = waiting[0]
-    fields: dict[str, Any] = {"queued_at": placed_at.isoformat()}
+    waiting.sort(key=lambda entry: entry[0])
+    _, queued_at, review_pointer = waiting[0]
+    fields: dict[str, Any] = {}
+    if queued_at is not None:
+        fields["queued_at"] = queued_at.isoformat()
     placement = queue_admission.queued_placements(live_pointers, now=now).get(
         str(review_pointer.get("run_id") or "")
     )
@@ -876,17 +883,23 @@ def _review_duty_item(
         item["head"] = head
     if review is not None and recovery._review_is_complete(review):
         item["kind"] = "promotable-stale" if age > grace else "review-ready"
-    elif reviewed_head and not recovery.same_revision(reviewed_head, head):
-        # A stored record describes a revision the run has moved past, so no
-        # review of the head the run carries exists; both revisions travel on
-        # the duty so the reader sees which two disagree.
-        item["kind"] = "review-missing"
-        item["reviewed_head"] = reviewed_head
     else:
+        superseded = bool(reviewed_head) and not recovery.same_revision(
+            reviewed_head, head
+        )
+        if superseded:
+            # A stored record describes a revision the run has moved past, so
+            # both revisions travel on the duty so the reader sees which two
+            # disagree.
+            item["reviewed_head"] = reviewed_head
         # No stored review covers the head, so the duty would read
-        # review-missing. A refused attempt the reflex still owns is the one
-        # exception: within the bound it reads as queued, and the duty does not
-        # hold a turn open over a wait the coordinator cannot shorten.
+        # review-missing. A review the coordinator has already dispatched is
+        # the one exception: one the lane refused, or one it queued and has not
+        # launched, reads as queued inside its wait and the duty does not hold a
+        # turn open over a wait the coordinator cannot shorten. That holds
+        # whether or not an older stored record exists, because a review
+        # composed for the head after a test-driven repair is still a dispatch
+        # already made.
         queued = _queued_review_fields(
             pointer,
             project=project,
@@ -897,6 +910,8 @@ def _review_duty_item(
         if queued is not None:
             item["kind"] = REVIEW_QUEUED_DUTY_KIND
             item.update(queued)
+        elif superseded:
+            item["kind"] = "review-missing"
     return item
 
 
