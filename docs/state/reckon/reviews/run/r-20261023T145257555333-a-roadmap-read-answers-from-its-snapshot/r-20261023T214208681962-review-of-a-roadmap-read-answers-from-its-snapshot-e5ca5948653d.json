@@ -1,0 +1,50 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-23T22:08:56.211Z",
+  "dispatched_at": "2026-10-23T21:53:25Z",
+  "findings": [
+    {
+      "file": "reckon/roadmap_snapshot.py",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The increment's sole new file is not among the node's declared write paths: the dispatch fences reckon/serve.py, reckon/mcp.py, reckon/_store.py, tests/test_a_roadmap_read_answers_from_its_snapshot.py and the evidence fragment, and never names reckon/roadmap_snapshot.py. The move was the prescribed remedy for the width finding (the ALLOWLIST stays empty) and this review's own goal names the file, so the scope is understood rather than disputed; recorded because no widen appears on the run and the fence as written would not have permitted the write."
+    },
+    {
+      "file": "runs/r-20261023T145257555333-a-roadmap-read-answers-from-its-snapshot/manifest.md",
+      "line": 24,
+      "severity": "non-blocking",
+      "text": "after_suite.command and the baseline_suite.command on line 25 carry an unexpanded $PY, the word 'then serially' and the angle-bracket placeholder '<the gate's files that exist at the base>', so neither field is the literal command that ran and neither can be interpreted without hand work. The cited log headers (split4-head-gate.log:4, base-gate.log:6) carry the literal commands and remain the re-runnable form; the same field defect was recorded on the previous review at this node and persists."
+    },
+    {
+      "file": "runs/r-20261023T145257555333-a-roadmap-read-answers-from-its-snapshot/manifest.md",
+      "line": 20,
+      "severity": "non-blocking",
+      "text": "The source done-when requires that ruff check and ruff format --check findings on every changed path do not exceed the base, but no ruff log appears under test_logs and the only record is the worker's closing claim of 20-before/20-after on serve.py; the increment deletes an import and a large block, so the claim is plausible, but it is a claim rather than a recorded measurement."
+    },
+    {
+      "file": "reckon/roadmap_snapshot.py",
+      "line": 313,
+      "severity": "non-blocking",
+      "text": "The moved comment reads 'which is the behaviour this section removes', citing a plan section inside source; the naming rules forbid plan references in comments and ask that they be scrubbed in place when a change passes through the code. The comment travelled verbatim with the move, so the increment carries it into the new owner module."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a warm roadmap read answered from a snapshot keyed on each mounted project's write generation, and the one commit gained since the last review (e5ca59486) moves that key, the live-run readings and the node-local store into reckon/roadmap_snapshot.py while the read path stays reachable through reckon/serve.py's re-exports at reckon/serve.py:171-180 and the calls in reckon/mcp.py:1802, 1844, 1867, so the deliverable stands.\nVERDICT done_when: the source done-when names tests/test_a_roadmap_read_answers_from_its_snapshot.py plus the roadmap/serve gate files adding zero failures at head against the base arm with logs closing in EXIT=; manifest.md:24-25 records 39 passed in the head parallel arm and 14 in the serial arm against 39 at the base, both EXIT=0 with zero failure ids, and split4-width.log records reckon/serve.py at 48,381 estimated tokens under the 50,000 bound with 4 passed and EXIT=0.\nVERDICT write_paths: the dispatch fences reckon/serve.py, reckon/mcp.py, reckon/_store.py, tests/test_a_roadmap_read_answers_from_its_snapshot.py and the evidence fragment; the gained diff touches reckon/serve.py and the test file inside that fence and creates reckon/roadmap_snapshot.py outside it.\nVERDICT manifest: read manifest.md; status complete, commits through e5ca59486, after_suite and baseline_suite both zero failures, negative_control_log points at split4-negative-control.log which ends EXIT=1 with the reuse arm's 'stable' != 'stable' failure, and the suite command fields are not literal commands.\nVERDICT diff: read e5ca59486 against f1fdfee7b commit by commit; one commit, three files, a verbatim move of the key builder, the live-run readings and the snapshot path/load/store into reckon/roadmap_snapshot.py, a re-export import block at reckon/serve.py:171-180, and two driver rebinds at tests/test_a_roadmap_read_answers_from_its_snapshot.py:56 and 535 so the negative control and the clock move on the module the builder reads.\nCALL_SITES: reckon/mcp.py:1802, reckon/mcp.py:1844, reckon/mcp.py:1867, reckon/serve.py:171-180, reckon/serve.py:1152\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp.py:1802 and 1844 still obtain the key and the mounts through serve_module, which re-exports the same function objects defined at reckon/roadmap_snapshot.py:221 and 261, so the warm read is unchanged.\nSCORE evidence: 15\nJUSTIFICATION evidence: split4-head-gate.log:6 and split4-width.log:5 carry the literal commands and EXIT=0 results the done-when asks for, but the done-when's ruff clause has no log in manifest.md:21.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: reckon/roadmap_snapshot.py is created by the diff while the dispatch's declared write paths list only serve.py, mcp.py, _store.py, the test and the evidence fragment.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_every_module_fits_a_worker_window.py reddens if reckon/serve.py regrows past the bound, and the rebind at tests/test_a_roadmap_read_answers_from_its_snapshot.py:56 keeps the write-counter control genuinely red, but no assertion pins the re-export identity that keeps the snapshot store single.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/roadmap_snapshot.py follows the surrounding module idiom and is capability-named, but reckon/roadmap_snapshot.py:313 carries a plan-section reference inside a source comment.\nSCORE reuse: 18\nJUSTIFICATION reuse: the move creates the owner for the snapshot capability rather than duplicating it, and reckon/serve.py:171 re-exports instead of forking; a search over reckon/ for an existing keyed snapshot store found only reckon/file_memo.py, whose per-file revision memo is a different capability.\nFINDING reckon/roadmap_snapshot.py:1 non-blocking: the increment's new module is outside the node's declared write paths and no widen was recorded on the run, though the review goal and the width remedy both name it.\nFINDING runs/r-20261023T145257555333-a-roadmap-read-answers-from-its-snapshot/manifest.md:24 non-blocking: after_suite.command and baseline_suite.command (line 25) carry $PY and an angle-bracket placeholder rather than the literal command, so neither arm can be re-run from the record; the log headers are the fallback.\nFINDING runs/r-20261023T145257555333-a-roadmap-read-answers-from-its-snapshot/manifest.md:20 non-blocking: the done-when's ruff clause is claimed, not measured; no ruff log stands under test_logs.\nFINDING reckon/roadmap_snapshot.py:313 non-blocking: the moved comment cites 'this section', a plan reference in source, which the naming rules forbid and ask to be scrubbed in place.\n",
+  "review_run_id": "r-20261023T214208681962-review-of-a-roadmap-read-answers-from-its-snapshot-e5ca5948653d",
+  "reviewed_base_sha": "f1fdfee7b2e43011683d6e1ea0ab444113a7fcbc",
+  "reviewed_head_sha": "e5ca5948653de875ebd36ab035b722120c9068a1",
+  "reviewed_run_id": "r-20261023T145257555333-a-roadmap-read-answers-from-its-snapshot",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T22:22:14.924194+00:00",
+  "total": 99
+}
