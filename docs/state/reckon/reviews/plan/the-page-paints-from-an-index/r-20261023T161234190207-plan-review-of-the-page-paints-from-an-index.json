@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T16:49:33.008Z",
+  "dispatched_at": "2026-10-23T16:35:40Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-page-paints-from-an-index/r-20261023T161234190207-plan-review-of-the-page-paints-from-an-index/plan.html:273",
+      "id": "reasoning-1",
+      "reason": "(e) is the changed unit and the sole place the pipe wake is reasoned about, so a reason that does not cover `publish_fleet` leaves the no-change wake unspecified on the mechanism's own decision point (whether the build is kept or dropped).",
+      "text": "\u00a715(e) says a wake through the fleet watch's pipe \"marks nothing further, because the source that woke it has already marked its paths\", but the stream's wake pipe is written by two paths, not one: `_FleetChangeWatch.notify` after a detector or kernel report, and `_FleetChangeWatch.publish_fleet` (`reckon/change_streams.py:340-354`), which `_publish_refresh` calls (`reckon/route_results.py:338`) whenever a fleet-scoped refresh completes. A fleet-scoped refresh is started for a change to *any* mounted tree (`_spawn_changes` starts `(\"rollup\",)`), so a write in another project's tree wakes this stream with no change at all in this tree and nothing marked for it. `_send_project_changes` still calls `_invalidate_tree_views(docs_dir, changed_at=changed_at)` unconditionally on that wake, so (e) is the only text that says what the handler should do with a wake that observed no change, and its stated reason does not hold for that case \u2014 under the reason as written an implementer may treat the wake as belonging to an attributed change and, on the \"unattributed drops the build\" rule, drop this tree's build on every fleet rollup publish, which is the sweep \u00a715 exists to remove.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ebfdaffd30bab3215f134284c2394cb2a357b1ae32703f93b4760e151ac41556",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 122,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T161234190207-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "febee1ac19e413f199301bde1d2c5b740ef48249",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited symbols all resolve (`_reuse_covered`, `_covered_files`, `_covered_files_for_project`, `_dir_identity`, `covered_dir_identity`, `_walk_covered` in `reckon/metadata_index.py`; `_walk_discovery_signature`, `_send_project_changes`, `_invalidate_tree_views`, `_served_index_rows` in `reckon/serve.py`; `_FleetChangeWatch._run`, `consume`, `drain` in `reckon/change_streams.py`), `tests/test_every_module_fits_a_worker_window.py` exists, and the new test file is a declared write path.",
+    "done_when": "pass \u2014 the changed case (7) carries its own control (\"drop the build on every stream wake, and the stream's read reads every recorded directory's identity\"), and the reworded live measure still declares a base-arm floor (\"its second pass must take at least 1 s\") with an explicit inconclusive outcome, so it can fail.",
+    "evidence_paths": "pass \u2014 every log \"sits under the run directory with a revision header and ends in EXIT=\", and suites are directed to the fleet allocation rather than the login node, so no evidence path is a session scratchpad.",
+    "naming": "pass \u2014 the changed text names mechanisms and symbols, and carries no plan label, stage name, ticket number or changelog prose.",
+    "reasoning": "a finding \u2014 source (e), added in this revision, accounts for a wake through the fleet watch's pipe with \"the source that woke it has already marked its paths\", but the pipe is also written by `publish_fleet`, which wakes every open stream on an unrelated tree's refresh, where nothing about this tree was marked.",
+    "single_goal": "pass \u2014 \u00a715 has one deliverable, keeping the index build across changes a source can attribute; the covered-set reuse prose it recites is landed \u00a713/\u00a714 state, not a second deliverable.",
+    "wiring": "pass \u2014 \u00a715 declares `depends-on` `the-page-paints-from-an-index#s14`, which resolves to an existing section (and \u00a713, whose covered-set reuse \u00a715 builds on, is already declared done), and the head's effort total now matches the section records."
+  },
+  "section_digests": {
+    "_document": "f463b5e41f61ce538f9142e4869bcc7bb2305bf07635480da31fc68db8ffad86",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "17515cc4d212280b53e77d7279aa81e37c7d58f877ada031f77705b31e53d437",
+    "s11": "bb32b98b9a0a5070d5ec6b5387862bef5af3ba37b5956ac7c9d734723c2ac9fa",
+    "s12": "071a3e9ff829e6cc2047658d80b57b5d30603318f0fa4a31084d94b5ed308185",
+    "s13": "c1b191dea15e7b03a3c847c3a5729ac7a4ca2d0492920bd5b273d04a79593d48",
+    "s14": "81d5ac4cc3ec42e5b1f7e8ee9da1f92e89073fdda2bd21fda06046a2d2e15b68",
+    "s15": "7a443d414172b60319d4b74067e079d1253e7109210989ea376436f6f243c28f",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "048a1031945a098f9a63b70d985d91dd2d9ee2f67f1ac1a2132e4c7d21b89e7e",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T16:52:35.384819+00:00"
+}
