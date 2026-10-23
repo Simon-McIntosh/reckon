@@ -1,0 +1,48 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/serve.py:2552",
+    "reckon/mcp.py:1228",
+    "reckon/doccheck.py:1834",
+    "reckon/evidence.py:compose_landed_record"
+  ],
+  "completed_at": "2026-10-23T00:14:22.401Z",
+  "dispatched_at": "2026-10-23T00:00:51Z",
+  "findings": [],
+  "item_verdicts": {
+    "call_sites": "the fragment is read at runtime by reckon/evidence.py:compose_landed_record, reached from reckon/serve.py:2552 (serving the composed record), reckon/mcp.py:1228 and reckon/doccheck.py:1834.",
+    "diff": "read 933b0112..365a5debf commit by commit; one file changes (the evidence fragment, +11/-7), prose only, no code or test path touched.",
+    "done_when": "section 15's done_when asks each arm's log to name its revision and end EXIT= plus ruff not exceeding base; the fragment now cites the base arm (9a9492e0a) at 10 failed/197 passed in 329.79s and the head arm (933b0112) at 6 failed/203 passed in 477.86s, which logs/base-gate.log and logs/head-gate.log:1 confirm, and both logs close EXIT=1.",
+    "goal": "the increment gained since the prior review is 365a5debf, a re-review response whose goal is to repair the evidence fragment's gate paragraph; the single file changed is docs/evidence/fragments/every-plan-write-goes-through-edit-plan/every-surface-lists-open-decisions.html and the repair matches the goal.",
+    "manifest": "read the reviewed run's manifest.md; status complete, seven full-length commits that all resolve, the 933b0112 head arm, the ruff receipt (base 29, head 22, format 0), both negative controls in logs/negative-control.log, and the baseline_suite/after_suite JSON.",
+    "write_paths": "section 15 declares five write paths (reckon/roadmap.py, reckon/mcp_* etc.) including this evidence fragment; the increment touches only the declared fragment path."
+  },
+  "justifications": {
+    "durability": "the increment adds no assertion anywhere (docs-only), so no test reddens if the paragraph is re-staled; the figures it now states are correct against the logs but nothing guards them against a future edit, which is the same shape as the two defects this commit repairs.",
+    "evidence": "every figure the repaired paragraph states reconciles with its log: head-gate.log:1 names revision 933b0112 and its tail reads 6 failed, 203 passed, base-gate.log reads 10 failed, 197 passed, ruff-base.log holds 29 findings and ruff-head.log 22 by a file:line:col count, and the negative-control log shows the parity case failing with KeyError 'open_decisions', 1 failed, EXIT=1.",
+    "fit": "the rewritten prose follows the paragraph's existing sentence structure and cites revision shorthand and log paths in the file's established style, and no symbol, filename or comment the increment touches carries a plan, sprint or ticket label.",
+    "goal_fidelity": "the increment rewrites exactly the two paragraphs the prior review refused, at docs/evidence/fragments/every-plan-write-goes-through-edit-plan/every-surface-lists-open-decisions.html:89-99, replacing the superseded head and the unevidenced ruff claim with the figures the logs carry.",
+    "reuse": "the increment changes no definition and introduces no capability; the paragraph names the existing owner of the wait derivation, waiting_decision_rows in reckon/roadmap.py:1121, so there is nothing for it to fork.",
+    "scope_discipline": "the increment's only changed path is the declared fragment, 933b0112..365a5debf shows exactly one file, and nothing outside the declared write paths or the goal is touched."
+  },
+  "notes": "this is a delta review: the prior record at 933b011273a26d5364f23615022870badadc5566 raised two follow-on findings at fragment lines 89 and 96 (a superseded head arm with a stale pass count, and an unevidenced ruff claim naming neither ruff log), and the single gained commit 365a5debf repairs both. Verified against the reviewed run's own logs under its run directory. The reviewed worktree was present at 365a5debf while this record was written.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the increment gained since the prior review is 365a5debf, whose goal is to repair the evidence fragment's gate paragraph; the single file changed is docs/evidence/fragments/every-plan-write-goes-through-edit-plan/every-surface-lists-open-decisions.html:89-103 and the repair matches the goal.\nVERDICT done_when: section 15's done_when asks each arm's log to name its revision and end EXIT= plus ruff not exceeding base; the fragment now cites the base arm 9a9492e0a at 10 failed/197 passed in 329.79s and head 933b0112 at 6 failed/203 passed in 477.86s, which logs/base-gate.log and logs/head-gate.log:1 confirm.\nVERDICT write_paths: section 15 declares five write paths including this evidence fragment; the increment touches only that declared fragment path.\nVERDICT manifest: read the reviewed run's manifest.md; status complete, seven resolving full-length commits, the ruff receipt (base 29, head 22, format 0), both negative controls in logs/negative-control.log, and the baseline_suite/after_suite JSON.\nVERDICT diff: read 933b0112..365a5debf; one file changes (the evidence fragment, +11/-7), prose only, no code or test path touched.\nCALL_SITES: reckon/serve.py:2552, reckon/mcp.py:1228, reckon/doccheck.py:1834, reckon/evidence.py:compose_landed_record\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the increment rewrites exactly the two paragraphs the prior review refused, at docs/evidence/fragments/every-plan-write-goes-through-edit-plan/every-surface-lists-open-decisions.html:89-99.\nSCORE evidence: 19\nJUSTIFICATION evidence: head-gate.log:1 names revision 933b0112 at 6 failed/203 passed, base-gate.log reads 10 failed/197 passed, ruff-base.log holds 29 findings against ruff-head.log's 22, and the negative-control log shows KeyError 'open_decisions' at 1 failed, EXIT=1 \u2014 every figure the paragraph states.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: 933b0112..365a5debf changes exactly one file, the declared evidence fragment, carrying nothing the goal does not imply.\nSCORE durability: 15\nJUSTIFICATION durability: the docs-only increment adds no assertion (the diff at docs/evidence/fragments/every-plan-write-goes-through-edit-plan/every-surface-lists-open-decisions.html changes no code or test), so nothing reddens if the paragraph is re-staled.\nSCORE fit: 18\nJUSTIFICATION fit: the rewritten sentences follow the paragraph's existing structure at docs/evidence/fragments/every-plan-write-goes-through-edit-plan/every-surface-lists-open-decisions.html:85-103 and carry no forbidden plan, sprint or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the increment defines nothing new and names the existing owner of the wait derivation, waiting_decision_rows at reckon/roadmap.py:1121, so no capability is forked.\n",
+  "review_run_id": "r-20261022T235918417436-review-of-every-surface-lists-open-decisions-365a5debf3cd",
+  "reviewed_base_sha": "933b011273a26d5364f23615022870badadc5566",
+  "reviewed_head_sha": "365a5debf3cd857fac753677ae43e4f1f8bad075",
+  "reviewed_run_id": "r-20261022T162012603305-every-surface-lists-open-decisions",
+  "scores": {
+    "durability": 15,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T00:14:31.566042+00:00",
+  "total": 111
+}
