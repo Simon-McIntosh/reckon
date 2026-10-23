@@ -1,0 +1,91 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T23:04:59.751Z",
+  "dispatched_at": "2026-10-23T22:54:37Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html:80",
+      "id": "reasoning-1",
+      "reason": "the implementer must either record the upstream's project on the stored ref at queue time or scan every mounted project's ledger, and \u00a78 specifies neither, so two workers would land two different predicates and only one of them can be the one the plan meant.",
+      "text": "\u00a78 decides a wait is satisfied only when the upstream run's id is in \"its project's ledger\", read through `ledger.run_ids(project)` (`reckon/ledger.py:1019`), but an `--after <request-id>` wait is carried as a run id only (the request ref is `run:<id>`, `REQUEST_REF_PREFIX` in \u00a72's `reckon/crew/queue_admission.py`) and the upstream's live pointer \u2014 the one record naming its project \u2014 is deleted when the run is promoted, so at the moment the wait must be answered the waiter cannot name the ledger to read; the manifest half of the same check has no such problem because `runs.run_dir(run_id)` is project-independent (`reckon/crew/runs.py:100`), which is why \u00a72's landed code never needed a project. \u00a78's landing arm exercises only a same-project upstream, so nothing in the suite discriminates the cross-project case the section exists to support",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html:80",
+      "id": "anchors_resolve-1",
+      "reason": "the stated end state is unambiguous and the implementer produces the same narrowed constant either way, so only the sentence's accuracy suffers.",
+      "text": "\u00a78 says `RUN_DELIVERED_STATUSES` \"lists `completed`, `done`, `landed` and `promoted`\" and that \u00a78 \"replaces it with the one manifest status that means delivered, `complete`\", but the constant \u00a72's implementation adds is `(\"complete\", \"completed\", \"done\", \"landed\", \"promoted\")` (`reckon/crew/queue_admission.py:1023` on the \u00a72 chain): `complete` is already a member and is the member that already satisfies a wait, so the real change is narrowing a five-entry tuple and gating it on the ledger, not adding the word the sentence presents as the replacement",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "831eb985e4491917d00acc5b7fff49d4780f1b23c92f95c1b1ef422ca5db458c",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 32,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-23T23:05:53.245108+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "anchors_resolve-1",
+      "reason": "",
+      "when": "2026-10-23T23:06:07.153738+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-23T23:06:07.153738+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-23T23:05:53.245108+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-queue-holds-the-whole-plan.v32.json",
+  "review_run_id": "r-20261023T225332537803-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "a6354e95cb7ed104c6ac13a44a65db475d89c7b8",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a78's sentence about `RUN_DELIVERED_STATUSES` states the constant's contents and leaves out the one member it keeps.",
+    "done_when": "pass \u2014 \u00a78's suite names negative arms that fail on the code it replaces: a `blocked` and a `failed` upstream each move the waiter to `blocked-upstream`, a `complete`-but-unlanded upstream holds it `awaiting-upstream`, and a cycle-closing dispatch is refused with nothing stored.",
+    "evidence_paths": "pass \u2014 \u00a78 names the code paths it changes (`reckon/crew/queue_admission.py`, `reckon/crew/dispatch_admission.py`, `reckon/crew_dispatch_commands.py`, `reckon/crew/node.py`, a new test file); its gate is a test suite whose log the node contract places on the run directory, and no session-scratchpad path is named.",
+    "naming": "pass \u2014 \u00a78 introduces `--after`, a wait derivation and a phase vocabulary named by what they do; no plan label, stage name, ticket number or changelog prose reaches a symbol or comment.",
+    "reasoning": "a finding \u2014 \u00a78 makes the ledger the landing predicate but leaves no way to resolve which project's ledger to read for an `--after` upstream once its pointer has been deleted.",
+    "single_goal": "pass \u2014 \u00a78 carries no measurable behaviour of its own beyond the cross-plan, cross-project wait derivation and the cycle refusal.",
+    "wiring": "pass \u2014 \u00a78 declares `s8 <- s2` and that is the only edge it needs: it extends \u00a72's request phases and readiness re-read rather than introducing a second state machine, and every node ref in the plan's `plan-section-depends-on` map resolves."
+  },
+  "section_digests": {
+    "_document": "3687b78879f4254bc12755beb7d845e4cb94fe5d4fe55ae3e033ddf86e0d5cb5",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "c5b9ec6971c99d11598fc75b9daab4490f64dd91b5df2e4b7178aa79ddb83a6d",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "7bb3dd3b3d1e28b5d5ed470cd96cfee891a8886a6f5317f7e1d5d5bb21ba5a7f",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s3": "c8987dddf45ef27369fcce604285a552d5745bc1002c6947159125bd1216caa7",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s5": "53bd9fc1d3f0dbbd181feb41c011dcd67a67461e888be626dbaf20cfabf33e82",
+    "s6": "888a359c62d83eaa231df69d5107745fb5a7f0b30320d77ca0a8586aff7965b6",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "d06036cc35ac178523f245b9861d83cdd563311bc943c2af03e9a42bec2c84c3",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T23:05:44.927879+00:00"
+}
