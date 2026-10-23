@@ -1,0 +1,95 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured from the reviewed run's own armed gate logs; see verified_independently.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1378",
+    "reckon/crew/dispatch_plan.py:1059",
+    "reckon/crew/dispatch.py:2584",
+    "reckon/crew/dispatch_claims.py:1526",
+    "reckon/crew/dispatch_claims.py:1790"
+  ],
+  "commits_read": [
+    "1150dcc49",
+    "0be6a3dc0"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-23T12:02:49Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "1378",
+      "severity": "blocking",
+      "text": "the production dispatch still disposes every live pointer, so the node's goal is not delivered on the path its own plan measured at 463 s. The read narrows only when a caller supplies candidate_paths, and the sole production caller that does is refuse_widen_scope_conflicts (reckon/crew/dispatch_claims.py:1790, reached only from reckon/crew/claims.py:99); crew.dispatch and the plan-review read at reckon/crew/dispatch_plan.py:1059 pass none, so reckon/crew/dispatch_claims.py:358 sets relevant=True for every pointer and the git cost the section exists to remove is untouched there. The new test cannot see this because it calls the private read directly rather than going through crew.dispatch. Contrast with the manifest, which records only the _WORKTREE_REPOSITORY_FIELDS deviation and describes the read as narrowed. The dispatch.py call site lies outside the node's declared write paths, so this needs the coordinator: either wire the candidate paths in, or record that the section's write paths do not reach the file its deliverable requires."
+    },
+    {
+      "file": "tests/test_a_dispatch_asks_git_only_about_claims_that_could_meet_its_own.py",
+      "line": "308",
+      "severity": "non-blocking",
+      "text": "the fixture gives every claim in a repository the same worktree path (tests/test_a_dispatch_asks_git_only_about_claims_that_could_meet_its_own.py:262 and :269), so assert len(probes) <= 2 measures a cache hit that a real fleet cannot produce: of the 41 live pointers on this workstation today, 37 name a distinct checkout path, and the identity cache is keyed by the checkout path probed, so one probe is still paid per pointer that has its own worktree (about 37 + 6 rather than 6). The fragment's closing claim that \"at most one rev-parse per distinct repository\" holds is therefore unsupported by this fixture, and would only hold if the deliberately-unapplied field reorder were restored. A fixture giving each claim its own linked worktree would show the real count; the positive-control lesson applies to the count as well as to the check."
+    },
+    {
+      "file": "tests/test_a_dispatch_asks_git_only_about_claims_that_could_meet_its_own.py",
+      "line": "373",
+      "severity": "non-blocking",
+      "text": "assert all(claim.binding or claim.disposition_reason for claim in claims) is documented as proving that \"a claim nobody judged would carry neither\", but reckon/crew/dispatch_claims.py:384 sets binding=True if disposition is None, so an unread claim satisfies the disjunction and this assertion cannot redden on the very case its comment names. The sibling assertion on the preceding line (not any(claim.unread)) does carry that guard, so the disjunction is redundant rather than load-bearing, but as written it is an assertion that cannot name a condition under which it fails."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T120032911615-a-dispatch-asks-git-only-about-claims-that-could-meet-its-own/manifest.md",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "the done_when requires that ruff check and ruff format --check findings on every changed path do not exceed base, but the manifest records logs for the two suite arms and the negative control only, so the ruff half of the gate has no log to read. I ran it: head 8 findings on the changed files against the base arm's 9, and ruff format --check reports all three files already formatted, so the claim holds; it is the record that is missing, and this node's manifest names no log for it."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against the base; 1150dcc49 changes reckon/crew/dispatch_claims.py and reckon/crew/node.py and adds the new test, and 0be6a3dc0 adds only the landing fragment.",
+    "done_when": "the done_when names tests/test_a_dispatch_asks_git_only_about_claims_that_could_meet_its_own.py plus the gate cohort; the manifest records both arms' revisions, failure ids and log paths, and each log opens with its revision and command and closes with a bare EXIT=1.",
+    "goal": "the node's goal is to make the dispatch's claim read spend git only on claims whose paths could meet the dispatch's; the read at reckon/crew/dispatch_claims.py:308 does that when a caller names candidate paths, but the production dispatch that the goal names names none.",
+    "manifest": "read; it states the gate cohort, records base 7cb177e8a at 1 failed/86 passed and head 1150dcc49 at 1 failed/91 passed with the identical failure id, names its three logs, and records the deliberate deviation on _WORKTREE_REPOSITORY_FIELDS.",
+    "write_paths": "read the manifest's four declared paths; git diff 7cb177e8a..0be6a3dc0 names exactly those four files and nothing else."
+  },
+  "justifications": {
+    "durability": "the declared negative control at logs/negative-control.log turns the wrapper's disposition count from 2 to 42 and reddens two of the new tests, so the narrowing is genuinely guarded, but reckon/crew/dispatch_claims.py:384 defaults binding=True on an unread claim, which makes the assertion at tests/test_a_dispatch_asks_git_only_about_claims_that_could_meet_its_own.py:373 unable to redden on the case its comment names.",
+    "evidence": "the gate at logs/head-arm.log and logs/base-arm.log records its revisions, its literal command and its EXIT= line, but the done_when's \"at most one rev-parse per distinct repository\" bound rests on a fixture that gives every claim in a repository one shared checkout path (tests/test_a_dispatch_asks_git_only_about_claims_that_could_meet_its_own.py:262).",
+    "fit": "the new names (unread, candidate_paths, identity_cache, _resolve_repository_identity) name mechanism rather than plan items and the module docstring at reckon/crew/dispatch_claims.py:308 follows the surrounding idiom.",
+    "goal_fidelity": "reckon/crew/dispatch.py:1378 calls _repository_scope_claims() with no candidate_paths, so candidates is None at reckon/crew/dispatch_claims.py:358 and every live pointer's disposition is still read on the dispatch path the plan's 463 s measurement names.",
+    "reuse": "reckon/crew/dispatch_sections.py:69 already owns a per-spelling memo of repository_identity with a result-aliasing step; the change adds a second, read-scoped memo parameter to the same owner: the same capability, twice, with the older one left unextended.",
+    "scope_discipline": "git diff 7cb177e8a..0be6a3dc0 touches only the four declared write paths, with no incidental reformatting and nothing under docs/figures/."
+  },
+  "notes": "Independent review of the reviewed run at head 0be6a3dc0 against base 7cb177e8a. The landed read is correct in itself: narrowing by candidate paths cannot drop a collision because relevance uses the same containment rule the arbitration does, the negative control raises the disposition count from 2 to 42 and reddens two tests, the arms add no failure, and the field-order deviation is real and recorded. The blocking finding is that the production dispatch passes no candidate paths, so the plan's central benefit is not delivered on the path it names; the node could not fix that inside its write paths.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the dispatch's claim read spend git only on claims whose paths could meet the dispatch's; the read at reckon/crew/dispatch_claims.py:308 does that when a caller names candidate paths, but the production dispatch that the goal names names none.\nVERDICT done_when: the done_when names tests/test_a_dispatch_asks_git_only_about_claims_that_could_meet_its_own.py plus the gate cohort; the manifest records both arms' revisions, failure ids and log paths, and each log opens with its revision and command and closes with a bare EXIT=1.\nVERDICT write_paths: read the manifest's four declared paths; git diff 7cb177e8a..0be6a3dc0 names exactly those four files and nothing else.\nVERDICT manifest: read; it states the gate cohort, records base 7cb177e8a at 1 failed/86 passed and head 1150dcc49 at 1 failed/91 passed with the identical failure id, names its three logs, and records the deliberate deviation on _WORKTREE_REPOSITORY_FIELDS.\nVERDICT diff: read commit by commit against the base; 1150dcc49 changes reckon/crew/dispatch_claims.py and reckon/crew/node.py and adds the new test, and 0be6a3dc0 adds only the landing fragment.\nCALL_SITES: reckon/crew/dispatch.py:1378, reckon/crew/dispatch_plan.py:1059, reckon/crew/dispatch.py:2584, reckon/crew/dispatch_claims.py:1526, reckon/crew/dispatch_claims.py:1790\nSCORE goal_fidelity: 8\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:1378 calls _repository_scope_claims() with no candidate_paths, so candidates is None at reckon/crew/dispatch_claims.py:358 and every live pointer's disposition is still read on the dispatch path the plan's 463 s measurement names.\nSCORE evidence: 13\nJUSTIFICATION evidence: the gate at logs/head-arm.log and logs/base-arm.log records its revisions, its literal command and its EXIT= line, but the done_when's \"at most one rev-parse per distinct repository\" bound rests on a fixture that gives every claim in a repository one shared checkout path (tests/test_a_dispatch_asks_git_only_about_claims_that_could_meet_its_own.py:262).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 7cb177e8a..0be6a3dc0 touches only the four declared write paths, with no incidental reformatting and nothing under docs/figures/.\nSCORE durability: 15\nJUSTIFICATION durability: the declared negative control at logs/negative-control.log turns the wrapper's disposition count from 2 to 42 and reddens two of the new tests, so the narrowing is genuinely guarded, but reckon/crew/dispatch_claims.py:384 defaults binding=True on an unread claim, which makes the assertion at tests/test_a_dispatch_asks_git_only_about_claims_that_could_meet_its_own.py:373 unable to redden on the case its comment names.\nSCORE fit: 16\nJUSTIFICATION fit: the new names (unread, candidate_paths, identity_cache, _resolve_repository_identity) name mechanism rather than plan items and the module docstring at reckon/crew/dispatch_claims.py:308 follows the surrounding idiom.\nSCORE reuse: 15\nJUSTIFICATION reuse: reckon/crew/dispatch_sections.py:69 already owns a per-spelling memo of repository_identity with a result-aliasing step; the change adds a second, read-scoped memo parameter to the same owner: the same capability, twice, with the older one left unextended.\nFINDING reckon/crew/dispatch.py:1378 blocking: the production dispatch still disposes every live pointer, so the node's goal is not delivered on the path its own plan measured at 463 s. The read narrows only when a caller supplies candidate_paths, and the sole production caller that does is refuse_widen_scope_conflicts (reckon/crew/dispatch_claims.py:1790, reached only from reckon/crew/claims.py:99); crew.dispatch and the plan-review read at reckon/crew/dispatch_plan.py:1059 pass none, so reckon/crew/dispatch_claims.py:358 sets relevant=True for every pointer and the git cost the section exists to remove is untouched there. The new test cannot see this because it calls the private read directly rather than going through crew.dispatch. Contrast with the manifest, which records only the _WORKTREE_REPOSITORY_FIELDS deviation and describes the read as narrowed. The dispatch.py call site lies outside the node's declared write paths, so this needs the coordinator: either wire the candidate paths in, or record that the section's write paths do not reach the file its deliverable requires.\nFINDING tests/test_a_dispatch_asks_git_only_about_claims_that_could_meet_its_own.py:308 non-blocking: the fixture gives every claim in a repository the same worktree path (tests/test_a_dispatch_asks_git_only_about_claims_that_could_meet_its_own.py:262 and :269), so assert len(probes) <= 2 measures a cache hit that a real fleet cannot produce: of the 41 live pointers on this workstation today, 37 name a distinct checkout path, and the identity cache is keyed by the checkout path probed, so one probe is still paid per pointer that has its own worktree (about 37 + 6 rather than 6). The fragment's closing claim that \"at most one rev-parse per distinct repository\" holds is therefore unsupported by this fixture, and would only hold if the deliberately-unapplied field reorder were restored. A fixture giving each claim its own linked worktree would show the real count; the positive-control lesson applies to the count as well as to the check.\nFINDING tests/test_a_dispatch_asks_git_only_about_claims_that_could_meet_its_own.py:373 non-blocking: assert all(claim.binding or claim.disposition_reason for claim in claims) is documented as proving that \"a claim nobody judged would carry neither\", but reckon/crew/dispatch_claims.py:384 sets binding=True if disposition is None, so an unread claim satisfies the disjunction and this assertion cannot redden on the very case its comment names. The sibling assertion on the preceding line (not any(claim.unread)) does carry that guard, so the disjunction is redundant rather than load-bearing, but as written it is an assertion that cannot name a condition under which it fails.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T120032911615-a-dispatch-asks-git-only-about-claims-that-could-meet-its-own/manifest.md:12 non-blocking: the done_when requires that ruff check and ruff format --check findings on every changed path do not exceed base, but the manifest records logs for the two suite arms and the negative control only, so the ruff half of the gate has no log to read. I ran it: head 8 findings on the changed files against the base arm's 9, and ruff format --check reports all three files already formatted, so the claim holds; it is the record that is missing, and this node's manifest names no log for it.",
+  "review_run_id": "r-20261023T131144523625-review-of-a-dispatch-asks-git-only-about-claims-that-could-meet-its-own-0be6a3dc0628",
+  "reviewed_base_sha": "7cb177e8a12067d1a6ac2c9068e925acd3f32ac5",
+  "reviewed_commit": "0be6a3dc0628bdffb98e327d50470b08c83fdea3",
+  "reviewed_head_sha": "0be6a3dc0628bdffb98e327d50470b08c83fdea3",
+  "reviewed_run_id": "r-20261023T120032911615-a-dispatch-asks-git-only-about-claims-that-could-meet-its-own",
+  "reviewed_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/d768318d-3e86-4094-bdc7-3ed5964852ba/a-dispatch-asks-git-only-about-claims-that-could-meet-its-own",
+  "reviewer_node": "review-of-a-dispatch-asks-git-only-about-claims-that-could-meet-its-own-0be6a3dc0628",
+  "scores": {
+    "durability": 15,
+    "evidence": 13,
+    "fit": 16,
+    "goal_fidelity": 8,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T13:45:00+00:00",
+  "total": 86,
+  "verdict": "blocking",
+  "verified_independently": [
+    "reviewed_head_sha 0be6a3dc0628bdffb98e327d50470b08c83fdea3 is the reviewed worktree's HEAD, and the reviewed run's classification.json records git-head for that worktree as the same sha.",
+    "reviewed_base_sha 7cb177e8a12067d1a6ac2c9068e925acd3f32ac5 is the parent of the first commit 1150dcc49; git log 7cb177e8a..0be6a3dc0 shows exactly 1150dcc49 then 0be6a3dc0.",
+    "git diff --name-only 7cb177e8a 0be6a3dc0 names the four declared write paths and nothing else.",
+    "the reviewed gate logs are real: base-arm.log ends '1 failed, 86 passed in 254.15s' with EXIT=1 and head-arm.log ends '1 failed, 91 passed in 165.04s' with EXIT=1, both naming the same single failure id, so 0 failures were added.",
+    "the negative control fires: logs/negative-control.log ends EXIT=1 with two failing ids the head arm does not fail, and its body shows 'assert 42 == 2' for the disposition count.",
+    "ruff, run independently on the changed paths: head 8 findings against the base arm's 9 on the two source files, and ruff format --check reports all three files already formatted; no log of this check is recorded in the reviewed manifest.",
+    "the production call sites were read: reckon/crew/dispatch.py:1378 and reckon/crew/dispatch_plan.py:1059 call _repository_scope_claims() with no candidate_paths, and the only caller passing them is refuse_widen_scope_conflicts at reckon/crew/dispatch_claims.py:1790, reached from reckon/crew/claims.py:99.",
+    "distinct checkout paths over live pointers counted on this workstation 2026-10-23: 0be6a3dc0's identity cache is keyed by checkout path, and 37 distinct worktree values appear across 41 live pointers over 6 distinct repositories."
+  ]
+}
