@@ -1,0 +1,77 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T10:41:14.067Z",
+  "dispatched_at": "2026-10-23T10:32:01Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html:64",
+      "id": "wiring-1",
+      "reason": "either an s5\u2192s2 edge is added or \u00a75 states that it ships queued-only until \u00a72 lands; without one, the node dispatched for \u00a75 cannot exercise the half of its verb the plan describes.",
+      "text": "\u00a75 specifies its `edit` verb over \"a waiting or queued request\" and reads the `waiting` phase \"\u00a72 adds\", yet \u00a75 declares no dependency on \u00a72 while \u00a74 depends on \u00a75 (so \u00a75 is the earlier of the two), leaving \u00a75's waiting branch with no state to act on until \u00a72 also lands",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html:47",
+      "id": "naming-1",
+      "reason": "the plan names the phase a reader of both modules must disambiguate; choosing a distinct state word (or renaming the count) is a one-line plan change that removes a real mis-read before \u00a72 is dispatched.",
+      "text": "\u00a72 introduces `waiting` as a new request phase while `reckon/crew/dispatch_admission.py:967,1088` already carries a `waiting` key (\"its count of requests queued behind them\", line 1011), so the same word names a state in the phase vocabulary and a count in the neighbouring crew module",
+      "type": "naming",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html:53",
+      "id": "reasoning-1",
+      "reason": "the node would measure a deadline the named surface does not have, so it must either scope the assertion to the MCP read path or add and state a bound for the CLI view.",
+      "text": "\u00a73 asserts \"each view's existing read deadline, the 30 s `deadline_seconds`\" and its done-when requires `crew view live` to answer within \"that 30 s deadline\", but `deadline_seconds`/`READ_DEADLINE_SECONDS = 30.0` is applied by the MCP read wrapper in `reckon/mcp_deadlines.py` to MCP tool calls, and `crew view live` (`reckon/mcp_deadlines.py:185`, the answer command printed by the storage-slow result) carries no such bound when run from a shell",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html:59",
+      "id": "reasoning-2",
+      "reason": "the node cannot tell whether the router change is in \u00a74's scope or an external dependency, and a done-when resting on a figure another repository publishes and may still publish is not measurable by this node.",
+      "text": "\u00a74 says the lane router in imas-ambix \"then publishes one figure \u2026 and stops dividing it by session (`admission.sessions`, `fair_share`)\" in the same change as the reckon-side `_dispatch_lane_allowance` replacement, and its done-when asserts a request is not held on `admission.sessions[<session>].worker_slots`, yet the next sentence says the router's per-session figures \"stay published until imas-ambix drops them\", and the superseded text had named that router change as proposed to imas-ambix's owner",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html:70",
+      "id": "anchors_resolve-1",
+      "reason": "the done-when does not hinge on which lock is named, and the implementer can resolve the real serialisation from the `crew land` path \u00a76 already points at; worth one line in the text, not a replan.",
+      "text": "\u00a76 says landings are \"serialised per repository under the landing lock\", but no object of that name exists: landings serialise on the checkout's `index.lock` retry path (`reckon/crew/merge.py:481-512`) and on the per-run promotion lease (`reckon/crew/promotion.py` `_promotion_lease_name`, a fleet-home link claimed per run, not per repository)",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "c9422952b951d7733b174481876291ef020456d3ac71e4f6af596db3e9dbe214",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 5,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T094404559532-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "d5f7518ee1433a7bba224cb0303b18346236ff5c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 every cited module, symbol, plan and section anchor resolves, but \u00a76 names a \"landing lock\" that exists under no such name.",
+    "done_when": "pass \u2014 every node names a measure and a failing arm (\u00a72 abandoned upstream, \u00a73 the 501st refusal, \u00a74 equal weights, \u00a75 the refused edit and the invalid steering file, \u00a76 the older-head and below-floor arms, \u00a77 the cleared lift).",
+    "evidence_paths": "pass \u2014 \u00a72 names the run directory for every log, and no node writes a gate to a session scratchpad or a node-local temporary path.",
+    "naming": "a finding \u2014 \u00a72 introduces a `waiting` request state while `reckon/crew/dispatch_admission.py` already uses `waiting` as a count.",
+    "reasoning": "a finding \u2014 \u00a73's done-when measures `crew view live` against an MCP read deadline, and \u00a74 asserts a router change in imas-ambix that its own next sentence says stays published.",
+    "single_goal": "pass \u2014 each node names one deliverable; \u00a74's ranking is one goal even though it also touches the lane read.",
+    "wiring": "a finding \u2014 the depends-on map is `s3:[s2,s4]`, `s4:[s5]`, `s6:[s2]`, `s7:[s4]`; every declared edge resolves, but \u00a75 acts on \u00a72's `waiting` state and declares no edge to \u00a72."
+  },
+  "section_digests": {
+    "_document": "0cb36e918ae81611b55c39082f399d0a22a17170330e8fb9cb422e420948b3d0",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s2": "2dd10ce0bc469f0c86e857e679c87dca1c773158e6c75882bd3c0898f7d557ed",
+    "s3": "b7a0762d64ced05735726d2d41427e5e937e91a65c0aa74d141274059060bb7d",
+    "s4": "a646be5c8e42a7c62f722b3f76ee0fac357337c185788483b5e2c8c2f7c359ac",
+    "s5": "76d8b8ea73bd54f632c594e86a08d6cb2acda6e80a8f80c7ea92f0b343ac14fe",
+    "s6": "6341795b4a1de46606e8d05b829a8725ca4510f09540644e4286af83327efe5f",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T10:42:56.276611+00:00"
+}
