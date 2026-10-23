@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window"
+  ],
+  "added_failures_note": "derived from the reviewed manifest's own arms: the after arm is missing no failure the base arm names, but the two arms ran different commands (the base arm only tests/test_a_domain_waiver_is_written_to_the_promoted_row.py, the after arm six files), so the one id the pair supports, tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window, is a pre-existing failure of reckon/roadmap.py over the module bound and is not this node's regression (git diff 3906d386 HEAD -- reckon/roadmap.py is empty).",
+  "base_log_revision": "3906d38636b15efccd93fb3e19f0a96f3ac35747",
+  "completed_at": "2026-10-23T01:17:15.467Z",
+  "dispatched_at": "2026-10-23T00:48:02Z",
+  "finding_dispositions": {
+    "2": {
+      "kind": "folded",
+      "node": "a-domain-waiver-is-written-to-the-promoted-row",
+      "recorded_at": "2026-10-23T01:20:05.976526+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": 174,
+      "severity": "follow-on",
+      "text": "follow-on: the `domain_waiver` declaration in RECORD_FIELDS is guarded by no assertion in this node's own gate, so deleting it leaves the suite green while the field stops being part of the declared promoted shape; the repository already owns the idiom for this check (assert \"key\" in ledger.RECORD_FIELDS at tests/test_disposition_reaches_the_ledger_row.py:159 and tests/test_ledger_declares_the_review_tier.py:58) and the new test module did not use it."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": 1003,
+      "severity": "follow-on",
+      "text": "follow-on: the parameter name `domain_waiver` carries the guard's waiver mapping inside `_complete_locked`, while the same identifier carries the reason string at reckon/crew/promotion.py:258 and reckon/mcp.py:2367, so a close reading of one waiver end to end has to check the type at each layer rather than the name; no naming rule is broken and the record is correct, so this is a comprehension cost rather than a defect."
+    },
+    {
+      "file": "tests/test_a_domain_waiver_is_written_to_the_promoted_row.py",
+      "line": 146,
+      "severity": "follow-on",
+      "text": "follow-on: `waiver[\"reason\"] == WAIVER_REASON` compares the row's reason against the constant the test itself hands the tool at line 137, so it pins carriage of the input rather than an independent reading of the row; it does redden on the regression (the field is absent, so the `waiver is not None` check at line 144 fails first), and the independent comparison is the guard-product case at line 205."
+    }
+  ],
+  "head_log_revision": "854cb5abc7608bc1caffa8498ec7b85faa0fd5d0",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is \"Record a promotion's waived domain checks and their reason on the promoted ledger row\" (its prompt.txt:19), and the landed change does exactly that \u2014 the guard's returned mapping `_domain_checks` is unpacked at reckon/crew/promotion.py:535 and passed as `domain_waiver=_domain_checks` at reckon/crew/promotion.py:656 into `_complete_locked`, which writes `run[\"domain_waiver\"] = dict(domain_waiver)` at reckon/crew/promotion.py:1515-1516, so the waived invariant ids and the stated reason ride the committed row.\nVERDICT done_when: the source done_when (its prompt.txt:101) requires the waived check names and reason on the row read back through crew(view=\"records\"), the field empty for a promotion with no waiver, and the tests failing on the base commit; tests/test_a_domain_waiver_is_written_to_the_promoted_row.py asserts all three (lines 145-146, 167-168, 205) and the recorded arms show it \u2014 base-domain-row.log 'FFF' / 3 failed / EXIT=1 naming exactly those three ids, gate-domain-row-head.log '64 passed, 1 failed, 1 skipped' / EXIT=1 with none of them failing.\nVERDICT write_paths: the source manifest declares six paths (reckon/crew/promotion.py, reckon/run_record.py, reckon/ledger.py, the new test module, the landing fragment, and a docs/figures directory); the diff 3906d386..9aacc61df touches five of them and no file outside the set, and the declared figures directory is correctly left unwritten, which the manifest's artifacts line states.\nVERDICT manifest: read; status complete, commits 854cb5abc and 9aacc61df, changed_paths naming the five files, baseline_suite (revision 3906d386, 3 failures, base-domain-row.log) and after_suite (revision 854cb5abc, 1 failure, gate-domain-row-head.log) both with completed true, the single failure attributed to reckon/roadmap.py being over the module bound at 50280 tokens, negative_control_log a bare path, and the tests line the literal command a shell was handed \u2014 but the two arms ran different commands (one test file against six), so the pair is not a like-for-like delta.\nVERDICT diff: read commit by commit against 3906d38636b15efccd93fb3e19f0a96f3ac35747; 854cb5abc carries the whole production change \u2014 one call argument at reckon/crew/promotion.py:656, one parameter and one three-line write at :1003 and :1515-1516, one seeded key at reckon/run_record.py:639, one declared field at reckon/ledger.py:174 \u2014 plus the 205-line test module, and 9aacc61df adds the landing fragment only; net two commits, five files, +266 lines, no deletions.\nCALL_SITES: reckon/crew_run_commands.py:2222 (crew_complete), reckon/mcp_crew_actions.py:225 (complete/land verbs routed to crew_complete), reckon/mcp_views.py:4140 (records view reading the committed row through ledger.read_records), reckon/crew/promotion.py:638 (complete's call into _complete_locked)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the guard's product is threaded to the row at reckon/crew/promotion.py:656 and written at :1515-1516, which is the goal read off the source, and the record confirms the defect it repairs reproduces \u2014 at 3906d386 `_domain_checks` is bound at promotion.py:535 and used nowhere else in the module.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-domain-row-head.log and base-domain-row.log are both recorded and reconcile with the manifest's summary lines, but the base arm is a one-file command while the after arm is a six-file command, so the added-failure count the pair supports (1, tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window) names a failure the node did not introduce, and the base arm's header revision 3906d386 is not a commit at which its command can be replayed, because the new test file does not exist there; the base arm's own citations do confirm the measure, the three ids it fails being exactly the three the done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all five paths in 854cb5abc and 9aacc61df are inside the six the source manifest declares, the figures directory is declared and correctly left unwritten, and no file outside the set is touched.\nSCORE durability: 15\nJUSTIFICATION durability: dropping `domain_waiver=_domain_checks` at reckon/crew/promotion.py:656 reddens tests/test_a_domain_waiver_is_written_to_the_promoted_row.py:144 and :205 as negative-control-domain-row.log records (2 failed, 1 passed, EXIT=1), and removing the seedsetdefault at reckon/run_record.py:639 reddens :167, but the third production line \u2014 \"domain_waiver\" in RECORD_FIELDS at reckon/ledger.py:174 \u2014 has no assertion in this node's gate that fails without it, and the test's reason check at line 146 compares against the very constant the test passed in.\nSCORE fit: 16\nJUSTIFICATION fit: the write follows the surrounding idiom for the row's other waivers (`if x is not None: run[...] = dict(x)` at reckon/crew/promotion.py:1508 and :1513), the comment above it states the mechanism and cites no ticket or stage label, and ruff check adds no finding on the staged paths (only the pre-existing S110/BLE001 pair at promotion.py:1662 remains, which base carries too) \u2014 but the identifier `domain_waiver` names the reason string two layers up (reckon/crew/promotion.py:258, reckon/mcp.py:2367) and the waiver mapping inside `_complete_locked` at :1003.\nSCORE reuse: 19\nJUSTIFICATION reuse: the addition extends the owner of the promoted row's waiver family \u2014 `boundary_waiver` at reckon/run_record.py:638 and reckon/ledger.py:173, `resume_waiver` beside it \u2014 instead of adding a mechanism, and a capability search over reckon/ for a second waiver-on-row store found none: every other `domain_waiver` occurrence is this change or the pre-existing guard-reason parameter.\nFINDING reckon/ledger.py:174 follow-on: the `domain_waiver` declaration in RECORD_FIELDS is guarded by no assertion in this node's own gate, so deleting it leaves the suite green while the field stops being part of the declared promoted shape; the repository already owns the idiom for this check (assert \"key\" in ledger.RECORD_FIELDS at tests/test_disposition_reaches_the_ledger_row.py:159 and tests/test_ledger_declares_the_review_tier.py:58) and the new test module did not use it.\nFINDING reckon/crew/promotion.py:1003 follow-on: the parameter name `domain_waiver` carries the guard's waiver mapping inside `_complete_locked`, while the same identifier carries the reason string at reckon/crew/promotion.py:258 and reckon/mcp.py:2367, so a reader tracing one waiver end to end must check the type at each layer rather than the name; no naming rule is broken and the record is correct, so this is a comprehension cost rather than a defect.\nFINDING tests/test_a_domain_waiver_is_written_to_the_promoted_row.py:146 follow-on: `waiver[\"reason\"] == WAIVER_REASON` compares the row's reason against the constant the test itself hands the tool at line 137, so it pins carriage of the input rather than an independent reading of the row; it does redden on the regression (the field is absent, so line 144 fails first), and the independent comparison is the guard-product case at line 205, where the row is read against the mapping the patched guard actually returned.",
+  "review_run_id": "r-20261023T004606431906-review-of-a-domain-waiver-is-written-to-the-promoted-row-9aacc61df523",
+  "reviewed_base_sha": "3906d38636b15efccd93fb3e19f0a96f3ac35747",
+  "reviewed_head_sha": "9aacc61df523e95c2eb0296de876c37144b714c9",
+  "reviewed_run_id": "r-20261022T234509733071-a-domain-waiver-is-written-to-the-promoted-row",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T01:05:00.000000+00:00",
+  "total": 105
+}
