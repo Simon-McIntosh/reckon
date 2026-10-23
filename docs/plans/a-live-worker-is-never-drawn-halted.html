@@ -24,7 +24,7 @@
   <title>A Live Worker Is Never Drawn Halted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="3">
 <meta name="plan-modified" content="2026-10-23">
 </head>
 <body>
@@ -193,16 +193,23 @@
     <code>status-repair.json</code> is written. Negative control: the stamped event at the base revision
     is printed, recorded in the gate log. The tests importing <code>ticker</code> add no failures against
     the base. Ruff adds no findings on the staged paths. Write paths: <code>reckon/crew/ticker.py</code>,
-    the producer module that composes transition events (named in the manifest), and the new test.</p>
+    and the producer side that composes and publishes transition events: <code>recovery_watch.py</code>,
+    which builds the transition dict (about line 1878), and <code>runs._stream_transition</code> /
+    <code>runs._publish_watch_transitions</code> in <code>reckon/crew/runs.py</code>. The stamp is added
+    where the dict is built, and the publisher only carries it. Name the line in the manifest. The new test
+    is the last write path.</p>
 
     <h2 id="s5">§5 — A wait that recovers from aged prints no row</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
     <p><code>wait-aged</code> and <code>waiting</code> share the pane word <code>waiting</code>. The aging
     row is news, because the wait is overdue. The return to <code>waiting</code> is not, because nothing
-    the coordinator must do has changed, yet it prints as <code>waiting → waiting</code>. The stream no
-    longer carries a row whose pane word is the same on both sides and whose wait facts (condition, probe,
-    terminal) are unchanged. The aging row is drawn with the word <code>overdue</code> in its reason clause,
-    so it no longer reads as a repeat.</p>
+    the coordinator must do has changed, yet it prints as <code>waiting → waiting</code>. The row policy
+    already owns round-trip suppression. <code>RowPolicy._shown</code> and <code>_departures</code>, with
+    <code>_note_shown</code>, hold a departure and drop it when the run returns inside the settle window.
+    The recorded pair is five minutes apart, outside that window. Extend that memory so that a return to a
+    pane word the run was last <em>shown</em> in, with the same wait facts (condition, probe, terminal), is
+    dropped whatever the gap. Add no second same-word rule beside it. The aging row is drawn with the word
+    <code>overdue</code> in its reason clause, so it no longer reads as a repeat.</p>
     <p>Done when a test feeds the row policy the recorded pair from
     <code>a-plans-coordinator-is-derived-from-the-ledger</code> (<code>waiting → wait-aged</code>, then
     <code>wait-aged → waiting</code>, same condition) and the stream prints exactly one row, which names the
@@ -272,7 +279,13 @@
     A producer whose host is not that node cannot probe a worker pid, so every liveness reading it publishes
     is unknown, and it still holds the seat that would let a producer on the fleet node start. At start and
     on each lease renewal, a producer whose host differs from the fleet record's node, and whose project's
-    runs carry a <code>launcher_host</code> equal to that node, releases its seat and exits. When it was
+    runs carry a <code>launcher_host</code> equal to that node, releases its seat and exits. The seat owner
+    takes that decision, so it cannot disagree with the readers that already judge a foreign seat:
+    <code>watch_unit.live_foreign_seat</code> / <code>live_foreign_seat_host</code>,
+    <code>watch_unit._record_producer_running</code>, and <code>runs.watch_host_lease</code> /
+    <code>runs._seat_host_is_local</code>. The fleet record is read through its existing owner,
+    <code>fleet_supervisor.RECORD_NAME</code> (and the reader at <code>dispatch_launch.py</code> about line
+    2128), not by a new path literal. When it was
     started as a systemd user unit, it first disables that unit, so <code>Restart=always</code> does not
     bring it back every five seconds. The release is announced once on the stream, naming both hosts. With
     no fleet record, nothing changes.</p>
@@ -281,18 +294,19 @@
     composed (not run) when the unit environment variable is set. The same host gives hold, and an absent
     fleet record gives hold. Negative control: the foreign-host arm at the base revision holds the seat,
     recorded in the gate log. The tests of the watch producer and seat modules add no failures against the
-    base. Ruff adds no findings on the staged paths. Write paths: the producer seat module named in the
-    manifest, and the new test. A test must not read or write the real fleet record or seat.</p>
+    base. Ruff adds no findings on the staged paths. Write paths: <code>reckon/crew/watch_unit.py</code>,
+    <code>reckon/crew/runs.py</code> if the lease side changes, and the new test. A test must not read or
+    write the real fleet record or seat.</p>
 
     
 
     <h2 id="s10">§10 — A wait nothing can lift says it needs the coordinator</h2>
 <section data-reckon="section" data-id="s10" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
-<p>A worker may end its turn while it holds a declared wait, and the recovery sweep then resumes it when the wait's condition probe reports a terminal state. When the probe cannot answer, the sweep never will. The row still reads <code>waiting</code>, and its next action still promises "the recovery sweep will resume … when the condition test reports a terminal state". Measured on imas-efit <code>r-20261023T065106939911-cbl-render-step-routine</code>: attempt 1 exited 07:50:51Z holding a wait on build 1293562. At 08:09:50Z the row read <code>wait-aged</code> with "condition probe did not answer successfully" and that promise. The coordinator found the stall by hand and resumed it at 08:33Z. A declared wait whose worker has an exit record for the current attempt and whose probe did not answer is classified with a halted word. Its next action names the resume command and says the probe could not answer. A wait whose worker is still live, or whose probe answers non-terminal, is unchanged.</p><p>Done when a test builds a fixture run with a declared wait, a current-attempt exit record and a probe that exits non-zero. It classifies to a pane word <code>halted</code>, with a next action containing <code>reckon crew resume</code> and not <code>the recovery sweep will resume</code>. The same fixture with a live worker, or with a probe answering non-terminal, stays <code>waiting</code>. Negative control: the first fixture at the base revision stays <code>waiting</code> with the sweep promise, recorded in the gate log. The tests importing <code>recovery_classification</code> add no failures against the base. Ruff adds no findings on the staged paths. Write paths: the classification module that composes a wait's next action (named in the manifest) and the new test. It runs after §3 when that module is <code>recovery_classification.py</code>.</p>
+<p>A worker may end its turn while it holds a declared wait, and the recovery sweep then resumes it when the wait's condition probe reports a terminal state. When the probe cannot answer, the sweep never will. The row still reads <code>waiting</code>, and its next action still promises "the recovery sweep will resume … when the condition test reports a terminal state". Measured on imas-efit <code>r-20261023T065106939911-cbl-render-step-routine</code>: attempt 1 exited 07:50:51Z holding a wait on build 1293562. At 08:09:50Z the row read <code>wait-aged</code> with "condition probe did not answer successfully" and that promise. The coordinator found the stall by hand and resumed it at 08:33Z. A declared wait whose worker has an exit record for the current attempt and whose probe did not answer is classified with a halted word. Its next action names the resume command and says the probe could not answer. A wait whose worker is still live, or whose probe answers non-terminal, is unchanged.</p><p>Done when a test builds a fixture run with a declared wait, a current-attempt exit record and a probe that exits non-zero. It classifies to a pane word <code>halted</code>, with a next action containing <code>reckon crew resume</code> and not <code>the recovery sweep will resume</code>. The same fixture with a live worker, or with a probe answering non-terminal, stays <code>waiting</code>. Negative control: the first fixture at the base revision stays <code>waiting</code> with the sweep promise, recorded in the gate log. The tests importing <code>recovery_classification</code> add no failures against the base. Ruff adds no findings on the staged paths. Write paths: <code>reckon/crew/recovery_classification.py</code>, whose wait arm composes "the recovery sweep will resume run … when the condition …" (about line 1000), and the new test. It runs after §3, which writes the same file.</p>
 
     <h2 id="s11">§11 — The census finds no live worker drawn halted</h2>
 <section data-reckon="section" data-id="s11" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
-<p>The instrument behind §1 is committed and re-run once §2–§10 have landed and every producer has reloaded onto that code. For every project's watch stream over a stated window, it reclassifies each event through <code>ticker.stream_carries</code> and <code>ticker._pane_word</code>. It counts carried <em>halted</em> rows, and among them the rows whose own event records <code>process_alive: true</code> and the rows followed within 30 minutes by a <code>working</code> row with no new attempt claim between them. It also counts lift transitions per lift id, and same-word <code>waiting → waiting</code> rows. It reads the streams and writes only its report.</p><p>Done when the instrument is committed under <code>scripts/</code> with a test that runs it on a synthetic stream holding one row of each counted kind and asserts each count is 1. Its report over the 24 hours after the last producer reload, run on the fleet node, records zero carried halted rows with <code>process_alive: true</code>, zero halted rows returning to working with no new attempt claim, at most one <code>lift-granted</code> per lift id, and zero same-word wait rows. Each figure sits beside the census in §1. Negative control: the same instrument over the 48 hours ending 2026-10-23T12:37Z reproduces §1's 24 halted rows with <code>process_alive: true</code>, recorded in the report. Write paths: the script, its test, and the report at <code>docs/evidence/fragments/a-live-worker-is-never-drawn-halted/census.html</code>.</p>
+<p>The instrument behind §1 is committed and re-run once §2–§10 have landed and every producer has reloaded onto that code. For every project's watch stream over a stated window, it reclassifies each event through <code>ticker.stream_carries</code> and <code>ticker._pane_word</code>. It counts carried <em>halted</em> rows, and among them the rows whose own event records <code>process_alive: true</code> and the rows followed within 30 minutes by a <code>working</code> row with no new attempt claim between them. It also counts lift transitions per lift id, and same-word <code>waiting → waiting</code> rows. It reads the streams and writes only its report.</p><p>Done when the instrument is committed as one module under <code>scripts/census/</code>, beside <code>death_census.py</code> and <code>carryover_census.py</code>, with a co-located test that runs it on a synthetic stream holding one row of each counted kind and asserts each count is 1. Its report over the 24 hours after the last producer reload, run on the fleet node, records zero carried halted rows with <code>process_alive: true</code>, zero halted rows returning to working with no new attempt claim, at most one <code>lift-granted</code> per lift id, and zero same-word wait rows. Each figure sits beside the census in §1. Negative control: the same instrument over the 48 hours ending 2026-10-23T12:37Z reproduces §1's 24 halted rows with <code>process_alive: true</code>, recorded in the report. Write paths: the script, its test, and the report as this node's evidence fragment, <code>docs/evidence/fragments/a-live-worker-is-never-drawn-halted/&lt;node-id&gt;.html</code>, which the landing beat folds into <code>docs/evidence/archive/a-live-worker-is-never-drawn-halted-landed.html</code>.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
