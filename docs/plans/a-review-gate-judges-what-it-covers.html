@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="a-plan-is-reviewed-before-it-is-built,the-review-loop-runs-without-hand-steps">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;}">
   <title>A Review Gate Judges What It Covers | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="10">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -172,7 +172,7 @@
     </p>
 
     <h2 id="s8">§8 — A write&#x27;s answer names what that write uncovered</h2>
-<section data-reckon="section" data-id="s8" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s8" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> Measured on power_convertor on 2026-10-23. <code>set sprint</code> on coil-supply-report-rebuild returned <code>review_owed</code> for <code>_document</code>, s12 and s4 (measured change 0.0089); on iter-switched-terminal-transients it returned s6 (change null), on tf-quench-detection-on-cold-test-hardware s8, and <code>close</code> on jt60sa-coil-circuit-model returned <code>_document</code>. A coordinator told that a review is owed composes one: the project ran 98 plan reviews against 143 implementation runs between 19 and 23 October.</p>
     <p>None of those writes uncovered anything. The document digest already leaves them out: <code>PLAN_METADATA_SCALARS</code> in <code>reckon/crew/plan_review.py</code> normalises status, sprint, owner, ROI, effort, tags and the archived flag out of it, and comments and followups are dropped from it. What the coordinator saw was the plan's existing debt, listed in <code>review_owed</code> as though the write had made it.</p>
     <p><strong>Change.</strong> <code>_review_owed_fields</code> in <code>reckon/mcp_deadlines.py</code> keeps <code>review_owed</code> as the plan's whole debt and adds <code>uncovered_by_write</code>, the units this write moved from covered to uncovered, found by comparing coverage before and after it. <code>_review_owed_fields</code> runs only after the write, on the written plan, and coverage is a function of the plan's content, so <code>edit_plan</code> in <code>reckon/mcp_edit_plan.py</code> computes the plan's coverage from its content before it applies the write and passes that in. A write that uncovers nothing carries an empty list. The edit skill tells a coordinator to act on <code>uncovered_by_write</code> after its own write and on <code>review_owed</code> before a build. The change composes with §2 in either order: it reports coverage without changing how coverage is decided.</p>
@@ -185,10 +185,11 @@
     <div class="r-fu-body"><p>§2 and §3 remove the waiver habit and can be built together, because both change how the dispatch gate reads coverage. §4 to §6 are independent of them and of each other.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-review-gate-judges-what-it-covers §2</pre>
     </article>
-<article class="r-fu" data-id="f-argjwic-008" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-edit" data-written-at="2026-10-23 09:00" data-recommends-skill="/reckon-build a-review-gate-judges-what-it-covers §8" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-argjwic-008" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-edit" data-written-at="2026-10-23 09:00" data-recommends-skill="/reckon-build a-review-gate-judges-what-it-covers §8" data-resolved-at="2026-10-23T22:07:55+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">A write that changes only lifecycle metadata uncovers nothing</h4>
     <div class="r-fu-body"><p>Measured in a power_convertor portfolio review on 2026-10-23 and passed on by its coordinator. A content review of this section is owed before dispatch.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-review-gate-judges-what-it-covers §8</pre>
+    <p class="r-fu-outcome">Section 8 landed at merge effacd38d: every plan write answers uncovered_by_write beside review_owed. Review 110, zero added failures against a red base. f-rgjc-001 carries the next build, section 2.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -212,6 +213,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261023T203414448007-a-write-names-what-it-uncovered" data-who="reckon-build" data-when="2026-10-23T21:35:28.583Z">
     <div class="r-comment-body"><p>§8 landed — every plan write answers uncovered_by_write (the units it moved from covered to uncovered) beside the unchanged review_owed, with the sprint and close cases empty and the prose edit naming only s3; the declared mutation (uncovered_by_write = review_owed) fails the sprint case, 1 failed EXIT=1, against 5 passed at the head arm.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-10-23T11:30:00Z">
+    <div class="r-comment-body"><p>Section 8 landed at merge <code>effacd38d</code>: plan writes name <code>uncovered_by_write</code>, review 110, zero added failures. <a href="/reckon/evidence/archive/a-review-gate-judges-what-it-covers-landed.html#s8">evidence</a></p></div>
 </div>
 </section>
 </main>
