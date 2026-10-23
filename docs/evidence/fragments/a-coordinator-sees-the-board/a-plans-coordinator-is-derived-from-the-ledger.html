@@ -114,7 +114,15 @@ decided tf-cold-test-validation: run=r-20261021T190726061562-cold-test-reproduct
   obligation cases, against the fixture whose evidence is tabulated above. The two failures
   are named below and neither is this change's; the gate has no third.</p>
 
-  <p><strong>One failure the gate carries, and it is not this node's.</strong> The fourth
+  <p><strong>The gate's other failure, and it is environmental.</strong>
+  <code>tests/test_ledger.py::test_every_read_view_returns_and_large_defaults_are_compact</code>
+  hits the suite's own 300-second per-test bound on this storage. It does not assert and
+  does not fail on content: it is killed, and it is killed the same way at the base
+  revision, where <code>tests/test_ledger.py</code> and <code>reckon/ledger.py</code> are
+  byte-identical to this head. A case this change cannot reach, timed out on the storage
+  it ran on, is recorded as environmental rather than as a regression.</p>
+
+  <p><strong>The one failure the gate carries that would look like this node's.</strong> The fourth
   member, <code>tests/test_every_module_fits_a_worker_window.py</code>, fails on a module
   this change does not touch:</p>
 
