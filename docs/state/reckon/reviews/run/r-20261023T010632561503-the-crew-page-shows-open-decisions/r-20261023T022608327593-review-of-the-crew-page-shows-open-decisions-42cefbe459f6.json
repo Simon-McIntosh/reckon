@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-23T03:10:57.939Z",
+  "dispatched_at": "2026-10-23T02:33:15Z",
+  "findings": [
+    {
+      "file": "docs/ui/crew.jsx",
+      "line": 425,
+      "severity": "blocking",
+      "summary": "the crew view starts a second /crew poll beside the shell's own, which breaks the pinned contract at tests/test_a_poll_waits_for_its_previous_answer.py:211 (assert crew_pollers == 0) - that case passes at 3d80d6544 and fails at 42cefbe45 with assert (1 + 1) == 1 - and contradicts docs/ui/shell.jsx:311, while reckon/serve.py:3142 recomputes _waiting_decision_rows over every mounted plan on each request, so the crew page now pays that walk twice per cycle.",
+      "text": "the crew view starts a second /crew poll beside the shell's own, which breaks the pinned contract at tests/test_a_poll_waits_for_its_previous_answer.py:211 (assert crew_pollers == 0) - that case passes at 3d80d6544 and fails at 42cefbe45 with assert (1 + 1) == 1 - and contradicts docs/ui/shell.jsx:311, while reckon/serve.py:3142 computes _waiting_decision_rows over every mounted plan on each request, so the crew page now pays that walk twice per cycle."
+    },
+    {
+      "file": "manifest.md",
+      "line": 12,
+      "severity": "blocking",
+      "summary": "the tests: line carries a JSON object rather than the literal gate command and neither gate log has a '# command:' header, so reckon crew check --manifest --run r-20261023T010632561503-the-crew-page-shows-open-decisions returns ok:false and promotion has no re-runnable gate receipt.",
+      "text": "the tests: line carries a JSON object rather than the literal gate command and neither gate log has a '# command:' header, so reckon crew check --manifest --run r-20261023T010632561503-the-crew-page-shows-open-decisions returns ok:false and promotion has no re-runnable gate receipt."
+    },
+    {
+      "file": "docs/ui/crew.jsx",
+      "line": 354,
+      "severity": "follow-on",
+      "summary": "crewDecisionsForProjects re-implements the visible-project filter its neighbour crewRunsForVisibleProjects already owns at docs/ui/crew.jsx:325; the two bodies differ only in the row variable name, so the filter now has two owners.",
+      "text": "crewDecisionsForProjects re-implements the visible-project filter its neighbour crewRunsForVisibleProjects already owns at docs/ui/crew.jsx:325; the two bodies differ only in the row variable name, so the filter now has two owners."
+    },
+    {
+      "file": "docs/ui/crew.jsx",
+      "line": 340,
+      "severity": "follow-on",
+      "summary": "crewDecisionPlanHref returns /<project>/#plan/<slug> with no fragment naming the decision, so the row links to the plan page rather than to the plan page's decision that section 16 asks the row to link to.",
+      "text": "crewDecisionPlanHref returns /<project>/#plan/<slug> with no fragment naming the decision, so the row links to the plan page rather than to the plan page's decision that section 16 asks the row to link to."
+    },
+    {
+      "file": "tests/test_the_crew_page_shows_open_decisions.py",
+      "line": 245,
+      "severity": "follow-on",
+      "summary": "the assertion seen[\"empty\"] is False is written twice in a row (at :244 and :245), a copy-paste duplicate that adds no coverage.",
+      "text": "the assertion seen[\"empty\"] is False is written twice in a row (at :244 and :245), a copy-paste duplicate that adds no coverage."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to render the open decisions the /crew payload carries on the crew page as section 16 specifies, and docs/ui/crew.jsx:360 CrewOpenDecisions draws one row per payload row with the plan link, key, title, sections, recommendation and wait stamp, plus the empty line section 16 requires.\nVERDICT done_when: the done_when names the new test plus five existing crew browser cases at base and head with zero added failures and no SKIPPED; both arms ran (logs/gate-base.log 32 passed EXIT=0, logs/gate-head.log 34 passed EXIT=0) but the selection omits tests/test_a_poll_waits_for_its_previous_answer.py, which covers docs/ui/crew.jsx and fails at head.\nVERDICT write_paths: the declared paths are docs/ui/crew.jsx, docs/ui/crew.css, tests/test_the_crew_page_shows_open_decisions.py, the fragment and the figures directory; git diff --name-only 3d80d6544 42cefbe45 lists exactly the first four, so the diff stays inside them.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T010632561503-the-crew-page-shows-open-decisions/manifest.md; it reports 32 passed at base and 34 at head, but reckon crew check --manifest refuses it (ok:false): both gate logs carry no command near their head and its commits: entries are not a bare sha list.\nVERDICT diff: read commit by commit against 3d80d6544; b7d949674 adds docs/ui/crew.jsx, docs/ui/crew.css and the browser test, 42cefbe45 adds the evidence fragment, 497 insertions and no deletions, all inside the declared scope.\nCALL_SITES: docs/ui/shell.jsx:530 (renders CrewView and passes runs), docs/ui/shell.jsx:316 (the shell's own /crew poll), reckon/serve.py:3142 (populates open_decisions on the /crew payload), reckon/roadmap.py:1125 (unsettled_decisions builds the rows)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/ui/crew.jsx:360 renders the payload's own fields for plan, key, title, sections, recommendation and wait stamp and draws the empty line, so section 16's deliverable is met, though the row links to #plan/<slug> rather than to the decision itself.\nSCORE evidence: 13\nJUSTIFICATION evidence: both arms ran with EXIT= and the negative control is genuinely red (logs/negative-control.log, 2 failed, EXIT=1), but the gate's file set omits the test that covers the changed module and neither log carries a '# command:' header, so the receipt is not re-runnable.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 3d80d6544 42cefbe45 lists four paths and every one is inside the declared write paths.\nSCORE durability: 9\nJUSTIFICATION durability: tests/test_the_crew_page_shows_open_decisions.py:244 reddens when the row is removed (proved by logs/negative-control.log), but the change also breaks tests/test_a_poll_waits_for_its_previous_answer.py:211, which the node's gate never ran.\nSCORE fit: 10\nJUSTIFICATION fit: docs/ui/crew.jsx:425 starts a second /crew poll that docs/ui/shell.jsx:311 states the crew view must not start.\nSCORE reuse: 5\nJUSTIFICATION reuse: docs/ui/crew.jsx:354 crewDecisionsForProjects repeats the visible-project filter already owned by crewRunsForVisibleProjects at docs/ui/crew.jsx:325, the same body over a different row type.\nFINDING docs/ui/crew.jsx:425 blocking: the crew view starts a second /crew poll beside the shell's own, which breaks the pinned contract at tests/test_a_poll_waits_for_its_previous_answer.py:211 (assert crew_pollers == 0) - that case passes at 3d80d6544 and fails at 42cefbe45 with assert (1 + 1) == 1 - and contradicts docs/ui/shell.jsx:311, while reckon/serve.py:3142 recomputes _waiting_decision_rows over every mounted plan on each request, so the crew page now pays that walk twice per cycle.\nFINDING manifest.md:12 blocking: the tests: line carries a JSON object rather than the literal gate command and neither gate log has a '# command:' header, so reckon crew check --manifest --run r-20261023T010632561503-the-crew-page-shows-open-decisions returns ok:false and promotion has no re-runnable gate receipt.\nFINDING docs/ui/crew.jsx:354 follow-on: crewDecisionsForProjects re-implements the visible-project filter its neighbour crewRunsForVisibleProjects already owns at docs/ui/crew.jsx:325; the two bodies differ only in the row variable name, so the filter now has two owners.\nFINDING docs/ui/crew.jsx:340 follow-on: crewDecisionPlanHref returns /<project>/#plan/<slug> with no fragment naming the row's decision, so the row links to the plan page rather than to the plan page's decision section 16 asks the row to link to.\nFINDING tests/test_the_crew_page_shows_open_decisions.py:245 follow-on: the assertion seen[\"empty\"] is False is written twice in a row (at :244 and :245), a copy-paste duplicate that adds no coverage.\n",
+  "review_run_id": "r-20261023T022608327593-review-of-the-crew-page-shows-open-decisions-42cefbe459f6",
+  "reviewed_base_sha": "3d80d6544c00c10a390bb3f557287c6a1d03c572",
+  "reviewed_head_sha": "42cefbe459f605bee544b05c4cdac950b0bb8d90",
+  "reviewed_run_id": "r-20261023T010632561503-the-crew-page-shows-open-decisions",
+  "scores": {
+    "durability": 9,
+    "evidence": 13,
+    "fit": 10,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T03:20:18.496439+00:00",
+  "total": 75
+}
