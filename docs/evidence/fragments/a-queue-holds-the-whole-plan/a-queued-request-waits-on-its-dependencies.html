@@ -231,6 +231,16 @@
   not the CLI dispatch path, so it observes the stored phase in either tree
   rather than a launch count.</p>
 
+  <p><strong>Which entry point is production, and which is not.</strong>
+  <code>queue_requests</code>, the batch entry that stores a plan's whole width
+  in one call, has no production caller yet: the queue verbs that would drive
+  it — <code>crew queue edit</code>, <code>reprioritise</code> and
+  <code>drop</code> — are the subject of a later section of this plan, and that
+  section owns wiring the batch. What this section proves as its production
+  route is the single-node one: <code>crew dispatch</code> now writes the hold
+  itself, so a node a coordinator dispatches is held on its waits without any
+  batch entry point existing.</p>
+
   <h3>What is not measured here</h3>
 
   <ul>
