@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;the-monitor-reads-each-fact-once#s12&quot;],&quot;s5&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s7&quot;:[&quot;crew-state-stays-bounded#s3&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
   <title>Crew State Stays Bounded | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 <meta name="plan-modified" content="2026-10-23">
 </head>
 <body>
@@ -120,7 +120,7 @@
     
 
     <h2 id="s6">§6 — A worker&#x27;s harness caches leave with the worker</h2>
-<section data-reckon="section" data-id="s6" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s6" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> §1's sample found that the bulk of a codex run's directory is caches its harness built for
     that one process, kept for as long as the directory lives. One is the codex plugin catalog under
     <code>codex-home/cache/</code> and <code>codex-home/plugins/</code>, which every codex run downloads afresh. The
@@ -188,7 +188,10 @@
     <div class="r-comment-body"><p>§6 review at 6099b9f37 — parsed; scores goal_fidelity 19, evidence 14, scope_discipline 20, durability 19, fit 18, reuse 20; added_failure_count 0; one non-blocking finding (negative-control.log:2 names the pre-review revision 508da957f while its traceback is the head revision's test file).</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261023T092448652887-a-harness-cache-leaves-with-its-attempt" data-who="reckon-build" data-when="2026-10-23T10:44:23Z">
-    <div class="r-comment-body"><p>§6 — an attempt&#x27;s harness caches (codex-home/cache, codex-home/plugins, cache) are removed as its exit record is written, listed with their sizes on the record; the removal runs only while the recorded attempt is still the run&#x27;s current one, so a late record leaves a live attempt&#x27;s caches alone; the sessions tree a resume reads survives. Gate: 38 passed, 1 pre-existing failure (reckon/roadmap.py width), 1 skipped.</p></div>
+    <div class="r-comment-body"><p>§6 — an attempt's harness caches (codex-home/cache, codex-home/plugins, cache) are removed as its exit record is written, listed with their sizes on the record; the removal runs only while the recorded attempt is still the run's current one, so a late record leaves a live attempt's caches alone; the sessions tree a resume reads survives. Gate: 38 passed, 1 pre-existing failure (reckon/roadmap.py width), 1 skipped.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-close-s6" data-who="reckon-build" data-when="2026-10-23T11:30:00Z">
+    <div class="r-comment-body"><p>§6 landed by merge <code>61d6f85a6</code>: an exited attempt's harness caches leave its run directory in the exit-record writer and the resume sessions stay; 38 passed at head with only the pre-existing width failure; review 110/120. <a href="/reckon/evidence/archive/crew-state-stays-bounded-landed.html#s6">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261023T102142975294-review-of-only-a-run-something-can-still-need-keeps-its-directory-cee4634d6dfb" data-who="reckon-build" data-when="2026-10-23T11:00:38.141Z">
     <div class="r-comment-body"><p>Reviewed run r-20261023T090019521065-only-a-run-something-can-still-need-keeps-its-directory at base ad415ded61249c82a3302f00f9a579685b9274bd / head cee4634d6dfb5b8e7bbd32136e91c66894d311fe: scores goal 18, evidence 14, scope 19, durability 14, fit 16, reuse 4; added failures 0; five non-blocking findings (a duplicated duration parser, a duplicated committed-review walk, an untested grace parser, a fragment that misstates the negative control, and a checkout_path omission).</p></div>

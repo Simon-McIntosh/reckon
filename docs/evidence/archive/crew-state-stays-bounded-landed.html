@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-state-stays-bounded-landed">
+  <meta name="plan-title" content="Crew State Stays Bounded — landed record">
+  <meta name="plan-summary" content="Closure synthesis for Crew State Stays Bounded: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="crew-state-stays-bounded">
+  <meta name="plan-verdict" content="qualified">
+  <title>Crew State Stays Bounded — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>Crew State Stays Bounded — landed record</h1>
+  <p>Closure synthesis for Crew State Stays Bounded: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s6">
+    <h2>§6 — A worker&#x27;s harness caches leave with the worker</h2>
+    <p>When an attempt's process exits, <code>_supervisor_exit_record</code> in <code>reckon/crew/dispatch_launch.py</code> removes the caches its harness built for that process: <code>codex-home/cache/</code> and <code>codex-home/plugins/</code>, the codex plugin catalog each codex run downloads afresh, and the <code>cache/</code> tree a worker's tools fill. It keeps <code>codex-home/sessions/</code>, which a resume needs, and records each removed path and its size, measured by the module's existing <code>tree_size_bytes</code>, on the exit record. Nothing removes the caches at any other time, so a running attempt is never touched.</p><p>Run <code>r-20261023T092448652887-a-harness-cache-leaves-with-its-attempt</code>, head <code>6099b9f3</code>, landed by merge <code>61d6f85a6</code>. The coordinator re-ran the gate from <code>git archive</code> extractions: 38 passed at the head, with only the <code>reckon/roadmap.py</code> width failure, which fails identically at the base <code>6fe36f37</code>, where the new test file fails at import. Four tests were added. The second review scored 110/120 after a repair round that replaced a duplicate tree-size walker with <code>tree_size_bytes</code> and made the tests drive the production path.</p>
+  </section>
+
+</main>
+</body>
+</html>
