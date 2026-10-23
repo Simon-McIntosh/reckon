@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery.py:402",
+    "reckon/crew/recovery_watch.py:3079",
+    "reckon/crew/dispatch.py:3090",
+    "reckon/crew/dispatch_peer.py:445",
+    "reckon/crew/promotion.py:1794"
+  ],
+  "completed_at": "2026-10-23T23:33:23.815Z",
+  "dispatched_at": "2026-10-23T23:18:30Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/additional-work-is-a-section/every-derived-manifest-carries-the-outside-scope-field.html",
+      "line": 39,
+      "severity": "non-blocking",
+      "text": "the done-when's ruff clause (docs/plans/additional-work-is-a-section.html:94) is measured nowhere: no ruff log, manifest line or fragment row records `ruff check` or `ruff format --check` on the changed paths, so the record cannot show the clause holds; rechecking at 160e251c2 gives 8 check findings at base and 8 at head with the new test file formatted, so the change is compliant and only the receipt is missing"
+    },
+    {
+      "file": "docs/evidence/fragments/additional-work-is-a-section/every-derived-manifest-carries-the-outside-scope-field.html",
+      "line": 50,
+      "severity": "non-blocking",
+      "text": "the arms table names 160e251c2 as the head revision while the head arm's own log header reads '160e251c2 (plus this node's uncommitted changes)', so the recorded after_suite revision does not identify the tree that ran; the later commit 8c4e10c5b is docs-only, so the measured code equals the reviewed head's code, but a reader cannot prove that from the record"
+    },
+    {
+      "file": "reckon/crew/reports.py",
+      "line": 105,
+      "severity": "non-blocking",
+      "text": "a comment still lists `follow_ons` among the prose list fields, so the rename leaves one stale reference to the retired spelling; the file is outside this node's write paths and the node reported outside_scope: none, so the coordinator never saw it"
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 5 production call sites",
+    "diff": "two commits read against 67cba14e: 160e251c2 changes two emitted field names, two ledger docstrings and one fixture key and adds a 118-line four-case test, and 8c4e10c5b fills in the evidence fragment's unresolved arm placeholders",
+    "done_when": "docs/plans/additional-work-is-a-section.html:94 asks four new test cases, a base/head delta over the importing test files and a ruff clause on the changed paths; the four cases and both arms are recorded (31 failing at base, 25 at head, no added ids) and the ruff clause carries no recorded measurement",
+    "goal": "the goal asks the three derived sites and the ledger docstrings to name outside_scope; reckon/crew/recovery_watch.py:201, reckon/crew/dispatch_peer.py:407, scripts/check_snapshot_assertions.py:147 and reckon/ledger.py:632,651 all now name it",
+    "manifest": "the delivered record (manifest.md.attempt-1.asdelivered, status complete) reports the two arms, zero added failure ids, the negative control and the 284-file population; the live manifest.md has since been rewritten in-progress by a resume whose uncommitted edits are outside both commits",
+    "write_paths": "the manifest declares nine paths; both commits touch six files (reckon/crew/recovery_watch.py, reckon/crew/dispatch_peer.py, scripts/check_snapshot_assertions.py, reckon/ledger.py, the new test, the evidence fragment) and every one is inside that list"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to write and list the manifest field as outside_scope at the three derived sites and in the ledger docstrings; reckon/crew/recovery_watch.py:201, reckon/crew/dispatch_peer.py:407, scripts/check_snapshot_assertions.py:147 and reckon/ledger.py:632,651 now all name outside_scope.\nVERDICT done_when: docs/plans/additional-work-is-a-section.html:94 asks for four new cases, a base/head delta over the importing test files and a ruff clause on the changed paths; the four cases and both arms are recorded and pass, and the ruff clause has no recorded measurement (recheck at 160e251c2: 8 findings at base, 8 at head, new test formatted).\nVERDICT write_paths: the manifest declares nine paths and both commits touch six files, all of them inside that list.\nVERDICT manifest: the delivered record (manifest.md.attempt-1.asdelivered, status complete) states 31 failing at base against 25 at head with zero added ids and the negative control; the live manifest.md was later rewritten in-progress by a resume outside these commits.\nVERDICT diff: two commits read against 67cba14e; 160e251c2 changes two emitted field names, two ledger docstrings and one fixture key set and adds a four-case test, and 8c4e10c5b fills in the evidence fragment's arm results.\nCALL_SITES: reckon/crew/recovery.py:402, reckon/crew/recovery_watch.py:3079, reckon/crew/dispatch.py:3090, reckon/crew/dispatch_peer.py:445, reckon/crew/promotion.py:1794\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the three derived sites and the two ledger docstrings named in docs/plans/additional-work-is-a-section.html:94 now all emit or describe outside_scope, at reckon/crew/recovery_watch.py:201, reckon/crew/dispatch_peer.py:407, scripts/check_snapshot_assertions.py:147 and reckon/ledger.py:651.\nSCORE evidence: 15\nJUSTIFICATION evidence: the head suite log records 25 failed against the base arm's 31 with no added ids and the negative control log shows the declared red arm, but the done-when's ruff clause has no receipt anywhere in the manifest or the evidence fragment.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the two commits is one of the nine declared write paths, and no file outside them is touched.\nSCORE durability: 18\nJUSTIFICATION durability: each of the four added cases in tests/test_every_derived_manifest_carries_the_outside_scope_field.py fails if its site reverts \u2014 the declared mutation at recovery_watch.py turns the first case red with the manifest still reading follow_ons: none \u2014 and no assertion compares a value against the same variable it passed in.\nSCORE fit: 18\nJUSTIFICATION fit: the change follows the surrounding idiom of the modules it edits, and the added test's loader mirrors the existing check-script loader at tests/test_snapshot_assertion_shape.py:18 without introducing a name the repository rules forbid.\nSCORE reuse: 16\nJUSTIFICATION reuse: the only added definition is the test-local `_load_snapshot_assertions` at tests/test_every_derived_manifest_carries_the_outside_scope_field.py:30, which repeats the per-test script-loader idiom already used by six test files rather than extending the loader at tests/test_snapshot_assertion_shape.py:18.\nFINDING docs/evidence/fragments/additional-work-is-a-section/every-derived-manifest-carries-the-outside-scope-field.html:39 non-blocking: the done-when's ruff clause is measured nowhere: no ruff log, manifest line or fragment row records `ruff check` or `ruff format --check` on the changed paths, so the record cannot show the clause holds; rechecking at 160e251c2 gives 8 check findings at base and 8 at head with the new test file formatted, so the change is compliant and only the receipt is missing.\nFINDING docs/evidence/fragments/additional-work-is-a-section/every-derived-manifest-carries-the-outside-scope-field.html:50 non-blocking: the arms table names 160e251c2 as the head revision while the head arm's own log header reads '160e251c2 (plus this node's uncommitted changes)', so the recorded after_suite revision does not identify the tree that ran; the later commit 8c4e10c5b is docs-only, so the measured code equals the reviewed head's code, but a reader cannot prove that from the record.\nFINDING reckon/crew/reports.py:105 non-blocking: a comment still lists `follow_ons` among the prose list fields, so the rename leaves one stale reference to the retired spelling; the file is outside this node's write paths and the node reported outside_scope: none, so the coordinator never saw it.\n",
+  "review_run_id": "r-20261023T231725723244-review-of-every-derived-manifest-carries-the-outside-scope-field-8c4e10c5b83d",
+  "reviewed_base_sha": "67cba14e682d484489600b2194b9917b3d86dfc4",
+  "reviewed_head_sha": "8c4e10c5b83dafae2e7888cd50f5ad62e7d73d38",
+  "reviewed_run_id": "r-20261023T191636578395-every-derived-manifest-carries-the-outside-scope-field",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T23:35:01.157261+00:00",
+  "total": 105
+}
