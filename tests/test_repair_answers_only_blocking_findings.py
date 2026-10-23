@@ -314,10 +314,10 @@ def _stub_resume(monkeypatch) -> list[dict]:
 
 
 @pytest.mark.arms_watch_producer
-def test_an_all_follow_on_round_names_its_cause_and_the_follow_on_count(
+def test_an_all_non_blocking_round_names_its_cause_and_the_non_blocking_count(
     dispatch_project: tuple[Path, Path, str], monkeypatch
 ) -> None:
-    """Every finding a follow-on: the reason names no blocking finding and the count.
+    """Every finding non-blocking: the reason names no blocking finding and the count.
 
     The reflex returns this reason and records it on the reviewed run, so a
     round the reflex considered is not indistinguishable from one it never saw.
@@ -336,7 +336,7 @@ def test_an_all_follow_on_round_names_its_cause_and_the_follow_on_count(
     assert report["dispatched"] is False
     assert calls == []
     assert "the review round carried no blocking finding" in report["reason"]
-    assert "1 follow-on" in report["reason"]
+    assert "1 non-blocking finding(s)" in report["reason"]
     assert "unmarked" not in report["reason"]
 
     recorded = runs.read_pointer(RUN_ID)["repair_dispatch"]

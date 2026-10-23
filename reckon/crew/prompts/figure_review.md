@@ -52,12 +52,18 @@ Record every finding as an object with these four fields:
 - `blocking` — reserved for a defect that stops a reader reading the figure: a
   clipped or overlapping label, unreadable text, or data the figure does not
   let a reader see.
-- `follow-on` — anything else worth recording; the defect does not hold the
+- `non-blocking` — anything else worth recording; the defect does not hold the
   node.
 
 Use no severity outside these two. The word stays in your text as prose where
 no gate can read it, and a finding carrying no severity is read as holding the
-node, so a follow-on left unlabelled refuses a promotion it should not.
+node, so a non-blocking finding left unlabelled refuses a promotion it should
+not.
+
+A non-blocking finding is answered one of two ways, in the same closed set of
+dispositions `crew dispose` records: `folded` names the node the work goes into,
+which is how the finding becomes a plan section when it is one; `exempted`
+states why the finding is not acted on.
 
 ## The record to write
 

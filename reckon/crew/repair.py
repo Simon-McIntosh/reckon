@@ -7,9 +7,9 @@ and three merges against the same files. This module turns a stored review
 record into that single node — its brief lists every finding that blocks under a
 stable id, its write scope is the union of the paths those findings name and the
 reviewed run's own fence, and its manifest contract obliges the repair to answer
-every finding it declines with a reason. A finding that declares itself a
-follow-on is left out of all three: it is recorded on the review rather than
-become work, so a round of follow-ons alone composes no repair.
+every finding it declines with a reason. A finding that declares itself
+non-blocking is left out of all three: it is recorded on the review rather than
+become work, so a round of non-blocking findings alone composes no repair.
 
 The identity of a round is the pair a review stands for: the run it reviewed and
 the head it read. Composition is a pure function of that pair and the record, so
@@ -117,8 +117,9 @@ def review_findings(review: Mapping[str, Any]) -> list[dict[str, Any]]:
 
     The severity the finding states is carried through under ``severity``, and
     only then: a finding that stated none has no key here either, so the reader
-    that must tell a declared follow-on from an unstated severity can. The key's
-    presence is the declaration, which is why it is never defaulted.
+    that must tell a declared non-blocking finding from an unstated severity
+    can. The key's presence is the declaration, which is why it is never
+    defaulted.
     """
     findings = review.get("findings")
     if not isinstance(findings, list) and review.get("raw_text"):
@@ -159,7 +160,7 @@ def review_findings(review: Mapping[str, Any]) -> list[dict[str, Any]]:
 # scope and the refusal reason can never disagree about which list a finding
 # belongs to.
 _BLOCKING = "blocking"
-_FOLLOW_ON = "follow-on"
+_NON_BLOCKING = "non-blocking"
 
 
 def _parsed_moment(value: str) -> datetime | None:
@@ -195,15 +196,15 @@ def _record_predates_unmarked_audit(review: Mapping[str, Any]) -> bool:
 
 
 def _finding_kind(finding: Mapping[str, Any]) -> str:
-    """Classify one finding as blocking or a follow-on.
+    """Classify one finding as blocking or a non-blocking finding.
 
-    A declared blocking severity blocks; any other declared severity is a
-    follow-on, recorded on the review rather than repaired. A finding that
+    A declared blocking severity blocks; any other declared severity is
+    non-blocking, recorded on the review rather than repaired. A finding that
     declares nothing — no key, an empty value, or a word outside the vocabulary
     — blocks too: the store admits such a finding rather than refusing it, so an
     unreadable severity is a judgement the reviewer left unstated, not a
-    follow-on, and repairing it is what keeps a finding a reviewer raised from
-    being discarded. Which values count as a declaration is
+    non-blocking finding, and repairing it is what keeps a finding a reviewer
+    raised from being discarded. Which values count as a declaration is
     :func:`declared_severity`'s decision, shared with the write-time audit.
     """
     severity = review_module.declared_severity(finding)
@@ -211,7 +212,7 @@ def _finding_kind(finding: Mapping[str, Any]) -> str:
         return _BLOCKING
     if severity == review_module.BLOCKING_FINDING_SEVERITY:
         return _BLOCKING
-    return _FOLLOW_ON
+    return _NON_BLOCKING
 
 
 def _findings_of_kind(review: Mapping[str, Any], kind: str) -> list[dict[str, Any]]:
@@ -229,8 +230,8 @@ def blocking_findings(review: Mapping[str, Any]) -> list[dict[str, Any]]:
     grants can never disagree about which findings became work. A finding that
     declares no severity blocks, because the store admits it rather than
     refusing it and it is a finding a reviewer raised. A review whose findings
-    are all follow-ons or disposed yields an empty list, which composes no repair
-    rather than a node with an empty brief.
+    are all non-blocking or disposed yields an empty list, which composes no
+    repair rather than a node with an empty brief.
     """
     return [
         finding
@@ -279,14 +280,14 @@ def unmarked_findings(review: Mapping[str, Any]) -> list[dict[str, Any]]:
     ]
 
 
-def follow_on_findings(review: Mapping[str, Any]) -> list[dict[str, Any]]:
+def non_blocking_findings(review: Mapping[str, Any]) -> list[dict[str, Any]]:
     """Return the findings that declare a non-blocking severity.
 
-    A follow-on is recorded on the review rather than repaired, and it is named
-    apart from an unmarked finding so a refusal can report the two counts
-    separately.
+    A non-blocking finding is recorded on the review rather than repaired, and
+    it is named apart from an unmarked finding so a refusal can report the two
+    counts separately.
     """
-    return _findings_of_kind(review, _FOLLOW_ON)
+    return _findings_of_kind(review, _NON_BLOCKING)
 
 
 def repair_round_id(
@@ -481,8 +482,8 @@ def repair_write_scope(
     granted does not read as two entries. A finding that names a path outside the
     fence therefore grants it here — the repair is dispatched with the scope its
     brief implies rather than refused the file it must edit. Only a finding that
-    blocks contributes a path: a follow-on is recorded on the review, not work,
-    so it must not widen the scope the repair is fenced into.
+    blocks contributes a path: a non-blocking finding is recorded on the review,
+    not work, so it must not widen the scope the repair is fenced into.
     """
     scope: list[str] = []
     for path in [*_run_fence(run_record), *[str(item).strip() for item in fence]]:
@@ -577,14 +578,14 @@ def compose_repair_node(
     """Compose the single repair node a finding-bearing review round produces.
 
     Returns ``None`` when the review carries no blocking finding: a clean review
-    is not work, and neither is a round whose findings are all follow-ons or all
-    follow-ons — composing an empty node for either would dispatch a repair with
-    nothing to do. When it carries blocking findings, the returned mapping names
-    the node, its brief, its write scope, the findings the record left unmarked
-    and the round it belongs to, so a caller can
-    dispatch it or print it without re-deriving any of them. The reviewed
-    run's node id names the node when the record carries one, so the repair
-    reads as work on the run rather than on the review.
+    is not work, and neither is a round whose findings are all non-blocking or
+    all disposed — composing an empty node for either would dispatch a repair
+    with nothing to do. When it carries blocking findings, the returned mapping
+    names the node, its brief, its write scope, the findings the record left
+    unmarked and the round it belongs to, so a caller can dispatch it or print
+    it without re-deriving any of them. The reviewed run's node id names the
+    node when the record carries one, so the repair reads as work on the run
+    rather than on the review.
 
     ``suite_command`` is the reviewed run's own recorded suite command, when it
     had one. A non-empty command adds both suite observations to the done-when —

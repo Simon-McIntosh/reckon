@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="additional-work-is-a-section">
+  <meta name="plan-title" content="A review finding is blocking or non-blocking">
+  <meta name="plan-evidence-for" content="reckon:additional-work-is-a-section">
+  <meta name="plan-verifies" content="reckon:additional-work-is-a-section#s2">
+  <meta name="plan-recorded-at" content="2026-10-23">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="review,severity,vocabulary,rename,backward-compatible">
+  <title>A review finding is blocking or non-blocking — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-finding-is-blocking-or-non-blocking" data-reckon="landed" data-when="2026-10-23">
+  <h2>A review finding is blocking or non-blocking</h2>
+  <p id="a-finding-is-blocking-or-non-blocking-severity">A finding's declared severity is <code>blocking</code> or <code>non-blocking</code>. <code>FINDING_SEVERITIES</code> and <code>NON_BLOCKING_SEVERITIES</code> name those two words, the review and figure-review prompts teach them, and every emitted message that names a severity names the current word. <code>repair.follow_on_findings</code> is renamed <code>repair.non_blocking_findings</code>, and the recovery reflex's two messages carry no retired word.</p>
+  <p id="a-finding-is-blocking-or-non-blocking-legacy">A record stored under the retired spelling <code>follow-on</code> reads as <code>non-blocking</code>: <code>review.declared_severity</code> maps the retired word to the current one on the way in and never writes it back, so an older review's judgement survives the vocabulary change.</p>
+  <p id="a-finding-is-blocking-or-non-blocking-gate">The gate is the whole census population at both arms, run from the worktree's own interpreter, and the command recorded for each arm is the literal one that ran: every file named by absolute path, with no placeholder a re-run would have to substitute. The base arm ran to its summary line at <code>3d80d654</code> for 2 failed / 712 passed / 1 skipped, and the head arm at <code>068624fd</code> for 2 failed / 717 passed / 1 skipped, both <code>EXIT=1</code>. The two heads carry the same two failure ids, so the change adds none. An earlier pair of runs disagreed in both directions — four ids failing only at base and five only at head — which is what sent the head-only ids back for attribution.</p>
+  <p id="a-finding-is-blocking-or-non-blocking-attribution">Each head-only id was then run alone, five times at base and five at head, each arm in a detached checkout of its own revision and each run logged with its revision, its literal command and its exit status. Both <code>tests/test_crew.py</code> ids pass in all ten runs, so their appearance in the earlier head arm was load-sensitive, not caused by this change. The all-declined round and the predicate parity id were fixed in the two severity tests, and the negative control was re-run in a clean export of the head carrying only the declared mutation, so its header names the revision the red log measured.</p>
+</article>
+</body>
+</html>

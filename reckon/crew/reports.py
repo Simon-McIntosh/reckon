@@ -823,9 +823,9 @@ def _coerce_list_field(value: Any) -> Any:
 # that stands before an entry-shaped token is that join rather than ordinary
 # prose, so it is refused naming the field and the separator instead of being
 # read as the one entry it is not. The entry-shaped test keeps a semicolon
-# inside a sentence — a blocker or a follow-on — from being mistaken for a join,
-# because the token after it there is a word and neither a path nor an
-# identifier.
+# inside a sentence — a blocker or a non-blocking finding — from being mistaken
+# for a join, because the token after it there is a word and neither a path nor
+# an identifier.
 _JOINED_LIST_SEPARATOR = ";"
 _PATH_LIKE_TOKEN = re.compile(r"[A-Za-z0-9_.-]+\.[A-Za-z0-9]+")
 _COMMIT_IDENTIFIER_TOKEN = re.compile(r"[0-9a-fA-F]{7,40}")
@@ -1718,11 +1718,11 @@ def _plan_label_findings(
 # with one of the declared severities. A finding that states none is recorded
 # without the key rather than defaulted, which keeps a judgement nobody made
 # out of the record — and leaves the gate that reads the record unable to tell
-# a blocking defect from a follow-on. Judging the record at the write, while
-# the reviewer still holds its turn, is what lets the reviewer restate the
-# severities instead of costing a corrective node hours later. The record is
-# read through the review store's own reader so this check and every other
-# consumer see one parse of one file.
+# a blocking defect from a non-blocking finding. Judging the record at the
+# write, while the reviewer still holds its turn, is what lets the reviewer
+# restate the severities instead of costing a corrective node hours later. The
+# record is read through the review store's own reader so this check and every
+# other consumer see one parse of one file.
 
 _HEAD_KEYED_RECORD_NAME = re.compile(r"\.at-[0-9A-Fa-f]{7,64}\Z")
 
@@ -1821,8 +1821,8 @@ def _reviewer_store_records(
 def _unmarked_finding_severity_findings(node: TaskNode | None) -> list[str]:
     """Report a review run's stored findings that declare no severity.
 
-    A finding that declares no severity cannot be told from a follow-on by the
-    gate that reads the stored record, so the reviewer's judgement is missing
+    A finding that declares no severity cannot be told from a non-blocking one by
+    the gate that reads the stored record, so the reviewer's judgement is missing
     rather than negative, and the reviewer is the only party that can restate
     it. Each unmarked finding is reported on its own, naming the finding's file
     and line, so the reviewer can restate the severities in the same turn;
@@ -1934,7 +1934,8 @@ def _unmarked_findings_in_record(
             f"with no declared severity: a finding says whether it blocks by "
             f"opening with one of {declared}, so an unstated severity leaves "
             "the gate that reads this record unable to tell a blocking defect "
-            "from a follow-on — restate the severity on the finding and store "
+            "from a non-blocking finding — restate the severity on the finding "
+            "and store "
             "the record again"
         )
     return findings

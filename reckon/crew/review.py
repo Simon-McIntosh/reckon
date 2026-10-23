@@ -152,8 +152,25 @@ def check_verdict_outcome(verdict: str) -> str | None:
 # same falsifier that holds the dimension names. The blocking value is named on
 # its own because a gate that acts on blocking findings alone compares against
 # that name rather than against the literal it happens to hold.
-FINDING_SEVERITIES: tuple[str, ...] = ("blocking", "follow-on")
+FINDING_SEVERITIES: tuple[str, ...] = ("blocking", "non-blocking")
 BLOCKING_FINDING_SEVERITY = "blocking"
+
+# The spelling the non-blocking severity was written under before it was renamed.
+# A record stored under it still reads as non-blocking, so an older review's
+# judgement survives the vocabulary change; the current spelling is the only
+# spelling the reader and the writer ever emit, so the retired word is mapped on
+# the way in and never written back.
+RETIRED_FINDING_SEVERITIES: dict[str, str] = {"follow-on": "non-blocking"}
+
+
+def current_finding_severity(word: str) -> str:
+    """Return the current spelling of a finding severity word.
+
+    A word that is not a retired spelling is returned unchanged, so a word no
+    reader can place reaches the vocabulary check as itself rather than as a
+    guess.
+    """
+    return RETIRED_FINDING_SEVERITIES.get(word, word)
 
 
 def declared_severity(finding: Mapping[str, Any]) -> str | None:
@@ -162,16 +179,16 @@ def declared_severity(finding: Mapping[str, Any]) -> str | None:
     The one reader of a stored finding's severity, so the promotion audit, the
     repair reflex and the parser cannot disagree about which findings carry a
     judgement. A finding either states one of :data:`FINDING_SEVERITIES` — in
-    its declared spelling, surrounding whitespace trimmed — or it states
-    nothing: an absent key, an empty string and a word outside the vocabulary
-    all mean the same thing here, no declared severity. A value outside the
-    vocabulary is never guessed at, because a defaulted severity is a judgement
-    nobody made.
+    its declared spelling, surrounding whitespace trimmed, a retired spelling
+    read as its current one — or it states nothing: an absent key, an empty
+    string and a word outside the vocabulary all mean the same thing here, no
+    declared severity. A value outside the vocabulary is never guessed at,
+    because a defaulted severity is a judgement nobody made.
     """
     value = finding.get("severity")
     if value is None:
         return None
-    word = str(value).strip()
+    word = current_finding_severity(str(value).strip())
     return word if word in FINDING_SEVERITIES else None
 
 
