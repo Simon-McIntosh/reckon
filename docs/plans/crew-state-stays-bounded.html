@@ -24,7 +24,7 @@
   <title>Crew State Stays Bounded | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="15">
+<meta name="plan-version" content="16">
 <meta name="plan-modified" content="2026-10-23">
 </head>
 <body>
@@ -205,6 +205,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261023T135257752150-review-of-the-retention-sweep-runs-on-its-own-83eb753bedb2" data-who="reckon-build" data-when="2026-10-23T14:44:55.412Z">
     <div class="r-comment-body"><p>Independent review of the-retention-sweep-runs-on-its-own: it delivers the goal (an hourly self-run run-directory retention pass across every mounted project plus an installed user timer), its gate log records 131 passed EXIT=0 and its declared negative control reddens three cases EXIT=1; three non-blocking findings — a test assertion that cannot fail (tests/test_the_retention_sweep_runs_on_its_own.py:282), a duplicated timer installer (reckon/service.py:390 vs reckon/crew/paid_lanes.py:1341), and a redundant local `import sys` (reckon/crew/gc.py:1439).</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261023T150852572432-review-of-the-retention-sweep-runs-on-its-own-e5565c3a8bb0" data-who="reckon-build" data-when="2026-10-23T16:04:05.709Z">
+    <div class="r-comment-body"><p>An independent review of the run-directory retention sweep at e5565c3a8 is stored parsed, scoring goal_fidelity 19, evidence 17, scope_discipline 15, durability 18, fit 18, reuse 19, with three non-blocking findings (a dropped After=network.target in the paid-lanes unit, a test file edited outside every declared write path, and a landing fragment still describing the superseded ledger.load spy) and no added failures.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261023T094244498082-review-of-a-harness-cache-leaves-with-its-attempt-508da957f0a5" data-who="reckon-build" data-when="2026-10-23T10:30:14.666Z">
     <div class="r-comment-body"><p>Independent review of run r-20261023T092448652887-a-harness-cache-leaves-with-its-attempt at 508da957f0a5; parsed record scores goal_fidelity 18, evidence 14, scope_discipline 19, durability 15, fit 18, reuse 4, added_failure_count 0, three non-blocking findings (reuse: _tree_bytes duplicates tree_size_bytes in the same module; durability: one added test invokes no production code and one path-set assertion is self-referential).</p></div>

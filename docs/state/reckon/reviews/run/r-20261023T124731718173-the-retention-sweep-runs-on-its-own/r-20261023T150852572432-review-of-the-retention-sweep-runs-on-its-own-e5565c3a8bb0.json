@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:1582 crew_retention_sweep",
+    "reckon/crew/gc.py:1495 main (the entry the installed unit runs as python -m reckon.crew.gc, rendered at reckon/crew/gc.py:1425 render_retention_service_unit)",
+    "reckon/crew/gc.py:447 garbage_collect (now classifies through the shared _run_directory_retention_report at reckon/crew/gc.py:275)",
+    "reckon/crew/paid_lanes.py:1322 install_timer (delegates to reckon/service.py:390 install_timer_units)"
+  ],
+  "completed_at": "2026-10-23T16:04:05.709Z",
+  "dispatched_at": "2026-10-23T15:43:05Z",
+  "findings": [
+    {
+      "file": "reckon/crew/paid_lanes.py:1304",
+      "line": 1304,
+      "severity": "non-blocking",
+      "text": "the consolidated render drops After=network.target from the published unit: paid lanes' own SERVICE_TEMPLATE carried it and service.PERIODIC_SERVICE_TEMPLATE (reckon/service.py:60) has no ordering directive, so reckon-crew-paid-lanes.service loses the directive with no test asserting it. The code change that would have to be put back for a guard to redden is the restored After= line in reckon/service.py:60, and no assertion would notice it. The publish retries every five minutes from a oneshot timer, so the loss is low impact, but it is a silent functional change to a unit outside this node's goal."
+    },
+    {
+      "file": "tests/test_watcher_unit_restart.py:43",
+      "line": 43,
+      "severity": "non-blocking",
+      "text": "a file outside every declared write path was rewritten: UNIT_SOURCES replaces the UNIT_GENERATORS inventory as the tree scan's comparison set. The edit preserves the guard's intent, because reckon/crew/gc.py no longer carries a [Service] section and the scan still reddens on a module that does, but the node rewrote a test it was not fenced to write."
+    },
+    {
+      "file": "docs/evidence/fragments/crew-state-stays-bounded/the-retention-sweep-runs-on-its-own.html:58",
+      "line": 58,
+      "severity": "non-blocking",
+      "text": "the landing record describes a measure the node no longer runs: it says a spy on ledger.load shows every mounted project's ledger read with use_index=True, but e5565c3a8 moved that spy onto ledger._indexed_data and made it assert the set of projects read, precisely because the flag form could not fail. The same section still reports the gate as 131 passed at 50d453b98 while the reviewed head's gate is 139 passed at e5565c3a8, so the record tells a reader about a superseded assertion."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified reckon/crew_run_commands.py:1582 crew_retention_sweep, reckon/crew/gc.py:1495 main, reckon/crew/gc.py:447 garbage_collect and reckon/crew/paid_lanes.py:1322 install_timer; nothing else in the tree reaches retention_sweep or install_timer_units.",
+    "diff": "read commit by commit from c4d3ae5b6 to e5565c3a8: 81b4ea57e adds the sweep and its verb, 50d453b98 moves the unit sections into reckon/service.py, 83eb753be writes the fragment, af1b5e155 consolidates the periodic-unit install and e5565c3a8 rewrites the ledger-read assertion.",
+    "done_when": "the done_when names tests/test_the_retention_sweep_runs_on_its_own.py plus every module importing reckon/service.py; those six cases assert the two-project pass, the silent second pass, 1,200 to 500 with 700 left, the git-shim absence beside both removals, the index-backed read per project and the install-once pair, and the manifest records 139 passed EXIT=0 at e5565c3a8 in after-suite.log.",
+    "goal": "the goal is \"Run the run-directory retention pass hourly across every mounted project from an installed user timer\"; reckon/crew/gc.py:1329 retention_sweep walks every mounted project's ledger and reckon/crew/gc.py:1468 install_retention_timer installs reckon-crew-retention.service plus an hourly timer, so the landed change delivers it.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T124731718173-the-retention-sweep-runs-on-its-own/manifest.md; it states the five commits, 139 passed EXIT=0 at e5565c3a8 in after-suite.log, the 3 of 6 negative control at EXIT=1, and both scope extensions in failure_attribution.",
+    "write_paths": "the declared paths are reckon/crew/gc.py, reckon/service.py, reckon/crew_run_commands.py, the new test module and the landing fragment; the diff also changes tests/test_watcher_unit_restart.py, which no declaration covers, and reckon/crew/paid_lanes.py, which the resume advice moved into scope."
+  },
+  "justifications": {
+    "durability": "each added assertion names a code change that reddens it and the declared mutation reddens three of six in negative-control.log, but nothing pins the sweep to the shared predicate it now reuses.",
+    "evidence": "the gate's six cases in tests/test_the_retention_sweep_runs_on_its_own.py assert the done_when's figures and are recorded at 139 passed EXIT=0 in after-suite.log, with the negative control reddening three of them at EXIT=1, but the done_when's two structural sub-claims (one generic function, the watch log's rotating stream) are exercised only through their behaviour.",
+    "fit": "the constants and helpers at reckon/crew/gc.py:1270 follow the surrounding style, the CLI verb at reckon/crew_run_commands.py:1558 mirrors the neighbouring crew commands, and the naming checks over the added lines are clean.",
+    "goal_fidelity": "reckon/crew/gc.py:1329 retention_sweep judges each run directory against every mounted project's ledger and reckon/crew/gc.py:1468 install_retention_timer writes the hourly service and timer, which is the goal's pass on its own clock.",
+    "reuse": "reckon/service.py:390 install_timer_units is the one write-and-enable owner and the periodic unit sections live once in reckon/service.py:60; the search for another owner found reckon/project_maintenance_commands.py:110, a distinct project-scoped service installer with no timer, which is not the capability this pass needs.",
+    "scope_discipline": "reckon/crew/paid_lanes.py:1283 and tests/test_watcher_unit_restart.py:43 both lie outside the five declared write paths; the resume advice moved paid_lanes.py into scope, the test file stayed outside, and the consolidation silently drops the published unit's After=network.target."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is \"Run the run-directory retention pass hourly across every mounted project from an installed user timer\"; reckon/crew/gc.py:1329 retention_sweep walks every mounted project's ledger and reckon/crew/gc.py:1468 install_retention_timer installs reckon-crew-retention.service plus an hourly timer, so the landed change delivers it.\nVERDICT done_when: the done_when names tests/test_the_retention_sweep_runs_on_its_own.py plus every module importing reckon/service.py; those six cases assert the two-project pass, the silent second pass, 1,200 to 500 with 700 left, the git-shim absence beside both removals, the index-backed read per project and the install-once pair, and the manifest records 139 passed EXIT=0 at e5565c3a8 in after-suite.log.\nVERDICT write_paths: the declared paths are reckon/crew/gc.py, reckon/service.py, reckon/crew_run_commands.py, the new test module and the landing fragment; the diff also changes tests/test_watcher_unit_restart.py, which no declaration covers, and reckon/crew/paid_lanes.py, which the resume advice moved into scope.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T124731718173-the-retention-sweep-runs-on-its-own/manifest.md; it states the five commits, 139 passed EXIT=0 at e5565c3a8 in after-suite.log, 3 of 6 failed at EXIT=1 in the negative control, and both scope extensions in failure_attribution.\nVERDICT diff: read commit by commit from c4d3ae5b6 to e5565c3a8: 81b4ea57e adds the sweep and its verb, 50d453b98 moves the unit sections into reckon/service.py, 83eb753be writes the fragment, af1b5e155 consolidates the periodic unit install, and e5565c3a8 rewrites the ledger-read assertion.\nCALL_SITES: reckon/crew_run_commands.py:1582 crew_retention_sweep, reckon/crew/gc.py:1495 main, reckon/crew/gc.py:447 garbage_collect, reckon/crew/paid_lanes.py:1322 install_timer\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/gc.py:1329 retention_sweep judges each run directory against every mounted project's ledger and reckon/crew/gc.py:1468 install_retention_timer writes the hourly service and timer, which is the goal's pass on its own clock.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate's six cases in tests/test_the_retention_sweep_runs_on_its_own.py assert the done_when's figures and are recorded at 139 passed EXIT=0 in after-suite.log, but the done_when's two structural sub-claims are exercised only through their behaviour.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: reckon/crew/paid_lanes.py:1283 and tests/test_watcher_unit_restart.py:43 both lie outside the five declared write paths, and the consolidation silently drops the published unit's After=network.target.\nSCORE durability: 18\nJUSTIFICATION durability: each added assertion names a code change that reddens it and the declared mutation reddens three of six in negative-control.log, but nothing pins the sweep to the shared predicate it now reuses.\nSCORE fit: 18\nJUSTIFICATION fit: the constants and helpers at reckon/crew/gc.py:1270 follow the surrounding style and reckon/crew_run_commands.py:1558 mirrors the neighbouring crew commands.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/service.py:390 install_timer_units is the one write-and-enable owner and the periodic unit sections live once there; the search for another owner found reckon/project_maintenance_commands.py:110, a distinct project-scoped installer with no timer.\nFINDING reckon/crew/paid_lanes.py:1304 non-blocking: the consolidated render drops After=network.target from the published unit, which paid lanes' own SERVICE_TEMPLATE carried and service.PERIODIC_SERVICE_TEMPLATE at reckon/service.py:60 does not, with no test asserting it.\nFINDING tests/test_watcher_unit_restart.py:43 non-blocking: a test file outside every declared write path was rewritten to accommodate the paid-lanes consolidation; the edit preserves the scan's intent but the node was not fenced to make it.\nFINDING docs/evidence/fragments/crew-state-stays-bounded/the-retention-sweep-runs-on-its-own.html:58 non-blocking: the landing record still describes the superseded ledger.load spy and the 131-passed gate figure, which no longer match the reviewed head's test and gate.",
+  "review_run_id": "r-20261023T150852572432-review-of-the-retention-sweep-runs-on-its-own-e5565c3a8bb0",
+  "reviewed_base_sha": "c4d3ae5b6e6d3d6c48e09e1cd1decb441e1e1a1e",
+  "reviewed_head_sha": "e5565c3a8bb0dfd20a9fec8b62514ff06d891997",
+  "reviewed_run_id": "r-20261023T124731718173-the-retention-sweep-runs-on-its-own",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T16:05:39.072023+00:00",
+  "total": 106
+}
