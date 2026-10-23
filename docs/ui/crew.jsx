@@ -335,15 +335,102 @@ function crewScopedProjects(selectedProject, visibleProjects, allVisible) {
   return [selectedProject];
 }
 
+// The plan page a decision's row links to. The reader route names the plan by
+// slug, so the decision key rides on the row rather than the fragment.
+function crewDecisionPlanHref(row) {
+  const project = row?.project || window.STATE?.project || "";
+  if (!row?.plan) return "";
+  return `/${encodeURIComponent(project)}/#plan/${encodeURIComponent(row.plan)}`;
+}
+
+// The scope the served row already carries: the sections it holds, or the whole
+// plan where it names none. The list states this rather than deciding it.
+function crewDecisionScope(row) {
+  const sections = Array.isArray(row?.sections) ? row.sections : [];
+  if (sections.length) return sections.map(section => `§${section}`).join(", ");
+  return row?.holds_whole_plan ? "whole plan" : "";
+}
+
+function crewDecisionsForProjects(decisions, visibleProjects) {
+  if (!Array.isArray(visibleProjects)) return decisions || [];
+  const visible = new Set(visibleProjects);
+  return (decisions || []).filter(row => visible.has(row.project));
+}
+
+function CrewOpenDecisions({ decisions, visibleProjects }) {
+  // A payload not yet read is not an empty list: the empty line asserts that
+  // nothing waits, which is a claim about an answer the page does not have
+  // yet, so the list is drawn only once the payload has arrived.
+  if (!Array.isArray(decisions)) return null;
+  const rows = crewDecisionsForProjects(decisions, visibleProjects);
+  return (
+    <section className="r-crew-decisions" aria-label="Open decisions holding work">
+      <header className="r-crew-decisions-head">
+        <span className="r-crew-label">Waiting on you</span>
+      </header>
+      {rows.length === 0 ? (
+        <p className="r-crew-decisions-empty">No decision is waiting.</p>
+      ) : (
+        <ul className="r-crew-decision-list">
+          {rows.map(row => (
+            <li
+              key={`${row.project || ""}:${row.plan || ""}:${row.id || ""}`}
+              className="r-crew-decision"
+              data-status={row.status || ""}
+            >
+              <a className="r-crew-decision-plan" href={crewDecisionPlanHref(row)}>
+                {row.project ? <code>{row.project}</code> : null}
+                {row.plan || "—"}
+              </a>
+              <code className="r-crew-decision-key">{row.id || "—"}</code>
+              <span className="r-crew-decision-question">{row.question || row.id || ""}</span>
+              <span className="r-crew-decision-holds">{crewDecisionScope(row)}</span>
+              {row.recommended ? (
+                <span className="r-crew-decision-recommendation">
+                  recommended {row.recommended}
+                  {row.recommended_by ? ` · ${row.recommended_by}` : ""}
+                </span>
+              ) : null}
+              <span className="r-crew-decision-waited">
+                waiting since {crewFormatStamp(row.plan_modified) || "an unrecorded date"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 function CrewView({ visibleProjects, mountedProjectCount, selectedProject, quota, runs = [], loaded = false, error = "" }) {
   const [refreshedAt, setRefreshedAt] = useState(null);
   const [allVisible, setAllVisible] = useState(false);
+  // Null until the payload has been read: an empty list is a claim that nothing
+  // waits, and the page cannot make that claim before it has asked.
+  const [openDecisions, setOpenDecisions] = useState(null);
 
   // The shell owns the single /crew poll and passes its result down, so this
   // view renders the same run list without polling the same route again.
   useEffect(() => {
     if (loaded) setRefreshedAt(new Date());
   }, [runs, loaded]);
+
+  // The open decisions ride the same /crew payload as the run list, and this
+  // view is the surface that draws them. The shell hands down only the runs, so
+  // the page reads the payload's decision list here rather than asking the
+  // shell for a second shape. A page opened without a poll (a component probe)
+  // simply draws the empty line.
+  useEffect(() => {
+    if (!window.startPoll) return undefined;
+    return window.startPoll(
+      "/crew",
+      payload => {
+        if (Array.isArray(payload?.open_decisions)) setOpenDecisions(payload.open_decisions);
+      },
+      CREW_POLL_INTERVAL_MS,
+      () => {},
+    );
+  }, []);
 
   const scopedProjects = crewScopedProjects(selectedProject, visibleProjects, allVisible);
   const visibleRuns = crewRunsForVisibleProjects(runs, scopedProjects);
@@ -375,6 +462,8 @@ function CrewView({ visibleProjects, mountedProjectCount, selectedProject, quota
       </div>
 
       {error && <div role="status" className="r-crew-error">{error}</div>}
+
+      <CrewOpenDecisions decisions={openDecisions} visibleProjects={scopedProjects} />
 
       <DerivedFlow runs={flowRuns} project={flowProject} />
 
