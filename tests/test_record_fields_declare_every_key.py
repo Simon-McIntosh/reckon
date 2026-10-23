@@ -40,7 +40,7 @@ def test_promoted_record_fields_are_all_declared() -> None:
     assert "worktree_retention" in declared
     assert "no_commit" in declared
     assert "dispute_count" in declared
-    assert "follow_on_paths" in declared
+    assert "outside_scope_paths" in declared
     assert "scope_acceptances" in declared
     assert "resume_waiver" in declared
     assert "watch_override" in declared

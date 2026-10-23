@@ -23,6 +23,49 @@ from typing import Any
 
 # ── Completed runs ──────────────────────────────────────────────────────────
 
+# The ledger key naming the repository paths a worker reported as lying beyond
+# its own scope, and the spelling it replaced. A row promoted before the rename
+# carries the retired key; every reader maps it on the way in and the writer
+# emits only the current one, so an old row and a new one answer alike. The
+# manifest field the paths are read from is the worker's own and keeps its name
+# here; only the committed row's key is renamed.
+OUTSIDE_SCOPE_PATHS = "outside_scope_paths"
+RETIRED_OUTSIDE_SCOPE_PATHS = "follow_on_paths"
+
+
+def outside_scope_paths(record: Mapping[str, Any]) -> list[str] | None:
+    """The paths a row names as outside its worker's scope, or ``None``.
+
+    A row promoted before the key was renamed is read through the retired
+    spelling, so both spellings answer identically here. An empty list is a
+    real measurement — the worker reported no such path — and stays distinct
+    from ``None``, which is a row never measured for the field.
+    """
+    for key in (OUTSIDE_SCOPE_PATHS, RETIRED_OUTSIDE_SCOPE_PATHS):
+        if key in record:
+            value = record[key]
+            return [] if value is None else [str(path) for path in value]
+    return None
+
+
+def normalize_outside_scope_paths(record: Mapping[str, Any]) -> dict[str, Any]:
+    """A row carrying its outside-scope paths under the current key.
+
+    The retired key is mapped onto the current one and dropped, so a reader
+    finds one key whichever spelling the row was written with, and a later
+    write cannot carry the retired key forward. A row that already carries the
+    current key — or neither — is copied unchanged.
+    """
+    if RETIRED_OUTSIDE_SCOPE_PATHS not in record:
+        return dict(record)
+    mapped = {
+        key: value
+        for key, value in record.items()
+        if key != RETIRED_OUTSIDE_SCOPE_PATHS
+    }
+    mapped.setdefault(OUTSIDE_SCOPE_PATHS, record[RETIRED_OUTSIDE_SCOPE_PATHS])
+    return mapped
+
 
 def measured_throughput(throughput: Mapping[str, Any] | None) -> dict[str, Any] | None:
     """Keep only the rates a throughput block actually measured, or nothing.
@@ -394,7 +437,7 @@ def build_record(
     require_gate_check: bool = False,
     suite_delta: Mapping[str, Any] | None = None,
     resume_remedy: Mapping[str, str] | None = None,
-    follow_on_paths: Iterable[str] | None = None,
+    outside_scope_paths: Iterable[str] | None = None,
     predecessor_run: str | None = None,
     dispute_count: int | str | None = None,
     review: Mapping[str, Any] | None = None,
@@ -602,14 +645,14 @@ def build_record(
     if str(shadow_contaminated).strip():
         record["shadow_contaminated"] = str(shadow_contaminated).strip()
     # Routing evidence is present whenever promotion could read it. An empty
-    # ``follow_on_paths`` is a real measurement — the manifest declared no
-    # follow-ons — and stays distinct from an absent key, which is a row never
+    # ``outside_scope_paths`` is a real measurement — the manifest declared no
+    # such paths — and stays distinct from an absent key, which is a row never
     # measured; ``dispute_count`` is an integer when the report parsed and
     # stated no corrections, the string "unknown" when it did not read;
     # ``predecessor_run`` is a run id or nothing, since a run with no
     # predecessor must not read identically to one with no base to compare.
-    if follow_on_paths is not None:
-        record["follow_on_paths"] = [str(path) for path in follow_on_paths]
+    if outside_scope_paths is not None:
+        record[OUTSIDE_SCOPE_PATHS] = [str(path) for path in outside_scope_paths]
     if predecessor_run is not None:
         record["predecessor_run"] = str(predecessor_run)
     if dispute_count is not None:

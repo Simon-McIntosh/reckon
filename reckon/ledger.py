@@ -988,7 +988,10 @@ def _load_aggregate(
     return (
         {
             "members": list(members),
-            "runs": list(runs),
+            "runs": [
+                normalize_outside_scope_paths(row) if isinstance(row, Mapping) else row
+                for row in runs
+            ],
             "holds": list(holds),
         },
         version,
@@ -1268,7 +1271,10 @@ def _read_run(source: Path) -> dict[str, Any]:
         ) from exc
     if not isinstance(record, dict) or record.get("run_id") != source.stem:
         raise LedgerError(f"run {source.stem!r} at {source} must hold its own run_id")
-    return record
+    # The row's outside-scope key is mapped on the way in, so a document written
+    # before the key was renamed reaches every reader under the current one and
+    # the retired spelling is never carried into a later write.
+    return normalize_outside_scope_paths(record)
 
 
 def _index_payload(
@@ -1301,13 +1307,13 @@ def _index_payload(
         return data, version
     column = "picker" if picker_only else "payload"
     data["runs"] = [
-        json.loads(row[0])
+        normalize_outside_scope_paths(json.loads(row[0]))
         for row in connection.execute(
             f"SELECT {column} FROM aggregate_rows ORDER BY ordinal"  # noqa: S608 - fixed column names
         )
     ]
     extra = [
-        json.loads(row[0])
+        normalize_outside_scope_paths(json.loads(row[0]))
         for row in connection.execute(
             f"SELECT {column} FROM records WHERE name NOT IN "  # noqa: S608 - fixed column names
             "(SELECT run_id FROM aggregate_rows WHERE run_id IS NOT NULL) ORDER BY name"
@@ -3689,6 +3695,8 @@ def summary(
 
 from reckon.run_record import (  # noqa: E402, F401
     _RESOLVED_FLIGHT_CACHE,
+    OUTSIDE_SCOPE_PATHS,
+    RETIRED_OUTSIDE_SCOPE_PATHS,
     _clone_report,
     _flight_layer_key,
     _label_unmetered_cost,
@@ -3700,6 +3708,8 @@ from reckon.run_record import (  # noqa: E402, F401
     is_unmetered_backend,
     measured_throughput,
     measurement_exclusion_reason,
+    normalize_outside_scope_paths,
+    outside_scope_paths,
     per_run_budget,
     promoted_budget_fallback,
     promoted_pace_row,
